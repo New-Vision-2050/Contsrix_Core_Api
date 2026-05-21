@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\EmployeeTask\Services;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\DTO\CreateExtensionRequestDTO;
@@ -68,7 +69,7 @@ final class EmployeeTaskExtensionService
                 // Parent task is in workflow
                 // Extension enters workflow at the same procedure's first step
                 $data['status'] = 'pending';
-                $firstStep = $this->workflow->resolveFirstStep($task->procedure_setting_id);
+                $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
                 $data['current_procedure_step_id'] = $firstStep->id;
             }
 
@@ -80,11 +81,27 @@ final class EmployeeTaskExtensionService
     }
 
     /**
-     * List all pending extension requests (admin inbox).
+     * Admin inbox: pending extension requests where the given admin is an
+     * action-taker on the current workflow step (or the step is open).
      *
-     * Ordered by creation date (newest first).
+     * Mirrors EmployeeTaskRequestService::inbox() for the same access pattern.
      */
-    public function listPending(int $perPage = 15)
+    public function listInboxForAdmin(string $adminId, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->taskRepo->paginateExtensionInboxForAdmin($adminId, $filters, $perPage);
+    }
+
+    public function listInboxAllForAdmin(string $adminId, array $filters = []): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->taskRepo->allExtensionInboxForAdmin($adminId, $filters);
+    }
+
+    /**
+     * List all pending extension requests regardless of action-taker.
+     *
+     * Useful for super-admin views; prefer listInboxForAdmin() for scoped access.
+     */
+    public function listPending(int $perPage = 15): LengthAwarePaginator
     {
         return EmployeeTaskExtensionRequest::query()
             ->where('status', 'pending')

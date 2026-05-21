@@ -18,13 +18,18 @@ The ExtensionRequest approval/rejection flow has been fully refactored to integr
 
 **Migration Added**: `2026_05_20_000005_add_workflow_to_employee_task_extension_requests_table.php`
 
-**New Columns**:
+**New Column** (single column, not two):
 ```
-procedure_setting_id      (string, nullable) → FK to procedure_settings.id
-current_procedure_step_id (int, nullable)    → FK to procedure_setting_steps.id
+current_procedure_step_id (int, nullable) → FK to procedure_setting_steps.id
 ```
 
-**Rationale**: These columns track which workflow an ExtensionRequest is in and which step it's currently awaiting approval from.
+**Design Note**: Extension requests do NOT store their own `procedure_setting_id`. They inherit the parent
+task's `procedure_setting_id` at runtime. This guarantees the same approvers who approved the task also
+approve the extension with zero extra configuration.
+
+**Rationale**: `current_procedure_step_id` tracks which step the extension is currently awaiting.
+The parent task's `procedure_setting_id` is used when calling `workflow->advance()` and
+`workflow->resolveFirstStepBySettingId()`.
 
 ---
 
@@ -45,13 +50,11 @@ This mirrors the exact relationship pattern used in EmployeeTaskRequest (lines 8
 
 ### 3. Enum Layer
 
-**ProcedureSettingType** - Added new case:
+**ProcedureSettingType** — No new case added.
 
-```php
-case EmployeeTaskExtensionRequest = 'employee_task_extension_request';
-```
-
-This allows ProcedureSettings to be configured for extension request approval workflows separately from general employee task workflows.
+Extension requests share the same `employee_task_request` procedure as their parent task.
+There is no separate `employee_task_extension_request` type. The enum comment documents this
+explicitly to prevent future confusion.
 
 ---
 
@@ -65,31 +68,33 @@ This allows ProcedureSettings to be configured for extension request approval wo
 - No workflow integration
 
 **After**:
-- `requestExtension()` now:
-  - Calls `ProcedureWorkflowService::getApprovalResponsibles()` for the extension type
-  - If auto-approved: sets status='approved' + clears workflow fields
-  - If workflow required: resolves first step + sets workflow IDs + keeps status='pending'
-  
-- `approve()` and `reject()` **removed** - moved to EmployeeTaskExtensionWorkflowService
-- `listPending()` and `listForTask()` preserved for querying
+- `requestExtension()` now uses **parent-inheritance** design:
+  - If parent task has no procedure (`procedure_setting_id = null`): Extension auto-approves immediately
+  - If parent task is in a workflow: Extension enters the **same** procedure at its first step
+  - Uses `ProcedureWorkflowService::resolveFirstStepBySettingId()` (not `resolveFirstStep()`)
 
-**Code Pattern** (Lines 23-70):
+- `approve()` and `reject()` **removed** — moved to EmployeeTaskExtensionWorkflowService
+- `listInboxForAdmin()` **added** — filters pending extensions by admin action-taker (mirrors task inbox)
+- `listPending()` preserved for super-admin/unfiltered use
+
+**Code Pattern** (actual implementation):
 ```php
-$procedureType = ProcedureSettingType::EmployeeTaskExtensionRequest->value;
-$preview = $this->workflow->getApprovalResponsibles($procedureType);
-
-if ($preview['auto_approve']) {
+if ($task->procedure_setting_id === null) {
+    // Parent task was auto-approved → extension also auto-approves
     $data['status'] = 'approved';
-    $data['procedure_setting_id'] = null;
     $data['current_procedure_step_id'] = null;
+    $data['reviewed_at'] = now();
 } else {
-    $firstStep = $this->workflow->resolveFirstStep($procedureType);
-    $data['procedure_setting_id'] = $firstStep->procedure_setting_id;
+    // Parent task has a workflow → extension inherits same procedure at first step
+    $data['status'] = 'pending';
+    $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
     $data['current_procedure_step_id'] = $firstStep->id;
 }
 ```
 
-This **exactly mirrors** EmployeeTaskRequestService::create() (lines 23-50).
+**Key difference from original document**: The implementation uses parent-inheritance instead of a separate
+`ProcedureSettingType::EmployeeTaskExtensionRequest` procedure. This is intentional — no extra configuration
+is needed, and the same approvers handle both tasks and extensions automatically.
 
 ---
 
@@ -322,11 +327,14 @@ Admins must configure ProcedureSetting for extension requests:
 - `Services/EmployeeTaskExtensionWorkflowService.php`
 
 ### Modified
-- `Models/EmployeeTaskExtensionRequest.php` - Added workflow relationships
-- `Services/EmployeeTaskExtensionService.php` - Integrated workflow on request creation
-- `Controllers/AdminEmployeeTaskController.php` - Uses new workflow service
-- `Providers/EmployeeTaskServiceProvider.php` - Registers new service
-- `Enums/ProcedureSettingType.php` - Added extension request type
+- `Models/EmployeeTaskExtensionRequest.php` - Added `currentProcedureStep` relationship + `current_procedure_step_id` in fillable
+- `Services/EmployeeTaskExtensionService.php` - Integrated workflow on creation; added `listInboxForAdmin()`
+- `Services/EmployeeTaskExtensionService.php` - **Bug fix**: `resolveFirstStep()` → `resolveFirstStepBySettingId()`
+- `Controllers/AdminEmployeeTaskController.php` - Uses `EmployeeTaskExtensionWorkflowService`; extension inbox now filtered by admin
+- `Providers/EmployeeTaskServiceProvider.php` - Registers `EmployeeTaskExtensionWorkflowService`
+- `Enums/ProcedureSettingType.php` - Added clarifying comment (no new enum case; extensions share `EmployeeTaskRequest` procedure)
+- `Repositories/EmployeeTaskRepository.php` - Added `paginateExtensionInboxForAdmin()`
+- `ProcedureSetting/Services/ProcedureWorkflowService.php` - Added `resolveFirstStepBySettingId()`
 
 ### Deleted
 - `Services/EmployeeTaskExtensionResolveService.php` (functionality moved to EmployeeTaskExtensionWorkflowService)
@@ -340,6 +348,43 @@ Admins must configure ProcedureSetting for extension requests:
 - Presenters (same output format)
 - Request validations (same)
 - Models: EmployeeTaskRequest, ProcedureSettingStep, User, etc.
+
+---
+
+## Bug Fixes Applied (Pre-Merge)
+
+### BUG-1: `resolveFirstStep()` called with UUID instead of type string
+**File**: `EmployeeTaskExtensionService::requestExtension()` (line 71)
+
+**Root cause**: `ProcedureWorkflowService::resolveFirstStep(string $procedureType)` queries
+`WHERE procedure_settings.type = ?`. Passing `$task->procedure_setting_id` (a UUID) always
+returned null → always threw `noStepsConfigured`, making extension requests impossible when the
+parent task had a workflow.
+
+**Fix**: Added `ProcedureWorkflowService::resolveFirstStepBySettingId(string $settingId)` which
+queries `WHERE procedure_setting_steps.procedure_setting_id = ?`. Extension service now calls this
+method.
+
+### BUG-2: Extension inbox exposed all pending extensions to every admin
+**File**: `AdminEmployeeTaskController::extensionRequests()` + `EmployeeTaskExtensionService::listPending()`
+
+**Root cause**: `listPending()` returned ALL pending extensions with no action-taker filter. Any
+admin could see (and act on) extension requests they were not assigned to, inconsistent with the
+task inbox behaviour.
+
+**Fix**:
+- Added `EmployeeTaskRepository::paginateExtensionInboxForAdmin()` — same `whereHas / whereDoesntHave`
+  pattern as `paginateInboxForAdmin()` for tasks.
+- Added `EmployeeTaskExtensionService::listInboxForAdmin(string $adminId, ...)`.
+- `AdminEmployeeTaskController::extensionRequests()` now calls `listInboxForAdmin(Auth::id(), ...)`.
+
+### Design Clarification: Parent-Inheritance (No Separate Procedure Type)
+The original document described using `ProcedureSettingType::EmployeeTaskExtensionRequest` as a
+separate procedure type. **This was intentionally omitted.** The actual implementation uses
+**parent-inheritance** — the extension reuses the parent task's `procedure_setting_id` directly.
+No separate `employee_task_extension_request` procedure configuration is needed or supported.
+Admins configure one `employee_task_request` procedure and it covers both task approvals and
+extension approvals automatically.
 
 ---
 

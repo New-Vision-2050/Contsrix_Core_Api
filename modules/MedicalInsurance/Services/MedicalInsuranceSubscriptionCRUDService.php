@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\MedicalInsurance\Services;
 
+use Illuminate\Support\Facades\DB;
 use Modules\MedicalInsurance\DTO\CreateMedicalInsuranceSubscriptionDTO;
 use Modules\MedicalInsurance\Models\MedicalInsuranceSubscription;
 use Modules\MedicalInsurance\Repositories\MedicalInsuranceSubscriptionRepository;
@@ -34,6 +35,24 @@ class MedicalInsuranceSubscriptionCRUDService
         );
 
         return $this->repository->createWithFamilyMembers($dto->toArray(), $familyMembersData);
+    }
+
+
+    public function createMany(array $dtos): array
+    {
+        return DB::transaction(function () use ($dtos) {
+            $pairs = collect($dtos)
+                ->map(fn ($dto) => $dto->userId . '|' . $dto->medicalInsuranceId)
+                ->unique()
+                ->values();
+
+            foreach ($pairs as $pair) {
+                [$userId, $insuranceId] = explode('|', $pair);
+                $this->repository->deleteByUserAndInsurance($userId, $insuranceId);
+            }
+
+            return array_map(fn ($dto) => $this->create($dto), $dtos);
+        });
     }
 
     public function update(UuidInterface $id, array $data, array $familyMembers): bool

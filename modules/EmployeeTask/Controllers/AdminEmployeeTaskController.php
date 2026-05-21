@@ -9,6 +9,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use BasePackage\Shared\Presenters\Json;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
+use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Presenters\EmployeeTaskExtensionPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
 use Modules\EmployeeTask\Requests\AdminCancelTaskRequest;
@@ -49,18 +50,37 @@ class AdminEmployeeTaskController extends Controller
 
     public function inbox(): JsonResponse
     {
-        $filters = request()->only(['task_date', 'date_from', 'date_to']);
+        $adminId = (string) Auth::id();
+        $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to']);
         $perPage = (int) request()->input('per_page', 15);
+        $page    = (int) request()->input('page', 1);
 
-        $paginator = $this->requestService->inbox((string) Auth::id(), $filters, $perPage);
+        $taskItems = $this->requestService->inboxAll($adminId, $filters);
+        $extItems  = $this->extensionService->listInboxAllForAdmin($adminId, $filters);
+
+        $combined = collect()
+            ->merge($taskItems->map(fn ($t) => ['_type' => 'task_request', '_model' => $t, '_at' => $t->created_at]))
+            ->merge($extItems->map(fn ($e)  => ['_type' => 'extension_request', '_model' => $e, '_at' => $e->created_at]))
+            ->sortByDesc('_at')
+            ->values();
+
+        $total  = $combined->count();
+        $slice  = $combined->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $items = $slice->map(function (array $entry): array {
+            if ($entry['_type'] === 'task_request') {
+                return array_merge(['type' => 'task_request'], EmployeeTaskRequestPresenter::single($entry['_model']));
+            }
+            return array_merge(['type' => 'extension_request'], EmployeeTaskExtensionPresenter::single($entry['_model']));
+        })->all();
 
         return Json::items(
-            mainItems: EmployeeTaskRequestPresenter::collection($paginator->items()),
+            mainItems: $items,
             paginationSettings: [
-                'current_page' => $paginator->currentPage(),
-                'last_page'    => $paginator->lastPage(),
-                'per_page'     => $paginator->perPage(),
-                'total'        => $paginator->total(),
+                'current_page' => $page,
+                'last_page'    => max(1, (int) ceil($total / $perPage)),
+                'per_page'     => $perPage,
+                'total'        => $total,
             ],
             message: 'Inbox retrieved successfully',
         );
@@ -69,6 +89,15 @@ class AdminEmployeeTaskController extends Controller
     public function approve(string $id): JsonResponse
     {
         try {
+            if (EmployeeTaskExtensionRequest::find($id)) {
+                $extension = $this->extensionWorkflow->approve(
+                    $id,
+                    (string) Auth::id(),
+                    request()->input('approval_notes'),
+                );
+                return Json::item(EmployeeTaskExtensionPresenter::single($extension), message: 'Extension approved successfully');
+            }
+
             $task = $this->requestService->approve($id, (string) Auth::id());
             return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task approved successfully');
         } catch (EmployeeTaskException | ProcedureWorkflowException $e) {
@@ -79,6 +108,15 @@ class AdminEmployeeTaskController extends Controller
     public function reject(RejectTaskRequest $request, string $id): JsonResponse
     {
         try {
+            if (EmployeeTaskExtensionRequest::find($id)) {
+                $extension = $this->extensionWorkflow->reject(
+                    $id,
+                    (string) Auth::id(),
+                    $request->input('rejection_reason'),
+                );
+                return Json::item(EmployeeTaskExtensionPresenter::single($extension), message: 'Extension rejected successfully');
+            }
+
             $task = $this->requestService->reject(
                 $id,
                 (string) Auth::id(),
@@ -106,8 +144,14 @@ class AdminEmployeeTaskController extends Controller
 
     public function extensionRequests(): JsonResponse
     {
+        $filters = request()->only(['task_id', 'date_from', 'date_to']);
         $perPage = (int) request()->input('per_page', 15);
-        $paginator = $this->extensionService->listPending($perPage);
+
+        $paginator = $this->extensionService->listInboxForAdmin(
+            (string) Auth::id(),
+            $filters,
+            $perPage,
+        );
 
         return Json::items(
             mainItems: EmployeeTaskExtensionPresenter::collection($paginator->items()),
@@ -117,7 +161,7 @@ class AdminEmployeeTaskController extends Controller
                 'per_page'     => $paginator->perPage(),
                 'total'        => $paginator->total(),
             ],
-            message: 'Pending extension requests retrieved successfully',
+            message: 'Extension requests inbox retrieved successfully',
         );
     }
 
