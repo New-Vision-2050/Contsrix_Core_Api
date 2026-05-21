@@ -45,7 +45,7 @@ class AdminEmployeeTaskController extends Controller
 
     public function inbox(): JsonResponse
     {
-        $filters = request()->only(['task_date', 'date_from', 'date_to']);
+        $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to']);
         $perPage = (int) request()->input('per_page', 15);
 
         $paginator = $this->requestService->inbox((string) Auth::id(), $filters, $perPage);

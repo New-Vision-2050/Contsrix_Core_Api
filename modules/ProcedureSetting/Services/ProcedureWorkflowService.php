@@ -72,7 +72,7 @@ final class ProcedureWorkflowService
         $this->assertIsActionTaker($currentStep, $userId);
 
         $nextStep = null;
-        if ($procedureSettingId) {
+        if ($procedureSettingId && $currentStep->step_order !== null) {
             $nextStep = ProcedureSettingStep::query()
                 ->where('procedure_setting_id', $procedureSettingId)
                 ->where('step_order', '>', $currentStep->step_order)
