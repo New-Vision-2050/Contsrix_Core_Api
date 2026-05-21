@@ -144,36 +144,117 @@ class ReportDataExtractionService
             ->whereBetween('a.business_date', [$start, $end])
             ->whereIn('u.global_company_user_id', $globalIds)
             ->orderBy('u.global_company_user_id')
-            ->orderBy('a.business_date');
+            ->orderBy('a.business_date')
+            ->orderByRaw('COALESCE(a.clock_in_time, a.start_time) ASC');
         $dailyRows = $dailyQuery->get();
 
-        $dailyMap = [];
-        foreach ($dailyRows as $d) {
-            $gid = (string) $d->global_id;
-            // Determine the effective display status:
-            // - is_holiday=1 → holiday
-            // - is_absent=1 OR (waiting with no clock_in) → absent
-            // - has clock_in → present
-            $isHoliday  = (int) ($d->is_holiday ?? 0) === 1;
-            $isAbsent   = (int) ($d->is_absent ?? 0) === 1;
-            $isWaiting  = ($d->status ?? '') === 'waiting' && empty($d->clock_in_time);
-            $displayStatus = $isHoliday ? 'holiday' : ($isAbsent || $isWaiting ? 'absent' : (empty($d->clock_in_time) ? 'absent' : 'present'));
+        // Fetch task sessions for the same employees and date range.
+        $taskRows = DB::table('employee_task_requests as t')
+            ->join('users as u', 'u.id', '=', 't.user_id')
+            ->select(
+                'u.global_company_user_id as global_id',
+                't.task_date',
+                't.title',
+                't.time_from',
+                't.time_to',
+                't.total_task_hours'
+            )
+            ->where('t.company_id', tenant('id'))
+            ->whereBetween('t.task_date', [$start, $end])
+            ->whereIn('u.global_company_user_id', $globalIds)
+            ->whereIn('t.status', ['completed', 'in_progress', 'paused'])
+            ->orderBy('u.global_company_user_id')
+            ->orderBy('t.task_date')
+            ->orderByRaw('COALESCE(t.time_from, t.task_date) ASC')
+            ->get();
 
-            $dailyMap[$gid][] = [
-                'date'                => (string) $d->business_date,
-                'status'              => (string) ($d->status ?? ''),
-                'day_status'          => (string) ($d->day_status ?? ''),
-                'display_status'      => $displayStatus,
-                'start_time'          => (string) ($d->start_time ?? ''),
-                'end_time'            => (string) ($d->end_time ?? ''),
-                'clock_in_time'       => (string) ($d->clock_in_time ?? ''),
-                'clock_out_time'      => (string) ($d->clock_out_time ?? ''),
-                'late_minutes'        => (int) ($d->late_minutes ?? 0),
-                'overtime_minutes'    => (int) round((float) ($d->overtime_minutes ?? 0)),
-                'early_leave_minutes' => (int) ($d->early_departure_minutes ?? 0),
-                'total_work_hours'    => (float) ($d->total_work_hours ?? 0),
-                'notes'               => (string) ($d->notes ?? ''),
+        // Group attendance rows by (global_id → date); accumulate per-session data.
+        $groupedDaily = [];
+        foreach ($dailyRows as $d) {
+            $gid  = (string) $d->global_id;
+            $date = (string) $d->business_date;
+
+            $isHoliday     = (int) ($d->is_holiday ?? 0) === 1;
+            $isAbsent      = (int) ($d->is_absent  ?? 0) === 1;
+            $isWaiting     = ($d->status ?? '') === 'waiting' && empty($d->clock_in_time);
+            $displayStatus = $isHoliday ? 'holiday'
+                : ($isAbsent || $isWaiting ? 'absent'
+                    : (empty($d->clock_in_time) ? 'absent' : 'present'));
+
+            if (!isset($groupedDaily[$gid][$date])) {
+                $groupedDaily[$gid][$date] = [
+                    'date'                => $date,
+                    'status'              => (string) ($d->status   ?? ''),
+                    'day_status'          => (string) ($d->day_status ?? ''),
+                    'display_status'      => $displayStatus,
+                    'start_time'          => (string) ($d->start_time ?? ''),
+                    'end_time'            => (string) ($d->end_time   ?? ''),
+                    'late_minutes'        => (int) ($d->late_minutes          ?? 0),
+                    'overtime_minutes'    => 0,
+                    'early_leave_minutes' => (int) ($d->early_departure_minutes ?? 0),
+                    'total_work_hours'    => 0.0,
+                    'notes'               => (string) ($d->notes ?? ''),
+                    'attendance_sessions' => [],
+                    'task_sessions'       => [],
+                ];
+            }
+
+            $groupedDaily[$gid][$date]['overtime_minutes'] += (int) round((float) ($d->overtime_minutes ?? 0));
+            $groupedDaily[$gid][$date]['total_work_hours']  += (float) ($d->total_work_hours ?? 0);
+
+            if (!empty($d->clock_in_time)) {
+                $groupedDaily[$gid][$date]['attendance_sessions'][] = [
+                    'clock_in_time'  => (string) $d->clock_in_time,
+                    'clock_out_time' => (string) ($d->clock_out_time ?? ''),
+                ];
+            }
+        }
+
+        // Merge task sessions into the date groups; create the date key when only tasks exist.
+        foreach ($taskRows as $t) {
+            $gid  = (string) $t->global_id;
+            $date = (string) $t->task_date;
+
+            if (!isset($groupedDaily[$gid][$date])) {
+                $groupedDaily[$gid][$date] = [
+                    'date'                => $date,
+                    'status'              => '',
+                    'day_status'          => '',
+                    'display_status'      => 'present',
+                    'start_time'          => '',
+                    'end_time'            => '',
+                    'late_minutes'        => 0,
+                    'overtime_minutes'    => 0,
+                    'early_leave_minutes' => 0,
+                    'total_work_hours'    => 0.0,
+                    'notes'               => '',
+                    'attendance_sessions' => [],
+                    'task_sessions'       => [],
+                ];
+            }
+
+            $groupedDaily[$gid][$date]['total_work_hours'] += (float) ($t->total_task_hours ?? 0);
+            $groupedDaily[$gid][$date]['task_sessions'][]   = [
+                'task_time_in'  => $t->time_from ? substr((string) $t->time_from, 11, 5) : '',
+                'task_time_out' => $t->time_to   ? substr((string) $t->time_to,   11, 5) : '',
+                'title'         => (string) ($t->title ?? ''),
             ];
+        }
+
+        // Flatten to per-employee arrays sorted by date; compute sub_row_count per date.
+        $dailyMap = [];
+        foreach ($groupedDaily as $gid => $dates) {
+            ksort($dates);
+            $entries = [];
+            foreach ($dates as $entry) {
+                $entry['sub_row_count'] = max(
+                    1,
+                    count($entry['attendance_sessions']),
+                    count($entry['task_sessions'])
+                );
+                $entries[] = $entry;
+            }
+            $dailyMap[$gid] = $entries;
         }
 
         $base['__daily'] = $dailyMap;

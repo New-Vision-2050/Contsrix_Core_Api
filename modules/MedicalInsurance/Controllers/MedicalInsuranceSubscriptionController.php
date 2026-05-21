@@ -31,6 +31,7 @@ class MedicalInsuranceSubscriptionController extends Controller
     {
         $filters = array_filter([
             'user_id'                       => $request->get('user_id'),
+            'user_ids'                      => $request->get('user_ids'),
             'medical_insurance_id'          => $request->get('medical_insurance_id'),
             'medical_insurance_category_id' => $request->get('medical_insurance_category_id'),
             'status'                        => $request->has('status') ? (int) $request->get('status') : null,
@@ -57,19 +58,17 @@ class MedicalInsuranceSubscriptionController extends Controller
 
     public function store(CreateMedicalInsuranceSubscriptionRequest $request): JsonResponse
     {
-        $item = $this->subscriptionService->create($request->createDTO());
+        $items = $this->subscriptionService->createMany($request->createDTOs());
 
-        return Json::item((new MedicalInsuranceSubscriptionPresenter($item))->getData());
+        return Json::items(MedicalInsuranceSubscriptionPresenter::collection($items));
     }
 
     public function update(UpdateMedicalInsuranceSubscriptionRequest $request): JsonResponse
     {
         $command = $request->createCommand();
-        $this->updateHandler->handle($command);
+        $items   = $this->updateHandler->handle($command);
 
-        $item = $this->subscriptionService->get($command->getId());
-
-        return Json::item((new MedicalInsuranceSubscriptionPresenter($item))->getData());
+        return Json::items(MedicalInsuranceSubscriptionPresenter::collection($items));
     }
 
     public function delete(DeleteMedicalInsuranceSubscriptionRequest $request): JsonResponse

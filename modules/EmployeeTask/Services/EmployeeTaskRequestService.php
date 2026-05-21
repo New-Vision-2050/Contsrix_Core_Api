@@ -22,7 +22,7 @@ class EmployeeTaskRequestService
 
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
     {
-        $procedureType = ProcedureSettingType::EmployeeTaskProcedure->value;
+        $procedureType = ProcedureSettingType::EmployeeTaskRequest->value;
         $preview       = $this->workflow->getApprovalResponsibles($procedureType);
 
         $data                  = $dto->toArray();
