@@ -54,6 +54,27 @@ final class ProcedureWorkflowService
     }
 
     /**
+     * Resolve the first step for a procedure setting identified by its UUID.
+     *
+     * Used when an entity inherits a procedure from a parent (e.g. extension
+     * requests inheriting the parent task's procedure_setting_id) rather than
+     * resolving from a type string.
+     */
+    public function resolveFirstStepBySettingId(string $procedureSettingId): ProcedureSettingStep
+    {
+        $firstStep = ProcedureSettingStep::query()
+            ->where('procedure_setting_id', $procedureSettingId)
+            ->orderBy('step_order')
+            ->first();
+
+        if (!$firstStep) {
+            throw ProcedureWorkflowException::noStepsConfigured();
+        }
+
+        return $firstStep;
+    }
+
+    /**
      * Advance the workflow after an authorized action-taker has approved the
      * current step. Caller decides whether to update the entity to the next
      * step or apply its terminal action based on $result->isFinal.

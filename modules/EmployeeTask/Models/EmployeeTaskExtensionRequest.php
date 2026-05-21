@@ -7,6 +7,7 @@ namespace Modules\EmployeeTask\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\User\Models\User;
 
 class EmployeeTaskExtensionRequest extends Model
@@ -29,6 +30,7 @@ class EmployeeTaskExtensionRequest extends Model
         'reviewed_by',
         'reviewed_at',
         'review_notes',
+        'current_procedure_step_id',
     ];
 
     protected $casts = [
@@ -51,4 +53,10 @@ class EmployeeTaskExtensionRequest extends Model
     {
         return $this->belongsTo(User::class, 'reviewed_by');
     }
+
+    public function currentProcedureStep(): BelongsTo
+    {
+        return $this->belongsTo(ProcedureSettingStep::class, 'current_procedure_step_id');
+    }
 }
+

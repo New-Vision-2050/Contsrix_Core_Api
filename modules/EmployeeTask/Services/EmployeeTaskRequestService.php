@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\EmployeeTask\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
@@ -62,6 +63,11 @@ class EmployeeTaskRequestService
     public function inbox(string $adminId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->paginateInboxForAdmin($adminId, $filters, $perPage);
+    }
+
+    public function inboxAll(string $adminId, array $filters = []): Collection
+    {
+        return $this->repository->allInboxForAdmin($adminId, $filters);
     }
 
     public function get(string $id): EmployeeTaskRequest
