@@ -137,16 +137,7 @@
                 @if (!empty($empDaily))
                 <table style="margin-bottom:14px;">
                     <thead>
-                        {{-- Employee identity row — sits above the column headers --}}
-                        <tr class="emp-hdr">
-                            <td colspan="14" style="padding:7px 10px;">
-                                <img src="{{ $empAvatarSrc }}" style="width:32px; height:32px; border-radius:16px; border:2px solid #ffffff; vertical-align:middle;" />
-                                <span style="vertical-align:middle; {{ $align === 'right' ? 'margin-right' : 'margin-left' }}:8px; font-size:12px;">{{ $emp->name }}</span>
-                                @if ($empBranch)<span class="emp-hdr-sub"> &nbsp;|&nbsp; {{ $empBranch }}</span>@endif
-                                @if ($empMgmt)<span class="emp-hdr-sub"> &nbsp;/&nbsp; {{ $empMgmt }}</span>@endif
-                            </td>
-                        </tr>
-                        {{-- Column headers --}}
+                        {{-- Column headers only — mPDF repeats <thead> on page breaks, which is desired --}}
                         <tr>
                             <th style="width:20px;">#</th>
                             <th>{{ $lang === 'ar' ? 'التاريخ'               : 'Date' }}</th>
@@ -165,6 +156,15 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {{-- Employee identity row inside <tbody> — renders once, never repeated on page breaks --}}
+                        <tr class="emp-hdr">
+                            <td colspan="14" style="padding:7px 10px;">
+                                <img src="{{ $empAvatarSrc }}" style="width:32px; height:32px; border-radius:16px; border:2px solid #ffffff; vertical-align:middle;" />
+                                <span style="vertical-align:middle; {{ $align === 'right' ? 'margin-right' : 'margin-left' }}:8px; font-size:12px;">{{ $emp->name }}</span>
+                                @if ($empBranch)<span class="emp-hdr-sub"> &nbsp;|&nbsp; {{ $empBranch }}</span>@endif
+                                @if ($empMgmt)<span class="emp-hdr-sub"> &nbsp;/&nbsp; {{ $empMgmt }}</span>@endif
+                            </td>
+                        </tr>
                         @php $dateSeq = 0; @endphp
                         @foreach ($empDaily as $d)
                             @php
