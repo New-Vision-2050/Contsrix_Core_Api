@@ -25,6 +25,9 @@ Route::prefix('employee-tasks')->group(function () {
     Route::get('/{id}/check-location', [EmployeeTaskController::class, 'checkLocation']);
     Route::get('/{id}/sessions',       [EmployeeTaskController::class, 'sessions']);
 
+    // Task completion approval (ارسال للاعتماد)
+    Route::post('/{id}/request-approval', [EmployeeTaskController::class, 'requestApproval']);
+
     Route::post('/{id}/extension-requests', [EmployeeTaskController::class, 'storeExtension']);
     Route::get('/{id}/extension-requests',  [EmployeeTaskController::class, 'listExtensions']);
 });
@@ -37,6 +40,8 @@ Route::prefix('employee-tasks')->group(function () {
 Route::prefix('admin/employee-tasks')->group(function () {
     Route::get('/',       [AdminEmployeeTaskController::class, 'index']);
     Route::get('/inbox',  [AdminEmployeeTaskController::class, 'inbox']);
+
+    // Unified approve/reject — works for task_request, extension_request, and task_approval
     Route::patch('/{id}/approve', [AdminEmployeeTaskController::class, 'approve']);
     Route::patch('/{id}/reject',  [AdminEmployeeTaskController::class, 'reject']);
     Route::delete('/{id}',        [AdminEmployeeTaskController::class, 'destroy']);

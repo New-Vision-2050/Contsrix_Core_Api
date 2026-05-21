@@ -70,6 +70,11 @@ class EmployeeTaskRequestService
         return $this->repository->allInboxForAdmin($adminId, $filters);
     }
 
+    public function inboxAllApprovals(string $adminId, array $filters = []): Collection
+    {
+        return $this->repository->allApprovalInboxForAdmin($adminId, $filters);
+    }
+
     public function get(string $id): EmployeeTaskRequest
     {
         $task = $this->repository->findByIdWithRelations($id);

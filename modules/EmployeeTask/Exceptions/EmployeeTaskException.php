@@ -118,4 +118,24 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__('Failed to schedule the extension approval job. Please contact your administrator.'), 500);
     }
+
+    public static function approvalRequestNotAllowed(): self
+    {
+        return new self(__('A task approval request can only be submitted when the task is approved, in progress, paused, or completed.'), 422);
+    }
+
+    public static function pendingApprovalRequestExists(): self
+    {
+        return new self(__('A pending approval request already exists for this task.'), 422);
+    }
+
+    public static function approvalRequestNotFound(): self
+    {
+        return new self(__('Task approval request not found.'), 404);
+    }
+
+    public static function approvalRequestAlreadyResolved(): self
+    {
+        return new self(__('This approval request has already been resolved.'), 422);
+    }
 }

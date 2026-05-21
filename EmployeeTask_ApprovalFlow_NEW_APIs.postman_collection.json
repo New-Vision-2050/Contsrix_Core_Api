@@ -1,0 +1,510 @@
+{
+  "info": {
+    "name": "EmployeeTask — Approval Flow (NEW APIs)",
+    "_postman_id": "employee-task-approval-flow-new",
+    "description": "New APIs added for the task-approval-flow.\n\nSet variables before running:\n- url: http://localhost\n- token: employee bearer token\n- admin_token: admin bearer token\n- task_id: an existing task UUID\n- approval_id: auto-set by the 'Send for Approval' test script\n\nRun migrations:\n  php artisan migrate --path=modules/EmployeeTask/Database/Migrations/2026_05_21_000010_create_employee_task_approval_requests_table.php\n  php artisan migrate --path=modules/EmployeeTask/Database/Migrations/2026_05_21_000011_add_location_confirmed_at_to_employee_task_requests.php",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "url",         "value": "http://localhost", "type": "string" },
+    { "key": "token",       "value": "",                 "type": "string" },
+    { "key": "admin_token", "value": "",                 "type": "string" },
+    { "key": "task_id",     "value": "",                 "type": "string" },
+    { "key": "approval_id", "value": "",                 "type": "string" },
+    { "key": "extension_id","value": "",                 "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Employee",
+      "item": [
+        {
+          "name": "List My Tasks",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks"],
+              "query": [
+                { "key": "status",    "value": "in_progress", "disabled": true },
+                { "key": "task_date", "value": "2026-05-22",  "disabled": true },
+                { "key": "date_from", "value": "2026-05-01",  "disabled": true },
+                { "key": "date_to",   "value": "2026-05-31",  "disabled": true },
+                { "key": "per_page",  "value": "15",          "disabled": true },
+                { "key": "page",      "value": "1",           "disabled": true }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const id = pm.response.json().payload?.id;",
+                  "if (id) pm.collectionVariables.set('task_id', id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"تحديث نظام إنذار الحريق\",\n  \"description\": \"فحص وتحديث كافة أجهزة الإنذار في المبنى A\",\n  \"duration_hours\": 2,\n  \"task_date\": \"2026-05-22\",\n  \"task_latitude\": 24.7136,\n  \"task_longitude\": 46.6753,\n  \"notes\": null,\n  \"project_id\": null,\n  \"approval_responsible_id\": null,\n  \"assignment_responsible_id\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/start",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Task",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/pause",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "pause"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/resume",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "resume"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "End Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"notes\": \"تم الانتهاء من المهمة\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/end",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "end"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Task",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task Sessions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/sessions",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "sessions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Location Ping",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"timestamp\": \"2026-05-22T10:25:00+03:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"]
+            },
+            "description": "First successful ping (in_location = true) records location_confirmed_at on the task, marking step 2 of the status pipeline as completed."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Location",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/check-location?latitude=24.7136&longitude=46.6753",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "check-location"],
+              "query": [
+                { "key": "latitude",  "value": "24.7136" },
+                { "key": "longitude", "value": "46.6753" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task Status (3-Step Pipeline) ★ NEW",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/status",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "status"]
+            },
+            "description": "Returns task details + active_task timer block + pipeline array.\n\npipeline steps:\n1. acceptance        — قبول       — task moved from pending → approved\n2. location_confirmation — تأكيد الموقع — first in-location ping received\n3. task_approval     — اعتماد      — approval request approved by admin\n\nstep.status values: pending | completed | pending_approval"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Task for Approval (ارسال للاعتماد) ★ NEW",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const id = pm.response.json().payload?.id;",
+                  "if (id) pm.collectionVariables.set('approval_id', id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"تم إنجاز المهمة بنجاح وفق المطلوب\",\n  \"attachment_path\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/request-approval",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "request-approval"]
+            },
+            "description": "Allowed when task status is: approved | in_progress | paused | completed.\nOnly one pending approval request is allowed per task.\n\nIf no ProcedureSetting workflow is configured → auto-approved immediately.\nIf workflow configured → status = pending, appears in admin inbox as type = task_approval.\n\nTest script saves approval_id automatically."
+          },
+          "response": []
+        },
+        {
+          "name": "Request Extension",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const id = pm.response.json().payload?.id;",
+                  "if (id) pm.collectionVariables.set('extension_id', id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"additional_hours\": 1.5,\n  \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Extensions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "List All Tasks",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }] },
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks"],
+              "query": [
+                { "key": "user_id",   "value": "",           "disabled": true },
+                { "key": "status",    "value": "pending",    "disabled": true },
+                { "key": "date_from", "value": "2026-05-01", "disabled": true },
+                { "key": "date_to",   "value": "2026-05-31", "disabled": true },
+                { "key": "per_page",  "value": "15",         "disabled": true },
+                { "key": "page",      "value": "1",          "disabled": true }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Inbox (Unified — all 3 types) ★ UPDATED",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }] },
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks/inbox",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks", "inbox"],
+              "query": [
+                { "key": "task_id",   "value": "",           "disabled": true },
+                { "key": "date_from", "value": "2026-05-01", "disabled": true },
+                { "key": "date_to",   "value": "2026-05-31", "disabled": true },
+                { "key": "per_page",  "value": "15",         "disabled": true },
+                { "key": "page",      "value": "1",          "disabled": true }
+              ]
+            },
+            "description": "Returns task_request + extension_request + task_approval merged, sorted by created_at desc.\n\nEvery item has the SAME shape:\n{\n  id, type, type_label,\n  task: { id, serial_number, title, task_date, status, status_label },\n  employee: { id, name },\n  status,\n  current_step: { id, name, step_order, is_approve, action_takers[] },\n  summary: { ... type-specific ... },\n  created_at\n}\n\ntype values:  task_request | extension_request | task_approval\ntype_label:   طلب مهمة    | طلب تمديد        | طلب اعتماد مهمة\n\nsummary per type:\n  task_request     → { duration_hours, task_date, task_location }\n  extension_request→ { additional_hours, reason }\n  task_approval    → { notes, attachment_path, time_from, time_to, total_task_hours }\n\nUse the item id in PATCH /{id}/approve or PATCH /{id}/reject."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Any Inbox Item ★ UPDATED",
+          "request": {
+            "method": "PATCH",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }] },
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approval_notes\": \"تم المراجعة والاعتماد\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks/{{approval_id}}/approve",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks", "{{approval_id}}", "approve"]
+            },
+            "description": "Pass the id of ANY inbox item (task_request, extension_request, or task_approval).\nThe server auto-detects the type.\n\ntask_request   → advances task workflow; final step → task status = approved\nextension_request→ advances extension workflow; final step → duration extended\ntask_approval  → advances approval workflow; final step → task status = approved (اعتماد المهمة)\n\nFor multi-step workflows the item stays pending with the updated current_step."
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Any Inbox Item ★ UPDATED",
+          "request": {
+            "method": "PATCH",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }] },
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejection_reason\": \"يحتاج مراجعة إضافية قبل الاعتماد\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks/{{approval_id}}/reject",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks", "{{approval_id}}", "reject"]
+            },
+            "description": "Pass the id of ANY inbox item. Rejection always terminates the workflow immediately."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Task (Admin)",
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }] },
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancellation_reason\": \"ألغيت من قبل المدير\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Extension Requests Inbox",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }] },
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks", "extension-requests"],
+              "query": [
+                { "key": "task_id",   "value": "",           "disabled": true },
+                { "key": "date_from", "value": "2026-05-01", "disabled": true },
+                { "key": "date_to",   "value": "2026-05-31", "disabled": true },
+                { "key": "per_page",  "value": "15",         "disabled": true }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Extension",
+          "request": {
+            "method": "PATCH",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }] },
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approval_notes\": \"تمت الموافقة على التمديد\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/approve",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "approve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Extension",
+          "request": {
+            "method": "PATCH",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }] },
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejection_reason\": \"الوقت الإضافي غير متاح\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/reject",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "reject"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

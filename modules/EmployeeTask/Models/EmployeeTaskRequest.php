@@ -62,6 +62,7 @@ class EmployeeTaskRequest extends Model
         'cancelled_at',
         'cancellation_reason',
         'last_extension_status',
+        'location_confirmed_at',
     ];
 
     protected $casts = [
@@ -79,6 +80,7 @@ class EmployeeTaskRequest extends Model
         'approved_at'             => 'datetime',
         'rejected_at'             => 'datetime',
         'cancelled_at'            => 'datetime',
+        'location_confirmed_at'   => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -116,6 +118,11 @@ class EmployeeTaskRequest extends Model
         return $this->hasMany(EmployeeTaskExtensionRequest::class, 'employee_task_request_id');
     }
 
+    public function approvalRequests(): HasMany
+    {
+        return $this->hasMany(EmployeeTaskApprovalRequest::class, 'employee_task_request_id');
+    }
+
     public function isInStatus(EmployeeTaskStatus ...$statuses): bool
     {
         return in_array($this->status, array_map(fn (EmployeeTaskStatus $s) => $s->value, $statuses), true);
@@ -129,6 +136,13 @@ class EmployeeTaskRequest extends Model
     public function hasPendingExtension(): bool
     {
         return $this->extensionRequests()
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    public function hasPendingApprovalRequest(): bool
+    {
+        return $this->approvalRequests()
             ->where('status', 'pending')
             ->exists();
     }

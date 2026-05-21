@@ -119,6 +119,11 @@ final class EmployeeTaskExtensionService
      *
      * Useful for viewing history of extensions on a single task.
      */
+    public function listExtensions(string $taskId): Collection
+    {
+        return $this->listForTask($taskId);
+    }
+
     public function listForTask(string $taskId): Collection
     {
         return EmployeeTaskExtensionRequest::query()
