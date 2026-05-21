@@ -59,6 +59,8 @@
         .row-alt  { background: #f8fafc; }
         .tot-row  { background: #e8f4ea; font-weight: 700; }
         .tot-row td { border-top: 2px solid #16a34a; }
+        .emp-hdr td  { background: #1e3a5f; color: #ffffff; font-size: 10px; font-weight: 700; padding: 6px 8px; border: 1px solid #0f2441; }
+        .emp-hdr-sub { font-size: 8px; font-weight: 400; opacity: 0.82; }
     </style>
 </head>
 <body lang="{{ $lang }}" dir="{{ $dir }}">
@@ -121,29 +123,25 @@
 
             {{-- Main daily records table --}}
             {{--
-                Column layout (16 columns):
-                [1] Avatar    — rowspan = all session rows + totals row for this employee
-                [2] Name      — rowspan = same as avatar
-                [3] #         — rowspan = sub_row_count for this date group
-                [4] Date      — rowspan = sub_row_count
-                [5] Day       — rowspan = sub_row_count
-                [6] Branch    — rowspan = sub_row_count
-                [7] Mgmt      — rowspan = sub_row_count
-                [8] Off. In   — rowspan = sub_row_count
-                [9] Off. Out  — rowspan = sub_row_count
-                [10] Act. In  — one per session row
-                [11] Act. Out — one per session row
-                [12] Task In  — one per session row
-                [13] Task Out — one per session row
-                [14] Delay    — rowspan = sub_row_count
-                [15] Overtime — rowspan = sub_row_count
-                [16] Total h  — rowspan = sub_row_count
+                Column layout (14 columns — employee shown as a banner <tr> above each group):
+                [1]  #          — rowspan = sub_row_count for this date group
+                [2]  Date       — rowspan = sub_row_count
+                [3]  Day        — rowspan = sub_row_count
+                [4]  Branch     — rowspan = sub_row_count
+                [5]  Mgmt       — rowspan = sub_row_count
+                [6]  Off. In    — rowspan = sub_row_count
+                [7]  Off. Out   — rowspan = sub_row_count
+                [8]  Act. In    — one per session row
+                [9]  Act. Out   — one per session row
+                [10] Task In    — one per session row
+                [11] Task Out   — one per session row
+                [12] Delay      — rowspan = sub_row_count
+                [13] Overtime   — rowspan = sub_row_count
+                [14] Total hrs  — rowspan = sub_row_count
             --}}
             <table>
                 <thead>
                     <tr>
-                        <th style="width:26px;"></th>
-                        <th>{{ $lang === 'ar' ? 'الاسم'                 : 'Employee' }}</th>
                         <th style="width:20px;">{{ $lang === 'ar' ? '#' : '#' }}</th>
                         <th>{{ $lang === 'ar' ? 'التاريخ'               : 'Date' }}</th>
                         <th>{{ $lang === 'ar' ? 'اليوم'                 : 'Day' }}</th>
@@ -170,11 +168,18 @@
                             $sumDelay     = 0;
                             $sumOT        = 0;
                             $sumWorkMin   = 0;
-                            // Total rows this employee occupies = sum of sub_row_counts + 1 totals row.
-                            $empTotalRows = array_sum(array_column($empDaily, 'sub_row_count')) + 1;
                         @endphp
                         @if (!empty($empDaily))
-                            @php $isFirstEmpRow = true; $dateSeq = 0; @endphp
+                            {{-- Employee section banner --}}
+                            <tr class="emp-hdr">
+                                <td colspan="14">
+                                    <img src="{{ $empAvatarSrc }}" style="width:28px; height:28px; border-radius:14px; border:2px solid #ffffff; vertical-align:middle;" />
+                                    <span style="vertical-align:middle; {{ $align === 'right' ? 'margin-right' : 'margin-left' }}:7px; font-size:11px;">{{ $emp->name }}</span>
+                                    @if ($empBranch)<span class="emp-hdr-sub"> &nbsp;|&nbsp; {{ $empBranch }}</span>@endif
+                                    @if ($empMgmt)<span class="emp-hdr-sub"> &nbsp;/&nbsp; {{ $empMgmt }}</span>@endif
+                                </td>
+                            </tr>
+                            @php $dateSeq = 0; @endphp
                             @foreach ($empDaily as $d)
                                 @php
                                     $sumDelay     += (int)   ($d['late_minutes']    ?? 0);
@@ -206,17 +211,7 @@
                                         $taskRow = $taskSessions[$ri] ?? null;
                                     @endphp
                                     <tr style="background-color:{{ $rowBg }};">
-                                        {{-- [1][2] Employee avatar + name — span entire employee block --}}
-                                        @if ($isFirstEmpRow)
-                                            <td rowspan="{{ $empTotalRows }}" style="width:26px; padding:1px; text-align:center; vertical-align:top;">
-                                                <div style="width:24px; height:24px; border-radius:12px; border:2.5px solid {{ $statusColor }}; overflow:hidden; background-color:#9ca3af; margin:0 auto;">
-                                                    <img src="{{ $empAvatarSrc }}" width="24" height="24" style="display:block;" />
-                                                </div>
-                                            </td>
-                                            <td rowspan="{{ $empTotalRows }}" style="vertical-align:top; font-weight:600;">{{ $emp->name }}</td>
-                                            @php $isFirstEmpRow = false; @endphp
-                                        @endif
-                                        {{-- [3]–[9] Date-level cols — span all session rows for this date --}}
+                                        {{-- [1]–[7] Date-level cols — span all session rows for this date --}}
                                         @if ($ri === 0)
                                             <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dateSeq }}</td>
                                             <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dateStr }}</td>
@@ -241,7 +236,7 @@
                                     </tr>
                                 @endfor
                             @endforeach
-                            {{-- Per-employee totals row (avatar+name are still rowspanned above) --}}
+                            {{-- Per-employee totals row --}}
                             <tr class="tot-row">
                                 <td colspan="11" style="text-align:{{ $align }};">{{ $lang === 'ar' ? 'الإجمالي' : 'Total' }}</td>
                                 <td class="num">{{ $toHoursMinutes($sumDelay) }}</td>
