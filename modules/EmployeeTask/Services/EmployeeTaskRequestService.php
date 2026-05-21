@@ -117,9 +117,9 @@ class EmployeeTaskRequestService
             throw EmployeeTaskException::notFound();
         }
 
-        if ($task->status !== EmployeeTaskStatus::Pending->value) {
-            throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
-        }
+//        if ($task->status !== EmployeeTaskStatus::Pending->value) {
+//            throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
+//        }
 
         $result = $this->workflow->advance(
             $task->current_procedure_step_id,
@@ -149,9 +149,9 @@ class EmployeeTaskRequestService
             throw EmployeeTaskException::notFound();
         }
 
-        if ($task->status !== EmployeeTaskStatus::Pending->value) {
-            throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
-        }
+//        if ($task->status !== EmployeeTaskStatus::Pending->value) {
+//            throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
+//        }
 
         $this->workflow->assertCanReject($task->current_procedure_step_id, $adminId);
 
