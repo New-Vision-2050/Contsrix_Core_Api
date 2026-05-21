@@ -125,18 +125,19 @@ class EmployeeTaskRepository
         return $task->fresh();
     }
 
-    public function countForYear(int $year): int
-    {
-        return EmployeeTaskRequest::query()
-            ->whereYear('created_at', $year)
-            ->count();
-    }
-
     public function generateSerialNumber(): string
     {
-        $year     = Carbon::now()->format('Y');
-        $sequence = $this->countForYear((int) $year) + 1;
+        $year      = Carbon::now()->format('Y');
+        $companyId = tenant('id');
+        $prefix    = "TASK-{$year}-";
 
-        return 'TASK-' . $year . '-' . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
+        $max = DB::table('employee_task_requests')
+            ->where('company_id', $companyId)
+            ->where('serial_number', 'like', $prefix . '%')
+            ->max(DB::raw('CAST(SUBSTRING(serial_number, ' . (strlen($prefix) + 1) . ') AS UNSIGNED)'));
+
+        $sequence = ((int) $max) + 1;
+
+        return $prefix . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
     }
 }
