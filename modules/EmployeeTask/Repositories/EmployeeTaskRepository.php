@@ -71,6 +71,10 @@ class EmployeeTaskRepository
             ->with(['user', 'currentProcedureStep.actionTakers.user'])
             ->orderByDesc('created_at');
 
+        if (!empty($filters['task_id'])) {
+            $query->where('id', $filters['task_id']);
+        }
+
         if (!empty($filters['task_date'])) {
             $query->whereDate('task_date', $filters['task_date']);
         }
