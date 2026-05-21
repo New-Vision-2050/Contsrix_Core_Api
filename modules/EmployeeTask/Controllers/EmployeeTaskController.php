@@ -12,7 +12,9 @@ use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
 use Modules\EmployeeTask\DTO\CreateExtensionRequestDTO;
+use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
+use Modules\EmployeeTask\Presenters\EmployeeTaskApprovalPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskExtensionPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskSessionPresenter;
@@ -21,6 +23,7 @@ use Modules\EmployeeTask\Requests\CreateExtensionRequest;
 use Modules\EmployeeTask\Requests\EndTaskRequest;
 use Modules\EmployeeTask\Requests\LocationPingRequest;
 use Modules\EmployeeTask\Requests\StartTaskRequest;
+use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
@@ -31,10 +34,11 @@ use Modules\User\Models\User;
 class EmployeeTaskController extends Controller
 {
     public function __construct(
-        private readonly EmployeeTaskRequestService  $requestService,
-        private readonly EmployeeTaskLifecycleService $lifecycleService,
-        private readonly EmployeeTaskLocationService  $locationService,
-        private readonly EmployeeTaskExtensionService $extensionService,
+        private readonly EmployeeTaskRequestService   $requestService,
+        private readonly EmployeeTaskLifecycleService  $lifecycleService,
+        private readonly EmployeeTaskLocationService   $locationService,
+        private readonly EmployeeTaskExtensionService  $extensionService,
+        private readonly EmployeeTaskApprovalService   $approvalService,
     ) {}
 
     public function index(): JsonResponse
@@ -175,6 +179,16 @@ class EmployeeTaskController extends Controller
         }
     }
 
+    /**
+     * GET /employee-tasks/{id}/status
+     *
+     * Returns the 3-step pipeline the mobile app displays:
+     *   1. قبول   — Initial task acceptance by admin
+     *   2. تأكيد الموقع — GPS location confirmed via location-ping
+     *   3. اعتماد — Final task-completion approval by admin
+     *
+     * Each step has: key, label_ar, label_en, status (pending|completed), badge, completed_at
+     */
     public function liveStatus(string $id): JsonResponse
     {
         try {
@@ -182,11 +196,15 @@ class EmployeeTaskController extends Controller
             $task->load(['sessions']);
 
             $presenter = new EmployeeTaskRequestPresenter($task);
+            $locale    = app()->getLocale();
+
+            $pipeline = $this->buildStatusPipeline($task, $locale);
 
             return Json::item(
                 array_merge(
                     EmployeeTaskRequestPresenter::single($task),
                     $presenter->liveStatus(),
+                    ['pipeline' => $pipeline],
                 ),
                 message: 'Live status retrieved successfully',
             );
@@ -195,6 +213,12 @@ class EmployeeTaskController extends Controller
         }
     }
 
+    /**
+     * POST /employee-tasks/{id}/location-ping
+     *
+     * Processes a GPS ping. If the employee is in location for the first time,
+     * records location_confirmed_at on the task.
+     */
     public function locationPing(LocationPingRequest $request, string $id): JsonResponse
     {
         try {
@@ -213,6 +237,12 @@ class EmployeeTaskController extends Controller
                 $request->input('timestamp'),
                 $threshold,
             );
+
+            // Record the first time location is confirmed so the status pipeline
+            // can show "تأكيد الموقع" as completed.
+            if ($result['in_location'] && !$task->location_confirmed_at) {
+                $task->update(['location_confirmed_at' => now()]);
+            }
 
             return Json::item($result, message: 'Location ping processed');
         } catch (EmployeeTaskException $e) {
@@ -257,6 +287,42 @@ class EmployeeTaskController extends Controller
         }
     }
 
+    /**
+     * POST /employee-tasks/{id}/request-approval  (multipart/form-data)
+     *
+     * Employee submits the task for final admin approval (ارسال للاعتماد).
+     * Accepts an optional file upload under the key `file` (single file)
+     * or `files[]` (multiple files). Uses the project's FileUploadService
+     * and Spatie Media Library — same pattern as ClientRequest attachments.
+     */
+    public function requestApproval(string $id): JsonResponse
+    {
+        try {
+            request()->validate([
+                'notes' => ['nullable', 'string', 'max:2000'],
+                'file'  => ['nullable', 'file', 'max:20480'],
+            ]);
+
+            $uploadedFiles = request()->hasFile('file') ? request()->file('file') : null;
+
+            $approval = $this->approvalService->create(
+                taskId: $id,
+                userId: (string) Auth::id(),
+                notes:  request()->input('notes'),
+                file:   $uploadedFiles,
+            );
+
+            $approval->load(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user', 'media']);
+
+            return Json::item(
+                EmployeeTaskApprovalPresenter::single($approval),
+                message: 'Task approval request submitted successfully',
+            );
+        } catch (EmployeeTaskException | ProcedureWorkflowException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
     public function storeExtension(CreateExtensionRequest $request, string $id): JsonResponse
     {
         try {
@@ -281,7 +347,7 @@ class EmployeeTaskController extends Controller
     public function listExtensions(string $id): JsonResponse
     {
         try {
-            $extensions = $this->extensionService->listExtensions($id);
+            $extensions = $this->extensionService->listForTask($id);
             return Json::items(
                 EmployeeTaskExtensionPresenter::collection($extensions),
                 message: 'Extension requests retrieved successfully',
@@ -289,5 +355,58 @@ class EmployeeTaskController extends Controller
         } catch (EmployeeTaskException $e) {
             return Json::error($e->getMessage(), $e->getCode() ?: 422);
         }
+    }
+
+    // ─── private helpers ─────────────────────────────────────────────────────
+
+    /**
+     * Builds the 3-step approval pipeline shown in the mobile UI (image 1):
+     *
+     *  [قبول] → [تأكيد الموقع] → [اعتماد]
+     */
+    private function buildStatusPipeline($task, string $locale): array
+    {
+        $ar = $locale === 'ar';
+
+        // Step 1: Initial acceptance — task was approved (moved out of pending)
+        $step1Done = !in_array($task->status, [
+            EmployeeTaskStatus::Pending->value,
+            EmployeeTaskStatus::Rejected->value,
+            EmployeeTaskStatus::Cancelled->value,
+        ], true);
+
+        // Step 2: Location confirmed — employee was in range at least once
+        $step2Done = $task->location_confirmed_at !== null;
+
+        // Step 3: Final task approval — a task_approval request was approved
+        $step3Done = $task->approvalRequests()
+            ->where('status', 'approved')
+            ->exists();
+
+        $step3Pending = !$step3Done && $task->hasPendingApprovalRequest();
+
+        return [
+            [
+                'key'          => 'acceptance',
+                'label'        => $ar ? 'قبول' : 'Acceptance',
+                'badge'        => $ar ? 'اعتماد' : 'Approved',
+                'status'       => $step1Done ? 'completed' : 'pending',
+                'completed_at' => $step1Done ? $task->approved_at?->format('Y-m-d H:i:s') : null,
+            ],
+            [
+                'key'          => 'location_confirmation',
+                'label'        => $ar ? 'تأكيد الموقع' : 'Location Confirmation',
+                'badge'        => $ar ? 'تم تأكيد' : 'Confirmed',
+                'status'       => $step2Done ? 'completed' : 'pending',
+                'completed_at' => $step2Done ? $task->location_confirmed_at->format('Y-m-d H:i:s') : null,
+            ],
+            [
+                'key'          => 'task_approval',
+                'label'        => $ar ? 'اعتماد' : 'Task Approval',
+                'badge'        => $ar ? 'اعتماد مهمة' : 'Task Approved',
+                'status'       => $step3Done ? 'completed' : ($step3Pending ? 'pending_approval' : 'pending'),
+                'completed_at' => null,
+            ],
+        ];
     }
 }

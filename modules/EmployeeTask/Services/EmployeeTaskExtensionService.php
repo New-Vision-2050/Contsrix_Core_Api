@@ -4,22 +4,37 @@ declare(strict_types=1);
 
 namespace Modules\EmployeeTask\Services;
 
-use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\DTO\CreateExtensionRequestDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
-use Modules\EmployeeTask\Jobs\AutoCloseTaskAtDurationExpiryJob;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
+use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 
 final class EmployeeTaskExtensionService
 {
     public function __construct(
         private readonly EmployeeTaskRepository $taskRepo,
+        private readonly ProcedureWorkflowService $workflow,
     ) {}
 
+    /**
+     * Request an extension for an active task.
+     *
+     * Extension requests inherit the workflow configuration from their parent EmployeeTask.
+     * This ensures:
+     * - Same approvers who approve tasks also approve extensions
+     * - No separate workflow configuration needed
+     * - Multi-step approvals work identically
+     *
+     * Scenarios:
+     * 1. Parent task is approved (no workflow): Extension auto-approved immediately
+     * 2. Parent task is pending (in workflow): Extension resolves first step of same procedure
+     * 3. Parent task was auto-approved (no procedure): Extension auto-approved immediately
+     */
     public function requestExtension(CreateExtensionRequestDTO $dto): EmployeeTaskExtensionRequest
     {
         $task = $this->taskRepo->findById($dto->taskId);
@@ -38,87 +53,109 @@ final class EmployeeTaskExtensionService
         }
 
         return DB::transaction(function () use ($task, $dto): EmployeeTaskExtensionRequest {
-            $extension = EmployeeTaskExtensionRequest::query()->create(
-                array_merge($dto->toArray(), ['company_id' => $task->company_id])
+            $data = array_merge(
+                $dto->toArray(),
+                ['company_id' => $task->company_id]
             );
 
+            // Extension inherits workflow state from parent task
+            if ($task->procedure_setting_id === null) {
+                // Parent task has no workflow (auto-approved or no procedure configured)
+                // Extension also auto-approves
+                $data['status'] = 'approved';
+                $data['current_procedure_step_id'] = null;
+                $data['reviewed_at'] = now();
+            } else {
+                // Parent task is in workflow
+                // Extension enters workflow at the same procedure's first step
+                $data['status'] = 'pending';
+                $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
+                $data['current_procedure_step_id'] = $firstStep->id;
+            }
+
+            $extension = EmployeeTaskExtensionRequest::query()->create($data);
             $task->update(['last_extension_status' => 'extension_pending']);
 
             return $extension;
         });
     }
 
-    public function approveExtension(string $extensionId, string $adminId): EmployeeTaskExtensionRequest
+    /**
+     * Admin inbox: pending extension requests where the given admin is an
+     * action-taker on the current workflow step (or the step is open).
+     *
+     * Mirrors EmployeeTaskRequestService::inbox() for the same access pattern.
+     */
+    public function listInboxForAdmin(string $adminId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $extension = EmployeeTaskExtensionRequest::query()->findOrFail($extensionId);
-        $task      = $this->taskRepo->findById($extension->employee_task_request_id);
-
-        if (!$task) {
-            throw EmployeeTaskException::notFound();
-        }
-
-        return DB::transaction(function () use ($extension, $task, $adminId): EmployeeTaskExtensionRequest {
-            if ($task->original_duration_hours === null) {
-                $task->update(['original_duration_hours' => $task->duration_hours]);
-            }
-
-            $newDuration = (float) $task->duration_hours + (float) $extension->additional_hours;
-            $task->update([
-                'duration_hours'       => $newDuration,
-                'last_extension_status' => 'extension_approved',
-            ]);
-
-            $extension->update([
-                'status'      => 'approved',
-                'reviewed_by' => $adminId,
-                'reviewed_at' => now(),
-            ]);
-
-            if ($task->time_from) {
-                $timezone  = $task->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
-                $timeFrom  = CarbonImmutable::parse($task->time_from, $timezone);
-                $closeAtIso = $timeFrom->addHours($newDuration)->toIso8601String();
-                $deadline  = $timeFrom->addHours($newDuration);
-
-                AutoCloseTaskAtDurationExpiryJob::dispatch(
-                    taskId:     $task->id,
-                    companyId:  $task->company_id,
-                    closeAtIso: $closeAtIso,
-                )->delay($deadline);
-            }
-
-            return $extension->fresh();
-        });
+        return $this->taskRepo->paginateExtensionInboxForAdmin($adminId, $filters, $perPage);
     }
 
-    public function rejectExtension(string $extensionId, string $adminId, ?string $notes): EmployeeTaskExtensionRequest
+    public function listInboxAllForAdmin(string $adminId, array $filters = []): \Illuminate\Database\Eloquent\Collection
     {
-        $extension = EmployeeTaskExtensionRequest::query()->findOrFail($extensionId);
-        $task      = $this->taskRepo->findById($extension->employee_task_request_id);
-
-        if (!$task) {
-            throw EmployeeTaskException::notFound();
-        }
-
-        return DB::transaction(function () use ($extension, $task, $adminId, $notes): EmployeeTaskExtensionRequest {
-            $extension->update([
-                'status'       => 'rejected',
-                'reviewed_by'  => $adminId,
-                'reviewed_at'  => now(),
-                'review_notes' => $notes,
-            ]);
-
-            $task->update(['last_extension_status' => 'extension_rejected']);
-
-            return $extension->fresh();
-        });
+        return $this->taskRepo->allExtensionInboxForAdmin($adminId, $filters);
     }
 
+    /**
+     * List all pending extension requests regardless of action-taker.
+     *
+     * Useful for super-admin views; prefer listInboxForAdmin() for scoped access.
+     */
+    public function listPending(int $perPage = 15): LengthAwarePaginator
+    {
+        return EmployeeTaskExtensionRequest::query()
+            ->where('status', 'pending')
+            ->with([
+                'task',
+                'requestedByUser',
+                'currentProcedureStep.actionTakers.user',
+            ])
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * List all extension requests for a specific task.
+     *
+     * Useful for viewing history of extensions on a single task.
+     */
     public function listExtensions(string $taskId): Collection
+    {
+        return $this->listForTask($taskId);
+    }
+
+    public function listForTask(string $taskId): Collection
     {
         return EmployeeTaskExtensionRequest::query()
             ->where('employee_task_request_id', $taskId)
+            ->with([
+                'requestedByUser',
+                'reviewedByUser',
+            ])
             ->orderByDesc('created_at')
             ->get();
+    }
+
+    /**
+     * Retrieve a single extension request with full eager loading.
+     *
+     * @throws EmployeeTaskException
+     */
+    public function get(string $extensionId): EmployeeTaskExtensionRequest
+    {
+        $extension = EmployeeTaskExtensionRequest::query()
+            ->with([
+                'task',
+                'requestedByUser',
+                'reviewedByUser',
+                'currentProcedureStep.actionTakers.user',
+            ])
+            ->find($extensionId);
+
+        if (!$extension) {
+            throw EmployeeTaskException::extensionNotFound();
+        }
+
+        return $extension;
     }
 }

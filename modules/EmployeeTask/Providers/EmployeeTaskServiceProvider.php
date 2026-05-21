@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Modules\EmployeeTask\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
-use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
-use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
+use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
 use Modules\EmployeeTask\Services\EmployeeTaskAutoCloseService;
+use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
+use Modules\EmployeeTask\Services\EmployeeTaskExtensionWorkflowService;
+use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
 use Modules\EmployeeTask\Services\EmployeeTaskReportService;
+use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 
 class EmployeeTaskServiceProvider extends ServiceProvider
 {
@@ -31,9 +33,11 @@ class EmployeeTaskServiceProvider extends ServiceProvider
         $this->app->singleton(EmployeeTaskRequestService::class);
         $this->app->singleton(EmployeeTaskLifecycleService::class);
         $this->app->singleton(EmployeeTaskExtensionService::class);
+        $this->app->singleton(EmployeeTaskExtensionWorkflowService::class);
         $this->app->singleton(EmployeeTaskAutoCloseService::class);
         $this->app->singleton(EmployeeTaskLocationService::class);
         $this->app->singleton(EmployeeTaskReportService::class);
+        $this->app->singleton(EmployeeTaskApprovalService::class);
     }
 
     protected function registerConfig(): void

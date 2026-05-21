@@ -73,4 +73,69 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__('The procedure setting has no steps configured. Please contact your administrator.'), 422);
     }
+
+
+    public static function extensionNotFound(): self
+    {
+        return new self(__('Extension request not found.'), 404);
+    }
+
+    public static function extensionAlreadyResolved(): self
+    {
+        return new self(__('This extension request has already been resolved.'), 422);
+    }
+
+    public static function cannotApproveExtension(string $reason = ''): self
+    {
+        $message = __('Cannot approve this extension request.');
+        if ($reason) {
+            $message .= " {$reason}";
+        }
+        return new self($message, 422);
+    }
+
+    public static function cannotRejectExtension(string $reason = ''): self
+    {
+        $message = __('Cannot reject this extension request.');
+        if ($reason) {
+            $message .= " {$reason}";
+        }
+        return new self($message, 422);
+    }
+
+    public static function extensionInvalidStatus(string $current, string ...$expected): self
+    {
+        $expectedList = implode(', ', $expected);
+        return new self("Extension status is '{$current}', expected one of: {$expectedList}.", 422);
+    }
+
+    public static function taskForExtensionNotFound(string $taskId): self
+    {
+        return new self(__("The task associated with this extension (ID: {$taskId}) was not found."), 404);
+    }
+
+    public static function extensionApprovalSchedulingFailed(): self
+    {
+        return new self(__('Failed to schedule the extension approval job. Please contact your administrator.'), 500);
+    }
+
+    public static function approvalRequestNotAllowed(): self
+    {
+        return new self(__('A task approval request can only be submitted when the task is approved, in progress, paused, or completed.'), 422);
+    }
+
+    public static function pendingApprovalRequestExists(): self
+    {
+        return new self(__('A pending approval request already exists for this task.'), 422);
+    }
+
+    public static function approvalRequestNotFound(): self
+    {
+        return new self(__('Task approval request not found.'), 404);
+    }
+
+    public static function approvalRequestAlreadyResolved(): self
+    {
+        return new self(__('This approval request has already been resolved.'), 422);
+    }
 }
