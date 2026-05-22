@@ -7,6 +7,7 @@ use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RoleOrPermissionMiddleware;
 use App\Http\Middleware\DomainToTenantMiddleware;
 use App\Http\Middleware\TenantCompatibilityMiddleware;
+use App\Http\Middleware\LogApiRequestMiddleware;
 use Modules\Auth\Middleware\CheckTokenAbility;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\TenancePermision::class);
         // $middleware->append(\Sentry\Laravel\Tracing\Middleware::class);
         $middleware->append(TenantCompatibilityMiddleware::class);
+        $middleware->append(LogApiRequestMiddleware::class);
         $middleware->prepend(\App\Http\Middleware\DomainToTenantMiddleware::class);
 
     })
