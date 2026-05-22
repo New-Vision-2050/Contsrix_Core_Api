@@ -17,9 +17,8 @@ class Handler
         return match (true) {
             $e instanceof ValidationException => response()->json([
                 'success' => false,
-                'message' =>  request()->all(),
+                'message' => __('validation.validation_failed'),
                 'errors' => $e->errors(),
-                'payload' => request()->all(),
             ], 422),
 
             $e instanceof AuthenticationException => response()->json([
