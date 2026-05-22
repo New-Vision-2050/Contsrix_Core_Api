@@ -19,6 +19,7 @@ class Handler
                 'success' => false,
                 'message' => __('validation.validation_failed'),
                 'errors' => $e->errors(),
+                'payload' => request()->all(),
             ], 422),
 
             $e instanceof AuthenticationException => response()->json([
