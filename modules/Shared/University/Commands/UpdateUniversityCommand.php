@@ -10,7 +10,7 @@ class UpdateUniversityCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $countryIso2,
+        private string $countryId,
         private string $name,
         private ?string $url = null,
     ) {
@@ -30,7 +30,7 @@ class UpdateUniversityCommand
     {
         return [
             'name' => $this->name,
-            'country_iso2' => $this->countryIso2,
+            'country_id' => $this->countryId,
             'url' => $this->url,
         ];
     }

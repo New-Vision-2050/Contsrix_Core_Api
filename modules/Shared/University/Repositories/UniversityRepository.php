@@ -20,16 +20,24 @@ class UniversityRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getUniversityList(?int $page, ?int $perPage = 10): Collection
+    public function getUniversityList(?int $page, ?int $perPage = 10): array
     {
-        return $this->paginatedList([], $page, $perPage);
+        $items = $this->model->with('country')->orderBy('id', 'asc')->paginate($perPage, ['*'], 'page', $page);
+
+        return [
+            'data' => $items->items(),
+            'pagination' => [
+                'total' => $items->total(),
+                'per_page' => $items->perPage(),
+                'current_page' => $items->currentPage(),
+                'last_page' => $items->lastPage(),
+            ],
+        ];
     }
 
     public function getUniversity(UuidInterface $id): University
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->with('country')->where('id', $id->toString())->firstOrFail();
     }
 
     public function createUniversity(array $data): University

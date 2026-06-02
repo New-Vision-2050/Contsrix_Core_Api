@@ -8,7 +8,7 @@ class CreateUniversityDTO
 {
     public function __construct(
         public string $name,
-        public string $countryIso2,
+        public string $countryId,
         public string $url,
     ) {
     }
@@ -17,7 +17,7 @@ class CreateUniversityDTO
     {
         return [
             'name' => $this->name,
-            'country_iso2' => $this->countryIso2,
+            'country_id' => $this->countryId,
             'url' => $this->url,
         ];
     }

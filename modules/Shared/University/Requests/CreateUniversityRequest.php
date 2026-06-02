@@ -13,7 +13,7 @@ class CreateUniversityRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'country_iso2' => 'required|string',
+            'country_id' => 'required|string',
             'url' => 'nullable|string',
         ];
     }
@@ -22,7 +22,7 @@ class CreateUniversityRequest extends FormRequest
     {
         return new CreateUniversityDTO(
             name: $this->get('name'),
-            countryIso2: $this->get('country_iso2'),
+            countryId: $this->get('country_id'),
             url: $this->get('name'),
         );
     }
