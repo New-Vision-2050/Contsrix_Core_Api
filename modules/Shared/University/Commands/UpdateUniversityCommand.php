@@ -31,7 +31,7 @@ class UpdateUniversityCommand
         return [
             'name' =>["ar"=> $this->name , "en"=> $this->name],
             'country_id' => $this->countryId,
-            'url' => $this->url,
+            'link' => $this->url,
         ];
     }
 }
