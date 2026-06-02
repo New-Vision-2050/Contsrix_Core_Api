@@ -14,7 +14,7 @@ return new class extends Migration
             Schema::table('medical_insurance_subscriptions', function (Blueprint $table) {
                 $table->uuid('medical_insurance_category_id')->nullable()->after('medical_insurance_id');
 
-                $table->foreign('medical_insurance_category_id')
+                $table->foreign('medical_insurance_category_id', 'mis_category_fk')
                     ->references('id')
                     ->on('medical_insurance_categories')
                     ->onDelete('set null');
@@ -28,7 +28,7 @@ return new class extends Migration
     {
         if (Schema::hasColumn('medical_insurance_subscriptions', 'medical_insurance_category_id')) {
             Schema::table('medical_insurance_subscriptions', function (Blueprint $table) {
-                $table->dropForeign(['medical_insurance_category_id']);
+                $table->dropForeign('mis_category_fk');
                 $table->dropIndex('mi_subscriptions_category_idx');
                 $table->dropColumn('medical_insurance_category_id');
             });
