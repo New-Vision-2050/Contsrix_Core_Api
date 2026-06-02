@@ -130,9 +130,7 @@ class UserRepository extends BaseRepository
             $query->whereHas("companyUserCompanies", function ($query) use ($type) {
                 $query
                     ->where("company_users_companies.role", $type)
-                    ->when(request()->has("status"), function ($query) {
-                        $query->where("company_users_companies.status", request()->status);
-                    })
+                    ->where("company_users_companies.status", request()->input("status", 1))
                     ->when(request()->has("branch_id"), function ($query) {
                         $query->whereHas('managementHierarchy', function ($hierarchyQuery) {
                             $hierarchyQuery->where('management_hierarchies.id', request()->branch_id);

@@ -10,7 +10,7 @@ class UpdateUniversityCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $countryIso2,
+        private string $countryId,
         private string $name,
         private ?string $url = null,
     ) {
@@ -29,9 +29,9 @@ class UpdateUniversityCommand
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
-            'country_iso2' => $this->countryIso2,
-            'url' => $this->url,
+            'name' =>["ar"=> $this->name , "en"=> $this->name],
+            'country_id' => $this->countryId,
+            'link' => $this->url,
         ];
     }
 }

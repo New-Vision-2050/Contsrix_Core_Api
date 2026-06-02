@@ -14,7 +14,7 @@ class UpdateUniversityRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'country_iso2' => 'required|string',
+            'country_id' => 'required|string',
             'url' => 'nullable|string',
         ];
     }
@@ -23,7 +23,7 @@ class UpdateUniversityRequest extends FormRequest
     {
         return new UpdateUniversityCommand(
             id: Uuid::fromString($this->route('id')),
-            countryIso2: $this->get('country_iso2'),
+            countryId: $this->get('country_id'),
             name: $this->get('name'),
             url: $this->get('url'),
         );

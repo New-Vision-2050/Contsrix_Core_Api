@@ -8,7 +8,7 @@ class CreateUniversityDTO
 {
     public function __construct(
         public string $name,
-        public string $countryIso2,
+        public string $countryId,
         public string $url,
     ) {
     }
@@ -16,9 +16,9 @@ class CreateUniversityDTO
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
-            'country_iso2' => $this->countryIso2,
-            'url' => $this->url,
+            'name' =>["ar"=> $this->name , "en"=> $this->name],
+            'country_id' => $this->countryId,
+            'link' => $this->url,
         ];
     }
 }

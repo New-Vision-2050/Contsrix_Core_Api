@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Shared\University\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Country\Presenters\CountryPresenter;
 use Modules\Shared\University\Models\University;
 
 class UniversityPresenter extends AbstractPresenter
@@ -22,6 +23,7 @@ class UniversityPresenter extends AbstractPresenter
             'id' => $this->university->id,
             'name' => $this->university->name,
             'url' => $this->university->url,
+            'country' => $this->university->country ? (new CountryPresenter($this->university->country))->getData() : null,
         ];
     }
 }
