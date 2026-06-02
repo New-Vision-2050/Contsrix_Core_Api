@@ -29,7 +29,7 @@ class UpdateUniversityCommand
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
+            'name' =>["ar"=> $this->name , "en"=> $this->name],
             'country_id' => $this->countryId,
             'url' => $this->url,
         ];
