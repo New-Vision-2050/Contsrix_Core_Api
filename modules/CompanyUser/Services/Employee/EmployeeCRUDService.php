@@ -29,6 +29,7 @@ use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
+use Modules\Shared\Privilege\Services\PrivilegeCardConfigService;
 
 class EmployeeCRUDService
 {
@@ -110,7 +111,29 @@ class EmployeeCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
 
-        $users = $this->userRepository->getUserInCurrentCompanyWith([], CompanyUserRole::EMPLOYEE->value, $page, $perPage);
+        $allowanceCode = request()->input('type_allowance_code');
+
+        $users = $this->userRepository->getUserInCurrentCompanyWith([
+            'userPrivileges' => function ($query) use ($allowanceCode) {
+                $query->where('company_id', tenant('id'))
+                    ->when(
+                        in_array($allowanceCode, ['constant', 'saving'], true),
+                        fn ($privilegeQuery) => $privilegeQuery->where('type_allowance_code', $allowanceCode),
+                        fn ($privilegeQuery) => $privilegeQuery->whereIn('type_allowance_code', ['constant', 'saving'])
+                    )
+                    ->where(function ($privilegeQuery) {
+                        $privilegeQuery
+                            ->whereHas('privilege', function ($typeQuery) {
+                                $typeQuery->where('type', PrivilegeCardConfigService::TYPE_HEALTH_INSURANCE);
+                            })
+                            ->orWhereNotNull('medical_insurance_id');
+                    })
+                    ->with([
+                        'privilege:id,type',
+                        'typePrivilege',
+                    ]);
+            },
+        ], CompanyUserRole::EMPLOYEE->value, $page, $perPage);
 
         return $users;
     }
