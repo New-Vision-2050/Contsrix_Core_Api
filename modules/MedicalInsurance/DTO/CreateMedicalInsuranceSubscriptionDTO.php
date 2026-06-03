@@ -16,6 +16,7 @@ class CreateMedicalInsuranceSubscriptionDTO
         public string $subscriptionNo,
         public ?string $medicalInsuranceCategoryId = null,
         public int $status = 1,
+        public string $subscriptionType = 'individual',
         public array $familyMembers = [],
     ) {
     }
@@ -29,6 +30,7 @@ class CreateMedicalInsuranceSubscriptionDTO
             'amount'                        => $this->amount,
             'subscription_no'               => $this->subscriptionNo,
             'status'                        => $this->status,
+            'subscription_type'             => $this->subscriptionType,
             'company_id'                    => tenant('id'),
         ];
     }
