@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\User\Models\User;
 use App\Traits\HasExport;
 
 /**
@@ -23,6 +24,49 @@ class ProjectManagementRepository extends BaseRepository
     public function __construct(ProjectManagement $model)
     {
         parent::__construct($model);
+    }
+
+    public function paginatedForUser(int $page = 1, int $perPage = 10, ?User $user = null): array
+    {
+        $query = $this->model
+            ->with([
+                'projectType',
+                'subProjectType',
+                'subSubProjectType',
+                'manager',
+                'branch',
+                'ownerCompany',
+                'ownerIndividual',
+                'client',
+                'costCenterBranch',
+                'management',
+                'currency',
+                'company',
+            ])
+            ->filter(request()->all())
+            ->orderBy('created_at', 'desc');
+
+        if ($user !== null && !$user->hasRole('super-admin')) {
+            $userId = $user->id;
+            $query->where(function ($q) use ($userId) {
+                $q->where('manager_id', $userId)
+                  ->orWhereHas('employees', fn ($q2) => $q2->where('user_id', $userId));
+            });
+        }
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return [
+            'data'       => $paginator->items(),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
+                'from'         => $paginator->firstItem(),
+                'to'           => $paginator->lastItem(),
+            ],
+        ];
     }
 
     public function getProjectManagementList(?int $page, ?int $perPage = 10): Collection

@@ -123,6 +123,43 @@
                 </tr>
             </table>
 
+            @php
+                /* Column visibility — empty array means show all columns */
+                $_dc = count($config->step3->attendanceDataTypeIds)
+                    ? array_flip($config->step3->attendanceDataTypeIds)
+                    : array_flip(\Modules\Reports\Enums\ReportEnums::attendanceDetailColumns());
+                $showDay     = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_DAY]);
+                $showBranch  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_BRANCH]);
+                $showMgmt    = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_MANAGEMENT]);
+                $showOffIn   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OFFICIAL_IN]);
+                $showOffOut  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OFFICIAL_OUT]);
+                $showActIn   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_IN]);
+                $showActOut  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_OUT]);
+                $showTaskIn  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TASK_IN]);
+                $showTaskOut = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TASK_OUT]);
+                $showDelay   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_DELAY]);
+                $showOT      = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OVERTIME]);
+                $showTotal   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TOTAL_HOURS]);
+
+                // employee_per_page: always 2 (#, date) + up to 12 optional
+                $empColCount   = 2 + (int)$showDay + (int)$showBranch + (int)$showMgmt
+                               + (int)$showOffIn + (int)$showOffOut
+                               + (int)$showActIn + (int)$showActOut
+                               + (int)$showTaskIn + (int)$showTaskOut
+                               + (int)$showDelay + (int)$showOT + (int)$showTotal;
+                $empMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal;
+                $empTotColspan = $empColCount - $empMetricCols;
+
+                // by_day: always 2 (#, employee) + up to 11 optional (no day col)
+                $dayColCount   = 2 + (int)$showBranch + (int)$showMgmt
+                               + (int)$showOffIn + (int)$showOffOut
+                               + (int)$showActIn + (int)$showActOut
+                               + (int)$showTaskIn + (int)$showTaskOut
+                               + (int)$showDelay + (int)$showOT + (int)$showTotal;
+                $dayMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal;
+                $dayTotColspan = $dayColCount - $dayMetricCols;
+            @endphp
+
             @if ($config->step3->displayMode === \Modules\Reports\Enums\ReportEnums::DISPLAY_MODE_BY_DAY)
             {{-- ══════════ BY-DAY view: one table per date, employees as rows ══════════ --}}
             @php
@@ -157,17 +194,17 @@
                         <tr>
                             <th style="width:18px;">#</th>
                             <th>{{ $lang === 'ar' ? 'الموظف'          : 'Employee' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الفرع'           : 'Branch' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الإدارة'         : 'Mgmt' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'دخول رسمي'  : 'Off.In' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'  : 'Off.Out' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'  : 'Act.In' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'  : 'Act.Out' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'بدء مهمة'   : 'Task In' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'نهاية مهمة' : 'Task Out' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'تأخير'      : 'Delay' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'إضافي'      : 'OT' }}</th>
-                            <th class="hcol">{{ $lang === 'ar' ? 'إجمالي'     : 'Total' }}</th>
+                            @if ($showBranch)<th>{{ $lang === 'ar' ? 'الفرع'           : 'Branch' }}</th>@endif
+                            @if ($showMgmt)<th>{{ $lang === 'ar' ? 'الإدارة'         : 'Mgmt' }}</th>@endif
+                            @if ($showOffIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول رسمي'  : 'Off.In' }}</th>@endif
+                            @if ($showOffOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'  : 'Off.Out' }}</th>@endif
+                            @if ($showActIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'  : 'Act.In' }}</th>@endif
+                            @if ($showActOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'  : 'Act.Out' }}</th>@endif
+                            @if ($showTaskIn)<th class="tcol">{{ $lang === 'ar' ? 'بدء مهمة'   : 'Task In' }}</th>@endif
+                            @if ($showTaskOut)<th class="tcol">{{ $lang === 'ar' ? 'نهاية مهمة' : 'Task Out' }}</th>@endif
+                            @if ($showDelay)<th class="tcol">{{ $lang === 'ar' ? 'تأخير'      : 'Delay' }}</th>@endif
+                            @if ($showOT)<th class="tcol">{{ $lang === 'ar' ? 'إضافي'      : 'Overtime' }}</th>@endif
+                            @if ($showTotal)<th class="hcol">{{ $lang === 'ar' ? 'إجمالي'     : 'Total' }}</th>@endif
                         </tr>
                     </thead>
                     <tbody>
@@ -202,29 +239,29 @@
                                         @if ($ri === 0)
                                             <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dSeq }}</td>
                                             <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $emp->name }}</td>
-                                            <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>
-                                            <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>
-                                            <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>
-                                            <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time'])   ?: '-' }}</td>
+                                            @if ($showBranch)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>@endif
+                                            @if ($showMgmt)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>@endif
+                                            @if ($showOffIn)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>@endif
+                                            @if ($showOffOut)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time'])   ?: '-' }}</td>@endif
                                         @endif
-                                        <td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>
-                                        <td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>
-                                        <td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>
-                                        <td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>
+                                        @if ($showActIn)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>@endif
+                                        @if ($showActOut)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
+                                        @if ($showTaskIn)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>@endif
+                                        @if ($showTaskOut)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>@endif
                                         @if ($ri === 0)
-                                            <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>
-                                            <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>
-                                            <td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>
+                                            @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>@endif
+                                            @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif
+                                            @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>@endif
                                         @endif
                                     </tr>
                                 @endfor
                             @endif
                         @endforeach
                         <tr class="tot-row">
-                            <td colspan="10" style="text-align:{{ $align }};">{{ $lang === 'ar' ? 'إجمالي اليوم' : 'Day Total' }}</td>
-                            <td class="num">{{ $toHoursMinutes($dSumDelay) }}</td>
-                            <td class="num">{{ $toHoursMinutes($dSumOT) }}</td>
-                            <td class="num">{{ $toHoursMinutes($dSumWorkMin) }}</td>
+                            <td colspan="{{ $dayTotColspan }}" style="text-align:{{ $align }};">{{ $lang === 'ar' ? 'إجمالي اليوم' : 'Day Total' }}</td>
+                            @if ($showDelay)<td class="num">{{ $toHoursMinutes($dSumDelay) }}</td>@endif
+                            @if ($showOT)<td class="num">{{ $toHoursMinutes($dSumOT) }}</td>@endif
+                            @if ($showTotal)<td class="num">{{ $toHoursMinutes($dSumWorkMin) }}</td>@endif
                         </tr>
                     </tbody>
                 </table>
@@ -247,7 +284,7 @@
                     <thead>
                         {{-- Employee identity row: appears above column headers, repeats on page breaks --}}
                         <tr class="emp-hdr">
-                            <td colspan="14" style="padding:7px 10px;">
+                            <td colspan="{{ $empColCount }}" style="padding:7px 10px;">
                                 <img src="{{ $empAvatarSrc }}" style="width:32px; height:32px; border-radius:16px; border:2px solid #ffffff; vertical-align:middle;" />
                                 <span style="vertical-align:middle; {{ $align === 'right' ? 'margin-right' : 'margin-left' }}:8px; font-size:12px;">{{ $emp->name }}</span>
                                 @if ($empBranch)<span class="emp-hdr-sub"> &nbsp;|&nbsp; {{ $empBranch }}</span>@endif
@@ -257,18 +294,18 @@
                         <tr>
                             <th style="width:18px;">#</th>
                             <th class="hcol">{{ $lang === 'ar' ? 'التاريخ'        : 'Date' }}</th>
-                            <th style="width:50px;">{{ $lang === 'ar' ? 'اليوم'   : 'Day' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الفرع'                        : 'Branch' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الإدارة'                      : 'Mgmt' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'دخول رسمي'      : 'Off.In' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'      : 'Off.Out' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'      : 'Act.In' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'      : 'Act.Out' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'بدء مهمة'       : 'Task In' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'نهاية مهمة'     : 'Task Out' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'تأخير'          : 'Delay' }}</th>
-                            <th class="tcol">{{ $lang === 'ar' ? 'إضافي'          : 'OT' }}</th>
-                            <th class="hcol">{{ $lang === 'ar' ? 'إجمالي ساعات'   : 'Total Hrs' }}</th>
+                            @if ($showDay)<th style="width:50px;">{{ $lang === 'ar' ? 'اليوم'   : 'Day' }}</th>@endif
+                            @if ($showBranch)<th>{{ $lang === 'ar' ? 'الفرع'                        : 'Branch' }}</th>@endif
+                            @if ($showMgmt)<th>{{ $lang === 'ar' ? 'الإدارة'                      : 'Mgmt' }}</th>@endif
+                            @if ($showOffIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول رسمي'      : 'Off.In' }}</th>@endif
+                            @if ($showOffOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'      : 'Off.Out' }}</th>@endif
+                            @if ($showActIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'      : 'Act.In' }}</th>@endif
+                            @if ($showActOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'      : 'Act.Out' }}</th>@endif
+                            @if ($showTaskIn)<th class="tcol">{{ $lang === 'ar' ? 'بدء مهمة'       : 'Task In' }}</th>@endif
+                            @if ($showTaskOut)<th class="tcol">{{ $lang === 'ar' ? 'نهاية مهمة'     : 'Task Out' }}</th>@endif
+                            @if ($showDelay)<th class="tcol">{{ $lang === 'ar' ? 'تأخير'          : 'Delay' }}</th>@endif
+                            @if ($showOT)<th class="tcol">{{ $lang === 'ar' ? 'إضافي'          : 'Overtime' }}</th>@endif
+                            @if ($showTotal)<th class="hcol">{{ $lang === 'ar' ? 'إجمالي ساعات'   : 'Total Hrs' }}</th>@endif
                         </tr>
                     </thead>
                     <tbody>
@@ -301,29 +338,29 @@
                                     @if ($ri === 0)
                                         <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dateSeq }}</td>
                                         <td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $dateStr }}</td>
-                                        <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $dayLabel }}</td>
-                                        <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>
-                                        <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>
-                                        <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>
-                                        <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time'])   ?: '-' }}</td>
+                                        @if ($showDay)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $dayLabel }}</td>@endif
+                                        @if ($showBranch)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>@endif
+                                        @if ($showMgmt)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>@endif
+                                        @if ($showOffIn)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>@endif
+                                        @if ($showOffOut)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time'])   ?: '-' }}</td>@endif
                                     @endif
-                                    <td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>
-                                    <td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>
-                                    <td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>
-                                    <td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>
+                                    @if ($showActIn)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>@endif
+                                    @if ($showActOut)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
+                                    @if ($showTaskIn)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>@endif
+                                    @if ($showTaskOut)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>@endif
                                     @if ($ri === 0)
-                                        <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>
-                                        <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>
-                                        <td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>
+                                        @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>@endif
+                                        @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif
+                                        @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>@endif
                                     @endif
                                 </tr>
                             @endfor
                         @endforeach
                         <tr class="tot-row">
-                            <td colspan="11" style="text-align:{{ $align }};">{{ $lang === 'ar' ? 'الإجمالي' : 'Total' }}</td>
-                            <td class="num">{{ $toHoursMinutes($sumDelay) }}</td>
-                            <td class="num">{{ $toHoursMinutes($sumOT) }}</td>
-                            <td class="num">{{ $toHoursMinutes($sumWorkMin) }}</td>
+                            <td colspan="{{ $empTotColspan }}" style="text-align:{{ $align }};">{{ $lang === 'ar' ? 'الإجمالي' : 'Total' }}</td>
+                            @if ($showDelay)<td class="num">{{ $toHoursMinutes($sumDelay) }}</td>@endif
+                            @if ($showOT)<td class="num">{{ $toHoursMinutes($sumOT) }}</td>@endif
+                            @if ($showTotal)<td class="num">{{ $toHoursMinutes($sumWorkMin) }}</td>@endif
                         </tr>
                     </tbody>
                 </table>

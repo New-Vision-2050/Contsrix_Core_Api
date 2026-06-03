@@ -58,7 +58,7 @@ trait ValidatesWizardConfig
             // ---- Step 3 --------------------------------------------------
             "{$p}step3"                             => 'required|array',
             "{$p}step3.attendanceDataTypeIds"       => 'nullable|array',
-            "{$p}step3.attendanceDataTypeIds.*"     => ['string', $enum(ReportEnums::attendanceDataTypes())],
+            "{$p}step3.attendanceDataTypeIds.*"     => ['string', $enum(ReportEnums::attendanceDetailColumns())],
             "{$p}step3.display_mode"                => ['nullable', 'string', $enum(ReportEnums::displayModes())],
             "{$p}step3.attendancePattern"           => ['required', 'string', $enum(ReportEnums::attendancePatterns())],
             "{$p}step3.attendanceRateMin"           => ['required', 'string', $enum(ReportEnums::attendanceRateOptions())],

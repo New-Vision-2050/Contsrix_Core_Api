@@ -95,6 +95,20 @@ final class ReportEnums
     public const ATT_DATA_SICK_LEAVES      = 'sick_leaves';
     public const ATT_DATA_EARLY_DEPARTURE  = 'early_departure';
 
+    // ---- Attendance detail column visibility toggles ---------------------
+    public const ATT_COL_DAY          = 'day';
+    public const ATT_COL_BRANCH       = 'branch';
+    public const ATT_COL_MANAGEMENT   = 'management';
+    public const ATT_COL_OFFICIAL_IN  = 'official_in';
+    public const ATT_COL_OFFICIAL_OUT = 'official_out';
+    public const ATT_COL_ACTUAL_IN    = 'actual_in';
+    public const ATT_COL_ACTUAL_OUT   = 'actual_out';
+    public const ATT_COL_TASK_IN      = 'task_in';
+    public const ATT_COL_TASK_OUT     = 'task_out';
+    public const ATT_COL_DELAY        = 'delay';
+    public const ATT_COL_OVERTIME     = 'overtime';
+    public const ATT_COL_TOTAL_HOURS  = 'total_hours';
+
     public const ATT_PATTERN_ALL                = 'all';
     public const ATT_PATTERN_ABSENTEES_ONLY     = 'absentees_only';
     public const ATT_PATTERN_LATE_ONLY          = 'late_only';
@@ -249,6 +263,24 @@ final class ReportEnums
             self::ATT_DATA_OVERTIME,
             self::ATT_DATA_SICK_LEAVES,
             self::ATT_DATA_EARLY_DEPARTURE,
+        ];
+    }
+
+    public static function attendanceDetailColumns(): array
+    {
+        return [
+            self::ATT_COL_DAY,
+            self::ATT_COL_BRANCH,
+            self::ATT_COL_MANAGEMENT,
+            self::ATT_COL_OFFICIAL_IN,
+            self::ATT_COL_OFFICIAL_OUT,
+            self::ATT_COL_ACTUAL_IN,
+            self::ATT_COL_ACTUAL_OUT,
+            self::ATT_COL_TASK_IN,
+            self::ATT_COL_TASK_OUT,
+            self::ATT_COL_DELAY,
+            self::ATT_COL_OVERTIME,
+            self::ATT_COL_TOTAL_HOURS,
         ];
     }
 
