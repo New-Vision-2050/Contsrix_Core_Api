@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Modules\Project\ProjectManagement\DTO\CreateProjectManagementDTO;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Repositories\ProjectManagementRepository;
+use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 
@@ -25,11 +26,12 @@ class ProjectManagementCRUDService
          return $this->repository->createProjectManagement($createProjectManagementDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list(int $page = 1, int $perPage = 10, ?User $user = null): array
     {
-        return $this->repository->paginated(
+        return $this->repository->paginatedForUser(
             page: $page,
             perPage: $perPage,
+            user: $user,
         );
     }
 

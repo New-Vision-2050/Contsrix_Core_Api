@@ -38,7 +38,8 @@ class ProjectManagementController extends Controller
     {
         $list = $this->projectManagementService->list(
             (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int) $request->get('per_page', 10),
+            $request->user(),
         );
 
         return Json::items(ProjectManagementPresenter::collection($list['data']), paginationSettings: $list['pagination']);
@@ -91,7 +92,7 @@ class ProjectManagementController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'project_management.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new ProjectManagementExport($this->projectManagementService, $filters), $fileName);
     }
 

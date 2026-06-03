@@ -23,11 +23,21 @@ class UserPrivilegeRepository extends BaseRepository
 
     public function getUserPrivilegeList(UuidInterface $companyId, UuidInterface $globalId, ?int $page, ?int $perPage = 10):array
     {
-        return $this->paginated(
+        $result = $this->paginated(
             ['company_id' => $companyId, 'global_id' => $globalId],
             $page,
             $perPage
         );
+
+        $result['data']->load([
+            'privilege',
+            'typePrivilege',
+            'typeAllowance',
+            'period',
+            'medicalInsurance',
+        ]);
+
+        return $result;
     }
 
     public function getUserPrivilege(UuidInterface $id): UserPrivilege

@@ -7,6 +7,7 @@ namespace Modules\UserInfo\UserPrivilege\Presenters;
 use Modules\UserInfo\UserPrivilege\Models\UserPrivilege;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Shared\Period\Presenters\PeriodPresenter;
+use Modules\Shared\Privilege\Models\Privilege;
 use Modules\Shared\Privilege\Presenters\PrivilegePresenter;
 use Modules\Shared\TypeAllowance\Presenters\TypeAllowancePresenter;
 use Modules\Shared\TypePrivilege\Presenters\TypePrivilegePresenter;
@@ -25,7 +26,8 @@ class UserPrivilegePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-        $privilegeType = $this->userPrivilege->privilege?->type;
+        $privilege = $this->resolvePrivilege();
+        $privilegeType = $privilege?->type;
 
         $data = [
             'id' => $this->userPrivilege->id,
@@ -44,8 +46,8 @@ class UserPrivilegePresenter extends AbstractPresenter
             'period' => $this->userPrivilege->period
                 ? (new PeriodPresenter($this->userPrivilege->period))->getData()
                 : null,
-            'privilege' => $this->userPrivilege->privilege
-                ? (new PrivilegePresenter($this->userPrivilege->privilege))->getData()
+            'privilege' => $privilege
+                ? (new PrivilegePresenter($privilege))->getData()
                 : null,
             'medical_insurance' => $this->presentMedicalInsurance(),
         ];
@@ -56,6 +58,23 @@ class UserPrivilegePresenter extends AbstractPresenter
         }
 
         return $data;
+    }
+
+    private function resolvePrivilege(): ?Privilege
+    {
+        if ($this->userPrivilege->privilege) {
+            return $this->userPrivilege->privilege;
+        }
+
+        if (! $this->userPrivilege->medical_insurance_id) {
+            return null;
+        }
+
+        return once(function () {
+            return Privilege::query()
+                ->where('type', PrivilegeCardConfigService::TYPE_HEALTH_INSURANCE)
+                ->first();
+        });
     }
 
     /**
