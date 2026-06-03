@@ -48,9 +48,11 @@
         h2        { font-size: 11px; margin: 12px 0 4px; border-bottom: 2px solid #1e3a5f; padding-bottom: 3px; color: #1e3a5f; }
         table     { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
         th, td    { border: 1px solid #d1d5db; padding: 3px 4px; text-align: {{ $align }}; vertical-align: middle; }
-        th        { background: #1e3a5f; color: #ffffff; font-weight: 600; font-size: 8px; }
+        th        { background: #1e3a5f; color: #ffffff; font-weight: 600; font-size: 8px; white-space: nowrap; }
         .meta td  { border: none; padding: 2px 6px; font-size: 10px; }
         .num      { text-align: center; direction: ltr; }
+        .tcol     { width: 36px; min-width: 34px; max-width: 40px; }
+        .hcol     { width: 44px; min-width: 40px; max-width: 50px; }
         .stats-bar td { border: 1px solid #cbd5e1; padding: 5px 10px; text-align: center; font-weight: 700; font-size: 9px; }
         .s-emp    { background: #e2e8f0; color: #1e293b; }
         .s-pres   { background: #dcfce7; color: #166534; }
@@ -121,9 +123,115 @@
                 </tr>
             </table>
 
-            {{-- One separate table per employee (14 data columns).
-                 Employee photo + name appear as the first <thead> row above the column headers.
-            --}}
+            @if ($config->step3->displayMode === \Modules\Reports\Enums\ReportEnums::DISPLAY_MODE_BY_DAY)
+            {{-- ══════════ BY-DAY view: one table per date, employees as rows ══════════ --}}
+            @php
+                $byDate = [];
+                foreach ($employees as $_emp) {
+                    foreach ($daily[(string) $_emp->global_id] ?? [] as $_d) {
+                        $_dt = (string) ($_d['date'] ?? '');
+                        if ($_dt !== '') {
+                            $byDate[$_dt][(string) $_emp->global_id] = ['emp' => $_emp, 'day' => $_d];
+                        }
+                    }
+                }
+                ksort($byDate);
+            @endphp
+            @foreach ($byDate as $dateKey => $dateEmployees)
+                @php
+                    $dayNum   = date('N', strtotime($dateKey));
+                    $dayLabel = $dayNames[(string) $dayNum] ?? '';
+                    $dSumDelay   = 0;
+                    $dSumOT      = 0;
+                    $dSumWorkMin = 0;
+                @endphp
+                <table style="margin-bottom:2px; border:none;">
+                    <tr>
+                        <td style="background:#1e3a5f; color:#ffffff; font-size:11px; font-weight:700; padding:6px 10px; border:1px solid #0f2441;">
+                            {{ $dateKey }} &nbsp;—&nbsp; {{ $dayLabel }}
+                        </td>
+                    </tr>
+                </table>
+                <table style="margin-bottom:14px;">
+                    <thead>
+                        <tr>
+                            <th style="width:18px;">#</th>
+                            <th>{{ $lang === 'ar' ? 'الموظف'          : 'Employee' }}</th>
+                            <th>{{ $lang === 'ar' ? 'الفرع'           : 'Branch' }}</th>
+                            <th>{{ $lang === 'ar' ? 'الإدارة'         : 'Mgmt' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'دخول رسمي'  : 'Off.In' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'  : 'Off.Out' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'  : 'Act.In' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'  : 'Act.Out' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'بدء مهمة'   : 'Task In' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'نهاية مهمة' : 'Task Out' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'تأخير'      : 'Delay' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'إضافي'      : 'OT' }}</th>
+                            <th class="hcol">{{ $lang === 'ar' ? 'إجمالي'     : 'Total' }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php $dSeq = 0; @endphp
+                        @foreach ($employees as $emp)
+                            @php $entry = $dateEmployees[(string) $emp->global_id] ?? null; @endphp
+                            @if ($entry)
+                                @php
+                                    $d            = $entry['day'];
+                                    $empBranch    = optional(optional($emp->userProfessionalData)->branch)->name     ?? '';
+                                    $empMgmt      = optional(optional($emp->userProfessionalData)->management)->name ?? '';
+                                    $attSessions  = $d['attendance_sessions'] ?? [];
+                                    $taskSessions = $d['task_sessions']       ?? [];
+                                    $subRowCount  = max(1, count($attSessions), count($taskSessions));
+                                    $rowBg = match($d['display_status'] ?? '') {
+                                        'present' => '#f0fdf4',
+                                        'absent'  => '#fef2f2',
+                                        'holiday' => '#fffbeb',
+                                        default   => '#ffffff',
+                                    };
+                                    $dSumDelay   += (int) ($d['late_minutes']    ?? 0);
+                                    $dSumOT      += (int) ($d['overtime_minutes'] ?? 0);
+                                    $dSumWorkMin += (int) round((float) ($d['total_work_hours'] ?? 0) * 60);
+                                    $dSeq++;
+                                @endphp
+                                @for ($ri = 0; $ri < $subRowCount; $ri++)
+                                    @php
+                                        $attRow  = $attSessions[$ri]  ?? null;
+                                        $taskRow = $taskSessions[$ri] ?? null;
+                                    @endphp
+                                    <tr style="background-color:{{ $rowBg }};">
+                                        @if ($ri === 0)
+                                            <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dSeq }}</td>
+                                            <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $emp->name }}</td>
+                                            <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>
+                                            <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>
+                                            <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>
+                                            <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time'])   ?: '-' }}</td>
+                                        @endif
+                                        <td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>
+                                        <td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>
+                                        <td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>
+                                        <td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>
+                                        @if ($ri === 0)
+                                            <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>
+                                            <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>
+                                            <td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>
+                                        @endif
+                                    </tr>
+                                @endfor
+                            @endif
+                        @endforeach
+                        <tr class="tot-row">
+                            <td colspan="10" style="text-align:{{ $align }};">{{ $lang === 'ar' ? 'إجمالي اليوم' : 'Day Total' }}</td>
+                            <td class="num">{{ $toHoursMinutes($dSumDelay) }}</td>
+                            <td class="num">{{ $toHoursMinutes($dSumOT) }}</td>
+                            <td class="num">{{ $toHoursMinutes($dSumWorkMin) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            @endforeach
+
+            @else
+            {{-- ══════════ EMPLOYEE-PER-PAGE view (default): one table per employee ══════════ --}}
             @foreach ($employees as $emp)
                 @php
                     $empDaily     = $daily[(string) $emp->global_id] ?? [];
@@ -137,26 +245,24 @@
                 @if (!empty($empDaily))
                 <table style="margin-bottom:14px;">
                     <thead>
-                        {{-- Column headers only — mPDF repeats <thead> on page breaks, which is desired --}}
                         <tr>
-                            <th style="width:20px;">#</th>
-                            <th>{{ $lang === 'ar' ? 'التاريخ'               : 'Date' }}</th>
-                            <th>{{ $lang === 'ar' ? 'اليوم'                 : 'Day' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الفرع'                 : 'Branch' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الإدارة'               : 'Management' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الحضور الرسمي'         : 'Official In' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الانصراف الرسمي'       : 'Official Out' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الحضور الفعلي'         : 'Actual In' }}</th>
-                            <th>{{ $lang === 'ar' ? 'الانصراف الفعلي'       : 'Actual Out' }}</th>
-                            <th>{{ $lang === 'ar' ? 'بدء المهمة'            : 'Task In' }}</th>
-                            <th>{{ $lang === 'ar' ? 'انتهاء المهمة'         : 'Task Out' }}</th>
-                            <th>{{ $lang === 'ar' ? 'ساعات التأخير'         : 'Delay' }}</th>
-                            <th>{{ $lang === 'ar' ? 'ساعات إضافية'          : 'Overtime' }}</th>
-                            <th>{{ $lang === 'ar' ? 'إجمالي ساعات اليوم'    : 'Total Hours' }}</th>
+                            <th style="width:18px;">#</th>
+                            <th class="hcol">{{ $lang === 'ar' ? 'التاريخ'        : 'Date' }}</th>
+                            <th style="width:50px;">{{ $lang === 'ar' ? 'اليوم'   : 'Day' }}</th>
+                            <th>{{ $lang === 'ar' ? 'الفرع'                        : 'Branch' }}</th>
+                            <th>{{ $lang === 'ar' ? 'الإدارة'                      : 'Mgmt' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'دخول رسمي'      : 'Off.In' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'      : 'Off.Out' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'      : 'Act.In' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'      : 'Act.Out' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'بدء مهمة'       : 'Task In' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'نهاية مهمة'     : 'Task Out' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'تأخير'          : 'Delay' }}</th>
+                            <th class="tcol">{{ $lang === 'ar' ? 'إضافي'          : 'OT' }}</th>
+                            <th class="hcol">{{ $lang === 'ar' ? 'إجمالي ساعات'   : 'Total Hrs' }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {{-- Employee identity row inside <tbody> — renders once, never repeated on page breaks --}}
                         <tr class="emp-hdr">
                             <td colspan="14" style="padding:7px 10px;">
                                 <img src="{{ $empAvatarSrc }}" style="width:32px; height:32px; border-radius:16px; border:2px solid #ffffff; vertical-align:middle;" />
@@ -168,18 +274,12 @@
                         @php $dateSeq = 0; @endphp
                         @foreach ($empDaily as $d)
                             @php
-                                $sumDelay     += (int)   ($d['late_minutes']    ?? 0);
+                                $sumDelay     += (int)   ($d['late_minutes']     ?? 0);
                                 $sumOT        += (int)   ($d['overtime_minutes'] ?? 0);
                                 $sumWorkMin   += (int)   round((float) ($d['total_work_hours'] ?? 0) * 60);
                                 $dateStr       = (string) ($d['date'] ?? '');
                                 $dayNum        = $dateStr ? date('N', strtotime($dateStr)) : '';
                                 $dayLabel      = $dayNum !== '' ? ($dayNames[(string) $dayNum] ?? '') : '';
-                                $statusColor   = match($d['display_status'] ?? '') {
-                                    'present' => '#16a34a',
-                                    'absent'  => '#dc2626',
-                                    'holiday' => '#d97706',
-                                    default   => '#94a3b8',
-                                };
                                 $rowBg         = match($d['display_status'] ?? '') {
                                     'present' => '#f0fdf4',
                                     'absent'  => '#fef2f2',
@@ -197,32 +297,27 @@
                                     $taskRow = $taskSessions[$ri] ?? null;
                                 @endphp
                                 <tr style="background-color:{{ $rowBg }};">
-                                    {{-- [1]–[7] Date-level cols — rowspan across all session rows for this date --}}
                                     @if ($ri === 0)
                                         <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dateSeq }}</td>
-                                        <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dateStr }}</td>
+                                        <td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $dateStr }}</td>
                                         <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $dayLabel }}</td>
                                         <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>
                                         <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>
-                                        <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>
-                                        <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $fmtTime($d['end_time'])   ?: '-' }}</td>
+                                        <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>
+                                        <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time'])   ?: '-' }}</td>
                                     @endif
-                                    {{-- [8][9] Actual clock-in / clock-out — one per session row --}}
-                                    <td class="num">{{ $attRow ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>
-                                    <td class="num">{{ $attRow ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>
-                                    {{-- [10][11] Task time in / out — one per session row --}}
-                                    <td class="num">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>
-                                    <td class="num">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>
-                                    {{-- [12][13][14] Totals per date — rowspan across session rows --}}
+                                    <td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>
+                                    <td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>
+                                    <td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>
+                                    <td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>
                                     @if ($ri === 0)
-                                        <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>
-                                        <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>
-                                        <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>
+                                        <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>
+                                        <td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>
+                                        <td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>
                                     @endif
                                 </tr>
                             @endfor
                         @endforeach
-                        {{-- Per-employee totals row --}}
                         <tr class="tot-row">
                             <td colspan="11" style="text-align:{{ $align }};">{{ $lang === 'ar' ? 'الإجمالي' : 'Total' }}</td>
                             <td class="num">{{ $toHoursMinutes($sumDelay) }}</td>
@@ -233,6 +328,7 @@
                 </table>
                 @endif
             @endforeach
+            @endif
 
         @else
             {{-- ═══ Other report types: compact summary table ═══ --}}
