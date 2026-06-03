@@ -11,6 +11,7 @@ use Modules\Shared\Privilege\Models\Privilege;
 use Modules\Shared\Privilege\Presenters\PrivilegePresenter;
 use Modules\Shared\TypeAllowance\Models\TypeAllowance;
 use Modules\Shared\TypePrivilege\Models\TypePrivilege;
+use Modules\UserInfo\UserPrivilege\Filters\UserPrivilegeFilter;
 use Modules\UserInfo\UserPrivilege\Models\UserPrivilege;
 use Modules\UserInfo\UserPrivilege\Presenters\UserPrivilegePresenter;
 use Modules\MedicalInsurance\Models\MedicalInsurance;
@@ -242,6 +243,54 @@ class UserPrivilegeHealthInsuranceTest extends TestCase
 
         // Should not include card_fields when privilege is not set
         $this->assertArrayNotHasKey('card_fields', $data);
+    }
+
+    // ---------------------------------------------------------------
+    // List request: type filter validation
+    // ---------------------------------------------------------------
+
+    public function test_list_request_accepts_health_insurance_type_filter(): void
+    {
+        $request = new \Modules\UserInfo\UserPrivilege\Requests\GetUserPrivilegeListRequest();
+        $rules = $request->rules();
+
+        $this->assertArrayHasKey('type', $rules);
+        $this->assertInstanceOf(\Illuminate\Validation\Rules\In::class, $rules['type'][2]);
+    }
+
+    public function test_user_privilege_filter_supports_privilege_type(): void
+    {
+        $filterClass = \Modules\UserInfo\UserPrivilege\Filters\UserPrivilegeFilter::class;
+
+        $this->assertTrue(method_exists($filterClass, 'type'));
+    }
+
+    public function test_user_privilege_filter_includes_medical_insurance_records_for_health_insurance_type(): void
+    {
+        $filterClass = \Modules\UserInfo\UserPrivilege\Filters\UserPrivilegeFilter::class;
+        $source = file_get_contents((new \ReflectionClass($filterClass))->getFileName());
+
+        $this->assertStringContainsString('orWhereNotNull(\'medical_insurance_id\')', $source);
+        $this->assertStringContainsString('TYPE_HEALTH_INSURANCE', $source);
+    }
+
+    public function test_list_request_accepts_type_privilege_filter_values(): void
+    {
+        $request = new \Modules\UserInfo\UserPrivilege\Requests\GetUserPrivilegeListRequest();
+        $rules = $request->rules();
+
+        $this->assertArrayHasKey('type_privilege', $rules);
+        $this->assertInstanceOf(\Illuminate\Validation\Rules\In::class, $rules['type_privilege'][2]);
+        $this->assertContains('Individual', UserPrivilegeFilter::TYPE_PRIVILEGE_FILTER_VALUES);
+        $this->assertContains('Family', UserPrivilegeFilter::TYPE_PRIVILEGE_FILTER_VALUES);
+    }
+
+    public function test_user_privilege_filter_supports_type_privilege(): void
+    {
+        $filterClass = \Modules\UserInfo\UserPrivilege\Filters\UserPrivilegeFilter::class;
+
+        $this->assertTrue(method_exists($filterClass, 'typePrivilege'));
+        $this->assertTrue(method_exists($filterClass, 'typePrivilegeId'));
     }
 
     // ---------------------------------------------------------------

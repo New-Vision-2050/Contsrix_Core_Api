@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\User\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
+use Modules\Shared\Privilege\Services\PrivilegeCardConfigService;
 
 class UserFilter extends SearchModelFilter
 {
@@ -61,6 +62,21 @@ class UserFilter extends SearchModelFilter
     {
        return $this->whereHas('professionalData', function ($query) use ($constraintId) {
             $query->where('attendance_constraint_id',$constraintId);
+        });
+    }
+
+    public function typeAllowanceCode(string $code)
+    {
+        return $this->whereHas('userPrivileges', function ($query) use ($code) {
+            $query->where('company_id', tenant('id'))
+                ->where('type_allowance_code', $code)
+                ->where(function ($privilegeQuery) {
+                    $privilegeQuery
+                        ->whereHas('privilege', function ($typeQuery) {
+                            $typeQuery->where('type', PrivilegeCardConfigService::TYPE_HEALTH_INSURANCE);
+                        })
+                        ->orWhereNotNull('medical_insurance_id');
+                });
         });
     }
     // public function startDate($date)
