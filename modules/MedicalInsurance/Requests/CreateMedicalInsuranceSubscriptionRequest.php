@@ -19,6 +19,7 @@ class CreateMedicalInsuranceSubscriptionRequest extends FormRequest
             'subscriptions.*.medical_insurance_category_id'     => 'nullable|uuid|exists:medical_insurance_categories,id',
             'subscriptions.*.amount'                            => 'required|numeric|min:0',
             'subscriptions.*.subscription_no'                   => 'required|string|max:255|distinct|unique:medical_insurance_subscriptions,subscription_no',
+            'subscriptions.*.subscription_type'                 => 'required|string|in:individual,family',
             'subscriptions.*.status'                            => 'nullable|integer|in:-1,0,1',
             'subscriptions.*.family_members'                    => 'nullable|array',
             'subscriptions.*.family_members.*.name'             => 'required_with:subscriptions.*.family_members|string|max:255',
@@ -27,6 +28,45 @@ class CreateMedicalInsuranceSubscriptionRequest extends FormRequest
             'subscriptions.*.family_members.*.amount'           => 'required_with:subscriptions.*.family_members|numeric|min:0',
             'subscriptions.*.family_members.*.subscription_no'  => 'nullable|string|max:255',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            foreach ($this->get('subscriptions', []) as $index => $sub) {
+                $subscriptionType = $sub['subscription_type'] ?? 'individual';
+                $hasFamilyMembers = !empty($sub['family_members']);
+
+                // individual cannot have dependents
+                if ($subscriptionType === 'individual' && $hasFamilyMembers) {
+                    $validator->errors()->add(
+                        "subscriptions.{$index}.family_members",
+                        __('Individual subscriptions cannot have family members.')
+                    );
+                }
+
+                // Reject users with fixed (constant) insurance type
+                if (!empty($sub['user_id'])) {
+                    $hasFixedPrivilege = \Modules\UserInfo\UserPrivilege\Models\UserPrivilege::where('global_id', function ($q) use ($sub) {
+                        $q->select('global_company_user_id')
+                            ->from('users')
+                            ->where('id', $sub['user_id']);
+                    })
+                    ->where('type_allowance_code', 'constant')
+                    ->exists();
+
+                    if ($hasFixedPrivilege) {
+                        $validator->errors()->add(
+                            "subscriptions.{$index}.user_id",
+                            __('Employees with fixed insurance type cannot be added to medical insurance.')
+                        );
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -53,6 +93,7 @@ class CreateMedicalInsuranceSubscriptionRequest extends FormRequest
                 subscriptionNo: $sub['subscription_no'],
                 medicalInsuranceCategoryId: $sub['medical_insurance_category_id'] ?? null,
                 status: (int) ($sub['status'] ?? 1),
+                subscriptionType: $sub['subscription_type'] ?? 'individual',
                 familyMembers: $familyMembers,
             );
         }, $this->get('subscriptions', []));

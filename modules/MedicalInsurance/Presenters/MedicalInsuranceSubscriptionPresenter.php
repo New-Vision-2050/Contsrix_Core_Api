@@ -25,6 +25,7 @@ class MedicalInsuranceSubscriptionPresenter extends AbstractPresenter
             'medical_insurance_category_id' => $this->subscription->medical_insurance_category_id,
             'amount'                        => $this->subscription->amount,
             'subscription_no'               => $this->subscription->subscription_no,
+            'subscription_type'             => $this->subscription->subscription_type,
             'status'                        => $this->subscription->status,
             'user'                          => $this->subscription->user ? [
                 'id'   => $this->subscription->user->id,

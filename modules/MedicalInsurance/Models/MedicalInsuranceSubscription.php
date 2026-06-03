@@ -34,6 +34,7 @@ class MedicalInsuranceSubscription extends Model
         'amount',
         'subscription_no',
         'status',
+        'subscription_type',
     ];
 
     protected $casts = [
@@ -44,6 +45,7 @@ class MedicalInsuranceSubscription extends Model
         'company_id'                    => 'string',
         'amount'                        => 'decimal:2',
         'status'                        => 'integer',
+        'subscription_type'             => 'string',
     ];
 
     public function getTenantIdColumn(): string
