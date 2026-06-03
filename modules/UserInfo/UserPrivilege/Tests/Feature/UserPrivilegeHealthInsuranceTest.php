@@ -245,6 +245,35 @@ class UserPrivilegeHealthInsuranceTest extends TestCase
     }
 
     // ---------------------------------------------------------------
+    // List request: type filter validation
+    // ---------------------------------------------------------------
+
+    public function test_list_request_accepts_health_insurance_type_filter(): void
+    {
+        $request = new \Modules\UserInfo\UserPrivilege\Requests\GetUserPrivilegeListRequest();
+        $rules = $request->rules();
+
+        $this->assertArrayHasKey('type', $rules);
+        $this->assertInstanceOf(\Illuminate\Validation\Rules\In::class, $rules['type'][2]);
+    }
+
+    public function test_user_privilege_filter_supports_privilege_type(): void
+    {
+        $filterClass = \Modules\UserInfo\UserPrivilege\Filters\UserPrivilegeFilter::class;
+
+        $this->assertTrue(method_exists($filterClass, 'type'));
+    }
+
+    public function test_user_privilege_filter_includes_medical_insurance_records_for_health_insurance_type(): void
+    {
+        $filterClass = \Modules\UserInfo\UserPrivilege\Filters\UserPrivilegeFilter::class;
+        $source = file_get_contents((new \ReflectionClass($filterClass))->getFileName());
+
+        $this->assertStringContainsString('orWhereNotNull(\'medical_insurance_id\')', $source);
+        $this->assertStringContainsString('TYPE_HEALTH_INSURANCE', $source);
+    }
+
+    // ---------------------------------------------------------------
     // Validation: percentage type_allowance_code is rejected
     // ---------------------------------------------------------------
 
