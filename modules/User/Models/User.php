@@ -30,6 +30,7 @@ use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
+use Modules\UserInfo\UserPrivilege\Models\UserPrivilege;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -345,6 +346,11 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'user_id',
             'file_id'
         )->withTimestamps();
+    }
+
+    public function userPrivileges()
+    {
+        return $this->hasMany(UserPrivilege::class, 'global_id', 'global_company_user_id');
     }
 
     public function medicalInsurances()
