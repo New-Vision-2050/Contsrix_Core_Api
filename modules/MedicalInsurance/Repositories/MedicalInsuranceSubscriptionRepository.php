@@ -57,8 +57,7 @@ class MedicalInsuranceSubscriptionRepository extends BaseRepository
             $q->select('u.id')
                 ->from('users as u')
                 ->join('user_privileges as up', 'u.global_company_user_id', '=', 'up.global_id')
-                ->where('up.type_allowance_code', 'constant')
-                ->whereNull('up.deleted_at');
+                ->where('up.type_allowance_code', 'constant');
         });
 
         if (!empty($filters['user_id'])) {
