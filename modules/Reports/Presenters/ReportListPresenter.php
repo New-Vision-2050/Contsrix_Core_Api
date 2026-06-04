@@ -19,6 +19,8 @@ class ReportListPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $branchName = $this->getBranchName();
+        
         return [
             'id'           => $this->report->id,
             'name'         => $this->report->name,
@@ -30,8 +32,27 @@ class ReportListPresenter extends AbstractPresenter
             'month'        => $this->report->month,
             'export_format'=> $this->report->export_format,
             'status'       => $this->report->status,
+            'branch'       => $branchName,
             'created_at'   => optional($this->report->created_at)->toDateTimeString(),
             'generated_at' => optional($this->report->generated_at)->toDateTimeString(),
         ];
+    }
+
+    /**
+     * Get branch name from config or return "لم يتم الاختيار" if no branch selected
+     */
+    private function getBranchName(): string
+    {
+        $config = $this->report->config ?? [];
+        $branchId = $config['step2']['branch_id'] ?? null;
+
+        if (!$branchId) {
+            return 'لم يتم الاختيار';
+        }
+
+        // Try to get branch name from ManagementHierarchy
+        $branch = \Modules\ManagementHierarchy\Models\ManagementHierarchy::find($branchId);
+        
+        return $branch ? $branch->name : 'لم يتم الاختيار';
     }
 }
