@@ -29,7 +29,7 @@ class InboxCountsUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('inbox.' . $this->userId),
+            new Channel('employee-task.inbox-counts.' . $this->userId),
         ];
     }
 
