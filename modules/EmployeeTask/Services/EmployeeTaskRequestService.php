@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Events\EmployeeTaskNotification;
+use Modules\EmployeeTask\Events\InboxCountsUpdated;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
@@ -20,6 +21,7 @@ class EmployeeTaskRequestService
     public function __construct(
         private readonly EmployeeTaskRepository    $repository,
         private readonly ProcedureWorkflowService  $workflow,
+        private readonly EmployeeTaskExtensionService $extensionService,
     ) {}
 
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
@@ -52,6 +54,9 @@ class EmployeeTaskRequestService
 
         // Broadcast notification to action takers
         $this->broadcastTaskNotification($task, $firstStep);
+
+        // Broadcast inbox counts update
+        $this->broadcastInboxCounts($firstStep);
 
         return $task;
     }
@@ -208,5 +213,33 @@ class EmployeeTaskRequestService
         ]);
 
         event(new EmployeeTaskNotification($task, $currentStep));
+    }
+
+    public function getInboxCountsForAdmin(string $adminId, array $filters = []): array
+    {
+        $tasks     = $this->inboxAll($adminId, $filters)->count();
+        $extensions = $this->extensionService->listInboxAllForAdmin($adminId, $filters)->count();
+        $approvals = $this->inboxAllApprovals($adminId, $filters)->count();
+
+        return [
+            'pending_tasks'      => $tasks,
+            'pending_extensions' => $extensions,
+            'pending_approvals'  => $approvals,
+            'total'              => $tasks + $extensions + $approvals,
+        ];
+    }
+
+    private function broadcastInboxCounts(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $filters = []): void
+    {
+        foreach ($step->actionTakers as $taker) {
+            $counts = $this->getInboxCountsForAdmin($taker->user_id, $filters);
+            event(new InboxCountsUpdated(
+                userId: $taker->user_id,
+                pendingTasks: $counts['pending_tasks'],
+                pendingExtensions: $counts['pending_extensions'],
+                pendingApprovals: $counts['pending_approvals'],
+                total: $counts['total'],
+            ));
+        }
     }
 }
