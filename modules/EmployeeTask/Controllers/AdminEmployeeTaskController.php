@@ -237,4 +237,21 @@ class AdminEmployeeTaskController extends Controller
             return Json::error($e->getMessage(), $e->getCode() ?: 422);
         }
     }
+
+    public function inboxCounts(): JsonResponse
+    {
+        $adminId = (string) Auth::id();
+        $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to']);
+
+        $taskCount     = $this->requestService->inboxAll($adminId, $filters)->count();
+        $extCount      = $this->extensionService->listInboxAllForAdmin($adminId, $filters)->count();
+        $approvalCount = $this->requestService->inboxAllApprovals($adminId, $filters)->count();
+
+        return Json::item([
+            'pending_tasks'      => $taskCount,
+            'pending_extensions' => $extCount,
+            'pending_approvals'  => $approvalCount,
+            'total'              => $taskCount + $extCount + $approvalCount,
+        ], message: 'Inbox counts retrieved successfully');
+    }
 }
