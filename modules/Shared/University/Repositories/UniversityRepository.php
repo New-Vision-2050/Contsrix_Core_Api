@@ -22,7 +22,7 @@ class UniversityRepository extends BaseRepository
 
     public function getUniversityList(?int $page, ?int $perPage = 10): array
     {
-        $items = $this->model->with('country')->orderBy('id', 'asc')->paginate($perPage, ['*'], 'page', $page);
+        $items = $this->model->with('country')->orderBy('id', 'asc')->filter(request()->all())->paginate($perPage, ['*'], 'page', $page);
 
         return [
             'data' => $items->items(),
