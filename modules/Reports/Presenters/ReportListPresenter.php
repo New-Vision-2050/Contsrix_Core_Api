@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Reports\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Reports\Models\Report;
 
 /**
@@ -20,7 +21,7 @@ class ReportListPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         $branchName = $this->getBranchName();
-        
+
         return [
             'id'           => $this->report->id,
             'name'         => $this->report->name,
@@ -51,8 +52,8 @@ class ReportListPresenter extends AbstractPresenter
         }
 
         // Try to get branch name from ManagementHierarchy
-        $branch = \Modules\ManagementHierarchy\Models\ManagementHierarchy::find($branchId);
-        
+        $branch = ManagementHierarchy::find($branchId);
+
         return $branch ? $branch->name : 'لم يتم الاختيار';
     }
 }
