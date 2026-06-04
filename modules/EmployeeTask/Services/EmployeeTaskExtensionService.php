@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\DTO\CreateExtensionRequestDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
+use Modules\EmployeeTask\Events\EmployeeTaskNotification;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
@@ -75,6 +76,12 @@ final class EmployeeTaskExtensionService
 
             $extension = EmployeeTaskExtensionRequest::query()->create($data);
             $task->update(['last_extension_status' => 'extension_pending']);
+
+            // Broadcast notification to action takers
+            if ($task->procedure_setting_id !== null) {
+                $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
+                $this->broadcastTaskNotification($task, $firstStep);
+            }
 
             return $extension;
         });
@@ -157,5 +164,22 @@ final class EmployeeTaskExtensionService
         }
 
         return $extension;
+    }
+
+    /**
+     * Broadcast task notification to action takers in real-time.
+     * Follows the same pattern as ResourceShareService::broadcastToSharedCompany().
+     */
+    private function broadcastTaskNotification(\Modules\EmployeeTask\Models\EmployeeTaskRequest $task, \Modules\ProcedureSetting\Models\ProcedureSettingStep $currentStep): void
+    {
+        $task->load(['user']);
+        $currentStep->load(['actionTakers.user']);
+
+        \Log::info('Broadcasting EmployeeTaskNotification', [
+            'task_id' => $task->id,
+            'step_id' => $currentStep->id,
+        ]);
+
+        event(new EmployeeTaskNotification($task, $currentStep));
     }
 }

@@ -8,6 +8,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
+use Modules\EmployeeTask\Events\EmployeeTaskNotification;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
@@ -47,7 +48,12 @@ class EmployeeTaskRequestService
         $data['status']                    = EmployeeTaskStatus::Pending->value;
         $data['approval_responsible_id']   = $preview['action_takers'][0]['user_id'] ?? null;
 
-        return $this->repository->create($data);
+        $task = $this->repository->create($data);
+
+        // Broadcast notification to action takers
+        $this->broadcastTaskNotification($task, $firstStep);
+
+        return $task;
     }
 
     public function list(string $userId, array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -188,5 +194,19 @@ class EmployeeTaskRequestService
             'cancelled_at'         => now(),
             'cancellation_reason'  => $reason,
         ]);
+    }
+
+
+    private function broadcastTaskNotification(EmployeeTaskRequest $task, \Modules\ProcedureSetting\Models\ProcedureSettingStep $currentStep): void
+    {
+        $task->load(['user']);
+        $currentStep->load(['actionTakers.user']);
+
+        \Log::info('Broadcasting EmployeeTaskNotification', [
+            'task_id' => $task->id,
+            'step_id' => $currentStep->id,
+        ]);
+
+        event(new EmployeeTaskNotification($task, $currentStep));
     }
 }

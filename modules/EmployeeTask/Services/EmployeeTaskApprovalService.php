@@ -7,8 +7,10 @@ namespace Modules\EmployeeTask\Services;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
+use Modules\EmployeeTask\Events\EmployeeTaskNotification;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
+use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -90,6 +92,9 @@ final class EmployeeTaskApprovalService
 
             $approval = EmployeeTaskApprovalRequest::query()->create($data);
             $this->handleFileUpload($approval, $file);
+
+            // Broadcast notification to action takers
+            $this->broadcastTaskNotification($task, $firstStep);
 
             return $approval->load('media');
         });
@@ -205,5 +210,22 @@ final class EmployeeTaskApprovalService
             'attachments',
             'public',
         );
+    }
+
+    /**
+     * Broadcast task notification to action takers in real-time.
+     * Follows the same pattern as ResourceShareService::broadcastToSharedCompany().
+     */
+    private function broadcastTaskNotification(EmployeeTaskRequest $task, \Modules\ProcedureSetting\Models\ProcedureSettingStep $currentStep): void
+    {
+        $task->load(['user']);
+        $currentStep->load(['actionTakers.user']);
+
+        \Log::info('Broadcasting EmployeeTaskNotification', [
+            'task_id' => $task->id,
+            'step_id' => $currentStep->id,
+        ]);
+
+        event(new EmployeeTaskNotification($task, $currentStep));
     }
 }
