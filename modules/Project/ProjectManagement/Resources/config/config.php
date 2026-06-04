@@ -55,19 +55,19 @@ return [
         // ============================================================
         // Attachment Cycle Settings Permissions
         // ============================================================
-        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_VIEW' => 'project-management.project-management*attachment-cycle-settings.view',
-        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_LIST' => 'project-management.project-management*attachment-cycle-settings.list',
-        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_CREATE' => 'project-management.project-management*attachment-cycle-settings.create',
-        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_UPDATE' => 'project-management.project-management*attachment-cycle-settings.update',
-        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_DELETE' => 'project-management.project-management*attachment-cycle-settings.delete',
+//        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_VIEW' => 'project-management.project-management*attachment-cycle-settings.view',
+//        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_LIST' => 'project-management.project-management*attachment-cycle-settings.list',
+//        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_CREATE' => 'project-management.project-management*attachment-cycle-settings.create',
+//        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_UPDATE' => 'project-management.project-management*attachment-cycle-settings.update',
+//        'PROJECT_ATTACHMENT_CYCLE_SETTINGS_DELETE' => 'project-management.project-management*attachment-cycle-settings.delete',
 
         // ============================================================
         // Archive Library Settings Permissions
         // ============================================================
-        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_VIEW' => 'project-management.project-management*archive-library-settings.view',
-        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_LIST' => 'project-management.project-management*archive-library-settings.list',
-        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_CREATE' => 'project-management.project-management*archive-library-settings.create',
-        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_UPDATE' => 'project-management.project-management*archive-library-settings.update',
-        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_DELETE' => 'project-management.project-management*archive-library-settings.delete',
+//        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_VIEW' => 'project-management.project-management*archive-library-settings.view',
+//        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_LIST' => 'project-management.project-management*archive-library-settings.list',
+//        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_CREATE' => 'project-management.project-management*archive-library-settings.create',
+//        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_UPDATE' => 'project-management.project-management*archive-library-settings.update',
+//        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_DELETE' => 'project-management.project-management*archive-library-settings.delete',
     ]
 ];

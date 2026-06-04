@@ -5,20 +5,20 @@ use Modules\ArchiveLibrary\Folder\Controllers\FolderController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [FolderController::class, 'showFolders'])
-        ->permission(Permission::FOLDER_LIST());
+    Route::get('/', [FolderController::class, 'showFolders']);
+//        ->permission(Permission::FOLDER_LIST());
 
-    Route::get('/get-all-folders', [FolderController::class, 'index'])
-        ->permission(Permission::FOLDER_LIST());
+    Route::get('/get-all-folders', [FolderController::class, 'index']);
+//        ->permission(Permission::FOLDER_LIST());
 
-    Route::get('/contents', [FolderController::class, 'getFoldersAndFiles'])
-        ->permission(Permission::FOLDER_LIST());
+    Route::get('/contents', [FolderController::class, 'getFoldersAndFiles']);
+//        ->permission(Permission::FOLDER_LIST());
 
-    Route::post('/', [FolderController::class, 'store'])
-        ->permission(Permission::FOLDER_CREATE());
+    Route::post('/', [FolderController::class, 'store']);
+//        ->permission(Permission::FOLDER_CREATE());
 
-    Route::get('/child-folders/{id}', [FolderController::class, 'getChildFolders'])
-        ->permission(Permission::FOLDER_LIST());
+    Route::get('/child-folders/{id}', [FolderController::class, 'getChildFolders']);
+//        ->permission(Permission::FOLDER_LIST());
 
     Route::post('/file', [FolderController::class, 'file']);
 //        ->permission(Permission::FOLDER_ADD_FILE());
