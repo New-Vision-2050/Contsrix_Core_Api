@@ -21,7 +21,6 @@ class EmployeeTaskRequestService
     public function __construct(
         private readonly EmployeeTaskRepository    $repository,
         private readonly ProcedureWorkflowService  $workflow,
-        private readonly EmployeeTaskExtensionService $extensionService,
     ) {}
 
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
@@ -217,20 +216,25 @@ class EmployeeTaskRequestService
 
     public function getInboxCountsForAdmin(string $adminId, array $filters = []): array
     {
-        $tasks     = $this->inboxAll($adminId, $filters)->count();
-        $extensions = $this->extensionService->listInboxAllForAdmin($adminId, $filters)->count();
-        $approvals = $this->inboxAllApprovals($adminId, $filters)->count();
+        $tasks      = $this->repository->allInboxForAdmin($adminId, $filters)->count();
+        $extensions = $this->repository->allExtensionInboxForAdmin($adminId, $filters)->count();
+        $approvals  = $this->repository->allApprovalInboxForAdmin($adminId, $filters)->count();
 
         return [
             'pending_tasks'      => $tasks,
             'pending_extensions' => $extensions,
             'pending_approvals'  => $approvals,
-            'total'              => $tasks + $extensions + $approvals,
+            'total'              => (int) ($tasks + $extensions + $approvals),
         ];
     }
 
-    private function broadcastInboxCounts(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $filters = []): void
+    public function broadcastInboxCounts(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $filters = []): void
     {
+        \Log::info('Broadcasting InboxCountsUpdated', [
+            'step_id' => $step->id,
+            'action_takers_count' => $step->actionTakers->count(),
+        ]);
+
         foreach ($step->actionTakers as $taker) {
             $counts = $this->getInboxCountsForAdmin($taker->user_id, $filters);
             event(new InboxCountsUpdated(
