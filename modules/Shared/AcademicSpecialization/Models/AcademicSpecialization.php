@@ -26,7 +26,9 @@ class AcademicSpecialization extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'name',
         'code',
+        'academic_qualification_id',
     ];
 
     protected $casts = [
