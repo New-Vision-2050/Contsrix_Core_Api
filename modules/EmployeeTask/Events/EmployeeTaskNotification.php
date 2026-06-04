@@ -29,7 +29,7 @@ class EmployeeTaskNotification implements ShouldBroadcast
 
         // Extract channels from currentStep.actionTakers
         foreach ($this->currentStep->actionTakers as $actionTaker) {
-            $channels[] = new Channel('inbox.' . $actionTaker->user_id);
+            $channels[] = new Channel('employee-task.notification.' . $actionTaker->user_id);
         }
 
         return $channels;

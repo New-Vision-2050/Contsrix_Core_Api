@@ -13,6 +13,9 @@ Broadcast::channel('inbox.{userId}', function ($user, $userId) {
 Broadcast::channel('employee-task.inbox-counts.{userId}', function ($user, $userId) {
     return (string) $user->id === (string) $userId;
 });
+Broadcast::channel('employee-task.notification.{userId}', function ($user, $userId) {
+    return (string) $user->id === (string) $userId;
+});
 
 //// Allow users to listen to their company's channel
 //Broadcast::channel('company.{companyId}', function ($user, $companyId) {
