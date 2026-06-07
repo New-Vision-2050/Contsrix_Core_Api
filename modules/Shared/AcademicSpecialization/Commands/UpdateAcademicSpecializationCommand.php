@@ -11,7 +11,6 @@ class UpdateAcademicSpecializationCommand
     public function __construct(
         private UuidInterface $id,
         private ?array $name = null,
-        private ?string $code = null,
         private ?string $academicQualificationId = null,
     ) {
     }
@@ -26,11 +25,6 @@ class UpdateAcademicSpecializationCommand
         return $this->name;
     }
 
-    public function getCode(): ?string
-    {
-        return $this->code;
-    }
-
     public function getAcademicQualificationId(): ?string
     {
         return $this->academicQualificationId;
@@ -38,10 +32,9 @@ class UpdateAcademicSpecializationCommand
 
     public function toArray(): array
     {
-        return array_filter([
+        return [
             'name' => $this->name,
-            'code' => $this->code,
             'academic_qualification_id' => $this->academicQualificationId,
-        ], fn($value) => $value !== null);
+        ];
     }
 }
