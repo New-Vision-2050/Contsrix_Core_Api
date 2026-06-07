@@ -58,7 +58,9 @@ class CreateAttendanceConstraintRequest extends FormRequest
                     ->whereNull('deleted_at'),
             ],
             'constraint_config' => 'nullable|array',
-            'max_over_time' => ['nullable'],
+            'max_over_time' => ['nullable', 'integer', 'min:0'],
+            'out_zone_minutes' => ['nullable', 'integer', 'min:0'],
+            'max_working_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'is_active' => 'boolean',
             'inherit_from_parent' => ['boolean'],
             'priority' => ['nullable', 'integer', 'min:1', 'max:10'],
@@ -135,6 +137,8 @@ class CreateAttendanceConstraintRequest extends FormRequest
             effective_from: $validated['start_date'] ?? null,
             effective_to: $validated['end_date'] ?? null,
             max_over_time: isset($validated['max_over_time']) ? (int) $validated['max_over_time'] : null,
+            out_zone_minutes: isset($validated['out_zone_minutes']) ? (int) $validated['out_zone_minutes'] : null,
+            max_working_hours: isset($validated['max_working_hours']) ? (int) $validated['max_working_hours'] : 9,
         );
     }
 }

@@ -22,6 +22,8 @@ class UpdateAttendanceConstraintDTO
         public ?string $effective_from = null,
         public ?string $effective_to = null,
         public ?int $max_over_time = null,
+        public ?int $out_zone_minutes = null,
+        public ?int $max_working_hours = null,
     ) {}
 
     public function toArray(): array
@@ -69,6 +71,12 @@ class UpdateAttendanceConstraintDTO
         }
         if ($this->max_over_time !== null) {
             $data['max_over_time'] = $this->max_over_time;
+        }
+        if ($this->out_zone_minutes !== null) {
+            $data['out_zone_minutes'] = $this->out_zone_minutes;
+        }
+        if ($this->max_working_hours !== null) {
+            $data['max_working_hours'] = $this->max_working_hours;
         }
 
         return $data;
