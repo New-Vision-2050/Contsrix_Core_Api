@@ -37,6 +37,7 @@ class ProcedureSetting extends Model
         'escalation_management_hierarchy_id',
         'company_id',
         'work_flow_id',
+        'sort_order',
     ];
 
     protected $casts = [
@@ -46,6 +47,7 @@ class ProcedureSetting extends Model
         'deadline_hours' => 'integer',
         'escalation_management_hierarchy_id' => 'integer',
         'work_flow_id'                       => 'string',
+        'sort_order'                         => 'integer',
     ];
 
     public function getRelationshipToPrimaryModel(): string

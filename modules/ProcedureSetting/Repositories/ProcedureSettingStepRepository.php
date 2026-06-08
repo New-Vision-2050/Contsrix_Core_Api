@@ -7,6 +7,7 @@ namespace Modules\ProcedureSetting\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Illuminate\Support\Facades\DB;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedManagementHierarchy;
 
@@ -49,17 +50,23 @@ class ProcedureSettingStepRepository extends BaseRepository
     {
         [$syncAction, $syncConcerned, $actionIds, $concernedIds, $payload] = $this->splitUserSyncPayload($data);
 
-        $model = $this->create($payload);
-        $model->refresh();
+        return DB::transaction(function () use ($syncAction, $syncConcerned, $actionIds, $concernedIds, $payload) {
+            if (empty($payload['step_order']) && !empty($payload['procedure_setting_id'])) {
+                $payload['step_order'] = $this->getNextStepOrder((string) $payload['procedure_setting_id']);
+            }
 
-        if ($syncAction) {
-            $this->replaceActionTakers($model, (array) $actionIds);
-        }
-        if ($syncConcerned) {
-            $this->replaceConcernedManagementHierarchies($model, (array) $concernedIds);
-        }
+            $model = $this->create($payload);
+            $model->refresh();
 
-        return $model->load(self::STEP_WITH);
+            if ($syncAction) {
+                $this->replaceActionTakers($model, (array) $actionIds);
+            }
+            if ($syncConcerned) {
+                $this->replaceConcernedManagementHierarchies($model, (array) $concernedIds);
+            }
+
+            return $model->load(self::STEP_WITH);
+        });
     }
 
     public function updateProcedureSettingStep(int $id, array $data): bool
@@ -131,5 +138,15 @@ class ProcedureSettingStepRepository extends BaseRepository
                 'company_id'                => $step->company_id,
             ]);
         }
+    }
+
+
+    private function getNextStepOrder(string $procedureSettingId): int
+    {
+        $max = (int) $this->model->newQuery()
+            ->where('procedure_setting_id', $procedureSettingId)
+            ->max('step_order');
+
+        return $max + 1;
     }
 }
