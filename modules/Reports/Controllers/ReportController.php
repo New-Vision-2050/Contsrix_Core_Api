@@ -29,14 +29,8 @@ class ReportController extends Controller
         $page    = (int) $request->get('page', 1);
         $perPage = (int) $request->get('per_page', 10);
 
-        $list   = $this->reportService->list($page, $perPage);
-        $offset = ($page - 1) * $perPage;
-        $items  = ReportListPresenter::collection($list['data']);
-
-        foreach ($items as $index => &$item) {
-            $item['serial_number'] = $offset + $index + 1;
-        }
-        unset($item);
+        $list  = $this->reportService->list($page, $perPage);
+        $items = ReportListPresenter::collection($list['data']);
 
         return Json::items(
             $items,
