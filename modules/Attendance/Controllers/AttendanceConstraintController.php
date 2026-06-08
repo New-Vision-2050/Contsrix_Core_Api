@@ -60,7 +60,7 @@ class AttendanceConstraintController extends Controller
         );
 
 
-       $presentedData = collect($result['data'])->map(function ($constraint) {
+        $presentedData = collect($result['data'])->map(function ($constraint) {
             return (new ConstraintPresenter($constraint))->present();
         });
 
@@ -84,7 +84,7 @@ class AttendanceConstraintController extends Controller
         );
 
 
-       $presentedData = collect($result['data'])->map(function ($constraint) {
+        $presentedData = collect($result['data'])->map(function ($constraint) {
             return (new ConstraintListPresenter($constraint))->present();
         });
 
@@ -183,7 +183,7 @@ class AttendanceConstraintController extends Controller
 
         if ($result['pagination']) {
             return Json::items(
-                                    $result['data'],
+                $result['data'],
                 extraItems:         $meta,
                 paginationSettings: $result['pagination'],
                 message:            'Violations retrieved successfully'
@@ -338,7 +338,7 @@ class AttendanceConstraintController extends Controller
 
         if ($result['pagination']) {
             return Json::items(
-                                    $result['data'],
+                $result['data'],
                 paginationSettings: $result['pagination'],
                 message:            'Violations retrieved successfully'
             );
@@ -353,7 +353,7 @@ class AttendanceConstraintController extends Controller
 
         $result = $this->constraintService->getTodaysWorkRulesForUser($user);
 
-         return Json::item($result, message: 'Violations retrieved successfully');
+        return Json::item($result, message: 'Violations retrieved successfully');
     }
 
     /**
@@ -987,6 +987,57 @@ class AttendanceConstraintController extends Controller
             'mode'            => $request->input('mode'),
             'weekly_schedule' => $weeklySchedule,
         ], message: 'Shifts assigned successfully');
+    }
+
+    /**
+     * Get constraint-level rules for a given constraint.
+     */
+    public function getRules(string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $config   = $constraint->constraint_config ?? [];
+        $allDays  = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        $schedule = $config['time_rules']['weekly_schedule'] ?? [];
+
+        // Extract per-day rules from the first enabled day (they are applied uniformly by updateRules).
+        $latenessMinutes      = null;
+        $earlyClockInMinutes  = null;
+        $workingHours         = null;
+
+        foreach ($allDays as $day) {
+            $dayData = $schedule[$day] ?? [];
+            if (!($dayData['enabled'] ?? false)) {
+                continue;
+            }
+
+            if ($latenessMinutes === null && isset($dayData['lateness_rules']['lateness_period'])) {
+                $latenessMinutes = (int) $dayData['lateness_rules']['lateness_period'];
+            }
+
+            if ($earlyClockInMinutes === null && isset($dayData['early_clock_in_rules']['allowed_minutes_before'])) {
+                $earlyClockInMinutes = (int) $dayData['early_clock_in_rules']['allowed_minutes_before'];
+            }
+
+            if ($workingHours === null && isset($dayData['total_work_hours'])) {
+                $workingHours = (float) $dayData['total_work_hours'];
+            }
+
+            if ($latenessMinutes !== null && $earlyClockInMinutes !== null && $workingHours !== null) {
+                break;
+            }
+        }
+
+        return Json::item([
+            'constraint_id'          => $constraint->id,
+            'max_over_time'          => $constraint->max_over_time,
+            'out_zone_minutes'       => $constraint->out_zone_minutes,
+            'max_working_hours'      => $constraint->max_working_hours,
+            'out_zone_rules'         => $constraint->out_zone_rules,
+            'lateness_minutes'       => $latenessMinutes,
+            'early_clock_in_minutes' => $earlyClockInMinutes,
+            'working_hours'          => $workingHours,
+        ], message: 'Constraint rules retrieved successfully');
     }
 
     /**
