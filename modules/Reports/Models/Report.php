@@ -20,6 +20,7 @@ use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 /**
  * @property string $id
+ * @property string|null $serial_number
  * @property string $company_id
  * @property string|null $created_by
  * @property string|null $template_id
@@ -62,6 +63,7 @@ class Report extends Model implements HasMedia
     public array $translatable = ['name'];
 
     protected $fillable = [
+        'serial_number',
         'company_id',
         'created_by',
         'template_id',

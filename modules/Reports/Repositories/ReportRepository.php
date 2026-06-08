@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Reports\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Modules\Reports\Enums\ReportStatus;
 use Modules\Reports\Models\Report;
@@ -78,6 +79,22 @@ class ReportRepository extends BaseRepository
                 'error_message' => substr($errorMessage, 0, 60_000),
                 'updated_at'    => now(),
             ]);
+    }
+
+    public function generateSerialNumber(): string
+    {
+        $year      = Carbon::now()->format('Y');
+        $companyId = tenant('id');
+        $prefix    = "REP-{$year}-";
+
+        $max = DB::table('reports')
+            ->where('company_id', $companyId)
+            ->where('serial_number', 'like', $prefix . '%')
+            ->max(DB::raw('CAST(SUBSTRING(serial_number, ' . (strlen($prefix) + 1) . ') AS UNSIGNED)'));
+
+        $sequence = ((int) $max) + 1;
+
+        return $prefix . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
     }
 
     public function deleteById(UuidInterface $id): bool

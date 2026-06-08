@@ -27,8 +27,6 @@ class ConstraintPresenter extends AbstractPresenter
             'start_date' => $this->constraint->start_date?->format('Y-m-d'),
             'end_date' => $this->constraint->end_date?->format('Y-m-d'),
             'max_over_time' => $this->constraint->max_over_time,
-            'out_zone_minutes' => $this->constraint->out_zone_minutes,
-            'max_working_hours' => $this->constraint->max_working_hours,
             'config' => $this->formatConstraintConfig(),
             'branches' => $this->formatBranches(),
             'created_by' => $this->constraint->creator?->name,

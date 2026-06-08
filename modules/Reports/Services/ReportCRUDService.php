@@ -49,6 +49,7 @@ class ReportCRUDService
 
         $report = $this->repository->create([
             'id'                => Uuid::uuid4()->toString(),
+            'serial_number'     => $this->repository->generateSerialNumber(),
             'company_id'        => tenant('id'),
             'created_by'        => Auth::id(),
             'template_id'       => $dto->templateId,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Reports\Presenters;
 
+use Carbon\Carbon;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Reports\Models\Report;
@@ -23,8 +24,9 @@ class ReportListPresenter extends AbstractPresenter
         $branchName = $this->getBranchName();
 
         return [
-            'id'           => $this->report->id,
-            'name'         => $this->report->name,
+            'id'            => $this->report->id,
+            'serial_number' => $this->report->serial_number,
+            'name'          => $this->report->name,
             'name_ar'      => $this->report->getTranslation('name', 'ar'),
             'name_en'      => $this->report->getTranslation('name', 'en'),
             'report_types' => $this->report->report_types ?? [],
@@ -34,8 +36,12 @@ class ReportListPresenter extends AbstractPresenter
             'export_format'=> $this->report->export_format,
             'status'       => $this->report->status,
             'branch'       => $branchName,
-            'created_at'   => optional($this->report->created_at)->toDateTimeString(),
-            'generated_at' => optional($this->report->generated_at)->toDateTimeString(),
+            'created_at'   => $this->report->created_at
+                ? Carbon::parse($this->report->created_at)->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d H:i:s')
+                : null,
+            'generated_at' => $this->report->generated_at
+                ? Carbon::parse($this->report->generated_at)->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d H:i:s')
+                : null,
         ];
     }
 
