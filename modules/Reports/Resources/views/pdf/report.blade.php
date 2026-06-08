@@ -63,6 +63,17 @@
         .emp-hdr td  { background: #1e3a5f; color: #ffffff; font-size: 10px; font-weight: 700; padding: 6px 8px; border: 1px solid #0f2441; }
         .emp-hdr-sub { font-size: 8px; font-weight: 400; opacity: 0.82; }
         .page-break  { page-break-before: always; }
+        /* ── status badges ── */
+        .tbl-badge  { display:inline-block; border-radius:4px; padding:2px 7px; font-size:7.5px; font-weight:700; }
+        .b-present  { background:#dcfce7; color:#166534; }
+        .b-absent   { background:#fee2e2; color:#991b1b; }
+        .b-holiday  { background:#fef3c7; color:#92400e; }
+        /* ── colored time pills ── */
+        .tv-in    { display:inline-block; background:#d1fae5; color:#065f46; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
+        .tv-out   { display:inline-block; background:#dbeafe; color:#1e40af; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
+        .tv-delay { display:inline-block; background:#fee2e2; color:#b91c1c; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
+        .tv-ot    { display:inline-block; background:#ede9fe; color:#5b21b6; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
+        .tv-total { display:inline-block; background:#0f172a; color:#ffffff; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
     </style>
 </head>
 <body lang="{{ $lang }}" dir="{{ $dir }}">
@@ -139,8 +150,8 @@
                 $showOT      = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OVERTIME]);
                 $showTotal   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TOTAL_HOURS]);
 
-                // employee_per_page: always 2 (#, date) + up to 12 optional
-                $empColCount   = 2 + (int)$showDay + (int)$showBranch + (int)$showMgmt
+                // employee_per_page: always 2 (#, date) + 1 status badge + up to 12 optional
+                $empColCount   = 2 + 1 + (int)$showDay + (int)$showBranch + (int)$showMgmt
                                + (int)$showOffIn + (int)$showOffOut
                                + (int)$showActIn + (int)$showActOut
                                + (int)$showTaskIn + (int)$showTaskOut
@@ -284,7 +295,8 @@
                 @endphp
                 @if (!empty($empDaily))
                 <div @unless($loop->first) class="page-break" @endunless>
-                <table style="margin-bottom:14px;">
+                <div style="border-radius:10px; overflow:hidden; border:2px solid #e2e8f0; margin-bottom:18px;">
+                <table style="margin-bottom:0;">
                     <thead>
                         {{-- Employee identity row: appears above column headers, repeats on page breaks --}}
                         <tr class="emp-hdr">
@@ -306,6 +318,7 @@
                             <th style="width:18px;">#</th>
                             <th class="hcol">{{ $lang === 'ar' ? 'التاريخ'        : 'Date' }}</th>
                             @if ($showDay)<th style="width:50px;">{{ $lang === 'ar' ? 'اليوم'   : 'Day' }}</th>@endif
+                            <th style="width:60px;">{{ $lang === 'ar' ? 'الحالة' : 'Status' }}</th>
                             @if ($showBranch)<th>{{ $lang === 'ar' ? 'الفرع'                        : 'Branch' }}</th>@endif
                             @if ($showMgmt)<th>{{ $lang === 'ar' ? 'الإدارة'                      : 'Mgmt' }}</th>@endif
                             @if ($showOffIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول رسمي'      : 'Off.In' }}</th>@endif
@@ -347,22 +360,33 @@
                                 @endphp
                                 <tr style="background-color:{{ $rowBg }};">
                                     @if ($ri === 0)
+                                        @php
+                                            $statusBadge = match($d['display_status'] ?? '') {
+                                                'present' => ['cls' => 'b-present', 'lbl' => $lang === 'ar' ? 'حضور' : 'Present'],
+                                                'absent'  => ['cls' => 'b-absent',  'lbl' => $lang === 'ar' ? 'غياب' : 'Absent'],
+                                                'holiday' => ['cls' => 'b-holiday', 'lbl' => $lang === 'ar' ? 'إجازة' : 'Holiday'],
+                                                default   => ['cls' => '',          'lbl' => '—'],
+                                            };
+                                        @endphp
                                         <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dateSeq }}</td>
                                         <td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $dateStr }}</td>
                                         @if ($showDay)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $dayLabel }}</td>@endif
+                                        <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">
+                                            <span class="tbl-badge {{ $statusBadge['cls'] }}">{{ $statusBadge['lbl'] }}</span>
+                                        </td>
                                         @if ($showBranch)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>@endif
                                         @if ($showMgmt)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>@endif
-                                        @if ($showOffIn)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>@endif
-                                        @if ($showOffOut)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time'])   ?: '-' }}</td>@endif
+                                        @if ($showOffIn)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">@php $ov=$fmtTime($d['start_time']); @endphp @if($ov)<span class="tv-in">{{ $ov }}</span>@else &mdash;@endif</td>@endif
+                                        @if ($showOffOut)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">@php $ov=$fmtTime($d['end_time']); @endphp @if($ov)<span class="tv-out">{{ $ov }}</span>@else &mdash;@endif</td>@endif
                                     @endif
-                                    @if ($showActIn)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>@endif
-                                    @if ($showActOut)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
-                                    @if ($showTaskIn)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>@endif
-                                    @if ($showTaskOut)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>@endif
+                                    @if ($showActIn)<td class="num tcol">@php $v=$attRow?$fmtTime($attRow['clock_in_time']):''; @endphp @if($v)<span class="tv-in">{{ $v }}</span>@elseif($attRow)&mdash;@endif</td>@endif
+                                    @if ($showActOut)<td class="num tcol">@php $v=$attRow?$fmtTime($attRow['clock_out_time']):''; @endphp @if($v)<span class="tv-out">{{ $v }}</span>@elseif($attRow)&mdash;@endif</td>@endif
+                                    @if ($showTaskIn)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '—') : '' }}</td>@endif
+                                    @if ($showTaskOut)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '—') : '' }}</td>@endif
                                     @if ($ri === 0)
-                                        @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>@endif
-                                        @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif
-                                        @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>@endif
+                                        @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">@php $v=$toHoursMinutes($d['late_minutes']??0); @endphp @if(($d['late_minutes']??0)>0)<span class="tv-delay">{{ $v }}</span>@else{{ $v }}@endif</td>@endif
+                                        @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">@php $v=$toHoursMinutes($d['overtime_minutes']??0); @endphp @if(($d['overtime_minutes']??0)>0)<span class="tv-ot">{{ $v }}</span>@else{{ $v }}@endif</td>@endif
+                                        @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">@php $v=$workHoursToHM($d['total_work_hours']??0); @endphp @if(($d['total_work_hours']??0)>0)<span class="tv-total">{{ $v }}</span>@else{{ $v }}@endif</td>@endif
                                     @endif
                                 </tr>
                             @endfor
@@ -381,6 +405,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
                 </div>
                 @endif
             @endforeach
