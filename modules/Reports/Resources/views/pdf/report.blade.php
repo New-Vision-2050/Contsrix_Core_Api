@@ -376,17 +376,17 @@
                                         </td>
                                         @if ($showBranch)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>@endif
                                         @if ($showMgmt)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>@endif
-                                        @if ($showOffIn)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">@php $ov=$fmtTime($d['start_time']); @endphp @if($ov)<span class="tv-in">{{ $ov }}</span>@else &mdash;@endif</td>@endif
-                                        @if ($showOffOut)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">@php $ov=$fmtTime($d['end_time']); @endphp @if($ov)<span class="tv-out">{{ $ov }}</span>@else &mdash;@endif</td>@endif
+                                        @if ($showOffIn)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>@endif
+                                        @if ($showOffOut)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time']) ?: '-' }}</td>@endif
                                     @endif
-                                    @if ($showActIn)<td class="num tcol">@php $v=$attRow?$fmtTime($attRow['clock_in_time']):''; @endphp @if($v)<span class="tv-in">{{ $v }}</span>@elseif($attRow)&mdash;@endif</td>@endif
-                                    @if ($showActOut)<td class="num tcol">@php $v=$attRow?$fmtTime($attRow['clock_out_time']):''; @endphp @if($v)<span class="tv-out">{{ $v }}</span>@elseif($attRow)&mdash;@endif</td>@endif
-                                    @if ($showTaskIn)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '—') : '' }}</td>@endif
-                                    @if ($showTaskOut)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '—') : '' }}</td>@endif
+                                    @if ($showActIn)<td class="num tcol">{{ $attRow ? ($fmtTime($attRow['clock_in_time']) ?: '-') : '' }}</td>@endif
+                                    @if ($showActOut)<td class="num tcol">{{ $attRow ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
+                                    @if ($showTaskIn)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>@endif
+                                    @if ($showTaskOut)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>@endif
                                     @if ($ri === 0)
-                                        @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">@php $v=$toHoursMinutes($d['late_minutes']??0); @endphp @if(($d['late_minutes']??0)>0)<span class="tv-delay">{{ $v }}</span>@else{{ $v }}@endif</td>@endif
-                                        @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">@php $v=$toHoursMinutes($d['overtime_minutes']??0); @endphp @if(($d['overtime_minutes']??0)>0)<span class="tv-ot">{{ $v }}</span>@else{{ $v }}@endif</td>@endif
-                                        @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">@php $v=$workHoursToHM($d['total_work_hours']??0); @endphp @if(($d['total_work_hours']??0)>0)<span class="tv-total">{{ $v }}</span>@else{{ $v }}@endif</td>@endif
+                                        @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes'] ?? 0) }}</td>@endif
+                                        @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif
+                                        @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours'] ?? 0) }}</td>@endif
                                     @endif
                                 </tr>
                             @endfor
