@@ -63,6 +63,7 @@
         .tot-row td { border-top: 2px solid #16a34a; }
         .emp-hdr td  { background: #1e3a5f; color: #ffffff; font-size: 10px; font-weight: 700; padding: 6px 8px; border: 1px solid #0f2441; }
         .emp-hdr-sub { font-size: 8px; font-weight: 400; opacity: 0.82; }
+        .page-break  { page-break-before: always; }
     </style>
 </head>
 <body lang="{{ $lang }}" dir="{{ $dir }}">
@@ -103,22 +104,15 @@
         @elseif ($type === \Modules\Reports\Enums\ReportEnums::REPORT_TYPE_ATTENDANCE_ABSENCE)
             {{-- ═══ Detailed daily attendance — employee & date grouped with per-session rows ═══ --}}
             @php
-                $totalPresent = 0;
-                $totalAbsent  = 0;
-                foreach ($employees as $_e) {
-                    $_s = is_array($rows) && !str_starts_with((string)$_e->global_id, '__')
-                        ? ($rows[(string)$_e->global_id] ?? []) : [];
-                    $totalPresent += (int)($_s['present_days'] ?? 0);
-                    $totalAbsent  += (int)($_s['absent_days']  ?? 0);
-                }
+                $periodDays = \Carbon\Carbon::parse($report->period_start)
+                    ->diffInDays(\Carbon\Carbon::parse($report->period_end)) + 1;
             @endphp
 
             {{-- Summary stats bar --}}
             <table class="stats-bar">
                 <tr>
                     <td class="s-emp">{{ $lang === 'ar' ? 'عدد الموظفين' : 'Total Employees' }}: {{ $employees->count() }}</td>
-                    <td class="s-pres">{{ $lang === 'ar' ? 'إجمالي أيام الحضور' : 'Total Present Days' }}: {{ $totalPresent }}</td>
-                    <td class="s-abs">{{ $lang === 'ar' ? 'إجمالي أيام الغياب' : 'Total Absent Days' }}: {{ $totalAbsent }}</td>
+                    <td class="s-pres">{{ $lang === 'ar' ? 'عدد الأيام' : 'Period Days' }}: {{ $periodDays }}</td>
                     <td class="s-date">{{ $lang === 'ar' ? 'تاريخ اليوم' : 'Report Date' }}: {{ now()->toDateString() }}</td>
                 </tr>
             </table>
@@ -182,6 +176,7 @@
                     $dSumOT      = 0;
                     $dSumWorkMin = 0;
                 @endphp
+                <div @unless($loop->first) class="page-break" @endunless>
                 <table style="margin-bottom:2px; border:none;">
                     <tr>
                         <td style="background:#1e3a5f; color:#ffffff; font-size:11px; font-weight:700; padding:6px 10px; border:1px solid #0f2441;">
@@ -265,6 +260,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
             @endforeach
 
             @else
@@ -278,8 +274,12 @@
                     $sumDelay     = 0;
                     $sumOT        = 0;
                     $sumWorkMin   = 0;
+                    $empPresentCount = collect($empDaily)->where('display_status', 'present')->count();
+                    $empAbsentCount  = collect($empDaily)->where('display_status', 'absent')->count();
+                    $empHolidayCount = collect($empDaily)->where('display_status', 'holiday')->count();
                 @endphp
                 @if (!empty($empDaily))
+                <div @unless($loop->first) class="page-break" @endunless>
                 <table style="margin-bottom:14px;">
                     <thead>
                         {{-- Employee identity row: appears above column headers, repeats on page breaks --}}
@@ -289,6 +289,13 @@
                                 <span style="vertical-align:middle; {{ $align === 'right' ? 'margin-right' : 'margin-left' }}:8px; font-size:12px;">{{ $emp->name }}</span>
                                 @if ($empBranch)<span class="emp-hdr-sub"> &nbsp;|&nbsp; {{ $empBranch }}</span>@endif
                                 @if ($empMgmt)<span class="emp-hdr-sub"> &nbsp;/&nbsp; {{ $empMgmt }}</span>@endif
+                                <span style="float:{{ $align === 'right' ? 'left' : 'right' }}; font-size:8px; font-weight:400; opacity:0.92; margin-top:4px;">
+                                    <span style="background:#dcfce7; color:#166534; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'حضور' : 'Present' }}: {{ $empPresentCount }}</span>
+                                    &nbsp;
+                                    <span style="background:#fee2e2; color:#991b1b; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'غياب' : 'Absent' }}: {{ $empAbsentCount }}</span>
+                                    &nbsp;
+                                    <span style="background:#fef9c3; color:#854d0e; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'إجازة' : 'Holiday' }}: {{ $empHolidayCount }}</span>
+                                </span>
                             </td>
                         </tr>
                         <tr>
@@ -362,8 +369,15 @@
                             @if ($showOT)<td class="num">{{ $toHoursMinutes($sumOT) }}</td>@endif
                             @if ($showTotal)<td class="num">{{ $toHoursMinutes($sumWorkMin) }}</td>@endif
                         </tr>
+                        <tr>
+                            <td colspan="{{ $empColCount }}" style="padding: 18px 10px 6px; border-top: none; text-align: {{ $align }};">
+                                <span style="font-size:9px; font-weight:600;">{{ $lang === 'ar' ? 'التوقيع:' : 'Signature:' }}</span>
+                                <span style="display:inline-block; width:180px; border-bottom: 1px solid #374151; margin-{{ $align === 'right' ? 'right' : 'left' }}:8px; vertical-align:bottom;">&nbsp;</span>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
+                </div>
                 @endif
             @endforeach
             @endif

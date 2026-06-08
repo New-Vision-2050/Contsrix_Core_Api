@@ -12,7 +12,7 @@ use Modules\Attendance\Models\Attendance;
 use Modules\User\Models\User;
 class AutoAttendanceService
 {
-    public function createAttendanceRecord(array $data, Carbon $startDateTime=null): Attendance
+    public function createAttendanceRecord(array $data, Carbon $startDateTime=null, Carbon $endDateTime=null): Attendance
     {
         // Keep status constrained to lifecycle states stored in attendances.status.
         $status = $data['status'] ?? Attendance::STATUS_COMPLETED;
@@ -23,6 +23,7 @@ class AutoAttendanceService
             'clock_in_time' => $data['clock_in_time'] ?? null,
             'clock_in_location' => $data['clock_in_location'] ?? null,
             'start_time' => $startDateTime,
+            'end_time' => $endDateTime,
             'notes' => $data['notes'] ?? null,
             'ip_address' => $data['ip_address'] ?? null,
             'user_agent' => $data['user_agent'] ?? null,
@@ -130,6 +131,9 @@ class AutoAttendanceService
 
                             if (!isset($existingByUserDate[$uid][$dateString][$periodTimeKey])) {
                                 $periodStart = Carbon::parse($dateString . ' ' . $periodTime['start_time']);
+                                $periodEnd   = isset($periodTime['end_time'])
+                                    ? Carbon::parse($dateString . ' ' . $periodTime['end_time'])
+                                    : null;
                                 $periodName  = 'فترة ' . ($index + 1);
 
                                 $this->createAttendanceRecord(
@@ -143,6 +147,7 @@ class AutoAttendanceService
                                         'is_absent'  => 1,
                                     ],
                                     $periodStart,
+                                    $periodEnd,
                                 );
 
                                 $existingByUserDate[$uid][$dateString][$periodTimeKey] = true;
