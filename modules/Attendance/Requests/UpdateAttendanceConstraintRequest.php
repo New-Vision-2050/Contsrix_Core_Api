@@ -69,7 +69,9 @@ class UpdateAttendanceConstraintRequest extends FormRequest
                     ->ignore($this->route('constraint')),
             ],
             'constraint_config' => 'sometimes|required|array',
-            'max_over_time' => ['sometimes', 'nullable'],
+            'max_over_time' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'out_zone_minutes' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'max_working_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:24'],
             'is_active' => 'sometimes|boolean',
             'inherit_from_parent' => ['sometimes', 'boolean'],
             'priority' => 'sometimes|integer|min:1|max:10',
@@ -137,7 +139,7 @@ class UpdateAttendanceConstraintRequest extends FormRequest
             constraint_type: $validated['constraint_type'] ?? null,
             name: $validated['constraint_name'] ?? null,
             notes: $validated['notes'] ?? null,
-            config: $validated['constraint_config'] ?? [],
+            config: $validated['constraint_config'] ?? null,
             user_ids: $validated['user_ids'] ?? null,
             department_ids: $validated['department_ids'] ?? null,
             branch_ids: $validated['branch_ids'] ?? null,
@@ -148,6 +150,8 @@ class UpdateAttendanceConstraintRequest extends FormRequest
             effective_from: $validated['start_date'] ?? null,
             effective_to: $validated['end_date'] ?? null,
             max_over_time: array_key_exists('max_over_time', $validated) ? (isset($validated['max_over_time']) ? (int) $validated['max_over_time'] : null) : null,
+            out_zone_minutes: array_key_exists('out_zone_minutes', $validated) ? (isset($validated['out_zone_minutes']) ? (int) $validated['out_zone_minutes'] : null) : null,
+            max_working_hours: array_key_exists('max_working_hours', $validated) ? (isset($validated['max_working_hours']) ? (int) $validated['max_working_hours'] : null) : null,
         );
     }
 }

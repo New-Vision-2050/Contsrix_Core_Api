@@ -182,6 +182,11 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.shifts.assign');
 
+    // Get constraint-level rules
+    Route::get('/{constraint}/rules', [AttendanceConstraintController::class, 'getRules'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.rules.show');
+
     // Update constraint-level rules (lateness, early-clock-in, max overtime)
     Route::patch('/{constraint}/rules', [AttendanceConstraintController::class, 'updateRules'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())

@@ -23,6 +23,8 @@ class CreateAttendanceConstraintDTO
         public ?string $effective_from = null,
         public ?string $effective_to = null,
         public ?int $max_over_time = null,
+        public ?int $out_zone_minutes = null,
+        public int $max_working_hours = 9,
     ) {}
 
     public function toArray(): array
@@ -44,6 +46,8 @@ class CreateAttendanceConstraintDTO
             'start_date' => $this->effective_from,
             'end_date' => $this->effective_to,
             'max_over_time' => $this->max_over_time,
+            'out_zone_minutes' => $this->out_zone_minutes,
+            'max_working_hours' => $this->max_working_hours,
         ];
     }
 
