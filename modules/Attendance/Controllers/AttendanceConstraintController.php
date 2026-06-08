@@ -60,7 +60,7 @@ class AttendanceConstraintController extends Controller
         );
 
 
-       $presentedData = collect($result['data'])->map(function ($constraint) {
+        $presentedData = collect($result['data'])->map(function ($constraint) {
             return (new ConstraintPresenter($constraint))->present();
         });
 
@@ -84,7 +84,7 @@ class AttendanceConstraintController extends Controller
         );
 
 
-       $presentedData = collect($result['data'])->map(function ($constraint) {
+        $presentedData = collect($result['data'])->map(function ($constraint) {
             return (new ConstraintListPresenter($constraint))->present();
         });
 
@@ -183,7 +183,7 @@ class AttendanceConstraintController extends Controller
 
         if ($result['pagination']) {
             return Json::items(
-                                    $result['data'],
+                $result['data'],
                 extraItems:         $meta,
                 paginationSettings: $result['pagination'],
                 message:            'Violations retrieved successfully'
@@ -338,7 +338,7 @@ class AttendanceConstraintController extends Controller
 
         if ($result['pagination']) {
             return Json::items(
-                                    $result['data'],
+                $result['data'],
                 paginationSettings: $result['pagination'],
                 message:            'Violations retrieved successfully'
             );
@@ -353,7 +353,7 @@ class AttendanceConstraintController extends Controller
 
         $result = $this->constraintService->getTodaysWorkRulesForUser($user);
 
-         return Json::item($result, message: 'Violations retrieved successfully');
+        return Json::item($result, message: 'Violations retrieved successfully');
     }
 
     /**

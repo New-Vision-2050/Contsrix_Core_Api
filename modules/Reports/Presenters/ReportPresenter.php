@@ -17,6 +17,7 @@ class ReportPresenter extends AbstractPresenter
     {
         return [
             'id'                => $this->report->id,
+            'serial_number'     => $this->report->serial_number,
             'name'              => $this->report->name,
             'name_ar'           => $this->report->getTranslation('name', 'ar'),
             'name_en'           => $this->report->getTranslation('name', 'en'),
