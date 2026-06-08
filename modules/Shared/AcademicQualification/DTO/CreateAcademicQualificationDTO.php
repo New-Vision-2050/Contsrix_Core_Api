@@ -16,7 +16,7 @@ class CreateAcademicQualificationDTO
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
+            'name' => ["ar"=>$this->name , "en"=>$this->name],
         ];
     }
 }

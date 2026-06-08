@@ -26,8 +26,8 @@ class UpdateAcademicQualificationCommand
 
     public function toArray(): array
     {
-        return array_filter([
-            'name' => $this->name,
-        ]);
+        return [
+            'name' => ["ar"=>$this->name,"en"=>$this->name]
+        ];
     }
 }
