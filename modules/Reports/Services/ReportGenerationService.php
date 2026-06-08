@@ -207,7 +207,7 @@ class ReportGenerationService
         $name    = (string) ($company->name ?? '');
         $logoUrl = null;
 
-        $media = $company->getFirstMedia();
+        $media = $company->getFirstMedia('logo');
         if ($media) {
             $logoUrl = $media->getFullUrl();
         } elseif (!empty($company->image_path)) {
