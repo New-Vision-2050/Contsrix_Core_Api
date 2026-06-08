@@ -8,12 +8,12 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Modules\ClientRequest\Enums\ProcessStatus;
-use Modules\ClientRequest\Enums\ProcessStepStatus;
+use Modules\Shared\Process\Enums\ProcessStatus;
+use Modules\Shared\Process\Enums\ProcessStepStatus;
 use Modules\ClientRequest\Events\ClientRequestStatusChanged;
 use Modules\ClientRequest\Models\ClientRequest;
-use Modules\ClientRequest\Models\Process;
-use Modules\ClientRequest\Models\ProcessStep;
+use Modules\Shared\Process\Models\Process;
+use Modules\Shared\Process\Models\ProcessStep;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
@@ -31,8 +31,8 @@ class ClientRequestWorkflowService
     {
         return DB::transaction(function () use ($cr) {
             $existing = Process::query()
-                ->where('client_request_id', $cr->id)
-                ->where('type', self::TYPE_CLIENT_REQUEST)
+                ->where('processable_id', $cr->id)
+                ->where('processable_type', self::TYPE_CLIENT_REQUEST)
                 ->first();
 
             if ($existing !== null) {
@@ -42,7 +42,12 @@ class ClientRequestWorkflowService
             $setting = ProcedureSetting::query()
                 ->where('type', ProcedureSettingType::ClientRequest->value)
                 ->where('company_id', $cr->company_id)
-                ->orderByDesc('updated_at')
+                ->whereHas('workFlow', function ($q) use ($cr) {
+                    $q->whereHas('managementHierarchies', function ($q) use ($cr) {
+                        $q->where('management_hierarchies.id', $cr->branch_id);
+                    });
+                })
+                ->orderByDesc('sort_order')
                 ->first();
 
             if ($setting === null) {
@@ -58,9 +63,7 @@ class ClientRequestWorkflowService
             $steps = ProcedureSettingStep::query()
                 ->with(['actionTakers' => static fn ($q) => $q->orderBy('id')])
                 ->where('procedure_setting_id', $setting->id)
-                ->orderByRaw('(step_order IS NULL) ASC')
                 ->orderBy('step_order')
-                ->orderBy('id')
                 ->get();
 
             $snapshots = [];
@@ -83,8 +86,8 @@ class ClientRequestWorkflowService
             try {
                 if ($snapshots === []) {
                     $process = Process::query()->create([
-                        'client_request_id' => $cr->id,
-                        'type'              => self::TYPE_CLIENT_REQUEST,
+                        'processable_id'    => $cr->id,
+                        'processable_type'  => self::TYPE_CLIENT_REQUEST,
                         'execute_type'      => $setting->execute_type,
                         'status'            => ProcessStatus::Pending,
                         'template_snapshot' => [],
@@ -93,13 +96,12 @@ class ClientRequestWorkflowService
                         'procedure_setting_id' => $setting->id,
                         'client_request_id'    => $cr->id,
                     ]);
-
                     return $process;
                 }
 
                 $process = Process::query()->create([
-                    'client_request_id' => $cr->id,
-                    'type'              => self::TYPE_CLIENT_REQUEST,
+                    'processable_id'    => $cr->id,
+                    'processable_type'  => self::TYPE_CLIENT_REQUEST,
                     'execute_type'      => $setting->execute_type,
                     'status'            => ProcessStatus::Pending,
                     'template_snapshot' => $snapshots,
@@ -116,8 +118,8 @@ class ClientRequestWorkflowService
                 return $process;
             } catch (UniqueConstraintViolationException) {
                 return Process::query()
-                    ->where('client_request_id', $cr->id)
-                    ->where('type', self::TYPE_CLIENT_REQUEST)
+                    ->where('processable_id', $cr->id)
+                    ->where('processable_type', self::TYPE_CLIENT_REQUEST)
                     ->first();
             }
         });
@@ -138,7 +140,7 @@ class ClientRequestWorkflowService
         $step = ProcessStep::query()->findOrFail($processStepId);
         $process = Process::query()->findOrFail($step->process_id);
 
-        if ($process->client_request_id !== $clientRequestId || $process->type !== self::TYPE_CLIENT_REQUEST) {
+        if ($process->processable_id !== $clientRequestId || $process->processable_type !== self::TYPE_CLIENT_REQUEST) {
             abort(404);
         }
 
@@ -158,8 +160,8 @@ class ClientRequestWorkflowService
         $actorId = (string) Auth::id();
 
         $process = Process::query()
-            ->where('client_request_id', $clientRequestId)
-            ->where('type', self::TYPE_CLIENT_REQUEST)
+            ->where('processable_id', $clientRequestId)
+            ->where('processable_type', self::TYPE_CLIENT_REQUEST)
             ->first();
 
         if ($process === null) {
@@ -213,7 +215,7 @@ class ClientRequestWorkflowService
                     $this->createProcessStepFromSnapshot($process, $nextRow);
                 } else {
                     $process->update(['status' => ProcessStatus::Completed]);
-                    $this->advanceClientRequestToPriceOfferAfterWorkflow($process->client_request_id);
+                    $this->advanceClientRequestToPriceOfferAfterWorkflow((string) $process->processable_id);
                 }
             } else {
                 // parallel: all template steps exist; when every step is approved, workflow ends.
@@ -221,7 +223,7 @@ class ClientRequestWorkflowService
                 $approved = $process->steps()->where('status', ProcessStepStatus::Approved)->count();
                 if ($approved === $total && $total > 0) {
                     $process->update(['status' => ProcessStatus::Completed]);
-                    $this->advanceClientRequestToPriceOfferAfterWorkflow($process->client_request_id);
+                    $this->advanceClientRequestToPriceOfferAfterWorkflow((string) $process->processable_id);
                 }
             }
 
@@ -257,8 +259,8 @@ class ClientRequestWorkflowService
     {
         DB::transaction(function () use ($cr) {
             $process = Process::query()
-                ->where('client_request_id', $cr->id)
-                ->where('type', self::TYPE_CLIENT_REQUEST)
+                ->where('processable_id', $cr->id)
+                ->where('processable_type', self::TYPE_CLIENT_REQUEST)
                 ->lockForUpdate()
                 ->first();
 
@@ -317,7 +319,7 @@ class ClientRequestWorkflowService
                 $process->update(['status' => ProcessStatus::Completed]);
             }
 
-            $this->advanceClientRequestToPriceOfferAfterWorkflow($process->client_request_id);
+            $this->advanceClientRequestToPriceOfferAfterWorkflow((string) $process->processable_id);
         });
     }
 
@@ -325,8 +327,8 @@ class ClientRequestWorkflowService
     {
         DB::transaction(function () use ($cr) {
             $process = Process::query()
-                ->where('client_request_id', $cr->id)
-                ->where('type', self::TYPE_CLIENT_REQUEST)
+                ->where('processable_id', $cr->id)
+                ->where('processable_type', self::TYPE_CLIENT_REQUEST)
                 ->lockForUpdate()
                 ->first();
 

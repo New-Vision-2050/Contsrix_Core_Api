@@ -1,0 +1,14 @@
+{
+    "name": "Shared/Process",
+    "alias": "shared/process",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared/Process\\Providers\\Shared/ProcessServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Modules\ClientRequest\Enums;
+namespace Modules\Shared\Process\Enums;
 
 enum ProcessStepStatus: string
 {
