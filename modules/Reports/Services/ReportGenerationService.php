@@ -163,14 +163,17 @@ class ReportGenerationService
         $mpdf->SetCreator('Constrix Reports');
 
         $avatarCache = $this->buildAvatarCache($employees);
+        [$companyName, $companyLogoUrl] = $this->resolveCompanyBranding();
 
         $html = view('reports::pdf.report', [
-            'report'      => $report,
-            'config'      => $config,
-            'employees'   => $employees,
-            'sections'    => $sections,
-            'lookups'     => $this->lookupService,
-            'avatarCache' => $avatarCache,
+            'report'          => $report,
+            'config'          => $config,
+            'employees'       => $employees,
+            'sections'        => $sections,
+            'lookups'         => $this->lookupService,
+            'avatarCache'     => $avatarCache,
+            'companyName'     => $companyName,
+            'companyLogoUrl'  => $companyLogoUrl,
         ])->render();
 
         ini_set('pcre.backtrack_limit', '50000000');
@@ -188,6 +191,38 @@ class ReportGenerationService
      * mPDF caches images by URL internally, so each unique image is downloaded
      * only once even when the same employee appears in 31 daily rows.
      */
+    /**
+     * Returns [companyName, companyLogoDataUri].
+     * Tries Spatie media first, falls back to image_path column.
+     *
+     * @return array{0:string,1:string|null}
+     */
+    private function resolveCompanyBranding(): array
+    {
+        $company = \Modules\Company\CompanyCore\Models\Company::find(tenant('id'));
+        if (!$company) {
+            return ['', null];
+        }
+
+        $name    = (string) ($company->name ?? '');
+        $logoUrl = null;
+
+        $media = $company->getFirstMedia();
+        if ($media) {
+            $logoUrl = $media->getFullUrl();
+        } elseif (!empty($company->image_path)) {
+            $path = public_path($company->image_path);
+            if (file_exists($path)) {
+                $mime    = mime_content_type($path) ?: 'image/png';
+                $logoUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($path));
+            } else {
+                $logoUrl = $company->image_path;
+            }
+        }
+
+        return [$name, $logoUrl];
+    }
+
     private function buildAvatarCache($employees): array
     {
         $cache = [];
