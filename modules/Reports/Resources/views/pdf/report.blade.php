@@ -43,57 +43,48 @@
     <meta charset="utf-8">
     <title>{{ $reportName }}</title>
     <style>
-        body        { font-family: "dejavusans", sans-serif; font-size: 9px; color: #1f2937; margin: 0; }
-        h2          { font-size: 11px; margin: 14px 0 6px; border-bottom: 2px solid #1e3a5f; padding-bottom: 4px; color: #1e3a5f; }
-        table       { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        th, td      { border: 1px solid #d1d5db; padding: 3px 5px; text-align: {{ $align }}; vertical-align: middle; }
-        th          { background: #1e3a5f; color: #ffffff; font-weight: 600; font-size: 8px; white-space: nowrap; }
-        .num        { text-align: center; direction: ltr; }
-        .tcol       { width: 36px; min-width: 34px; max-width: 40px; }
-        .hcol       { width: 44px; min-width: 40px; max-width: 50px; }
-        /* ── page-header ── */
-        .rpt-header td { border: none; padding: 0; }
-        .rpt-hdr-logo  { width: 30%; padding: 14px 16px; vertical-align: middle; }
-        .rpt-hdr-title { width: 40%; text-align: center; padding: 14px 8px; vertical-align: middle; }
-        .rpt-hdr-meta  { width: 30%; padding: 14px 16px; vertical-align: middle; text-align: {{ $align === 'right' ? 'left' : 'right' }}; }
-        /* ── summary stat cards ── */
-        .stat-card     { text-align: center; padding: 12px 6px 10px; border: 1px solid #e5e7eb; background: #ffffff; }
-        .stat-num      { font-size: 20px; font-weight: 800; line-height: 1; }
-        .stat-lbl      { font-size: 8px; color: #6b7280; margin-top: 5px; }
-        /* ── data table ── */
-        .row-alt   { background: #f8fafc; }
-        .tot-row   { background: #eff6ff; font-weight: 700; }
-        .tot-row td { border-top: 2px solid #1e3a5f; }
-        /* ── employee header ── */
-        .emp-hdr td  { background: #1e3a5f; color: #ffffff; font-size: 10px; font-weight: 700; padding: 8px 12px; border: none; }
-        .emp-hdr-sub { font-size: 8px; font-weight: 400; opacity: 0.80; }
+        body      { font-family: "dejavusans", sans-serif; font-size: 9px; color: #1f2937; }
+        h1        { font-size: 15px; margin: 0 0 6px; }
+        h2        { font-size: 11px; margin: 12px 0 4px; border-bottom: 2px solid #1e3a5f; padding-bottom: 3px; color: #1e3a5f; }
+        table     { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        th, td    { border: 1px solid #d1d5db; padding: 3px 4px; text-align: {{ $align }}; vertical-align: middle; }
+        th        { background: #1e3a5f; color: #ffffff; font-weight: 600; font-size: 8px; white-space: nowrap; }
+        .meta td  { border: none; padding: 2px 6px; font-size: 10px; }
+        .num      { text-align: center; direction: ltr; }
+        .tcol     { width: 36px; min-width: 34px; max-width: 40px; }
+        .hcol     { width: 44px; min-width: 40px; max-width: 50px; }
+        .stats-bar td { border: 1px solid #cbd5e1; padding: 5px 10px; text-align: center; font-weight: 700; font-size: 9px; }
+        .s-emp    { background: #e2e8f0; color: #1e293b; }
+        .s-pres   { background: #dcfce7; color: #166534; }
+        .s-date   { background: #dbeafe; color: #1e40af; }
+        .row-alt  { background: #f8fafc; }
+        .tot-row  { background: #e8f4ea; font-weight: 700; }
+        .tot-row td { border-top: 2px solid #16a34a; }
+        .emp-hdr td  { background: #1e3a5f; color: #ffffff; font-size: 10px; font-weight: 700; padding: 6px 8px; border: 1px solid #0f2441; }
+        .emp-hdr-sub { font-size: 8px; font-weight: 400; opacity: 0.82; }
         .page-break  { page-break-before: always; }
     </style>
 </head>
 <body lang="{{ $lang }}" dir="{{ $dir }}">
-    {{-- ═══════════════ Report Header ═══════════════ --}}
-    <table class="rpt-header" style="background:#1e3a5f; margin-bottom:14px;">
+    @if (!empty($companyLogoUrl))
+        <div style="margin-bottom:6px;">
+            <img src="{{ $companyLogoUrl }}" style="height:52px; max-width:160px;" />
+        </div>
+    @endif
+    <h1>{{ $reportName }}</h1>
+    <table class="meta">
         <tr>
-            <td class="rpt-hdr-logo">
-                @if (!empty($companyLogoUrl))
-                    <img src="{{ $companyLogoUrl }}" style="height:38px; width:38px; border-radius:6px; vertical-align:middle; border:2px solid rgba(255,255,255,0.3);" />
-                @else
-                    <span style="display:inline-block; width:38px; height:38px; background:#2563eb; border-radius:6px; text-align:center; vertical-align:middle; font-size:14px; font-weight:800; color:#fff; line-height:38px;">HR</span>
-                @endif
-                <span style="vertical-align:middle; {{ $align === 'right' ? 'margin-right' : 'margin-left' }}:8px; font-size:11px; font-weight:700; color:#ffffff;">{{ $companyName }}</span><br/>
-                <span style="font-size:8px; color:rgba(255,255,255,0.65); {{ $align === 'right' ? 'margin-right' : 'margin-left' }}:46px;">{{ $lang === 'ar' ? 'نظام الحضور والغياب' : 'Attendance System' }}</span>
-            </td>
-            <td class="rpt-hdr-title">
-                <div style="font-size:15px; font-weight:800; color:#ffffff;">{{ $reportName }}</div>
-                <div style="font-size:9px; color:rgba(255,255,255,0.75); margin-top:5px;">{{ substr($report->period_start, 0, 10) }} &mdash; {{ substr($report->period_end, 0, 10) }}</div>
-            </td>
-            <td class="rpt-hdr-meta">
-                <div style="font-size:8px; color:rgba(255,255,255,0.65);">{{ $lang === 'ar' ? 'تاريخ التقرير' : 'Report Date' }}</div>
-                <div style="font-size:10px; font-weight:700; color:#ffffff; margin-bottom:6px;">{{ now()->toDateString() }}</div>
-                <div style="font-size:8px; color:rgba(255,255,255,0.65);">{{ $lang === 'ar' ? 'إجمالي الموظفين' : 'Total Employees' }}</div>
-                <div style="font-size:10px; font-weight:700; color:#ffffff;">{{ $employees->count() }}</div>
-            </td>
+            <td><strong>{{ $lang === 'ar' ? 'الفترة' : 'Period' }}:</strong></td>
+            <td>{{ $report->period_start }} — {{ $report->period_end }}</td>
+            <td><strong>{{ $lang === 'ar' ? 'عدد الموظفين' : 'Employees' }}:</strong></td>
+            <td>{{ $employees->count() }}</td>
         </tr>
+        @if ($oneEmployee)
+        <tr>
+            <td><strong>{{ $lang === 'ar' ? 'الموظف المحدد' : 'Selected Employee' }}:</strong></td>
+            <td colspan="3">{{ $oneEmployee }}</td>
+        </tr>
+        @endif
     </table>
 
     @foreach ($config->step1->reportTypeIds as $type)
@@ -121,28 +112,12 @@
                     ->diffInDays(\Carbon\Carbon::parse($report->period_end)) + 1;
             @endphp
 
-            {{-- Summary stat cards --}}
-            <table style="margin-bottom:14px; border-collapse:collapse;">
+            {{-- Summary stats bar --}}
+            <table class="stats-bar">
                 <tr>
-                    <td class="stat-card" style="border-{{ $align === 'right' ? 'right' : 'left' }}:3px solid #1e3a5f;">
-                        <div class="stat-num" style="color:#1e3a5f;">{{ $periodDays }}</div>
-                        <div class="stat-lbl">{{ $lang === 'ar' ? 'أيام الفترة' : 'Period Days' }}</div>
-                    </td>
-                    <td style="width:10px; border:none;"></td>
-                    <td class="stat-card" style="border-{{ $align === 'right' ? 'right' : 'left' }}:3px solid #16a34a;">
-                        <div class="stat-num" style="color:#16a34a;">{{ $employees->count() }}</div>
-                        <div class="stat-lbl">{{ $lang === 'ar' ? 'عدد الموظفين' : 'Employees' }}</div>
-                    </td>
-                    <td style="width:10px; border:none;"></td>
-                    <td class="stat-card" style="border-{{ $align === 'right' ? 'right' : 'left' }}:3px solid #2563eb;">
-                        <div class="stat-num" style="color:#2563eb;">{{ substr($report->period_start, 0, 10) }}</div>
-                        <div class="stat-lbl">{{ $lang === 'ar' ? 'من' : 'From' }}</div>
-                    </td>
-                    <td style="width:10px; border:none;"></td>
-                    <td class="stat-card" style="border-{{ $align === 'right' ? 'right' : 'left' }}:3px solid #7c3aed;">
-                        <div class="stat-num" style="color:#7c3aed;">{{ substr($report->period_end, 0, 10) }}</div>
-                        <div class="stat-lbl">{{ $lang === 'ar' ? 'إلى' : 'To' }}</div>
-                    </td>
+                    <td class="s-emp">{{ $lang === 'ar' ? 'عدد الموظفين' : 'Total Employees' }}: {{ $employees->count() }}</td>
+                    <td class="s-pres">{{ $lang === 'ar' ? 'عدد الأيام' : 'Period Days' }}: {{ $periodDays }}</td>
+                    <td class="s-date">{{ $lang === 'ar' ? 'تاريخ اليوم' : 'Report Date' }}: {{ now()->toDateString() }}</td>
                 </tr>
             </table>
 
