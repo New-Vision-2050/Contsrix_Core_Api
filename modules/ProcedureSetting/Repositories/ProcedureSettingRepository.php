@@ -30,7 +30,7 @@ class ProcedureSettingRepository extends BaseRepository
 
     public function getProcedureSettingList(?int $page, ?int $perPage = 10): Collection
     {
-        return $this->paginatedList([], $page , $perPage , 'sort_order', 'asc');
+        return $this->paginatedList([], $page, $perPage,'sort_order','asc');
     }
 
     public function getProcedureSetting(UuidInterface $id): ProcedureSetting
