@@ -23,11 +23,17 @@ class ReportRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function paginated(int $page = 1, int $perPage = 10, array $filters = []): array
-    {
+    public function paginated(
+        array  $conditions = [],
+        int    $page       = 1,
+        int    $perPage    = 15,
+        string $orderBy    = 'created_at',
+        string $sortBy     = 'desc',
+        array  $filters    = [],
+    ): array {
         $query = $this->model->newQuery()
             ->where('company_id', tenant('id'))
-            ->orderBy('created_at', 'desc');
+            ->orderBy($orderBy, $sortBy);
 
         if (!empty($filters['date_from'])) {
             $query->whereDate('created_at', '>=', $filters['date_from']);
