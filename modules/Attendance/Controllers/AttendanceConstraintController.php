@@ -529,7 +529,20 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
-     * Update only basic info: constraint_name, constraint_type, branch_ids.
+     * Get only basic info: constraint_name, constraint_type, branch_ids, country_id, time_zone_id.
+     */
+    public function getBasicInfo(string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+        $constraint->load(['branches', 'creator']);
+
+        $presented = (new ConstraintPresenter($constraint))->getData();
+
+        return Json::item($presented);
+    }
+
+    /**
+     * Update only basic info: constraint_name, constraint_type, branch_ids, country_id, time_zone_id.
      */
     public function updateBasicInfo(Request $request, string $constraintId): JsonResponse
     {
@@ -538,6 +551,8 @@ class AttendanceConstraintController extends Controller
             'constraint_type' => ['sometimes', 'required', 'string', 'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintArrayTypes()))],
             'branch_ids'      => ['sometimes', 'nullable', 'array'],
             'branch_ids.*'    => ['exists:management_hierarchies,id'],
+            'country_id'      => ['sometimes', 'nullable', 'integer'],
+            'time_zone_id'    => ['sometimes', 'nullable', 'integer'],
         ]);
 
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
@@ -551,6 +566,12 @@ class AttendanceConstraintController extends Controller
         }
         if ($request->has('branch_ids')) {
             $data['branch_ids'] = $request->input('branch_ids');
+        }
+        if ($request->has('country_id')) {
+            $data['country_id'] = $request->input('country_id');
+        }
+        if ($request->has('time_zone_id')) {
+            $data['time_zone_id'] = $request->input('time_zone_id');
         }
 
         $constraint->update($data);

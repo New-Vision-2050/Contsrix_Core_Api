@@ -136,7 +136,11 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
             ->name('attendance.constraints.user.additional.remove');
     });
 
-    // Update basic info (name, constraint_type, branches)
+    // Get / update basic info (name, constraint_type, branches, country_id, time_zone_id)
+    Route::get('/{constraint}/basic-info', [AttendanceConstraintController::class, 'getBasicInfo'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.get-basic-info');
+
     Route::patch('/{constraint}/basic-info', [AttendanceConstraintController::class, 'updateBasicInfo'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.update-basic-info');

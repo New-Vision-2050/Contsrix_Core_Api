@@ -80,6 +80,8 @@ class AttendanceConstraint extends Model implements Auditable
         'created_by',
         'updated_by',
         'notes',
+        'country_id',
+        'time_zone_id',
     ];
 
     protected $casts = [
@@ -101,6 +103,8 @@ class AttendanceConstraint extends Model implements Auditable
         'priority' => 'integer',
         'start_date' => 'date',
         'end_date' => 'date',
+        'country_id' => 'integer',
+        'time_zone_id' => 'integer',
     ];
 
     protected $dates = [

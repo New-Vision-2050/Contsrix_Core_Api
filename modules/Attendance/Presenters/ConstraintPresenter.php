@@ -31,6 +31,8 @@ class ConstraintPresenter extends AbstractPresenter
             'max_working_hours' => $this->constraint->max_working_hours,
             'config' => $this->formatConstraintConfig(),
             'branches' => $this->formatBranches(),
+            'country_id' => $this->constraint->country_id,
+            'time_zone_id' => $this->constraint->time_zone_id,
             'created_by' => $this->constraint->creator?->name,
             'created_at' => $this->constraint->created_at?->format('Y-m-d H:i:s'),
         ];
