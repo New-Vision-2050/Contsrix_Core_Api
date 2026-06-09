@@ -40,17 +40,11 @@ class ConstraintPresenter extends AbstractPresenter
 
     private function formatBranches(): array
     {
-        // This assumes you have a `branches` relationship defined on the AttendanceConstraint model.
-        if (!$this->constraint->relationLoaded('branches')) {
-            return [];
-        }
-
-        return $this->constraint->branches->map(function ($branch) {
-            return [
-                'id' => $branch->id,
+        return $this->constraint->getBranchModels()
+            ->map(fn($branch) => [
+                'id'   => $branch->id,
                 'name' => $branch->name,
-            ];
-        })->all();
+            ])->all();
     }
 
     private function formatConstraintConfig(): array

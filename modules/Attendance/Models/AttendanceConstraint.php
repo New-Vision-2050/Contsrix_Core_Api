@@ -536,9 +536,13 @@ class AttendanceConstraint extends Model implements Auditable
         return $constraints[$type] ?? [];
     }
 
-    public function branches()
+    public function getBranchModels(): \Illuminate\Database\Eloquent\Collection
     {
-        return $this->hasMany(ManagementHierarchy::class, 'id', 'branch_ids');
+        $ids = $this->branch_ids ?? [];
+        if (empty($ids)) {
+            return \Illuminate\Database\Eloquent\Collection::make();
+        }
+        return ManagementHierarchy::whereIn('id', $ids)->get();
     }
 
     public function additionalLocations(): HasMany

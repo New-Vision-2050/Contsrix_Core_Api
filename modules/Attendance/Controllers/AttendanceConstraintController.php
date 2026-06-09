@@ -534,7 +534,7 @@ class AttendanceConstraintController extends Controller
     public function getBasicInfo(string $constraintId): JsonResponse
     {
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
-        $constraint->load(['branches', 'creator']);
+        $constraint->load(['creator']);
 
         $presented = (new ConstraintPresenter($constraint))->getData();
 
