@@ -551,8 +551,8 @@ class AttendanceConstraintController extends Controller
             'constraint_type' => ['sometimes', 'required', 'string', 'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintArrayTypes()))],
             'branch_ids'      => ['sometimes', 'nullable', 'array'],
             'branch_ids.*'    => ['exists:management_hierarchies,id'],
-            'country_id'      => ['sometimes', 'nullable', 'integer'],
-            'time_zone_id'    => ['sometimes', 'nullable', 'integer'],
+            'country_id'      => ['sometimes', 'nullable', 'string', 'max:36'],
+            'time_zone_id'    => ['sometimes', 'nullable', 'string', 'max:36'],
         ]);
 
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
