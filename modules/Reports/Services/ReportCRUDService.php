@@ -27,11 +27,15 @@ class ReportCRUDService
     ) {
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list(int $page = 1, int $perPage = 10, array $filters = []): array
     {
         return $this->repository->paginated(
-            page:    $page,
-            perPage: $perPage,
+            conditions: [],
+            page:       $page,
+            perPage:    $perPage,
+            orderBy:    'created_at',
+            sortBy:     'desc',
+            filters:    $filters,
         );
     }
 

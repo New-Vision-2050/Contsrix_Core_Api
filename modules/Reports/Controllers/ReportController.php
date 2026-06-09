@@ -29,7 +29,19 @@ class ReportController extends Controller
         $page    = (int) $request->get('page', 1);
         $perPage = (int) $request->get('per_page', 10);
 
-        $list  = $this->reportService->list($page, $perPage);
+        $filters = $request->only([
+            'date_from',
+            'date_to',
+            'status',
+            'report_type',
+            'period_type',
+            'year',
+            'month',
+            'template_id',
+            'search',
+        ]);
+
+        $list  = $this->reportService->list($page, $perPage, $filters);
         $items = ReportListPresenter::collection($list['data']);
 
         return Json::items(
