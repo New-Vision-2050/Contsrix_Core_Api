@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Shared\Media\Services\FileUploadService;
 
 class AttachmentRequestRepository extends BaseRepository
@@ -19,29 +20,60 @@ class AttachmentRequestRepository extends BaseRepository
     }
 
     /**
-     * Get all requests (incoming and outgoing) for a company
+     * Get all requests (incoming and outgoing) for a company with optional filters
+     *
+     * Accepted filters:
+     *   project_id  – filter by project UUID
+     *   type        – filter by status  (pending|approved|declined|semi-approved)
+     *   direction   – 'outgoing' (sender) | 'incoming' (receiver)
+     *   receiver_id – filter by receiver_company_id
+     *   name        – partial search on serial_number
+     *   per_page    – items per page (default 15)
+     *   page        – page number    (default 1)
      */
-    public function getAllRequests(string $companyId, ?string $projectId = null): Collection
+    public function getAllRequests(string $companyId, array $filters = []): LengthAwarePaginator
     {
-        $query = $this->model
-            ->where(function ($q) use ($companyId) {
+        $query = $this->model->with([
+            'project',
+            'senderCompany',
+            'receiverCompany',
+            'createdByUser',
+            'respondedByUser',
+            'items.respondedByUser',
+        ]);
+
+        $direction = $filters['direction'] ?? null;
+
+        if ($direction === 'outgoing') {
+            $query->where('sender_company_id', $companyId);
+        } elseif ($direction === 'incoming') {
+            $query->where('receiver_company_id', $companyId);
+        } else {
+            $query->where(function ($q) use ($companyId) {
                 $q->where('sender_company_id', $companyId)
                   ->orWhere('receiver_company_id', $companyId);
-            })
-            ->with([
-                'project',
-                'senderCompany',
-                'receiverCompany',
-                'createdByUser',
-                'respondedByUser',
-                'items.respondedByUser'
-            ]);
-
-        if ($projectId) {
-            $query->where('project_id', $projectId);
+            });
         }
 
-        return $query->orderBy('created_at', 'desc')->get();
+        if (!empty($filters['project_id'])) {
+            $query->where('project_id', $filters['project_id']);
+        }
+
+        if (!empty($filters['type'])) {
+            $query->where('status', $filters['type']);
+        }
+
+        if (!empty($filters['receiver_id'])) {
+            $query->where('receiver_company_id', $filters['receiver_id']);
+        }
+
+        if (!empty($filters['name'])) {
+            $query->where('serial_number', 'like', '%' . $filters['name'] . '%');
+        }
+
+        $perPage = (int) ($filters['per_page'] ?? 15);
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
     /**

@@ -11,6 +11,7 @@ use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\ArchiveLibrary\File\Models\File;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -86,9 +87,9 @@ class AttachmentRequestService
     /**
      * Get all requests (incoming and outgoing) for current company
      */
-    public function getAllRequests(?string $projectId = null): Collection
+    public function getAllRequests(array $filters = []): LengthAwarePaginator
     {
-        return $this->repository->getAllRequests(tenant('id'), $projectId);
+        return $this->repository->getAllRequests(tenant('id'), $filters);
     }
 
     /**
