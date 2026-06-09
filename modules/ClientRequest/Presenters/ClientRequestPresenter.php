@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\ClientRequest\Presenters;
 
 use Modules\ClientRequest\Models\ClientRequest;
-use Modules\ClientRequest\Models\ProcessStep;
+use Modules\Process\Models\ProcessStep;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
 class ClientRequestPresenter extends AbstractPresenter
@@ -101,7 +101,7 @@ class ClientRequestPresenter extends AbstractPresenter
         if ($this->clientRequest->relationLoaded('serviceTerms') && $this->clientRequest->serviceTerms) {
             $data['term_service_settings'] = $this->buildServiceTermTrees($this->clientRequest->serviceTerms);
         }
-        
+
         // Keep old term_settings for backward compatibility (flat list)
         $data['term_settings'] = [];
         if ($this->clientRequest->relationLoaded('termSettings') && $this->clientRequest->termSettings) {
@@ -170,8 +170,8 @@ class ClientRequestPresenter extends AbstractPresenter
                     'id'           => $process->id,
                     'status'       => $process->status->value,
                     'execute_type' => $process->execute_type,
-                    'type'         => $process->type,
-                    'client_request_id' => $process->client_request_id,
+                    'type'         => $process->processable_type,
+                    'client_request_id' => $process->processable_id,
                     'created_at'   => $process->created_at?->toIso8601String(),
                     'updated_at'   => $process->updated_at?->toIso8601String(),
                 ];
@@ -217,18 +217,18 @@ class ClientRequestPresenter extends AbstractPresenter
     private function buildServiceTermTrees($serviceTerms): array
     {
         $result = [];
-        
+
         foreach ($serviceTerms as $serviceTerm) {
             // Get the TermServiceSetting
             $termServiceSetting = $serviceTerm->termServiceSetting;
-            
+
             if (!$termServiceSetting) continue;
-            
+
             // Get all leaf term IDs from the JSON column
             $leafTermIds = $serviceTerm->term_ids ?? [];
-            
+
             if (empty($leafTermIds)) continue;
-            
+
             // Load all leaf terms with their full parent chain recursively
             $leafTerms = \Modules\Project\TermSetting\Models\TermSetting::query()
                 ->whereIn('id', $leafTermIds)
@@ -236,10 +236,10 @@ class ClientRequestPresenter extends AbstractPresenter
                     $query->with('parent.parent.parent.parent.parent.parent.parent.parent');
                 }])
                 ->get();
-            
+
             // Build tree from leaf terms
             $termTree = $this->buildTermTreeFromLeafs($leafTerms);
-            
+
             // Create service node with term tree as children
             $result[] = [
                 'id' => $termServiceSetting->id,
@@ -249,22 +249,22 @@ class ClientRequestPresenter extends AbstractPresenter
                 'children' => $termTree,
             ];
         }
-        
+
         return $result;
     }
 
     private function buildTermTreeFromLeafs($leafTerms): array
     {
         $trees = [];
-        
+
         foreach ($leafTerms as $leafTerm) {
             // Build the path from leaf to root
             $path = $this->buildPathToRoot($leafTerm);
-            
+
             // Merge the path into the tree
             $this->mergePathIntoTree($trees, $path);
         }
-        
+
         return array_values($trees);
     }
 
@@ -272,33 +272,33 @@ class ClientRequestPresenter extends AbstractPresenter
     {
         $path = [];
         $current = $term;
-        
+
         // Build path from leaf to root
         while ($current) {
             array_unshift($path, $current);
             $current = $current->parent;
         }
-        
+
         return $path;
     }
 
     private function mergePathIntoTree(&$trees, array $path)
     {
         if (empty($path)) return;
-        
+
         $rootId = $path[0]->id;
-        
+
         // If root doesn't exist, create it
         if (!isset($trees[$rootId])) {
             $trees[$rootId] = $this->buildTermNode($path[0]);
         }
-        
+
         // Merge the rest of the path
         $currentNode = &$trees[$rootId];
         for ($i = 1; $i < count($path); $i++) {
             $term = $path[$i];
             $found = false;
-            
+
             // Check if this child already exists
             if (isset($currentNode['children'])) {
                 foreach ($currentNode['children'] as &$child) {
@@ -309,7 +309,7 @@ class ClientRequestPresenter extends AbstractPresenter
                     }
                 }
             }
-            
+
             // If not found, add it
             if (!$found) {
                 if (!isset($currentNode['children'])) {
@@ -333,7 +333,7 @@ class ClientRequestPresenter extends AbstractPresenter
             'created_at' => $term->created_at?->toDateTimeString(),
             'children' => [],
         ];
-        
+
         return $node;
     }
 }
