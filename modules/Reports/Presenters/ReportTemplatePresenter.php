@@ -27,8 +27,8 @@ class ReportTemplatePresenter extends AbstractPresenter
             'description_en'  => $this->template->getTranslation('description', 'en'),
             'config'          => $this->template->config,
             'is_active'       => (bool) $this->template->is_active,
-            'created_at'      => optional($this->template->created_at)->format('Y-m-d h:i:s A'),
-            'updated_at'      => optional($this->template->updated_at)->format('Y-m-d h:i:s A'),
+            'created_at'      => optional($this->template->created_at)->format('Y-m-d h:i A'),
+            'updated_at'      => optional($this->template->updated_at)->format('Y-m-d h:i A'),
         ];
     }
 }
