@@ -14,50 +14,91 @@ use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
+use Modules\Process\Services\ProcessWorkflowService;
 
 class EmployeeTaskRequestService
 {
     public function __construct(
         private readonly EmployeeTaskRepository    $repository,
         private readonly ProcedureWorkflowService  $workflow,
+        private readonly ProcessWorkflowService    $processService,
     ) {}
 
-    public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
-    {
-        $procedureType = ProcedureSettingType::EmployeeTaskRequest->value;
-        $preview       = $this->workflow->getApprovalResponsibles($procedureType);
+public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
+{
+    $procedureType = ProcedureSettingType::EmployeeTaskRequest->value;
+    $preview       = $this->workflow->getApprovalResponsibles($procedureType);
 
-        $data                  = $dto->toArray();
-        $data['serial_number'] = $this->repository->generateSerialNumber();
-        $data['company_id']    = tenant('id');
+    $data                  = $dto->toArray();
+    $data['serial_number'] = $this->repository->generateSerialNumber();
+    $data['company_id']    = tenant('id');
 
-        if ($preview['auto_approve']) {
-            $data['procedure_setting_id']      = null;
-            $data['current_procedure_step_id'] = null;
-            $data['status']                    = EmployeeTaskStatus::Approved->value;
-            $data['approved_at']               = now();
-            $data['approval_responsible_id']   = null;
+    if ($preview['auto_approve']) {
+        $data['status']      = EmployeeTaskStatus::Approved->value;
+        $data['approved_at'] = now();
+        return $this->repository->create($data);
+    }
 
-            return $this->repository->create($data);
-        }
+    $data['status'] = EmployeeTaskStatus::Pending->value;
+    $task = $this->repository->create($data);
 
-        $firstStep = $this->workflow->resolveFirstStep($procedureType);
+    $this->createProcessesForTask($task);
 
-        $data['procedure_setting_id']      = $firstStep->procedure_setting_id;
-        $data['current_procedure_step_id'] = $firstStep->id;
-        $data['status']                    = EmployeeTaskStatus::Pending->value;
-        $data['approval_responsible_id']   = $preview['action_takers'][0]['user_id'] ?? null;
+    return $task;
+}
 
-        $task = $this->repository->create($data);
+private function createProcessesForTask(EmployeeTaskRequest $task): void
+{
+    $user     = $task->user->load('userProfessionalData');
+    $branchId = $user->userProfessionalData?->branch_id;
+// dd($branchId);
+    $settings = ProcedureSetting::query()
+        ->where('type', ProcedureSettingType::EmployeeTaskRequest->value)
+        ->where('company_id', $task->company_id)
+        ->whereHas('workFlow', function ($q) use ($branchId) {
+                $q->whereHas('managementHierarchies', function ($q) use ($branchId) {
+                    $q->where('management_hierarchies.id', $branchId);
+                });
+            })
+        ->orderBy('sort_order')
+        ->get();
+// dd($settings);
+    $activeProcess = $this->processService->createProcessesFromSettings(
+        ProcedureSettingType::EmployeeTaskRequest->value,
+        $task->id,
+        $settings,
+    );
 
-        // Broadcast notification to action takers
-        $this->broadcastTaskNotification($task, $firstStep);
+    if (!$activeProcess) {
+        $task->update([
+            'status'      => EmployeeTaskStatus::Approved->value,
+            'approved_at' => now(),
+        ]);
+        return;
+    }
 
-        // Broadcast inbox counts update
-        $this->broadcastInboxCounts($firstStep);
+    $currentStep = $this->processService->getCurrentStep($activeProcess);
+    if (!$currentStep) return;
 
-        return $task;
+    $task->update([
+        'approval_responsible_id' => $currentStep->assigned_user_id,
+    ]);
+
+    $dummyStep = new ProcedureSettingStep([
+        'id'   => $currentStep->step_id,
+        'name' => null,
+        'step_order' => $currentStep->template_step_order,
+    ]);
+    $dummyStep->setRelation('actionTakers', collect([
+        (object) ['user_id' => $currentStep->assigned_user_id],
+    ]));
+
+    $this->broadcastTaskNotification($task, $dummyStep);
+    $this->broadcastInboxCounts($dummyStep);
+
     }
 
     public function list(string $userId, array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -201,7 +242,7 @@ class EmployeeTaskRequestService
     }
 
 
-    private function broadcastTaskNotification(EmployeeTaskRequest $task, \Modules\ProcedureSetting\Models\ProcedureSettingStep $currentStep): void
+    private function broadcastTaskNotification(EmployeeTaskRequest $task, ProcedureSettingStep $currentStep): void
     {
         $task->load(['user']);
         $currentStep->load(['actionTakers.user']);
@@ -228,7 +269,7 @@ class EmployeeTaskRequestService
         ];
     }
 
-    public function broadcastInboxCounts(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $filters = []): void
+    public function broadcastInboxCounts(ProcedureSettingStep $step, array $filters = []): void
     {
         \Log::info('Broadcasting InboxCountsUpdated', [
             'step_id' => $step->id,
