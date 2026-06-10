@@ -37,10 +37,10 @@ class ReportListPresenter extends AbstractPresenter
             'status'       => $this->report->status,
             'branch'       => $branchName,
             'created_at'   => $this->report->created_at
-                ? Carbon::parse($this->report->created_at)->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d H:i:s')
+                ? Carbon::parse($this->report->created_at)->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d h:i:s A')
                 : null,
             'generated_at' => $this->report->generated_at
-                ? Carbon::parse($this->report->generated_at)->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d H:i:s')
+                ? Carbon::parse($this->report->generated_at)->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d h:i:s A')
                 : null,
         ];
     }
