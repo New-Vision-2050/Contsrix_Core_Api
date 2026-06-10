@@ -8,11 +8,15 @@ use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\User\Models\User;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Models\Process;
 
 class EmployeeTaskRequest extends Model
 {
@@ -140,10 +144,41 @@ class EmployeeTaskRequest extends Model
             ->exists();
     }
 
+    public function processes(): HasMany
+    {
+        return $this->hasMany(Process::class, 'processable_id');
+    }
+
+    public function employeeTaskProcess(): HasOne
+    {
+        return $this->hasOne(Process::class, 'processable_id')
+            ->where('processable_type', 'employee_task_request');
+    }
+
     public function hasPendingApprovalRequest(): bool
     {
         return $this->approvalRequests()
             ->where('status', 'pending')
             ->exists();
+    }
+
+    /**
+     * Callback when all processes for this EmployeeTaskRequest are completed.
+     */
+    public function onAllProcessesCompleted(Process $process): void
+    {
+        // If the task is still pending, mark it as approved.
+        // This handles cases where the workflow completes without explicit approval.
+        if ($this->status === EmployeeTaskStatus::Pending->value) {
+            $this->update(['status' => EmployeeTaskStatus::Approved->value, 'approved_at' => now()]);
+        }
+    }
+
+    /**
+     * Callback when a process for this EmployeeTaskRequest fails.
+     */
+    public function onProcessFailed(Process $process): void
+    {
+        $this->update(['status' => EmployeeTaskStatus::Rejected->value, 'rejected_at' => now()]);
     }
 }

@@ -2,8 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Modules\ClientRequest\Enums;
-
+namespace Modules\Process\Enums;
 enum ProcessStatus: string
 {
     case Pending = 'pending';

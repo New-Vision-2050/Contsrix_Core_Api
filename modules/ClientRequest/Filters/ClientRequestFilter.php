@@ -6,7 +6,7 @@ namespace Modules\ClientRequest\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
 use Illuminate\Support\Facades\Auth;
-use Modules\ClientRequest\Enums\ProcessStepStatus;
+use Modules\Process\Enums\ProcessStepStatus;
 use Modules\ClientRequest\Models\ClientRequest;
 
 class ClientRequestFilter extends SearchModelFilter

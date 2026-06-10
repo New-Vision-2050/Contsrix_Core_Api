@@ -1,0 +1,14 @@
+{
+    "name": "Process",
+    "alias": "process",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Process\\Providers\\ProcessServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

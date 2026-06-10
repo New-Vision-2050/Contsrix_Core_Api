@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\Process\Enums\ProcessStatus;
 
 class EmployeeTaskRepository
 {
@@ -65,13 +66,18 @@ class EmployeeTaskRepository
     public function paginateInboxForAdmin(string $adminId, array $filters, int $perPage = 15): LengthAwarePaginator
     {
         $query = EmployeeTaskRequest::query()
-            ->where('status', 'pending')
-            ->whereNotNull('current_procedure_step_id')
-            ->where(function ($q) use ($adminId) {
-                $q->whereDoesntHave('currentProcedureStep.actionTakers')
-                  ->orWhereHas('currentProcedureStep.actionTakers', fn ($at) => $at->where('user_id', $adminId));
+            ->where('employee_task_requests.status', 'pending')
+            ->whereHas('processes', function ($q) use ($adminId) {
+                $q->where('status', ProcessStatus::InProgress)
+                  ->whereHas('steps', function ($q) use ($adminId) {
+                      $q->where('status', 'pending')
+                        ->where('assigned_user_id', $adminId);
+                  });
             })
-            ->with(['user', 'currentProcedureStep.actionTakers.user'])
+            ->with([
+                'user',
+                'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with('steps')
+            ])
             ->orderByDesc('created_at');
 
         if (!empty($filters['task_id'])) {
@@ -128,13 +134,18 @@ class EmployeeTaskRepository
     public function allInboxForAdmin(string $adminId, array $filters): Collection
     {
         $query = EmployeeTaskRequest::query()
-            ->where('status', 'pending')
-            ->whereNotNull('current_procedure_step_id')
-            ->where(function ($q) use ($adminId) {
-                $q->whereDoesntHave('currentProcedureStep.actionTakers')
-                  ->orWhereHas('currentProcedureStep.actionTakers', fn ($at) => $at->where('user_id', $adminId));
+            ->where('employee_task_requests.status', 'pending')
+            ->whereHas('processes', function ($q) use ($adminId) {
+                $q->where('status', ProcessStatus::InProgress)
+                  ->whereHas('steps', function ($q) use ($adminId) {
+                      $q->where('status', 'pending')
+                        ->where('assigned_user_id', $adminId);
+                  });
             })
-            ->with(['user', 'currentProcedureStep.actionTakers.user']);
+            ->with([
+                'user',
+                'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with('steps')
+            ]);
 
         if (!empty($filters['task_id'])) {
             $query->where('id', $filters['task_id']);
