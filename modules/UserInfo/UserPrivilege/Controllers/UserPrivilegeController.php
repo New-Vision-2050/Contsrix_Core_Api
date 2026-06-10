@@ -148,9 +148,9 @@ class UserPrivilegeController extends Controller
                 privilegeType: $item->privilege?->type,
                 subscriptions: $request->get('subscriptions', []),
                 companyId: $item->company_id,
-                createDTOs: fn () => $request->createSubscriptionDTOs(),
+                createDTOs: fn () => $request->createSubscriptionDTOs($userId),
             );
-
+ 
             $subscriptionsByInsurance = $userId
                 ? $this->fetchSubscriptionsByInsurance($userId)
                 : [];
