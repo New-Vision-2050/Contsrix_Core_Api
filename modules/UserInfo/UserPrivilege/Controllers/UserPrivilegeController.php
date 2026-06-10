@@ -17,7 +17,11 @@ use Modules\UserInfo\UserPrivilege\Requests\GetUserPrivilegeListRequest;
 use Modules\UserInfo\UserPrivilege\Requests\GetUserPrivilegeRequest;
 use Modules\UserInfo\UserPrivilege\Requests\UpdateUserPrivilegeRequest;
 use Modules\UserInfo\UserPrivilege\Services\UserPrivilegeCRUDService;
+use Modules\MedicalInsurance\Services\MedicalInsuranceSubscriptionCRUDService;
+use Modules\Shared\Privilege\Services\PrivilegeCardConfigService;
+use Modules\Shared\Privilege\Models\Privilege;
 use Ramsey\Uuid\Uuid;
+use Stancl\Tenancy\Facades\Tenancy;
 
 class UserPrivilegeController extends Controller
 {
@@ -25,7 +29,8 @@ class UserPrivilegeController extends Controller
         private UserPrivilegeCRUDService $userPrivilegeService,
         private UpdateUserPrivilegeHandler $updateUserPrivilegeHandler,
         private DeleteUserPrivilegeHandler $deleteUserPrivilegeHandler,
-        private UserRepository $userRepository
+        private UserRepository $userRepository,
+        private MedicalInsuranceSubscriptionCRUDService $medicalInsuranceSubscriptionService,
     ) {
     }
 
@@ -41,7 +46,34 @@ class UserPrivilegeController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::items(UserPrivilegePresenter::collection($list['data']), paginationSettings: $list['pagination']);
+        // Pre-fetch subscriptions for health insurance privileges (indexed by medical_insurance_id).
+        // The presenter uses this map to avoid N+1 queries.
+        $subscriptionsByInsurance = $this->fetchSubscriptionsByInsurance($userId->toString());
+
+        return Json::items(
+            UserPrivilegePresenter::collection($list['data'], $subscriptionsByInsurance),
+            paginationSettings: $list['pagination']
+        );
+    }
+
+    /**
+     * Fetch all medical insurance subscriptions for a user, indexed by medical_insurance_id.
+     * Returns an empty array if the user has no subscriptions.
+     */
+    private function fetchSubscriptionsByInsurance(string $userId): array
+    {
+        $subs = $this->medicalInsuranceSubscriptionService->list(
+            page: 1,
+            perPage: 1000,
+            filters: ['user_id' => $userId]
+        );
+
+        $indexed = [];
+        foreach ($subs['data'] as $sub) {
+            $indexed[$sub->medical_insurance_id][] = $sub;
+        }
+
+        return $indexed;
     }
 
     public function show(GetUserPrivilegeRequest $request): JsonResponse
@@ -64,7 +96,17 @@ class UserPrivilegeController extends Controller
 
         $createdItem = $this->userPrivilegeService->create($createCreateUserPrivilegeDTO);
 
-        $presenter = new UserPrivilegePresenter($createdItem);
+        // Process subscriptions if privilege is health_insurance type
+        $this->processSubscriptions(
+            privilegeType: $this->resolvePrivilegeType($request->get('privilege_id')),
+            subscriptions: $request->get('subscriptions', []),
+            companyId: $user->company_id,
+            createDTOs: fn () => $request->createSubscriptionDTOs($userId->toString()),
+        );
+
+        $subscriptionsByInsurance = $this->fetchSubscriptionsByInsurance($userId->toString());
+
+        $presenter = new UserPrivilegePresenter($createdItem, $subscriptionsByInsurance);
 
         return Json::item($presenter->getData());
     }
@@ -75,10 +117,23 @@ class UserPrivilegeController extends Controller
         $this->updateUserPrivilegeHandler->handle($command);
 
         $item = $this->userPrivilegeService->get($command->getId());
+        $userId = $this->resolveUserIdFromPrivilege($item);
 
-        $presenter = new UserPrivilegePresenter($item);
+        // Process subscriptions if privilege is health_insurance type
+        $this->processSubscriptions(
+            privilegeType: $item->privilege?->type,
+            subscriptions: $request->get('subscriptions', []),
+            companyId: $item->company_id,
+            createDTOs: fn () => $request->createSubscriptionDTOs(),
+        );
 
-        return Json::item( $presenter->getData());
+        $subscriptionsByInsurance = $userId
+            ? $this->fetchSubscriptionsByInsurance($userId)
+            : [];
+
+        $presenter = new UserPrivilegePresenter($item, $subscriptionsByInsurance);
+
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteUserPrivilegeRequest $request): JsonResponse
@@ -86,5 +141,44 @@ class UserPrivilegeController extends Controller
         $this->deleteUserPrivilegeHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    // -----------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------
+
+    /**
+     * Process subscription creation if the privilege type is health_insurance
+     * and subscriptions are provided.
+     */
+    private function processSubscriptions(?string $privilegeType, array $subscriptions, string $companyId, callable $createDTOs): void
+    {
+        if (empty($subscriptions) || $privilegeType !== PrivilegeCardConfigService::TYPE_HEALTH_INSURANCE) {
+            return;
+        }
+
+        $dtos = $createDTOs();
+        if (! empty($dtos)) {
+            Tenancy::initialize($companyId);
+            $this->medicalInsuranceSubscriptionService->createMany($dtos);
+        }
+    }
+
+    /**
+     * Resolve the privilege type slug from a privilege ID.
+     */
+    private function resolvePrivilegeType(string $privilegeId): ?string
+    {
+        return Privilege::find($privilegeId)?->type;
+    }
+
+    /**
+     * Resolve the user UUID from a UserPrivilege record.
+     */
+    private function resolveUserIdFromPrivilege($userPrivilege): string
+    {
+        return \Modules\User\Models\User::where('global_company_user_id', $userPrivilege->global_id)
+            ->where('company_id', $userPrivilege->company_id)
+            ->value('id') ?? '';
     }
 }
