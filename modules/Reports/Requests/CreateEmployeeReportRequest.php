@@ -17,7 +17,7 @@ class CreateEmployeeReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id'          => 'required|string|exists:users,global_id',
+            'user_id'          => 'required|string|exists:users,id',
             'date_from'        => 'required|date|before_or_equal:date_to',
             'date_to'          => 'required|date|after_or_equal:date_from',
             'name'             => 'nullable|array',
