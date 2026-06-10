@@ -40,10 +40,10 @@ class ReportPresenter extends AbstractPresenter
             'status'            => $this->report->status,
             'file_path'         => $this->report->file_path,
             'file_size'         => $this->report->file_size,
-            'generated_at'      => optional($this->report->generated_at)->toDateTimeString(),
+            'generated_at'      => optional($this->report->generated_at)->format('Y-m-d h:i:s A'),
             'error_message'     => $this->report->error_message,
-            'created_at'        => optional($this->report->created_at)->toDateTimeString(),
-            'updated_at'        => optional($this->report->updated_at)->toDateTimeString(),
+            'created_at'        => optional($this->report->created_at)->format('Y-m-d h:i:s A'),
+            'updated_at'        => optional($this->report->updated_at)->format('Y-m-d h:i:s A'),
         ];
     }
 }
