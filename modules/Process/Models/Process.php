@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Modules\Process\Enums\ProcessStatus;
 
 class Process extends Model
@@ -36,6 +37,16 @@ class Process extends Model
         'status'             => ProcessStatus::class,
         'template_snapshot'  => 'array',
     ];
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        Relation::morphMap([
+            'client_request'        => \Modules\ClientRequest\Models\ClientRequest::class,
+            'employee_task_request' => \Modules\EmployeeTask\Models\EmployeeTaskRequest::class,
+        ]);
+    }
 
     /**
      * Get the owning processable model (ClientRequest, EmployeeTask, etc.).
