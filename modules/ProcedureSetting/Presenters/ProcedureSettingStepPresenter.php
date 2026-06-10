@@ -35,6 +35,8 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'notify_by_whatsapp'   => (bool) $this->step->notify_by_whatsapp,
             'escalation_management_hierarchy_id' => $this->step->escalation_management_hierarchy_id,
             'escalation_management_hierarchy'    => $this->escalationManagementHierarchyPayload(),
+            'action_taker_type'                  => $this->step->action_taker_type?->value,
+            'action_taker_management_hierarchy_type' => $this->step->action_taker_management_hierarchy_type?->value,
         ];
 
         if ($this->step->relationLoaded('branch') && $this->step->branch) {

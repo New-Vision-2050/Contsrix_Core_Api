@@ -81,7 +81,7 @@ class ClientRequestWorkflowService
                     if (! $step instanceof ProcedureSettingStep) {
                         continue;
                     }
-                    $assignedUserId = $this->resolveAssignedUserId($step);
+                    $assignedUserId = $this->resolveAssignedUserId($step, $cr->created_by_user_id);
                     if ($assignedUserId === null) {
                         continue;
                     }
@@ -386,15 +386,60 @@ class ClientRequestWorkflowService
         });
     }
 
-    private function resolveAssignedUserId(ProcedureSettingStep $step): ?string
+    private function resolveAssignedUserId(ProcedureSettingStep $step, ?string $createdByUserId = null): ?string
     {
-        if (is_string($step->user_id) && $step->user_id !== '') {
-            return $step->user_id;
+        $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
+
+        if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
+            return $this->resolveManagerFromCreatorHierarchy($step, $createdByUserId);
         }
 
         $firstTaker = $step->actionTakers->first();
 
         return $firstTaker !== null ? (string) $firstTaker->user_id : null;
+    }
+
+    private function resolveManagerFromCreatorHierarchy(ProcedureSettingStep $step, string $createdByUserId): ?string
+    {
+        $hierarchyType = $step->action_taker_management_hierarchy_type?->value;
+
+        if ($hierarchyType === null) {
+            return null;
+        }
+
+        $creator = \Modules\User\Models\User::query()
+            ->with('professionalData')
+            ->find($createdByUserId);
+
+        if ($creator === null) {
+            return null;
+        }
+
+        $professionalData = $creator->professionalData;
+
+        if ($professionalData === null) {
+            return null;
+        }
+
+        $hierarchyId = null;
+        if ($hierarchyType === 'branch_manager') {
+            $hierarchyId = $professionalData->branch_id;
+        } elseif ($hierarchyType === 'management_manager') {
+            $hierarchyId = $professionalData->management_id;
+        }
+
+        if ($hierarchyId === null) {
+            return null;
+        }
+
+        $hierarchy = \Modules\Company\ManagementHierarchy\Models\ManagementHierarchy::query()
+            ->find($hierarchyId);
+
+        if ($hierarchy === null || $hierarchy->manager_id === null) {
+            return null;
+        }
+
+        return (string) $hierarchy->manager_id;
     }
 
     /**

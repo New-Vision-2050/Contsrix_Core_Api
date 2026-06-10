@@ -114,9 +114,20 @@ class UpdateProcedureSettingStepRequest extends FormRequest
 
             'step_order' => 'sometimes|nullable|integer|min:0',
 
+            'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy',
+            'action_taker_management_hierarchy_type' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'in:branch_manager,management_manager',
+                'required_if:action_taker_type,management_hierarchy',
+                'prohibited_unless:action_taker_type,management_hierarchy',
+            ],
+
             'action_taker_user_ids'   => [
                 'sometimes',
                 'array',
+                'required_if:action_taker_type,specific_user',
                 new ActionTakerUserIdsUniquePerProcedureSetting(
                     (string) $this->route('procedureSettingId'),
                     (int) $this->route('stepId'),

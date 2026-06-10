@@ -27,6 +27,8 @@ class CreateProcedureSettingStepDTO
         public readonly bool $notify_by_whatsapp = false,
         public readonly ?int $escalation_management_hierarchy_id = null,
         public readonly ?int $step_order = null,
+        public readonly ?string $action_taker_type = null,
+        public readonly ?string $action_taker_management_hierarchy_type = null,
         public readonly ?array $action_taker_user_ids = null,
         public readonly ?array $concerned_management_hierarchy_ids = null,
     ) {
@@ -54,6 +56,8 @@ class CreateProcedureSettingStepDTO
             'notify_by_whatsapp'               => $this->notify_by_whatsapp,
             'escalation_management_hierarchy_id' => $this->escalation_management_hierarchy_id,
             'step_order'                         => $this->step_order,
+            'action_taker_type'                  => $this->action_taker_type,
+            'action_taker_management_hierarchy_type' => $this->action_taker_management_hierarchy_type,
         ];
 
         if ($this->action_taker_user_ids !== null) {

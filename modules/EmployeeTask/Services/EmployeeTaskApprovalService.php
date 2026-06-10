@@ -125,6 +125,7 @@ final class EmployeeTaskApprovalService
             $approval->current_procedure_step_id,
             $task->procedure_setting_id,
             $adminId,
+            $task->user_id,
         );
 
         return DB::transaction(function () use ($approval, $task, $result, $adminId, $approvalNotes): EmployeeTaskApprovalRequest {
@@ -167,7 +168,7 @@ final class EmployeeTaskApprovalService
             throw EmployeeTaskException::approvalRequestAlreadyResolved();
         }
 
-        $this->workflow->assertCanReject($approval->current_procedure_step_id, $adminId);
+        $this->workflow->assertCanReject($approval->current_procedure_step_id, $adminId, $task->user_id);
 
         return DB::transaction(function () use ($approval, $adminId, $rejectionReason): EmployeeTaskApprovalRequest {
             $approval->update([
