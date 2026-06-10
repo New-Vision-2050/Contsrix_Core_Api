@@ -50,13 +50,25 @@ class ProcessWorkflowService
                 continue;
             }
 
+            $sortOrder = $setting->sort_order ?? ($index + 1);
+
+            $exists = Process::query()
+                ->where('processable_id', $processableId)
+                ->where('processable_type', $processableType)
+                ->where('sort_order', $sortOrder)
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
             $process = Process::create([
                 'processable_type'  => $processableType,
                 'processable_id'    => $processableId,
                 'execute_type'      => $setting->execute_type ?? 'sequence',
                 'status'            => $index === 0 ? ProcessStatus::InProgress : ProcessStatus::Pending,
                 'template_snapshot' => $snapshots,
-                'sort_order'        => $setting->sort_order ?? ($index + 1),
+                'sort_order'        => $sortOrder,
             ]);
 
             if ($index === 0) {
