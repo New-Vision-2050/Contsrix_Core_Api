@@ -102,18 +102,19 @@ class UserPrivilegePresenter extends AbstractPresenter
      */
     private function presentSubscriptions(): array
     {
-        $medicalInsuranceId = $this->userPrivilege->medical_insurance_id;
+        // Flatten all subscriptions for this user across all insurance policies.
+        // We use a flat list because the UserPrivilege may not have a
+        // medical_insurance_id set directly — the subscriptions themselves
+        // carry the insurance reference.
+        $all = [];
+        foreach ($this->subscriptionsByInsurance as $insuranceSubs) {
+            $all = array_merge($all, $insuranceSubs);
+        }
 
-        if (! $medicalInsuranceId) {
+        if (empty($all)) {
             return [];
         }
 
-        $subscriptions = $this->subscriptionsByInsurance[$medicalInsuranceId] ?? [];
-
-        if (empty($subscriptions)) {
-            return [];
-        }
-
-        return MedicalInsuranceSubscriptionPresenter::collection($subscriptions);
+        return MedicalInsuranceSubscriptionPresenter::collection($all);
     }
 }
