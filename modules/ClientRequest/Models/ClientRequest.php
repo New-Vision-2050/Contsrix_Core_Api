@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Process\Models\Process;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Project\TermSetting\Models\TermSetting;
 use Modules\User\Models\User;
@@ -172,13 +173,13 @@ class ClientRequest extends Model implements HasMedia
 
     public function processes(): HasMany
     {
-        return $this->hasMany(Process::class, 'client_request_id');
+        return $this->hasMany(Process::class, 'processable_id');
     }
 
     public function clientRequestProcess(): HasOne
     {
-        return $this->hasOne(Process::class, 'client_request_id')
-            ->where('type', 'client_request');
+        return $this->hasOne(Process::class, 'processable_id')
+            ->where('processable_type', 'client_request');
     }
 
     public function isDraft(): bool

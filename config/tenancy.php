@@ -19,6 +19,7 @@ return [
     'central_domains' => array_merge([
         '127.0.0.1',
         'localhost',
+        'https://contsrix_core_api.test/',
         "https://core-be-stage.constrix-nv.com"
     ],[env('APP_URL')]),
 

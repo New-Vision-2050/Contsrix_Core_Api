@@ -30,12 +30,15 @@ class ProcedureSettingRepository extends BaseRepository
 
     public function getProcedureSettingList(?int $page, ?int $perPage = 10): Collection
     {
-        return $this->paginatedList([], $page, $perPage);
+        return $this->paginatedList([], $page, $perPage,'sort_order','asc');
     }
 
     public function getProcedureSetting(UuidInterface $id): ProcedureSetting
     {
         return $this->model->with([
+            'steps' => function ($q) {
+                $q->orderBy('step_order');
+            },
             'steps.branch',
             'steps.management',
             'steps.escalationManagementHierarchy:id,name,type,company_id',
@@ -54,20 +57,26 @@ class ProcedureSettingRepository extends BaseRepository
             && $data['work_flow_id'] !== null
             && $data['work_flow_id'] !== '';
 
-        if (! $hasExplicitWorkFlow && $companyId !== null && $companyId !== '') {
-            $data['work_flow_id'] = WorkFlow::defaultForCompany((string) $companyId, $procedureType)->id;
-        }
+        return DB::transaction(function () use ($data, $companyId, $procedureType, $hasExplicitWorkFlow) {
+            if (!$hasExplicitWorkFlow && $companyId !== null && $companyId !== '') {
+                $data['work_flow_id'] = WorkFlow::defaultForCompany((string) $companyId, $procedureType)->id;
+            }
 
-        $model = $this->create($data);
-        $model->load(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name']);
+            if (empty($data['sort_order'])) {
+                $data['sort_order'] = $this->getNextSortOrder();
+            }
 
-        return $model;
+            $model = $this->create($data);
+            $model->load(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name']);
+
+            return $model;
+        });
     }
 
     /**
      * @param array<string, mixed> $conditions
      */
-    public function list(array $conditions = [], string $orderBy = 'id', string $sortBy = 'asc'): Collection
+    public function list(array $conditions = [], string $orderBy = 'sort_order', string $sortBy = 'asc'): Collection
     {
         return $this->model->newQuery()
             ->where($conditions)
@@ -86,8 +95,10 @@ class ProcedureSettingRepository extends BaseRepository
         $query = WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
-                'procedureSettings.workFlow:id,name,company_id',
+                'procedureSettings' => function ($q) {
+                    $q->orderBy('sort_order')
+                      ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
+                },
             ]);
 
         if (! empty($filters['type'])) {
@@ -132,8 +143,10 @@ class ProcedureSettingRepository extends BaseRepository
         $query = WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
-                'procedureSettings.workFlow:id,name,company_id',
+                'procedureSettings' => function ($q) {
+                    $q->orderBy('sort_order')
+                      ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
+                },
             ])
             ->where('type', ProcedureSettingType::ClientRequest->value);
 
@@ -155,8 +168,10 @@ class ProcedureSettingRepository extends BaseRepository
         $query = WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
-                'procedureSettings.workFlow:id,name,company_id',
+                'procedureSettings' => function ($q) {
+                    $q->orderBy('sort_order')
+                      ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
+                },
             ])
             ->where('type', $type)
             ->where('name', 'default');
@@ -228,8 +243,10 @@ class ProcedureSettingRepository extends BaseRepository
             return WorkFlow::query()
                 ->with([
                     'managementHierarchies:id,name,type,company_id',
-                    'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
-                    'procedureSettings.workFlow:id,name,company_id',
+                    'procedureSettings' => function ($q) {
+                        $q->orderBy('sort_order')
+                          ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
+                    },
                 ])
                 ->where('company_id', $companyId)
                 ->where('type', $type)
@@ -244,8 +261,10 @@ class ProcedureSettingRepository extends BaseRepository
         return WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
-                'procedureSettings.workFlow:id,name,company_id',
+                'procedureSettings' => function ($q) {
+                    $q->orderBy('sort_order')
+                      ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
+                },
             ])
             ->where('company_id', $companyId)
             ->where('type', $type)
@@ -265,5 +284,15 @@ class ProcedureSettingRepository extends BaseRepository
     public function deleteProcedureSetting(UuidInterface $id): bool
     {
         return $this->delete($id);
+    }
+
+
+    private function getNextSortOrder(): int
+    {
+        $max = (int) $this->model->newQuery()
+            ->where('company_id', tenant('id'))
+            ->max('sort_order');
+
+        return $max + 1;
     }
 }

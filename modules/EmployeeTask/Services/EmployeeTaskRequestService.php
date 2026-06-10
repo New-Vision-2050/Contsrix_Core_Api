@@ -6,6 +6,7 @@ namespace Modules\EmployeeTask\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Events\EmployeeTaskNotification;
@@ -14,14 +15,23 @@ use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
+use Modules\Process\Models\Process;
+use Modules\Process\Models\ProcessStep;
+use Modules\Process\Services\ProcessWorkflowService;
 
 class EmployeeTaskRequestService
 {
     public function __construct(
-        private readonly EmployeeTaskRepository    $repository,
-        private readonly ProcedureWorkflowService  $workflow,
+        private readonly EmployeeTaskRepository   $repository,
+        private readonly ProcedureWorkflowService $workflow,
+        private readonly ProcessWorkflowService   $processService,
     ) {}
+
 
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
     {
@@ -33,32 +43,132 @@ class EmployeeTaskRequestService
         $data['company_id']    = tenant('id');
 
         if ($preview['auto_approve']) {
-            $data['procedure_setting_id']      = null;
-            $data['current_procedure_step_id'] = null;
-            $data['status']                    = EmployeeTaskStatus::Approved->value;
-            $data['approved_at']               = now();
-            $data['approval_responsible_id']   = null;
-
+            $data['status']      = EmployeeTaskStatus::Approved->value;
+            $data['approved_at'] = now();
             return $this->repository->create($data);
         }
 
-        $firstStep = $this->workflow->resolveFirstStep($procedureType);
-
-        $data['procedure_setting_id']      = $firstStep->procedure_setting_id;
-        $data['current_procedure_step_id'] = $firstStep->id;
-        $data['status']                    = EmployeeTaskStatus::Pending->value;
-        $data['approval_responsible_id']   = $preview['action_takers'][0]['user_id'] ?? null;
-
+        $data['status'] = EmployeeTaskStatus::Pending->value;
         $task = $this->repository->create($data);
 
-        // Broadcast notification to action takers
-        $this->broadcastTaskNotification($task, $firstStep);
-
-        // Broadcast inbox counts update
-        $this->broadcastInboxCounts($firstStep);
+        $this->createProcessesForTask($task);
 
         return $task;
     }
+
+    private function createProcessesForTask(EmployeeTaskRequest $task): void
+    {
+        $user     = $task->user->load('userProfessionalData');
+        $branchId = $user->userProfessionalData?->branch_id;
+
+        $settings = ProcedureSetting::query()
+            ->where('type', ProcedureSettingType::EmployeeTaskRequest->value)
+            ->where('company_id', $task->company_id)
+            ->whereHas('workFlow', function ($q) use ($branchId) {
+                $q->whereHas('managementHierarchies', function ($q) use ($branchId) {
+                    $q->where('management_hierarchies.id', $branchId);
+                });
+            })
+            ->orderBy('sort_order')
+            ->get();
+
+        $activeProcess = $this->processService->createProcessesFromSettings(
+            ProcedureSettingType::EmployeeTaskRequest->value,
+            $task->id,
+            $settings,
+        );
+
+        if (!$activeProcess) {
+            $task->update([
+                'status'      => EmployeeTaskStatus::Approved->value,
+                'approved_at' => now(),
+            ]);
+            return;
+        }
+
+        $currentStep = $this->processService->getCurrentStep($activeProcess);
+        if (!$currentStep) return;
+
+        $task->update([
+            'approval_responsible_id' => $currentStep->assigned_user_id,
+        ]);
+
+        $dummyStep = new ProcedureSettingStep([
+            'id'         => $currentStep->step_id,
+            'name'       => null,
+            'step_order' => $currentStep->template_step_order,
+        ]);
+        $dummyStep->setRelation('actionTakers', collect([
+            (object) ['user_id' => $currentStep->assigned_user_id],
+        ]));
+
+        $this->broadcastTaskNotification($task, $dummyStep);
+        $this->broadcastInboxCounts($dummyStep);
+    }
+
+
+    public function approve(string $id, string $adminId): EmployeeTaskRequest
+    {
+        $task = $this->repository->findById($id);
+
+        if (!$task) {
+            throw EmployeeTaskException::notFound();
+        }
+
+        if ($task->status !== EmployeeTaskStatus::Pending->value) {
+            throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
+        }
+// dd($id, $adminId);
+        return DB::transaction(function () use ($id, $adminId, $task): EmployeeTaskRequest {
+            $process = Process::query()
+                ->where('processable_type', ProcedureSettingType::EmployeeTaskRequest->value)
+                ->where('processable_id', $task->id)
+                ->where('status', ProcessStatus::InProgress)
+                ->firstOrFail();
+// dd($process);
+            $step = ProcessStep::query()
+                ->where('process_id', $process->id)
+                ->where('assigned_user_id', $adminId)
+                ->where('status', ProcessStepStatus::Pending)
+                ->firstOrFail();
+
+            $this->processService->approveStep($step->id);
+
+            return $task->fresh();
+        });
+    }
+
+    public function reject(string $id, string $adminId, string $reason): EmployeeTaskRequest
+    {
+        $task = $this->repository->findById($id);
+
+        if (!$task) {
+            throw EmployeeTaskException::notFound();
+        }
+
+        if ($task->status !== EmployeeTaskStatus::Pending->value) {
+            throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
+        }
+
+        return DB::transaction(function () use ($id, $adminId, $reason, $task): EmployeeTaskRequest {
+            $process = Process::query()
+                ->where('processable_type', ProcedureSettingType::EmployeeTaskRequest->value)
+                ->where('processable_id', $task->id)
+                ->where('status', ProcessStatus::InProgress)
+                ->firstOrFail();
+
+            $step = ProcessStep::query()
+                ->where('process_id', $process->id)
+                ->where('assigned_user_id', $adminId)
+                ->where('status', ProcessStepStatus::Pending)
+                ->firstOrFail();
+
+            $this->processService->rejectStep($step->id);
+
+            return $task->fresh();
+        });
+    }
+
 
     public function list(string $userId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
@@ -113,64 +223,9 @@ class EmployeeTaskRequestService
         }
 
         return $this->repository->update($task, [
-            'status'             => EmployeeTaskStatus::Cancelled->value,
-            'cancelled_by'       => $userId,
-            'cancelled_at'       => now(),
-        ]);
-    }
-
-    public function approve(string $id, string $adminId): EmployeeTaskRequest
-    {
-        $task = $this->repository->findById($id);
-
-        if (!$task) {
-            throw EmployeeTaskException::notFound();
-        }
-
-//        if ($task->status !== EmployeeTaskStatus::Pending->value) {
-//            throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
-//        }
-
-        $result = $this->workflow->advance(
-            $task->current_procedure_step_id,
-            $task->procedure_setting_id,
-            $adminId,
-        );
-
-        if (!$result->isFinal) {
-            return $this->repository->update($task, [
-                'current_procedure_step_id' => $result->nextStep->id,
-            ]);
-        }
-
-        return $this->repository->update($task, [
-            'status'                    => EmployeeTaskStatus::Approved->value,
-            'approved_by'               => $adminId,
-            'approved_at'               => now(),
-            'current_procedure_step_id' => null,
-        ]);
-    }
-
-    public function reject(string $id, string $adminId, string $reason): EmployeeTaskRequest
-    {
-        $task = $this->repository->findById($id);
-
-        if (!$task) {
-            throw EmployeeTaskException::notFound();
-        }
-
-//        if ($task->status !== EmployeeTaskStatus::Pending->value) {
-//            throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
-//        }
-
-        $this->workflow->assertCanReject($task->current_procedure_step_id, $adminId);
-
-        return $this->repository->update($task, [
-            'status'                    => EmployeeTaskStatus::Rejected->value,
-            'rejected_by'               => $adminId,
-            'rejected_at'               => now(),
-            'rejection_reason'          => $reason,
-            'current_procedure_step_id' => null,
+            'status'       => EmployeeTaskStatus::Cancelled->value,
+            'cancelled_by' => $userId,
+            'cancelled_at' => now(),
         ]);
     }
 
@@ -193,15 +248,15 @@ class EmployeeTaskRequestService
         }
 
         return $this->repository->update($task, [
-            'status'               => EmployeeTaskStatus::Cancelled->value,
-            'cancelled_by'         => $adminId,
-            'cancelled_at'         => now(),
-            'cancellation_reason'  => $reason,
+            'status'             => EmployeeTaskStatus::Cancelled->value,
+            'cancelled_by'       => $adminId,
+            'cancelled_at'       => now(),
+            'cancellation_reason'=> $reason,
         ]);
     }
 
 
-    private function broadcastTaskNotification(EmployeeTaskRequest $task, \Modules\ProcedureSetting\Models\ProcedureSettingStep $currentStep): void
+    private function broadcastTaskNotification(EmployeeTaskRequest $task, ProcedureSettingStep $currentStep): void
     {
         $task->load(['user']);
         $currentStep->load(['actionTakers.user']);
@@ -228,7 +283,7 @@ class EmployeeTaskRequestService
         ];
     }
 
-    public function broadcastInboxCounts(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $filters = []): void
+    public function broadcastInboxCounts(ProcedureSettingStep $step, array $filters = []): void
     {
         \Log::info('Broadcasting InboxCountsUpdated', [
             'step_id' => $step->id,
