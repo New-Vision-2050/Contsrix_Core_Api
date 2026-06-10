@@ -584,6 +584,52 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
+     * Get notification settings for this constraint.
+     */
+    public function getNotificationSettings(string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $settings = $constraint->notification_settings ?? [];
+
+        return Json::item([
+            'notify_late_arrival'     => $settings['notify_late_arrival'] ?? false,
+            'notify_unexcused_absence' => $settings['notify_unexcused_absence'] ?? false,
+            'notify_early_departure'  => $settings['notify_early_departure'] ?? false,
+        ]);
+    }
+
+    /**
+     * Update notification settings for this constraint.
+     */
+    public function updateNotificationSettings(Request $request, string $constraintId): JsonResponse
+    {
+        $request->validate([
+            'notify_late_arrival'      => ['sometimes', 'boolean'],
+            'notify_unexcused_absence' => ['sometimes', 'boolean'],
+            'notify_early_departure'   => ['sometimes', 'boolean'],
+        ]);
+
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $current = $constraint->notification_settings ?? [];
+        $updated = array_merge($current, array_filter([
+            'notify_late_arrival'      => $request->boolean('notify_late_arrival', $current['notify_late_arrival'] ?? false),
+            'notify_unexcused_absence' => $request->boolean('notify_unexcused_absence', $current['notify_unexcused_absence'] ?? false),
+            'notify_early_departure'   => $request->boolean('notify_early_departure', $current['notify_early_departure'] ?? false),
+        ], fn($v) => is_bool($v)));
+
+        $constraint->update([
+            'notification_settings' => $updated,
+            'updated_by' => Auth::id(),
+        ]);
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+
+        return Json::item($updated, message: 'Notification settings updated successfully');
+    }
+
+    /**
      * Get all employees assigned to this attendance constraint, paginated.
      * Includes users assigned via user_professional_datas AND via attendance_constraint_user pivot.
      */

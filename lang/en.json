@@ -66,5 +66,15 @@
     "suspended_records": "Suspended :type",
     "brokers": "Brokers",
     "employees": "Employees",
-    "clients": "Clients"
+    "clients": "Clients",
+    "attendance": {
+        "notifications": {
+            "late_arrival_title": "Late Arrival",
+            "late_arrival_body": "You are late by {minutes} minutes.",
+            "early_departure_title": "Early Departure",
+            "early_departure_body": "You left early by {minutes} minutes.",
+            "unexcused_absence_title": "Unexcused Absence",
+            "unexcused_absence_body": "You have been marked absent today."
+        }
+    }
 }

@@ -9,6 +9,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
 use Modules\Attendance\Models\AppliedAttendanceConstraint;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Services\AttendanceNotificationService;
 use Modules\User\Models\User;
 class AutoAttendanceService
 {
@@ -41,12 +42,18 @@ class AutoAttendanceService
         $constraint = $attendance->user->professionalData->attendanceConstraint;
 
         if ($constraint) {
-            // Create a record in the pivot table with the required fields
             AppliedAttendanceConstraint::create([
-                'attendance_id' => $attendance->id,
+                'attendance_id'       => $attendance->id,
                 'constraint_snapshot' => $constraint->toArray(),
-                'company_id' => $attendance->company_id,
+                'company_id'          => $attendance->company_id,
             ]);
+        }
+
+        if (!empty($attendanceData['is_absent'])) {
+            try {
+                $attendance->load('appliedAttendanceConstraint');
+                app(AttendanceNotificationService::class)->notifyUnexcusedAbsence($attendance);
+            } catch (\Throwable) {}
         }
 
         return $attendance;

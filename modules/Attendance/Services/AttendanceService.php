@@ -25,12 +25,14 @@ use Modules\Attendance\Jobs\AutoClockOutAtNextShiftStartJob;
 use Modules\Attendance\Jobs\AutoCloseAttendanceJob;
 use Modules\Attendance\Jobs\ProcessClockInAttendanceData;
 use Modules\Attendance\Presenters\AttendanceTeamPresenter;
+use Modules\Attendance\Services\AttendanceNotificationService;
 
 class AttendanceService
 {
     public function __construct(
         private AttendanceRepository $attendanceRepository,
         private AttendanceCalculator $calculator,
+        private ?AttendanceNotificationService $notificationService = null,
     ) {}
 
     /**
@@ -80,6 +82,12 @@ class AttendanceService
 
         $this->scheduleAutoClockOutWhenNextShiftStarts($attendance, $constraints, $endDateTime);
         $this->scheduleAutoCloseAtMaxOvertime($attendance, $endDateTime, (float) ($attendanceData['max_over_time'] ?? 0.0));
+
+        if ($attendance->is_late && $this->notificationService) {
+            try {
+                $this->notificationService->notifyLateArrival($attendance);
+            } catch (\Throwable) {}
+        }
 
         return $attendance;
     }
@@ -311,7 +319,15 @@ class AttendanceService
             'early_departure_minutes' => $result->earlyDepartureMinutes,
         ]);
 
-        return $attendance->refresh();
+        $attendance->refresh();
+
+        if ($result->isEarlyDeparture && $this->notificationService) {
+            try {
+                $this->notificationService->notifyEarlyDeparture($attendance);
+            } catch (\Throwable) {}
+        }
+
+        return $attendance;
     }
 
     private function buildCalculatorInput(Attendance $attendance): CalculatorInput
