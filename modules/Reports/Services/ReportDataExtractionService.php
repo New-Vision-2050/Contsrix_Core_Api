@@ -345,7 +345,7 @@ class ReportDataExtractionService
     /**
      * Branches comparison: aggregate attendance metrics per branch (keyed by branch_id).
      *
-     * Sources `branch_id` from `user_professional_data` so the comparison
+     * Sources `branch_id` from `user_professional_datas` so the comparison
      * follows the same filter set used to build the employee list.
      */
     protected function extractBranchesComparison(Report $report, ReportWizardConfigDTO $config, Collection $employees): array
@@ -372,7 +372,7 @@ class ReportDataExtractionService
 
         $rows = DB::table('attendances as a')
             ->join('users as u', 'u.id', '=', 'a.user_id')
-            ->leftJoin('user_professional_data as upd', function ($join) {
+            ->leftJoin('user_professional_datas as upd', function ($join) {
                 $join->on('upd.global_id', '=', 'u.global_company_user_id')
                     ->where('upd.company_id', '=', tenant('id'));
             })
