@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Modules\UserInfo\UserPrivilege\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use Modules\Shared\Privilege\Services\PrivilegeCardConfigService;
+use Modules\MedicalInsurance\DTO\CreateMedicalInsuranceSubscriptionDTO;
+use Modules\MedicalInsurance\DTO\CreateMedicalInsuranceSubscriptionFamilyMemberDTO;
 use Modules\UserInfo\UserPrivilege\Commands\UpdateUserPrivilegeCommand;
 use Modules\UserInfo\UserPrivilege\Models\UserPrivilege;
 use Ramsey\Uuid\Uuid;
@@ -21,14 +21,20 @@ class UpdateUserPrivilegeRequest extends FormRequest
             'charge_amount'        => 'nullable|string',
             'description'          => 'nullable|string',
             'period_id'            => 'nullable|string',
-            'medical_insurance_id' => [
-                'nullable',
-                'uuid',
-                'exists:medical_insurances,id',
-                Rule::requiredIf(function () {
-                    return $this->privilegeType() === PrivilegeCardConfigService::TYPE_HEALTH_INSURANCE;
-                }),
-            ],
+            'subscriptions'                                     => 'nullable|array',
+            'subscriptions.*.user_id'                           => 'required_with:subscriptions|uuid|exists:users,id',
+            'subscriptions.*.medical_insurance_id'              => 'required_with:subscriptions|uuid|exists:medical_insurances,id',
+            'subscriptions.*.medical_insurance_category_id'     => 'nullable|uuid|exists:medical_insurance_categories,id',
+            'subscriptions.*.amount'                            => 'required_with:subscriptions|numeric|min:0',
+            'subscriptions.*.subscription_no'                   => 'required_with:subscriptions|string|max:255|distinct',
+            'subscriptions.*.subscription_type'                 => 'nullable|string|in:individual,family',
+            'subscriptions.*.status'                            => 'nullable|integer|in:-1,0,1',
+            'subscriptions.*.family_members'                    => 'nullable|array',
+            'subscriptions.*.family_members.*.name'             => 'required_with:subscriptions.*.family_members|string|max:255',
+            'subscriptions.*.family_members.*.national_id'      => 'required_with:subscriptions.*.family_members|string|max:50',
+            'subscriptions.*.family_members.*.relation'         => 'required_with:subscriptions.*.family_members|string|max:100',
+            'subscriptions.*.family_members.*.amount'           => 'required_with:subscriptions.*.family_members|numeric|min:0',
+            'subscriptions.*.family_members.*.subscription_no'  => 'nullable|string|max:255',
         ];
     }
 
@@ -74,23 +80,38 @@ class UpdateUserPrivilegeRequest extends FormRequest
             charge_amount: $this->get('charge_amount'),
             description: $this->get('description'),
             period_id: $this->get('period_id'),
-            medical_insurance_id: $this->get('medical_insurance_id'),
         );
     }
 
     /**
-     * Resolve the privilege type from the existing user_privilege record.
+     * Build subscription DTOs from the request.
+     *
+     * @return array<CreateMedicalInsuranceSubscriptionDTO>
      */
-    private function privilegeType(): ?string
+    public function createSubscriptionDTOs(): array
     {
-        $id = $this->route('id');
+        return array_map(function (array $sub) {
+            $familyMembers = array_map(
+                fn (array $member) => new CreateMedicalInsuranceSubscriptionFamilyMemberDTO(
+                    name: $member['name'],
+                    nationalId: $member['national_id'],
+                    relation: $member['relation'],
+                    amount: (float) $member['amount'],
+                    subscriptionNo: $member['subscription_no'] ?? null,
+                ),
+                $sub['family_members'] ?? []
+            );
 
-        if (! $id) {
-            return null;
-        }
-
-        $userPrivilege = UserPrivilege::with('privilege')->find($id);
-
-        return $userPrivilege?->privilege?->type;
+            return new CreateMedicalInsuranceSubscriptionDTO(
+                userId: $sub['user_id'],
+                medicalInsuranceId: $sub['medical_insurance_id'],
+                amount: (float) $sub['amount'],
+                subscriptionNo: $sub['subscription_no'],
+                medicalInsuranceCategoryId: $sub['medical_insurance_category_id'] ?? null,
+                status: (int) ($sub['status'] ?? 1),
+                subscriptionType: $sub['subscription_type'] ?? 'individual',
+                familyMembers: $familyMembers,
+            );
+        }, $this->get('subscriptions', []));
     }
 }
