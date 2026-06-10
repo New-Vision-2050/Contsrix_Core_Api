@@ -65,14 +65,13 @@ class AttendanceUserPresenter extends AbstractPresenter
 
         $professionalData = $this->attendance->professionalData;
 
-        // ── Load ALL attendance sessions for this user on this business date ──
-        $businessDate = $this->attendance->business_date?->toDateString();
+        // ── Load ALL attendance sessions for this user on this work date ──
         $attendanceSessions = [];
-        if ($businessDate && $this->attendance->user_id) {
+        if ($workDate && $this->attendance->user_id) {
             $siblingAttendances = Attendance::query()
                 ->where('user_id', $this->attendance->user_id)
                 ->where('company_id', tenant('id'))
-                ->whereDate('business_date', $businessDate)
+                ->whereDate('business_date', $workDate)
                 ->whereNotNull('clock_in_time')
                 ->orderBy('clock_in_time')
                 ->get(['clock_in_time', 'clock_out_time']);
@@ -91,11 +90,11 @@ class AttendanceUserPresenter extends AbstractPresenter
 
         // ── Load ALL task sessions for this user on this date ──
         $taskSessions = [];
-        if ($businessDate && $this->attendance->user_id) {
+        if ($workDate && $this->attendance->user_id) {
             $taskRows = \Illuminate\Support\Facades\DB::table('employee_task_requests')
                 ->where('user_id', $this->attendance->user_id)
                 ->where('company_id', tenant('id'))
-                ->whereDate('task_date', $businessDate)
+                ->whereDate('task_date', $workDate)
                 ->whereIn('status', ['completed', 'in_progress', 'paused'])
                 ->orderByRaw('COALESCE(time_from, task_date) ASC')
                 ->get(['time_from', 'time_to', 'title']);
