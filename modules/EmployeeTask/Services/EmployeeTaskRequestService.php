@@ -36,7 +36,7 @@ class EmployeeTaskRequestService
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
     {
         $procedureType = ProcedureSettingType::EmployeeTaskRequest->value;
-        $preview       = $this->workflow->getApprovalResponsibles($procedureType);
+        $preview       = $this->workflow->getApprovalResponsibles($procedureType, $dto->userId);
 
         $data                  = $dto->toArray();
         $data['serial_number'] = $this->repository->generateSerialNumber();
@@ -76,6 +76,7 @@ class EmployeeTaskRequestService
             ProcedureSettingType::EmployeeTaskRequest->value,
             $task->id,
             $settings,
+            $task->user_id,
         );
 
         if (!$activeProcess) {
