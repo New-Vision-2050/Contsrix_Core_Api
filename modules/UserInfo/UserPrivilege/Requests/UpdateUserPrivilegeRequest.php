@@ -22,7 +22,6 @@ class UpdateUserPrivilegeRequest extends FormRequest
             'description'          => 'nullable|string',
             'period_id'            => 'nullable|string',
             'subscriptions'                                     => 'nullable|array',
-            'subscriptions.*.user_id'                           => 'required_with:subscriptions|uuid|exists:users,id',
             'subscriptions.*.medical_insurance_id'              => 'required_with:subscriptions|uuid|exists:medical_insurances,id',
             'subscriptions.*.medical_insurance_category_id'     => 'nullable|uuid|exists:medical_insurance_categories,id',
             'subscriptions.*.amount'                            => 'required_with:subscriptions|numeric|min:0',
@@ -88,9 +87,9 @@ class UpdateUserPrivilegeRequest extends FormRequest
      *
      * @return array<CreateMedicalInsuranceSubscriptionDTO>
      */
-    public function createSubscriptionDTOs(): array
+    public function createSubscriptionDTOs(string $userId): array
     {
-        return array_map(function (array $sub) {
+        return array_map(function (array $sub) use ($userId) {
             $familyMembers = array_map(
                 fn (array $member) => new CreateMedicalInsuranceSubscriptionFamilyMemberDTO(
                     name: $member['name'],
@@ -103,7 +102,7 @@ class UpdateUserPrivilegeRequest extends FormRequest
             );
 
             return new CreateMedicalInsuranceSubscriptionDTO(
-                userId: $sub['user_id'],
+                userId: $userId,
                 medicalInsuranceId: $sub['medical_insurance_id'],
                 amount: (float) $sub['amount'],
                 subscriptionNo: $sub['subscription_no'],
