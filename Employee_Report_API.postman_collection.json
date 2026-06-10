@@ -1,0 +1,184 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Employee Report API",
+    "description": "Synchronous single-employee PDF report generation.\nGenerates a complete PDF for a specific employee across a date range.\nNo queue - file is ready immediately in the response.\n\nVariables:\n- base_url  : API domain\n- token     : Bearer JWT\n- company_id: Tenant UUID\n- user_id   : Employee global_id",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "POST Generate Employee Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Company-Id",
+                "value": "{{company_id}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"date_from\": \"2026-06-01\",\n  \"date_to\": \"2026-06-30\",\n  \"name\": {\n    \"ar\": \"تقرير الموظف - يونيو 2026\",\n    \"en\": \"Employee Report - June 2026\"\n  },\n  \"report_language\": \"ar\",\n  \"paper_size\": \"A4\",\n  \"print_orientation\": \"portrait\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/employee-report",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports",
+                "employee-report"
+              ]
+            },
+            "description": "Creates and immediately generates a PDF report for a single employee.\nSynchronous generation (no queue). Response includes download_url."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Company-Id",
+                    "value": "{{company_id}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"date_from\": \"2026-06-01\",\n  \"date_to\": \"2026-06-30\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/reports/employee-report",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "reports",
+                    "employee-report"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Employee report generated successfully\",\n  \"payload\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"serial_number\": \"REP-2026-00042\",\n    \"name\": {\n      \"ar\": \"تقرير الموظف - يونيو 2026\",\n      \"en\": \"Employee Report - June 2026\"\n    },\n    \"name_ar\": \"تقرير الموظف - يونيو 2026\",\n    \"name_en\": \"Employee Report - June 2026\",\n    \"company_id\": \"comp-uuid-here\",\n    \"created_by\": \"admin-uuid-here\",\n    \"template_id\": null,\n    \"report_types\": [\n      \"attendance_absence\",\n      \"leaves\",\n      \"overtime\",\n      \"monthly_performance\",\n      \"salaries\",\n      \"lateness\",\n      \"deductions\",\n      \"branches_comparison\"\n    ],\n    \"period_type\": \"range\",\n    \"year\": 2026,\n    \"month\": null,\n    \"week\": null,\n    \"quarter\": null,\n    \"period_start\": \"2026-06-01\",\n    \"period_end\": \"2026-06-30\",\n    \"export_format\": \"pdf\",\n    \"language\": \"ar\",\n    \"paper_size\": \"A4\",\n    \"print_orientation\": \"portrait\",\n    \"config\": { },\n    \"status\": \"ready\",\n    \"file_path\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890.pdf\",\n    \"file_size\": 142350,\n    \"generated_at\": \"2026-06-10 05:24:00 PM\",\n    \"error_message\": null,\n    \"created_at\": \"2026-06-10 05:23:00 PM\",\n    \"updated_at\": \"2026-06-10 05:24:00 PM\",\n    \"download_url\": \"https://spaces-url/reports/a1b2c3d4-e5f6-7890-abcd-ef1234567890.pdf\"\n  }\n}"
+            },
+            {
+              "name": "422 Validation Error",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"The given data was invalid.\",\n  \"errors\": {\n    \"user_id\": [\"The user id field is required.\"],\n    \"date_from\": [\"The date from field is required.\"],\n    \"date_to\": [\"The date to field is required.\"]\n  }\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Unauthenticated.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET Download Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/pdf",
+                "type": "text"
+              },
+              {
+                "key": "X-Company-Id",
+                "value": "{{company_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/{{report_id}}/download",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports",
+                "{{report_id}}",
+                "download"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - PDF",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/pdf"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "attachment; filename=\"Employee-Report-June-2026.pdf\""
+                }
+              ],
+              "body": "<binary pdf content>"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
