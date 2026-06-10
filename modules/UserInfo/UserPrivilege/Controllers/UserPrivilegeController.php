@@ -7,6 +7,7 @@ namespace Modules\UserInfo\UserPrivilege\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Modules\User\Repositories\UserRepository;
 use Modules\UserInfo\UserPrivilege\Handlers\DeleteUserPrivilegeHandler;
 use Modules\UserInfo\UserPrivilege\Handlers\UpdateUserPrivilegeHandler;
@@ -19,7 +20,6 @@ use Modules\UserInfo\UserPrivilege\Requests\UpdateUserPrivilegeRequest;
 use Modules\UserInfo\UserPrivilege\Services\UserPrivilegeCRUDService;
 use Modules\MedicalInsurance\Services\MedicalInsuranceSubscriptionCRUDService;
 use Modules\Shared\Privilege\Services\PrivilegeCardConfigService;
-use Modules\Shared\Privilege\Models\Privilege;
 use Ramsey\Uuid\Uuid;
 use Stancl\Tenancy\Facades\Tenancy;
 
@@ -90,50 +90,75 @@ class UserPrivilegeController extends Controller
         $createCreateUserPrivilegeDTO = $request->createCreateUserPrivilegeDTO();
         $userId = Uuid::fromString($request->input('user_id'));
 
-        $user = $this->userRepository->getUser($userId);
-        $createCreateUserPrivilegeDTO->company_id = $user->company_id;
-        $createCreateUserPrivilegeDTO->global_id = $user->global_company_user_id;
+        return DB::transaction(function () use ($request, $createCreateUserPrivilegeDTO, $userId) {
+            $user = $this->userRepository->getUser($userId);
+            $createCreateUserPrivilegeDTO->company_id = $user->company_id;
+            $createCreateUserPrivilegeDTO->global_id = $user->global_company_user_id;
 
-        $createdItem = $this->userPrivilegeService->create($createCreateUserPrivilegeDTO);
+            $createdItem = $this->userPrivilegeService->create($createCreateUserPrivilegeDTO);
 
-        // Process subscriptions if privilege is health_insurance type
-        $this->processSubscriptions(
-            privilegeType: $this->resolvePrivilegeType($request->get('privilege_id')),
-            subscriptions: $request->get('subscriptions', []),
-            companyId: $user->company_id,
-            createDTOs: fn () => $request->createSubscriptionDTOs($userId->toString()),
-        );
+            // Resolve privilege type from the created item's relationship (no separate DB query).
+            $privilegeType = $createdItem->privilege?->type;
 
-        $subscriptionsByInsurance = $this->fetchSubscriptionsByInsurance($userId->toString());
+            // Process subscriptions if privilege is health_insurance type.
+            $this->processSubscriptions(
+                privilegeType: $privilegeType,
+                subscriptions: $request->get('subscriptions', []),
+                companyId: $user->company_id,
+                createDTOs: fn () => $request->createSubscriptionDTOs($userId->toString()),
+            );
 
-        $presenter = new UserPrivilegePresenter($createdItem, $subscriptionsByInsurance);
+            // Reload the privilege after tenant-conditional subscription processing
+            // so the presenter has all eager-loaded relations.
+            $createdItem->load([
+                'privilege',
+                'typePrivilege',
+                'typeAllowance',
+                'period',
+                'medicalInsurance',
+            ]);
 
-        return Json::item($presenter->getData());
+            $subscriptionsByInsurance = $this->fetchSubscriptionsByInsurance($userId->toString());
+
+            $presenter = new UserPrivilegePresenter($createdItem, $subscriptionsByInsurance);
+
+            return Json::item($presenter->getData());
+        });
     }
 
     public function update(UpdateUserPrivilegeRequest $request): JsonResponse
     {
-        $command = $request->createUpdateUserPrivilegeCommand();
-        $this->updateUserPrivilegeHandler->handle($command);
+        return DB::transaction(function () use ($request) {
+            $command = $request->createUpdateUserPrivilegeCommand();
+            $this->updateUserPrivilegeHandler->handle($command);
 
-        $item = $this->userPrivilegeService->get($command->getId());
-        $userId = $this->resolveUserIdFromPrivilege($item);
+            $item = $this->userPrivilegeService->get($command->getId());
+            $item->load([
+                'privilege',
+                'typePrivilege',
+                'typeAllowance',
+                'period',
+                'medicalInsurance',
+            ]);
 
-        // Process subscriptions if privilege is health_insurance type
-        $this->processSubscriptions(
-            privilegeType: $item->privilege?->type,
-            subscriptions: $request->get('subscriptions', []),
-            companyId: $item->company_id,
-            createDTOs: fn () => $request->createSubscriptionDTOs(),
-        );
+            $userId = $this->resolveUserIdFromPrivilege($item);
 
-        $subscriptionsByInsurance = $userId
-            ? $this->fetchSubscriptionsByInsurance($userId)
-            : [];
+            // Process subscriptions if privilege is health_insurance type.
+            $this->processSubscriptions(
+                privilegeType: $item->privilege?->type,
+                subscriptions: $request->get('subscriptions', []),
+                companyId: $item->company_id,
+                createDTOs: fn () => $request->createSubscriptionDTOs(),
+            );
 
-        $presenter = new UserPrivilegePresenter($item, $subscriptionsByInsurance);
+            $subscriptionsByInsurance = $userId
+                ? $this->fetchSubscriptionsByInsurance($userId)
+                : [];
 
-        return Json::item($presenter->getData());
+            $presenter = new UserPrivilegePresenter($item, $subscriptionsByInsurance);
+
+            return Json::item($presenter->getData());
+        });
     }
 
     public function delete(DeleteUserPrivilegeRequest $request): JsonResponse
@@ -150,6 +175,9 @@ class UserPrivilegeController extends Controller
     /**
      * Process subscription creation if the privilege type is health_insurance
      * and subscriptions are provided.
+     *
+     * Runs inside the caller's DB transaction so that user_privilege creation
+     * and subscription creation are atomic.
      */
     private function processSubscriptions(?string $privilegeType, array $subscriptions, string $companyId, callable $createDTOs): void
     {
@@ -158,18 +186,12 @@ class UserPrivilegeController extends Controller
         }
 
         $dtos = $createDTOs();
-        if (! empty($dtos)) {
-            Tenancy::initialize($companyId);
-            $this->medicalInsuranceSubscriptionService->createMany($dtos);
+        if (empty($dtos)) {
+            return;
         }
-    }
 
-    /**
-     * Resolve the privilege type slug from a privilege ID.
-     */
-    private function resolvePrivilegeType(string $privilegeId): ?string
-    {
-        return Privilege::find($privilegeId)?->type;
+        Tenancy::initialize($companyId);
+        $this->medicalInsuranceSubscriptionService->createMany($dtos);
     }
 
     /**
@@ -177,8 +199,10 @@ class UserPrivilegeController extends Controller
      */
     private function resolveUserIdFromPrivilege($userPrivilege): string
     {
-        return \Modules\User\Models\User::where('global_company_user_id', $userPrivilege->global_id)
+        $userId = \Modules\User\Models\User::where('global_company_user_id', $userPrivilege->global_id)
             ->where('company_id', $userPrivilege->company_id)
-            ->value('id') ?? '';
+            ->value('id');
+
+        return $userId ? (string) $userId : '';
     }
 }
