@@ -290,6 +290,7 @@ class AttendancePresenter extends AbstractPresenter
             'is_early_departure' => $this->attendance->is_early_departure ? 'Yes' : 'No',
             'early_departure_minutes' => HoursFormatter::fromMinutes((int)$this->attendance->early_departure_minutes),
             'status' => ucfirst($this->attendance->status),
+            'created_at' => $this->attendance->created_at?->format('Y-m-d h:i:s A'),
         ];
     }
 

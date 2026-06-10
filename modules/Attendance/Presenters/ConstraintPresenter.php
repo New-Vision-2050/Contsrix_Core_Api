@@ -39,7 +39,7 @@ class ConstraintPresenter extends AbstractPresenter
                 'notify_early_departure' => false,
             ],
             'created_by' => $this->constraint->creator?->name,
-            'created_at' => $this->constraint->created_at?->format('Y-m-d h:i:s A'),
+            'created_at' => $this->constraint->created_at?->format('Y-m-d H:i:s'),
         ];
     }
 

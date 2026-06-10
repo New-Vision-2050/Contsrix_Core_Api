@@ -21,28 +21,28 @@ class LeaveRequestPresenter extends AbstractPresenter
             'user_id' => $this->leaveRequest->user_id,
             'company_id' => $this->leaveRequest->company_id,
             'leave_type_id' => $this->leaveRequest->leave_type_id,
-            
+
             // Leave dates
             'start_date' => $this->leaveRequest->start_date?->format('Y-m-d'),
             'end_date' => $this->leaveRequest->end_date?->format('Y-m-d'),
             'total_days' => $this->leaveRequest->total_days,
-            
+
             // Request details
             'reason' => $this->leaveRequest->reason,
             'is_emergency' => $this->leaveRequest->is_emergency,
             'contact_info' => $this->leaveRequest->contact_info,
             'attachments' => $this->leaveRequest->attachments,
-            
+
             // Status and approval
             'status' => $this->leaveRequest->status,
             'approved_by' => $this->leaveRequest->approved_by,
             'approved_at' => $this->leaveRequest->approved_at?->format('Y-m-d H:i:s'),
             'rejection_reason' => $this->leaveRequest->rejection_reason,
-            
+
             // Timestamps
             'created_at' => $this->leaveRequest->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->leaveRequest->updated_at?->format('Y-m-d H:i:s'),
-            
+
             // Relationships
             'user' => $this->leaveRequest->user ? [
                 'id' => $this->leaveRequest->user->id,
@@ -50,12 +50,12 @@ class LeaveRequestPresenter extends AbstractPresenter
                 'email' => $this->leaveRequest->user->email,
                 'employee_id' => $this->leaveRequest->user->employee_id ?? null,
             ] : null,
-            
+
             'company' => $this->leaveRequest->company ? [
                 'id' => $this->leaveRequest->company->id,
                 'name' => $this->leaveRequest->company->name,
             ] : null,
-            
+
             'leave_type' => $this->leaveRequest->leaveType ? [
                 'id' => $this->leaveRequest->leaveType->id,
                 'name' => $this->leaveRequest->leaveType->name,
@@ -64,12 +64,12 @@ class LeaveRequestPresenter extends AbstractPresenter
                 'max_days_per_year' => $this->leaveRequest->leaveType->max_days_per_year,
                 'requires_approval' => $this->leaveRequest->leaveType->requires_approval,
             ] : null,
-            
+
             'approved_by_user' => $this->leaveRequest->approvedBy ? [
                 'id' => $this->leaveRequest->approvedBy->id,
                 'name' => $this->leaveRequest->approvedBy->name,
             ] : null,
-            
+
             // Computed properties
             'duration_text' => $this->getDurationText(),
             'status_text' => $this->getStatusText(),
@@ -90,24 +90,24 @@ class LeaveRequestPresenter extends AbstractPresenter
         }
 
         $days = $this->leaveRequest->total_days;
-        
+
         if ($days == 1) {
             return '1 day';
         }
-        
+
         if ($days < 7) {
             return "{$days} days";
         }
-        
+
         $weeks = floor($days / 7);
         $remainingDays = $days % 7;
-        
+
         $text = $weeks == 1 ? '1 week' : "{$weeks} weeks";
-        
+
         if ($remainingDays > 0) {
             $text .= $remainingDays == 1 ? ' 1 day' : " {$remainingDays} days";
         }
-        
+
         return $text;
     }
 
@@ -130,8 +130,8 @@ class LeaveRequestPresenter extends AbstractPresenter
      */
     private function canBeCancelled(): bool
     {
-        return in_array($this->leaveRequest->status, ['pending', 'approved']) 
-            && $this->leaveRequest->start_date 
+        return in_array($this->leaveRequest->status, ['pending', 'approved'])
+            && $this->leaveRequest->start_date
             && $this->leaveRequest->start_date->isFuture();
     }
 
@@ -140,8 +140,8 @@ class LeaveRequestPresenter extends AbstractPresenter
      */
     private function canBeModified(): bool
     {
-        return $this->leaveRequest->status === 'pending' 
-            && $this->leaveRequest->start_date 
+        return $this->leaveRequest->status === 'pending'
+            && $this->leaveRequest->start_date
             && $this->leaveRequest->start_date->isFuture();
     }
 
@@ -150,7 +150,7 @@ class LeaveRequestPresenter extends AbstractPresenter
      */
     private function isPastDue(): bool
     {
-        return $this->leaveRequest->end_date 
+        return $this->leaveRequest->end_date
             && $this->leaveRequest->end_date->isPast();
     }
 
@@ -162,7 +162,7 @@ class LeaveRequestPresenter extends AbstractPresenter
         if (!$this->leaveRequest->start_date || $this->leaveRequest->start_date->isPast()) {
             return null;
         }
-        
+
         return now()->diffInDays($this->leaveRequest->start_date);
     }
 
@@ -200,8 +200,8 @@ class LeaveRequestPresenter extends AbstractPresenter
             'is_emergency' => $this->leaveRequest->is_emergency ? 'Yes' : 'No',
             'reason' => $this->leaveRequest->reason,
             'approved_by' => $this->leaveRequest->approvedBy?->name,
-            'approved_at' => $this->leaveRequest->approved_at?->format('Y-m-d H:i:s'),
-            'created_at' => $this->leaveRequest->created_at?->format('Y-m-d H:i:s'),
+            'approved_at' => $this->leaveRequest->approved_at?->format('Y-m-d h:i:s A'),
+            'created_at' => $this->leaveRequest->created_at?->format('Y-m-d h:i:s A'),
         ];
     }
 }
