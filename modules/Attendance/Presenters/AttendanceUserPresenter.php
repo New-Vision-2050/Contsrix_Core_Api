@@ -65,6 +65,54 @@ class AttendanceUserPresenter extends AbstractPresenter
 
         $professionalData = $this->attendance->professionalData;
 
+        // ── Load ALL attendance sessions for this user on this business date ──
+        $businessDate = $this->attendance->business_date?->toDateString();
+        $attendanceSessions = [];
+        if ($businessDate && $this->attendance->user_id) {
+            $siblingAttendances = Attendance::query()
+                ->where('user_id', $this->attendance->user_id)
+                ->where('company_id', tenant('id'))
+                ->whereDate('business_date', $businessDate)
+                ->whereNotNull('clock_in_time')
+                ->orderBy('clock_in_time')
+                ->get(['clock_in_time', 'clock_out_time']);
+
+            foreach ($siblingAttendances as $sa) {
+                $attendanceSessions[] = [
+                    'clock_in_time'  => $sa->clock_in_time
+                        ? \Carbon\Carbon::parse($sa->clock_in_time)->format('H:i:s')
+                        : null,
+                    'clock_out_time' => $sa->clock_out_time
+                        ? \Carbon\Carbon::parse($sa->clock_out_time)->format('H:i:s')
+                        : null,
+                ];
+            }
+        }
+
+        // ── Load ALL task sessions for this user on this date ──
+        $taskSessions = [];
+        if ($businessDate && $this->attendance->user_id) {
+            $taskRows = \Illuminate\Support\Facades\DB::table('employee_task_requests')
+                ->where('user_id', $this->attendance->user_id)
+                ->where('company_id', tenant('id'))
+                ->whereDate('task_date', $businessDate)
+                ->whereIn('status', ['completed', 'in_progress', 'paused'])
+                ->orderByRaw('COALESCE(time_from, task_date) ASC')
+                ->get(['time_from', 'time_to', 'title']);
+
+            foreach ($taskRows as $tr) {
+                $taskSessions[] = [
+                    'task_time_in'  => $tr->time_from
+                        ? substr((string) $tr->time_from, 11, 5)
+                        : null,
+                    'task_time_out' => $tr->time_to
+                        ? substr((string) $tr->time_to, 11, 5)
+                        : null,
+                    'title'         => (string) ($tr->title ?? ''),
+                ];
+            }
+        }
+
         return [
             'id' => $this->attendance->id ? (string)$this->attendance->id : null,
             'user_name' => $this->attendance->user?->name,
@@ -77,17 +125,21 @@ class AttendanceUserPresenter extends AbstractPresenter
             'branch' => $professionalData?->branch?->name,
             'management' => $professionalData?->management?->name,
 
-            // Actual times
+            // Official times from constraint
+            'official_in_time' => $officialIn,
+            'official_out_time' => $officialOut,
+
+            // Multiple sessions per day
+            'attendance_sessions' => $attendanceSessions,
+            'task_sessions' => $taskSessions,
+
+            // Current record's single session (convenience / backward compat)
             'clock_in_time' => $this->attendance->clock_in_time
                 ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('H:i:s')
                 : null,
             'clock_out_time' => $this->attendance->clock_out_time
                 ? \Carbon\Carbon::parse($this->attendance->clock_out_time)->format('H:i:s')
                 : null,
-
-            // Official times from constraint
-            'official_in_time' => $officialIn,
-            'official_out_time' => $officialOut,
 
             // Hours (report format HH:MM)
             'total_work_hours' => HoursFormatter::fromDecimalString($this->attendance->total_work_hours),
