@@ -17,6 +17,7 @@ return new class extends Migration
                 $table->uuid('id')->primary();
                 $table->uuid('processable_id');
                 $table->string('processable_type');
+                $table->unsignedInteger('sort_order')->nullable();
                 $table->string('execute_type');
                 $table->string('status'); // ProcessStatus Enum
                 $table->json('template_snapshot')->nullable();
@@ -24,7 +25,7 @@ return new class extends Migration
 
                 // Indexes
                 $table->index(['processable_id', 'processable_type']);
-                $table->unique(['processable_id', 'processable_type'], 'processes_morph_type_unique');
+                $table->unique(['processable_id', 'processable_type', 'sort_order'], 'processes_morph_type_sort_unique');
             });
         }
 

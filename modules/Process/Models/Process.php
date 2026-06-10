@@ -26,6 +26,7 @@ class Process extends Model
         'type',
         'execute_type',
         'status',
+        'sort_order',
         'template_snapshot',
     ];
 
