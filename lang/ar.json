@@ -70,5 +70,15 @@
     "suspended_records": ":type المعلقين",
     "brokers": "الوسطاء",
     "employees": "الموظفين",
-    "clients": "العملاء"
+    "clients": "العملاء",
+    "attendance": {
+        "notifications": {
+            "late_arrival_title": "تأخير عن الموعد",
+            "late_arrival_body": "لقد تأخرت بمقدار {minutes} دقيقة.",
+            "early_departure_title": "خروج مبكر",
+            "early_departure_body": "لقد غادرت مبكراً بمقدار {minutes} دقيقة.",
+            "unexcused_absence_title": "غياب غير مبرر",
+            "unexcused_absence_body": "لقد تم تسجيل غيابك اليوم."
+        }
+    }
 }

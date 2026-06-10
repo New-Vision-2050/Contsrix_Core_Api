@@ -145,6 +145,15 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.update-basic-info');
 
+    // Get / update notification settings
+    Route::get('/{constraint}/notifications', [AttendanceConstraintController::class, 'getNotificationSettings'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.get-notification-settings');
+
+    Route::patch('/{constraint}/notifications', [AttendanceConstraintController::class, 'updateNotificationSettings'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+        ->name('attendance.constraints.update-notification-settings');
+
     // Constraint employees
     Route::get('/{constraint}/employees', [AttendanceConstraintController::class, 'getConstraintEmployees'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())

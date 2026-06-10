@@ -82,6 +82,7 @@ class AttendanceConstraint extends Model implements Auditable
         'notes',
         'country_id',
         'time_zone_id',
+        'notification_settings',
     ];
 
     protected $casts = [
@@ -105,6 +106,7 @@ class AttendanceConstraint extends Model implements Auditable
         'end_date' => 'date',
         'country_id' => 'string',
         'time_zone_id' => 'string',
+        'notification_settings' => 'array',
     ];
 
     protected $dates = [

@@ -33,6 +33,11 @@ class ConstraintPresenter extends AbstractPresenter
             'branches' => $this->formatBranches(),
             'country_id' => $this->constraint->country_id,
             'time_zone_id' => $this->constraint->time_zone_id,
+            'notification_settings' => $this->constraint->notification_settings ?? [
+                'notify_late_arrival' => false,
+                'notify_unexcused_absence' => false,
+                'notify_early_departure' => false,
+            ],
             'created_by' => $this->constraint->creator?->name,
             'created_at' => $this->constraint->created_at?->format('Y-m-d H:i:s'),
         ];
