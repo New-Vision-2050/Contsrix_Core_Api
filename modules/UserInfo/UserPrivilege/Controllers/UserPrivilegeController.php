@@ -150,7 +150,7 @@ class UserPrivilegeController extends Controller
                 companyId: $item->company_id,
                 createDTOs: fn () => $request->createSubscriptionDTOs($userId),
             );
-
+ 
             $subscriptionsByInsurance = $userId
                 ? $this->fetchSubscriptionsByInsurance($userId)
                 : [];
