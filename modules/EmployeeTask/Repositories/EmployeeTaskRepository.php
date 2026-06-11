@@ -76,8 +76,7 @@ class EmployeeTaskRepository
             })
             ->with([
                 'user',
-                'currentProcedureStep.actionTakers.user',
-                'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with('steps')
+                'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with(['steps.procedureSettingStep', 'steps.assignedUser'])
             ])
             ->orderByDesc('created_at');
 
@@ -145,8 +144,7 @@ class EmployeeTaskRepository
             })
             ->with([
                 'user',
-                'currentProcedureStep.actionTakers.user',
-                'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with('steps')
+                'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with(['steps.procedureSettingStep', 'steps.assignedUser'])
             ]);
 
         if (!empty($filters['task_id'])) {
