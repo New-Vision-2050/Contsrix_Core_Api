@@ -32,30 +32,40 @@ class EmployeeTaskRepository
             ->find($id);
     }
 
-    public function paginateForEmployee(string $userId, array $filters, int $perPage = 15): LengthAwarePaginator
+    public function paginateForEmployee(string $userId, array $filters, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
-        $query = EmployeeTaskRequest::query()
+        $query = EmployeeTaskRequest::filter($filters)
             ->where('user_id', $userId)
-            ->with(['sessions'])
-            ->orderByDesc('created_at');
+            ->with(['sessions']);
 
-        if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        if (!empty($filters['task_date'])) {
-            $query->whereDate('task_date', $filters['task_date']);
-        }
-
-        if (!empty($filters['date_from'])) {
-            $query->whereDate('task_date', '>=', $filters['date_from']);
-        }
-
-        if (!empty($filters['date_to'])) {
-            $query->whereDate('task_date', '<=', $filters['date_to']);
-        }
+        $this->applySorting($query, $sort);
 
         return $query->paginate($perPage);
+    }
+
+    private function applySorting($query, ?string $sort): void
+    {
+        if (!$sort) {
+            $query->orderByDesc('created_at');
+            return;
+        }
+
+        $direction = str_ends_with($sort, '_desc') ? 'desc' : 'asc';
+        $column    = str_replace(['_desc', '_asc'], '', $sort);
+
+        $allowed = [
+            'created_at',
+            'task_date',
+            'duration_hours',
+            'title',
+            'status',
+        ];
+
+        if (in_array($column, $allowed, true)) {
+            $query->orderBy($column, $direction);
+        } else {
+            $query->orderByDesc('created_at');
+        }
     }
 
     /**
@@ -255,6 +265,47 @@ class EmployeeTaskRepository
     {
         $task->update($data);
         return $task->fresh();
+    }
+
+    public function getFilterMetadata(string $userId): array
+    {
+        $statusCounts = EmployeeTaskRequest::query()
+            ->where('user_id', $userId)
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $projectRows = EmployeeTaskRequest::query()
+            ->where('user_id', $userId)
+            ->whereNotNull('project_id')
+            ->join('projects', 'employee_task_requests.project_id', '=', 'projects.id')
+            ->selectRaw('projects.id as project_id, projects.name as project_name, COUNT(*) as count')
+            ->groupBy('projects.id', 'projects.name')
+            ->get();
+
+        $projectCounts = [];
+        foreach ($projectRows as $row) {
+            $projectCounts[] = [
+                'id'    => $row->project_id,
+                'name'  => $row->project_name,
+                'count' => (int) $row->count,
+            ];
+        }
+
+        $durationStats = EmployeeTaskRequest::query()
+            ->where('user_id', $userId)
+            ->selectRaw('MIN(duration_hours) as min_hours, MAX(duration_hours) as max_hours')
+            ->first();
+
+        return [
+            'status_counts'  => $statusCounts,
+            'project_counts' => $projectCounts,
+            'duration'       => [
+                'min_hours' => $durationStats?->min_hours ? (float) $durationStats->min_hours : null,
+                'max_hours' => $durationStats?->max_hours ? (float) $durationStats->max_hours : null,
+            ],
+        ];
     }
 
     public function generateSerialNumber(): string

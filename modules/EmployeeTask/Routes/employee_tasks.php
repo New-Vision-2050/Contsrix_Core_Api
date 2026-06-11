@@ -10,8 +10,9 @@ use Modules\EmployeeTask\Controllers\EmployeeTaskController;
 |--------------------------------------------------------------------------
 */
 Route::prefix('employee-tasks')->group(function () {
-    Route::get('/',     [EmployeeTaskController::class, 'index']);
-    Route::post('/',    [EmployeeTaskController::class, 'store']);
+    Route::get('/',              [EmployeeTaskController::class, 'index']);
+    Route::get('/filters',       [EmployeeTaskController::class, 'filters']);
+    Route::post('/',             [EmployeeTaskController::class, 'store']);
     Route::get('/{id}', [EmployeeTaskController::class, 'show']);
 
     Route::delete('/{id}', [EmployeeTaskController::class, 'destroy']);

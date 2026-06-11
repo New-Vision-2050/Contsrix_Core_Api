@@ -43,11 +43,19 @@ class EmployeeTaskController extends Controller
 
     public function index(): JsonResponse
     {
-        $filters  = request()->only(['status', 'task_date', 'date_from', 'date_to']);
-        $perPage  = (int) request()->input('per_page', 15);
-        $userId   = (string) Auth::id();
+        $filters = request()->only([
+            'status',
+            'project_id',
+            'task_date',
+            'date_from',
+            'date_to',
+            'search',
+        ]);
+        $perPage = (int) request()->input('per_page', 15);
+        $sort    = request()->input('sort');
+        $userId  = (string) Auth::id();
 
-        $paginator = $this->requestService->list($userId, $filters, $perPage);
+        $paginator = $this->requestService->list($userId, $filters, $perPage, $sort);
 
         return Json::items(
             mainItems:          EmployeeTaskRequestPresenter::collection($paginator->items()),
@@ -59,6 +67,63 @@ class EmployeeTaskController extends Controller
             ],
             message: 'Task requests retrieved successfully',
         );
+    }
+
+    /**
+     * GET /employee-tasks/filters
+     *
+     * Returns filter metadata with counts for the mobile filter UI:
+     *   - statuses: key, title_ar, title_en, count
+     *   - projects: key (project_id), title, count
+     *   - duration: min_minutes, max_minutes
+     */
+    public function filters(): JsonResponse
+    {
+        $userId   = (string) Auth::id();
+        $locale   = app()->getLocale();
+        $metadata = $this->requestService->getFilterMetadata($userId);
+
+        $statuses = [];
+        foreach ($metadata['status_counts'] as $statusValue => $count) {
+            try {
+                $enum = EmployeeTaskStatus::from($statusValue);
+            } catch (\ValueError) {
+                continue;
+            }
+            $statuses[] = [
+                'key'      => $statusValue,
+                'title_ar' => $enum->label('ar'),
+                'title_en' => $enum->label('en'),
+                'count'    => (int) $count,
+            ];
+        }
+
+        $projects = [];
+        foreach ($metadata['project_counts'] as $project) {
+            $projects[] = [
+                'key'   => $project['id'],
+                'title' => $project['name'],
+                'count' => $project['count'],
+            ];
+        }
+
+        $duration = [
+            'key'       => 'duration_minutes',
+            'title_ar'  => 'مدة المهمة',
+            'title_en'  => 'Task Duration',
+            'min_minutes' => $metadata['duration']['min_hours'] !== null
+                ? (int) round($metadata['duration']['min_hours'] * 60)
+                : null,
+            'max_minutes' => $metadata['duration']['max_hours'] !== null
+                ? (int) round($metadata['duration']['max_hours'] * 60)
+                : null,
+        ];
+
+        return Json::item([
+            'statuses' => $statuses,
+            'projects' => $projects,
+            'duration' => $duration,
+        ], message: 'Filter metadata retrieved successfully');
     }
 
     public function store(CreateEmployeeTaskRequest $request): JsonResponse

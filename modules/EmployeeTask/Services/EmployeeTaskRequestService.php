@@ -172,9 +172,9 @@ class EmployeeTaskRequestService
     }
 
 
-    public function list(string $userId, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function list(string $userId, array $filters = [], int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
-        return $this->repository->paginateForEmployee($userId, $filters, $perPage);
+        return $this->repository->paginateForEmployee($userId, $filters, $perPage, $sort);
     }
 
     public function adminList(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -269,6 +269,11 @@ class EmployeeTaskRequestService
         ]);
 
         event(new EmployeeTaskNotification($task, $currentStep));
+    }
+
+    public function getFilterMetadata(string $userId): array
+    {
+        return $this->repository->getFilterMetadata($userId);
     }
 
     public function getInboxCountsForAdmin(string $adminId, array $filters = []): array
