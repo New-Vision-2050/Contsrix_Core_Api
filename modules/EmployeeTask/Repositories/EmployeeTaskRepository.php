@@ -76,6 +76,7 @@ class EmployeeTaskRepository
             })
             ->with([
                 'user',
+                'currentProcedureStep.actionTakers.user',
                 'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with('steps')
             ])
             ->orderByDesc('created_at');
@@ -144,6 +145,7 @@ class EmployeeTaskRepository
             })
             ->with([
                 'user',
+                'currentProcedureStep.actionTakers.user',
                 'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with('steps')
             ]);
 
