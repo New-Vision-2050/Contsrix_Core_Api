@@ -91,7 +91,8 @@ class EmployeeTaskRequestService
         if (!$currentStep) return;
 
         $task->update([
-            'approval_responsible_id' => $currentStep->assigned_user_id,
+            'approval_responsible_id'     => $currentStep->assigned_user_id,
+            'current_procedure_step_id'   => $currentStep->step_id,
         ]);
 
         $dummyStep = new ProcedureSettingStep([
