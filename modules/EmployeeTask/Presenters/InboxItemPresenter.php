@@ -136,7 +136,13 @@ final class InboxItemPresenter
     private static function step($model): ?array
     {
         if (!$model->relationLoaded('currentProcedureStep') || !$model->currentProcedureStep) {
-            return null;
+            return [
+                'id'            => null,
+                'name'          => null,
+                'step_order'    => null,
+                'is_approve'    => null,
+                'action_takers' => [],
+            ];
         }
 
         $step         = $model->currentProcedureStep;
