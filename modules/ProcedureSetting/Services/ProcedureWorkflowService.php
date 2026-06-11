@@ -146,7 +146,7 @@ final class ProcedureWorkflowService
     {
         /** @var ProcedureSetting|null $setting */
         $setting = ProcedureSetting::query()
-            ->where('type', $procedureType)
+            ->where('type', $procedureType)->orderBy("sort_order")
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with('actionTakers.user')])
             ->first();
 
