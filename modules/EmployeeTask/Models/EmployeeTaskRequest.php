@@ -17,6 +17,7 @@ use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\User\Models\User;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Models\Process;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 
 class EmployeeTaskRequest extends Model
 {
@@ -90,6 +91,11 @@ class EmployeeTaskRequest extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
 
     public function currentProcedureStep(): BelongsTo

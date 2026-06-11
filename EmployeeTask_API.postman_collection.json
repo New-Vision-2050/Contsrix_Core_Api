@@ -198,10 +198,14 @@
               "host": ["{{url}}"],
               "path": ["api", "v1", "employee-tasks"],
               "query": [
-                { "key": "status",    "value": "pending",     "description": "Filter by status" },
-                { "key": "task_date", "value": "",            "disabled": true },
-                { "key": "date_from", "value": "2026-01-01",  "disabled": true },
-                { "key": "date_to",   "value": "2026-12-31",  "disabled": true }
+                { "key": "status",     "value": "pending",            "description": "Filter by status (single or comma-separated: pending,in_progress)" },
+                { "key": "project_id", "value": "",                   "disabled": true, "description": "Filter by project UUID" },
+                { "key": "task_date",  "value": "",                   "disabled": true, "description": "Exact task date (YYYY-MM-DD)" },
+                { "key": "date_from",  "value": "2026-01-01",         "disabled": true, "description": "Date range start (YYYY-MM-DD)" },
+                { "key": "date_to",    "value": "2026-12-31",         "disabled": true, "description": "Date range end (YYYY-MM-DD)" },
+                { "key": "search",     "value": "",                   "disabled": true, "description": "Search in title and description" },
+                { "key": "sort",       "value": "created_at_desc",    "disabled": true, "description": "Sort column_direction (created_at|task_date|duration_hours|title|status + _asc|_desc)" },
+                { "key": "per_page",   "value": "15",                 "disabled": true, "description": "Items per page" }
               ]
             }
           },
@@ -218,6 +222,51 @@
               "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
               "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Task requests retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 2 },\n  \"payload\": [\n    {\n      \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"serial_number\": \"TASK-2026-00042\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"duration_hours\": \"04:00\",\n      \"task_date\": \"2026-11-24\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n      \"created_at\": \"2026-05-18 14:32:11\",\n      \"sessions\": []\n    },\n    {\n      \"id\": \"a1b2c3d4-aaaa-bbbb-cccc-dddddddddddd\",\n      \"serial_number\": \"TASK-2026-00041\",\n      \"title\": \"صيانة دورية للمولد\",\n      \"duration_hours\": \"02:30\",\n      \"task_date\": \"2026-11-23\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"task_location\": { \"latitude\": 46.6800, \"longitude\": 23.6500, \"radius_meters\": 150 },\n      \"created_at\": \"2026-05-17 09:10:00\",\n      \"sessions\": []\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "id": "req-filter-metadata-mobile",
+          "name": "Get Filter Metadata (Mobile)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().payload;",
+                  "pm.test('Has statuses array', () => pm.expect(p.statuses).to.be.an('array'));",
+                  "pm.test('Has projects array', () => pm.expect(p.projects).to.be.an('array'));",
+                  "pm.test('Has duration object', () => pm.expect(p.duration).to.be.an('object'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/filters",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "filters"]
+            },
+            "description": "Mobile endpoint that returns filter metadata with counts:\n- statuses: key, title_ar, title_en, count\n- projects: key (project_id), title, count\n- duration: min_minutes, max_minutes, title_ar, title_en"
+          },
+          "response": [
+            {
+              "id": "resp-filter-metadata-success",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/employee-tasks/filters", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "filters"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Filter metadata retrieved successfully\",\n  \"payload\": {\n    \"statuses\": [\n      { \"key\": \"in_progress\", \"title_ar\": \"جارية\", \"title_en\": \"In Progress\", \"count\": 12 },\n      { \"key\": \"pending\", \"title_ar\": \"في انتظار الاعتماد\", \"title_en\": \"Pending Approval\", \"count\": 16 },\n      { \"key\": \"rejected\", \"title_ar\": \"مرفوضة\", \"title_en\": \"Rejected\", \"count\": 8 },\n      { \"key\": \"approved\", \"title_ar\": \"معتمدة\", \"title_en\": \"Approved\", \"count\": 2 }\n    ],\n    \"projects\": [\n      { \"key\": \"proj-uuid-1\", \"title\": \"مشروع العليا\", \"count\": 12 },\n      { \"key\": \"proj-uuid-2\", \"title\": \"مشروع كدانة\", \"count\": 16 }\n    ],\n    \"duration\": {\n      \"key\": \"duration_minutes\",\n      \"title_ar\": \"مدة المهمة\",\n      \"title_en\": \"Task Duration\",\n      \"min_minutes\": 30,\n      \"max_minutes\": 540\n    }\n  }\n}"
             }
           ]
         },
