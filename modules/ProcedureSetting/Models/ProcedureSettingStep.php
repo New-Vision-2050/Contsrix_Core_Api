@@ -45,6 +45,8 @@ class ProcedureSettingStep extends Model
         'notify_by_sms',
         'escalation_management_hierarchy_id',
         'step_order',
+        'action_taker_type',
+        'action_taker_management_hierarchy_type',
     ];
 
     protected $casts = [
@@ -63,6 +65,8 @@ class ProcedureSettingStep extends Model
         'notify_by_sms'                   => 'boolean',
         'escalation_management_hierarchy_id' => 'integer',
         'step_order'                         => 'integer',
+        'action_taker_type'                  => \Modules\ProcedureSetting\Enums\ActionTakerType::class,
+        'action_taker_management_hierarchy_type' => \Modules\ProcedureSetting\Enums\ActionTakerManagementHierarchyType::class,
     ];
 
     public function getRelationshipToPrimaryModel(): string

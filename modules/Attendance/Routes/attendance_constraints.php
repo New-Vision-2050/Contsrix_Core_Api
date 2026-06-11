@@ -136,10 +136,23 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
             ->name('attendance.constraints.user.additional.remove');
     });
 
-    // Update basic info (name, constraint_type, branches)
+    // Get / update basic info (name, constraint_type, branches, country_id, time_zone_id)
+    Route::get('/{constraint}/basic-info', [AttendanceConstraintController::class, 'getBasicInfo'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.get-basic-info');
+
     Route::patch('/{constraint}/basic-info', [AttendanceConstraintController::class, 'updateBasicInfo'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.update-basic-info');
+
+    // Get / update notification settings
+    Route::get('/{constraint}/notifications', [AttendanceConstraintController::class, 'getNotificationSettings'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.get-notification-settings');
+
+    Route::patch('/{constraint}/notifications', [AttendanceConstraintController::class, 'updateNotificationSettings'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+        ->name('attendance.constraints.update-notification-settings');
 
     // Constraint employees
     Route::get('/{constraint}/employees', [AttendanceConstraintController::class, 'getConstraintEmployees'])
@@ -181,6 +194,11 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
     Route::post('/{constraint}/shifts', [AttendanceConstraintController::class, 'assignShifts'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.shifts.assign');
+
+    // Get constraint-level rules
+    Route::get('/{constraint}/rules', [AttendanceConstraintController::class, 'getRules'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.rules.show');
 
     // Update constraint-level rules (lateness, early-clock-in, max overtime)
     Route::patch('/{constraint}/rules', [AttendanceConstraintController::class, 'updateRules'])

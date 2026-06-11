@@ -15,7 +15,6 @@ class UpdateUserPrivilegeCommand
         private ?string $charge_amount,
         private ?string $description,
         private ?string $period_id,
-        private ?string $medical_insurance_id = null,
     ) {
     }
 
@@ -33,7 +32,6 @@ class UpdateUserPrivilegeCommand
             'charge_amount' => $this->charge_amount,
             'description' => $this->description,
             'period_id' => $this->period_id,
-            'medical_insurance_id' => $this->medical_insurance_id
         ]);
     }
 }

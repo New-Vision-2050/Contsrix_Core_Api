@@ -66,9 +66,19 @@ class CreateProcedureSettingStepRequest extends FormRequest
 
             'step_order' => 'nullable|integer|min:0',
 
+            'action_taker_type' => 'nullable|string|in:specific_user,management_hierarchy',
+            'action_taker_management_hierarchy_type' => [
+                'nullable',
+                'string',
+                'in:branch_manager,management_manager',
+                'required_if:action_taker_type,management_hierarchy',
+                'prohibited_unless:action_taker_type,management_hierarchy',
+            ],
+
             'action_taker_user_ids'   => [
                 'nullable',
                 'array',
+                'required_if:action_taker_type,specific_user',
                 new ActionTakerUserIdsUniquePerProcedureSetting((string) $this->route('procedureSettingId')),
             ],
             'action_taker_user_ids.*' => 'uuid|exists:users,id',
@@ -107,6 +117,8 @@ class CreateProcedureSettingStepRequest extends FormRequest
             notify_by_sms:   (bool) ($v['notify_by_sms'] ?? false),
             escalation_management_hierarchy_id: isset($v['escalation_management_hierarchy_id']) ? (int) $v['escalation_management_hierarchy_id'] : null,
             step_order:            isset($v['step_order']) ? (int) $v['step_order'] : null,
+            action_taker_type:     $v['action_taker_type'] ?? null,
+            action_taker_management_hierarchy_type: $v['action_taker_management_hierarchy_type'] ?? null,
             action_taker_user_ids: $v['action_taker_user_ids'] ?? null,
             concerned_management_hierarchy_ids: $v['concerned_management_hierarchy_ids'] ?? null,
         );

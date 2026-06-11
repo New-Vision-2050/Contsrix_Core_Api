@@ -82,8 +82,13 @@ class ClientRequestWorkflowService
                     if (! $step instanceof ProcedureSettingStep) {
                         continue;
                     }
+<<<<<<< HEAD
                     $actionTakerIds  = $this->resolveActionTakerIds($step);
                     if (empty($actionTakerIds)) {
+=======
+                    $assignedUserId = $this->resolveAssignedUserId($step, $cr->created_by_user_id);
+                    if ($assignedUserId === null) {
+>>>>>>> 7e7bc03d265ebb41b00723cfac38441088eb3c27
                         continue;
                     }
                     $snapshots[] = [
@@ -396,6 +401,7 @@ class ClientRequestWorkflowService
         });
     }
 
+<<<<<<< HEAD
     // private function resolveAssignedUserId(ProcedureSettingStep $step): ?string
     // {
     //     if (is_string($step->user_id) && $step->user_id !== '') {
@@ -414,6 +420,14 @@ class ClientRequestWorkflowService
     {
         if (is_string($step->user_id) && $step->user_id !== '') {
             return [(string) $step->user_id];
+=======
+    private function resolveAssignedUserId(ProcedureSettingStep $step, ?string $createdByUserId = null): ?string
+    {
+        $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
+
+        if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
+            return $this->resolveManagerFromCreatorHierarchy($step, $createdByUserId);
+>>>>>>> 7e7bc03d265ebb41b00723cfac38441088eb3c27
         }
 
         return $step->actionTakers
@@ -422,6 +436,55 @@ class ClientRequestWorkflowService
             ->all();
     }
 
+<<<<<<< HEAD
+=======
+    private function resolveManagerFromCreatorHierarchy(ProcedureSettingStep $step, string $createdByUserId): ?string
+    {
+        $hierarchyType = $step->action_taker_management_hierarchy_type?->value;
+
+        if ($hierarchyType === null) {
+            return null;
+        }
+
+        $creator = \Modules\User\Models\User::query()
+            ->with('professionalData')
+            ->find($createdByUserId);
+
+        if ($creator === null) {
+            return null;
+        }
+
+        $professionalData = $creator->professionalData;
+
+        if ($professionalData === null) {
+            return null;
+        }
+
+        $hierarchyId = null;
+        if ($hierarchyType === 'branch_manager') {
+            $hierarchyId = $professionalData->branch_id;
+        } elseif ($hierarchyType === 'management_manager') {
+            $hierarchyId = $professionalData->management_id;
+        }
+
+        if ($hierarchyId === null) {
+            return null;
+        }
+
+        $hierarchy = \Modules\Company\ManagementHierarchy\Models\ManagementHierarchy::query()
+            ->find($hierarchyId);
+
+        if ($hierarchy === null || $hierarchy->manager_id === null) {
+            return null;
+        }
+
+        return (string) $hierarchy->manager_id;
+    }
+
+    /**
+     * @param array{step_id: int, template_step_order: ?int, assigned_user_id: string, escalation_management_hierarchy_id: ?int} $row
+     */
+>>>>>>> 7e7bc03d265ebb41b00723cfac38441088eb3c27
     private function createProcessStepFromSnapshot(Process $process, array $row): ProcessStep
     {
         $processStep = ProcessStep::query()->create([

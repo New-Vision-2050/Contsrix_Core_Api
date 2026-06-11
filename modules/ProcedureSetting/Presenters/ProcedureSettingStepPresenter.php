@@ -38,6 +38,11 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'step_order'           => $this->step->step_order,
             'escalation_management_hierarchy_id' => $this->step->escalation_management_hierarchy_id,
             'escalation_management_hierarchy'    => $this->escalationManagementHierarchyPayload(),
+            'action_taker_type'                  => $this->step->action_taker_type?->value,
+            'action_taker_type_label'            => $this->step->action_taker_type?->value === 'management_hierarchy' ? 'Management Hierarchy' : 'Specific User',
+            'action_taker_management_hierarchy_type' => $this->step->action_taker_management_hierarchy_type?->value,
+            'action_taker_management_hierarchy_type_label' => $this->resolveHierarchyTypeLabel(),
+            'action_taker_hierarchy'             => $this->resolveActionTakerHierarchyPayload(),
         ];
 
         if ($this->step->relationLoaded('branch') && $this->step->branch) {
@@ -89,6 +94,27 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
         }
 
         return $data;
+    }
+
+    private function resolveHierarchyTypeLabel(): ?string
+    {
+        return match ($this->step->action_taker_management_hierarchy_type?->value) {
+            'branch_manager'     => 'Branch Manager',
+            'management_manager' => 'Management Manager',
+            default              => null,
+        };
+    }
+
+    private function resolveActionTakerHierarchyPayload(): ?array
+    {
+        if ($this->step->action_taker_type?->value !== 'management_hierarchy') {
+            return null;
+        }
+
+        return [
+            'type'  => $this->step->action_taker_management_hierarchy_type?->value,
+            'label' => $this->resolveHierarchyTypeLabel(),
+        ];
     }
 
     private function escalationManagementHierarchyPayload(): ?array

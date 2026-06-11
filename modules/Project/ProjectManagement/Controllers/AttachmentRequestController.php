@@ -46,19 +46,41 @@ class AttachmentRequestController extends Controller
 
     /**
      * Get all requests (incoming and outgoing) for current company
+     *
+     * Query params:
+     *   project_id  – filter by project
+     *   type        – filter by status (pending|approved|declined|semi-approved)
+     *   direction   – outgoing | incoming
+     *   receiver_id – filter by receiver company UUID
+     *   name        – search by serial number (partial match)
+     *   page        – page number (default 1)
+     *   per_page    – items per page (default 15)
      */
     public function getAllRequests(Request $request): JsonResponse
     {
         try {
-            $projectId = $request->query('project_id');
+            $filters = array_filter([
+                'project_id'  => $request->query('project_id'),
+                'type'        => $request->query('type'),
+                'direction'   => $request->query('direction'),
+                'receiver_id' => $request->query('receiver_id'),
+                'name'        => $request->query('name'),
+                'per_page'    => $request->query('per_page', 15),
+            ], fn ($v) => $v !== null && $v !== '');
 
-            $requests = $this->service->getAllRequests($projectId);
+            $paginated = $this->service->getAllRequests($filters);
 
-            $data = $requests->map(function ($request) {
-                return (new AttachmentRequestPresenter($request))->getData(true);
+            $data = collect($paginated->items())->map(function ($req) {
+                return (new AttachmentRequestPresenter($req))->getData(true);
             });
 
-            return Json::items($data->toArray());
+            return response()->json([
+                'data'         => $data,
+                'current_page' => $paginated->currentPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+                'last_page'    => $paginated->lastPage(),
+            ]);
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }

@@ -21,17 +21,22 @@ use Ramsey\Uuid\UuidInterface;
 class ReportCRUDService
 {
     public function __construct(
-        private ReportRepository    $repository,
-        private ReportPeriodResolver $periodResolver,
-        private ReportLookupService  $lookupService,
+        private ReportRepository            $repository,
+        private ReportPeriodResolver        $periodResolver,
+        private ReportLookupService         $lookupService,
+        private ReportGenerationService     $generationService,
     ) {
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list(int $page = 1, int $perPage = 10, array $filters = []): array
     {
         return $this->repository->paginated(
-            page:    $page,
-            perPage: $perPage,
+            conditions: [],
+            page:       $page,
+            perPage:    $perPage,
+            orderBy:    'created_at',
+            sortBy:     'desc',
+            filters:    $filters,
         );
     }
 
@@ -49,6 +54,7 @@ class ReportCRUDService
 
         $report = $this->repository->create([
             'id'                => Uuid::uuid4()->toString(),
+            'serial_number'     => $this->repository->generateSerialNumber(),
             'company_id'        => tenant('id'),
             'created_by'        => Auth::id(),
             'template_id'       => $dto->templateId,
@@ -77,6 +83,124 @@ class ReportCRUDService
         }
 
         GenerateReportJob::dispatch($report->id, tenant('id'));
+
+        return $report->fresh();
+    }
+
+    /**
+     * Create a report for a specific employee and generate it synchronously
+     * (no queue). Defaults to PDF with all report types and all columns.
+     */
+    public function createEmployeeReport(
+        string $userId,
+        string $dateFrom,
+        string $dateTo,
+        ?array $name = null,
+        string $reportLanguage = ReportEnums::LANGUAGE_AR,
+        string $paperSize = ReportEnums::PAPER_A4,
+        string $printOrientation = ReportEnums::ORIENTATION_PORTRAIT,
+    ): Report {
+        $dateFromCarbon = \Carbon\Carbon::parse($dateFrom);
+        $dateToCarbon   = \Carbon\Carbon::parse($dateTo);
+
+        // Build default wizard config with all report types and all columns
+        $config = new ReportWizardConfigDTO(
+            step1: new \Modules\Reports\DTO\ReportWizardStep1DTO(
+                reportTypeIds:    ReportEnums::reportTypes(),
+                periodType:       ReportEnums::PERIOD_RANGE,
+                year:             (int) $dateFromCarbon->format('Y'),
+                month:            null,
+                week:             null,
+                quarter:          null,
+                exportFormat:     ReportEnums::FORMAT_PDF,
+                reportLanguage:   $reportLanguage,
+                paperSize:        $paperSize,
+                printOrientation: $printOrientation,
+                dateFrom:         $dateFrom,
+                dateTo:           $dateTo,
+            ),
+            step2: new \Modules\Reports\DTO\ReportWizardStep2DTO(
+                employeeScope:   ReportEnums::EMPLOYEE_SCOPE_SELECT_EMPLOYEES,
+                employeeUserIds: [$userId],
+                branchId:        null,
+                managementId:    null,
+                department:      null,
+                jobTitle:        null,
+                contractTypeIds: [],
+                nationality:     null,
+                gender:          null,
+            ),
+            step3: new \Modules\Reports\DTO\ReportWizardStep3DTO(
+                attendanceDataTypeIds:       ReportEnums::attendanceDataTypes(),
+                displayMode:                 ReportEnums::DISPLAY_MODE_EMPLOYEE_PER_PAGE,
+                attendancePattern:           ReportEnums::ATT_PATTERN_ALL,
+                attendanceRateMin:           ReportEnums::ATT_RATE_NO_FILTER,
+                delayLimitMinutes:           ReportEnums::DELAY_NO_FILTER,
+                minOvertime:                 ReportEnums::OT_NO_FILTER,
+                includeEntryExitTime:        true,
+                includeShiftName:            true,
+                includeAttendanceNotes:      true,
+                calculateTotalWorkHours:     true,
+                showPreviousMonthComparison: false,
+            ),
+            step4: new \Modules\Reports\DTO\ReportWizardStep4DTO(
+                salaryComponentIds:          ReportEnums::salaryComponents(),
+                deductionIds:                ReportEnums::salaryDeductions(),
+                disbursementStatus:          ReportEnums::DISBURSEMENT_ALL,
+                netSalaryOnly:               false,
+                compareWithPreviousMonth:    false,
+                employeeDetailsSeparatePage:   false,
+                addTotalSummaryEnd:            true,
+            ),
+            step5: new \Modules\Reports\DTO\ReportWizardStep5DTO(
+                mainSortBy:          ReportEnums::SORT_BY_EMPLOYEE_NAME_ALPHA,
+                sortDirection:       ReportEnums::SORT_DIR_ASC,
+                groupBy:             ReportEnums::GROUP_BY_NONE,
+                employeesPerPage:    '25',
+                visualElementIds:    [],
+                autoEmail:           false,
+                copyToManager:       false,
+                monthlyScheduling:   false,
+                companyHeaderFooter: true,
+                digitalSignature:    false,
+                recipientEmails:     '',
+            ),
+        );
+
+        $reportName = $name ?: $this->buildDefaultName($config);
+
+        $report = $this->repository->create([
+            'id'                => Uuid::uuid4()->toString(),
+            'serial_number'     => $this->repository->generateSerialNumber(),
+            'company_id'        => tenant('id'),
+            'created_by'        => Auth::id(),
+            'template_id'       => null,
+            'report_types'      => $config->step1->reportTypeIds,
+            'period_type'       => $config->step1->periodType,
+            'year'              => $config->step1->year,
+            'month'             => $config->step1->month,
+            'week'              => $config->step1->week,
+            'quarter'           => $config->step1->quarter,
+            'period_start'      => $dateFromCarbon->toDateString(),
+            'period_end'        => $dateToCarbon->toDateString(),
+            'export_format'     => $config->step1->exportFormat,
+            'language'          => $config->step1->reportLanguage,
+            'paper_size'        => $config->step1->paperSize,
+            'print_orientation' => $config->step1->printOrientation,
+            'config'            => $config->toArray(),
+            'status'            => ReportStatus::PENDING,
+        ]);
+
+        // Set translations using HasTranslations trait
+        if (is_array($reportName)) {
+            foreach ($reportName as $locale => $value) {
+                $report->setTranslation('name', $locale, $value);
+            }
+            $report->save();
+        }
+
+        // Generate synchronously — no queue
+        $this->generationService->generate($report);
 
         return $report->fresh();
     }

@@ -53,13 +53,17 @@ class MedicalInsuranceSubscriptionRepository extends BaseRepository
     {
         $query = $this->model->with(['user', 'medicalInsurance', 'category', 'familyMembers']);
 
-        $query->whereNotIn('user_id', function ($q) {
-            $q->select('u.id')
-                ->from('users as u')
-                ->join('user_privileges as up', 'u.global_company_user_id', '=', 'up.global_id')
-                ->where('up.type_allowance_code', 'constant')
-                ->whereNull('up.deleted_at');
-        });
+        // Only exclude constant-allowance users when listing ALL subscriptions
+        // (i.e. no specific user filter). When fetching for a specific user,
+        // we always return their subscriptions regardless of allowance type.
+        if (empty($filters['user_id'])) {
+            $query->whereNotIn('user_id', function ($q) {
+                $q->select('u.id')
+                    ->from('users as u')
+                    ->join('user_privileges as up', 'u.global_company_user_id', '=', 'up.global_id')
+                    ->where('up.type_allowance_code', 'constant');
+            });
+        }
 
         if (!empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);

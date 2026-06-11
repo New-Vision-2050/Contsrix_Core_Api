@@ -38,7 +38,7 @@ final class InboxItemPresenter
             'task'       => self::taskSummary($task),
             'employee'   => self::employee($task->relationLoaded('user') ? $task->user : null),
             'status'     => $task->status,
-            'current_step' => self::step($task),
+            'current_step' => self::stepFromProcess($task),
             'summary'    => [
                 'duration_hours' => HoursFormatter::fromDecimalString($task->duration_hours),
                 'task_date'      => $task->task_date?->format('Y-m-d'),
@@ -133,10 +133,71 @@ final class InboxItemPresenter
         ];
     }
 
+    private static function stepFromProcess(EmployeeTaskRequest $task): ?array
+    {
+        if (!$task->relationLoaded('processes')) {
+            return [
+                'id'            => null,
+                'name'          => null,
+                'step_order'    => null,
+                'is_approve'    => null,
+                'action_takers' => [],
+            ];
+        }
+
+        $process = $task->processes->first(fn ($p) => $p->status->value === 'in_progress');
+        if (!$process || !$process->relationLoaded('steps')) {
+            return [
+                'id'            => null,
+                'name'          => null,
+                'step_order'    => null,
+                'is_approve'    => null,
+                'action_takers' => [],
+            ];
+        }
+
+        $processStep = $process->steps->first(fn ($s) => $s->status->value === 'pending');
+        if (!$processStep) {
+            return [
+                'id'            => null,
+                'name'          => null,
+                'step_order'    => null,
+                'is_approve'    => null,
+                'action_takers' => [],
+            ];
+        }
+
+        $templateStep = $processStep->relationLoaded('procedureSettingStep')
+            ? $processStep->procedureSettingStep
+            : null;
+
+        $actionTakers = [];
+        if ($processStep->assigned_user_id) {
+            $name = $processStep->relationLoaded('assignedUser') && $processStep->assignedUser
+                ? $processStep->assignedUser->name
+                : null;
+            $actionTakers[] = ['user_id' => $processStep->assigned_user_id, 'name' => $name];
+        }
+
+        return [
+            'id'            => $processStep->step_id,
+            'name'          => $templateStep?->name,
+            'step_order'    => $processStep->template_step_order,
+            'is_approve'    => $templateStep ? (bool) $templateStep->is_approve : null,
+            'action_takers' => $actionTakers,
+        ];
+    }
+
     private static function step($model): ?array
     {
         if (!$model->relationLoaded('currentProcedureStep') || !$model->currentProcedureStep) {
-            return null;
+            return [
+                'id'            => null,
+                'name'          => null,
+                'step_order'    => null,
+                'is_approve'    => null,
+                'action_takers' => [],
+            ];
         }
 
         $step         = $model->currentProcedureStep;

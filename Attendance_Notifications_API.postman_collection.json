@@ -1,0 +1,211 @@
+{
+  "info": {
+    "_postman_id": "attendance-notifications-api",
+    "name": "Attendance Notifications API",
+    "description": "API endpoints for managing attendance notification settings and mobile push notification triggers in the Attendance module.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "url",
+      "value": "http://localhost/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-bearer-token-here",
+      "type": "string"
+    },
+    {
+      "key": "constraint_id",
+      "value": "your-constraint-uuid-here",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Get Notification Settings",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/attendance_constraints/{{constraint_id}}/notifications",
+          "host": ["{{url}}"],
+          "path": ["attendance_constraints", "{{constraint_id}}", "notifications"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/attendance_constraints/{{constraint_id}}/notifications"
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": \"success\",\n  \"message\": null,\n  \"data\": {\n    \"notify_late_arrival\": true,\n    \"notify_unexcused_absence\": true,\n    \"notify_early_departure\": false\n  },\n  \"meta\": null\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Notification Settings",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"notify_late_arrival\": true,\n  \"notify_unexcused_absence\": true,\n  \"notify_early_departure\": false\n}"
+        },
+        "url": {
+          "raw": "{{url}}/attendance_constraints/{{constraint_id}}/notifications",
+          "host": ["{{url}}"],
+          "path": ["attendance_constraints", "{{constraint_id}}", "notifications"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notify_late_arrival\": true,\n  \"notify_unexcused_absence\": true,\n  \"notify_early_departure\": false\n}"
+            },
+            "url": {
+              "raw": "{{url}}/attendance_constraints/{{constraint_id}}/notifications"
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": \"success\",\n  \"message\": \"Notification settings updated successfully\",\n  \"data\": {\n    \"notify_late_arrival\": true,\n    \"notify_unexcused_absence\": true,\n    \"notify_early_departure\": false\n  },\n  \"meta\": null\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Notification Settings (partial)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"notify_early_departure\": true\n}"
+        },
+        "url": {
+          "raw": "{{url}}/attendance_constraints/{{constraint_id}}/notifications",
+          "host": ["{{url}}"],
+          "path": ["attendance_constraints", "{{constraint_id}}", "notifications"]
+        },
+        "description": "Send only the fields you want to update. Others keep their current value."
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notify_early_departure\": true\n}"
+            },
+            "url": {
+              "raw": "{{url}}/attendance_constraints/{{constraint_id}}/notifications"
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": \"success\",\n  \"message\": \"Notification settings updated successfully\",\n  \"data\": {\n    \"notify_late_arrival\": true,\n    \"notify_unexcused_absence\": true,\n    \"notify_early_departure\": true\n  },\n  \"meta\": null\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Constraint Detail (shows notification_settings)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/attendance_constraints/{{constraint_id}}",
+          "host": ["{{url}}"],
+          "path": ["attendance_constraints", "{{constraint_id}}"]
+        },
+        "description": "Retrieve the full constraint details including the embedded notification_settings field."
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/attendance_constraints/{{constraint_id}}"
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": \"success\",\n  \"message\": null,\n  \"data\": {\n    \"id\": \"{{constraint_id}}\",\n    \"constraint_name\": \"Default Work Hours\",\n    \"constraint_type\": \"Work Hours\",\n    \"constraint_code\": \"work_hours\",\n    \"branch_locations\": [],\n    \"notes\": null,\n    \"is_active\": 1,\n    \"priority\": 1,\n    \"start_date\": \"2025-01-01\",\n    \"end_date\": \"2025-12-31\",\n    \"max_over_time\": 2,\n    \"out_zone_minutes\": 30,\n    \"max_working_hours\": 8,\n    \"config\": {},\n    \"branches\": [],\n    \"country_id\": null,\n    \"time_zone_id\": null,\n    \"notification_settings\": {\n      \"notify_late_arrival\": true,\n      \"notify_unexcused_absence\": true,\n      \"notify_early_departure\": false\n    },\n    \"created_by\": \"Admin\",\n    \"created_at\": \"2025-01-01 10:00:00\"\n  },\n  \"meta\": null\n}"
+        }
+      ]
+    }
+  ]
+}

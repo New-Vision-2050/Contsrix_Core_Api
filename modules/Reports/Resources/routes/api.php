@@ -37,10 +37,14 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         ->permission(Permission::REPORT_LIST());
     Route::post('/', [ReportController::class, 'store'])
         ->permission(Permission::REPORT_CREATE());
+    Route::post('/employee-report', [ReportController::class, 'storeEmployeeReport'])
+        ->permission(Permission::REPORT_CREATE())
+        ->name('reports.employee-report');
     Route::get('/{id}', [ReportController::class, 'show'])
         ->permission(Permission::REPORT_VIEW());
     Route::get('/{id}/download', [ReportController::class, 'download'])
-        ->permission(Permission::REPORT_DOWNLOAD());
+        ->permission(Permission::REPORT_DOWNLOAD())
+        ->name('reports.download');
     Route::post('/{id}/regenerate', [ReportController::class, 'regenerate'])
         ->permission(Permission::REPORT_REGENERATE());
     Route::delete('/{id}', [ReportController::class, 'delete'])

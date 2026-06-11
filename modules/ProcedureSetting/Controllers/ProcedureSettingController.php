@@ -53,7 +53,7 @@ class ProcedureSettingController extends Controller
         }
 
         return Json::item(
-            $this->workflowService->getApprovalResponsibles($type),
+            $this->workflowService->getApprovalResponsibles($type, (string) \Illuminate\Support\Facades\Auth::id()),
             message: 'Approval responsibles retrieved successfully',
         );
     }

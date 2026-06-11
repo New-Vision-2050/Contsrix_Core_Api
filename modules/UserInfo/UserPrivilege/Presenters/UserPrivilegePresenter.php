@@ -12,16 +12,19 @@ use Modules\Shared\Privilege\Presenters\PrivilegePresenter;
 use Modules\Shared\TypeAllowance\Presenters\TypeAllowancePresenter;
 use Modules\Shared\TypePrivilege\Presenters\TypePrivilegePresenter;
 use Modules\Shared\Privilege\Services\PrivilegeCardConfigService;
+use Modules\MedicalInsurance\Presenters\MedicalInsuranceSubscriptionPresenter;
 
 class UserPrivilegePresenter extends AbstractPresenter
 {
     private UserPrivilege $userPrivilege;
     private PrivilegeCardConfigService $cardConfigService;
+    private array $subscriptionsByInsurance;
 
-    public function __construct(UserPrivilege $userPrivilege)
+    public function __construct(UserPrivilege $userPrivilege, array $subscriptionsByInsurance = [])
     {
         $this->userPrivilege = $userPrivilege;
         $this->cardConfigService = app(PrivilegeCardConfigService::class);
+        $this->subscriptionsByInsurance = $subscriptionsByInsurance;
     }
 
     protected function present(bool $isListing = false): array
@@ -34,7 +37,6 @@ class UserPrivilegePresenter extends AbstractPresenter
             'type_privilege_id' => $this->userPrivilege->type_privilege_id,
             'type_allowance_code' => $this->userPrivilege->type_allowance_code,
             'period_id' => $this->userPrivilege->period_id,
-            'medical_insurance_id' => $this->userPrivilege->medical_insurance_id,
             'type_privilege' => $this->userPrivilege->typePrivilege
                 ? (new TypePrivilegePresenter($this->userPrivilege->typePrivilege))->getData()
                 : null,
@@ -52,6 +54,11 @@ class UserPrivilegePresenter extends AbstractPresenter
             'medical_insurance' => $this->presentMedicalInsurance(),
         ];
 
+        // Only health insurance privileges include subscription data.
+        if ($privilegeType === PrivilegeCardConfigService::TYPE_HEALTH_INSURANCE) {
+            $data['subscriptions'] = $this->presentSubscriptions();
+        }
+
         // Include card field configuration so the frontend knows which fields to render.
         if ($privilegeType !== null) {
             $data['card_fields'] = $this->cardConfigService->getCardConfig($privilegeType);
@@ -62,19 +69,7 @@ class UserPrivilegePresenter extends AbstractPresenter
 
     private function resolvePrivilege(): ?Privilege
     {
-        if ($this->userPrivilege->privilege) {
-            return $this->userPrivilege->privilege;
-        }
-
-        if (! $this->userPrivilege->medical_insurance_id) {
-            return null;
-        }
-
-        return once(function () {
-            return Privilege::query()
-                ->where('type', PrivilegeCardConfigService::TYPE_HEALTH_INSURANCE)
-                ->first();
-        });
+        return $this->userPrivilege->privilege;
     }
 
     /**
@@ -99,5 +94,27 @@ class UserPrivilegePresenter extends AbstractPresenter
             'individuals_count' => $insurance->individuals_count,
             'status'            => $insurance->status,
         ];
+    }
+
+    /**
+     * Present medical insurance subscription data sourced from the subscription service.
+     * Returns an empty array when no subscriptions exist (never null for health_insurance type).
+     */
+    private function presentSubscriptions(): array
+    {
+        // Flatten all subscriptions for this user across all insurance policies.
+        // We use a flat list because the UserPrivilege may not have a
+        // medical_insurance_id set directly — the subscriptions themselves
+        // carry the insurance reference.
+        $all = [];
+        foreach ($this->subscriptionsByInsurance as $insuranceSubs) {
+            $all = array_merge($all, $insuranceSubs);
+        }
+
+        if (empty($all)) {
+            return [];
+        }
+
+        return MedicalInsuranceSubscriptionPresenter::collection($all);
     }
 }

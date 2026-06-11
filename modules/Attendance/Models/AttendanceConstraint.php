@@ -36,6 +36,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $created_by
  * @property string|null $updated_by
  * @property string|null $notes
+ * @property integer|null $out_zone_minutes
+ * @property array|null $out_zone_rules
+ * @property integer $max_working_hours
  * @property-read Company $company
  * @property-read User $creator
  * @property-read User $updater
@@ -66,6 +69,9 @@ class AttendanceConstraint extends Model implements Auditable
         'constraint_name',
         'constraint_config',
         'max_over_time',
+        'out_zone_minutes',
+        'out_zone_rules',
+        'max_working_hours',
         'is_active',
         'inherit_from_parent',
         'priority',
@@ -74,6 +80,9 @@ class AttendanceConstraint extends Model implements Auditable
         'created_by',
         'updated_by',
         'notes',
+        'country_id',
+        'time_zone_id',
+        'notification_settings',
     ];
 
     protected $casts = [
@@ -87,11 +96,17 @@ class AttendanceConstraint extends Model implements Auditable
         'updated_by' => 'string',
         'constraint_config' => 'array',
         'max_over_time' => 'integer',
+        'out_zone_minutes' => 'integer',
+        'out_zone_rules' => 'array',
+        'max_working_hours' => 'integer',
         'is_active' => 'boolean',
         'inherit_from_parent' => 'boolean',
         'priority' => 'integer',
         'start_date' => 'date',
         'end_date' => 'date',
+        'country_id' => 'string',
+        'time_zone_id' => 'string',
+        'notification_settings' => 'array',
     ];
 
     protected $dates = [
@@ -523,9 +538,13 @@ class AttendanceConstraint extends Model implements Auditable
         return $constraints[$type] ?? [];
     }
 
-    public function branches()
+    public function getBranchModels(): \Illuminate\Database\Eloquent\Collection
     {
-        return $this->hasMany(ManagementHierarchy::class, 'id', 'branch_ids');
+        $ids = $this->branch_ids ?? [];
+        if (empty($ids)) {
+            return \Illuminate\Database\Eloquent\Collection::make();
+        }
+        return ManagementHierarchy::whereIn('id', $ids)->get();
     }
 
     public function additionalLocations(): HasMany

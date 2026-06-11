@@ -17,6 +17,13 @@ class UniversityFilter extends SearchModelFilter
         });
     }
 
+    public function q($name)
+    {
+        return $this->whereHas('translations',function($q) use ($name){
+            $q->where('content','like','%'.$name.'%');
+        });
+    }
+
     public function country($id)
     {
         return $this->whereHas('country', function ($q) use ($id) {

@@ -56,16 +56,32 @@
         .stats-bar td { border: 1px solid #cbd5e1; padding: 5px 10px; text-align: center; font-weight: 700; font-size: 9px; }
         .s-emp    { background: #e2e8f0; color: #1e293b; }
         .s-pres   { background: #dcfce7; color: #166534; }
-        .s-abs    { background: #fee2e2; color: #991b1b; }
         .s-date   { background: #dbeafe; color: #1e40af; }
         .row-alt  { background: #f8fafc; }
         .tot-row  { background: #e8f4ea; font-weight: 700; }
         .tot-row td { border-top: 2px solid #16a34a; }
         .emp-hdr td  { background: #1e3a5f; color: #ffffff; font-size: 10px; font-weight: 700; padding: 6px 8px; border: 1px solid #0f2441; }
         .emp-hdr-sub { font-size: 8px; font-weight: 400; opacity: 0.82; }
+        .page-break  { page-break-before: always; }
+        /* ── status badges ── */
+        .tbl-badge  { display:inline-block; border-radius:4px; padding:2px 7px; font-size:7.5px; font-weight:700; }
+        .b-present  { background:#dcfce7; color:#166534; }
+        .b-absent   { background:#fee2e2; color:#991b1b; }
+        .b-holiday  { background:#fef3c7; color:#92400e; }
+        /* ── colored time pills ── */
+        .tv-in    { display:inline-block; background:#d1fae5; color:#065f46; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
+        .tv-out   { display:inline-block; background:#dbeafe; color:#1e40af; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
+        .tv-delay { display:inline-block; background:#fee2e2; color:#b91c1c; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
+        .tv-ot    { display:inline-block; background:#ede9fe; color:#5b21b6; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
+        .tv-total { display:inline-block; background:#0f172a; color:#ffffff; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
     </style>
 </head>
 <body lang="{{ $lang }}" dir="{{ $dir }}">
+    @if (!empty($companyLogoUrl))
+        <div style="margin-bottom:6px;">
+            <img src="{{ $companyLogoUrl }}" style="height:52px; max-width:160px;" />
+        </div>
+    @endif
     <h1>{{ $reportName }}</h1>
     <table class="meta">
         <tr>
@@ -103,22 +119,15 @@
         @elseif ($type === \Modules\Reports\Enums\ReportEnums::REPORT_TYPE_ATTENDANCE_ABSENCE)
             {{-- ═══ Detailed daily attendance — employee & date grouped with per-session rows ═══ --}}
             @php
-                $totalPresent = 0;
-                $totalAbsent  = 0;
-                foreach ($employees as $_e) {
-                    $_s = is_array($rows) && !str_starts_with((string)$_e->global_id, '__')
-                        ? ($rows[(string)$_e->global_id] ?? []) : [];
-                    $totalPresent += (int)($_s['present_days'] ?? 0);
-                    $totalAbsent  += (int)($_s['absent_days']  ?? 0);
-                }
+                $periodDays = \Carbon\Carbon::parse($report->period_start)
+                    ->diffInDays(\Carbon\Carbon::parse($report->period_end)) + 1;
             @endphp
 
             {{-- Summary stats bar --}}
             <table class="stats-bar">
                 <tr>
                     <td class="s-emp">{{ $lang === 'ar' ? 'عدد الموظفين' : 'Total Employees' }}: {{ $employees->count() }}</td>
-                    <td class="s-pres">{{ $lang === 'ar' ? 'إجمالي أيام الحضور' : 'Total Present Days' }}: {{ $totalPresent }}</td>
-                    <td class="s-abs">{{ $lang === 'ar' ? 'إجمالي أيام الغياب' : 'Total Absent Days' }}: {{ $totalAbsent }}</td>
+                    <td class="s-pres">{{ $lang === 'ar' ? 'عدد الأيام' : 'Period Days' }}: {{ $periodDays }}</td>
                     <td class="s-date">{{ $lang === 'ar' ? 'تاريخ اليوم' : 'Report Date' }}: {{ now()->toDateString() }}</td>
                 </tr>
             </table>
@@ -141,8 +150,8 @@
                 $showOT      = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OVERTIME]);
                 $showTotal   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TOTAL_HOURS]);
 
-                // employee_per_page: always 2 (#, date) + up to 12 optional
-                $empColCount   = 2 + (int)$showDay + (int)$showBranch + (int)$showMgmt
+                // employee_per_page: always 2 (#, date) + 1 status badge + up to 12 optional
+                $empColCount   = 2 + 1 + (int)$showDay + (int)$showBranch + (int)$showMgmt
                                + (int)$showOffIn + (int)$showOffOut
                                + (int)$showActIn + (int)$showActOut
                                + (int)$showTaskIn + (int)$showTaskOut
@@ -182,6 +191,7 @@
                     $dSumOT      = 0;
                     $dSumWorkMin = 0;
                 @endphp
+                <div @unless($loop->first) class="page-break" @endunless>
                 <table style="margin-bottom:2px; border:none;">
                     <tr>
                         <td style="background:#1e3a5f; color:#ffffff; font-size:11px; font-weight:700; padding:6px 10px; border:1px solid #0f2441;">
@@ -265,6 +275,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
             @endforeach
 
             @else
@@ -278,9 +289,14 @@
                     $sumDelay     = 0;
                     $sumOT        = 0;
                     $sumWorkMin   = 0;
+                    $empPresentCount = collect($empDaily)->where('display_status', 'present')->count();
+                    $empAbsentCount  = collect($empDaily)->where('display_status', 'absent')->count();
+                    $empHolidayCount = collect($empDaily)->where('display_status', 'holiday')->count();
                 @endphp
                 @if (!empty($empDaily))
-                <table style="margin-bottom:14px;">
+                <div @unless($loop->first) class="page-break" @endunless>
+                <div style="border-radius:10px; overflow:hidden; border:2px solid #e2e8f0; margin-bottom:18px;">
+                <table style="margin-bottom:0;">
                     <thead>
                         {{-- Employee identity row: appears above column headers, repeats on page breaks --}}
                         <tr class="emp-hdr">
@@ -289,12 +305,20 @@
                                 <span style="vertical-align:middle; {{ $align === 'right' ? 'margin-right' : 'margin-left' }}:8px; font-size:12px;">{{ $emp->name }}</span>
                                 @if ($empBranch)<span class="emp-hdr-sub"> &nbsp;|&nbsp; {{ $empBranch }}</span>@endif
                                 @if ($empMgmt)<span class="emp-hdr-sub"> &nbsp;/&nbsp; {{ $empMgmt }}</span>@endif
+                                <span style="float:{{ $align === 'right' ? 'left' : 'right' }}; font-size:8px; font-weight:400; opacity:0.92; margin-top:4px;">
+                                    <span style="background:#dcfce7; color:#166534; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'حضور' : 'Present' }}: {{ $empPresentCount }}</span>
+                                    &nbsp;
+                                    <span style="background:#fee2e2; color:#991b1b; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'غياب' : 'Absent' }}: {{ $empAbsentCount }}</span>
+                                    &nbsp;
+                                    <span style="background:#fef9c3; color:#854d0e; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'إجازة' : 'Holiday' }}: {{ $empHolidayCount }}</span>
+                                </span>
                             </td>
                         </tr>
                         <tr>
                             <th style="width:18px;">#</th>
                             <th class="hcol">{{ $lang === 'ar' ? 'التاريخ'        : 'Date' }}</th>
                             @if ($showDay)<th style="width:50px;">{{ $lang === 'ar' ? 'اليوم'   : 'Day' }}</th>@endif
+                            <th style="width:60px;">{{ $lang === 'ar' ? 'الحالة' : 'Status' }}</th>
                             @if ($showBranch)<th>{{ $lang === 'ar' ? 'الفرع'                        : 'Branch' }}</th>@endif
                             @if ($showMgmt)<th>{{ $lang === 'ar' ? 'الإدارة'                      : 'Mgmt' }}</th>@endif
                             @if ($showOffIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول رسمي'      : 'Off.In' }}</th>@endif
@@ -336,22 +360,33 @@
                                 @endphp
                                 <tr style="background-color:{{ $rowBg }};">
                                     @if ($ri === 0)
+                                        @php
+                                            $statusBadge = match($d['display_status'] ?? '') {
+                                                'present' => ['cls' => 'b-present', 'lbl' => $lang === 'ar' ? 'حضور' : 'Present'],
+                                                'absent'  => ['cls' => 'b-absent',  'lbl' => $lang === 'ar' ? 'غياب' : 'Absent'],
+                                                'holiday' => ['cls' => 'b-holiday', 'lbl' => $lang === 'ar' ? 'إجازة' : 'Holiday'],
+                                                default   => ['cls' => '',          'lbl' => '—'],
+                                            };
+                                        @endphp
                                         <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dateSeq }}</td>
                                         <td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $dateStr }}</td>
                                         @if ($showDay)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $dayLabel }}</td>@endif
+                                        <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">
+                                            <span class="tbl-badge {{ $statusBadge['cls'] }}">{{ $statusBadge['lbl'] }}</span>
+                                        </td>
                                         @if ($showBranch)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>@endif
                                         @if ($showMgmt)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>@endif
                                         @if ($showOffIn)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>@endif
-                                        @if ($showOffOut)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time'])   ?: '-' }}</td>@endif
+                                        @if ($showOffOut)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['end_time']) ?: '-' }}</td>@endif
                                     @endif
-                                    @if ($showActIn)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>@endif
-                                    @if ($showActOut)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
+                                    @if ($showActIn)<td class="num tcol">{{ $attRow ? ($fmtTime($attRow['clock_in_time']) ?: '-') : '' }}</td>@endif
+                                    @if ($showActOut)<td class="num tcol">{{ $attRow ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
                                     @if ($showTaskIn)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>@endif
                                     @if ($showTaskOut)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>@endif
                                     @if ($ri === 0)
-                                        @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>@endif
+                                        @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes'] ?? 0) }}</td>@endif
                                         @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif
-                                        @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>@endif
+                                        @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours'] ?? 0) }}</td>@endif
                                     @endif
                                 </tr>
                             @endfor
@@ -362,8 +397,16 @@
                             @if ($showOT)<td class="num">{{ $toHoursMinutes($sumOT) }}</td>@endif
                             @if ($showTotal)<td class="num">{{ $toHoursMinutes($sumWorkMin) }}</td>@endif
                         </tr>
+                        <tr>
+                            <td colspan="{{ $empColCount }}" style="padding: 18px 10px 6px; border-top: none; text-align: {{ $align }};">
+                                <span style="font-size:9px; font-weight:600;">{{ $lang === 'ar' ? 'التوقيع:' : 'Signature:' }}</span>
+                                <span style="display:inline-block; width:180px; border-bottom: 1px solid #374151; margin-{{ $align === 'right' ? 'right' : 'left' }}:8px; vertical-align:bottom;">&nbsp;</span>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
+                </div>
+                </div>
                 @endif
             @endforeach
             @endif

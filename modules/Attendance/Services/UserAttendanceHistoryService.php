@@ -51,7 +51,7 @@ final class UserAttendanceHistoryService
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
-            'business_date', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         $allAttendances = Attendance::query()
@@ -102,16 +102,16 @@ final class UserAttendanceHistoryService
 
             $periodsWithAttendance = $this->buildHistoryPeriodsForDay($user, $dateString, $dateCarbon, $attendances, $timezone);
 
-            $dayStatus = $this->determineDayStatus($attendances);
+            $dayStatusPayload = $this->buildDayStatusPayload($attendances);
             $dayName = $this->getDayNameArabic($dateCarbon);
 
             $result[] = [
                 'date'          => $dateString,
                 'day_name'      => $dayName,
-                'status'        => $dayStatus,
-                'is_late'       => (int) $attendances->contains(fn ($a) => (bool) $a->is_late),
-                'is_absent'     => (int) $attendances->contains(fn ($a) => (bool) $a->is_absent),
-                'is_holiday'    => (int) $attendances->contains(fn ($a) => (bool) $a->is_holiday),
+                'status'        => $dayStatusPayload['status'],
+                'is_late'       => $dayStatusPayload['is_late'],
+                'is_absent'     => $dayStatusPayload['is_absent'],
+                'is_holiday'    => $dayStatusPayload['is_holiday'],
                 'periods_count' => count($periodsWithAttendance),
                 'periods'       => $periodsWithAttendance,
             ];
@@ -156,7 +156,7 @@ final class UserAttendanceHistoryService
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
-            'business_date', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         $allAttendances = Attendance::query()
@@ -207,16 +207,16 @@ final class UserAttendanceHistoryService
 
             $periodsWithAttendance = $this->buildHistoryPeriodsForDay($user, $dateString, $dateCarbon, $attendances, $timezone);
 
-            $dayStatus = $this->determineDayStatus($attendances);
+            $dayStatusPayload = $this->buildDayStatusPayload($attendances);
             $dayName = $this->getDayNameArabic($dateCarbon);
 
             $result[] = [
                 'date'          => $dateString,
                 'day_name'      => $dayName,
-                'status'        => $dayStatus,
-                'is_late'       => (int) $attendances->contains(fn($a) => (bool) $a->is_late),
-                'is_absent'     => (int) $attendances->contains(fn($a) => (bool) $a->is_absent),
-                'is_holiday'    => (int) $attendances->contains(fn($a) => (bool) $a->is_holiday),
+                'status'        => $dayStatusPayload['status'],
+                'is_late'       => $dayStatusPayload['is_late'],
+                'is_absent'     => $dayStatusPayload['is_absent'],
+                'is_holiday'    => $dayStatusPayload['is_holiday'],
                 'periods_count' => count($periodsWithAttendance),
                 'periods'       => $periodsWithAttendance,
             ];
@@ -729,6 +729,60 @@ final class UserAttendanceHistoryService
     // Display helpers
     // =============================================================================
 
+    /**
+     * @return array{status: string, is_late: int, is_absent: int, is_holiday: int}
+     */
+    private function buildDayStatusPayload(Collection $attendances): array
+    {
+        if ($attendances->isEmpty()) {
+            return [
+                'status'     => 'غائب',
+                'is_late'    => 0,
+                'is_absent'  => 1,
+                'is_holiday' => 0,
+            ];
+        }
+
+        $hasHoliday = $attendances->contains(fn ($a) => $this->isTruthy($a->is_holiday ?? null)
+            || ($a->status ?? null) === Attendance::STATUS_HOLIDAY
+            || ($a->day_status ?? null) === 'holiday');
+
+        $hasAbsent = $attendances->contains(fn ($a) => $this->isTruthy($a->is_absent ?? null)
+            || ($a->status ?? null) === Attendance::STATUS_ABSENT);
+
+        $hasLate = $attendances->contains(fn ($a) => $this->isTruthy($a->is_late ?? null));
+
+        if ($hasHoliday) {
+            return [
+                'status'     => 'عطلة',
+                'is_late'    => (int) $hasLate,
+                'is_absent'  => 0,
+                'is_holiday' => 1,
+            ];
+        }
+
+        if ($hasAbsent) {
+            return [
+                'status'     => 'غائب',
+                'is_late'    => (int) $hasLate,
+                'is_absent'  => 1,
+                'is_holiday' => 0,
+            ];
+        }
+
+        $status = $this->determineDayStatus($attendances);
+        if ($hasLate && $status !== 'نشط') {
+            $status = 'متأخر';
+        }
+
+        return [
+            'status'     => $status,
+            'is_late'    => (int) ($hasLate || $status === 'متأخر'),
+            'is_absent'  => 0,
+            'is_holiday' => 0,
+        ];
+    }
+
     private function determineDayStatus(Collection $attendances): string
     {
         if ($attendances->isEmpty()) {
@@ -747,6 +801,23 @@ final class UserAttendanceHistoryService
         }
 
         return 'تم الخروج';
+    }
+
+    private function isTruthy(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (int) $value === 1;
+        }
+
+        if (is_string($value)) {
+            return in_array(strtolower(trim($value)), ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return false;
     }
 
     private function getDayNameArabic(Carbon $date): string

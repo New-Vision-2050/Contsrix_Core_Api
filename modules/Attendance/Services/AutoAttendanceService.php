@@ -9,10 +9,11 @@ use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
 use Modules\Attendance\Models\AppliedAttendanceConstraint;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Services\AttendanceNotificationService;
 use Modules\User\Models\User;
 class AutoAttendanceService
 {
-    public function createAttendanceRecord(array $data, Carbon $startDateTime=null): Attendance
+    public function createAttendanceRecord(array $data, Carbon $startDateTime=null, Carbon $endDateTime=null): Attendance
     {
         // Keep status constrained to lifecycle states stored in attendances.status.
         $status = $data['status'] ?? Attendance::STATUS_COMPLETED;
@@ -23,6 +24,7 @@ class AutoAttendanceService
             'clock_in_time' => $data['clock_in_time'] ?? null,
             'clock_in_location' => $data['clock_in_location'] ?? null,
             'start_time' => $startDateTime,
+            'end_time' => $endDateTime,
             'notes' => $data['notes'] ?? null,
             'ip_address' => $data['ip_address'] ?? null,
             'user_agent' => $data['user_agent'] ?? null,
@@ -40,12 +42,18 @@ class AutoAttendanceService
         $constraint = $attendance->user->professionalData->attendanceConstraint;
 
         if ($constraint) {
-            // Create a record in the pivot table with the required fields
             AppliedAttendanceConstraint::create([
-                'attendance_id' => $attendance->id,
+                'attendance_id'       => $attendance->id,
                 'constraint_snapshot' => $constraint->toArray(),
-                'company_id' => $attendance->company_id,
+                'company_id'          => $attendance->company_id,
             ]);
+        }
+
+        if (!empty($attendanceData['is_absent'])) {
+            try {
+                $attendance->load('appliedAttendanceConstraint');
+                app(AttendanceNotificationService::class)->notifyUnexcusedAbsence($attendance);
+            } catch (\Throwable) {}
         }
 
         return $attendance;
@@ -130,6 +138,9 @@ class AutoAttendanceService
 
                             if (!isset($existingByUserDate[$uid][$dateString][$periodTimeKey])) {
                                 $periodStart = Carbon::parse($dateString . ' ' . $periodTime['start_time']);
+                                $periodEnd   = isset($periodTime['end_time'])
+                                    ? Carbon::parse($dateString . ' ' . $periodTime['end_time'])
+                                    : null;
                                 $periodName  = 'فترة ' . ($index + 1);
 
                                 $this->createAttendanceRecord(
@@ -143,6 +154,7 @@ class AutoAttendanceService
                                         'is_absent'  => 1,
                                     ],
                                     $periodStart,
+                                    $periodEnd,
                                 );
 
                                 $existingByUserDate[$uid][$dateString][$periodTimeKey] = true;

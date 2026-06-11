@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Reports\Presenters;
 
+use Carbon\Carbon;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Reports\Models\Report;
 
 /**
@@ -19,9 +21,12 @@ class ReportListPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $branchName = $this->getBranchName();
+
         return [
-            'id'           => $this->report->id,
-            'name'         => $this->report->name,
+            'id'            => $this->report->id,
+            'serial_number' => $this->report->serial_number,
+            'name'          => $this->report->name,
             'name_ar'      => $this->report->getTranslation('name', 'ar'),
             'name_en'      => $this->report->getTranslation('name', 'en'),
             'report_types' => $this->report->report_types ?? [],
@@ -30,8 +35,31 @@ class ReportListPresenter extends AbstractPresenter
             'month'        => $this->report->month,
             'export_format'=> $this->report->export_format,
             'status'       => $this->report->status,
-            'created_at'   => optional($this->report->created_at)->toDateTimeString(),
-            'generated_at' => optional($this->report->generated_at)->toDateTimeString(),
+            'branch'       => $branchName,
+            'created_at'   => $this->report->created_at
+                ? Carbon::parse($this->report->created_at)->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d h:i:s A')
+                : null,
+            'generated_at' => $this->report->generated_at
+                ? Carbon::parse($this->report->generated_at)->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d h:i:s A')
+                : null,
         ];
+    }
+
+    /**
+     * Get branch name from config or return "لم يتم الاختيار" if no branch selected
+     */
+    private function getBranchName(): string
+    {
+        $config = $this->report->config ?? [];
+        $branchId = $config['step2']['branch_id'] ?? null;
+
+        if (!$branchId) {
+            return 'لم يتم الاختيار';
+        }
+
+        // Try to get branch name from ManagementHierarchy
+        $branch = ManagementHierarchy::find($branchId);
+
+        return $branch ? $branch->name : 'لم يتم الاختيار';
     }
 }

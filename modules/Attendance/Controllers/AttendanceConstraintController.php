@@ -60,7 +60,7 @@ class AttendanceConstraintController extends Controller
         );
 
 
-       $presentedData = collect($result['data'])->map(function ($constraint) {
+        $presentedData = collect($result['data'])->map(function ($constraint) {
             return (new ConstraintPresenter($constraint))->present();
         });
 
@@ -84,7 +84,7 @@ class AttendanceConstraintController extends Controller
         );
 
 
-       $presentedData = collect($result['data'])->map(function ($constraint) {
+        $presentedData = collect($result['data'])->map(function ($constraint) {
             return (new ConstraintListPresenter($constraint))->present();
         });
 
@@ -183,7 +183,7 @@ class AttendanceConstraintController extends Controller
 
         if ($result['pagination']) {
             return Json::items(
-                                    $result['data'],
+                $result['data'],
                 extraItems:         $meta,
                 paginationSettings: $result['pagination'],
                 message:            'Violations retrieved successfully'
@@ -338,7 +338,7 @@ class AttendanceConstraintController extends Controller
 
         if ($result['pagination']) {
             return Json::items(
-                                    $result['data'],
+                $result['data'],
                 paginationSettings: $result['pagination'],
                 message:            'Violations retrieved successfully'
             );
@@ -353,7 +353,7 @@ class AttendanceConstraintController extends Controller
 
         $result = $this->constraintService->getTodaysWorkRulesForUser($user);
 
-         return Json::item($result, message: 'Violations retrieved successfully');
+        return Json::item($result, message: 'Violations retrieved successfully');
     }
 
     /**
@@ -529,7 +529,20 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
-     * Update only basic info: constraint_name, constraint_type, branch_ids.
+     * Get only basic info: constraint_name, constraint_type, branch_ids, country_id, time_zone_id.
+     */
+    public function getBasicInfo(string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+        $constraint->load(['creator']);
+
+        $presented = (new ConstraintPresenter($constraint))->getData();
+
+        return Json::item($presented);
+    }
+
+    /**
+     * Update only basic info: constraint_name, constraint_type, branch_ids, country_id, time_zone_id.
      */
     public function updateBasicInfo(Request $request, string $constraintId): JsonResponse
     {
@@ -538,6 +551,8 @@ class AttendanceConstraintController extends Controller
             'constraint_type' => ['sometimes', 'required', 'string', 'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintArrayTypes()))],
             'branch_ids'      => ['sometimes', 'nullable', 'array'],
             'branch_ids.*'    => ['exists:management_hierarchies,id'],
+            'country_id'      => ['sometimes', 'nullable', 'string', 'max:36'],
+            'time_zone_id'    => ['sometimes', 'nullable', 'string', 'max:36'],
         ]);
 
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
@@ -552,6 +567,12 @@ class AttendanceConstraintController extends Controller
         if ($request->has('branch_ids')) {
             $data['branch_ids'] = $request->input('branch_ids');
         }
+        if ($request->has('country_id')) {
+            $data['country_id'] = $request->input('country_id');
+        }
+        if ($request->has('time_zone_id')) {
+            $data['time_zone_id'] = $request->input('time_zone_id');
+        }
 
         $constraint->update($data);
         $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
@@ -560,6 +581,52 @@ class AttendanceConstraintController extends Controller
         $presented = (new ConstraintPresenter($constraint))->getData();
 
         return Json::item($presented, message: 'Constraint basic info updated successfully');
+    }
+
+    /**
+     * Get notification settings for this constraint.
+     */
+    public function getNotificationSettings(string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $settings = $constraint->notification_settings ?? [];
+
+        return Json::item([
+            'notify_late_arrival'     => $settings['notify_late_arrival'] ?? false,
+            'notify_unexcused_absence' => $settings['notify_unexcused_absence'] ?? false,
+            'notify_early_departure'  => $settings['notify_early_departure'] ?? false,
+        ]);
+    }
+
+    /**
+     * Update notification settings for this constraint.
+     */
+    public function updateNotificationSettings(Request $request, string $constraintId): JsonResponse
+    {
+        $request->validate([
+            'notify_late_arrival'      => ['sometimes', 'boolean'],
+            'notify_unexcused_absence' => ['sometimes', 'boolean'],
+            'notify_early_departure'   => ['sometimes', 'boolean'],
+        ]);
+
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $current = $constraint->notification_settings ?? [];
+        $updated = array_merge($current, array_filter([
+            'notify_late_arrival'      => $request->boolean('notify_late_arrival', $current['notify_late_arrival'] ?? false),
+            'notify_unexcused_absence' => $request->boolean('notify_unexcused_absence', $current['notify_unexcused_absence'] ?? false),
+            'notify_early_departure'   => $request->boolean('notify_early_departure', $current['notify_early_departure'] ?? false),
+        ], fn($v) => is_bool($v)));
+
+        $constraint->update([
+            'notification_settings' => $updated,
+            'updated_by' => Auth::id(),
+        ]);
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+
+        return Json::item($updated, message: 'Notification settings updated successfully');
     }
 
     /**
@@ -990,18 +1057,80 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
-     * Update constraint-level rules (lateness, early clock-in, max overtime).
+     * Get constraint-level rules for a given constraint.
+     */
+    public function getRules(string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $config   = $constraint->constraint_config ?? [];
+        $allDays  = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        $schedule = $config['time_rules']['weekly_schedule'] ?? [];
+
+        // Extract per-day rules from the first enabled day (they are applied uniformly by updateRules).
+        $latenessMinutes      = null;
+        $earlyClockInMinutes  = null;
+        $workingHours         = null;
+
+        foreach ($allDays as $day) {
+            $dayData = $schedule[$day] ?? [];
+            if (!($dayData['enabled'] ?? false)) {
+                continue;
+            }
+
+            if ($latenessMinutes === null && isset($dayData['lateness_rules']['lateness_period'])) {
+                $latenessMinutes = (int) $dayData['lateness_rules']['lateness_period'];
+            }
+
+            if ($earlyClockInMinutes === null && isset($dayData['early_clock_in_rules']['allowed_minutes_before'])) {
+                $earlyClockInMinutes = (int) $dayData['early_clock_in_rules']['allowed_minutes_before'];
+            }
+
+            if ($workingHours === null && isset($dayData['total_work_hours'])) {
+                $workingHours = (float) $dayData['total_work_hours'];
+            }
+
+            if ($latenessMinutes !== null && $earlyClockInMinutes !== null && $workingHours !== null) {
+                break;
+            }
+        }
+
+        return Json::item([
+            'constraint_id'          => $constraint->id,
+            'max_over_time'          => $constraint->max_over_time,
+            'out_zone_minutes'       => $constraint->out_zone_minutes,
+            'max_working_hours'      => $constraint->max_working_hours,
+            'out_zone_rules'         => $constraint->out_zone_rules,
+            'lateness_minutes'       => $latenessMinutes,
+            'early_clock_in_minutes' => $earlyClockInMinutes,
+            'working_hours'          => $workingHours,
+        ], message: 'Constraint rules retrieved successfully');
+    }
+
+    /**
+     * Update constraint-level rules (lateness, early clock-in, max overtime,
+     * working hours cap, out-of-zone hours and out-of-zone approval rules).
      *
-     * lateness_minutes and early_clock_in_minutes are applied uniformly
-     * to every day in the existing weekly_schedule.
-     * Passing null clears the rule for all days.
+     * lateness_minutes, early_clock_in_minutes, and working_hours are applied
+     * uniformly to every day that already exists in the weekly_schedule.
+     * Passing null for lateness_minutes / early_clock_in_minutes clears the rule.
+     *
+     * out_zone_rules is written to both the dedicated column and
+     * constraint_config.time_rules.out_zone_rules so both access paths stay in sync.
      */
     public function updateRules(Request $request, string $constraintId): JsonResponse
     {
         $request->validate([
-            'lateness_minutes'       => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
-            'early_clock_in_minutes' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
-            'max_over_time'          => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'lateness_minutes'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
+            'early_clock_in_minutes'                      => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
+            'max_over_time'                               => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'working_hours'                               => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:24'],
+            'out_zone_minutes'                             => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'max_working_hours'                            => ['sometimes', 'nullable', 'integer', 'min:1', 'max:24'],
+            'out_zone_rules'                              => ['sometimes', 'nullable', 'array'],
+            'out_zone_rules.requires_approval'            => ['sometimes', 'boolean'],
+            'out_zone_rules.approval_threshold_minutes'   => ['sometimes', 'integer', 'min:0'],
+            'out_zone_rules.unit'                         => ['sometimes', 'string', 'in:minute,hour,day'],
         ]);
 
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
@@ -1012,9 +1141,23 @@ class AttendanceConstraintController extends Controller
             $updates['max_over_time'] = $request->input('max_over_time');
         }
 
-        $hasRuleUpdate = $request->has('lateness_minutes') || $request->has('early_clock_in_minutes');
+        if ($request->has('out_zone_minutes')) {
+            $updates['out_zone_minutes'] = $request->input('out_zone_minutes');
+        }
 
-        if ($hasRuleUpdate) {
+        if ($request->has('max_working_hours')) {
+            $updates['max_working_hours'] = $request->input('max_working_hours');
+        }
+
+        $hasConfigUpdate = $request->hasAny([
+            'lateness_minutes',
+            'early_clock_in_minutes',
+            'working_hours',
+            'out_zone_rules',
+            'out_zone_minutes',
+        ]);
+
+        if ($hasConfigUpdate) {
             $config = $constraint->constraint_config ?? [];
 
             foreach ($allDays as $day) {
@@ -1024,12 +1167,35 @@ class AttendanceConstraintController extends Controller
                         ? ['lateness_period' => (int) $min, 'lateness_unit' => 'minute']
                         : null;
                 }
+
                 if ($request->has('early_clock_in_minutes')) {
                     $min = $request->input('early_clock_in_minutes');
                     $config['time_rules']['weekly_schedule'][$day]['early_clock_in_rules'] = $min !== null
                         ? ['allowed_minutes_before' => (int) $min]
                         : null;
                 }
+
+                if ($request->has('working_hours')) {
+                    $hours = $request->input('working_hours');
+                    if ($hours !== null) {
+                        $config['time_rules']['weekly_schedule'][$day]['total_work_hours'] = (float) $hours;
+                    } else {
+                        unset($config['time_rules']['weekly_schedule'][$day]['total_work_hours']);
+                    }
+                }
+            }
+
+            if ($request->has('out_zone_rules') || $request->has('out_zone_minutes')) {
+                $outZoneRules = $request->input('out_zone_rules')
+                    ?? $config['time_rules']['out_zone_rules']
+                    ?? [];
+
+                if ($request->has('out_zone_minutes') && $request->input('out_zone_minutes') !== null) {
+                    $outZoneRules['duration_minutes'] = (int) $request->input('out_zone_minutes');
+                }
+
+                $config['time_rules']['out_zone_rules'] = $outZoneRules;
+                $updates['out_zone_rules'] = $outZoneRules;
             }
 
             $updates['constraint_config'] = $config;
@@ -1043,8 +1209,12 @@ class AttendanceConstraintController extends Controller
         return Json::item([
             'constraint_id'          => $fresh->id,
             'max_over_time'          => $fresh->max_over_time,
+            'out_zone_minutes'        => $fresh->out_zone_minutes,
+            'max_working_hours'       => $fresh->max_working_hours,
+            'out_zone_rules'         => $fresh->out_zone_rules,
             'lateness_minutes'       => $request->has('lateness_minutes')       ? $request->input('lateness_minutes')       : null,
             'early_clock_in_minutes' => $request->has('early_clock_in_minutes') ? $request->input('early_clock_in_minutes') : null,
+            'working_hours'          => $request->has('working_hours')          ? $request->input('working_hours')          : null,
         ], message: 'Constraint rules updated successfully');
     }
 

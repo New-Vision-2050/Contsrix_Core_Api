@@ -306,6 +306,14 @@ class UserPrivilegeHealthInsuranceTest extends TestCase
         $this->assertStringContainsString('not_in:percentage', $rules['type_allowance_code']);
     }
 
+    public function test_create_user_privilege_does_not_accept_medical_insurance_id(): void
+    {
+        $request = new \Modules\UserInfo\UserPrivilege\Requests\CreateUserPrivilegeRequest();
+        $rules = $request->rules();
+
+        $this->assertArrayNotHasKey('medical_insurance_id', $rules);
+    }
+
     public function test_update_user_privilege_rejects_percentage_type_allowance(): void
     {
         $request = new \Modules\UserInfo\UserPrivilege\Requests\UpdateUserPrivilegeRequest();
@@ -313,6 +321,14 @@ class UserPrivilegeHealthInsuranceTest extends TestCase
 
         $this->assertArrayHasKey('type_allowance_code', $rules);
         $this->assertStringContainsString('not_in:percentage', $rules['type_allowance_code']);
+    }
+
+    public function test_update_user_privilege_does_not_accept_medical_insurance_id(): void
+    {
+        $request = new \Modules\UserInfo\UserPrivilege\Requests\UpdateUserPrivilegeRequest();
+        $rules = $request->rules();
+
+        $this->assertArrayNotHasKey('medical_insurance_id', $rules);
     }
 
     // ---------------------------------------------------------------

@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Modules\Reports\Presenters\ReportListPresenter;
 use Modules\Reports\Presenters\ReportPresenter;
+use Modules\Reports\Requests\CreateEmployeeReportRequest;
 use Modules\Reports\Requests\CreateReportRequest;
 use Modules\Reports\Requests\DeleteReportRequest;
 use Modules\Reports\Requests\GetReportListRequest;
@@ -26,13 +27,26 @@ class ReportController extends Controller
 
     public function list(GetReportListRequest $request): JsonResponse
     {
-        $list = $this->reportService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10),
-        );
+        $page    = (int) $request->get('page', 1);
+        $perPage = (int) $request->get('per_page', 10);
+
+        $filters = $request->only([
+            'date_from',
+            'date_to',
+            'status',
+            'report_type',
+            'period_type',
+            'year',
+            'month',
+            'template_id',
+            'search',
+        ]);
+
+        $list  = $this->reportService->list($page, $perPage, $filters);
+        $items = ReportListPresenter::collection($list['data']);
 
         return Json::items(
-            ReportListPresenter::collection($list['data']),
+            $items,
             paginationSettings: $list['pagination'],
         );
     }
@@ -49,6 +63,33 @@ class ReportController extends Controller
         $report = $this->reportService->create($request->toDTO());
 
         return Json::item((new ReportPresenter($report))->getData());
+    }
+
+    /**
+     * Create and immediately generate a PDF report for a single employee.
+     * Synchronous generation (no queue) — the response includes the
+     * generated file link.
+     */
+    public function storeEmployeeReport(CreateEmployeeReportRequest $request): JsonResponse
+    {
+        $report = $this->reportService->createEmployeeReport(
+            userId:            $request->getUserId(),
+            dateFrom:          $request->getDateFrom(),
+            dateTo:            $request->getDateTo(),
+            name:              $request->getName(),
+            reportLanguage:    $request->getReportLanguage(),
+            paperSize:         $request->getPaperSize(),
+            printOrientation:  $request->getPrintOrientation(),
+        );
+
+        $data = (new ReportPresenter($report))->getData();
+
+        // Add download URL when file is ready
+        $media = $report->getFirstMedia('report_file');
+        $data['download_url'] = $media?->getFullUrl();
+        $data['download_url'] ??= route('reports.download', ['id' => $report->id]);
+
+        return Json::item($data, message: 'Employee report generated successfully');
     }
 
     public function regenerate(GetReportRequest $request): JsonResponse

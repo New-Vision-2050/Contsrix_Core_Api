@@ -174,10 +174,90 @@ trait HasConstraintConfigValidation
                 $validator->errors()->add('constraint_config.time_rules.weekly_schedule', $issue);
             }
 
+            // Validate per-day hours against both the day-level cap and the constraint-level max_working_hours
+            $maxWorkingHours = $this->input('max_working_hours') !== null
+                ? (float) $this->input('max_working_hours')
+                : 9.0;
+            $this->validateDailyWorkHoursCap($validator, $config['weekly_schedule'], $maxWorkingHours);
+
         } catch (InvalidArgumentException $e) {
             // Catch exceptions from data class parsing (e.g., malformed time strings)
             $validator->errors()->add('constraint_config.time_rules', 'Multiple periods configuration error: ' . $e->getMessage());
             return;
+        }
+    }
+
+    /**
+     * Validate that each enabled day's shift periods do not exceed:
+     *   1. The day-level declared total_work_hours (if set on that day).
+     *   2. The constraint-level $maxWorkingHours cap (defaults to 9 h if not supplied).
+     */
+    protected function validateDailyWorkHoursCap($validator, array $weeklySchedule, float $maxWorkingHours = 9.0): void
+    {
+        foreach ($weeklySchedule as $dayName => $dayData) {
+            if (!is_array($dayData) || !($dayData['enabled'] ?? false)) {
+                continue;
+            }
+
+            $periods = $dayData['periods'] ?? [];
+            $totalMinutes = 0;
+
+            foreach ($periods as $period) {
+                $startTime = $period['start_time'] ?? null;
+                $endTime   = $period['end_time']   ?? null;
+                $crossDay  = (bool) ($period['extends_to_next_day'] ?? false);
+
+                if (!$startTime || !$endTime) {
+                    continue;
+                }
+
+                [$startH, $startM] = array_map('intval', explode(':', $startTime));
+                [$endH,   $endM]   = array_map('intval', explode(':', $endTime));
+
+                $startMinutes = $startH * 60 + $startM;
+                $endMinutes   = $endH   * 60 + $endM;
+
+                if ($crossDay) {
+                    $endMinutes += 24 * 60;
+                } elseif ($endMinutes <= $startMinutes) {
+                    continue; // malformed period — caught by DaySchedule parser
+                }
+
+                $totalMinutes += ($endMinutes - $startMinutes);
+            }
+
+            $totalHours = $totalMinutes / 60;
+
+            // Check 1: day-level declared total_work_hours cap
+            $declaredHours = isset($dayData['total_work_hours']) ? (float) $dayData['total_work_hours'] : null;
+
+            if ($declaredHours !== null) {
+                if ($declaredHours <= 0) {
+                    $validator->errors()->add(
+                        "constraint_config.time_rules.weekly_schedule.{$dayName}.total_work_hours",
+                        "The total_work_hours for {$dayName} must be greater than 0."
+                    );
+                } elseif ($totalHours > $declaredHours) {
+                    $validator->errors()->add(
+                        "constraint_config.time_rules.weekly_schedule.{$dayName}.total_work_hours",
+                        sprintf(
+                            'The scheduled shifts for %s total %.2f hour(s), which exceeds the declared working hours cap of %.2f hour(s).',
+                            $dayName, $totalHours, $declaredHours
+                        )
+                    );
+                }
+            }
+
+            // Check 2: constraint-level max_working_hours cap
+            if ($totalHours > $maxWorkingHours) {
+                $validator->errors()->add(
+                    "constraint_config.time_rules.weekly_schedule.{$dayName}",
+                    sprintf(
+                        'The scheduled shifts for %s total %.2f hour(s), which exceeds the maximum allowed working hours of %.2f hour(s) per day.',
+                        $dayName, $totalHours, $maxWorkingHours
+                    )
+                );
+            }
         }
     }
 }

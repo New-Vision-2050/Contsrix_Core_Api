@@ -27,8 +27,17 @@ class ConstraintPresenter extends AbstractPresenter
             'start_date' => $this->constraint->start_date?->format('Y-m-d'),
             'end_date' => $this->constraint->end_date?->format('Y-m-d'),
             'max_over_time' => $this->constraint->max_over_time,
+            'out_zone_minutes' => $this->constraint->out_zone_minutes,
+            'max_working_hours' => $this->constraint->max_working_hours,
             'config' => $this->formatConstraintConfig(),
             'branches' => $this->formatBranches(),
+            'country_id' => $this->constraint->country_id,
+            'time_zone_id' => $this->constraint->time_zone_id,
+            'notification_settings' => $this->constraint->notification_settings ?? [
+                'notify_late_arrival' => false,
+                'notify_unexcused_absence' => false,
+                'notify_early_departure' => false,
+            ],
             'created_by' => $this->constraint->creator?->name,
             'created_at' => $this->constraint->created_at?->format('Y-m-d H:i:s'),
         ];
@@ -36,17 +45,11 @@ class ConstraintPresenter extends AbstractPresenter
 
     private function formatBranches(): array
     {
-        // This assumes you have a `branches` relationship defined on the AttendanceConstraint model.
-        if (!$this->constraint->relationLoaded('branches')) {
-            return [];
-        }
-
-        return $this->constraint->branches->map(function ($branch) {
-            return [
-                'id' => $branch->id,
+        return $this->constraint->getBranchModels()
+            ->map(fn($branch) => [
+                'id'   => $branch->id,
                 'name' => $branch->name,
-            ];
-        })->all();
+            ])->all();
     }
 
     private function formatConstraintConfig(): array
