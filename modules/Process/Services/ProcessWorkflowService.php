@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Models\Process;
+use Modules\Process\Events\ProcessStepPending;
 use Modules\Process\Models\ProcessStep;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
@@ -33,18 +34,27 @@ class ProcessWorkflowService
 
             $snapshots = [];
             foreach ($steps as $step) {
-                $assignedUserId = $this->resolveAssignedUserId($step);
-                if ($assignedUserId === null) {
+                $actionTakerIds = $this->resolveActionTakerIds($step);
+                if (empty($actionTakerIds)) {
                     continue;
                 }
+                $assignedUserId = $actionTakerIds[0];
                 $snapshots[] = [
-                    'step_id'                            => $step->id,
-                    'template_step_order'                => $step->step_order,
+                    'step_id'                           => $step->id,
+                    'template_step_order'               => $step->step_order,
+                    'notify_by_sms'                     => $step->notify_by_sms,
+                    'notify_by_email'                   => $step->notify_by_email,
+                    'notify_by_whatsapp'                => $step->notify_by_whatsapp,
+                    'auto_approval_within_hours'        => $step->auto_approval_within_hours,
+                    'is_view_only'                      => $step->is_view_only,
+                    'is_return_with_notes'              => $step->is_return_with_notes,
+                    'approval_within_days'              => $step->approval_within_days,
+                    'approval_within_hours'             => $step->approval_within_hours,
                     'assigned_user_id'                   => $assignedUserId,
                     'escalation_management_hierarchy_id' => $step->escalation_management_hierarchy_id,
+                    'action_taker_ids'                   => $actionTakerIds,
                 ];
             }
-
             if (empty($snapshots)) {
                 continue;
             }
@@ -89,20 +99,42 @@ class ProcessWorkflowService
 
     private function createProcessStep(Process $process, array $stepConfig): void
     {
-        ProcessStep::create([
+        $step = ProcessStep::create([
             'process_id'                         => $process->id,
             'step_id'                            => $stepConfig['step_id'],
             'template_step_order'                => $stepConfig['template_step_order'] ?? null,
+            'notify_by_sms'                     => $stepConfig['notify_by_sms'] ?? false,
+            'notify_by_email'                   => $stepConfig['notify_by_email'] ?? false,
+            'notify_by_whatsapp'                => $stepConfig['notify_by_whatsapp'] ?? false,
+            'auto_approval_within_hours'        => $stepConfig['auto_approval_within_hours'] ?? null,
+            'is_view_only'                      => $stepConfig['is_view_only'] ?? false,
+            'is_return_with_notes'              => $stepConfig['is_return_with_notes'] ?? false,
+            'approval_within_days'              => $stepConfig['approval_within_days'] ?? null,
+            'approval_within_hours'             => $stepConfig['approval_within_hours'] ?? null,
             'assigned_user_id'                   => $stepConfig['assigned_user_id'],
             'escalation_management_hierarchy_id' => $stepConfig['escalation_management_hierarchy_id'] ?? null,
             'status'                             => 'pending',
         ]);
+
+        $actionTakerIds = $stepConfig['action_taker_ids'] ?? [$stepConfig['assigned_user_id']];
+        foreach ($actionTakerIds as $userId) {
+            \Modules\Process\Models\ProcessStepActionTaker::create([
+                'process_step_id' => $step->id,
+                'user_id'         => $userId,
+            ]);
+        }
+
+        if ($process->status === ProcessStatus::InProgress) {
+            event(new ProcessStepPending($step));
+        }
     }
 
-    private function resolveAssignedUserId(ProcedureSettingStep $step): ?string
+    private function resolveActionTakerIds(ProcedureSettingStep $step): array
     {
-        $taker = $step->actionTakers->first();
-        return $taker ? (string) $taker->user_id : null;
+        return $step->actionTakers
+            ->pluck('user_id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
     }
     public function approveStep(string $id): ProcessStep
     {

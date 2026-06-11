@@ -34,9 +34,9 @@ class ClientRequestCRUDService
         );
 
         $clientRequest->load(['company', 'createdByUser', 'receiverEmployees']);
-        foreach ($clientRequest->receiverEmployees as $employee) {
-            event(new ClientRequestCreated($clientRequest, (string) $employee->id));
-        }
+        // foreach ($clientRequest->receiverEmployees as $employee) {
+        //     event(new ClientRequestCreated($clientRequest, (string) $employee->id));
+        // }
 
         return $clientRequest;
     }
@@ -86,7 +86,7 @@ class ClientRequestCRUDService
     public function update(UpdateClientRequestDTO $updateClientRequestDTO): ClientRequest
     {
         $uuid = \Ramsey\Uuid\Uuid::fromString($updateClientRequestDTO->id);
-        
+
         $this->repository->updateClientRequest(
             $uuid,
             $updateClientRequestDTO->toArray(),

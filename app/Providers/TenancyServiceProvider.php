@@ -102,7 +102,9 @@ class TenancyServiceProvider extends ServiceProvider
             Events\SyncedResourceSaved::class => [
                 Listeners\UpdateSyncedResource::class,
             ],
-
+        \Modules\Process\Events\ProcessStepPending::class => [
+                    \Modules\Process\Listeners\SendProcessStepNotifications::class,
+                ],
             // Fired only when a synced resource is changed in a different DB than the origin DB (to avoid infinite loops)
             Events\SyncedResourceChangedInForeignDatabase::class => [],
         ];
@@ -162,7 +164,7 @@ class TenancyServiceProvider extends ServiceProvider
 
             // Our custom middleware to convert X-Domain to X-Tenant
             \App\Http\Middleware\DomainToTenantMiddleware::class,
-            
+
             // Our custom middleware to ensure tenant compatibility (must run before InitializeTenancyByRequestData)
             \App\Http\Middleware\TenantCompatibilityMiddleware::class,
 

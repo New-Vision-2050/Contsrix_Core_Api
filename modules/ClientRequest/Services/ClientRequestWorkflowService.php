@@ -17,6 +17,7 @@ use Modules\Process\Models\ProcessStep;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\ClientRequest\Events\ClientRequestCreated;
 
 class ClientRequestWorkflowService
 {
@@ -81,14 +82,23 @@ class ClientRequestWorkflowService
                     if (! $step instanceof ProcedureSettingStep) {
                         continue;
                     }
-                    $assignedUserId = $this->resolveAssignedUserId($step);
-                    if ($assignedUserId === null) {
+                    $actionTakerIds  = $this->resolveActionTakerIds($step);
+                    if (empty($actionTakerIds)) {
                         continue;
                     }
                     $snapshots[] = [
                         'step_id'                            => $step->id,
                         'template_step_order'                => $step->step_order,
-                        'assigned_user_id'                   => $assignedUserId,
+                        'assigned_user_id'                   => $actionTakerIds[0],
+                        'action_taker_ids'                   => $actionTakerIds,
+                        'auto_approval_within_hours'        => $step->auto_approval_within_hours ?? null,
+                        'is_view_only'                      => $step->is_view_only ?? false,
+                        'is_return_with_notes'              => $step->is_return_with_notes ?? false,
+                        'approval_within_days'              => $step->approval_within_days ?? null,
+                        'approval_within_hours'             => $step->approval_within_hours ?? null,
+                        'notify_by_sms'                     => $step->notify_by_sms ?? false,
+                        'notify_by_email'                   => $step->notify_by_email ?? false,
+                        'notify_by_whatsapp'                => $step->notify_by_whatsapp ?? false,
                         'escalation_management_hierarchy_id' => $step->escalation_management_hierarchy_id,
                     ];
                 }
@@ -386,32 +396,74 @@ class ClientRequestWorkflowService
         });
     }
 
-    private function resolveAssignedUserId(ProcedureSettingStep $step): ?string
+    // private function resolveAssignedUserId(ProcedureSettingStep $step): ?string
+    // {
+    //     if (is_string($step->user_id) && $step->user_id !== '') {
+    //         return $step->user_id;
+    //     }
+
+    //     $firstTaker = $step->actionTakers->first();
+
+    //     return $firstTaker !== null ? (string) $firstTaker->user_id : null;
+    // }
+/**
+ * Get all action taker user IDs for a step.
+ * Returns an array of user UUIDs.
+ */
+    private function resolveActionTakerIds(ProcedureSettingStep $step): array
     {
         if (is_string($step->user_id) && $step->user_id !== '') {
-            return $step->user_id;
+            return [(string) $step->user_id];
         }
 
-        $firstTaker = $step->actionTakers->first();
-
-        return $firstTaker !== null ? (string) $firstTaker->user_id : null;
+        return $step->actionTakers
+            ->pluck('user_id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
     }
 
-    /**
-     * @param array{step_id: int, template_step_order: ?int, assigned_user_id: string, escalation_management_hierarchy_id: ?int} $row
-     */
     private function createProcessStepFromSnapshot(Process $process, array $row): ProcessStep
     {
-        return ProcessStep::query()->create([
+        $processStep = ProcessStep::query()->create([
             'process_id'                         => $process->id,
             'step_id'                            => $row['step_id'],
             'template_step_order'                => $row['template_step_order'],
             'assigned_user_id'                   => $row['assigned_user_id'],
+            'notify_by_sms'                      => $row['notify_by_sms'] ?? false,
+            'notify_by_email'                    => $row['notify_by_email'] ?? false,
+            'notify_by_whatsapp'                 => $row['notify_by_whatsapp'] ?? false,
+            'auto_approval_within_hours'         => $row['auto_approval_within_hours'] ?? null,
+            'is_view_only'                       => $row['is_view_only'] ?? false,
+            'is_return_with_notes'               => $row['is_return_with_notes'] ?? false,
+            'approval_within_days'               => $row['approval_within_days'] ?? null,
+            'approval_within_hours'              => $row['approval_within_hours'] ?? null,
             'escalation_management_hierarchy_id' => $row['escalation_management_hierarchy_id'],
             'status'                             => ProcessStepStatus::Pending,
         ]);
-    }
+         $actionTakerIds = $row['action_taker_ids'] ?? [$row['assigned_user_id']];
 
+         # if process step is in progress, fire event for all action takers
+        // if ($process->status === ProcessStatus::InProgress) {
+
+            foreach ($actionTakerIds as $userId) {
+                \Modules\Process\Models\ProcessStepActionTaker::create([
+                    'process_step_id' => $processStep->id,
+                    'user_id'         => $userId,
+                ]);
+        //     event(new ClientRequestCreated($clientRequest, (string) $employee->id));
+            }
+
+            if ($process->status === ProcessStatus::InProgress) {
+                event(new \Modules\Process\Events\ProcessStepPending($processStep));
+            }
+                // if ($process->status === ProcessStatus::InProgress) {
+                //     $cr =   ClientRequest::where('id', $process->processable_id)->lockForUpdate()->with(['company', 'createdByUser', 'receiverEmployees'])->first();
+                //     event(new ClientRequestCreated($cr, $userId));
+                //     // event(new \Modules\Process\Events\ProcessStepPending($processStep));
+                // }
+
+        return $processStep;
+    }
     private function assertActorCanActOnStep(ProcessStep $step): void
     {
         if (! Auth::check()) {

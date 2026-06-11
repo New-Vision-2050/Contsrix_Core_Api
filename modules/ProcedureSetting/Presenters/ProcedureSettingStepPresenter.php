@@ -31,8 +31,11 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'requires_approval_within_period' => (bool) $this->step->requires_approval_within_period,
             'approval_within_days'  => $this->step->approval_within_days,
             'approval_within_hours' => $this->step->approval_within_hours,
+            'auto_approval_within_hours' => $this->step->auto_approval_within_hours,
             'notify_by_email'      => (bool) $this->step->notify_by_email,
             'notify_by_whatsapp'   => (bool) $this->step->notify_by_whatsapp,
+            'notify_by_sms'        => (bool) $this->step->notify_by_sms,
+            'step_order'           => $this->step->step_order,
             'escalation_management_hierarchy_id' => $this->step->escalation_management_hierarchy_id,
             'escalation_management_hierarchy'    => $this->escalationManagementHierarchyPayload(),
         ];

@@ -54,11 +54,13 @@ class CreateProcedureSettingStepRequest extends FormRequest
             'is_view_only'                     => 'nullable|boolean',
             'is_return_with_notes'             => 'nullable|boolean',
             'requires_approval_within_period' => 'nullable|boolean',
+            'auto_approval_within_hours'           => 'nullable|integer|min:0',
             'approval_within_days'            => 'nullable|integer|min:0',
             'approval_within_hours'           => 'nullable|integer|min:0',
 
             'notify_by_email'    => 'nullable|boolean',
             'notify_by_whatsapp' => 'nullable|boolean',
+            'notify_by_sms' => 'nullable|boolean',
 
             'escalation_management_hierarchy_id' => 'nullable|integer|exists:management_hierarchies,id',
 
@@ -99,8 +101,10 @@ class CreateProcedureSettingStepRequest extends FormRequest
             requires_approval_within_period: (bool) ($v['requires_approval_within_period'] ?? false),
             approval_within_days: isset($v['approval_within_days']) ? (int) $v['approval_within_days'] : null,
             approval_within_hours: isset($v['approval_within_hours']) ? (int) $v['approval_within_hours'] : null,
+            auto_approval_within_hours: isset($v['auto_approval_within_hours']) ? (int) $v['auto_approval_within_hours'] : null,
             notify_by_email:      (bool) ($v['notify_by_email'] ?? false),
             notify_by_whatsapp:   (bool) ($v['notify_by_whatsapp'] ?? false),
+            notify_by_sms:   (bool) ($v['notify_by_sms'] ?? false),
             escalation_management_hierarchy_id: isset($v['escalation_management_hierarchy_id']) ? (int) $v['escalation_management_hierarchy_id'] : null,
             step_order:            isset($v['step_order']) ? (int) $v['step_order'] : null,
             action_taker_user_ids: $v['action_taker_user_ids'] ?? null,

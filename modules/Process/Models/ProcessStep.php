@@ -7,6 +7,7 @@ namespace Modules\Process\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Process\Enums\ProcessStepStatus;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -30,6 +31,14 @@ class ProcessStep extends Model
         'escalation_management_hierarchy_id',
         'status',
         'action_by',
+        'notify_by_sms',
+        'auto_approval_within_hours',
+        'is_view_only',
+        'is_return_with_notes',
+        'approval_within_days',
+        'approval_within_hours',
+        'notify_by_email',
+        'notify_by_whatsapp',
         'acted_at',
     ];
 
@@ -70,10 +79,10 @@ class ProcessStep extends Model
         return $this->belongsTo(User::class, 'action_by');
     }
 
-    /**
-     * @param  \Illuminate\Database\Eloquent\Builder<ProcessStep>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<ProcessStep>
-     */
+    public function actionTakers(): HasMany
+    {
+        return $this->hasMany(ProcessStepActionTaker::class, 'process_step_id');
+    }
     public function scopePendingForAssignee($query, string $userId)
     {
         return $query->where('assigned_user_id', $userId)

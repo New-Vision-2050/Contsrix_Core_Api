@@ -106,9 +106,11 @@ class UpdateProcedureSettingStepRequest extends FormRequest
             'requires_approval_within_period' => 'sometimes|boolean',
             'approval_within_days'            => 'sometimes|nullable|integer|min:0',
             'approval_within_hours'           => 'sometimes|nullable|integer|min:0',
+            'auto_approval_within_hours'           => 'sometimes|nullable|integer|min:0',
 
             'notify_by_email'    => 'sometimes|boolean',
             'notify_by_whatsapp' => 'sometimes|boolean',
+            'notify_by_sms' => 'sometimes|boolean',
 
             'escalation_management_hierarchy_id' => 'sometimes|nullable|integer|exists:management_hierarchies,id',
 
