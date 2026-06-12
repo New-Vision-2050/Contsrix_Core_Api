@@ -54,11 +54,13 @@ final class EmployeeTaskExtensionWorkflowService
         $this->validateExtensionCanBeResolved($extension);
 
         // Extension uses parent task's procedure for workflow
+        $context = $task->project_id ? ['project_id' => $task->project_id] : [];
         $result = $this->workflow->advance(
             $extension->current_procedure_step_id,
             $task->procedure_setting_id,  // Use parent task's procedure
             $adminId,
             $task->user_id,
+            $context,
         );
 
         return DB::transaction(function () use ($extension, $task, $result, $adminId, $approvalNotes): EmployeeTaskExtensionRequest {
@@ -117,7 +119,8 @@ final class EmployeeTaskExtensionWorkflowService
         $this->validateExtensionCanBeResolved($extension);
 
         // Validate user can reject (using parent task's procedure)
-        $this->workflow->assertCanReject($extension->current_procedure_step_id, $adminId, $task->user_id);
+        $context = $task->project_id ? ['project_id' => $task->project_id] : [];
+        $this->workflow->assertCanReject($extension->current_procedure_step_id, $adminId, $task->user_id, $context);
 
         return DB::transaction(function () use ($extension, $task, $adminId, $rejectionReason): EmployeeTaskExtensionRequest {
             $extension->update([

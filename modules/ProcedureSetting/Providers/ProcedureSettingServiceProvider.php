@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\ProcedureSetting\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\ProcedureSetting\Events\WorkflowStepActivated;
+use Modules\ProcedureSetting\Listeners\SendWorkflowStepNotification;
 
 class ProcedureSettingServiceProvider extends ModuleServiceProvider
 {
@@ -19,11 +22,20 @@ class ProcedureSettingServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        $this->registerEventListeners();
     }
 
     public function register(): void
     {
         $this->registerRoutes();
+    }
+
+    private function registerEventListeners(): void
+    {
+        Event::listen(
+            WorkflowStepActivated::class,
+            SendWorkflowStepNotification::class,
+        );
     }
 
     public function mapRoutes(): void

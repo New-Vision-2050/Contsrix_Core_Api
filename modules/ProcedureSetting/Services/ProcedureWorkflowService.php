@@ -26,6 +26,9 @@ use Modules\ProcedureSetting\Models\ProcedureSettingStep;
  */
 final class ProcedureWorkflowService
 {
+    public function __construct(
+        private readonly ActionTakerResolver $resolver,
+    ) {}
     /**
      * Resolve the first step for a procedure setting of a given type.
      *
@@ -88,10 +91,11 @@ final class ProcedureWorkflowService
         ?string $procedureSettingId,
         string $userId,
         ?string $createdByUserId = null,
+        array $context = [],
     ): ProcedureWorkflowResult {
         $currentStep = $this->loadStep($currentStepId);
 
-        $this->assertIsActionTaker($currentStep, $userId, $createdByUserId);
+        $this->assertIsActionTaker($currentStep, $userId, $createdByUserId, $context);
 
         $nextStep = null;
         if ($procedureSettingId && $currentStep->step_order !== null) {
@@ -115,10 +119,10 @@ final class ProcedureWorkflowService
      * compute, so this method returns void and lets the caller apply the
      * entity's terminal rejection state.
      */
-    public function assertCanReject(?int $currentStepId, string $userId, ?string $createdByUserId = null): void
+    public function assertCanReject(?int $currentStepId, string $userId, ?string $createdByUserId = null, array $context = []): void
     {
         $step = $this->loadStep($currentStepId);
-        $this->assertIsActionTaker($step, $userId, $createdByUserId);
+        $this->assertIsActionTaker($step, $userId, $createdByUserId, $context);
     }
 
     /**
@@ -142,7 +146,7 @@ final class ProcedureWorkflowService
      *   action_takers: list<array{user_id:string,name:?string}>
      * }
      */
-    public function getApprovalResponsibles(string $procedureType, ?string $createdByUserId = null): array
+    public function getApprovalResponsibles(string $procedureType, ?string $createdByUserId = null, array $context = []): array
     {
         /** @var ProcedureSetting|null $setting */
         $setting = ProcedureSetting::query()
@@ -163,7 +167,7 @@ final class ProcedureWorkflowService
         $actionTakerType = $firstStep->action_taker_type?->value ?? 'specific_user';
 
         if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
-            $resolvedUserId = $this->resolveManagerFromCreatorHierarchy($firstStep, $createdByUserId);
+            $resolvedUserId = $this->resolver->resolveManagerFromCreatorHierarchy($firstStep, $createdByUserId, $context);
 
             if ($resolvedUserId !== null) {
                 $user = \Modules\User\Models\User::query()->find($resolvedUserId);
@@ -181,6 +185,35 @@ final class ProcedureWorkflowService
                             'name'    => $user?->name,
                         ],
                     ],
+                ];
+            }
+        }
+
+        if ($actionTakerType === 'specific_procedures') {
+            $resolvedUserIds = $this->resolver->resolveUsersForStep($firstStep, $createdByUserId, $context);
+
+            if ($resolvedUserIds !== []) {
+                $users = \Modules\User\Models\User::query()
+                    ->whereIn('id', $resolvedUserIds)
+                    ->get(['id', 'name']);
+
+                $actionTakers = [];
+                foreach ($resolvedUserIds as $resolvedId) {
+                    $u = $users->firstWhere('id', $resolvedId);
+                    $actionTakers[] = [
+                        'user_id' => $resolvedId,
+                        'name'    => $u?->name,
+                    ];
+                }
+
+                return [
+                    'auto_approve'  => false,
+                    'step'          => [
+                        'id'         => $firstStep->id,
+                        'name'       => $firstStep->name,
+                        'step_order' => $firstStep->step_order,
+                    ],
+                    'action_takers' => $actionTakers,
                 ];
             }
         }
@@ -209,18 +242,24 @@ final class ProcedureWorkflowService
      * act on the given step? Returns true for open steps (no action-takers)
      * and true when user is explicitly listed.
      */
-    public function userCanActOnStep(ProcedureSettingStep $step, string $userId, ?string $createdByUserId = null): bool
+    public function userCanActOnStep(ProcedureSettingStep $step, string $userId, ?string $createdByUserId = null, array $context = []): bool
     {
-        if (!$step->relationLoaded('actionTakers')) {
-            $step->load('actionTakers');
-        }
-
         $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
 
         if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
-            $resolvedUserId = $this->resolveManagerFromCreatorHierarchy($step, $createdByUserId);
+            $resolvedUserId = $this->resolver->resolveManagerFromCreatorHierarchy($step, $createdByUserId, $context);
 
             return $resolvedUserId !== null && $resolvedUserId === $userId;
+        }
+
+        if ($actionTakerType === 'specific_procedures') {
+            $resolvedUserIds = $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
+
+            return in_array($userId, $resolvedUserIds, true);
+        }
+
+        if (! $step->relationLoaded('actionTakers')) {
+            $step->load('actionTakers');
         }
 
         if ($step->actionTakers->isEmpty()) {
@@ -228,6 +267,15 @@ final class ProcedureWorkflowService
         }
 
         return $step->actionTakers->contains('user_id', $userId);
+    }
+
+    /**
+     * Resolve the user IDs authorized to act on a given step.
+     * Useful for broadcasting notifications to the correct recipients.
+     */
+    public function resolveActionTakerUserIdsForStep(ProcedureSettingStep $step, ?string $createdByUserId = null, array $context = []): array
+    {
+        return $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
     }
 
     private function loadStep(?int $stepId): ProcedureSettingStep
@@ -245,12 +293,12 @@ final class ProcedureWorkflowService
         return $step;
     }
 
-    private function assertIsActionTaker(ProcedureSettingStep $step, string $userId, ?string $createdByUserId = null): void
+    private function assertIsActionTaker(ProcedureSettingStep $step, string $userId, ?string $createdByUserId = null, array $context = []): void
     {
         $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
 
         if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
-            $resolvedUserId = $this->resolveManagerFromCreatorHierarchy($step, $createdByUserId);
+            $resolvedUserId = $this->resolver->resolveManagerFromCreatorHierarchy($step, $createdByUserId, $context);
 
             if ($resolvedUserId !== null && $resolvedUserId === $userId) {
                 return;
@@ -259,55 +307,26 @@ final class ProcedureWorkflowService
             throw ProcedureWorkflowException::notAuthorized();
         }
 
+        if ($actionTakerType === 'specific_procedures') {
+            $resolvedUserIds = $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
+
+            if (in_array($userId, $resolvedUserIds, true)) {
+                return;
+            }
+
+            throw ProcedureWorkflowException::notAuthorized();
+        }
+
+        if (! $step->relationLoaded('actionTakers')) {
+            $step->load('actionTakers');
+        }
+
         if ($step->actionTakers->isEmpty()) {
             return;
         }
 
-        if (!$step->actionTakers->contains('user_id', $userId)) {
+        if (! $step->actionTakers->contains('user_id', $userId)) {
             throw ProcedureWorkflowException::notAuthorized();
         }
-    }
-
-    private function resolveManagerFromCreatorHierarchy(ProcedureSettingStep $step, string $createdByUserId): ?string
-    {
-        $hierarchyType = $step->action_taker_management_hierarchy_type?->value;
-
-        if ($hierarchyType === null) {
-            return null;
-        }
-
-        $creator = \Modules\User\Models\User::query()
-            ->with('professionalData')
-            ->find($createdByUserId);
-
-        if ($creator === null) {
-            return null;
-        }
-
-        $professionalData = $creator->professionalData;
-
-        if ($professionalData === null) {
-            return null;
-        }
-
-        $hierarchyId = null;
-        if ($hierarchyType === 'branch_manager') {
-            $hierarchyId = $professionalData->branch_id;
-        } elseif ($hierarchyType === 'management_manager') {
-            $hierarchyId = $professionalData->management_id;
-        }
-
-        if ($hierarchyId === null) {
-            return null;
-        }
-
-        $hierarchy = \Modules\Company\ManagementHierarchy\Models\ManagementHierarchy::query()
-            ->find($hierarchyId);
-
-        if ($hierarchy === null || $hierarchy->manager_id === null) {
-            return null;
-        }
-
-        return (string) $hierarchy->manager_id;
     }
 }

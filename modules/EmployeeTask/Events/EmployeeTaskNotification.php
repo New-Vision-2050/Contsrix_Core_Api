@@ -20,6 +20,7 @@ class EmployeeTaskNotification implements ShouldBroadcast
     public function __construct(
         public EmployeeTaskRequest $task,
         public ProcedureSettingStep $currentStep,
+        public array $userIds = [],
     ) {}
 
 
@@ -27,9 +28,12 @@ class EmployeeTaskNotification implements ShouldBroadcast
     {
         $channels = [];
 
-        // Extract channels from currentStep.actionTakers
-        foreach ($this->currentStep->actionTakers as $actionTaker) {
-            $channels[] = new Channel('employee-task.notification.' . $actionTaker->user_id);
+        $userIds = $this->userIds !== []
+            ? $this->userIds
+            : $this->currentStep->actionTakers->pluck('user_id')->all();
+
+        foreach ($userIds as $userId) {
+            $channels[] = new Channel('employee-task.notification.' . $userId);
         }
 
         return $channels;

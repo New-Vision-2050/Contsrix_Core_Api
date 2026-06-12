@@ -81,7 +81,10 @@ class EmployeeTaskRepository
                 $q->where('status', ProcessStatus::InProgress)
                   ->whereHas('steps', function ($q) use ($adminId) {
                       $q->where('status', 'pending')
-                        ->where('assigned_user_id', $adminId);
+                        ->where(function ($q) use ($adminId) {
+                            $q->where('assigned_user_id', $adminId)
+                              ->orWhereJsonContains('authorized_user_ids', $adminId);
+                        });
                   });
             })
             ->with([
@@ -149,7 +152,10 @@ class EmployeeTaskRepository
                 $q->where('status', ProcessStatus::InProgress)
                   ->whereHas('steps', function ($q) use ($adminId) {
                       $q->where('status', 'pending')
-                        ->where('assigned_user_id', $adminId);
+                        ->where(function ($q) use ($adminId) {
+                            $q->where('assigned_user_id', $adminId)
+                              ->orWhereJsonContains('authorized_user_ids', $adminId);
+                        });
                   });
             })
             ->with([

@@ -88,12 +88,26 @@ final class EmployeeTaskRequestPresenter
         $step = $task->currentProcedureStep;
 
         $actionTakers = [];
-        if ($step->relationLoaded('actionTakers')) {
+        if ($step->relationLoaded('actionTakers') && $step->actionTakers->isNotEmpty()) {
             foreach ($step->actionTakers as $at) {
                 $actionTakers[] = [
                     'user_id' => $at->user_id,
                     'name'    => $at->relationLoaded('user') && $at->user ? $at->user->name : null,
                 ];
+            }
+        } elseif ($task->relationLoaded('employeeTaskProcess') && $task->employeeTaskProcess) {
+            $process = $task->employeeTaskProcess;
+            if ($process->relationLoaded('steps')) {
+                $pendingStep = $process->steps->first(fn ($s) => $s->status->value === 'pending');
+                if ($pendingStep) {
+                    $userIds = $pendingStep->authorized_user_ids ?? [$pendingStep->assigned_user_id];
+                    foreach ($userIds as $userId) {
+                        $actionTakers[] = [
+                            'user_id' => $userId,
+                            'name'    => null,
+                        ];
+                    }
+                }
             }
         }
 
