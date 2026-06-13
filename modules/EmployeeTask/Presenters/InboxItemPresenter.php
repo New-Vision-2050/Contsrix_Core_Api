@@ -172,11 +172,13 @@ final class InboxItemPresenter
             : null;
 
         $actionTakers = [];
-        if ($processStep->assigned_user_id) {
-            $name = $processStep->relationLoaded('assignedUser') && $processStep->assignedUser
-                ? $processStep->assignedUser->name
-                : null;
-            $actionTakers[] = ['user_id' => $processStep->assigned_user_id, 'name' => $name];
+        $userIds = $processStep->authorized_user_ids ?? [$processStep->assigned_user_id];
+        foreach ($userIds as $userId) {
+            $name = null;
+            if ($processStep->relationLoaded('assignedUser') && $processStep->assignedUser && $processStep->assignedUser->id === $userId) {
+                $name = $processStep->assignedUser->name;
+            }
+            $actionTakers[] = ['user_id' => $userId, 'name' => $name];
         }
 
         return [
@@ -203,13 +205,22 @@ final class InboxItemPresenter
         $step         = $model->currentProcedureStep;
         $actionTakers = [];
 
-        if ($step->relationLoaded('actionTakers')) {
+        if ($step->relationLoaded('actionTakers') && $step->actionTakers->isNotEmpty()) {
             foreach ($step->actionTakers as $at) {
                 $actionTakers[] = [
                     'user_id' => $at->user_id,
                     'name'    => $at->relationLoaded('user') && $at->user ? $at->user->name : null,
                 ];
             }
+        } elseif (
+            $model->relationLoaded('task')
+            && $model->task
+            && $model->task->approval_responsible_id
+        ) {
+            $actionTakers[] = [
+                'user_id' => $model->task->approval_responsible_id,
+                'name'    => null,
+            ];
         }
 
         return [

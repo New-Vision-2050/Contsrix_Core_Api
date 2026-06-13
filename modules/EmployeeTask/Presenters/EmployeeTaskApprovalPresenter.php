@@ -92,13 +92,22 @@ final class EmployeeTaskApprovalPresenter
         $step         = $approval->currentProcedureStep;
         $actionTakers = [];
 
-        if ($step->relationLoaded('actionTakers')) {
+        if ($step->relationLoaded('actionTakers') && $step->actionTakers->isNotEmpty()) {
             foreach ($step->actionTakers as $at) {
                 $actionTakers[] = [
                     'user_id' => $at->user_id,
                     'name'    => $at->relationLoaded('user') && $at->user ? $at->user->name : null,
                 ];
             }
+        } elseif (
+            $approval->relationLoaded('task')
+            && $approval->task
+            && $approval->task->approval_responsible_id
+        ) {
+            $actionTakers[] = [
+                'user_id' => $approval->task->approval_responsible_id,
+                'name'    => null,
+            ];
         }
 
         return [

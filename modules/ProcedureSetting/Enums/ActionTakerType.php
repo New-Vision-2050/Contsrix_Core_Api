@@ -8,4 +8,5 @@ enum ActionTakerType: string
 {
     case SpecificUser = 'specific_user';
     case ManagementHierarchy = 'management_hierarchy';
+    case SpecificProcedures = 'specific_procedures';
 }

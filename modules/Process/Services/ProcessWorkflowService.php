@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Process\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,15 +13,24 @@ use Modules\Process\Models\Process;
 use Modules\Process\Models\ProcessStep;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\ProcedureSetting\Events\WorkflowStepActivated;
+use Modules\ProcedureSetting\Jobs\AutoApproveWorkflowStep;
 
 use Modules\Process\Enums\ProcessStepStatus;
+use Modules\ProcedureSetting\Services\ActionTakerResolver;
+
 class ProcessWorkflowService
 {
+    public function __construct(
+        private readonly ActionTakerResolver $resolver,
+    ) {}
+
     public function createProcessesFromSettings(
             string $processableType,
             string $processableId,
             Collection $settings,
             ?string $createdByUserId = null,
+            array $context = [],
         ): ?Process {
             $firstProcess = null;
 
@@ -34,14 +44,16 @@ class ProcessWorkflowService
 
             $snapshots = [];
             foreach ($steps as $step) {
-                $assignedUserId = $this->resolveAssignedUserId($step, $createdByUserId);
-                if ($assignedUserId === null) {
+                $resolvedUsers = $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
+                if ($resolvedUsers === []) {
                     continue;
                 }
                 $snapshots[] = [
                     'step_id'                            => $step->id,
                     'template_step_order'                => $step->step_order,
-                    'assigned_user_id'                   => $assignedUserId,
+                    'assigned_user_id'                   => $resolvedUsers[0],
+                    'authorized_user_ids'                => $resolvedUsers,
+                    'specific_procedure_type'            => $step->action_taker_specific_procedure_type?->value,
                     'escalation_management_hierarchy_id' => $step->escalation_management_hierarchy_id,
                 ];
             }
@@ -102,69 +114,57 @@ class ProcessWorkflowService
 
     private function createProcessStep(Process $process, array $stepConfig): void
     {
-        ProcessStep::create([
+        $step = ProcessStep::create([
             'process_id'                         => $process->id,
             'step_id'                            => $stepConfig['step_id'],
             'template_step_order'                => $stepConfig['template_step_order'] ?? null,
             'assigned_user_id'                   => $stepConfig['assigned_user_id'],
+            'authorized_user_ids'                => $stepConfig['authorized_user_ids'] ?? null,
             'escalation_management_hierarchy_id' => $stepConfig['escalation_management_hierarchy_id'] ?? null,
             'status'                             => 'pending',
         ]);
+
+        $templateStep = ProcedureSettingStep::query()->find($stepConfig['step_id']);
+
+        if ($templateStep === null) {
+            return;
+        }
+
+        $authorizedUserIds = $stepConfig['authorized_user_ids'] ?? [$stepConfig['assigned_user_id']];
+
+        // 1. Dispatch centralized notification event (real-time + email + SMS)
+        event(new WorkflowStepActivated(
+            processStep: $step,
+            templateStep: $templateStep,
+            userIds: $authorizedUserIds,
+            context: [],
+        ));
+
+        // 2. Schedule auto-approve if skipping_period is configured
+        if (
+            $templateStep->requires_approval_within_period
+            && $templateStep->skipping_period !== null
+            && $templateStep->skipping_period > 0
+        ) {
+            $delay = Carbon::now()->addHours($templateStep->skipping_period);
+            AutoApproveWorkflowStep::dispatch($step->id)->delay($delay);
+        }
     }
 
-    private function resolveAssignedUserId(ProcedureSettingStep $step, ?string $createdByUserId = null): ?string
+    private function getSnapshotRowForStep(Process $process, ProcessStep $step): ?array
     {
-        $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
-
-        if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
-            return $this->resolveManagerFromCreatorHierarchy($step, $createdByUserId);
+        $snapshot = $process->template_snapshot ?? [];
+        foreach ($snapshot as $row) {
+            if ($row['step_id'] === $step->step_id) {
+                return $row;
+            }
         }
-
-        $taker = $step->actionTakers->first();
-        return $taker ? (string) $taker->user_id : null;
+        return null;
     }
 
-    private function resolveManagerFromCreatorHierarchy(ProcedureSettingStep $step, string $createdByUserId): ?string
+    private function getAuthorizedUsersForStep(array $snapshotRow): array
     {
-        $hierarchyType = $step->action_taker_management_hierarchy_type?->value;
-
-        if ($hierarchyType === null) {
-            return null;
-        }
-
-        $creator = \Modules\User\Models\User::query()
-            ->with('professionalData')
-            ->find($createdByUserId);
-
-        if ($creator === null) {
-            return null;
-        }
-
-        $professionalData = $creator->professionalData;
-
-        if ($professionalData === null) {
-            return null;
-        }
-
-        $hierarchyId = null;
-        if ($hierarchyType === 'branch_manager') {
-            $hierarchyId = $professionalData->branch_id;
-        } elseif ($hierarchyType === 'management_manager') {
-            $hierarchyId = $professionalData->management_id;
-        }
-
-        if ($hierarchyId === null) {
-            return null;
-        }
-
-        $hierarchy = \Modules\Company\ManagementHierarchy\Models\ManagementHierarchy::query()
-            ->find($hierarchyId);
-
-        if ($hierarchy === null || $hierarchy->manager_id === null) {
-            return null;
-        }
-
-        return (string) $hierarchy->manager_id;
+        return $snapshotRow['authorized_user_ids'] ?? [$snapshotRow['assigned_user_id']];
     }
     public function approveStep(string $id): ProcessStep
     {
@@ -173,13 +173,18 @@ class ProcessWorkflowService
                 ->whereKey($id)
                 ->lockForUpdate()
                 ->firstOrFail();
-// dd($step);
+
             $process = Process::query()
                 ->whereKey($step->process_id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ((string) Auth::id() !== (string) $step->assigned_user_id) {
+            $snapshotRow = $this->getSnapshotRowForStep($process, $step);
+            $authorizedUsers = $step->authorized_user_ids ?? (
+                $snapshotRow !== null ? $this->getAuthorizedUsersForStep($snapshotRow) : [(string) $step->assigned_user_id]
+            );
+
+            if (! in_array((string) Auth::id(), $authorizedUsers, true)) {
                 abort(403);
             }
             if ($step->status->value !== ProcessStepStatus::Pending->value) {
@@ -192,29 +197,7 @@ class ProcessWorkflowService
                 'acted_at'  => now(),
             ]);
 
-            if ($process->execute_type === 'sequence') {
-                $snapshot = $process->template_snapshot ?? [];
-                $approvedCount = $process->steps()
-                    ->where('status', ProcessStepStatus::Approved)
-                    ->count();
-
-                if ($approvedCount < count($snapshot)) {
-                    $this->createProcessStep($process, $snapshot[$approvedCount]);
-                } else {
-                    $process->update(['status' => ProcessStatus::Completed]);
-                    $this->moveToNextProcessOrFinalize($process);
-                }
-            } else {
-                $total = $process->steps()->count();
-                $approved = $process->steps()
-                    ->where('status', ProcessStepStatus::Approved)
-                    ->count();
-
-                if ($approved === $total && $total > 0) {
-                    $process->update(['status' => ProcessStatus::Completed]);
-                    $this->moveToNextProcessOrFinalize($process);
-                }
-            }
+            $this->advanceProcessAfterAction($process);
 
             return $step->fresh();
         });
@@ -233,7 +216,12 @@ class ProcessWorkflowService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ((string) Auth::id() !== (string) $step->assigned_user_id) {
+            $snapshotRow = $this->getSnapshotRowForStep($process, $step);
+            $authorizedUsers = $step->authorized_user_ids ?? (
+                $snapshotRow !== null ? $this->getAuthorizedUsersForStep($snapshotRow) : [(string) $step->assigned_user_id]
+            );
+
+            if (! in_array((string) Auth::id(), $authorizedUsers, true)) {
                 abort(403);
             }
             if ($step->status !== ProcessStepStatus::Pending->value) {
@@ -246,14 +234,84 @@ class ProcessWorkflowService
                 'acted_at'  => now(),
             ]);
 
-            $process->update(['status' => ProcessStatus::Failed]);
+            $isJobRole = ($snapshotRow['specific_procedure_type'] ?? null) === 'job_role';
 
-            if (method_exists($process->processable, 'onProcessFailed')) {
-                $process->processable->onProcessFailed($process);
+            if ($isJobRole) {
+                $this->advanceProcessAfterAction($process);
+            } else {
+                $process->update(['status' => ProcessStatus::Failed]);
+
+                if (method_exists($process->processable, 'onProcessFailed')) {
+                    $process->processable->onProcessFailed($process);
+                }
             }
 
             return $step->fresh();
         });
+    }
+
+    /**
+     * Auto-approve a step without actor authorization check.
+     * Used by the skipping_period delayed job.
+     */
+    public function autoApproveStep(string $id): ProcessStep
+    {
+        return DB::transaction(function () use ($id) {
+            $step = ProcessStep::query()
+                ->whereKey($id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $process = Process::query()
+                ->whereKey($step->process_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($step->status->value !== ProcessStepStatus::Pending->value) {
+                abort(422, 'Process step is not pending.');
+            }
+
+            $step->update([
+                'status'    => ProcessStepStatus::Approved,
+                'action_by' => null,
+                'acted_at'  => now(),
+            ]);
+
+            $this->advanceProcessAfterAction($process);
+
+            return $step->fresh();
+        });
+    }
+
+    private function advanceProcessAfterAction(Process $process): void
+    {
+        if ($process->execute_type === 'sequence') {
+            $snapshot = $process->template_snapshot ?? [];
+            $approvedCount = $process->steps()
+                ->where('status', ProcessStepStatus::Approved)
+                ->count();
+            $rejectedCount = $process->steps()
+                ->where('status', ProcessStepStatus::Rejected)
+                ->count();
+            $actedCount = $approvedCount + $rejectedCount;
+
+            if ($actedCount < count($snapshot)) {
+                $this->createProcessStep($process, $snapshot[$actedCount]);
+            } else {
+                $process->update(['status' => ProcessStatus::Completed]);
+                $this->moveToNextProcessOrFinalize($process);
+            }
+        } else {
+            $total = $process->steps()->count();
+            $acted = $process->steps()
+                ->whereIn('status', [ProcessStepStatus::Approved, ProcessStepStatus::Rejected])
+                ->count();
+
+            if ($acted === $total && $total > 0) {
+                $process->update(['status' => ProcessStatus::Completed]);
+                $this->moveToNextProcessOrFinalize($process);
+            }
+        }
     }
     private function moveToNextProcessOrFinalize(Process $currentProcess): void
     {

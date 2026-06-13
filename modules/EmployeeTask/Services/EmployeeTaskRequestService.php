@@ -36,7 +36,8 @@ class EmployeeTaskRequestService
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
     {
         $procedureType = ProcedureSettingType::EmployeeTaskRequest->value;
-        $preview       = $this->workflow->getApprovalResponsibles($procedureType, $dto->userId);
+        $context       = $dto->projectId ? ['project_id' => $dto->projectId] : [];
+        $preview       = $this->workflow->getApprovalResponsibles($procedureType, $dto->userId, $context);
 
         $data                  = $dto->toArray();
         $data['serial_number'] = $this->repository->generateSerialNumber();
@@ -72,11 +73,13 @@ class EmployeeTaskRequestService
             ->orderBy('sort_order')
             ->get();
 
+        $context = $task->project_id ? ['project_id' => $task->project_id] : [];
         $activeProcess = $this->processService->createProcessesFromSettings(
             ProcedureSettingType::EmployeeTaskRequest->value,
             $task->id,
             $settings,
             $task->user_id,
+            $context,
         );
 
         if (!$activeProcess) {
@@ -88,24 +91,15 @@ class EmployeeTaskRequestService
         }
 
         $currentStep = $this->processService->getCurrentStep($activeProcess);
-        if (!$currentStep) return;
+        if (! $currentStep) return;
 
         $task->update([
             'approval_responsible_id'     => $currentStep->assigned_user_id,
             'current_procedure_step_id'   => $currentStep->step_id,
         ]);
 
-        $dummyStep = new ProcedureSettingStep([
-            'id'         => $currentStep->step_id,
-            'name'       => null,
-            'step_order' => $currentStep->template_step_order,
-        ]);
-        $dummyStep->setRelation('actionTakers', collect([
-            (object) ['user_id' => $currentStep->assigned_user_id],
-        ]));
-
-        $this->broadcastTaskNotification($task, $dummyStep);
-        $this->broadcastInboxCounts($dummyStep);
+        // Notifications (real-time + email + SMS) are now dispatched centrally
+        // via the WorkflowStepActivated event fired inside ProcessWorkflowService::createProcessStep().
     }
 
 
@@ -128,11 +122,10 @@ class EmployeeTaskRequestService
                 ->where('status', ProcessStatus::InProgress)
                 ->firstOrFail();
 // dd($process);
-            $step = ProcessStep::query()
-                ->where('process_id', $process->id)
-                ->where('assigned_user_id', $adminId)
-                ->where('status', ProcessStepStatus::Pending)
-                ->firstOrFail();
+            $step = $this->findPendingStepForActor($process, $adminId);
+            if (! $step) {
+                throw EmployeeTaskException::notFound();
+            }
 
             $this->processService->approveStep($step->id);
 
@@ -159,11 +152,10 @@ class EmployeeTaskRequestService
                 ->where('status', ProcessStatus::InProgress)
                 ->firstOrFail();
 
-            $step = ProcessStep::query()
-                ->where('process_id', $process->id)
-                ->where('assigned_user_id', $adminId)
-                ->where('status', ProcessStepStatus::Pending)
-                ->firstOrFail();
+            $step = $this->findPendingStepForActor($process, $adminId);
+            if (! $step) {
+                throw EmployeeTaskException::notFound();
+            }
 
             $this->processService->rejectStep($step->id);
 
@@ -171,6 +163,26 @@ class EmployeeTaskRequestService
         });
     }
 
+
+    private function findPendingStepForActor(Process $process, string $actorId): ?ProcessStep
+    {
+        $snapshot = $process->template_snapshot ?? [];
+        $pendingSteps = ProcessStep::query()
+            ->where('process_id', $process->id)
+            ->where('status', ProcessStepStatus::Pending)
+            ->get();
+
+        foreach ($pendingSteps as $step) {
+            $row = collect($snapshot)->first(fn ($r) => $r['step_id'] === $step->step_id);
+            $authorizedUsers = $row['authorized_user_ids'] ?? [$row['assigned_user_id'] ?? $step->assigned_user_id];
+
+            if (in_array($actorId, $authorizedUsers, true)) {
+                return $step;
+            }
+        }
+
+        return null;
+    }
 
     public function list(string $userId, array $filters = [], int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
@@ -258,17 +270,21 @@ class EmployeeTaskRequestService
     }
 
 
-    private function broadcastTaskNotification(EmployeeTaskRequest $task, ProcedureSettingStep $currentStep): void
+    private function broadcastTaskNotification(EmployeeTaskRequest $task, ProcedureSettingStep $currentStep, array $userIds = []): void
     {
         $task->load(['user']);
-        $currentStep->load(['actionTakers.user']);
+
+        if ($userIds === []) {
+            $currentStep->load(['actionTakers.user']);
+        }
 
         \Log::info('Broadcasting EmployeeTaskNotification', [
-            'task_id' => $task->id,
-            'step_id' => $currentStep->id,
+            'task_id'  => $task->id,
+            'step_id'  => $currentStep->id,
+            'user_ids' => $userIds,
         ]);
 
-        event(new EmployeeTaskNotification($task, $currentStep));
+        event(new EmployeeTaskNotification($task, $currentStep, $userIds));
     }
 
     public function getFilterMetadata(string $userId): array
@@ -290,17 +306,16 @@ class EmployeeTaskRequestService
         ];
     }
 
-    public function broadcastInboxCounts(ProcedureSettingStep $step, array $filters = []): void
+    public function broadcastInboxCounts(array $userIds, array $filters = []): void
     {
         \Log::info('Broadcasting InboxCountsUpdated', [
-            'step_id' => $step->id,
-            'action_takers_count' => $step->actionTakers->count(),
+            'user_ids_count' => count($userIds),
         ]);
 
-        foreach ($step->actionTakers as $taker) {
-            $counts = $this->getInboxCountsForAdmin($taker->user_id, $filters);
+        foreach ($userIds as $userId) {
+            $counts = $this->getInboxCountsForAdmin($userId, $filters);
             event(new InboxCountsUpdated(
-                userId: $taker->user_id,
+                userId: $userId,
                 pendingTasks: $counts['pending_tasks'],
                 pendingExtensions: $counts['pending_extensions'],
                 pendingApprovals: $counts['pending_approvals'],

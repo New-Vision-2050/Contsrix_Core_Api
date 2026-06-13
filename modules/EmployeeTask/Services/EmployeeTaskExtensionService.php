@@ -15,6 +15,8 @@ use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
+use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
+use Modules\User\Models\User;
 final class EmployeeTaskExtensionService
 {
     public function __construct(
@@ -81,8 +83,13 @@ final class EmployeeTaskExtensionService
             // Broadcast notification to action takers
             if ($task->procedure_setting_id !== null) {
                 $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
-                $this->broadcastTaskNotification($task, $firstStep);
-                $this->requestService->broadcastInboxCounts($firstStep);
+                $context   = $task->project_id ? ['project_id' => $task->project_id] : [];
+                $userIds   = $this->workflow->resolveActionTakerUserIdsForStep($firstStep, $task->user_id, $context);
+                $this->broadcastTaskNotification($task, $firstStep, $userIds);
+                $this->requestService->broadcastInboxCounts($userIds);
+
+                // Email + SMS notifications
+                $this->dispatchStepNotifications($firstStep, $userIds);
             }
 
             return $extension;
@@ -172,16 +179,50 @@ final class EmployeeTaskExtensionService
      * Broadcast task notification to action takers in real-time.
      * Follows the same pattern as ResourceShareService::broadcastToSharedCompany().
      */
-    private function broadcastTaskNotification(\Modules\EmployeeTask\Models\EmployeeTaskRequest $task, \Modules\ProcedureSetting\Models\ProcedureSettingStep $currentStep): void
+    private function broadcastTaskNotification(\Modules\EmployeeTask\Models\EmployeeTaskRequest $task, \Modules\ProcedureSetting\Models\ProcedureSettingStep $currentStep, array $userIds = []): void
     {
         $task->load(['user']);
-        $currentStep->load(['actionTakers.user']);
+
+        if ($userIds === []) {
+            $currentStep->load(['actionTakers.user']);
+        }
 
         \Log::info('Broadcasting EmployeeTaskNotification', [
-            'task_id' => $task->id,
-            'step_id' => $currentStep->id,
+            'task_id'  => $task->id,
+            'step_id'  => $currentStep->id,
+            'user_ids' => $userIds,
         ]);
 
-        event(new EmployeeTaskNotification($task, $currentStep));
+        event(new EmployeeTaskNotification($task, $currentStep, $userIds));
+    }
+
+    private function dispatchStepNotifications(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $userIds): void
+    {
+        $channels = [];
+        if ($step->notify_by_email) {
+            $channels[] = 'mail';
+        }
+        if ($step->notify_by_sms) {
+            $channels[] = 'sms';
+        }
+
+        if ($channels === []) {
+            return;
+        }
+
+        $users = User::query()->whereIn('id', $userIds)->get();
+        $notification = new WorkflowActionRequired(null, $step, $channels);
+
+        foreach ($users as $user) {
+            try {
+                $user->notify($notification);
+            } catch (\Throwable $e) {
+                \Log::error('WorkflowActionRequired notification failed', [
+                    'user_id' => $user->id,
+                    'step_id' => $step->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 }

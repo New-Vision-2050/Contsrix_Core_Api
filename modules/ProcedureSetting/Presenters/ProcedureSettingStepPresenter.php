@@ -33,12 +33,18 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'approval_within_hours' => $this->step->approval_within_hours,
             'notify_by_email'      => (bool) $this->step->notify_by_email,
             'notify_by_whatsapp'   => (bool) $this->step->notify_by_whatsapp,
+            'notify_by_sms'        => (bool) $this->step->notify_by_sms,
+            'skipping_period'      => $this->step->skipping_period,
             'escalation_management_hierarchy_id' => $this->step->escalation_management_hierarchy_id,
             'escalation_management_hierarchy'    => $this->escalationManagementHierarchyPayload(),
             'action_taker_type'                  => $this->step->action_taker_type?->value,
-            'action_taker_type_label'            => $this->step->action_taker_type?->value === 'management_hierarchy' ? 'Management Hierarchy' : 'Specific User',
+            'action_taker_type_label'            => $this->resolveActionTakerTypeLabel(),
             'action_taker_management_hierarchy_type' => $this->step->action_taker_management_hierarchy_type?->value,
             'action_taker_management_hierarchy_type_label' => $this->resolveHierarchyTypeLabel(),
+            'action_taker_alternative_management_hierarchy_type' => $this->step->action_taker_alternative_management_hierarchy_type?->value,
+            'action_taker_alternative_management_hierarchy_type_label' => $this->resolveAlternativeHierarchyTypeLabel(),
+            'action_taker_specific_procedure_type' => $this->step->action_taker_specific_procedure_type?->value,
+            'action_taker_specific_procedure_id'   => $this->step->action_taker_specific_procedure_id,
             'action_taker_hierarchy'             => $this->resolveActionTakerHierarchyPayload(),
         ];
 
@@ -93,9 +99,28 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
         return $data;
     }
 
+    private function resolveActionTakerTypeLabel(): ?string
+    {
+        return match ($this->step->action_taker_type?->value) {
+            'management_hierarchy' => 'Management Hierarchy',
+            'specific_procedures'    => 'Specific Procedures',
+            default                  => 'Specific User',
+        };
+    }
+
     private function resolveHierarchyTypeLabel(): ?string
     {
         return match ($this->step->action_taker_management_hierarchy_type?->value) {
+            'branch_manager'     => 'Branch Manager',
+            'management_manager' => 'Management Manager',
+            'project_manager'    => 'Project Manager',
+            default              => null,
+        };
+    }
+
+    private function resolveAlternativeHierarchyTypeLabel(): ?string
+    {
+        return match ($this->step->action_taker_alternative_management_hierarchy_type?->value) {
             'branch_manager'     => 'Branch Manager',
             'management_manager' => 'Management Manager',
             default              => null,

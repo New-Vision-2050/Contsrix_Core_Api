@@ -59,18 +59,40 @@ class CreateProcedureSettingStepRequest extends FormRequest
 
             'notify_by_email'    => 'nullable|boolean',
             'notify_by_whatsapp' => 'nullable|boolean',
+            'notify_by_sms'      => 'nullable|boolean',
+            'skipping_period'    => 'nullable|integer|min:0',
 
             'escalation_management_hierarchy_id' => 'nullable|integer|exists:management_hierarchies,id',
 
             'step_order' => 'nullable|integer|min:0',
 
-            'action_taker_type' => 'nullable|string|in:specific_user,management_hierarchy',
+            'action_taker_type' => 'nullable|string|in:specific_user,management_hierarchy,specific_procedures',
             'action_taker_management_hierarchy_type' => [
                 'nullable',
                 'string',
-                'in:branch_manager,management_manager',
+                'in:branch_manager,management_manager,project_manager',
                 'required_if:action_taker_type,management_hierarchy',
                 'prohibited_unless:action_taker_type,management_hierarchy',
+            ],
+            'action_taker_alternative_management_hierarchy_type' => [
+                'nullable',
+                'string',
+                'in:branch_manager,management_manager',
+                'prohibited_unless:action_taker_type,management_hierarchy',
+                'different:action_taker_management_hierarchy_type',
+            ],
+            'action_taker_specific_procedure_type' => [
+                'nullable',
+                'string',
+                'in:branch,management,job_title,job_role',
+                'required_if:action_taker_type,specific_procedures',
+                'prohibited_unless:action_taker_type,specific_procedures',
+            ],
+            'action_taker_specific_procedure_id' => [
+                'nullable',
+                'string',
+                'required_if:action_taker_type,specific_procedures',
+                'prohibited_unless:action_taker_type,specific_procedures',
             ],
 
             'action_taker_user_ids'   => [
@@ -111,10 +133,15 @@ class CreateProcedureSettingStepRequest extends FormRequest
             approval_within_hours: isset($v['approval_within_hours']) ? (int) $v['approval_within_hours'] : null,
             notify_by_email:      (bool) ($v['notify_by_email'] ?? false),
             notify_by_whatsapp:   (bool) ($v['notify_by_whatsapp'] ?? false),
+            notify_by_sms:        (bool) ($v['notify_by_sms'] ?? false),
+            skipping_period:      isset($v['skipping_period']) ? (int) $v['skipping_period'] : null,
             escalation_management_hierarchy_id: isset($v['escalation_management_hierarchy_id']) ? (int) $v['escalation_management_hierarchy_id'] : null,
             step_order:            isset($v['step_order']) ? (int) $v['step_order'] : null,
             action_taker_type:     $v['action_taker_type'] ?? null,
             action_taker_management_hierarchy_type: $v['action_taker_management_hierarchy_type'] ?? null,
+            action_taker_alternative_management_hierarchy_type: $v['action_taker_alternative_management_hierarchy_type'] ?? null,
+            action_taker_specific_procedure_type: $v['action_taker_specific_procedure_type'] ?? null,
+            action_taker_specific_procedure_id: $v['action_taker_specific_procedure_id'] ?? null,
             action_taker_user_ids: $v['action_taker_user_ids'] ?? null,
             concerned_management_hierarchy_ids: $v['concerned_management_hierarchy_ids'] ?? null,
         );

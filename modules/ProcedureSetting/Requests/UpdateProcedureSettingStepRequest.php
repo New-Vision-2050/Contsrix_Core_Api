@@ -109,19 +109,44 @@ class UpdateProcedureSettingStepRequest extends FormRequest
 
             'notify_by_email'    => 'sometimes|boolean',
             'notify_by_whatsapp' => 'sometimes|boolean',
+            'notify_by_sms'      => 'sometimes|boolean',
+            'skipping_period'    => 'sometimes|nullable|integer|min:0',
 
             'escalation_management_hierarchy_id' => 'sometimes|nullable|integer|exists:management_hierarchies,id',
 
             'step_order' => 'sometimes|nullable|integer|min:0',
 
-            'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy',
+            'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy,specific_procedures',
             'action_taker_management_hierarchy_type' => [
                 'sometimes',
                 'nullable',
                 'string',
-                'in:branch_manager,management_manager',
+                'in:branch_manager,management_manager,project_manager',
                 'required_if:action_taker_type,management_hierarchy',
                 'prohibited_unless:action_taker_type,management_hierarchy',
+            ],
+            'action_taker_alternative_management_hierarchy_type' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'in:branch_manager,management_manager',
+                'prohibited_unless:action_taker_type,management_hierarchy',
+                'different:action_taker_management_hierarchy_type',
+            ],
+            'action_taker_specific_procedure_type' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'in:branch,management,job_title,job_role',
+                'required_if:action_taker_type,specific_procedures',
+                'prohibited_unless:action_taker_type,specific_procedures',
+            ],
+            'action_taker_specific_procedure_id' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'required_if:action_taker_type,specific_procedures',
+                'prohibited_unless:action_taker_type,specific_procedures',
             ],
 
             'action_taker_user_ids'   => [

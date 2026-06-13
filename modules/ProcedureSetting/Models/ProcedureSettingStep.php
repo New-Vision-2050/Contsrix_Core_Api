@@ -39,12 +39,17 @@ class ProcedureSettingStep extends Model
         'requires_approval_within_period',
         'approval_within_days',
         'approval_within_hours',
+        'skipping_period',
         'notify_by_email',
         'notify_by_whatsapp',
+        'notify_by_sms',
         'escalation_management_hierarchy_id',
         'step_order',
         'action_taker_type',
         'action_taker_management_hierarchy_type',
+        'action_taker_alternative_management_hierarchy_type',
+        'action_taker_specific_procedure_type',
+        'action_taker_specific_procedure_id',
     ];
 
     protected $casts = [
@@ -57,12 +62,16 @@ class ProcedureSettingStep extends Model
         'requires_approval_within_period' => 'boolean',
         'approval_within_days'            => 'integer',
         'approval_within_hours'           => 'integer',
+        'skipping_period'                 => 'integer',
         'notify_by_email'                 => 'boolean',
         'notify_by_whatsapp'              => 'boolean',
+        'notify_by_sms'                   => 'boolean',
         'escalation_management_hierarchy_id' => 'integer',
         'step_order'                         => 'integer',
-        'action_taker_type'                  => \Modules\ProcedureSetting\Enums\ActionTakerType::class,
-        'action_taker_management_hierarchy_type' => \Modules\ProcedureSetting\Enums\ActionTakerManagementHierarchyType::class,
+        'action_taker_type'                              => \Modules\ProcedureSetting\Enums\ActionTakerType::class,
+        'action_taker_management_hierarchy_type'         => \Modules\ProcedureSetting\Enums\ActionTakerManagementHierarchyType::class,
+        'action_taker_alternative_management_hierarchy_type' => \Modules\ProcedureSetting\Enums\ActionTakerManagementHierarchyType::class,
+        'action_taker_specific_procedure_type'           => \Modules\ProcedureSetting\Enums\ActionTakerSpecificProcedureType::class,
     ];
 
     public function getRelationshipToPrimaryModel(): string
