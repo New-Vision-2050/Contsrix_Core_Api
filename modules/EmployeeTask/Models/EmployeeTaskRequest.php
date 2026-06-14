@@ -38,6 +38,7 @@ class EmployeeTaskRequest extends Model
         'title',
         'description',
         'project_id',
+        'internal_process_type_id',
         'approval_responsible_id',
         'assignment_responsible_id',
         'duration_hours',
@@ -96,6 +97,11 @@ class EmployeeTaskRequest extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
+    }
+
+    public function internalProcessType(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Shared\InternalProcessType\Models\InternalProcessType::class, 'internal_process_type_id');
     }
 
     public function currentProcedureStep(): BelongsTo

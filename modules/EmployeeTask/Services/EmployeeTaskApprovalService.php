@@ -14,6 +14,8 @@ use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
@@ -78,7 +80,10 @@ final class EmployeeTaskApprovalService
                 'notes'                    => $notes,
             ];
 
-            if ($task->procedure_setting_id === null) {
+            $procedureSetting = $this->resolveApprovalProcedureSetting($task);
+            $data['procedure_setting_id'] = $procedureSetting?->id;
+
+            if ($procedureSetting === null) {
                 $data['status']                    = 'approved';
                 $data['current_procedure_step_id'] = null;
                 $data['reviewed_at']               = now();
@@ -90,20 +95,17 @@ final class EmployeeTaskApprovalService
                 return $approval->load('media');
             }
 
-            $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
+            $firstStep = $this->workflow->resolveFirstStepBySettingId($procedureSetting->id);
             $data['status']                    = 'pending';
             $data['current_procedure_step_id'] = $firstStep->id;
 
             $approval = EmployeeTaskApprovalRequest::query()->create($data);
             $this->handleFileUpload($approval, $file);
 
-            // Resolve authorized users and broadcast notifications
             $context = $task->project_id ? ['project_id' => $task->project_id] : [];
             $userIds = $this->workflow->resolveActionTakerUserIdsForStep($firstStep, $task->user_id, $context);
             $this->broadcastTaskNotification($task, $firstStep, $userIds);
             $this->requestService->broadcastInboxCounts($userIds);
-
-            // Email + SMS notifications
             $this->dispatchStepNotifications($firstStep, $userIds);
 
             return $approval->load('media');
@@ -211,6 +213,19 @@ final class EmployeeTaskApprovalService
     /**
      * Upload one or multiple files to the 'attachments' media collection.
      */
+
+    private function resolveApprovalProcedureSetting(EmployeeTaskRequest $task): ?ProcedureSetting
+    {
+        $task->loadMissing('user.userProfessionalData');
+        $branchId = $task->user?->userProfessionalData?->branch_id;
+
+        return $this->workflow->resolveProcedureSettingForBranch(
+            ProcedureSettingType::EmployeeTaskApproval->value,
+            $task->company_id,
+            $branchId,
+        );
+    }
+
     private function handleFileUpload(EmployeeTaskApprovalRequest $approval, UploadedFile|array|null $file): void
     {
         if (empty($file)) {

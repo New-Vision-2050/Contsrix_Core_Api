@@ -24,6 +24,13 @@ final class EmployeeTaskRequestPresenter
             'title'                      => $task->title,
             'description'                => $task->description,
             'project_id'                 => $task->project_id,
+            'internal_process_type_id'   => $task->internal_process_type_id,
+            'internal_process_type'      => $task->relationLoaded('internalProcessType') && $task->internalProcessType
+                ? [
+                    'id'   => $task->internalProcessType->id,
+                    'name' => $task->internalProcessType->name,
+                ]
+                : null,
             'approval_responsible_id'    => $task->approval_responsible_id,
             'assignment_responsible_id'  => $task->assignment_responsible_id,
             'duration_hours'             => HoursFormatter::fromDecimalString($task->duration_hours),

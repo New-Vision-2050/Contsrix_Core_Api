@@ -1,0 +1,262 @@
+{
+  "info": {
+    "name": "Internal Process Types API",
+    "_postman_id": "internal-process-type-api-collection",
+    "description": "API collection for Internal Process Types (أنواع الإجراءات الداخلية).\n\n**Base URL:** `{{url}}/api/v1`\n**Auth:** Bearer `{{token}}`\n**Tenant:** `X-Company-Id: {{company_id}}` (if tenancy middleware is enabled)\n\n**Response envelope (BasePackage `Json`):**\n```json\n{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\" | \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"...\",\n  \"pagination\": { \"current_page\": 1, \"last_page\": 1, \"per_page\": 15, \"total\": 1 },\n  \"payload\": { ... } | [ ... ]\n}\n```\n\n**Settings keys (same for all entity_type):**\n- `allow_during_shift` (bool)\n- `allow_outside_shift` (bool)\n- `allow_on_holidays` (bool)\n- `apply_to_all_branches` (bool)\n- `max_duration_hours` (integer|null, 1-24)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "url", "value": "http://localhost", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "company_id", "value": "", "type": "string" },
+    { "key": "internal_process_type_id", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "1. Admin — Internal Process Types",
+      "description": "CRUD for admin panel. Types are scoped to the current company (tenant).",
+      "item": [
+        {
+          "name": "List (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/internal-process-types?entity_type=employee_task&page=1&per_page=15",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "internal-process-types"],
+              "query": [
+                { "key": "entity_type", "value": "employee_task", "description": "employee_task | leave_request" },
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "15" }
+              ]
+            },
+            "description": "Paginated list of internal process types for admin."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Internal process types retrieved successfully\",\n  \"pagination\": {\n    \"current_page\": 1,\n    \"last_page\": 1,\n    \"per_page\": 15,\n    \"total\": 2\n  },\n  \"payload\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"entity_type\": \"employee_task\",\n      \"name\": \"صيانة كهربائية\",\n      \"is_active\": true,\n      \"sort_order\": 0,\n      \"settings\": {\n        \"allow_during_shift\": true,\n        \"allow_outside_shift\": false,\n        \"allow_on_holidays\": false,\n        \"apply_to_all_branches\": true,\n        \"max_duration_hours\": 8\n      },\n      \"created_at\": \"2026-06-14 10:00:00\",\n      \"updated_at\": \"2026-06-14 10:00:00\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "if (json.payload && json.payload.id) {",
+                  "  pm.collectionVariables.set('internal_process_type_id', json.payload.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"employee_task\",\n  \"name\": \"صيانة كهربائية\",\n  \"is_active\": true,\n  \"sort_order\": 0,\n  \"settings\": {\n    \"allow_during_shift\": true,\n    \"allow_outside_shift\": false,\n    \"allow_on_holidays\": false,\n    \"apply_to_all_branches\": true,\n    \"max_duration_hours\": 8\n  }\n}"
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/admin/internal-process-types",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "internal-process-types"]
+            },
+            "description": "Create a new internal process type. Admin writes name + conditions manually."
+          },
+          "response": [
+            {
+              "name": "201 Created (200 envelope)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal process type created successfully\",\n  \"payload\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"entity_type\": \"employee_task\",\n    \"name\": \"صيانة كهربائية\",\n    \"is_active\": true,\n    \"sort_order\": 0,\n    \"settings\": {\n      \"allow_during_shift\": true,\n      \"allow_outside_shift\": false,\n      \"allow_on_holidays\": false,\n      \"apply_to_all_branches\": true,\n      \"max_duration_hours\": 8\n    },\n    \"created_at\": \"2026-06-14 10:00:00\",\n    \"updated_at\": \"2026-06-14 10:00:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"صيانة كهربائية — محدث\",\n  \"is_active\": true,\n  \"sort_order\": 1,\n  \"settings\": {\n    \"allow_during_shift\": true,\n    \"allow_outside_shift\": true,\n    \"allow_on_holidays\": false,\n    \"apply_to_all_branches\": true,\n    \"max_duration_hours\": 12\n  }\n}"
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/admin/internal-process-types/{{internal_process_type_id}}",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "internal-process-types", "{{internal_process_type_id}}"]
+            },
+            "description": "Partial update supported. Settings merge with existing values."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal process type updated successfully\",\n  \"payload\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"entity_type\": \"employee_task\",\n    \"name\": \"صيانة كهربائية — محدث\",\n    \"is_active\": true,\n    \"sort_order\": 1,\n    \"settings\": {\n      \"allow_during_shift\": true,\n      \"allow_outside_shift\": true,\n      \"allow_on_holidays\": false,\n      \"apply_to_all_branches\": true,\n      \"max_duration_hours\": 12\n    },\n    \"created_at\": \"2026-06-14 10:00:00\",\n    \"updated_at\": \"2026-06-14 11:30:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/internal-process-types/{{internal_process_type_id}}",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "internal-process-types", "{{internal_process_type_id}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 Deleted",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"code\": \"SUCCESS_DELETED\",\n  \"message\": \"Internal process type deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Mobile — Dropdown List",
+      "description": "Active types only, for employee app dropdown when creating a task.",
+      "item": [
+        {
+          "name": "List Active Types (Mobile)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/internal-process-types?entity_type=employee_task",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "internal-process-types"],
+              "query": [
+                { "key": "entity_type", "value": "employee_task", "description": "Required" }
+              ]
+            },
+            "description": "Returns only `is_active = true` types, ordered by sort_order then name."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Internal process types retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"entity_type\": \"employee_task\",\n      \"name\": \"صيانة كهربائية\",\n      \"is_active\": true,\n      \"sort_order\": 0,\n      \"settings\": {\n        \"allow_during_shift\": true,\n        \"allow_outside_shift\": false,\n        \"allow_on_holidays\": false,\n        \"apply_to_all_branches\": true,\n        \"max_duration_hours\": 8\n      },\n      \"created_at\": \"2026-06-14 10:00:00\",\n      \"updated_at\": \"2026-06-14 10:00:00\"\n    },\n    {\n      \"id\": \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n      \"entity_type\": \"employee_task\",\n      \"name\": \"فحص أمني\",\n      \"is_active\": true,\n      \"sort_order\": 1,\n      \"settings\": {\n        \"allow_during_shift\": true,\n        \"allow_outside_shift\": true,\n        \"allow_on_holidays\": true,\n        \"apply_to_all_branches\": true,\n        \"max_duration_hours\": 4\n      },\n      \"created_at\": \"2026-06-14 10:05:00\",\n      \"updated_at\": \"2026-06-14 10:05:00\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "422 Missing entity_type",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"message\": \"The entity type field is required.\",\n  \"errors\": {\n    \"entity_type\": [\"The entity type field is required.\"]\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Employee Task — Use Type on Create",
+      "description": "Pass selected type when creating a task request.",
+      "item": [
+        {
+          "name": "Create Task with internal_process_type_id",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"فحص نظام الإنذار\",\n  \"description\": \"فحص أجهزة الإنذار في المبنى A\",\n  \"internal_process_type_id\": \"{{internal_process_type_id}}\",\n  \"duration_hours\": 4,\n  \"task_date\": \"2026-06-15\",\n  \"task_latitude\": 24.7136,\n  \"task_longitude\": 46.6753,\n  \"project_id\": null,\n  \"approval_responsible_id\": null,\n  \"assignment_responsible_id\": null,\n  \"notes\": null\n}"
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks"]
+            },
+            "description": "`internal_process_type_id` is optional (nullable). Must exist in `internal_process_types` table."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task request submitted successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"فحص نظام الإنذار\",\n    \"internal_process_type_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"internal_process_type\": {\n      \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"name\": \"صيانة كهربائية\"\n    },\n    \"duration_hours\": \"04:00\",\n    \"task_date\": \"2026-06-15\",\n    \"status\": \"pending\",\n    \"status_label\": \"في انتظار الاعتماد\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Procedure Setting Types (Workflow)",
+      "description": "New procedure types for separate employee-task actions. Configure steps via ProcedureSetting API.",
+      "item": [
+        {
+          "name": "Reference — Procedure Types",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/procedure-settings?type=employee_task_extension",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "procedure-settings"],
+              "query": [
+                { "key": "type", "value": "employee_task_extension" }
+              ]
+            },
+            "description": "**Procedure type values:**\n- `employee_task_request` — طلب مهمة\n- `employee_task_extension` — تمديد مدة\n- `employee_task_completion_approval` — اعتماد إتمام\n- `client_request` — طلب عميل\n\nSeed defaults:\n`php artisan db:seed --class=Modules\\\\ProcedureSetting\\\\Database\\\\Seeders\\\\EmployeeTaskWorkflowSeeder`\n`php artisan db:seed --class=Modules\\\\ProcedureSetting\\\\Database\\\\Seeders\\\\ClientRequestWorkflowSeeder`"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

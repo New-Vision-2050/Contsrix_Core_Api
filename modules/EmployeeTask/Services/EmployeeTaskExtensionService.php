@@ -13,6 +13,8 @@ use Modules\EmployeeTask\Events\EmployeeTaskNotification;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
@@ -28,16 +30,7 @@ final class EmployeeTaskExtensionService
     /**
      * Request an extension for an active task.
      *
-     * Extension requests inherit the workflow configuration from their parent EmployeeTask.
-     * This ensures:
-     * - Same approvers who approve tasks also approve extensions
-     * - No separate workflow configuration needed
-     * - Multi-step approvals work identically
-     *
-     * Scenarios:
-     * 1. Parent task is approved (no workflow): Extension auto-approved immediately
-     * 2. Parent task is pending (in workflow): Extension resolves first step of same procedure
-     * 3. Parent task was auto-approved (no procedure): Extension auto-approved immediately
+     * Uses the dedicated employee_task_extension procedure setting (not the parent task).
      */
     public function requestExtension(CreateExtensionRequestDTO $dto): EmployeeTaskExtensionRequest
     {
@@ -62,33 +55,28 @@ final class EmployeeTaskExtensionService
                 ['company_id' => $task->company_id]
             );
 
-            // Extension inherits workflow state from parent task
-            if ($task->procedure_setting_id === null) {
-                // Parent task has no workflow (auto-approved or no procedure configured)
-                // Extension also auto-approves
+            $procedureSetting = $this->resolveExtensionProcedureSetting($task);
+            $data['procedure_setting_id'] = $procedureSetting?->id;
+
+            if ($procedureSetting === null) {
                 $data['status'] = 'approved';
                 $data['current_procedure_step_id'] = null;
                 $data['reviewed_at'] = now();
             } else {
-                // Parent task is in workflow
-                // Extension enters workflow at the same procedure's first step
                 $data['status'] = 'pending';
-                $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
+                $firstStep = $this->workflow->resolveFirstStepBySettingId($procedureSetting->id);
                 $data['current_procedure_step_id'] = $firstStep->id;
             }
 
             $extension = EmployeeTaskExtensionRequest::query()->create($data);
             $task->update(['last_extension_status' => 'extension_pending']);
 
-            // Broadcast notification to action takers
-            if ($task->procedure_setting_id !== null) {
-                $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
+            if ($procedureSetting !== null) {
+                $firstStep = $this->workflow->resolveFirstStepBySettingId($procedureSetting->id);
                 $context   = $task->project_id ? ['project_id' => $task->project_id] : [];
                 $userIds   = $this->workflow->resolveActionTakerUserIdsForStep($firstStep, $task->user_id, $context);
                 $this->broadcastTaskNotification($task, $firstStep, $userIds);
                 $this->requestService->broadcastInboxCounts($userIds);
-
-                // Email + SMS notifications
                 $this->dispatchStepNotifications($firstStep, $userIds);
             }
 
@@ -194,6 +182,19 @@ final class EmployeeTaskExtensionService
         ]);
 
         event(new EmployeeTaskNotification($task, $currentStep, $userIds));
+    }
+
+
+    private function resolveExtensionProcedureSetting(\Modules\EmployeeTask\Models\EmployeeTaskRequest $task): ?ProcedureSetting
+    {
+        $task->loadMissing('user.userProfessionalData');
+        $branchId = $task->user?->userProfessionalData?->branch_id;
+
+        return $this->workflow->resolveProcedureSettingForBranch(
+            ProcedureSettingType::EmployeeTaskExtension->value,
+            $task->company_id,
+            $branchId,
+        );
     }
 
     private function dispatchStepNotifications(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $userIds): void
