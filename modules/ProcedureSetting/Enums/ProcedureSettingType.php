@@ -19,6 +19,27 @@ enum ProcedureSettingType: string
     case EmployeeTaskExtension = 'employee_task_extension';
     case EmployeeTaskApproval  = 'employee_task_completion_approval';
 
+    public function labelAr(): string
+    {
+        return match ($this) {
+            self::ClientRequest        => 'طلب عميل',
+            self::PriceOffer           => 'عرض سعر',
+            self::Contract             => 'عقد',
+            self::EmployeeTaskRequest  => 'طلب مهمة عمل',
+            self::EmployeeTaskExtension => 'تمديد مهمة عمل',
+            self::EmployeeTaskApproval  => 'اعتماد إتمام مهمة',
+        };
+    }
+
+    /** @return array{key: string, label_ar: string} */
+    public function toDefinition(): array
+    {
+        return [
+            'key'      => $this->value,
+            'label_ar' => $this->labelAr(),
+        ];
+    }
+
     /**
      * @return list<string>
      */

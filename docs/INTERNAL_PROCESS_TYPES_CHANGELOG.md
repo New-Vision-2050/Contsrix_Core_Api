@@ -29,15 +29,36 @@
 | Admin CRUD | إنشاء / تعديل / حذف / قائمة |
 | Mobile endpoint | قائمة الأنواع النشطة للـ dropdown |
 
-**الشروط الخمسة (`settings` JSON):**
+**الشروط (`conditions` في الـ API / مخزّنة داخل `settings` JSON):**
 
 | Key | النوع | المعنى |
 |-----|-------|--------|
-| `allow_during_shift` | bool | يمكن عملها داخل الدوام |
-| `allow_outside_shift` | bool | يمكن عملها خارج الدوام |
+| `allow_during_shift` | bool | موظف داخل الدوام |
+| `allow_outside_shift` | bool | موظف خارج الدوام |
 | `allow_on_holidays` | bool | مسموح في العطلات |
-| `apply_to_all_branches` | bool | تسري على جميع الفروع |
-| `max_duration_hours` | int\|null | أقصى مدة بالساعات (1–24) |
+| `apply_to_all_branches` | bool | تعمل في جميع الفروع |
+| `has_task_duration` | bool | مدة المهمة |
+| `max_duration_hours` | int\|null | أقصى مدة بالساعات |
+| `max_attachments` | int\|null | أقصى عدد مرفقات |
+
+**النماذج (`forms` — Enum `InternalProcessForm`):**
+
+| Key | الاسم العربي |
+|-----|-------------|
+| `start_task` | بدء المهمة |
+| `assign_other_employee` | تحويل لموظف اخر |
+| `extend_task_time` | تمديد وقت المهمة |
+| `send_for_approval` | ارسال للاعتماد |
+| `cancel_task` | الغاء المهمة |
+| `confirm_location` | تأكيد الموقع |
+| `attach_attachments` | ارفاق مرفقات |
+
+**ترتيب الإجراء (`ordering`):**
+
+| Key | النوع | المعنى |
+|-----|-------|--------|
+| `appears_before_id` | uuid\|null | يظهر قبل — ID نوع إجراء آخر |
+| `appears_after_id` | uuid\|null | يظهر بعد — ID نوع إجراء آخر |
 
 **ملفات الموديول:**
 
@@ -53,7 +74,9 @@ modules/Shared/InternalProcessType/
 │   └── UpdateInternalProcessTypeDTO.php
 ├── Enums/
 │   ├── InternalProcessEntityType.php
-│   └── InternalProcessCondition.php
+│   ├── InternalProcessCondition.php
+│   └── InternalProcessForm.php
+├── Support/InternalProcessTypePayload.php
 ├── Models/InternalProcessType.php
 ├── Presenters/InternalProcessTypePresenter.php
 ├── Repositories/InternalProcessTypeRepository.php
@@ -78,10 +101,12 @@ modules/Shared/InternalProcessType/
 
 | Method | Endpoint | الوصف |
 |--------|----------|--------|
-| `GET` | `/admin/internal-process-types?entity_type=employee_task` | قائمة (paginated) |
-| `POST` | `/admin/internal-process-types` | إنشاء نوع |
-| `PUT` | `/admin/internal-process-types/{id}` | تعديل |
-| `DELETE` | `/admin/internal-process-types/{id}` | حذف |
+| `GET` | `/admin/internal_procedure_setting_forms` | النماذج + شروط كل نموذج |
+| `GET` | `/admin/forms_conditions` | كل الشروط (key + type) |
+| `GET` | `/admin/internal_procedure_settings?entity_type=employee_task` | قائمة (paginated) |
+| `POST` | `/admin/internal_procedure_settings` | إنشاء إعداد (form واحد) |
+| `PUT` | `/admin/internal_procedure_settings/{id}` | تعديل |
+| `DELETE` | `/admin/internal_procedure_settings/{id}` | حذف |
 
 #### Mobile / Employee
 
@@ -94,37 +119,55 @@ modules/Shared/InternalProcessType/
 ```json
 {
   "entity_type": "employee_task",
-  "name": "صيانة كهربائية",
-  "is_active": true,
-  "sort_order": 0,
-  "settings": {
+  "name": "تمديد وقت مهمة العمل",
+  "form": "extend_task_time",
+  "conditions": {
     "allow_during_shift": true,
     "allow_outside_shift": false,
     "allow_on_holidays": false,
     "apply_to_all_branches": true,
+    "has_task_duration": true,
     "max_duration_hours": 8
+  },
+  "ordering": {
+    "appears_before_id": null,
+    "appears_after_id": null
   }
 }
 ```
 
-**مثال Response:**
+**مثال `GET /admin/internal_procedure_setting_forms`:**
 
 ```json
 {
-  "code": "SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT",
-  "message": "Internal process type created successfully",
+  "payload": [
+    {
+      "key": "extend_task_time",
+      "label_ar": "تمديد وقت المهمة",
+      "conditions": [
+        { "key": "allow_during_shift", "type": "bool", "label_ar": "موظف داخل الدوام" },
+        { "key": "max_duration_hours", "type": "int", "label_ar": "أقصى مدة بالساعات" }
+      ]
+    }
+  ]
+}
+```
+
+**مثال Response (setting):**
+
+```json
+{
   "payload": {
     "id": "uuid",
-    "entity_type": "employee_task",
-    "name": "صيانة كهربائية",
-    "is_active": true,
-    "sort_order": 0,
-    "settings": {
+    "name": "تمديد وقت مهمة العمل",
+    "form": { "key": "extend_task_time", "label_ar": "تمديد وقت المهمة" },
+    "conditions": {
       "allow_during_shift": true,
-      "allow_outside_shift": false,
-      "allow_on_holidays": false,
-      "apply_to_all_branches": true,
       "max_duration_hours": 8
+    },
+    "ordering": {
+      "appears_before_id": null,
+      "appears_after_id": null
     },
     "created_at": "2026-06-14 10:00:00",
     "updated_at": "2026-06-14 10:00:00"

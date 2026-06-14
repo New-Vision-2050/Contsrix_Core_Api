@@ -2,7 +2,7 @@
   "info": {
     "name": "Internal Process Types API",
     "_postman_id": "internal-process-type-api-collection",
-    "description": "API collection for Internal Process Types (أنواع الإجراءات الداخلية).\n\n**Base URL:** `{{url}}/api/v1`\n**Auth:** Bearer `{{token}}`\n**Tenant:** `X-Company-Id: {{company_id}}` (if tenancy middleware is enabled)\n\n**Response envelope (BasePackage `Json`):**\n```json\n{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\" | \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"...\",\n  \"pagination\": { \"current_page\": 1, \"last_page\": 1, \"per_page\": 15, \"total\": 1 },\n  \"payload\": { ... } | [ ... ]\n}\n```\n\n**Settings keys (same for all entity_type):**\n- `allow_during_shift` (bool)\n- `allow_outside_shift` (bool)\n- `allow_on_holidays` (bool)\n- `apply_to_all_branches` (bool)\n- `max_duration_hours` (integer|null, 1-24)",
+    "description": "Internal Procedure Settings API.\n\n**Body:** `form` (single), `conditions` (values per form), `ordering`\n**Catalog:** `GET internal_procedure_setting_forms` (forms + their conditions), `GET forms_conditions` (all condition definitions)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -21,7 +21,7 @@
       "description": "CRUD for admin panel. Types are scoped to the current company (tenant).",
       "item": [
         {
-          "name": "List (Admin)",
+          "name": "Internal Procedure Setting Forms",
           "request": {
             "method": "GET",
             "header": [
@@ -29,9 +29,39 @@
               { "key": "X-Company-Id", "value": "{{company_id}}" }
             ],
             "url": {
-              "raw": "{{url}}/api/v1/admin/internal-process-types?entity_type=employee_task&page=1&per_page=15",
+              "raw": "{{url}}/api/v1/admin/internal_procedure_setting_forms",
               "host": ["{{url}}"],
-              "path": ["api", "v1", "admin", "internal-process-types"],
+              "path": ["api", "v1", "admin", "internal_procedure_setting_forms"]
+            },
+            "description": "Dropdown options for النماذج in admin UI."
+          }
+        },
+        {
+          "name": "Forms Conditions Catalog",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/forms_conditions",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "forms_conditions"]
+            },
+            "description": "All condition definitions: key + type + label_ar"
+          }
+        },
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/internal_procedure_settings?entity_type=employee_task&page=1&per_page=15",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "internal-processger-types"],
               "query": [
                 { "key": "entity_type", "value": "employee_task", "description": "employee_task | leave_request" },
                 { "key": "page", "value": "1" },
@@ -47,7 +77,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Internal process types retrieved successfully\",\n  \"pagination\": {\n    \"current_page\": 1,\n    \"last_page\": 1,\n    \"per_page\": 15,\n    \"total\": 2\n  },\n  \"payload\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"entity_type\": \"employee_task\",\n      \"name\": \"صيانة كهربائية\",\n      \"is_active\": true,\n      \"sort_order\": 0,\n      \"settings\": {\n        \"allow_during_shift\": true,\n        \"allow_outside_shift\": false,\n        \"allow_on_holidays\": false,\n        \"apply_to_all_branches\": true,\n        \"max_duration_hours\": 8\n      },\n      \"created_at\": \"2026-06-14 10:00:00\",\n      \"updated_at\": \"2026-06-14 10:00:00\"\n    }\n  ]\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Internal process types retrieved successfully\",\n  \"pagination\": {\n    \"current_page\": 1,\n    \"last_page\": 1,\n    \"per_page\": 15,\n    \"total\": 2\n  },\n  \"payload\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"entity_type\": \"employee_task\",\n      \"name\": \"تمديد وقت مهمة العمل\",\n      \"is_active\": true,\n      \"sort_order\": 0,\n      \"forms\": [\n        { \"key\": \"start_task\", \"label_ar\": \"بدء المهمة\" },\n        { \"key\": \"confirm_location\", \"label_ar\": \"تأكيد الموقع\" }\n      ],\n      \"conditions\": {\n        \"allow_during_shift\": true,\n        \"allow_outside_shift\": false,\n        \"allow_on_holidays\": false,\n        \"apply_to_all_branches\": true,\n        \"has_task_duration\": true,\n        \"max_duration_hours\": 8\n      },\n      \"ordering\": {\n        \"appears_before_id\": null,\n        \"appears_after_id\": null\n      },\n      \"created_at\": \"2026-06-14 10:00:00\",\n      \"updated_at\": \"2026-06-14 10:00:00\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -77,12 +107,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entity_type\": \"employee_task\",\n  \"name\": \"صيانة كهربائية\",\n  \"is_active\": true,\n  \"sort_order\": 0,\n  \"settings\": {\n    \"allow_during_shift\": true,\n    \"allow_outside_shift\": false,\n    \"allow_on_holidays\": false,\n    \"apply_to_all_branches\": true,\n    \"max_duration_hours\": 8\n  }\n}"
+              "raw": "{\n  \"entity_type\": \"employee_task\",\n  \"name\": \"تمديد وقت مهمة العمل\",\n  \"form\": \"extend_task_time\",\n  \"conditions\": {\n    \"allow_during_shift\": true,\n    \"allow_outside_shift\": false,\n    \"allow_on_holidays\": false,\n    \"apply_to_all_branches\": true,\n    \"has_task_duration\": true,\n    \"max_duration_hours\": 8\n  },\n  \"ordering\": {\n    \"appears_before_id\": null,\n    \"appears_after_id\": null\n  }\n}"
             },
             "url": {
-              "raw": "{{url}}/api/v1/admin/internal-process-types",
+              "raw": "{{url}}/api/v1/admin/internal_procedure_settings",
               "host": ["{{url}}"],
-              "path": ["api", "v1", "admin", "internal-process-types"]
+              "path": ["api", "v1", "admin", "internal-processger-types"]
             },
             "description": "Create a new internal process type. Admin writes name + conditions manually."
           },
@@ -93,7 +123,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal process type created successfully\",\n  \"payload\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"entity_type\": \"employee_task\",\n    \"name\": \"صيانة كهربائية\",\n    \"is_active\": true,\n    \"sort_order\": 0,\n    \"settings\": {\n      \"allow_during_shift\": true,\n      \"allow_outside_shift\": false,\n      \"allow_on_holidays\": false,\n      \"apply_to_all_branches\": true,\n      \"max_duration_hours\": 8\n    },\n    \"created_at\": \"2026-06-14 10:00:00\",\n    \"updated_at\": \"2026-06-14 10:00:00\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal process type created successfully\",\n  \"payload\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"entity_type\": \"employee_task\",\n    \"name\": \"تمديد وقت مهمة العمل\",\n    \"is_active\": true,\n    \"sort_order\": 0,\n    \"forms\": [\n      { \"key\": \"start_task\", \"label_ar\": \"بدء المهمة\" },\n      { \"key\": \"confirm_location\", \"label_ar\": \"تأكيد الموقع\" }\n    ],\n    \"conditions\": {\n      \"allow_during_shift\": true,\n      \"allow_outside_shift\": false,\n      \"allow_on_holidays\": false,\n      \"apply_to_all_branches\": true,\n      \"has_task_duration\": true,\n      \"max_duration_hours\": 8\n    },\n    \"ordering\": {\n      \"appears_before_id\": null,\n      \"appears_after_id\": null\n    },\n    \"created_at\": \"2026-06-14 10:00:00\",\n    \"updated_at\": \"2026-06-14 10:00:00\"\n  }\n}"
             }
           ]
         },
@@ -108,12 +138,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"صيانة كهربائية — محدث\",\n  \"is_active\": true,\n  \"sort_order\": 1,\n  \"settings\": {\n    \"allow_during_shift\": true,\n    \"allow_outside_shift\": true,\n    \"allow_on_holidays\": false,\n    \"apply_to_all_branches\": true,\n    \"max_duration_hours\": 12\n  }\n}"
+              "raw": "{\n  \"name\": \"تمديد وقت مهمة العمل — محدث\",\n  \"conditions\": {\n    \"allow_outside_shift\": true,\n    \"has_task_duration\": true,\n    \"max_duration_hours\": 12\n  }\n}"
             },
             "url": {
-              "raw": "{{url}}/api/v1/admin/internal-process-types/{{internal_process_type_id}}",
+              "raw": "{{url}}/api/v1/admin/internal_procedure_settings/{{internal_process_type_id}}",
               "host": ["{{url}}"],
-              "path": ["api", "v1", "admin", "internal-process-types", "{{internal_process_type_id}}"]
+              "path": ["api", "v1", "admin", "internal-processger-types", "{{internal_process_type_id}}"]
             },
             "description": "Partial update supported. Settings merge with existing values."
           },
@@ -137,9 +167,9 @@
               { "key": "X-Company-Id", "value": "{{company_id}}" }
             ],
             "url": {
-              "raw": "{{url}}/api/v1/admin/internal-process-types/{{internal_process_type_id}}",
+              "raw": "{{url}}/api/v1/admin/internal_procedure_settings/{{internal_process_type_id}}",
               "host": ["{{url}}"],
-              "path": ["api", "v1", "admin", "internal-process-types", "{{internal_process_type_id}}"]
+              "path": ["api", "v1", "admin", "internal-processger-types", "{{internal_process_type_id}}"]
             }
           },
           "response": [

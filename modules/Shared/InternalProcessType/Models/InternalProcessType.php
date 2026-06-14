@@ -57,11 +57,13 @@ class InternalProcessType extends Model
 
     public function getSetting(InternalProcessCondition $condition): mixed
     {
-        return $this->settings[$condition->value] ?? null;
+        $conditions = $this->settings['conditions'] ?? $this->settings;
+
+        return $conditions[$condition->value] ?? null;
     }
 
     public function allowsDuringShift(): bool
     {
-        return (bool) ($this->settings[InternalProcessCondition::AllowDuringShift->value] ?? false);
+        return (bool) $this->getSetting(InternalProcessCondition::AllowDuringShift);
     }
 }
