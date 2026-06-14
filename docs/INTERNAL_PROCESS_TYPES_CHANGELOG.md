@@ -47,7 +47,7 @@ modules/Shared/InternalProcessType/
 │   ├── AdminInternalProcessTypeController.php
 │   └── InternalProcessTypeController.php
 ├── Database/Migrations/
-│   └── 2026_06_14_000001_create_internal_process_types_table.php
+│   └── 2026_06_14_000000_create_internal_process_types_table.php
 ├── DTO/
 │   ├── CreateInternalProcessTypeDTO.php
 │   └── UpdateInternalProcessTypeDTO.php
@@ -138,9 +138,9 @@ modules/Shared/InternalProcessType/
 
 | Migration | الجدول | التغيير |
 |-----------|--------|---------|
-| `2026_06_14_000001_create_internal_process_types_table` | `internal_process_types` | جدول جديد |
-| `2026_06_14_000001_add_internal_process_type_id_to_employee_task_requests` | `employee_task_requests` | `internal_process_type_id` FK |
-| `2026_06_14_000002_add_procedure_setting_id_to_extension_and_approval_requests` | `employee_task_extension_requests`, `employee_task_approval_requests` | `procedure_setting_id` FK |
+| `2026_06_14_000000_create_internal_process_types_table` | `internal_process_types` | جدول جديد (يُنشأ أولاً — `dropIfExists` ثم `create`) |
+| `2026_06_14_000001_add_internal_process_type_id_to_employee_task_requests` | `employee_task_requests` | `internal_process_type_id` FK (مع `hasColumn` guard) |
+| `2026_06_14_000002_add_procedure_setting_id_to_extension_and_approval_requests` | `employee_task_extension_requests`, `employee_task_approval_requests` | `procedure_setting_id` FK (مع `hasColumn` guard) |
 
 ---
 
@@ -317,8 +317,31 @@ employee_task_approval_requests
 
 ## 7. أوامر التشغيل السريعة
 
+### تنظيف السيرفر (مرة واحدة قبل الـ migrate — إذا فشلت migration سابقاً)
+
+```sql
+-- لكل tenant DB
+SET FOREIGN_KEY_CHECKS=0;
+ALTER TABLE employee_task_requests DROP COLUMN IF EXISTS internal_process_type_id;
+DROP TABLE IF EXISTS internal_process_types;
+SET FOREIGN_KEY_CHECKS=1;
+
+-- إذا سُجّلت migration فاشلة في جدول migrations
+DELETE FROM migrations WHERE migration LIKE '2026_06_14_%internal_process%';
+```
+
+> **ملاحظة:** إذا كان MySQL لا يدعم `DROP COLUMN IF EXISTS`، استخدم:
+> `ALTER TABLE employee_task_requests DROP COLUMN internal_process_type_id;` فقط إذا العمود موجود.
+
 ```bash
-# Migrations
+# بعد نشر الكود المُصلَح
+php artisan migrate --force
+```
+
+### Seeders
+
+```bash
+# Migrations (بيئة محلية)
 php artisan migrate
 
 # Seed workflows
