@@ -7,6 +7,8 @@ namespace Modules\Shared\InternalProcessType\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\Shared\InternalProcessType\Presenters\InternalProcessTypePresenter;
 use Modules\Shared\InternalProcessType\Requests\CreateInternalProcessTypeRequest;
 use Modules\Shared\InternalProcessType\Requests\UpdateInternalProcessTypeRequest;
@@ -34,7 +36,33 @@ class AdminInternalProcessTypeController extends Controller
                 'per_page'     => $paginator->perPage(),
                 'total'        => $paginator->total(),
             ],
-            message: 'Internal process types retrieved successfully',
+            message: 'Internal procedure settings retrieved successfully',
+        );
+    }
+
+    public function formOptions(): JsonResponse
+    {
+        $forms = array_map(
+            static fn (InternalProcessForm $form): array => $form->toDefinition(),
+            InternalProcessForm::cases(),
+        );
+
+        return Json::items(
+            mainItems: $forms,
+            message: 'Internal procedure setting forms retrieved successfully',
+        );
+    }
+
+    public function formsConditions(): JsonResponse
+    {
+        $definitions = array_map(
+            static fn (InternalProcessCondition $condition): array => $condition->toDefinition(),
+            InternalProcessCondition::cases(),
+        );
+
+        return Json::items(
+            mainItems: $definitions,
+            message: 'Forms conditions retrieved successfully',
         );
     }
 
@@ -44,7 +72,7 @@ class AdminInternalProcessTypeController extends Controller
 
         return Json::item(
             InternalProcessTypePresenter::single($type),
-            message: 'Internal process type created successfully',
+            message: 'Internal procedure setting created successfully',
         );
     }
 
@@ -54,7 +82,7 @@ class AdminInternalProcessTypeController extends Controller
 
         return Json::item(
             InternalProcessTypePresenter::single($type),
-            message: 'Internal process type updated successfully',
+            message: 'Internal procedure setting updated successfully',
         );
     }
 
@@ -62,6 +90,6 @@ class AdminInternalProcessTypeController extends Controller
     {
         $this->service->delete($id);
 
-        return Json::deleted('Internal process type deleted successfully');
+        return Json::deleted('Internal procedure setting deleted successfully');
     }
 }

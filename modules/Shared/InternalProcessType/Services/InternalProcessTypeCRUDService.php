@@ -8,9 +8,9 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Shared\InternalProcessType\DTO\CreateInternalProcessTypeDTO;
 use Modules\Shared\InternalProcessType\DTO\UpdateInternalProcessTypeDTO;
-use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
 use Modules\Shared\InternalProcessType\Models\InternalProcessType;
 use Modules\Shared\InternalProcessType\Repositories\InternalProcessTypeRepository;
+use Modules\Shared\InternalProcessType\Support\InternalProcessTypePayload;
 
 final class InternalProcessTypeCRUDService
 {
@@ -35,20 +35,24 @@ final class InternalProcessTypeCRUDService
 
     public function create(CreateInternalProcessTypeDTO $dto): InternalProcessType
     {
-        $data = $dto->toArray();
-        $data['settings'] = $this->normalizeSettings($data['settings'] ?? []);
-
-        return $this->repository->createType($data);
+        return $this->repository->createType($dto->toArray());
     }
 
     public function update(UpdateInternalProcessTypeDTO $dto): InternalProcessType
     {
-        $data = $dto->toArray();
+        $existing = $this->repository->findByIdOrFail($dto->id);
+        $data = array_filter([
+            'name'       => $dto->name,
+            'is_active'  => $dto->isActive,
+            'sort_order' => $dto->sortOrder,
+        ], static fn ($v) => $v !== null);
 
-        if (array_key_exists('settings', $data) && is_array($data['settings'])) {
-            $existing = $this->repository->findByIdOrFail($dto->id);
-            $data['settings'] = $this->normalizeSettings(
-                array_merge($existing->settings ?? [], $data['settings'])
+        if ($dto->form !== null || $dto->conditions !== null || $dto->ordering !== null) {
+            $data['settings'] = InternalProcessTypePayload::mergeStored(
+                $existing->settings,
+                $dto->form,
+                $dto->conditions,
+                $dto->ordering,
             );
         }
 
@@ -58,25 +62,5 @@ final class InternalProcessTypeCRUDService
     public function delete(string $id): void
     {
         $this->repository->deleteType($id);
-    }
-
-    private function normalizeSettings(array $settings): array
-    {
-        $defaults = InternalProcessCondition::defaultSettings();
-
-        foreach (InternalProcessCondition::cases() as $condition) {
-            $key = $condition->value;
-            if (! array_key_exists($key, $settings)) {
-                continue;
-            }
-
-            if ($condition->valueType() === 'integer') {
-                $defaults[$key] = $settings[$key] !== null ? (int) $settings[$key] : null;
-            } else {
-                $defaults[$key] = (bool) $settings[$key];
-            }
-        }
-
-        return $defaults;
     }
 }

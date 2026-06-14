@@ -11,6 +11,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::post('/export', [ProcedureSettingController::class, 'export']);
 
     Route::get('/approval-responsibles', [ProcedureSettingController::class, 'approvalResponsibles']);
+    Route::get('/types', [ProcedureSettingController::class, 'types']);
 
     Route::get('/{id}', [ProcedureSettingController::class, 'show']);
     Route::put('/{id}', [ProcedureSettingController::class, 'update']);

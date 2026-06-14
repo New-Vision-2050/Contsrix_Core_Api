@@ -7,6 +7,7 @@ namespace Modules\ProcedureSetting\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Handlers\DeleteProcedureSettingHandler;
 use Modules\ProcedureSetting\Handlers\UpdateProcedureSettingHandler;
 use Modules\ProcedureSetting\Presenters\ProcedureSettingPresenter;
@@ -55,6 +56,22 @@ class ProcedureSettingController extends Controller
         return Json::item(
             $this->workflowService->getApprovalResponsibles($type, (string) \Illuminate\Support\Facades\Auth::id()),
             message: 'Approval responsibles retrieved successfully',
+        );
+    }
+
+    /**
+     * GET /api/v1/procedure-settings/types
+     */
+    public function types(): JsonResponse
+    {
+        $types = array_map(
+            static fn (ProcedureSettingType $type): array => $type->toDefinition(),
+            ProcedureSettingType::cases(),
+        );
+
+        return Json::items(
+            mainItems: $types,
+            message: 'Procedure setting types retrieved successfully',
         );
     }
 
