@@ -140,6 +140,7 @@ class EmployeeTaskController extends Controller
                 projectId:               $request->input('project_id'),
                 approvalResponsibleId:   $request->input('approval_responsible_id'),
                 assignmentResponsibleId: $request->input('assignment_responsible_id'),
+                internalProcessTypeId:   $request->input('internal_process_type_id'),
                 notes:                   $request->input('notes'),
             );
 

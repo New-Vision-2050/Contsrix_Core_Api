@@ -23,6 +23,7 @@ class EmployeeTaskExtensionRequest extends Model
     protected $fillable = [
         'employee_task_request_id',
         'company_id',
+        'procedure_setting_id',
         'requested_by',
         'additional_hours',
         'reason',

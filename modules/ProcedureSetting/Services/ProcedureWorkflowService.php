@@ -278,6 +278,30 @@ final class ProcedureWorkflowService
         return $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
     }
 
+    /**
+     * Resolve the first procedure setting for a type scoped to company and branch workflow.
+     */
+    public function resolveProcedureSettingForBranch(
+        string $procedureType,
+        string $companyId,
+        ?string $branchId,
+    ): ?ProcedureSetting {
+        $query = ProcedureSetting::query()
+            ->where('type', $procedureType)
+            ->where('company_id', $companyId);
+
+        if ($branchId !== null && $branchId !== '') {
+            $query->whereHas('workFlow', function ($q) use ($branchId) {
+                $q->whereHas('managementHierarchies', function ($q) use ($branchId) {
+                    $q->where('management_hierarchies.id', $branchId);
+                });
+            });
+        }
+
+        return $query->orderBy('sort_order')->first();
+    }
+
+
     private function loadStep(?int $stepId): ProcedureSettingStep
     {
         if (!$stepId) {

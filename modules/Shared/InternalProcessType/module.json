@@ -1,0 +1,14 @@
+{
+    "name": "InternalProcessType",
+    "alias": "internalprocesstype",
+    "description": "Polymorphic internal process types with configurable conditions per entity.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\InternalProcessType\\Providers\\InternalProcessTypeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

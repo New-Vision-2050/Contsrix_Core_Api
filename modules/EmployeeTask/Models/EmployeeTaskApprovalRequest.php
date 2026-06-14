@@ -26,6 +26,7 @@ class EmployeeTaskApprovalRequest extends Model implements HasMedia
     protected $fillable = [
         'employee_task_request_id',
         'company_id',
+        'procedure_setting_id',
         'requested_by',
         'notes',
         'status',
