@@ -10,6 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('internal_process_types');
+
         Schema::create('internal_process_types', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('company_id');
