@@ -53,27 +53,24 @@ class InternalProcedureSettingsSeeder extends Seeder
     {
         $workFlow = WorkFlow::defaultForCompany($companyId, $type->value);
 
-        $parent = ProcedureSetting::query()
-            ->where('company_id', $companyId)
-            ->where('type', $type->value)
-            ->whereNull('parent_id')
-            ->whereNull('form')
-            ->first();
-
-        if ($parent !== null) {
-            return $parent;
-        }
-
-        return ProcedureSetting::query()->create([
-            'id'           => (string) Str::uuid(),
-            'company_id'   => $companyId,
-            'work_flow_id' => $workFlow->id,
-            'name'         => $type->labelAr(),
-            'type'         => $type->value,
-            'execute_type' => 'sequence',
-            'sort_order'   => 0,
-            'percentage'   => 0,
-        ]);
+        // Bypass tenant scope so we can manage records for *any* company during seeding.
+        return ProcedureSetting::withoutGlobalScopes()
+            ->firstOrCreate(
+                [
+                    'company_id' => $companyId,
+                    'type'       => $type->value,
+                    'parent_id'  => null,
+                    'form'       => null,
+                ],
+                [
+                    'id'           => (string) Str::uuid(),
+                    'work_flow_id' => $workFlow->id,
+                    'name'         => $type->labelAr(),
+                    'execute_type' => 'sequence',
+                    'sort_order'   => 0,
+                    'percentage'   => 0,
+                ]
+            );
     }
 
     private function seedForParent(ProcedureSetting $parent): void
@@ -87,12 +84,26 @@ class InternalProcedureSettingsSeeder extends Seeder
         }
 
         foreach ($forms as $order => $form) {
-            $alreadyExists = ProcedureSetting::query()
-                ->where('parent_id', $parent->id)
-                ->where('form', $form->value)
-                ->exists();
+            // Bypass tenant scope so the exists check works for any company.
+            $child = ProcedureSetting::withoutGlobalScopes()
+                ->firstOrCreate(
+                    [
+                        'parent_id' => $parent->id,
+                        'form'      => $form->value,
+                    ],
+                    [
+                        'id'           => (string) Str::uuid(),
+                        'company_id'   => $parent->company_id,
+                        'name'         => $form->labelAr(),
+                        'type'         => $type,
+                        'execute_type' => 'sequence',
+                        'sort_order'   => $order,
+                        'conditions'   => InternalProcessCondition::defaultValuesForForm($form),
+                        'percentage'   => 0,
+                    ]
+                );
 
-            if ($alreadyExists) {
+            if (! $child->wasRecentlyCreated) {
                 $this->command?->info(sprintf(
                     'InternalProcedure [%s] already exists under [%s]. Skipping.',
                     $form->value,
@@ -100,19 +111,6 @@ class InternalProcedureSettingsSeeder extends Seeder
                 ));
                 continue;
             }
-
-            ProcedureSetting::query()->create([
-                'id'           => (string) Str::uuid(),
-                'company_id'   => $parent->company_id,
-                'parent_id'    => $parent->id,
-                'name'         => $form->labelAr(),
-                'form'         => $form->value,
-                'type'         => $type,
-                'execute_type' => 'sequence',
-                'sort_order'   => $order,
-                'conditions'   => InternalProcessCondition::defaultValuesForForm($form),
-                'percentage'   => 0,
-            ]);
 
             $this->command?->info(sprintf(
                 'Created InternalProcedure [%s] under [%s].',
