@@ -68,9 +68,13 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('procedure_settings', function (Blueprint $table) {
-            $table->dropForeignIfExists('ps_parent_fk');
-            $table->dropForeignIfExists('ps_appears_before_fk');
-            $table->dropForeignIfExists('ps_appears_after_fk');
+            foreach (['ps_parent_fk', 'ps_appears_before_fk', 'ps_appears_after_fk'] as $fk) {
+                try {
+                    $table->dropForeign($fk);
+                } catch (\Throwable) {
+                    // Foreign key may not exist
+                }
+            }
 
             foreach (['parent_id', 'form', 'conditions', 'appears_before_id', 'appears_after_id'] as $col) {
                 if (Schema::hasColumn('procedure_settings', $col)) {
