@@ -6,15 +6,15 @@ namespace Modules\Shared\InternalProcessType\Enums;
 
 enum InternalProcessForm: string
 {
-    case CreateTask          = 'create_task';
-    case StartTask           = 'start_task';
-    case AssignOtherEmployee = 'assign_other_employee';
-    case ExtendTaskTime      = 'extend_task_time';
-    case SendForApproval     = 'send_for_approval';
-    case CancelTask          = 'cancel_task';
-    case ConfirmLocation     = 'confirm_location';
-    case EndTask             = 'end_task';
-    case AttachAttachments   = 'attach_attachments';
+    case CreateTask          = 'createTask';
+    case StartTask           = 'startTask';
+    case AssignOtherEmployee = 'assignOtherEmployee';
+    case ExtendTaskTime      = 'extendTaskTime';
+    case SendForApproval     = 'sendForApproval';
+    case CancelTask          = 'cancelTask';
+    case ConfirmLocation     = 'confirmLocation';
+    case EndTask             = 'endTask';
+    case AttachAttachments   = 'attachAttachments';
 
     public function labelAr(): string
     {
