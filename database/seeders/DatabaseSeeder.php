@@ -10,6 +10,7 @@ use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSee
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectPermissionsSeeder;
 use Modules\Project\TermServices\Database\Seeders\TermServicesSeeder;
 use Modules\ClientRequest\Database\Seeders\ClientRequestSeeder;
+use Modules\ProcedureSetting\Database\Seeders\InternalProcedureSettingsSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\SafetyEngineeringSpecializationSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
@@ -158,6 +159,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProfessionalDegreesSeeder::class);
         $this->call(ProjectPermissionsSeeder::class);
         $this->call(ProjectShareTypeSeeder::class);
+        $this->call(InternalProcedureSettingsSeeder::class);
 
     }
 }

@@ -273,18 +273,26 @@ class EmployeeTaskRepository
         return $task->fresh();
     }
 
-    public function getFilterMetadata(string $userId): array
+    public function getFilterMetadata(string $userId, array $filters = []): array
     {
-        $statusCounts = EmployeeTaskRequest::query()
-            ->where('user_id', $userId)
+        $taskDate = $filters['task_date'] ?? null;
+        $dateFrom = $filters['date_from'] ?? null;
+        $dateTo   = $filters['date_to']   ?? null;
+
+        $statusQuery = EmployeeTaskRequest::query()
+            ->where('user_id', $userId);
+        $this->applyDateFilters($statusQuery, $taskDate, $dateFrom, $dateTo);
+        $statusCounts = $statusQuery
             ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')
             ->toArray();
 
-        $projectRows = EmployeeTaskRequest::query()
+        $projectQuery = EmployeeTaskRequest::query()
             ->where('user_id', $userId)
-            ->whereNotNull('project_id')
+            ->whereNotNull('project_id');
+        $this->applyDateFilters($projectQuery, $taskDate, $dateFrom, $dateTo);
+        $projectRows = $projectQuery
             ->join('projects', 'employee_task_requests.project_id', '=', 'projects.id')
             ->selectRaw('projects.id as project_id, projects.name as project_name, COUNT(*) as count')
             ->groupBy('projects.id', 'projects.name')
@@ -299,8 +307,10 @@ class EmployeeTaskRepository
             ];
         }
 
-        $durationStats = EmployeeTaskRequest::query()
-            ->where('user_id', $userId)
+        $durationQuery = EmployeeTaskRequest::query()
+            ->where('user_id', $userId);
+        $this->applyDateFilters($durationQuery, $taskDate, $dateFrom, $dateTo);
+        $durationStats = $durationQuery
             ->selectRaw('MIN(duration_hours) as min_hours, MAX(duration_hours) as max_hours')
             ->first();
 
@@ -312,6 +322,20 @@ class EmployeeTaskRepository
                 'max_hours' => $durationStats?->max_hours ? (float) $durationStats->max_hours : null,
             ],
         ];
+    }
+
+    private function applyDateFilters($query, ?string $taskDate, ?string $dateFrom, ?string $dateTo): void
+    {
+        if ($taskDate) {
+            $query->whereDate('task_date', $taskDate);
+            return;
+        }
+        if ($dateFrom) {
+            $query->whereDate('task_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('task_date', '<=', $dateTo);
+        }
     }
 
     public function generateSerialNumber(): string

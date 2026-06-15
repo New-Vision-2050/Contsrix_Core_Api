@@ -14,6 +14,9 @@ use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
@@ -48,6 +51,7 @@ final class EmployeeTaskApprovalService
         string $userId,
         ?string $notes,
         UploadedFile|array|null $file = null,
+        ?string $internalProcedureSettingId = null,
     ): EmployeeTaskApprovalRequest {
         $task = $this->taskRepository->findById($taskId);
 
@@ -70,7 +74,7 @@ final class EmployeeTaskApprovalService
             throw EmployeeTaskException::pendingApprovalRequestExists();
         }
 
-        return DB::transaction(function () use ($task, $userId, $notes, $file): EmployeeTaskApprovalRequest {
+        return DB::transaction(function () use ($task, $userId, $notes, $file, $internalProcedureSettingId): EmployeeTaskApprovalRequest {
             $data = [
                 'employee_task_request_id' => $task->id,
                 'company_id'               => $task->company_id,
@@ -78,7 +82,12 @@ final class EmployeeTaskApprovalService
                 'notes'                    => $notes,
             ];
 
-            if ($task->procedure_setting_id === null) {
+            $procedureSetting = $internalProcedureSettingId
+                ? $this->loadInternalProcedureSetting($internalProcedureSettingId, $task)
+                : $this->resolveApprovalProcedureSetting($task);
+            $data['procedure_setting_id'] = $procedureSetting?->id;
+
+            if ($procedureSetting === null) {
                 $data['status']                    = 'approved';
                 $data['current_procedure_step_id'] = null;
                 $data['reviewed_at']               = now();
@@ -90,20 +99,17 @@ final class EmployeeTaskApprovalService
                 return $approval->load('media');
             }
 
-            $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
+            $firstStep = $this->workflow->resolveFirstStepBySettingId($procedureSetting->id);
             $data['status']                    = 'pending';
             $data['current_procedure_step_id'] = $firstStep->id;
 
             $approval = EmployeeTaskApprovalRequest::query()->create($data);
             $this->handleFileUpload($approval, $file);
 
-            // Resolve authorized users and broadcast notifications
             $context = $task->project_id ? ['project_id' => $task->project_id] : [];
             $userIds = $this->workflow->resolveActionTakerUserIdsForStep($firstStep, $task->user_id, $context);
             $this->broadcastTaskNotification($task, $firstStep, $userIds);
             $this->requestService->broadcastInboxCounts($userIds);
-
-            // Email + SMS notifications
             $this->dispatchStepNotifications($firstStep, $userIds);
 
             return $approval->load('media');
@@ -131,7 +137,7 @@ final class EmployeeTaskApprovalService
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
         $result = $this->workflow->advance(
             $approval->current_procedure_step_id,
-            $task->procedure_setting_id,
+            $approval->procedure_setting_id,
             $adminId,
             $task->user_id,
             $context,
@@ -211,6 +217,43 @@ final class EmployeeTaskApprovalService
     /**
      * Upload one or multiple files to the 'attachments' media collection.
      */
+
+    private function resolveApprovalProcedureSetting(EmployeeTaskRequest $task): ?ProcedureSetting
+    {
+        $task->loadMissing('user.userProfessionalData');
+        $branchId = $task->user?->userProfessionalData?->branch_id;
+
+        return $this->workflow->resolveInternalProcedureSettingByForm(
+            ProcedureSettingType::EmployeeTask->value,
+            InternalProcessForm::SendForApproval->value,
+            $task->company_id,
+            $branchId,
+        );
+    }
+
+    /**
+     * Load a specific internal procedure setting by ID, verifying it belongs
+     * to the task's company/category parent and has a form set.
+     */
+    private function loadInternalProcedureSetting(string $id, EmployeeTaskRequest $task): ?ProcedureSetting
+    {
+        $setting = ProcedureSetting::query()
+            ->where('id', $id)
+            ->whereNotNull('form')
+            ->whereHas('parent', function ($q) use ($task) {
+                $q->where('type', ProcedureSettingType::EmployeeTask->value)
+                  ->where('company_id', $task->company_id);
+            })
+            ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
+            ->first();
+
+        if (! $setting) {
+            throw EmployeeTaskException::invalidProcedureSetting();
+        }
+
+        return $setting;
+    }
+
     private function handleFileUpload(EmployeeTaskApprovalRequest $approval, UploadedFile|array|null $file): void
     {
         if (empty($file)) {

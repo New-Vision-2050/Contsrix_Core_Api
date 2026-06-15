@@ -11,7 +11,8 @@
     { "key": "admin_token",  "value": "",                 "type": "string" },
     { "key": "task_id",      "value": "",                 "type": "string" },
     { "key": "extension_id", "value": "",                 "type": "string" },
-    { "key": "user_id",      "value": "",                 "type": "string" }
+    { "key": "user_id",      "value": "",                 "type": "string" },
+    { "key": "internal_procedure_setting_id", "value": "", "type": "string", "description": "Child ProcedureSetting ID (form-specific)" }
   ],
   "auth": {
     "type": "bearer",
@@ -42,11 +43,12 @@
             "method": "GET",
             "header": [{ "key": "Accept", "value": "application/json" }],
             "url": {
-              "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure",
+              "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task&form_key=start_task",
               "host": ["{{url}}"],
               "path": ["api", "v1", "procedure-settings", "approval-responsibles"],
               "query": [
-                { "key": "type", "value": "employee_task_procedure", "description": "Procedure type — for the task form use employee_task_procedure" }
+                { "key": "type", "value": "employee_task", "description": "Category type: employee_task, client_request, price_offer, contract, meeting" },
+                { "key": "form_key", "value": "start_task", "description": "Optional: start_task, extend_task_time, send_for_approval, cancel_task, confirm_location, assign_other_employee, attach_attachments" }
               ]
             },
             "description": "Read-only preview used by the 'إنشاء مهمة' form to populate the 'مسؤل الاعتماد' field.\n\n- `auto_approve = true` → no human approval is required; submitting the form will create the task already in `approved` state.\n- `auto_approve = false` → display the first user in `action_takers` (the procedure's first-step approver) as the read-only 'مسؤل الاعتماد'."
@@ -56,7 +58,7 @@
               "name": "Has Approval Responsible",
               "originalRequest": {
                 "method": "GET",
-                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task_procedure" }] }
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task&form_key=start_task", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task" }, { "key": "form_key", "value": "start_task" }] }
               },
               "status": "OK",
               "code": 200,
@@ -69,7 +71,7 @@
               "name": "Auto-Approve (No Action-Takers)",
               "originalRequest": {
                 "method": "GET",
-                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task_procedure" }] }
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task&form_key=start_task", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task" }, { "key": "form_key", "value": "start_task" }] }
               },
               "status": "OK",
               "code": 200,
@@ -82,7 +84,7 @@
               "name": "Multiple Approvers",
               "originalRequest": {
                 "method": "GET",
-                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task_procedure" }] }
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task&form_key=start_task", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task" }, { "key": "form_key", "value": "start_task" }] }
               },
               "status": "OK",
               "code": 200,
@@ -697,6 +699,45 @@
               "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Sessions retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"sess-uuid-1\",\n      \"start_time\": \"2026-11-24 10:00:00\",\n      \"end_time\": \"2026-11-24 10:25:00\",\n      \"duration_minutes\": 25,\n      \"source\": \"manual\",\n      \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n      \"end_location\": null,\n      \"notes\": null\n    },\n    {\n      \"id\": \"sess-uuid-2\",\n      \"start_time\": \"2026-11-24 10:37:00\",\n      \"end_time\": \"2026-11-24 14:05:00\",\n      \"duration_minutes\": 208,\n      \"source\": \"manual\",\n      \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n      \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n      \"notes\": null\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Get Available Actions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().payload;",
+                  "pm.test('Payload is array', () => pm.expect(p).to.be.an('array'));",
+                  "pm.test('Each item has id and form', () => p.forEach(i => { pm.expect(i).to.have.property('id'); pm.expect(i).to.have.property('form'); }));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/available-actions",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "available-actions"]
+            },
+            "description": "NEW: Returns all active internal procedure settings (child rows) for the task.\n\nEach item has a unique `id` that the mobile app must send back when triggering that action.\n\nTwo items can share the same `form` key (e.g., two `confirm_location` entries with different names)."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/available-actions", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "available-actions"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Available actions retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"child-uuid-1\",\n      \"name\": \"تمديد وقت المهمة\",\n      \"form\": { \"key\": \"extend_task_time\", \"label_ar\": \"تمديد وقت المهمة\" },\n      \"conditions\": [{ \"key\": \"AllowDuringShift\", \"type\": \"boolean\", \"label_ar\": \"السماح أثناء الدوام\" }],\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"sort_order\": 1\n    },\n    {\n      \"id\": \"child-uuid-2\",\n      \"name\": \"تأكيد دخول الموقع\",\n      \"form\": { \"key\": \"confirm_location\", \"label_ar\": \"تأكيد الموقع\" },\n      \"conditions\": [{ \"key\": \"ApplyToAllBranches\", \"type\": \"boolean\", \"label_ar\": \"يطبق على جميع الفروع\" }],\n      \"appears_before_id\": \"child-uuid-3\",\n      \"appears_after_id\": null,\n      \"sort_order\": 2\n    },\n    {\n      \"id\": \"child-uuid-3\",\n      \"name\": \"تأكيد خروج الموقع\",\n      \"form\": { \"key\": \"confirm_location\", \"label_ar\": \"تأكيد الموقع\" },\n      \"conditions\": [{ \"key\": \"ApplyToAllBranches\", \"type\": \"boolean\", \"label_ar\": \"يطبق على جميع الفروع\" }],\n      \"appears_before_id\": null,\n      \"appears_after_id\": \"child-uuid-2\",\n      \"sort_order\": 3\n    },\n    {\n      \"id\": \"child-uuid-4\",\n      \"name\": \"ارسال للاعتماد\",\n      \"form\": { \"key\": \"send_for_approval\", \"label_ar\": \"ارسال للاعتماد\" },\n      \"conditions\": [{ \"key\": \"AllowDuringShift\", \"type\": \"boolean\", \"label_ar\": \"السماح أثناء الدوام\" }],\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"sort_order\": 4\n    }\n  ]\n}"
+            }
+          ]
         }
       ]
     },
@@ -725,7 +766,7 @@
             "header": [{ "key": "Accept", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"additional_hours\": 2,\n  \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\"\n}",
+              "raw": "{\n  \"additional_hours\": 2,\n  \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n  \"internal_procedure_setting_id\": \"{{internal_procedure_setting_id}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] }
@@ -787,7 +828,60 @@
       ]
     },
     {
-      "name": "4. Admin — Task Management",
+      "name": "4. Approval Requests (Employee)",
+      "description": "Employee submits task for final completion approval (ارسال للاعتماد).",
+      "item": [
+        {
+          "name": "Submit Task for Approval",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().payload;",
+                  "pm.test('Has id', () => pm.expect(p).to.have.property('id'));",
+                  "pm.test('Has status', () => pm.expect(p).to.have.property('status'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "notes", "value": "Task completed, please review", "type": "text" },
+                { "key": "internal_procedure_setting_id", "value": "{{internal_procedure_setting_id}}", "type": "text", "description": "Optional: specific child procedure setting ID from available-actions" },
+                { "key": "file", "type": "file", "src": "/path/to/report.pdf", "disabled": true }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/request-approval",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "request-approval"]
+            },
+            "description": "NEW: Employee submits task for final admin approval.\n\n- `internal_procedure_setting_id` (optional): send the specific child ID from `available-actions` to use a particular approval workflow.\n- `file` (optional): attachment upload.\n- `notes` (optional): notes for the approver."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/request-approval", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "request-approval"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task approval request submitted successfully\",\n  \"payload\": {\n    \"id\": \"approval-uuid\",\n    \"task_id\": \"{{task_id}}\",\n    \"notes\": \"Task completed, please review\",\n    \"status\": \"pending\",\n    \"current_step\": {\n      \"id\": 12,\n      \"name\": \"مدير القسم\",\n      \"step_order\": 1\n    },\n    \"media\": []\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Admin — Task Management",
       "description": "Admin-facing endpoints. Uses {{admin_token}}.\n\nApprove/reject now walks through the ProcedureSetting steps via `ProcedureWorkflowService`. While intermediate steps remain, the task stays `pending` and only `current_step` advances. The final step flips status to `approved`.",
       "auth": {
         "type": "bearer",
@@ -1139,7 +1233,7 @@
       ]
     },
     {
-      "name": "5. Attendance Integration",
+      "name": "6. Attendance Integration",
       "description": "Intra-day combined report: all attendance sessions + all task sessions for a given date.",
       "item": [
         {

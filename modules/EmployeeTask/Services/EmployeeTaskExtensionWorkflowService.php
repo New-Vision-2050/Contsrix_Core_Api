@@ -32,7 +32,7 @@ final class EmployeeTaskExtensionWorkflowService
     /**
      * Approve an extension request through the workflow.
      *
-     * Extension requests inherit the workflow from their parent EmployeeTask.
+     * Extension requests use their own employee_task_extension procedure setting.
      * The extension follows the same approval chain as its parent task.
      *
      * Workflow progression:
@@ -57,7 +57,7 @@ final class EmployeeTaskExtensionWorkflowService
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
         $result = $this->workflow->advance(
             $extension->current_procedure_step_id,
-            $task->procedure_setting_id,  // Use parent task's procedure
+            $extension->procedure_setting_id,
             $adminId,
             $task->user_id,
             $context,
@@ -106,7 +106,7 @@ final class EmployeeTaskExtensionWorkflowService
      * Reject an extension request through the workflow.
      *
      * Rejection always terminates the workflow immediately.
-     * Uses parent task's procedure for authorization check.
+     * Uses extension procedure_setting_id for authorization check.
      * No intermediate steps are traversed.
      *
      * @throws EmployeeTaskException
@@ -118,7 +118,6 @@ final class EmployeeTaskExtensionWorkflowService
 
         $this->validateExtensionCanBeResolved($extension);
 
-        // Validate user can reject (using parent task's procedure)
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
         $this->workflow->assertCanReject($extension->current_procedure_step_id, $adminId, $task->user_id, $context);
 

@@ -89,7 +89,7 @@ class SendWorkflowStepNotification
 
         // Only EmployeeTaskRequest has the real-time notification event
         $processableType = $process->processable_type;
-        if ($processableType === 'employee_task_request' && method_exists($processable, 'load')) {
+        if ($processableType === 'employee_task' && method_exists($processable, 'load')) {
             $processable->load(['user']);
 
             event(new EmployeeTaskNotification($processable, $event->templateStep, $userIds));

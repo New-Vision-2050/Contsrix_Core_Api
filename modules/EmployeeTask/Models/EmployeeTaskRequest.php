@@ -158,7 +158,7 @@ class EmployeeTaskRequest extends Model
     public function employeeTaskProcess(): HasOne
     {
         return $this->hasOne(Process::class, 'processable_id')
-            ->where('processable_type', 'employee_task_request');
+            ->where('processable_type', 'employee_task');
     }
 
     public function hasPendingApprovalRequest(): bool

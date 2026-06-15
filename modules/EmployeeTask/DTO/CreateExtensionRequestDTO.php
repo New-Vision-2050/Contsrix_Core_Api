@@ -11,6 +11,7 @@ final class CreateExtensionRequestDTO
         public readonly string  $requestedBy,
         public readonly float   $additionalHours,
         public readonly ?string $reason = null,
+        public readonly ?string $internalProcedureSettingId = null,
     ) {}
 
     public function toArray(): array

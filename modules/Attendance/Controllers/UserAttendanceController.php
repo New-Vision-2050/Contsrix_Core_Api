@@ -12,10 +12,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Modules\Attendance\Exceptions\AttendanceException;
+use Modules\Attendance\Presenters\AttendanceCalendarPresenter;
 use Modules\Attendance\Presenters\AttendanceTeamPresenter;
 use Modules\Attendance\Presenters\UserAttendanceHistoryPresenter;
+use Modules\Attendance\Requests\GetAttendanceCalendarRequest;
 use Modules\Attendance\Requests\GetUserConstraintRequest;
 use Modules\Attendance\Requests\GetUserAttendanceHistoryRequest;
+use Modules\Attendance\Services\AttendanceCalendarService;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\UserAttendanceHistoryService;
 use Modules\Attendance\Services\UserAttendanceService;
@@ -28,6 +31,7 @@ class UserAttendanceController extends Controller
         private AttendanceService $attendanceService,
         private UserAttendanceService $userAttendanceService,
         private UserAttendanceHistoryService $historyService,
+        private AttendanceCalendarService $calendarService,
     ) {}
 
     /**
@@ -50,7 +54,7 @@ class UserAttendanceController extends Controller
                 return Json::error('Unauthorized.', 401);
             }
             $result = $this->userAttendanceService->getUserConstraints($user, $request->input('date'));
-            
+
             return Json::item($result, message: __('messages.attendance.user_constraint_today_retrieved'));
         } catch (AttendanceException $e) {
             return Json::error(
@@ -94,6 +98,54 @@ class UserAttendanceController extends Controller
 
         return Json::item($result, message: __('messages.attendance.clock_in_status_retrieved'));
     }
+
+    /**
+     * Get current user's attendance calendar for a date range or month.
+     *
+     * @param GetAttendanceCalendarRequest $request
+     * @return JsonResponse
+     */
+    public function getAttendanceCalendar(GetAttendanceCalendarRequest $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            if (!$user instanceof User) {
+                return Json::error('Unauthorized.', 401);
+            }
+
+            $result = $this->calendarService->getCalendar(
+                $user,
+                $request->input('from_date'),
+                $request->input('to_date'),
+                $request->input('month') ? (int) $request->input('month') : null,
+                $request->input('year') ? (int) $request->input('year') : null,
+            );
+
+            $presenter = new AttendanceCalendarPresenter($result);
+
+            return Json::item($presenter->present(), message: __('messages.attendance.calendar_retrieved'));
+        } catch (AttendanceException $e) {
+            return Json::error(
+                $e->getMessage(),
+                $e->getStatusCode()
+            );
+        } catch (ModelNotFoundException $e) {
+            return Json::error(
+                'Resource not found.',
+                404
+            );
+        } catch (ValidationException $e) {
+            return Json::error(
+                $e->getMessage(),
+                422
+            );
+        } catch (\Exception $e) {
+            return Json::error(
+                'An unexpected error occurred. Please try again later.',
+                500
+            );
+        }
+    }
     /**
      * Get user attendance history grouped by date with periods
      *
@@ -101,7 +153,7 @@ class UserAttendanceController extends Controller
      * @return JsonResponse
      */
     public function getUserAttendanceHistory(GetUserAttendanceHistoryRequest $request): JsonResponse
-    { 
+    {
         // try {
             $userId = (string) Auth::id();
             $month = $request->input('month') ? (int) $request->input('month') : null;
@@ -113,7 +165,7 @@ class UserAttendanceController extends Controller
             $currentDate = \Carbon\Carbon::now($timezone)->format('Y-m-d');
             $userConstraints = $this->userAttendanceService->getUserConstraints($userId, $currentDate);
             $canClockIn = false;
-            
+
             if (isset($userConstraints['work_rules']['all_work_periods'])) {
                 foreach ($userConstraints['work_rules']['all_work_periods'] as $period) {
                     if ($period['can_clock_in'] ?? false) {

@@ -41,7 +41,7 @@ return new class extends Migration
 
         // Add new column
         Schema::table('procedure_settings', function (Blueprint $table) {
-            $table->unsignedBigInteger('escalation_management_hierarchy_id')->nullable()->after('deadline_hours');
+            $table->unsignedBigInteger('escalation_management_hierarchy_id')->nullable();
         });
 
         // Add new FK
@@ -84,7 +84,7 @@ return new class extends Migration
 
         // Restore old column
         Schema::table('procedure_settings', function (Blueprint $table) {
-            $table->uuid('escalation_user_id')->nullable()->after('deadline_hours');
+            $table->uuid('escalation_user_id')->nullable();
         });
 
         // Restore old FK

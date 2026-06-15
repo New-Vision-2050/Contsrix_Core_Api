@@ -35,9 +35,9 @@ class EmployeeTaskRequestService
 
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
     {
-        $procedureType = ProcedureSettingType::EmployeeTaskRequest->value;
+        $procedureType = ProcedureSettingType::EmployeeTask->value;
         $context       = $dto->projectId ? ['project_id' => $dto->projectId] : [];
-        $preview       = $this->workflow->getApprovalResponsibles($procedureType, $dto->userId, $context);
+        $preview       = $this->workflow->getApprovalResponsibles($procedureType, $dto->userId, $context, InternalProcessForm::StartTask->value);
 
         $data                  = $dto->toArray();
         $data['serial_number'] = $this->repository->generateSerialNumber();
@@ -62,20 +62,27 @@ class EmployeeTaskRequestService
         $user     = $task->user->load('userProfessionalData');
         $branchId = $user->userProfessionalData?->branch_id;
 
-        $settings = ProcedureSetting::query()
-            ->where('type', ProcedureSettingType::EmployeeTaskRequest->value)
+        $parentIds = ProcedureSetting::query()
+            ->whereNull('parent_id')
+            ->where('type', ProcedureSettingType::EmployeeTask->value)
             ->where('company_id', $task->company_id)
             ->whereHas('workFlow', function ($q) use ($branchId) {
                 $q->whereHas('managementHierarchies', function ($q) use ($branchId) {
                     $q->where('management_hierarchies.id', $branchId);
                 });
             })
+            ->pluck('id');
+
+        $settings = ProcedureSetting::query()
+            ->whereIn('parent_id', $parentIds)
+            ->where('form', InternalProcessForm::StartTask->value)
+            ->whereNotNull('form')
             ->orderBy('sort_order')
             ->get();
 
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
         $activeProcess = $this->processService->createProcessesFromSettings(
-            ProcedureSettingType::EmployeeTaskRequest->value,
+            ProcedureSettingType::EmployeeTask->value,
             $task->id,
             $settings,
             $task->user_id,
@@ -117,11 +124,10 @@ class EmployeeTaskRequestService
 // dd($id, $adminId);
         return DB::transaction(function () use ($id, $adminId, $task): EmployeeTaskRequest {
             $process = Process::query()
-                ->where('processable_type', ProcedureSettingType::EmployeeTaskRequest->value)
+                ->where('processable_type', ProcedureSettingType::EmployeeTask->value)
                 ->where('processable_id', $task->id)
                 ->where('status', ProcessStatus::InProgress)
                 ->firstOrFail();
-// dd($process);
             $step = $this->findPendingStepForActor($process, $adminId);
             if (! $step) {
                 throw EmployeeTaskException::notFound();
@@ -147,7 +153,7 @@ class EmployeeTaskRequestService
 
         return DB::transaction(function () use ($id, $adminId, $reason, $task): EmployeeTaskRequest {
             $process = Process::query()
-                ->where('processable_type', ProcedureSettingType::EmployeeTaskRequest->value)
+                ->where('processable_type', ProcedureSettingType::EmployeeTask->value)
                 ->where('processable_id', $task->id)
                 ->where('status', ProcessStatus::InProgress)
                 ->firstOrFail();
@@ -287,9 +293,9 @@ class EmployeeTaskRequestService
         event(new EmployeeTaskNotification($task, $currentStep, $userIds));
     }
 
-    public function getFilterMetadata(string $userId): array
+    public function getFilterMetadata(string $userId, array $filters = []): array
     {
-        return $this->repository->getFilterMetadata($userId);
+        return $this->repository->getFilterMetadata($userId, $filters);
     }
 
     public function getInboxCountsForAdmin(string $adminId, array $filters = []): array

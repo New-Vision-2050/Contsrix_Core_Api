@@ -40,6 +40,7 @@ final class ProcedureWorkflowService
         /** @var ProcedureSetting|null $setting */
         $setting = ProcedureSetting::query()
             ->where('type', $procedureType)
+            ->whereNull('parent_id')
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
             ->first();
 
@@ -146,13 +147,21 @@ final class ProcedureWorkflowService
      *   action_takers: list<array{user_id:string,name:?string}>
      * }
      */
-    public function getApprovalResponsibles(string $procedureType, ?string $createdByUserId = null, array $context = []): array
+    public function getApprovalResponsibles(string $procedureType, ?string $createdByUserId = null, array $context = [], ?string $formKey = null): array
     {
         /** @var ProcedureSetting|null $setting */
-        $setting = ProcedureSetting::query()
-            ->where('type', $procedureType)->orderBy("sort_order")
-            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with('actionTakers.user')])
-            ->first();
+        $query = ProcedureSetting::query()
+            ->where('type', $procedureType)
+            ->orderBy('sort_order')
+            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with('actionTakers.user')]);
+
+        if ($formKey !== null) {
+            $query->whereNotNull('parent_id')->where('form', $formKey);
+        } else {
+            $query->whereNull('parent_id');
+        }
+
+        $setting = $query->first();
 
         if (!$setting) {
             return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
@@ -276,6 +285,71 @@ final class ProcedureWorkflowService
     public function resolveActionTakerUserIdsForStep(ProcedureSettingStep $step, ?string $createdByUserId = null, array $context = []): array
     {
         return $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
+    }
+
+    /**
+     * Resolve the first procedure setting for a type scoped to company and branch workflow.
+     */
+    public function resolveProcedureSettingForBranch(
+        string $procedureType,
+        string $companyId,
+        ?string $branchId,
+    ): ?ProcedureSetting {
+        $query = ProcedureSetting::query()
+            ->where('type', $procedureType)
+            ->whereNull('parent_id')
+            ->where('company_id', $companyId);
+
+        if ($branchId !== null && $branchId !== '') {
+            $query->whereHas('workFlow', function ($q) use ($branchId) {
+                $q->whereHas('managementHierarchies', function ($q) use ($branchId) {
+                    $q->where('management_hierarchies.id', $branchId);
+                });
+            });
+        }
+
+        return $query->orderBy('sort_order')->first();
+    }
+
+
+    /**
+     * Resolve the InternalProcedureSetting (child row with form set) for a given
+     * category type + form key, scoped to company and optionally a branch.
+     *
+     * Used by entity services (extension, approval) to find which child
+     * procedure setting handles a specific action form.
+     */
+    public function resolveInternalProcedureSettingByForm(
+        string $procedureCategoryType,
+        string $formKey,
+        string $companyId,
+        ?string $branchId = null,
+    ): ?ProcedureSetting {
+        $parentQuery = ProcedureSetting::query()
+            ->whereNull('parent_id')
+            ->where('type', $procedureCategoryType)
+            ->where('company_id', $companyId);
+
+        if ($branchId !== null && $branchId !== '') {
+            $parentQuery->whereHas('workFlow', function ($q) use ($branchId) {
+                $q->whereHas('managementHierarchies', function ($q) use ($branchId) {
+                    $q->where('management_hierarchies.id', $branchId);
+                });
+            });
+        }
+
+        $parent = $parentQuery->orderBy('sort_order')->first();
+
+        if (! $parent) {
+            return null;
+        }
+
+        return ProcedureSetting::query()
+            ->where('parent_id', $parent->id)
+            ->where('form', $formKey)
+            ->whereNotNull('form')
+            ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
+            ->first();
     }
 
     private function loadStep(?int $stepId): ProcedureSettingStep

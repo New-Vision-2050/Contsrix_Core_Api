@@ -1,0 +1,159 @@
+{
+  "info": {
+    "_postman_id": "attendance-calendar-api-collection",
+    "name": "Attendance Calendar API",
+    "description": "API endpoints for retrieving attendance calendar status for the authenticated user. Supports date range and month-based queries.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Calendar",
+      "item": [
+        {
+          "name": "Get Attendance Calendar (By Month)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/attendance/user-attendance/calendar?month={{month}}&year={{year}}",
+              "host": ["{{url}}"],
+              "path": ["attendance", "user-attendance", "calendar"],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "{{month}}",
+                  "description": "Month number (1-12)"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}",
+                  "description": "Year (e.g. 2026)"
+                }
+              ]
+            },
+            "description": "Get attendance calendar for the current authenticated user by month and year. Returns daily status: حاضر, متأخر, غائب, إجازة, عطلة, مطلوب للحضور."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{url}}/attendance/user-attendance/calendar?month=6&year=2026",
+                  "host": ["{{url}}"],
+                  "path": ["attendance", "user-attendance", "calendar"],
+                  "query": [
+                    {
+                      "key": "month",
+                      "value": "6"
+                    },
+                    {
+                      "key": "year",
+                      "value": "2026"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"days\": [\n      {\n        \"date\": \"2026-06-01\",\n        \"day_name\": \"الاثنين\",\n        \"day_number\": 1,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 9.17,\n        \"duration_formatted\": \"09h 10m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-02\",\n        \"day_name\": \"الثلاثاء\",\n        \"day_number\": 2,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 8.75,\n        \"duration_formatted\": \"08h 45m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-03\",\n        \"day_name\": \"الأربعاء\",\n        \"day_number\": 3,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 9.08,\n        \"duration_formatted\": \"09h 05m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-04\",\n        \"day_name\": \"الخميس\",\n        \"day_number\": 4,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 8.50,\n        \"duration_formatted\": \"08h 30m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-05\",\n        \"day_name\": \"الجمعة\",\n        \"day_number\": 5,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-06\",\n        \"day_name\": \"السبت\",\n        \"day_number\": 6,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-07\",\n        \"day_name\": \"الأحد\",\n        \"day_number\": 7,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-08\",\n        \"day_name\": \"الاثنين\",\n        \"day_number\": 8,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 8.67,\n        \"duration_formatted\": \"08h 40m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-09\",\n        \"day_name\": \"الثلاثاء\",\n        \"day_number\": 9,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 9.33,\n        \"duration_formatted\": \"09h 20m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-10\",\n        \"day_name\": \"الأربعاء\",\n        \"day_number\": 10,\n        \"status_key\": \"late\",\n        \"status\": \"متأخر\",\n        \"work_hours\": 8.17,\n        \"duration_formatted\": \"08h 10m\",\n        \"dot_color\": \"orange\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-11\",\n        \"day_name\": \"الخميس\",\n        \"day_number\": 11,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 8.83,\n        \"duration_formatted\": \"08h 50m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-12\",\n        \"day_name\": \"الجمعة\",\n        \"day_number\": 12,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-13\",\n        \"day_name\": \"السبت\",\n        \"day_number\": 13,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-14\",\n        \"day_name\": \"الأحد\",\n        \"day_number\": 14,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-15\",\n        \"day_name\": \"الاثنين\",\n        \"day_number\": 15,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 9.17,\n        \"duration_formatted\": \"09h 10m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-16\",\n        \"day_name\": \"الثلاثاء\",\n        \"day_number\": 16,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 8.92,\n        \"duration_formatted\": \"08h 55m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-17\",\n        \"day_name\": \"الأربعاء\",\n        \"day_number\": 17,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 9.00,\n        \"duration_formatted\": \"09h 00m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-18\",\n        \"day_name\": \"الخميس\",\n        \"day_number\": 18,\n        \"status_key\": \"absent\",\n        \"status\": \"غائب\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"red\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-19\",\n        \"day_name\": \"الجمعة\",\n        \"day_number\": 19,\n        \"status_key\": \"late\",\n        \"status\": \"متأخر\",\n        \"work_hours\": 8.25,\n        \"duration_formatted\": \"08h 15m\",\n        \"dot_color\": \"orange\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-20\",\n        \"day_name\": \"السبت\",\n        \"day_number\": 20,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-21\",\n        \"day_name\": \"الأحد\",\n        \"day_number\": 21,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-22\",\n        \"day_name\": \"الاثنين\",\n        \"day_number\": 22,\n        \"status_key\": \"late\",\n        \"status\": \"متأخر\",\n        \"work_hours\": 8.42,\n        \"duration_formatted\": \"08h 25m\",\n        \"dot_color\": \"orange\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-23\",\n        \"day_name\": \"الثلاثاء\",\n        \"day_number\": 23,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 8.58,\n        \"duration_formatted\": \"08h 35m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-24\",\n        \"day_name\": \"الأربعاء\",\n        \"day_number\": 24,\n        \"status_key\": \"present\",\n        \"status\": \"حاضر\",\n        \"work_hours\": 8.67,\n        \"duration_formatted\": \"08h 40m\",\n        \"dot_color\": \"green\",\n        \"attendance_count\": 1\n      },\n      {\n        \"date\": \"2026-06-25\",\n        \"day_name\": \"الخميس\",\n        \"day_number\": 25,\n        \"status_key\": \"leave\",\n        \"status\": \"إجازة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"purple\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-26\",\n        \"day_name\": \"الجمعة\",\n        \"day_number\": 26,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-27\",\n        \"day_name\": \"السبت\",\n        \"day_number\": 27,\n        \"status_key\": \"off\",\n        \"status\": \"عطلة\",\n        \"work_hours\": null,\n        \"duration_formatted\": null,\n        \"dot_color\": \"gray\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-28\",\n        \"day_name\": \"الأحد\",\n        \"day_number\": 28,\n        \"status_key\": \"required\",\n        \"status\": \"مطلوب للحضور\",\n        \"work_hours\": 8.00,\n        \"duration_formatted\": \"08h 00m\",\n        \"dot_color\": \"blue\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-29\",\n        \"day_name\": \"الاثنين\",\n        \"day_number\": 29,\n        \"status_key\": \"required\",\n        \"status\": \"مطلوب للحضور\",\n        \"work_hours\": 8.00,\n        \"duration_formatted\": \"08h 00m\",\n        \"dot_color\": \"blue\",\n        \"attendance_count\": 0\n      },\n      {\n        \"date\": \"2026-06-30\",\n        \"day_name\": \"الثلاثاء\",\n        \"day_number\": 30,\n        \"status_key\": \"required\",\n        \"status\": \"مطلوب للحضور\",\n        \"work_hours\": 8.00,\n        \"duration_formatted\": \"08h 00m\",\n        \"dot_color\": \"blue\",\n        \"attendance_count\": 0\n      }\n    ],\n    \"summary\": {\n      \"total_days\": 30,\n      \"present_count\": 14,\n      \"late_count\": 4,\n      \"absent_count\": 1,\n      \"leave_count\": 1,\n      \"off_count\": 8,\n      \"required_count\": 3\n    }\n  },\n  \"message\": \"Attendance calendar retrieved successfully.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Attendance Calendar (By Date Range)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/attendance/user-attendance/calendar?from_date={{from_date}}&to_date={{to_date}}",
+              "host": ["{{url}}"],
+              "path": ["attendance", "user-attendance", "calendar"],
+              "query": [
+                {
+                  "key": "from_date",
+                  "value": "{{from_date}}",
+                  "description": "Start date in Y-m-d format"
+                },
+                {
+                  "key": "to_date",
+                  "value": "{{to_date}}",
+                  "description": "End date in Y-m-d format"
+                }
+              ]
+            },
+            "description": "Get attendance calendar for the current authenticated user by date range. Returns daily status for each day in range."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "url",
+      "value": "http://localhost/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-bearer-token-here",
+      "type": "string"
+    },
+    {
+      "key": "month",
+      "value": "6",
+      "type": "string"
+    },
+    {
+      "key": "year",
+      "value": "2026",
+      "type": "string"
+    },
+    {
+      "key": "from_date",
+      "value": "2026-06-01",
+      "type": "string"
+    },
+    {
+      "key": "to_date",
+      "value": "2026-06-30",
+      "type": "string"
+    }
+  ]
+}

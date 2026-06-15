@@ -31,6 +31,8 @@ Route::prefix('employee-tasks')->group(function () {
 
     Route::post('/{id}/extension-requests', [EmployeeTaskController::class, 'storeExtension']);
     Route::get('/{id}/extension-requests',  [EmployeeTaskController::class, 'listExtensions']);
+
+    Route::get('/{id}/available-actions',   [EmployeeTaskController::class, 'availableActions']);
 });
 
 /*

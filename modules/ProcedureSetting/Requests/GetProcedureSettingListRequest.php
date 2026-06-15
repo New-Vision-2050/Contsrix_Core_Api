@@ -19,6 +19,7 @@ class GetProcedureSettingListRequest extends FormRequest
             'execute_type'=> ['sometimes', 'string', Rule::in(ProcedureSettingType::values())],
             'work_flow_id'=> 'sometimes|uuid|exists:work_flows,id',
             'branch_id'   => ['sometimes', 'integer', Rule::exists('management_hierarchies', 'id')->where('type', 'branch')],
+            'parent_id'   => 'sometimes|uuid|exists:procedure_settings,id',
         ];
     }
 
@@ -36,6 +37,9 @@ class GetProcedureSettingListRequest extends FormRequest
         }
         if ($this->filled('branch_id')) {
             $filters['branch_id'] = (int) $this->get('branch_id');
+        }
+        if ($this->filled('parent_id')) {
+            $filters['parent_id'] = (string) $this->get('parent_id');
         }
 
         return $filters;
