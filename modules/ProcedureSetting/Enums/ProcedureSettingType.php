@@ -5,29 +5,28 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Enums;
 
 /**
- * Stored in `procedure_settings.type` — keep in sync with validation + migrations.
+ * Stored in `procedure_settings.type` — category-level identifiers only.
+ * Sub-actions (extend, approve, cancel…) are InternalProcedureSettings (child rows
+ * in the same table) linked via parent_id, distinguished by the `form` column.
  *
- * Allowed API / DB values: client_request | price_offer | contract | employee_task_request |
- * employee_task_extension | employee_task_completion_approval
+ * Allowed API / DB values: employee_task | client_request | price_offer | contract | meeting
  */
 enum ProcedureSettingType: string
 {
-    case ClientRequest       = 'client_request';
-    case PriceOffer          = 'price_offer';
-    case Contract            = 'contract';
-    case EmployeeTaskRequest  = 'employee_task_request';
-    case EmployeeTaskExtension = 'employee_task_extension';
-    case EmployeeTaskApproval  = 'employee_task_completion_approval';
+    case EmployeeTask  = 'employee_task';
+    case ClientRequest = 'client_request';
+    case PriceOffer    = 'price_offer';
+    case Contract      = 'contract';
+    case Meeting       = 'meeting';
 
     public function labelAr(): string
     {
         return match ($this) {
-            self::ClientRequest        => 'طلب عميل',
-            self::PriceOffer           => 'عرض سعر',
-            self::Contract             => 'عقد',
-            self::EmployeeTaskRequest  => 'طلب مهمة عمل',
-            self::EmployeeTaskExtension => 'تمديد مهمة عمل',
-            self::EmployeeTaskApproval  => 'اعتماد إتمام مهمة',
+            self::EmployeeTask  => 'مهمة العمل',
+            self::ClientRequest => 'طلب عميل',
+            self::PriceOffer    => 'عرض سعر',
+            self::Contract      => 'عقد',
+            self::Meeting       => 'اجتماع',
         };
     }
 

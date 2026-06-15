@@ -16,9 +16,7 @@ class EmployeeTaskWorkflowSeeder extends Seeder
 {
     /** @var list<ProcedureSettingType> */
     private const TYPES = [
-        ProcedureSettingType::EmployeeTaskRequest,
-        ProcedureSettingType::EmployeeTaskExtension,
-        ProcedureSettingType::EmployeeTaskApproval,
+        ProcedureSettingType::EmployeeTask,
     ];
 
     public function run(): void
@@ -87,9 +85,7 @@ class EmployeeTaskWorkflowSeeder extends Seeder
     private function defaultName(ProcedureSettingType $type): string
     {
         return match ($type) {
-            ProcedureSettingType::EmployeeTaskRequest  => 'Employee Task Request',
-            ProcedureSettingType::EmployeeTaskExtension => 'Employee Task Extension',
-            ProcedureSettingType::EmployeeTaskApproval  => 'Employee Task Completion Approval',
+            ProcedureSettingType::EmployeeTask  => 'Employee Task',
             default => $type->value,
         };
     }

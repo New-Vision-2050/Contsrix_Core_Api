@@ -14,6 +14,7 @@ use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
@@ -55,7 +56,9 @@ final class EmployeeTaskExtensionService
                 ['company_id' => $task->company_id]
             );
 
-            $procedureSetting = $this->resolveExtensionProcedureSetting($task);
+            $procedureSetting = $dto->internalProcedureSettingId
+                ? $this->loadInternalProcedureSetting($dto->internalProcedureSettingId, $task)
+                : $this->resolveExtensionProcedureSetting($task);
             $data['procedure_setting_id'] = $procedureSetting?->id;
 
             if ($procedureSetting === null) {
@@ -190,11 +193,35 @@ final class EmployeeTaskExtensionService
         $task->loadMissing('user.userProfessionalData');
         $branchId = $task->user?->userProfessionalData?->branch_id;
 
-        return $this->workflow->resolveProcedureSettingForBranch(
-            ProcedureSettingType::EmployeeTaskExtension->value,
+        return $this->workflow->resolveInternalProcedureSettingByForm(
+            ProcedureSettingType::EmployeeTask->value,
+            InternalProcessForm::ExtendTaskTime->value,
             $task->company_id,
             $branchId,
         );
+    }
+
+    /**
+     * Load a specific internal procedure setting by ID, verifying it belongs
+     * to the task's company/category parent and has a form set.
+     */
+    private function loadInternalProcedureSetting(string $id, \Modules\EmployeeTask\Models\EmployeeTaskRequest $task): ?ProcedureSetting
+    {
+        $setting = ProcedureSetting::query()
+            ->where('id', $id)
+            ->whereNotNull('form')
+            ->whereHas('parent', function ($q) use ($task) {
+                $q->where('type', ProcedureSettingType::EmployeeTask->value)
+                  ->where('company_id', $task->company_id);
+            })
+            ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
+            ->first();
+
+        if (! $setting) {
+            throw EmployeeTaskException::invalidProcedureSetting();
+        }
+
+        return $setting;
     }
 
     private function dispatchStepNotifications(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $userIds): void

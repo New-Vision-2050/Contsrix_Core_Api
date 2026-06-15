@@ -17,7 +17,6 @@ final class CreateEmployeeTaskRequestDTO
         public readonly ?string $projectId                = null,
         public readonly ?string $approvalResponsibleId    = null,
         public readonly ?string $assignmentResponsibleId  = null,
-        public readonly ?string $internalProcessTypeId    = null,
         public readonly ?string $notes                    = null,
     ) {}
 
@@ -30,7 +29,6 @@ final class CreateEmployeeTaskRequestDTO
             'project_id'                 => $this->projectId,
             'approval_responsible_id'    => $this->approvalResponsibleId,
             'assignment_responsible_id'  => $this->assignmentResponsibleId,
-            'internal_process_type_id'   => $this->internalProcessTypeId,
             'duration_hours'             => $this->durationHours,
             'task_date'                  => $this->taskDate,
             'task_latitude'              => $this->taskLatitude,

@@ -16,8 +16,9 @@ class CreateExtensionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'additional_hours' => ['required', 'numeric', 'min:0.25', 'max:24'],
-            'reason'           => ['nullable', 'string', 'max:1000'],
+            'additional_hours'             => ['required', 'numeric', 'min:0.25', 'max:24'],
+            'reason'                       => ['nullable', 'string', 'max:1000'],
+            'internal_procedure_setting_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
         ];
     }
 }

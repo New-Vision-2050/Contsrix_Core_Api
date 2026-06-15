@@ -182,7 +182,9 @@ class ProcedureSettingController extends Controller
                 ])
                 ->values()
                 ->all(),
-            'procedure-settings' => ProcedureSettingPresenter::collection($workFlow->procedureSettings),
+            'procedure-settings' => ProcedureSettingPresenter::collection(
+                $workFlow->procedureSettings->whereNull('parent_id')->values()
+            ),
         ];
     }
 }

@@ -96,7 +96,8 @@ class ProcedureSettingRepository extends BaseRepository
             ->with([
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
-                    $q->orderBy('sort_order')
+                    $q->whereNull('parent_id')
+                      ->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ]);
@@ -144,7 +145,8 @@ class ProcedureSettingRepository extends BaseRepository
             ->with([
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
-                    $q->orderBy('sort_order')
+                    $q->whereNull('parent_id')
+                      ->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
@@ -169,7 +171,8 @@ class ProcedureSettingRepository extends BaseRepository
             ->with([
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
-                    $q->orderBy('sort_order')
+                    $q->whereNull('parent_id')
+                      ->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
@@ -262,7 +265,8 @@ class ProcedureSettingRepository extends BaseRepository
             ->with([
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
-                    $q->orderBy('sort_order')
+                    $q->whereNull('parent_id')
+                      ->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])

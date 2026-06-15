@@ -45,6 +45,7 @@ class ClientRequestWorkflowService
             }
             $settings = ProcedureSetting::query()
                 ->where('type', ProcedureSettingType::ClientRequest->value)
+                ->whereNull('parent_id')
                 ->where('company_id', $cr->company_id)
                 ->whereHas('workFlow', function ($q) use ($cr) {
                     $q->whereHas('managementHierarchies', function ($q) use ($cr) {

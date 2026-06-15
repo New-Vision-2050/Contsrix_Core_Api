@@ -72,6 +72,39 @@ enum InternalProcessForm: string
         ];
     }
 
+    /**
+     * Returns the procedure-setting category types this form is applicable to.
+     * Matched against ProcedureSetting::type (ProcedureSettingType values).
+     *
+     * @return list<string>
+     */
+    public function applicableTypes(): array
+    {
+        return match ($this) {
+            self::StartTask           => ['employee_task'],
+            self::ExtendTaskTime      => ['employee_task'],
+            self::ConfirmLocation     => ['employee_task'],
+            self::AssignOtherEmployee => ['employee_task'],
+            self::CancelTask          => ['employee_task', 'client_request'],
+            self::SendForApproval     => ['employee_task', 'client_request'],
+            self::AttachAttachments   => ['employee_task', 'client_request', 'price_offer', 'contract'],
+        };
+    }
+
+    /**
+     * @param string $procedureType  A ProcedureSettingType::value
+     * @return list<self>
+     */
+    public static function forType(string $procedureType): array
+    {
+        return array_values(
+            array_filter(
+                self::cases(),
+                static fn (self $form): bool => in_array($procedureType, $form->applicableTypes(), true),
+            )
+        );
+    }
+
     /** @return list<string> */
     public static function values(): array
     {

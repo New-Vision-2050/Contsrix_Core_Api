@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\ProcedureSetting\Controllers\InternalProcedureSettingController;
 use Modules\ProcedureSetting\Controllers\ProcedureSettingController;
 use Modules\ProcedureSetting\Controllers\ProcedureSettingStepController;
 
@@ -16,6 +17,14 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{id}', [ProcedureSettingController::class, 'show']);
     Route::put('/{id}', [ProcedureSettingController::class, 'update']);
     Route::delete('/{id}', [ProcedureSettingController::class, 'delete']);
+
+    // Internal Procedure Settings (child procedure settings with form key)
+    Route::get('/internal-procedures', [InternalProcedureSettingController::class, 'index']);
+    Route::get('/{id}/available-forms', [InternalProcedureSettingController::class, 'availableForms']);
+    Route::get('/{id}/internal-procedures/by-form/{formKey}', [InternalProcedureSettingController::class, 'showByForm']);
+    Route::post('/internal-procedures', [InternalProcedureSettingController::class, 'store']);
+    Route::put('/{id}/internal-procedures/{internalProcedureId}', [InternalProcedureSettingController::class, 'update']);
+    Route::delete('/{id}/internal-procedures/{internalProcedureId}', [InternalProcedureSettingController::class, 'destroy']);
 
     // Procedure Setting Steps
     Route::get('/{procedureSettingId}/steps', [ProcedureSettingStepController::class, 'index']);
