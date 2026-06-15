@@ -61,6 +61,17 @@ final class InternalProcedureSettingService
             );
         }
 
+        $existing = ProcedureSetting::query()
+            ->where('parent_id', $parentId)
+            ->where('form', $form->value)
+            ->first();
+
+        if ($existing !== null) {
+            throw new \InvalidArgumentException(
+                "Internal procedure with form [{$form->value}] already exists under this parent."
+            );
+        }
+
         $conditions = InternalProcessCondition::defaultValuesForForm($form);
         if (isset($data['conditions']) && is_array($data['conditions'])) {
             $conditions = array_merge($conditions, $data['conditions']);

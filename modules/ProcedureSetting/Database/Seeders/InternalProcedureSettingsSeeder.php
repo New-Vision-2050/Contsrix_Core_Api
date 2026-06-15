@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Modules\Company\CompanyCore\Models\Company;
@@ -53,24 +54,28 @@ class InternalProcedureSettingsSeeder extends Seeder
     {
         $workFlow = WorkFlow::defaultForCompany($companyId, $type->value);
 
-        // Bypass tenant scope so we can manage records for *any* company during seeding.
-        return ProcedureSetting::withoutGlobalScopes()
-            ->firstOrCreate(
-                [
-                    'company_id' => $companyId,
-                    'type'       => $type->value,
-                    'parent_id'  => null,
-                    'form'       => null,
-                ],
-                [
-                    'id'           => (string) Str::uuid(),
-                    'work_flow_id' => $workFlow->id,
-                    'name'         => $type->labelAr(),
-                    'execute_type' => 'sequence',
-                    'sort_order'   => 0,
-                    'percentage'   => 0,
-                ]
-            );
+        // Use raw query to bypass tenant global scope completely.
+        $existingId = DB::table('procedure_settings')
+            ->where('company_id', $companyId)
+            ->where('type', $type->value)
+            ->whereNull('parent_id')
+            ->whereNull('form')
+            ->value('id');
+
+        if ($existingId !== null) {
+            return ProcedureSetting::withoutGlobalScopes()->findOrFail($existingId);
+        }
+
+        return ProcedureSetting::query()->create([
+            'id'           => (string) Str::uuid(),
+            'company_id'   => $companyId,
+            'work_flow_id' => $workFlow->id,
+            'name'         => $type->labelAr(),
+            'type'         => $type->value,
+            'execute_type' => 'sequence',
+            'sort_order'   => 0,
+            'percentage'   => 0,
+        ]);
     }
 
     private function seedForParent(ProcedureSetting $parent): void
@@ -84,26 +89,18 @@ class InternalProcedureSettingsSeeder extends Seeder
         }
 
         foreach ($forms as $order => $form) {
-            // Bypass tenant scope so the exists check works for any company.
-            $child = ProcedureSetting::withoutGlobalScopes()
-                ->firstOrCreate(
-                    [
-                        'parent_id' => $parent->id,
-                        'form'      => $form->value,
-                    ],
-                    [
-                        'id'           => (string) Str::uuid(),
-                        'company_id'   => $parent->company_id,
-                        'name'         => $form->labelAr(),
-                        'type'         => $type,
-                        'execute_type' => 'sequence',
-                        'sort_order'   => $order,
-                        'conditions'   => InternalProcessCondition::defaultValuesForForm($form),
-                        'percentage'   => 0,
-                    ]
-                );
+            // Only seed StartTask for now.
+            if ($form !== InternalProcessForm::StartTask) {
+                continue;
+            }
 
-            if (! $child->wasRecentlyCreated) {
+            // Use raw query to bypass tenant global scope completely.
+            $alreadyExists = DB::table('procedure_settings')
+                ->where('parent_id', $parent->id)
+                ->where('form', $form->value)
+                ->exists();
+
+            if ($alreadyExists) {
                 $this->command?->info(sprintf(
                     'InternalProcedure [%s] already exists under [%s]. Skipping.',
                     $form->value,
@@ -111,6 +108,19 @@ class InternalProcedureSettingsSeeder extends Seeder
                 ));
                 continue;
             }
+
+            ProcedureSetting::query()->create([
+                'id'           => (string) Str::uuid(),
+                'company_id'   => $parent->company_id,
+                'parent_id'    => $parent->id,
+                'name'         => $form->labelAr(),
+                'form'         => $form->value,
+                'type'         => $type,
+                'execute_type' => 'sequence',
+                'sort_order'   => $order,
+                'conditions'   => InternalProcessCondition::defaultValuesForForm($form),
+                'percentage'   => 0,
+            ]);
 
             $this->command?->info(sprintf(
                 'Created InternalProcedure [%s] under [%s].',
