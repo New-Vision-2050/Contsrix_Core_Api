@@ -6,23 +6,27 @@ namespace Modules\Shared\InternalProcessType\Enums;
 
 enum InternalProcessForm: string
 {
+    case CreateTask          = 'create_task';
     case StartTask           = 'start_task';
     case AssignOtherEmployee = 'assign_other_employee';
     case ExtendTaskTime      = 'extend_task_time';
     case SendForApproval     = 'send_for_approval';
     case CancelTask          = 'cancel_task';
     case ConfirmLocation     = 'confirm_location';
+    case EndTask             = 'end_task';
     case AttachAttachments   = 'attach_attachments';
 
     public function labelAr(): string
     {
         return match ($this) {
+            self::CreateTask          => 'انشاء مهمة',
             self::StartTask           => 'بدء المهمة',
             self::AssignOtherEmployee => 'تحويل لموظف اخر',
             self::ExtendTaskTime      => 'تمديد وقت المهمة',
             self::SendForApproval     => 'ارسال للاعتماد',
             self::CancelTask          => 'الغاء المهمة',
             self::ConfirmLocation     => 'تأكيد الموقع',
+            self::EndTask             => 'انهاء المهمة',
             self::AttachAttachments   => 'ارفاق مرفقات',
         };
     }
@@ -31,7 +35,7 @@ enum InternalProcessForm: string
     public function conditions(): array
     {
         return match ($this) {
-            self::StartTask, self::ExtendTaskTime => [
+            self::CreateTask, self::StartTask, self::ExtendTaskTime => [
                 InternalProcessCondition::AllowDuringShift,
                 InternalProcessCondition::AllowOutsideShift,
                 InternalProcessCondition::AllowOnHolidays,
@@ -45,7 +49,7 @@ enum InternalProcessForm: string
                 InternalProcessCondition::AllowOnHolidays,
                 InternalProcessCondition::ApplyToAllBranches,
             ],
-            self::SendForApproval => [
+            self::SendForApproval, self::EndTask => [
                 InternalProcessCondition::AllowDuringShift,
                 InternalProcessCondition::ApplyToAllBranches,
             ],
@@ -81,12 +85,14 @@ enum InternalProcessForm: string
     public function applicableTypes(): array
     {
         return match ($this) {
+            self::CreateTask          => ['employee_task'],
             self::StartTask           => ['employee_task'],
             self::ExtendTaskTime      => ['employee_task'],
             self::ConfirmLocation     => ['employee_task'],
             self::AssignOtherEmployee => ['employee_task'],
             self::CancelTask          => ['employee_task', 'client_request'],
             self::SendForApproval     => ['employee_task', 'client_request'],
+            self::EndTask             => ['employee_task'],
             self::AttachAttachments   => ['employee_task', 'client_request', 'price_offer', 'contract'],
         };
     }

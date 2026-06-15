@@ -92,12 +92,18 @@ class ProcedureSettingRepository extends BaseRepository
             $branchId = (int) $filters['branch_id'];
         }
 
+        $parentId = $filters['parent_id'] ?? null;
+
         $query = WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings' => function ($q) {
-                    $q->whereNull('parent_id')
-                      ->orderBy('sort_order')
+                'procedureSettings' => function ($q) use ($parentId) {
+                    if ($parentId !== null) {
+                        $q->where('parent_id', $parentId);
+                    } else {
+                        $q->whereNull('parent_id');
+                    }
+                    $q->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ]);

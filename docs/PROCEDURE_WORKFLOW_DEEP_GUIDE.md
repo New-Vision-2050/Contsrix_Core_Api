@@ -209,23 +209,27 @@ enum ProcedureSettingType: string
 
 enum InternalProcessForm: string
 {
-    case StartTask             = 'start_task';
-    case ExtendTaskTime        = 'extend_task_time';
-    case SendForApproval       = 'send_for_approval';
-    case CancelTask            = 'cancel_task';
-    case ConfirmLocation       = 'confirm_location';
-    case AssignOtherEmployee   = 'assign_other_employee';
-    case AttachAttachments     = 'attach_attachments';
+    case CreateTask          = 'create_task';
+    case StartTask           = 'start_task';
+    case ExtendTaskTime      = 'extend_task_time';
+    case SendForApproval     = 'send_for_approval';
+    case CancelTask          = 'cancel_task';
+    case ConfirmLocation     = 'confirm_location';
+    case EndTask             = 'end_task';
+    case AssignOtherEmployee = 'assign_other_employee';
+    case AttachAttachments   = 'attach_attachments';
 
     public static function applicableTo(string $categoryType): array
     {
         return match ($categoryType) {
             ProcedureSettingType::EmployeeTask->value => [
+                self::CreateTask,
                 self::StartTask,
                 self::ExtendTaskTime,
                 self::SendForApproval,
                 self::CancelTask,
                 self::ConfirmLocation,
+                self::EndTask,
                 self::AssignOtherEmployee,
                 self::AttachAttachments,
             ],
@@ -391,9 +395,11 @@ The EmployeeTask module now uses **Internal Procedure Settings** — child rows 
 
 ```
 Parent ProcedureSetting (type = 'employee_task')
-├── Child: form = 'start_task'           → Task creation workflow
+├── Child: form = 'create_task'          → Task creation workflow
+├── Child: form = 'start_task'           → Task start workflow
 ├── Child: form = 'extend_task_time'     → Extension request workflow
 ├── Child: form = 'send_for_approval'     → Completion approval workflow
+├── Child: form = 'end_task'             → Task end/completion workflow
 ├── Child: form = 'confirm_location'    → Location confirmation (can have MULTIPLE)
 └── ... more children with same or different forms
 ```
