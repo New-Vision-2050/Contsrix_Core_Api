@@ -31,6 +31,7 @@ class ProcedureSettingPresenter extends AbstractPresenter
             'escalation_management_hierarchy'    => $this->escalationManagementHierarchyPayload(),
             'work_flow_id'       => $this->procedureSetting->work_flow_id,
             'work_flow'          => $this->workFlowPayload(),
+            'is_internal_procedure' => $this->procedureSetting->isInternalProcedure(),
         ];
 
         if (! $isListing && $this->procedureSetting->relationLoaded('steps')) {

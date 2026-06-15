@@ -90,7 +90,7 @@
                 }
               ]
             },
-            "description": "Get paginated list of all procedure settings"
+            "description": "Get list of procedure settings (WorkFlows) with their parent procedure settings only.\n\n**Important:** The `procedure-settings` array inside each WorkFlow contains ONLY parent rows (`parent_id = NULL`). Child internal procedures are NOT included here — use `/procedure-settings/{id}/internal-procedures` to get children."
           },
           "response": [
             {
@@ -503,6 +503,31 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Internal procedure settings retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"child-uuid-1\",\n      \"name\": \"بدء المهمة\",\n      \"form\": \"start_task\",\n      \"conditions\": [],\n      \"sort_order\": 1,\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"is_active\": true\n    },\n    {\n      \"id\": \"child-uuid-2\",\n      \"name\": \"تمديد وقت المهمة\",\n      \"form\": \"extend_task_time\",\n      \"conditions\": [{ \"key\": \"AllowDuringShift\", \"value\": true }],\n      \"sort_order\": 2,\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"is_active\": true\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Internal Procedure by Form",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/internal-procedures/by-form/start_task",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "internal-procedures", "by-form", "start_task"]
+            },
+            "description": "Get a single internal procedure setting by its form key under a parent.\n\n**URL:**\n- `{{procedure_setting_id}}` = PARENT category UUID\n- `start_task` = the form key (e.g., start_task, extend_task_time, send_for_approval, etc.)\n\n**Note:** If multiple children share the same form, this returns the FIRST match. For precise selection, use the child UUID."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal procedure setting retrieved successfully\",\n  \"payload\": {\n    \"id\": \"child-uuid-1\",\n    \"name\": \"بدء المهمة\",\n    \"form\": \"start_task\",\n    \"conditions\": [],\n    \"sort_order\": 1,\n    \"appears_before_id\": null,\n    \"appears_after_id\": null,\n    \"is_active\": true,\n    \"steps\": []\n  }\n}"
             }
           ]
         },

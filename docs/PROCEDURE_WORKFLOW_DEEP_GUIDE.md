@@ -1534,10 +1534,10 @@ Each was a **standalone** `ProcedureSetting` row with its own steps. This made i
 
 ### 27.2 The Solution
 
-`ProcedureSetting` is now a **self-referencing table**:
+`ProcedureSetting` is now a **self-referencing table** with 3 levels:
 
-#### Parent Rows (`parent_id = NULL`)
-Represent a **category**. One per company + category combination.
+#### Level 1 — Parent Category (`parent_id = NULL`)
+The category header. Created via `POST /procedure-settings`. Does NOT have a `form`.
 
 | Field | Meaning |
 |-------|---------|
@@ -1545,9 +1545,16 @@ Represent a **category**. One per company + category combination.
 | `company_id` | The company this category belongs to |
 | `name` | Display name (e.g., "إجراءات مهام العمال") |
 | `execute_type` | `sequence` or `parallel` |
+| `is_internal_procedure` | `false` (always, for parents) |
 
-#### Child Rows (`parent_id = parent.id`)
-Represent an **internal procedure** — a specific action within the category.
+**How to get parent by type:**
+```
+GET /procedure-settings?type=employee_task
+```
+Returns WorkFlow → `procedure-settings` array contains ONLY parents (`parent_id = NULL`). Children are excluded.
+
+#### Level 2 — Internal Procedure (`parent_id = parent.id`)
+The actionable form. Created via `POST /procedure-settings/{parent_id}/internal-procedures`. MUST have a `form`.
 
 | Field | Meaning |
 |-------|---------|
@@ -1557,10 +1564,21 @@ Represent an **internal procedure** — a specific action within the category.
 | `conditions` | JSON array of `InternalProcessCondition` values |
 | `appears_before_id` | This child must appear BEFORE the referenced child |
 | `appears_after_id` | This child must appear AFTER the referenced child |
-| `sort_order` | Display order (fallback if no before/after constraints) |
+| `sort_order` | Display order |
 | `is_active` | Whether this child is enabled |
+| `is_internal_procedure` | `true` (always, for children) |
 
-Each child has its own `steps` (via `hasMany` to `ProcedureSettingStep`).
+**How to get children:**
+```
+GET /procedure-settings/{parent_id}/internal-procedures
+```
+
+#### Level 3 — Steps
+Steps belong to EITHER a parent (for Process workflows like task creation) OR a child (for non-Process workflows like extensions). Steps do NOT have a `form`.
+
+```
+GET /procedure-settings/{id}/steps        ← Parent or Child steps
+```
 
 ### 27.3 Model Relations
 
@@ -1697,6 +1715,20 @@ PUT /procedure-settings/{parent_uuid}/internal-procedures/{child_uuid}
 ```
 DELETE /procedure-settings/{parent_uuid}/internal-procedures/{child_uuid}
 ```
+
+#### Get Child by Form Key
+```
+GET /procedure-settings/{parent_uuid}/internal-procedures/by-form/{form_key}
+```
+
+Returns the **first** child matching the form key under the parent. Useful for quick lookups when you know there's only one child per form.
+
+**Example:**
+```
+GET /procedure-settings/{parent_uuid}/internal-procedures/by-form/start_task
+```
+
+**Warning:** If multiple children share the same form, this returns only the first match. For precise selection, use the child UUID directly.
 
 #### Get Form Definitions (for Admin UI)
 ```

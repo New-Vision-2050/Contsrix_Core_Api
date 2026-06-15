@@ -7,14 +7,11 @@ namespace Modules\ProcedureSetting\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\WorkFlow;
-use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
-use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use App\Traits\HasExport;
 
 /**
@@ -72,47 +69,8 @@ class ProcedureSettingRepository extends BaseRepository
             $model = $this->create($data);
             $model->load(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name']);
 
-            $this->createDefaultInternalProcedures($model);
-
             return $model;
         });
-    }
-
-    /**
-     * Auto-create default InternalProcedureSettings (children) for a freshly
-     * created parent ProcedureSetting based on InternalProcessForm enum.
-     */
-    private function createDefaultInternalProcedures(ProcedureSetting $parent): void
-    {
-        $forms = InternalProcessForm::forType($parent->type);
-
-        if ($forms === []) {
-            return;
-        }
-
-        foreach ($forms as $order => $form) {
-            $alreadyExists = ProcedureSetting::query()
-                ->where('parent_id', $parent->id)
-                ->where('form', $form->value)
-                ->exists();
-
-            if ($alreadyExists) {
-                continue;
-            }
-
-            ProcedureSetting::query()->create([
-                'id'           => (string) Str::uuid(),
-                'company_id'   => $parent->company_id,
-                'parent_id'    => $parent->id,
-                'name'         => $form->labelAr(),
-                'form'         => $form->value,
-                'type'         => $parent->type,
-                'execute_type' => 'sequence',
-                'sort_order'   => $order,
-                'conditions'   => InternalProcessCondition::defaultValuesForForm($form),
-                'percentage'   => 0,
-            ]);
-        }
     }
 
     /**
@@ -138,7 +96,8 @@ class ProcedureSettingRepository extends BaseRepository
             ->with([
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
-                    $q->orderBy('sort_order')
+                    $q->whereNull('parent_id')
+                      ->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ]);
@@ -186,7 +145,8 @@ class ProcedureSettingRepository extends BaseRepository
             ->with([
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
-                    $q->orderBy('sort_order')
+                    $q->whereNull('parent_id')
+                      ->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
@@ -211,7 +171,8 @@ class ProcedureSettingRepository extends BaseRepository
             ->with([
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
-                    $q->orderBy('sort_order')
+                    $q->whereNull('parent_id')
+                      ->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
@@ -304,7 +265,8 @@ class ProcedureSettingRepository extends BaseRepository
             ->with([
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
-                    $q->orderBy('sort_order')
+                    $q->whereNull('parent_id')
+                      ->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
