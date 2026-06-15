@@ -13,7 +13,7 @@ return new class extends Migration
         if (Schema::hasColumn('employee_task_requests', 'internal_process_type_id')) {
             Schema::table('employee_task_requests', function (Blueprint $table) {
                 try {
-                    $table->dropForeign(['internal_process_type_id']);
+                    $table->dropForeign('etr_internal_process_type_fk');
                 } catch (\Throwable) {
                     // Foreign key may not exist
                 }
