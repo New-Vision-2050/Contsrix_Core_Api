@@ -293,9 +293,9 @@ class EmployeeTaskRequestService
         event(new EmployeeTaskNotification($task, $currentStep, $userIds));
     }
 
-    public function getFilterMetadata(string $userId): array
+    public function getFilterMetadata(string $userId, array $filters = []): array
     {
-        return $this->repository->getFilterMetadata($userId);
+        return $this->repository->getFilterMetadata($userId, $filters);
     }
 
     public function getInboxCountsForAdmin(string $adminId, array $filters = []): array

@@ -83,7 +83,8 @@ class EmployeeTaskController extends Controller
     {
         $userId   = (string) Auth::id();
         $locale   = app()->getLocale();
-        $metadata = $this->requestService->getFilterMetadata($userId);
+        $filters  = request()->only(['task_date', 'date_from', 'date_to']);
+        $metadata = $this->requestService->getFilterMetadata($userId, $filters);
 
         $statuses = [];
         foreach ($metadata['status_counts'] as $statusValue => $count) {
