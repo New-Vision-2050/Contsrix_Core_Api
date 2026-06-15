@@ -14,12 +14,13 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/approval-responsibles', [ProcedureSettingController::class, 'approvalResponsibles']);
     Route::get('/types', [ProcedureSettingController::class, 'types']);
 
-    Route::get('/{id}', [ProcedureSettingController::class, 'show']);
-    Route::put('/{id}', [ProcedureSettingController::class, 'update']);
-    Route::delete('/{id}', [ProcedureSettingController::class, 'delete']);
 
     // Internal Procedure Settings (child procedure settings with form key)
     Route::get('/internal-procedures', [InternalProcedureSettingController::class, 'index']);
+
+    Route::get('/{id}', [ProcedureSettingController::class, 'show']);
+    Route::put('/{id}', [ProcedureSettingController::class, 'update']);
+    Route::delete('/{id}', [ProcedureSettingController::class, 'delete']);
     Route::get('/{id}/available-forms', [InternalProcedureSettingController::class, 'availableForms']);
     Route::get('/{id}/internal-procedures/by-form/{formKey}', [InternalProcedureSettingController::class, 'showByForm']);
     Route::post('/internal-procedures', [InternalProcedureSettingController::class, 'store']);
