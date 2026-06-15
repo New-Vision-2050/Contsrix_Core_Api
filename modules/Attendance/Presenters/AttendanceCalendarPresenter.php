@@ -17,10 +17,42 @@ class AttendanceCalendarPresenter extends AbstractPresenter
 
     public function present(bool $isListing = false): array
     {
+        $days = $this->calendarData['days'] ?? [];
+
         return [
-            'days'    => $this->calendarData['days'] ?? [],
+            'days'    => array_map([$this, 'presentDay'], $days),
             'summary' => $this->presentSummary($this->calendarData['summary'] ?? []),
         ];
+    }
+
+    private function presentDay(array $day): array
+    {
+        $statusKey = $day['status_key'] ?? '';
+
+        return [
+            'date'               => $day['date'] ?? null,
+            'day_name'           => $day['day_name'] ?? null,
+            'day_number'         => $day['day_number'] ?? null,
+            'status_key'         => $statusKey,
+            'status'             => $day['status'] ?? null,
+            'work_hours'         => $day['work_hours'] ?? null,
+            'duration_formatted' => $day['duration_formatted'] ?? null,
+            'dot_color'          => $this->resolveDotColor($statusKey),
+            'attendance_count'   => $day['attendance_count'] ?? 0,
+        ];
+    }
+
+    private function resolveDotColor(string $statusKey): string
+    {
+        return match ($statusKey) {
+            'present'  => '#4CAF50',
+            'late'     => '#FF9800',
+            'absent'   => '#F44336',
+            'leave'    => '#9C27B0',
+            'off'      => '#9E9E9E',
+            'required' => '#2196F3',
+            default    => '#9E9E9E',
+        };
     }
 
     private function presentSummary(array $summary): array
