@@ -29,6 +29,7 @@ class UpdateProcedureSettingRequest extends FormRequest
             'time_limit_hours' => 'nullable|integer|min:0',
             'escalation_management_hierarchy_id' => 'nullable|integer|exists:management_hierarchies,id',
             'work_flow_id'       => 'nullable|uuid|exists:work_flows,id',
+            'parent_id'          => 'nullable|uuid|exists:procedure_settings,id',
         ];
     }
 

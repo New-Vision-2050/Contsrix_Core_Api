@@ -44,6 +44,7 @@ class UpdateProcedureSettingCommand
             'deadline_hours',
             'escalation_management_hierarchy_id',
             'work_flow_id',
+            'parent_id',
         ];
 
         $data = Arr::only($this->attributes, $keys);

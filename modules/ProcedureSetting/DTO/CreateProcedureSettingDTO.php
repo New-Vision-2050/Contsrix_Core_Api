@@ -16,12 +16,13 @@ class CreateProcedureSettingDTO
         public readonly ?int $deadline_hours = null,
         public readonly ?int $escalation_management_hierarchy_id = null,
         public readonly ?string $work_flow_id = null,
+        public readonly ?string $parent_id = null,
     ) {
     }
 
     public function toArray(): array
     {
-        return [
+        $data = [
             'name'         => $this->name,
             'type'         => $this->type,
             'execute_type' => $this->execute_type,
@@ -32,5 +33,11 @@ class CreateProcedureSettingDTO
             'escalation_management_hierarchy_id' => $this->escalation_management_hierarchy_id,
             'work_flow_id'       => $this->work_flow_id,
         ];
+
+        if ($this->parent_id !== null) {
+            $data['parent_id'] = $this->parent_id;
+        }
+
+        return $data;
     }
 }

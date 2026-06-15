@@ -125,7 +125,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"إجراء اعتماد العقود\",\n  \"type\": \"client_request\",\n  \"execute_type\": \"sequence\",\n  \"icon\": \"folder-archive\",\n  \"percentage\": 20,\n  \"deadline_days\": 29,\n  \"deadline_hours\": 20,\n  \"escalation_user_id\": \"550e8400-e29b-41d4-a716-446655440001\"\n}",
+              "raw": "{\n  \"name\": \"إجراء اعتماد العقود\",\n  \"type\": \"client_request\",\n  \"execute_type\": \"sequence\",\n  \"icon\": \"folder-archive\",\n  \"percentage\": 20,\n  \"deadline_days\": 29,\n  \"deadline_hours\": 20,\n  \"escalation_user_id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"parent_id\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -137,7 +137,7 @@
               "host": ["{{url}}"],
               "path": ["procedure-settings"]
             },
-            "description": "POST {{url}}/procedure-settings\n\n**type:** employee_task | client_request | price_offer | contract | meeting\n**execute_type:** parallel | sequence\n**escalation_user_id:** optional UUID of user (exists in users)"
+            "description": "POST {{url}}/procedure-settings\n\n**type:** employee_task | client_request | price_offer | contract | meeting\n**execute_type:** parallel | sequence\n**escalation_user_id:** optional UUID of user (exists in users)\n**parent_id:** optional UUID of parent ProcedureSetting. If provided, this creates a child internal procedure under that parent. If null or omitted, creates a parent category."
           },
           "response": [
             {
@@ -217,7 +217,7 @@
               "host": ["{{url}}"],
               "path": ["procedure-settings", "{{procedure_setting_id}}"]
             },
-            "description": "Update an existing procedure setting.\n\ntype options: employee_task | client_request | price_offer | contract | meeting\nexecute_type options: parallel | sequence"
+            "description": "Update an existing procedure setting.\n\ntype options: employee_task | client_request | price_offer | contract | meeting\nexecute_type options: parallel | sequence\nparent_id: optional UUID of parent. Set to null to make this a parent category. Set to a parent UUID to convert this into a child internal procedure."
           },
           "response": []
         },
