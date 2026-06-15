@@ -33,10 +33,18 @@ Level 3 — Step (Workflow Stage)
 │   └── NO form (just step config: action takers, approval, etc.)
 ```
 
-**In your UI screenshot:**
-- The top "بداية مهمة العمل" row = **Procedure Setting** (parent)
-- The tabs "المرحلة الأولى", "المرحلة الثانية" = **Steps** under that parent
-- The gear/settings icon = click to configure that Procedure Setting's steps
+**UI vs Database — Important:**
+
+Your UI screenshot shows **4 visual levels**, but the database only has **3 table levels**:
+
+| UI Visual Level | Database Entity | Notes |
+|-----------------|-----------------|-------|
+| "بداية مهمة العمل" (top title) | **Procedure Setting** (Level 1) | Parent category |
+| "بداية مهمة العمل" + gear icon | **Internal Procedure** (Level 2) | Child with `form` |
+| "الموافقة" / "الاعتماد" sections | **Step config groupings** (UI only) | NOT a database table. These are grouped step fields (action taker, approval type) displayed in sections |
+| "المرحلة الأولى" / "المرحلة الثانية" cards | **Steps** (Level 3) | Actual `procedure_setting_steps` rows |
+
+**Key Point:** "الموافقة" and "الاعتماد" are **UI sections** that group step configuration fields (who approves, what type, etc.). They are NOT separate database tables. In the DB, these are just columns on the Step table (`action_taker_type`, `is_approve`, etc.).
 
 ---
 
