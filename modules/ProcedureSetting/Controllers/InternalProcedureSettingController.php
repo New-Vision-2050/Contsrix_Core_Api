@@ -9,6 +9,7 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\ProcedureSetting\Presenters\InternalProcedureSettingPresenter;
 use Modules\ProcedureSetting\Requests\CreateInternalProcedureSettingRequest;
+use Modules\ProcedureSetting\Requests\GetInternalProcedureSettingListRequest;
 use Modules\ProcedureSetting\Requests\UpdateInternalProcedureSettingRequest;
 use Modules\ProcedureSetting\Services\InternalProcedureSettingService;
 
@@ -19,12 +20,12 @@ class InternalProcedureSettingController extends Controller
     ) {}
 
     /**
-     * GET /procedure-settings/{id}/internal-procedures
-     * List all InternalProcedureSettings (children) for a parent procedure setting.
+     * GET /procedure-settings/internal-procedures
+     * List all InternalProcedureSettings with optional type filter.
      */
-    public function index(string $id): JsonResponse
+    public function index(GetInternalProcedureSettingListRequest $request): JsonResponse
     {
-        $items = $this->service->listForParent($id);
+        $items = $this->service->listAll($request->getType());
 
         return Json::items(InternalProcedureSettingPresenter::collection($items));
     }

@@ -26,6 +26,7 @@ use Modules\WebsiteCMS\WebsiteHomePageSetting\Database\Seeders\WebsiteHomePageSe
 use Modules\WebsiteCMS\WebsiteAboutUs\Database\Seeders\WebsiteAboutUsSeeder;
 use Modules\WebsiteCMS\WebsiteTheme\Database\Seeders\WebsiteThemeSeeder;
 use Modules\WebsiteCMS\WebsiteThemeSetting\Database\Seeders\AssignDefaultThemeToCompaniesSeeder;
+use Modules\ProcedureSetting\Database\Seeders\InternalProcedureSettingsSeeder;
 use Modules\ProcedureSetting\Database\Seeders\WorkFlowForBranchesSeeder;
 
 class TenantDatabaseSeeder extends Seeder
@@ -86,6 +87,7 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(SchemaSeeder::class);
 
         $this->call(WorkFlowForBranchesSeeder::class);
+        $this->call(InternalProcedureSettingsSeeder::class);
 
 //        $this->call(MainPackageSeeder::class);
     }

@@ -23,6 +23,20 @@ final class InternalProcedureSettingService
             ->get();
     }
 
+    public function listAll(?string $type = null): Collection
+    {
+        $query = ProcedureSetting::query()
+            ->whereNotNull('form')
+            ->with(['steps' => fn ($q) => $q->orderBy('step_order'), 'steps.actionTakers.user'])
+            ->orderBy('sort_order');
+
+        if ($type !== null && $type !== '') {
+            $query->where('type', $type);
+        }
+
+        return $query->get();
+    }
+
     public function create(string $parentId, array $data): ProcedureSetting
     {
         $parent = $this->findParentOrFail($parentId);
