@@ -138,4 +138,9 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__('This approval request has already been resolved.'), 422);
     }
+
+    public static function invalidProcedureSetting(): self
+    {
+        return new self(__('The selected internal procedure setting is invalid or does not belong to this task category.'), 422);
+    }
 }

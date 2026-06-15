@@ -44,7 +44,7 @@ class Process extends Model
 
         Relation::morphMap([
             'client_request'        => \Modules\ClientRequest\Models\ClientRequest::class,
-            'employee_task_request' => \Modules\EmployeeTask\Models\EmployeeTaskRequest::class,
+            'employee_task' => \Modules\EmployeeTask\Models\EmployeeTaskRequest::class,
         ]);
     }
 

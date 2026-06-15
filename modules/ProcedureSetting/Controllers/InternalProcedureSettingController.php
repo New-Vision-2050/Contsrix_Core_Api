@@ -1,0 +1,96 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\ProcedureSetting\Controllers;
+
+use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
+use Illuminate\Http\JsonResponse;
+use Modules\ProcedureSetting\Presenters\InternalProcedureSettingPresenter;
+use Modules\ProcedureSetting\Requests\CreateInternalProcedureSettingRequest;
+use Modules\ProcedureSetting\Requests\UpdateInternalProcedureSettingRequest;
+use Modules\ProcedureSetting\Services\InternalProcedureSettingService;
+
+class InternalProcedureSettingController extends Controller
+{
+    public function __construct(
+        private readonly InternalProcedureSettingService $service,
+    ) {}
+
+    /**
+     * GET /procedure-settings/{id}/internal-procedures
+     * List all InternalProcedureSettings (children) for a parent procedure setting.
+     */
+    public function index(string $id): JsonResponse
+    {
+        $items = $this->service->listForParent($id);
+
+        return Json::items(InternalProcedureSettingPresenter::collection($items));
+    }
+
+    /**
+     * GET /procedure-settings/{id}/internal-procedures/by-form/{formKey}
+     * Get a single InternalProcedureSetting by its form key under a parent.
+     */
+    public function showByForm(string $id, string $formKey): JsonResponse
+    {
+        $setting = $this->service->resolveByForm($id, $formKey);
+
+        if ($setting === null) {
+            return Json::error(__('Internal procedure setting not found for form key: :form', ['form' => $formKey]), 404);
+        }
+
+        return Json::item(
+            InternalProcedureSettingPresenter::single($setting),
+            message: 'Internal procedure setting retrieved successfully',
+        );
+    }
+
+    /**
+     * GET /procedure-settings/{id}/available-forms
+     * Returns forms applicable to this parent's type, for admin dropdowns.
+     */
+    public function availableForms(string $id): JsonResponse
+    {
+        $forms = $this->service->availableFormsForParent($id);
+
+        return Json::items($forms, message: 'Available forms retrieved successfully');
+    }
+
+    /**
+     * POST /procedure-settings/{id}/internal-procedures
+     */
+    public function store(CreateInternalProcedureSettingRequest $request, string $id): JsonResponse
+    {
+        $setting = $this->service->create($id, $request->toData());
+
+        return Json::item(
+            InternalProcedureSettingPresenter::single($setting),
+            message: 'Internal procedure setting created successfully',
+        );
+    }
+
+    /**
+     * PUT /procedure-settings/{id}/internal-procedures/{internalProcedureId}
+     */
+    public function update(UpdateInternalProcedureSettingRequest $request, string $id, string $internalProcedureId): JsonResponse
+    {
+        $setting = $this->service->update($id, $internalProcedureId, $request->toData());
+
+        return Json::item(
+            InternalProcedureSettingPresenter::single($setting),
+            message: 'Internal procedure setting updated successfully',
+        );
+    }
+
+    /**
+     * DELETE /procedure-settings/{id}/internal-procedures/{internalProcedureId}
+     */
+    public function destroy(string $id, string $internalProcedureId): JsonResponse
+    {
+        $this->service->delete($id, $internalProcedureId);
+
+        return Json::deleted('Internal procedure setting deleted successfully');
+    }
+}

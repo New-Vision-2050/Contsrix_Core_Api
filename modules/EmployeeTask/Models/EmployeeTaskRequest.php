@@ -38,7 +38,6 @@ class EmployeeTaskRequest extends Model
         'title',
         'description',
         'project_id',
-        'internal_process_type_id',
         'approval_responsible_id',
         'assignment_responsible_id',
         'duration_hours',
@@ -97,11 +96,6 @@ class EmployeeTaskRequest extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
-    }
-
-    public function internalProcessType(): BelongsTo
-    {
-        return $this->belongsTo(\Modules\Shared\InternalProcessType\Models\InternalProcessType::class, 'internal_process_type_id');
     }
 
     public function currentProcedureStep(): BelongsTo
@@ -164,7 +158,7 @@ class EmployeeTaskRequest extends Model
     public function employeeTaskProcess(): HasOne
     {
         return $this->hasOne(Process::class, 'processable_id')
-            ->where('processable_type', 'employee_task_request');
+            ->where('processable_type', 'employee_task');
     }
 
     public function hasPendingApprovalRequest(): bool

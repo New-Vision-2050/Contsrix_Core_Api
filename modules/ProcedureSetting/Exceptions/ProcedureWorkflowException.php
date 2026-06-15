@@ -33,4 +33,9 @@ final class ProcedureWorkflowException extends RuntimeException
     {
         return new self(__('This entity has no active procedure step to act on.'), 422);
     }
+
+    public static function settingNotFound(): self
+    {
+        return new self(__('The procedure setting could not be found.'), 404);
+    }
 }

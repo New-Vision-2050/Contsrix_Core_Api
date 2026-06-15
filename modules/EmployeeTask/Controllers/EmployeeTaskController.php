@@ -24,6 +24,7 @@ use Modules\EmployeeTask\Requests\EndTaskRequest;
 use Modules\EmployeeTask\Requests\LocationPingRequest;
 use Modules\EmployeeTask\Requests\StartTaskRequest;
 use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
+use Modules\EmployeeTask\Services\EmployeeTaskAvailableActionsService;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
@@ -34,11 +35,12 @@ use Modules\User\Models\User;
 class EmployeeTaskController extends Controller
 {
     public function __construct(
-        private readonly EmployeeTaskRequestService   $requestService,
-        private readonly EmployeeTaskLifecycleService  $lifecycleService,
-        private readonly EmployeeTaskLocationService   $locationService,
-        private readonly EmployeeTaskExtensionService  $extensionService,
-        private readonly EmployeeTaskApprovalService   $approvalService,
+        private readonly EmployeeTaskRequestService          $requestService,
+        private readonly EmployeeTaskLifecycleService         $lifecycleService,
+        private readonly EmployeeTaskLocationService          $locationService,
+        private readonly EmployeeTaskExtensionService         $extensionService,
+        private readonly EmployeeTaskApprovalService          $approvalService,
+        private readonly EmployeeTaskAvailableActionsService  $availableActionsService,
     ) {}
 
     public function index(): JsonResponse
@@ -140,7 +142,6 @@ class EmployeeTaskController extends Controller
                 projectId:               $request->input('project_id'),
                 approvalResponsibleId:   $request->input('approval_responsible_id'),
                 assignmentResponsibleId: $request->input('assignment_responsible_id'),
-                internalProcessTypeId:   $request->input('internal_process_type_id'),
                 notes:                   $request->input('notes'),
             );
 
@@ -367,6 +368,7 @@ class EmployeeTaskController extends Controller
             request()->validate([
                 'notes' => ['nullable', 'string', 'max:2000'],
                 'file'  => ['nullable', 'file', 'max:20480'],
+                'internal_procedure_setting_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
             ]);
 
             $uploadedFiles = request()->hasFile('file') ? request()->file('file') : null;
@@ -376,6 +378,7 @@ class EmployeeTaskController extends Controller
                 userId: (string) Auth::id(),
                 notes:  request()->input('notes'),
                 file:   $uploadedFiles,
+                internalProcedureSettingId: request()->input('internal_procedure_setting_id'),
             );
 
             $approval->load(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user', 'media']);
@@ -397,6 +400,7 @@ class EmployeeTaskController extends Controller
                 requestedBy:     (string) Auth::id(),
                 additionalHours: (float) $request->input('additional_hours'),
                 reason:          $request->input('reason'),
+                internalProcedureSettingId: $request->input('internal_procedure_setting_id'),
             );
 
             $extension = $this->extensionService->requestExtension($dto);
@@ -474,5 +478,12 @@ class EmployeeTaskController extends Controller
                 'completed_at' => null,
             ],
         ];
+    }
+
+    public function availableActions(string $id): JsonResponse
+    {
+        $actions = $this->availableActionsService->forTask($id);
+
+        return Json::items($actions, message: 'Available actions retrieved successfully');
     }
 }

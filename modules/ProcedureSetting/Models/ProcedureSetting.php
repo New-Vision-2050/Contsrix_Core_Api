@@ -38,6 +38,11 @@ class ProcedureSetting extends Model
         'company_id',
         'work_flow_id',
         'sort_order',
+        'parent_id',
+        'form',
+        'conditions',
+        'appears_before_id',
+        'appears_after_id',
     ];
 
     protected $casts = [
@@ -48,6 +53,7 @@ class ProcedureSetting extends Model
         'escalation_management_hierarchy_id' => 'integer',
         'work_flow_id'                       => 'string',
         'sort_order'                         => 'integer',
+        'conditions'                         => 'array',
     ];
 
     public function getRelationshipToPrimaryModel(): string
@@ -78,6 +84,39 @@ class ProcedureSetting extends Model
     public function workFlow()
     {
         return $this->belongsTo(WorkFlow::class, 'work_flow_id');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function internalProcedures()
+    {
+        return $this->hasMany(self::class, 'parent_id')
+            ->whereNotNull('form')
+            ->orderBy('sort_order');
+    }
+
+    public function procedureSettings()
+    {
+        return $this->hasMany(self::class, 'parent_id')
+            ->whereNotNull('form');
+    }
+
+    public function appearsBeforeEntry()
+    {
+        return $this->belongsTo(self::class, 'appears_before_id');
+    }
+
+    public function appearsAfterEntry()
+    {
+        return $this->belongsTo(self::class, 'appears_after_id');
+    }
+
+    public function isInternalProcedure(): bool
+    {
+        return $this->parent_id !== null && $this->form !== null;
     }
 
     protected static function newFactory(): ProcedureSettingFactory

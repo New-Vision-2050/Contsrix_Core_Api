@@ -155,7 +155,7 @@ The system models **business approval workflows** as configurable chains of **st
 
 | Field | Meaning |
 |-------|---------|
-| `processable_type` | `employee_task_request`, `client_request`, etc. |
+| `processable_type` | `employee_task`, `client_request`, etc. (was `employee_task_request` before June 2026) |
 | `processable_id` | Polymorphic FK |
 | `status` | `in_progress`, `completed`, `failed` |
 | `execute_type` | `sequence` (one at a time) or `parallel` (all at once) |
@@ -196,6 +196,53 @@ enum ActionTakerSpecificProcedureType: string
     case Management = 'management'; // Manager of specific management_id
     case JobTitle = 'job_title';   // ALL users with job_title_id
     case JobRole = 'job_role';     // 1 = all mgmt managers, 2 = all branch managers
+}
+
+enum ProcedureSettingType: string
+{
+    case EmployeeTask  = 'employee_task';   // Parent category for all employee task workflows
+    case ClientRequest = 'client_request';  // Parent category for client request workflows
+    case PriceOffer    = 'price_offer';     // Parent category for price offer workflows
+    case Contract      = 'contract';        // Parent category for contract workflows
+    case Meeting       = 'meeting';         // Parent category for meeting workflows
+}
+
+enum InternalProcessForm: string
+{
+    case StartTask             = 'start_task';
+    case ExtendTaskTime        = 'extend_task_time';
+    case SendForApproval       = 'send_for_approval';
+    case CancelTask            = 'cancel_task';
+    case ConfirmLocation       = 'confirm_location';
+    case AssignOtherEmployee   = 'assign_other_employee';
+    case AttachAttachments     = 'attach_attachments';
+
+    public static function applicableTo(string $categoryType): array
+    {
+        return match ($categoryType) {
+            ProcedureSettingType::EmployeeTask->value => [
+                self::StartTask,
+                self::ExtendTaskTime,
+                self::SendForApproval,
+                self::CancelTask,
+                self::ConfirmLocation,
+                self::AssignOtherEmployee,
+                self::AttachAttachments,
+            ],
+            default => [],
+        };
+    }
+}
+
+enum InternalProcessCondition: string
+{
+    case AllowDuringShift   = 'AllowDuringShift';
+    case AllowOutsideShift  = 'AllowOutsideShift';
+    case AllowOnHolidays    = 'AllowOnHolidays';
+    case ApplyToAllBranches = 'ApplyToAllBranches';
+    case HasTaskDuration    = 'HasTaskDuration';
+    case MaxDurationHours   = 'MaxDurationHours';
+    case MaxAttachments     = 'MaxAttachments';
 }
 ```
 
@@ -338,13 +385,42 @@ Same as approve but:
 
 ## 9. EmployeeTask Integration
 
-Three separate workflow paths:
+The EmployeeTask module now uses **Internal Procedure Settings** — child rows under a parent `ProcedureSetting` with `type = 'employee_task'`. Each child has a `form` key that defines what action it represents.
+
+### Architecture
+
+```
+Parent ProcedureSetting (type = 'employee_task')
+├── Child: form = 'start_task'           → Task creation workflow
+├── Child: form = 'extend_task_time'     → Extension request workflow
+├── Child: form = 'send_for_approval'     → Completion approval workflow
+├── Child: form = 'confirm_location'    → Location confirmation (can have MULTIPLE)
+└── ... more children with same or different forms
+```
+
+Each child has:
+- Its own `name` (display label)
+- Its own `steps` (workflow steps)
+- Its own `conditions` (JSON array of InternalProcessCondition)
+- `appears_before_id` / `appears_after_id` (ordering constraints)
+- `sort_order` (display order)
+
+### Resolving a Child Procedure Setting
+
+`ProcedureWorkflowService::resolveInternalProcedureSettingByForm()`:
+```
+1. Find parent where type = 'employee_task' AND company_id = task.company_id
+2. Find first child where parent_id = parent.id AND form = 'extend_task_time'
+3. Return child with steps eager-loaded
+```
+
+**CRITICAL**: When multiple children share the same `form` (e.g., two `confirm_location` entries), the backend must receive the specific `internal_procedure_setting_id` to load the correct child. The mobile app gets this ID from the `available-actions` API.
 
 ### 9.1 Task Request
 **Creation** (`EmployeeTaskRequestService::create()`):
 ```
 context = projectId ? ['project_id' => projectId] : []
-preview = workflow.getApprovalResponsibles(type, userId, context)
+preview = workflow.getApprovalResponsibles(type = 'employee_task', userId, context)
 create task record
 create Process with context
 currentStep = processService.getCurrentStep(process)
@@ -358,8 +434,9 @@ broadcast notification + inbox counts to authorizedUserIds
 - Calls `workflow->advance()` / `assertCanReject()` with context.
 
 ### 9.2 Task Extension
-**Creation** (`EmployeeTaskExtensionService::create()`):
-- Inherits `procedure_setting_id` from parent task.
+**Creation** (`EmployeeTaskExtensionService::requestExtension()`):
+- Resolves child by `form = 'extend_task_time'` under parent `type = 'employee_task'`.
+- Optionally accepts explicit `internal_procedure_setting_id` for precise child selection.
 - No `project_id` context → `project_manager` falls back to alternative.
 - Resolves users with context, broadcasts to resolved IDs.
 
@@ -368,8 +445,39 @@ broadcast notification + inbox counts to authorizedUserIds
 
 ### 9.3 Task Completion Approval
 **Creation** (`EmployeeTaskApprovalService::create()`):
+- Resolves child by `form = 'send_for_approval'` under parent `type = 'employee_task'`.
+- Optionally accepts explicit `internal_procedure_setting_id` for precise child selection.
 - Resolves first step users with `project_id` context.
 - Broadcasts to resolved IDs (not template `actionTakers`).
+
+### 9.4 Available Actions API (Mobile)
+
+`GET /employee-tasks/{taskId}/available-actions`
+
+Returns all active child internal procedure settings for the task, ordered by constraints:
+
+```json
+[
+  {
+    "id": "child-uuid-1",
+    "name": "تأكيد دخول الموقع",
+    "form": { "key": "confirm_location", "label_ar": "تأكيد الموقع" },
+    "conditions": [...],
+    "appears_before_id": "child-uuid-2",
+    "sort_order": 1
+  },
+  {
+    "id": "child-uuid-2",
+    "name": "تأكيد خروج الموقع",
+    "form": { "key": "confirm_location", "label_ar": "تأكيد الموقع" },
+    "conditions": [...],
+    "appears_after_id": "child-uuid-1",
+    "sort_order": 2
+  }
+]
+```
+
+**Duplicate Forms**: Two children can share the same `form` key. The mobile app MUST send back the specific `id` of the tapped item, not just the `form` key.
 
 ---
 
@@ -1028,10 +1136,12 @@ Do not confuse them. Extensions and approvals use `ProcedureWorkflowService` bec
 ### 21.10 The Polymorphic Processable Trap
 
 `Process` uses polymorphic relations (`processable_type`, `processable_id`). The type strings must match exactly:
-- `employee_task_request`
+- `employee_task` (was `employee_task_request` before June 2026 refactor)
 - `client_request`
 
-If you create a new entity using workflows, you MUST register its type string consistently everywhere.
+The morph map in `Process::boot()` registers `employee_task` → `EmployeeTaskRequest::class`.
+
+If you create a new entity using workflows, you MUST register its type string consistently everywhere. The `employee_task_request` string is DEPRECATED — use `employee_task` for all new code.
 
 ### 21.11 The `advance()` Result Trap
 
@@ -1133,6 +1243,49 @@ If you are a future AI reading this, these are the changes made to the codebase 
 - `CreateProcedureSettingStepRequest` — Added rules for new fields with `different` enforcement.
 - `UpdateProcedureSettingStepRequest` — Same rules.
 - `CreateProcedureSettingStepDTO` — Added new properties.
+
+### June 2026 — Internal Procedure Settings Refactor (NEW)
+
+#### Architecture Change
+- `ProcedureSetting` is now a **self-referencing table** with `parent_id`.
+- **Parent rows**: `parent_id = NULL`, `type` = category (`employee_task`, `client_request`, etc.)
+- **Child rows**: `parent_id = parent.id`, `form` = action key (`start_task`, `extend_task_time`, etc.)
+- Each child has its own `name`, `steps`, `conditions`, `appears_before_id`, `appears_after_id`, `sort_order`
+
+#### Enum Changes
+- `ProcedureSettingType` simplified to categories only (`employee_task`, `client_request`, `price_offer`, `contract`, `meeting`)
+- Removed: `EmployeeTaskRequest`, `EmployeeTaskExtension`, `EmployeeTaskCompletionApproval` cases
+- `InternalProcessForm` enum added with `applicableTo()` method
+- `InternalProcessCondition` enum added for per-form condition definitions
+
+#### Database Changes
+- Added to `procedure_settings`: `parent_id` (UUID, nullable, FK to self), `form` (string, nullable), `conditions` (JSON, nullable), `appears_before_id` (UUID, nullable), `appears_after_id` (UUID, nullable)
+- Dropped `internal_process_types` table
+- Removed `employee_task_requests.internal_process_type_id` column
+
+#### New APIs
+- `GET /employee-tasks/{id}/available-actions` — Returns child internal procedures for mobile
+- `GET/POST/PUT/DELETE /procedure-settings/{id}/internal-procedures` — Admin CRUD for children
+- `GET /procedure-settings/{id}/available-forms` — Returns form definitions for admin UI
+
+#### Updated APIs
+- `GET /procedure-settings/approval-responsibles` — Now accepts `type` (category) + optional `form_key`
+- `POST /employee-tasks/{id}/request-approval` — Now accepts optional `internal_procedure_setting_id`
+- `POST /employee-tasks/{id}/extension-requests` — Now accepts optional `internal_procedure_setting_id`
+
+#### Service Changes
+- `ProcedureWorkflowService::resolveInternalProcedureSettingByForm()` — Resolves child by category + form key
+- `EmployeeTaskExtensionService::loadInternalProcedureSetting()` — Loads specific child by ID, verifies parent belongs to task's company/category
+- `EmployeeTaskApprovalService::loadInternalProcedureSetting()` — Same
+- `EmployeeTaskAvailableActionsService::forTask()` — Returns all active children with IDs and form details
+
+#### Polymorphic Type Change
+- `Process.processable_type` changed from `employee_task_request` → `employee_task`
+- Updated in `Process::boot()` morph map, `EmployeeTaskRequest` model, presenter, listener, and seeder
+
+#### Removed
+- `InternalProcessType` module (standalone table, model, seeder, API)
+- `employee_task_requests.internal_process_type_id` column and all references
 
 ---
 
@@ -1250,6 +1403,14 @@ After Fix (WORKING):
 | **WorkflowStepActivated** | Central event fired when a ProcessStep becomes active. Listener handles ALL notification channels. |
 | **WorkflowActionRequired** | Laravel Notification class supporting mail + SMS channels. |
 | **AutoApproveWorkflowStep** | Queued job that auto-approves a step after the skipping_period delay. |
+| **Internal Procedure Setting** | Child row under a parent `ProcedureSetting` with a `form` key. Has its own steps, conditions, and ordering. |
+| **Parent Procedure Setting** | Category-level `ProcedureSetting` (`parent_id = NULL`). Groups related internal procedures. |
+| **Form Key** | Action identifier on a child: `start_task`, `extend_task_time`, `send_for_approval`, etc. Defined in `InternalProcessForm` enum. |
+| **Conditions** | JSON array of `InternalProcessCondition` values on a child. UI/UX hints for the mobile app. |
+| **appears_before_id** | Ordering constraint: this child must appear BEFORE the referenced child in available-actions. |
+| **appears_after_id** | Ordering constraint: this child must appear AFTER the referenced child in available-actions. |
+| **InternalProcessForm** | Enum defining valid form keys per category. Has `applicableTo()` method. |
+| **InternalProcessCondition** | Enum defining valid condition keys (e.g., `AllowDuringShift`, `ApplyToAllBranches`). |
 
 ---
 
@@ -1351,4 +1512,248 @@ Instead, `EmployeeTaskExtensionService::create()` and `EmployeeTaskApprovalServi
 | `modules/ProcedureSetting/Listeners/SendWorkflowStepNotification.php` | Central listener for all channels |
 | `modules/ProcedureSetting/Jobs/AutoApproveWorkflowStep.php` | Delayed job for skipping_period auto-approve |
 | `resources/views/emails/workflowActionRequired.blade.php` | Email blade template |
+
+---
+
+## 27. Internal Procedure Settings (Self-Referencing ProcedureSetting)
+
+> Added: June 2026
+> Architecture change from standalone `ProcedureSetting` types to a self-referencing parent/child model.
+
+### 27.1 The Problem
+
+Before, `ProcedureSettingType` had separate cases for every workflow variant:
+- `EmployeeTaskRequest` — task creation
+- `EmployeeTaskExtension` — extension request
+- `EmployeeTaskCompletionApproval` — completion approval
+
+Each was a **standalone** `ProcedureSetting` row with its own steps. This made it impossible to:
+- Have multiple workflows with the same action type (e.g., two "confirm location" forms)
+- Group related workflows under a single category
+- Share category-level configuration
+
+### 27.2 The Solution
+
+`ProcedureSetting` is now a **self-referencing table**:
+
+#### Parent Rows (`parent_id = NULL`)
+Represent a **category**. One per company + category combination.
+
+| Field | Meaning |
+|-------|---------|
+| `type` | Category: `employee_task`, `client_request`, `price_offer`, `contract`, `meeting` |
+| `company_id` | The company this category belongs to |
+| `name` | Display name (e.g., "إجراءات مهام العمال") |
+| `execute_type` | `sequence` or `parallel` |
+
+#### Child Rows (`parent_id = parent.id`)
+Represent an **internal procedure** — a specific action within the category.
+
+| Field | Meaning |
+|-------|---------|
+| `parent_id` | FK to the parent category row |
+| `form` | Action key: `start_task`, `extend_task_time`, `send_for_approval`, `cancel_task`, `confirm_location`, `assign_other_employee`, `attach_attachments` |
+| `name` | Display name (e.g., "تأكيد دخول الموقع") |
+| `conditions` | JSON array of `InternalProcessCondition` values |
+| `appears_before_id` | This child must appear BEFORE the referenced child |
+| `appears_after_id` | This child must appear AFTER the referenced child |
+| `sort_order` | Display order (fallback if no before/after constraints) |
+| `is_active` | Whether this child is enabled |
+
+Each child has its own `steps` (via `hasMany` to `ProcedureSettingStep`).
+
+### 27.3 Model Relations
+
+```php
+class ProcedureSetting extends Model
+{
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(ProcedureSetting::class, 'parent_id');
+    }
+
+    public function internalProcedures(): HasMany
+    {
+        return $this->hasMany(ProcedureSetting::class, 'parent_id')
+            ->whereNotNull('form')
+            ->orderBy('sort_order');
+    }
+
+    public function steps(): HasMany
+    {
+        return $this->hasMany(ProcedureSettingStep::class)
+            ->orderBy('step_order');
+    }
+
+    public function isInternalProcedure(): bool
+    {
+        return $this->parent_id !== null && $this->form !== null;
+    }
+}
+```
+
+### 27.4 Resolution Methods
+
+#### By Form Key (Fallback)
+
+```php
+ProcedureWorkflowService::resolveInternalProcedureSettingByForm(
+    string $procedureCategoryType,  // 'employee_task'
+    string $formKey,               // 'extend_task_time'
+    string $companyId,
+    ?string $branchId = null,
+): ?ProcedureSetting
+```
+
+Returns the **first** child matching the form key. Works when there's only one child per form.
+
+#### By Explicit ID (Precise)
+
+```php
+// In EmployeeTaskExtensionService / EmployeeTaskApprovalService
+private function loadInternalProcedureSetting(string $id, EmployeeTaskRequest $task): ?ProcedureSetting
+{
+    return ProcedureSetting::query()
+        ->where('id', $id)
+        ->whereNotNull('form')
+        ->whereHas('parent', function ($q) use ($task) {
+            $q->where('type', ProcedureSettingType::EmployeeTask->value)
+              ->where('company_id', $task->company_id);
+        })
+        ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
+        ->first();
+}
+```
+
+**Security check**: Verifies the child belongs to the task's company and category.
+
+### 27.5 Duplicate Forms Support
+
+A parent can have multiple children with the same `form`:
+
+```
+Parent (employee_task)
+├── Child A: form = "confirm_location", name = "تأكيد دخول الموقع"
+├── Child B: form = "extend_task_time", name = "تمديد وقت المهمة"
+└── Child C: form = "confirm_location", name = "تأكيد خروج الموقع"
+```
+
+**Mobile Flow**:
+```
+1. GET /employee-tasks/{id}/available-actions
+   → Returns [Child A, Child B, Child C] with unique IDs
+
+2. User taps "تأكيد خروج الموقع" (Child C)
+   → App stores: internal_procedure_setting_id = "uuid-of-child-c"
+
+3. POST /employee-tasks/{id}/request-approval
+   body: { internal_procedure_setting_id: "uuid-of-child-c", ... }
+   → Backend loads Child C explicitly by ID
+   → Uses Child C's specific steps and conditions
+```
+
+### 27.6 Admin CRUD API
+
+**URL Parameter `procedure_setting_id`:** This is the **PARENT** category ProcedureSetting UUID (the row with `parent_id = NULL`, `type = 'employee_task'`). It is NOT the `type` string itself.
+
+**`internal_procedure_setting_id`:** This is the **CHILD** UUID, auto-generated by the server. You send it in the URL for Update/Delete. You do NOT send it when Creating — the server returns it in the response.
+
+#### List Children
+```
+GET /procedure-settings/{parent_procedure_setting_uuid}/internal-procedures
+```
+
+#### Create Child
+```
+POST /procedure-settings/{parent_procedure_setting_uuid}/internal-procedures
+body: {
+  "name": "بدء مهمة العمل",
+  "form": "start_task",
+  "conditions": [],
+  "appears_before_id": null,
+  "appears_after_id": null,
+  "sort_order": 1,
+  "is_active": true
+}
+
+Response: { "id": "auto-generated-child-uuid", ... }
+```
+
+- **`name`**: Display name (e.g., "بدء مهمة العمل")
+- **`form`**: Must be a valid `InternalProcessForm` case (e.g., `start_task`)
+- **`conditions`**: JSON array of condition objects
+- **`appears_before_id`** / **`appears_after_id`**: Ordering constraints (optional)
+- **`sort_order`**: Display priority (optional, fallback)
+- **`is_active`**: Boolean (optional, default true)
+
+**Note:** You do NOT send `internal_procedure_setting_id` in the body. The server generates it.
+
+#### Update Child
+```
+PUT /procedure-settings/{parent_uuid}/internal-procedures/{child_uuid}
+```
+
+#### Delete Child
+```
+DELETE /procedure-settings/{parent_uuid}/internal-procedures/{child_uuid}
+```
+
+#### Get Form Definitions (for Admin UI)
+```
+GET /procedure-settings/{procedure_setting_id}/available-forms
+```
+Returns all `InternalProcessForm` values applicable to the parent's category, with their condition schemas.
+
+### 27.7 Seeding
+
+`InternalProcedureSettingsSeeder` auto-creates default children under each parent category:
+- `employee_task`: start_task, extend_task_time, send_for_approval, cancel_task, confirm_location, assign_other_employee, attach_attachments
+- Other categories: no defaults (extendable in future)
+
+### 27.8 Conditions Schema
+
+Each condition is stored as a JSON object:
+
+```json
+[
+  { "key": "AllowDuringShift", "value": true },
+  { "key": "ApplyToAllBranches", "value": false },
+  { "key": "MaxDurationHours", "value": 8 }
+]
+```
+
+The `key` must match an `InternalProcessCondition` case. The `value` type depends on the condition:
+- Boolean conditions: `true`/`false`
+- Number conditions: integer
+
+Conditions are read by the frontend/mobile app. The backend does NOT enforce them (they are UI/UX hints).
+
+### 27.9 Ordering Constraints
+
+`appears_before_id` and `appears_after_id` create a DAG of ordering:
+
+```
+Child B (appears_before_id = Child C.id)
+Child C (appears_after_id = Child B.id)
+```
+
+This means: Child B must appear BEFORE Child C in the available-actions list. The `sort_order` column is a fallback.
+
+### 27.10 Traps
+
+#### 27.10.1 `resolveInternalProcedureSettingByForm` Returns First Match
+
+If multiple children share the same form, this method returns only the first one. Always prefer explicit ID resolution for user-triggered actions.
+
+#### 27.10.2 Parent Steps vs Child Steps
+
+Parent rows can have steps too (for Process-based workflows like task creation). Child rows have their own steps (for non-Process workflows like extensions/approvals). Do not confuse them.
+
+#### 27.10.3 Conditions Are UI Hints
+
+The `conditions` JSON is stored and returned to clients but is NOT validated or enforced by the backend. The mobile/frontend app must read and apply them.
+
+#### 27.10.4 `form` Must Match `InternalProcessForm` Cases
+
+When creating a child, the `form` value must be a valid `InternalProcessForm` case. Invalid values are rejected at the API level.
 

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "procedure-setting-api-collection",
     "name": "ProcedureSetting API",
-    "description": "API endpoints for managing Procedure Settings and their Steps",
+    "description": "API endpoints for managing Procedure Settings and their Steps\n\n**New:** Internal Procedure Settings (child rows under parent categories)\n- Each parent ProcedureSetting represents a category (employee_task, client_request, etc.)\n- Child internal procedures have a `form` key (start_task, extend_task_time, send_for_approval, etc.)\n- Each child has its own workflow steps, conditions, and ordering constraints\n\n**Base URL:** `{{url}}`\n**Auth:** Bearer token via `{{token}}` variable.\n\n**Variables:**\n- `procedure_setting_id` — Parent category ProcedureSetting ID\n- `step_id` — ProcedureSettingStep ID (integer)\n- `internal_procedure_setting_id` — Child internal procedure ID (UUID)\n\n**Collection Version:** 2.0.0 — Updated June 2026",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -18,13 +18,21 @@
     },
     {
       "key": "procedure_setting_id",
-      "value": "uuid-here",
-      "type": "string"
+      "value": "parent-uuid-here",
+      "type": "string",
+      "description": "PARENT category ProcedureSetting UUID (e.g., the 'employee_task' row with parent_id = NULL)"
     },
     {
       "key": "step_id",
       "value": "1",
-      "type": "string"
+      "type": "string",
+      "description": "ProcedureSettingStep ID (integer, not UUID)"
+    },
+    {
+      "key": "internal_procedure_setting_id",
+      "value": "child-uuid-here",
+      "type": "string",
+      "description": "CHILD internal procedure UUID (auto-generated when creating; use for Update/Delete and mobile app actions)"
     }
   ],
   "item": [
@@ -71,7 +79,7 @@
                 {
                   "key": "type",
                   "value": "",
-                  "description": "Filter by type: client_request, price_offer, contract",
+                  "description": "Filter by category type: employee_task, client_request, price_offer, contract, meeting",
                   "disabled": true
                 },
                 {
@@ -129,7 +137,7 @@
               "host": ["{{url}}"],
               "path": ["procedure-settings"]
             },
-            "description": "POST {{url}}/procedure-settings\n\n**type:** client_request | price_offer | contract\n**execute_type:** parallel | sequence\n**escalation_user_id:** optional UUID of user (exists in users)"
+            "description": "POST {{url}}/procedure-settings\n\n**type:** employee_task | client_request | price_offer | contract | meeting\n**execute_type:** parallel | sequence\n**escalation_user_id:** optional UUID of user (exists in users)"
           },
           "response": [
             {
@@ -209,7 +217,7 @@
               "host": ["{{url}}"],
               "path": ["procedure-settings", "{{procedure_setting_id}}"]
             },
-            "description": "Update an existing procedure setting.\n\ntype options: client_request | price_offer | contract\nexecute_type options: parallel | sequence"
+            "description": "Update an existing procedure setting.\n\ntype options: employee_task | client_request | price_offer | contract | meeting\nexecute_type options: parallel | sequence"
           },
           "response": []
         },
@@ -464,6 +472,149 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "body": "{\n  \"message\": \"Deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Internal Procedure Settings",
+      "description": "NEW: CRUD for child procedure settings (internal procedures) under a parent category. Each child has a `form` key and its own workflow steps.",
+      "item": [
+        {
+          "name": "List Internal Procedures",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/internal-procedures",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "internal-procedures"]
+            },
+            "description": "List all child internal procedure settings under a parent category.\n\n**URL:** `{{procedure_setting_id}}` = PARENT category ProcedureSetting UUID (e.g., the 'employee_task' category row with `parent_id = NULL`)."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Internal procedure settings retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"child-uuid-1\",\n      \"name\": \"بدء المهمة\",\n      \"form\": \"start_task\",\n      \"conditions\": [],\n      \"sort_order\": 1,\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"is_active\": true\n    },\n    {\n      \"id\": \"child-uuid-2\",\n      \"name\": \"تمديد وقت المهمة\",\n      \"form\": \"extend_task_time\",\n      \"conditions\": [{ \"key\": \"AllowDuringShift\", \"value\": true }],\n      \"sort_order\": 2,\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"is_active\": true\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Internal Procedure",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"تأكيد خروج الموقع\",\n  \"form\": \"confirm_location\",\n  \"conditions\": [\n    { \"key\": \"ApplyToAllBranches\", \"value\": true }\n  ],\n  \"appears_before_id\": null,\n  \"appears_after_id\": \"child-uuid-of-enter-location\",\n  \"sort_order\": 3,\n  \"is_active\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/internal-procedures",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "internal-procedures"]
+            },
+            "description": "Create a new internal procedure setting (child) under a parent category.\n\n**URL:** `{{procedure_setting_id}}` = The PARENT category ProcedureSetting UUID (the row with `parent_id = NULL`, `type = 'employee_task'`).\n\n**Body:** You send `name`, `form`, `conditions`, etc. You do NOT send `internal_procedure_setting_id` — the server generates the child UUID automatically and returns it in the response.\n\n**Example:** To create 'بدء مهمة العمل' under the 'employee_task' category:\n- `procedure_setting_id` in URL = UUID of the 'employee_task' parent row\n- Body `form` = `start_task`\n- Response `payload.id` = the new `internal_procedure_setting_id`\n\n`form` must be one of: start_task, extend_task_time, send_for_approval, cancel_task, confirm_location, assign_other_employee, attach_attachments"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal procedure setting created successfully\",\n  \"payload\": {\n    \"id\": \"new-child-uuid\",\n    \"name\": \"تأكيد خروج الموقع\",\n    \"form\": \"confirm_location\",\n    \"conditions\": [{ \"key\": \"ApplyToAllBranches\", \"value\": true }],\n    \"sort_order\": 3,\n    \"appears_before_id\": null,\n    \"appears_after_id\": \"child-uuid-of-enter-location\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Internal Procedure",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"تأكيد خروج الموقع - نهائي\",\n  \"form\": \"confirm_location\",\n  \"conditions\": [\n    { \"key\": \"ApplyToAllBranches\", \"value\": true }\n  ],\n  \"appears_before_id\": null,\n  \"appears_after_id\": \"child-uuid-of-enter-location\",\n  \"sort_order\": 3,\n  \"is_active\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/internal-procedures/{{internal_procedure_setting_id}}",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "internal-procedures", "{{internal_procedure_setting_id}}"]
+            },
+            "description": "Update an existing internal procedure setting (child).\n\n**URL:**\n- `{{procedure_setting_id}}` = PARENT category UUID\n- `{{internal_procedure_setting_id}}` = CHILD internal procedure UUID (the one you are updating)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal procedure setting updated successfully\",\n  \"payload\": {\n    \"id\": \"new-child-uuid\",\n    \"name\": \"تأكيد خروج الموقع - نهائي\",\n    \"form\": \"confirm_location\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Internal Procedure",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/internal-procedures/{{internal_procedure_setting_id}}",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "internal-procedures", "{{internal_procedure_setting_id}}"]
+            },
+            "description": "Delete an internal procedure setting (child).\n\n**URL:**\n- `{{procedure_setting_id}}` = PARENT category UUID\n- `{{internal_procedure_setting_id}}` = CHILD internal procedure UUID (the one you are deleting)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal procedure setting deleted successfully\",\n  \"payload\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Available Forms (Definitions)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/available-forms",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "available-forms"]
+            },
+            "description": "Returns all InternalProcessForm definitions applicable to the parent's category type.\n\nUsed by the admin UI when creating a new internal procedure setting."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Available forms retrieved successfully\",\n  \"payload\": [\n    {\n      \"key\": \"start_task\",\n      \"label_ar\": \"بدء المهمة\",\n      \"conditions\": [\n        { \"key\": \"AllowDuringShift\", \"type\": \"boolean\", \"label_ar\": \"السماح أثناء الدوام\" }\n      ]\n    },\n    {\n      \"key\": \"extend_task_time\",\n      \"label_ar\": \"تمديد وقت المهمة\",\n      \"conditions\": [\n        { \"key\": \"AllowDuringShift\", \"type\": \"boolean\", \"label_ar\": \"السماح أثناء الدوام\" }\n      ]\n    },\n    {\n      \"key\": \"send_for_approval\",\n      \"label_ar\": \"ارسال للاعتماد\",\n      \"conditions\": [\n        { \"key\": \"AllowDuringShift\", \"type\": \"boolean\", \"label_ar\": \"السماح أثناء الدوام\" }\n      ]\n    }\n  ]\n}"
             }
           ]
         }
