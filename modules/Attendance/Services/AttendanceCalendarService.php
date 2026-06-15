@@ -315,18 +315,18 @@ class AttendanceCalendarService
     }
 
     /**
-     * Resolve the dot color based on status key.
+     * Resolve the dot color hex code based on status key.
      */
     private function resolveDotColor(string $statusKey): string
     {
         return match ($statusKey) {
-            'present'  => 'green',
-            'late'     => 'orange',
-            'absent'   => 'red',
-            'leave'    => 'purple',
-            'off'      => 'gray',
-            'required' => 'blue',
-            default    => 'gray',
+            'present'  => '#4CAF50',
+            'late'     => '#FF9800',
+            'absent'   => '#F44336',
+            'leave'    => '#9C27B0',
+            'off'      => '#9E9E9E',
+            'required' => '#2196F3',
+            default    => '#9E9E9E',
         };
     }
 
