@@ -82,13 +82,9 @@ return new class extends Migration
 
     private function foreignExists(string $name): bool
     {
-        $connection = Schema::getConnection();
-        $grammar    = $connection->getDoctrineSchemaManager();
-
         try {
-            $fks = $grammar->listTableForeignKeys('procedure_settings');
-            foreach ($fks as $fk) {
-                if ($fk->getName() === $name) {
+            foreach (Schema::getForeignKeys('procedure_settings') as $fk) {
+                if ($fk['name'] === $name) {
                     return true;
                 }
             }
