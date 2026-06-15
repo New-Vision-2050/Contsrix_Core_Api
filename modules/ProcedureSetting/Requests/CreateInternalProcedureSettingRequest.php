@@ -16,7 +16,7 @@ class CreateInternalProcedureSettingRequest extends FormRequest
     {
         return array_merge([
             'name'              => ['sometimes', 'string', 'max:255'],
-            'type'              => ['sometimes', 'string', Rule::in(ProcedureSettingType::values())],
+            'type'              => ['required', 'string', Rule::in(ProcedureSettingType::values())],
             'form'              => ['required', 'string', Rule::in(InternalProcessForm::values())],
             'execute_type'      => ['sometimes', 'string', 'in:parallel,sequence'],
             'conditions'        => ['sometimes', 'array'],

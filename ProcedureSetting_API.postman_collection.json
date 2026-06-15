@@ -20,7 +20,7 @@
       "key": "procedure_setting_id",
       "value": "parent-uuid-here",
       "type": "string",
-      "description": "ProcedureSetting UUID (can be PARENT category with parent_id=NULL OR CHILD internal procedure with form set)"
+      "description": "ProcedureSetting UUID. For steps under internal procedures, use internal_procedure_setting_id here."
     },
     {
       "key": "step_id",
@@ -125,7 +125,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"إجراء اعتماد العقود\",\n  \"type\": \"client_request\",\n  \"execute_type\": \"sequence\",\n  \"icon\": \"folder-archive\",\n  \"percentage\": 20,\n  \"deadline_days\": 29,\n  \"deadline_hours\": 20,\n  \"escalation_user_id\": \"550e8400-e29b-41d4-a716-446655440001\"\n}",
+              "raw": "{\n  \"name\": \"إجراء اعتماد العقود\",\n  \"type\": \"client_request\",\n  \"parent_id\": \"parent-uuid-here\",\n  \"execute_type\": \"sequence\",\n  \"icon\": \"folder-archive\",\n  \"percentage\": 20,\n  \"deadline_days\": 29,\n  \"deadline_hours\": 20,\n  \"escalation_user_id\": \"550e8400-e29b-41d4-a716-446655440001\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -137,7 +137,7 @@
               "host": ["{{url}}"],
               "path": ["procedure-settings"]
             },
-            "description": "POST {{url}}/procedure-settings\n\nCreates a PARENT category ProcedureSetting (`parent_id` is always `null`).\n\n**type:** employee_task | client_request | price_offer | contract | meeting\n**execute_type:** parallel | sequence\n**escalation_user_id:** optional UUID of user (exists in users)\n\n**Note:** `parent_id` is NOT accepted here. To create child internal procedures, use `POST /procedure-settings/{parent_id}/internal-procedures`."
+            "description": "POST {{url}}/procedure-settings\n\nCreates a ProcedureSetting (child/internal procedure) under a parent category.\n\n**parent_id:** Required UUID of the parent ProcedureSetting (e.g., the `employee_task` or `client_request` category).\n**type:** Must match the parent's type.\n**execute_type:** parallel | sequence\n**escalation_user_id:** optional UUID of user (exists in users)"
           },
           "response": [
             {
@@ -145,7 +145,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"name\": \"Client Request Approval\",\n    \"type\": \"client_request\",\n    \"execute_type\": \"sequence\",\n    \"icon\": \"approval-icon\",\n    \"percentage\": 50.00,\n    \"steps\": []\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"parent_id\": \"parent-uuid-here\",\n    \"name\": \"Client Request Approval\",\n    \"type\": \"client_request\",\n    \"execute_type\": \"sequence\",\n    \"icon\": \"approval-icon\",\n    \"percentage\": 50.00,\n    \"steps\": []\n  }\n}"
             }
           ]
         },
@@ -319,7 +319,7 @@
               "host": ["{{url}}"],
               "path": ["procedure-settings", "{{procedure_setting_id}}", "steps"]
             },
-            "description": "Get all steps for a specific procedure setting.\n\n`{{procedure_setting_id}}` can be a PARENT UUID or a CHILD (internal procedure) UUID. Steps belong to whichever ProcedureSetting you pass."
+            "description": "Get all steps for a specific procedure setting.\n\n`{{procedure_setting_id}}` = The ProcedureSetting UUID that OWNS these steps.\n\n- For parent category steps: use the PARENT UUID\n- For internal procedure steps (الموافقة, الاعتماد): use `{{internal_procedure_setting_id}}`\n\nThe backend accepts ANY ProcedureSetting UUID — parent or child."
           },
           "response": [
             {
@@ -366,7 +366,7 @@
               "host": ["{{url}}"],
               "path": ["procedure-settings", "{{procedure_setting_id}}", "steps"]
             },
-            "description": "Create a new step for a procedure setting.\n\n`{{procedure_setting_id}}` can be a PARENT UUID or a CHILD (internal procedure) UUID.\n\nforms: approve | accept | financial (single string value)"
+            "description": "Create a new step for a procedure setting.\n\n`{{procedure_setting_id}}` = The ProcedureSetting UUID that OWNS this step.\n\n- For parent category steps: use the PARENT UUID\n- For internal procedure steps (الموافقة, الاعتماد): use `{{internal_procedure_setting_id}}`\n\nforms: approve | accept | financial (single string value)"
           },
           "response": [
             {
@@ -494,7 +494,7 @@
               "host": ["{{url}}"],
               "path": ["procedure-settings", "{{procedure_setting_id}}", "internal-procedures"]
             },
-            "description": "List all child internal procedure settings under a parent category.\n\n**URL:** `{{procedure_setting_id}}` = PARENT category ProcedureSetting UUID (e.g., the 'employee_task' category row with `parent_id = NULL`)."
+            "description": "List all child internal procedure settings under a parent category.\n\n**URL:** `{{procedure_setting_id}}` = PARENT category ProcedureSetting UUID (e.g., the 'employee_task' category row with `parent_id = NULL`).\n\n**Response:** Each child includes `type` (inherited from parent, e.g., `employee_task`, `client_request`)."
           },
           "response": [
             {
@@ -502,7 +502,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Internal procedure settings retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"child-uuid-1\",\n      \"name\": \"بدء المهمة\",\n      \"form\": \"start_task\",\n      \"conditions\": [],\n      \"sort_order\": 1,\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"is_active\": true\n    },\n    {\n      \"id\": \"child-uuid-2\",\n      \"name\": \"تمديد وقت المهمة\",\n      \"form\": \"extend_task_time\",\n      \"conditions\": [{ \"key\": \"AllowDuringShift\", \"value\": true }],\n      \"sort_order\": 2,\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"is_active\": true\n    }\n  ]\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Internal procedure settings retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"child-uuid-1\",\n      \"parent_id\": \"parent-uuid\",\n      \"name\": \"بدء المهمة\",\n      \"type\": \"employee_task\",\n      \"form\": \"start_task\",\n      \"conditions\": [],\n      \"sort_order\": 1,\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"is_active\": true\n    },\n    {\n      \"id\": \"child-uuid-2\",\n      \"parent_id\": \"parent-uuid\",\n      \"name\": \"تمديد وقت المهمة\",\n      \"type\": \"employee_task\",\n      \"form\": \"extend_task_time\",\n      \"conditions\": [{ \"key\": \"AllowDuringShift\", \"value\": true }],\n      \"sort_order\": 2,\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"is_active\": true\n    }\n  ]\n}"
             }
           ]
         },
@@ -527,7 +527,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal procedure setting retrieved successfully\",\n  \"payload\": {\n    \"id\": \"child-uuid-1\",\n    \"name\": \"بدء المهمة\",\n    \"form\": \"start_task\",\n    \"conditions\": [],\n    \"sort_order\": 1,\n    \"appears_before_id\": null,\n    \"appears_after_id\": null,\n    \"is_active\": true,\n    \"steps\": []\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Internal procedure setting retrieved successfully\",\n  \"payload\": {\n    \"id\": \"child-uuid-1\",\n    \"parent_id\": \"parent-uuid\",\n    \"name\": \"بدء المهمة\",\n    \"type\": \"employee_task\",\n    \"form\": \"start_task\",\n    \"conditions\": [],\n    \"sort_order\": 1,\n    \"appears_before_id\": null,\n    \"appears_after_id\": null,\n    \"is_active\": true,\n    \"steps\": []\n  }\n}"
             }
           ]
         },
@@ -546,11 +546,11 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/internal-procedures",
+              "raw": "{{url}}/procedure-settings/internal-procedures",
               "host": ["{{url}}"],
-              "path": ["procedure-settings", "{{procedure_setting_id}}", "internal-procedures"]
+              "path": ["procedure-settings", "internal-procedures"]
             },
-            "description": "Create a new internal procedure setting (child) under a parent category.\n\n**URL:** `{{procedure_setting_id}}` = The PARENT category ProcedureSetting UUID (the row with `parent_id = NULL`, `type = 'employee_task'`).\n\n**Body:** You send `name`, `type`, `form`, `conditions`, etc. You do NOT send `internal_procedure_setting_id` — the server generates the child UUID automatically and returns it in the response.\n\n**type:** Optional. Must match the parent's type. If omitted, inherited from parent.\n\n**Example:** To create 'بدء مهمة العمل' under the 'employee_task' category:\n- `procedure_setting_id` in URL = UUID of the 'employee_task' parent row\n- Body `form` = `start_task`\n- Body `type` = `employee_task` (optional, validated against parent)\n- Response `payload.id` = the new `internal_procedure_setting_id`\n\n`form` must be one of: start_task, extend_task_time, send_for_approval, cancel_task, confirm_location, assign_other_employee, attach_attachments"
+            "description": "Create a new internal procedure setting (child).\n\n**URL:** No `procedure_setting_id` needed — parent is found automatically by `type`.\n\n**Body:** You send `name`, `type`, `form`, `conditions`, etc.\n\n**type:** Required. Must be a valid ProcedureSettingType (e.g., `employee_task`, `client_request`). The backend finds the parent category with this type and creates the child under it.\n\n**Example:** To create 'بدء مهمة العمل' under the 'employee_task' category:\n- Body `type` = `employee_task`\n- Body `form` = `start_task`\n- Response `payload.id` = the new `internal_procedure_setting_id`\n\n`form` must be one of: start_task, extend_task_time, send_for_approval, cancel_task, confirm_location, assign_other_employee, attach_attachments"
           },
           "response": [
             {

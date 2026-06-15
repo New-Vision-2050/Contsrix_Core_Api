@@ -110,6 +110,19 @@ final class InternalProcedureSettingService
         $setting->delete();
     }
 
+    public function findParentByType(string $type, ?string $companyId = null): ?ProcedureSetting
+    {
+        $query = ProcedureSetting::query()
+            ->whereNull('parent_id')
+            ->where('type', $type);
+
+        if ($companyId !== null && $companyId !== '') {
+            $query->where('company_id', $companyId);
+        }
+
+        return $query->orderBy('sort_order')->first();
+    }
+
     public function availableFormsForParent(string $parentId): array
     {
         $parent = $this->findParentOrFail($parentId);

@@ -59,11 +59,22 @@ class InternalProcedureSettingController extends Controller
     }
 
     /**
-     * POST /procedure-settings/{id}/internal-procedures
+     * POST /procedure-settings/internal-procedures
+     * Create internal procedure by type (finds parent automatically).
      */
-    public function store(CreateInternalProcedureSettingRequest $request, string $id): JsonResponse
+    public function store(CreateInternalProcedureSettingRequest $request): JsonResponse
     {
-        $setting = $this->service->create($id, $request->toData());
+        $data = $request->toData();
+        $parent = $this->service->findParentByType(
+            $data['type'] ?? '',
+            tenant('id') ? (string) tenant('id') : null,
+        );
+
+        if ($parent === null) {
+            return Json::error(__('Parent procedure setting not found for type: :type', ['type' => $data['type'] ?? '']), 404);
+        }
+
+        $setting = $this->service->create((string) $parent->id, $data);
 
         return Json::item(
             InternalProcedureSettingPresenter::single($setting),
