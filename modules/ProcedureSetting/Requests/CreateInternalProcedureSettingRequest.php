@@ -6,6 +6,7 @@ namespace Modules\ProcedureSetting\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
@@ -15,6 +16,7 @@ class CreateInternalProcedureSettingRequest extends FormRequest
     {
         return array_merge([
             'name'              => ['sometimes', 'string', 'max:255'],
+            'type'              => ['sometimes', 'string', Rule::in(ProcedureSettingType::values())],
             'form'              => ['required', 'string', Rule::in(InternalProcessForm::values())],
             'execute_type'      => ['sometimes', 'string', 'in:parallel,sequence'],
             'conditions'        => ['sometimes', 'array'],

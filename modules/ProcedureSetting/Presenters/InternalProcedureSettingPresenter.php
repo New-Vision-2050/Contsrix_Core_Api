@@ -19,6 +19,7 @@ final class InternalProcedureSettingPresenter
             'id'                 => $this->setting->id,
             'parent_id'          => $this->setting->parent_id,
             'name'               => $this->setting->name,
+            'type'               => $this->setting->type,
             'form'               => $form ? [
                 'key'        => $form->value,
                 'label_ar'   => $form->labelAr(),

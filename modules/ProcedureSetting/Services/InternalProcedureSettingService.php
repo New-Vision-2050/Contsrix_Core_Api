@@ -33,9 +33,17 @@ final class InternalProcedureSettingService
             throw new \InvalidArgumentException("Invalid form key: [{$data['form']}]");
         }
 
-        if (! in_array($parent->type, $form->applicableTypes(), true)) {
+        $type = $data['type'] ?? $parent->type;
+
+        if ($type !== $parent->type) {
             throw new \InvalidArgumentException(
-                "Form [{$form->value}] is not applicable to procedure type [{$parent->type}]."
+                "Provided type [{$type}] must match parent type [{$parent->type}]."
+            );
+        }
+
+        if (! in_array($type, $form->applicableTypes(), true)) {
+            throw new \InvalidArgumentException(
+                "Form [{$form->value}] is not applicable to procedure type [{$type}]."
             );
         }
 
@@ -50,7 +58,7 @@ final class InternalProcedureSettingService
             'parent_id'         => $parent->id,
             'name'              => $data['name'] ?? $form->labelAr(),
             'form'              => $form->value,
-            'type'              => $parent->type,
+            'type'              => $type,
             'execute_type'      => $data['execute_type'] ?? 'sequence',
             'conditions'        => $conditions,
             'appears_before_id' => $data['appears_before_id'] ?? null,
@@ -64,11 +72,18 @@ final class InternalProcedureSettingService
 
     public function update(string $parentId, string $id, array $data): ProcedureSetting
     {
-        $this->findParentOrFail($parentId);
+        $parent = $this->findParentOrFail($parentId);
         $setting = $this->findChildOrFail($id, $parentId);
+
+        if (isset($data['type']) && $data['type'] !== $parent->type) {
+            throw new \InvalidArgumentException(
+                "Provided type [{$data['type']}] must match parent type [{$parent->type}]."
+            );
+        }
 
         $update = array_filter([
             'name'              => $data['name'] ?? null,
+            'type'              => $data['type'] ?? null,
             'execute_type'      => $data['execute_type'] ?? null,
             'appears_before_id' => array_key_exists('appears_before_id', $data) ? $data['appears_before_id'] : null,
             'appears_after_id'  => array_key_exists('appears_after_id', $data) ? $data['appears_after_id'] : null,

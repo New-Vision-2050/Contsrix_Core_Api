@@ -66,6 +66,8 @@ class ProcedureSettingRepository extends BaseRepository
                 $data['sort_order'] = $this->getNextSortOrder();
             }
 
+            $data['parent_id'] = null;
+
             $model = $this->create($data);
             $model->load(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name']);
 

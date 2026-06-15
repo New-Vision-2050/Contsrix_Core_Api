@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
 
@@ -16,6 +18,7 @@ class UpdateInternalProcedureSettingRequest extends FormRequest
 
         return array_merge([
             'name'              => ['sometimes', 'string', 'max:255'],
+            'type'              => ['sometimes', 'string', Rule::in(ProcedureSettingType::values())],
             'execute_type'      => ['sometimes', 'string', 'in:parallel,sequence'],
             'conditions'        => ['sometimes', 'array'],
             'appears_before_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],

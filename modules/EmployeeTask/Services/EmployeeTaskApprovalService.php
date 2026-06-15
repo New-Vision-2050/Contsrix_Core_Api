@@ -137,7 +137,7 @@ final class EmployeeTaskApprovalService
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
         $result = $this->workflow->advance(
             $approval->current_procedure_step_id,
-            $task->procedure_setting_id,
+            $approval->procedure_setting_id,
             $adminId,
             $task->user_id,
             $context,

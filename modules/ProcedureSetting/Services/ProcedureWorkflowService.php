@@ -40,6 +40,7 @@ final class ProcedureWorkflowService
         /** @var ProcedureSetting|null $setting */
         $setting = ProcedureSetting::query()
             ->where('type', $procedureType)
+            ->whereNull('parent_id')
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
             ->first();
 
@@ -296,6 +297,7 @@ final class ProcedureWorkflowService
     ): ?ProcedureSetting {
         $query = ProcedureSetting::query()
             ->where('type', $procedureType)
+            ->whereNull('parent_id')
             ->where('company_id', $companyId);
 
         if ($branchId !== null && $branchId !== '') {
