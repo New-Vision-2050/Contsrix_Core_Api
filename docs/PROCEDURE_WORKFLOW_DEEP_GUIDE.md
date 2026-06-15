@@ -1580,6 +1580,8 @@ Steps belong to EITHER a parent (for Process workflows like task creation) OR a 
 GET /procedure-settings/{id}/steps        ← Parent or Child steps
 ```
 
+**UI Note:** The UI may show step configuration grouped into sections like "الموافقة" (Approval) or "الاعتماد" (Endorsement). These are **UI groupings only** — they are NOT separate database tables. In the database, these are just columns on `procedure_setting_steps` (e.g., `action_taker_type`, `is_approve`, `action_taker`).
+
 ### 27.3 Model Relations
 
 ```php
