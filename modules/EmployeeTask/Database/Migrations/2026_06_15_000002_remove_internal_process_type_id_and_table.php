@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,12 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasColumn('employee_task_requests', 'internal_process_type_id')) {
+            try {
+                DB::statement('ALTER TABLE employee_task_requests DROP FOREIGN KEY etr_internal_process_type_fk');
+            } catch (\Throwable) {
+                // Foreign key may not exist
+            }
+
             Schema::table('employee_task_requests', function (Blueprint $table) {
-                try {
-                    $table->dropForeign('etr_internal_process_type_fk');
-                } catch (\Throwable) {
-                    // Foreign key may not exist
-                }
                 $table->dropColumn('internal_process_type_id');
             });
         }
