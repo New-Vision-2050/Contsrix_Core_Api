@@ -25,4 +25,11 @@ return [
     'updated' => 'تم التحديث بنجاح',
     'deleted' => 'تم الحذف بنجاح',
     'retrieved' => 'تم الاسترجاع بنجاح',
+
+    // Attendance messages
+    'attendance' => [
+        'user_constraint_today_retrieved' => 'تم استرداد قيود العمل لهذا اليوم بنجاح.',
+        'clock_in_status_retrieved' => 'تم استرداد حالة تسجيل الدخول بنجاح.',
+        'calendar_retrieved' => 'تم استرداد تقويم الحضور بنجاح.',
+    ],
 ];

@@ -25,4 +25,11 @@ return [
     'updated' => 'Updated successfully',
     'deleted' => 'Deleted successfully',
     'retrieved' => 'Retrieved successfully',
+
+    // Attendance messages
+    'attendance' => [
+        'user_constraint_today_retrieved' => "Today's work constraints retrieved successfully.",
+        'clock_in_status_retrieved' => 'Clock-in status retrieved successfully.',
+        'calendar_retrieved' => 'Attendance calendar retrieved successfully.',
+    ],
 ];

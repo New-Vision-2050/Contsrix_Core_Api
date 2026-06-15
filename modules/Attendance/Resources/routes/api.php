@@ -79,6 +79,9 @@ Route::post('test', [AttendanceController::class, 'test'])
             ->name('attendance.user-attendance-status');
         Route::get('history', [UserAttendanceController::class, 'getUserAttendanceHistory'])
             ->name('attendance.user-attendance.get-history');
+        // Get current user's attendance calendar
+        Route::get('calendar', [UserAttendanceController::class, 'getAttendanceCalendar'])
+            ->name('attendance.user-attendance.calendar');
     });
 
     // Team Attendance (for supervisors)
@@ -92,7 +95,7 @@ Route::post('test', [AttendanceController::class, 'test'])
 
     Route::get('team/user', [AttendanceController::class, 'getUserAttendance'])
         ->name('attendance.team');
-        
+
     Route::get('{attendance}/team', [AttendanceController::class, 'teamAttendance'])
        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.team.show');
