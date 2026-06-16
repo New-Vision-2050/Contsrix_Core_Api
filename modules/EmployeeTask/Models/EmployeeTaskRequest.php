@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
@@ -38,6 +39,9 @@ class EmployeeTaskRequest extends Model
         'title',
         'description',
         'project_id',
+        'item_type',
+        'item_id',
+        'employee_task_type_id',
         'approval_responsible_id',
         'assignment_responsible_id',
         'duration_hours',
@@ -97,6 +101,10 @@ class EmployeeTaskRequest extends Model
     {
         return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
+    public function employeeTaskType(): BelongsTo
+    {
+        return $this->belongsTo(EmployeeTaskType::class, 'employee_task_type_id')->withoutGlobalScopes();
+    }
 
     public function currentProcedureStep(): BelongsTo
     {
@@ -107,7 +115,10 @@ class EmployeeTaskRequest extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
-
+    public function itemable(): MorphTo
+    {
+        return $this->morphTo('item');
+    }
     public function rejectedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rejected_by');

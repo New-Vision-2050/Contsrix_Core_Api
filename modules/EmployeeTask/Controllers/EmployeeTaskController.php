@@ -135,6 +135,9 @@ class EmployeeTaskController extends Controller
             $dto = new CreateEmployeeTaskRequestDTO(
                 userId:                  (string) Auth::id(),
                 title:                   $request->input('title'),
+                employee_task_type_id:   $request->input('employee_task_type_id'),
+                itemType:                $request->input('item_type'),
+                itemId:                  $request->input('item_id'),
                 durationHours:           (float) $request->input('duration_hours'),
                 taskDate:                $request->input('task_date'),
                 taskLatitude:            (float) $request->input('task_latitude'),

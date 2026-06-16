@@ -37,7 +37,7 @@ class EmployeeTaskRequestService
     {
         $procedureType = ProcedureSettingType::EmployeeTask->value;
         $context       = $dto->projectId ? ['project_id' => $dto->projectId] : [];
-        $preview       = $this->workflow->getApprovalResponsibles($procedureType, $dto->userId, $context, InternalProcessForm::StartTask->value);
+        $preview       = $this->workflow->getApprovalResponsibles($procedureType, $dto->userId, $context, \Modules\Shared\InternalProcessType\Enums\InternalProcessForm::StartTask->value);
 
         $data                  = $dto->toArray();
         $data['serial_number'] = $this->repository->generateSerialNumber();
