@@ -36,11 +36,7 @@ class ProcessWorkflowService
 
         foreach ($settings as $index => $setting) {
             /** @var ProcedureSetting $setting */
-            $steps = ProcedureSettingStep::query()
-                ->with(['actionTakers'])
-                ->where('procedure_setting_id', $setting->id)
-                ->orderBy('step_order')
-                ->get();
+            $steps = $this->resolveStepsForSetting($setting);
 
             $snapshots = [];
             foreach ($steps as $step) {
@@ -337,5 +333,37 @@ class ProcessWorkflowService
             ->where('status', 'pending')
             ->orderBy('template_step_order')
             ->first();
+    }
+
+    /**
+     * Return steps for the given setting. If the setting has no direct steps,
+     * recursively search descendants and return steps from the first child
+     * that has any (legacy data pattern support).
+     */
+    private function resolveStepsForSetting(ProcedureSetting $setting): Collection
+    {
+        $ids = [$setting->id];
+        $ids = array_merge($ids, $this->collectDescendantIds($setting->id));
+
+        return ProcedureSettingStep::query()
+            ->with(['actionTakers'])
+            ->whereIn('procedure_setting_id', $ids)
+            ->orderBy('step_order')
+            ->get();
+    }
+
+    private function collectDescendantIds(string $parentId): array
+    {
+        $children = ProcedureSetting::query()
+            ->where('parent_id', $parentId)
+            ->pluck('id')
+            ->all();
+
+        $result = $children;
+        foreach ($children as $childId) {
+            $result = array_merge($result, $this->collectDescendantIds($childId));
+        }
+
+        return $result;
     }
 }
