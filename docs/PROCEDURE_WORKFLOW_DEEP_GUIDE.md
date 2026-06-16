@@ -209,33 +209,35 @@ enum ProcedureSettingType: string
 
 enum InternalProcessForm: string
 {
-    case CreateTask          = 'create_task';
-    case StartTask           = 'start_task';
-    case ExtendTaskTime      = 'extend_task_time';
-    case SendForApproval     = 'send_for_approval';
-    case CancelTask          = 'cancel_task';
-    case ConfirmLocation     = 'confirm_location';
-    case EndTask             = 'end_task';
-    case AssignOtherEmployee = 'assign_other_employee';
-    case AttachAttachments   = 'attach_attachments';
+    case CreateTask          = 'createTask';           // employee_task only
+    case StartTask           = 'startTask';            // employee_task only
+    case ExtendTaskTime      = 'extendTaskTime';       // employee_task only
+    case SendForApproval     = 'sendForApproval';      // employee_task + client_request
+    case CancelTask          = 'cancelTask';           // employee_task + client_request
+    case ConfirmLocation     = 'confirmLocation';      // employee_task only
+    case EndTask             = 'endTask';              // employee_task only
+    case AssignOtherEmployee = 'assignOtherEmployee';  // employee_task only
+    case AttachAttachments   = 'attachAttachments';    // employee_task + client_request + price_offer + contract
 
-    public static function applicableTo(string $categoryType): array
+    // Returns the ProcedureSettingType values this form applies to.
+    // Call InternalProcessForm::forType($categoryType) to get all forms for a type.
+    public function applicableTypes(): array
     {
-        return match ($categoryType) {
-            ProcedureSettingType::EmployeeTask->value => [
-                self::CreateTask,
-                self::StartTask,
-                self::ExtendTaskTime,
-                self::SendForApproval,
-                self::CancelTask,
-                self::ConfirmLocation,
-                self::EndTask,
-                self::AssignOtherEmployee,
-                self::AttachAttachments,
-            ],
-            default => [],
+        return match ($this) {
+            self::CreateTask          => ['employee_task'],
+            self::StartTask           => ['employee_task'],
+            self::ExtendTaskTime      => ['employee_task'],
+            self::ConfirmLocation     => ['employee_task'],
+            self::AssignOtherEmployee => ['employee_task'],
+            self::EndTask             => ['employee_task'],
+            self::CancelTask          => ['employee_task', 'client_request'],
+            self::SendForApproval     => ['employee_task', 'client_request'],
+            self::AttachAttachments   => ['employee_task', 'client_request', 'price_offer', 'contract'],
         };
     }
+
+    // Returns all forms applicable to the given category type.
+    public static function forType(string $procedureType): array { ... }
 }
 
 enum InternalProcessCondition: string
@@ -379,11 +381,19 @@ Same as approve but:
 ## 8. ClientRequest Integration
 
 `ClientRequestWorkflowService::createProcessForClientRequest($cr)`:
-- Loads `ProcedureSetting` for type `client_request`.
-- Resolves users via `ActionTakerResolver`.
-- Stores `authorized_user_ids` + `specific_procedure_type` in snapshot.
+- Loads parent `ProcedureSetting` where `type = 'client_request'` AND `parent_id IS NULL` (the workflow template row, not internal procedure children).
+- Also filters by `company_id` + branch (workflow must include `$cr->branch_id`).
+- Supports **multiple sequential processes** per ClientRequest (one per matching ProcedureSetting, sorted by `sort_order`). Only first is `InProgress`; rest start as `Pending`.
+- Resolves users via `ActionTakerResolver`. Stores `authorized_user_ids` + `specific_procedure_type` in snapshot.
 - `approve()` / `reject()`: Uses `assertActorCanActOnStep()` which reads `authorized_user_ids` from snapshot.
-- `closeProcessOnClientRequestAccepted()`: Auto-approves pending steps where actor is in `authorized_user_ids`.
+- `job_role` rejection → advances workflow (does NOT fail). All other rejections → `Process::Failed`.
+- On last step approved → `advanceClientRequestToPriceOfferAfterWorkflow()` sets `status_client_request = 'accepted'` and `client_price_offer_status = 'pending'`. **The status is NOT set directly by the controller — it is set here after the workflow completes.**
+- `closeProcessOnClientRequestAccepted()`: Called when CR is accepted externally; auto-approves pending steps where actor is in `authorized_user_ids`.
+- `closeProcessOnClientRequestRejected()`: Bulk-rejects all pending steps and sets all non-completed processes to `Failed`.
+
+**CRITICAL**: The controller's `changeStatus()` for `accepted`/`rejected` calls `actOnPendingStepForCurrentUser()` (which advances the workflow step) and returns early — it does NOT call `changeStatus()` on the ClientRequest directly. The CR status changes only when the workflow finishes.
+
+**Applicable internal procedure forms** for `client_request` parent: `cancelTask`, `sendForApproval`, `attachAttachments` (seeded per company by `InternalProcedureSettingsSeeder`).
 
 ---
 
@@ -395,14 +405,18 @@ The EmployeeTask module now uses **Internal Procedure Settings** — child rows 
 
 ```
 Parent ProcedureSetting (type = 'employee_task')
-├── Child: form = 'create_task'          → Task creation workflow
-├── Child: form = 'start_task'           → Task start workflow
-├── Child: form = 'extend_task_time'     → Extension request workflow
-├── Child: form = 'send_for_approval'     → Completion approval workflow
-├── Child: form = 'end_task'             → Task end/completion workflow
-├── Child: form = 'confirm_location'    → Location confirmation (can have MULTIPLE)
-└── ... more children with same or different forms
+├── Child: form = 'createTask'          → Task creation workflow
+├── Child: form = 'startTask'           → Task start workflow
+├── Child: form = 'extendTaskTime'      → Extension request workflow
+├── Child: form = 'sendForApproval'     → Completion approval workflow
+├── Child: form = 'endTask'             → Task end/completion workflow
+├── Child: form = 'confirmLocation'     → Location confirmation (can have MULTIPLE)
+├── Child: form = 'cancelTask'          → Task cancellation workflow
+├── Child: form = 'assignOtherEmployee' → Reassignment workflow
+└── Child: form = 'attachAttachments'   → Attachment workflow
 ```
+
+**Form values are camelCase** (e.g. `extendTaskTime` not `extend_task_time`). This is what is stored in `procedure_settings.form` and returned in API responses.
 
 Each child has:
 - Its own `name` (display label)
@@ -416,9 +430,14 @@ Each child has:
 `ProcedureWorkflowService::resolveInternalProcedureSettingByForm()`:
 ```
 1. Find parent where type = 'employee_task' AND company_id = task.company_id
-2. Find first child where parent_id = parent.id AND form = 'extend_task_time'
-3. Return child with steps eager-loaded
+   (optionally: workflow must include the task user's branch_id)
+2. Find first child where parent_id = parent.id AND form = 'extendTaskTime'
+3. Return child with steps eager-loaded, or null if not found
 ```
+
+**CRITICAL — Auto-approve rule**: If `resolveInternalProcedureSettingByForm()` returns `null` (no parent, no child with that form, or branch not matched), the entity is **immediately auto-approved** (`status = 'approved'`, `reviewed_at = now()`). No workflow runs.
+
+**TRAP**: If a child procedure setting exists but has **zero steps**, calling `resolveFirstStepBySettingId()` throws `ProcedureWorkflowException::noStepsConfigured()`. Always add at least one step when creating an internal procedure setting via the admin UI.
 
 **CRITICAL**: When multiple children share the same `form` (e.g., two `confirm_location` entries), the backend must receive the specific `internal_procedure_setting_id` to load the correct child. The mobile app gets this ID from the `available-actions` API.
 
@@ -441,8 +460,10 @@ broadcast notification + inbox counts to authorizedUserIds
 
 ### 9.2 Task Extension
 **Creation** (`EmployeeTaskExtensionService::requestExtension()`):
-- Resolves child by `form = 'extend_task_time'` under parent `type = 'employee_task'`.
+- Resolves child by `form = 'extendTaskTime'` under parent `type = 'employee_task'`, scoped to `company_id` + user's `branch_id`.
 - Optionally accepts explicit `internal_procedure_setting_id` for precise child selection.
+- **If no procedure found → auto-approved immediately** (`status = 'approved'`, `reviewed_at = now()`). The seeder only seeds `startTask` by default, so extensions auto-approve unless admin adds an `extendTaskTime` internal procedure with steps.
+- If found → `status = 'pending'`, `current_procedure_step_id = firstStep->id`, notifications sent.
 - No `project_id` context → `project_manager` falls back to alternative.
 - Resolves users with context, broadcasts to resolved IDs.
 
@@ -451,8 +472,9 @@ broadcast notification + inbox counts to authorizedUserIds
 
 ### 9.3 Task Completion Approval
 **Creation** (`EmployeeTaskApprovalService::create()`):
-- Resolves child by `form = 'send_for_approval'` under parent `type = 'employee_task'`.
+- Resolves child by `form = 'sendForApproval'` under parent `type = 'employee_task'`.
 - Optionally accepts explicit `internal_procedure_setting_id` for precise child selection.
+- **If no procedure found → auto-approved immediately** (same auto-approve rule as extensions).
 - Resolves first step users with `project_id` context.
 - Broadcasts to resolved IDs (not template `actionTakers`).
 
@@ -467,7 +489,7 @@ Returns all active child internal procedure settings for the task, ordered by co
   {
     "id": "child-uuid-1",
     "name": "تأكيد دخول الموقع",
-    "form": { "key": "confirm_location", "label_ar": "تأكيد الموقع" },
+    "form": { "key": "confirmLocation", "label_ar": "تأكيد الموقع" },
     "conditions": [...],
     "appears_before_id": "child-uuid-2",
     "sort_order": 1
@@ -475,7 +497,7 @@ Returns all active child internal procedure settings for the task, ordered by co
   {
     "id": "child-uuid-2",
     "name": "تأكيد خروج الموقع",
-    "form": { "key": "confirm_location", "label_ar": "تأكيد الموقع" },
+    "form": { "key": "confirmLocation", "label_ar": "تأكيد الموقع" },
     "conditions": [...],
     "appears_after_id": "child-uuid-1",
     "sort_order": 2

@@ -85,6 +85,15 @@ class ProcedureSettingController extends Controller
             return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow, $filters) : null);
         }
 
+        if (isset($filters['type']) && isset($filters['parent_id']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
+            $defaultWorkFlow = $this->procedureSettingService->getDefaultWorkFlowByType(
+                (string) $filters['type'],
+                (string) $filters['parent_id'],
+            );
+
+            return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow, $filters) : null);
+        }
+
         if (isset($filters['type']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
             $defaultWorkFlow = $this->procedureSettingService->getDefaultWorkFlowByType((string) $filters['type']);
 

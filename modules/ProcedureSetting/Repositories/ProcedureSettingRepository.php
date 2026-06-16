@@ -165,7 +165,7 @@ class ProcedureSettingRepository extends BaseRepository
         return $query->orderBy('name')->first();
     }
 
-    public function getDefaultWorkFlowByType(string $type): ?WorkFlow
+    public function getDefaultWorkFlowByType(string $type, ?string $parentId = null): ?WorkFlow
     {
         $companyId = tenant('id');
 
@@ -176,9 +176,13 @@ class ProcedureSettingRepository extends BaseRepository
         $query = WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings' => function ($q) {
-                    $q->whereNull('parent_id')
-                      ->orderBy('sort_order')
+                'procedureSettings' => function ($q) use ($parentId) {
+                    if ($parentId !== null) {
+                        $q->where('parent_id', $parentId);
+                    } else {
+                        $q->whereNull('parent_id');
+                    }
+                    $q->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
