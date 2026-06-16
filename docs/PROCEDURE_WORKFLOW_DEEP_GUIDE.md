@@ -1559,6 +1559,30 @@ GET /procedure-settings?type=employee_task
 ```
 Returns WorkFlow → `procedure-settings` array contains ONLY parents (`parent_id = NULL`). Children are excluded.
 
+**How to get children of a parent under a specific workflow:**
+```
+GET /procedure-settings?type=employee_task&parent_id=<parent_uuid>
+```
+Returns the **default** workflow for that type. `procedure-settings` contains only children of `parent_id` whose `work_flow_id` matches the default workflow. If the child was created for a branch-specific workflow it will NOT appear here — only children belonging to the default workflow are returned.
+
+```
+GET /procedure-settings?type=employee_task&parent_id=<parent_uuid>&branch_id=9
+```
+Returns the workflow for branch 9. `procedure-settings` contains only children of `parent_id` whose `work_flow_id` matches the branch workflow.
+
+> **CRITICAL — work_flow_id on children**: A child's `work_flow_id` must match the workflow you are querying. The backend filters children per-workflow in the eager load (`WHERE work_flow_id = <workflow_id> AND parent_id = <parent_id>`). A child created with `branch_id=9` will ONLY appear under the branch-9 workflow query, never under the default workflow query.
+
+#### Controller routing table for `GET /procedure-settings`:
+
+| Filters sent | Branch used | Returns |
+|---|---|---|
+| _(none)_ | `getDefaultWorkFlowForList()` | Default `client_request` workflow, root PS only |
+| `type` + `parent_id` | `listByWorkFlow(filters)` → first `name=default` | Single workflow, children of `parent_id` scoped to that workflow |
+| `type` + `parent_id` + `branch_id` | `firstByWorkFlowFilters(filters)` | Single branch workflow, children of `parent_id` scoped to that workflow |
+| `type` only | `getDefaultWorkFlowByType(type)` | Default workflow for type, root PS only |
+| `branch_id` only | `firstByWorkFlowFilters(filters)` | Single branch workflow, root PS only |
+| `work_flow_id` | `listByWorkFlow(filters)` | All workflows (list), root PS only |
+
 #### Level 2 — Internal Procedure (`parent_id = parent.id`)
 The actionable form. Created via `POST /procedure-settings/{parent_id}/internal-procedures`. MUST have a `form`.
 

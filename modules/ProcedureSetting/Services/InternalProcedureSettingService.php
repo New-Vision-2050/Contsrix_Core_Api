@@ -80,6 +80,7 @@ final class InternalProcedureSettingService
         return ProcedureSetting::query()->create([
             'id'                => (string) Str::uuid(),
             'company_id'        => $parent->company_id,
+            'work_flow_id'      => $parent->work_flow_id,
             'parent_id'         => $parent->id,
             'name'              => $data['name'] ?? $form->labelAr(),
             'form'              => $form->value,
