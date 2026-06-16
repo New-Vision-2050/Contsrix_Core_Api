@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\EmployeeTask\Controllers\AdminEmployeeTaskController;
+use Modules\EmployeeTask\Controllers\EmployeeTaskTypeController;
 use Modules\EmployeeTask\Controllers\EmployeeTaskController;
 
 /*
@@ -11,6 +12,8 @@ use Modules\EmployeeTask\Controllers\EmployeeTaskController;
 */
 Route::prefix('employee-tasks')->group(function () {
     Route::get('/',              [EmployeeTaskController::class, 'index']);
+    Route::get('/types',              [EmployeeTaskTypeController::class, 'index']);
+
     Route::get('/filters',       [EmployeeTaskController::class, 'filters']);
     Route::post('/',             [EmployeeTaskController::class, 'store']);
     Route::get('/{id}', [EmployeeTaskController::class, 'show']);
@@ -33,6 +36,8 @@ Route::prefix('employee-tasks')->group(function () {
     Route::get('/{id}/extension-requests',  [EmployeeTaskController::class, 'listExtensions']);
 
     Route::get('/{id}/available-actions',   [EmployeeTaskController::class, 'availableActions']);
+
+
 });
 
 /*

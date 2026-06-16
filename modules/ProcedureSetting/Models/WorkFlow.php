@@ -10,10 +10,12 @@ use Illuminate\Support\Str;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class WorkFlow extends Model
 {
     use UuidTrait;
+    use BelongsToTenant;
 
     protected $table = 'work_flows';
 

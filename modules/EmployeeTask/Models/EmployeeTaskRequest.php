@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
@@ -18,12 +19,15 @@ use Modules\User\Models\User;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Models\Process;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class EmployeeTaskRequest extends Model
+class EmployeeTaskRequest extends Model implements HasMedia
 {
     use UuidTrait;
     use BaseFilterable;
     use CustomBelongsToTenant;
+    use InteractsWithMedia;
 
     protected $table = 'employee_task_requests';
 
@@ -38,6 +42,9 @@ class EmployeeTaskRequest extends Model
         'title',
         'description',
         'project_id',
+        'item_type',
+        'item_id',
+        'employee_task_type_id',
         'approval_responsible_id',
         'assignment_responsible_id',
         'duration_hours',
@@ -88,6 +95,11 @@ class EmployeeTaskRequest extends Model
         'location_confirmed_at'   => 'datetime',
     ];
 
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('attachments');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -96,6 +108,10 @@ class EmployeeTaskRequest extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
+    }
+    public function employeeTaskType(): BelongsTo
+    {
+        return $this->belongsTo(EmployeeTaskType::class, 'employee_task_type_id')->withoutGlobalScopes();
     }
 
     public function currentProcedureStep(): BelongsTo
@@ -107,7 +123,10 @@ class EmployeeTaskRequest extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
-
+    public function itemable(): MorphTo
+    {
+        return $this->morphTo('item');
+    }
     public function rejectedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rejected_by');

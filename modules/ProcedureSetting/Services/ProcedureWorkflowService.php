@@ -153,7 +153,9 @@ final class ProcedureWorkflowService
         $query = ProcedureSetting::query()
             ->where('type', $procedureType)
             ->orderBy('sort_order')
-            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with('actionTakers.user')]);
+            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
+                $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
+            }])]);
 
         if ($formKey !== null) {
             $query->whereNotNull('parent_id')->where('form', $formKey);
@@ -179,7 +181,9 @@ final class ProcedureWorkflowService
             $resolvedUserId = $this->resolver->resolveManagerFromCreatorHierarchy($firstStep, $createdByUserId, $context);
 
             if ($resolvedUserId !== null) {
-                $user = \Modules\User\Models\User::query()->find($resolvedUserId);
+                $user = \Modules\User\Models\User::query()
+                    ->with(['companyUser', 'companyUser.jobTitle'])
+                    ->find($resolvedUserId);
 
                 return [
                     'auto_approve'  => false,
@@ -190,8 +194,11 @@ final class ProcedureWorkflowService
                     ],
                     'action_takers' => [
                         [
-                            'user_id' => $resolvedUserId,
-                            'name'    => $user?->name,
+                            'user_id'   => $resolvedUserId,
+                            'name'      => $user?->name,
+                            // 'photo'    => $user?->companyUser?->getFirstMediaUrl('photo'),
+                            'photo'    => $user?->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
+                            'job_title' => $user?->companyUser?->jobTitle?->name,
                         ],
                     ],
                 ];
@@ -204,14 +211,18 @@ final class ProcedureWorkflowService
             if ($resolvedUserIds !== []) {
                 $users = \Modules\User\Models\User::query()
                     ->whereIn('id', $resolvedUserIds)
+                    ->with(['companyUser', 'companyUser.jobTitle'])
                     ->get(['id', 'name']);
 
                 $actionTakers = [];
                 foreach ($resolvedUserIds as $resolvedId) {
                     $u = $users->firstWhere('id', $resolvedId);
                     $actionTakers[] = [
-                        'user_id' => $resolvedId,
-                        'name'    => $u?->name,
+                        'user_id'   => $resolvedId,
+                        'name'      => $u?->name,
+                        // 'photo'    => $u?->companyUser?->getFirstMediaUrl('photo'),
+                        'photo'    => $u?->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
+                        'job_title' => $u?->companyUser?->jobTitle?->name,
                     ];
                 }
 
@@ -229,9 +240,13 @@ final class ProcedureWorkflowService
 
         $actionTakers = [];
         foreach ($firstStep->actionTakers as $at) {
+            $user = $at->relationLoaded('user') ? $at->user : null;
             $actionTakers[] = [
-                'user_id' => $at->user_id,
-                'name'    => $at->relationLoaded('user') && $at->user ? $at->user->name : null,
+                'user_id'   => $at->user_id,
+                'name'      => $user?->name,
+                'photo'    => $user?->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
+                // 'photo'    => $user?->companyUser?->getFirstMediaUrl('photo'),
+                'job_title' => $user?->companyUser?->jobTitle?->name,
             ];
         }
 
@@ -245,7 +260,6 @@ final class ProcedureWorkflowService
             'action_takers' => $actionTakers,
         ];
     }
-
     /**
      * Quick check used by inbox-style endpoints: would this user be allowed to
      * act on the given step? Returns true for open steps (no action-takers)
