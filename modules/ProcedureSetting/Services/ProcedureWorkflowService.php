@@ -175,14 +175,20 @@ final class ProcedureWorkflowService
             return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
         }
 
-        if ($setting->steps->isEmpty()) {
-            $setting = $this->findFirstDescendantWithSteps($setting->id);
+        $result = $this->computeApprovalResponsiblesForSetting($setting, $createdByUserId, $context);
+
+        if ($result['auto_approve'] && $formKey === null) {
+            $descendant = $this->findFirstDescendantWithSteps($setting->id);
+            if ($descendant !== null) {
+                $result = $this->computeApprovalResponsiblesForSetting($descendant, $createdByUserId, $context);
+            }
         }
 
-        if (!$setting) {
-            return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
-        }
+        return $result;
+    }
 
+    private function computeApprovalResponsiblesForSetting(ProcedureSetting $setting, ?string $createdByUserId, array $context): array
+    {
         $firstStep = $setting->steps->first();
 
         if (!$firstStep) {
@@ -210,7 +216,6 @@ final class ProcedureWorkflowService
                         [
                             'user_id'   => $resolvedUserId,
                             'name'      => $user?->name,
-                            // 'photo'    => $user?->companyUser?->getFirstMediaUrl('photo'),
                             'photo'    => $user?->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
                             'job_title' => $user?->companyUser?->jobTitle?->name,
                         ],
@@ -234,7 +239,6 @@ final class ProcedureWorkflowService
                     $actionTakers[] = [
                         'user_id'   => $resolvedId,
                         'name'      => $u?->name,
-                        // 'photo'    => $u?->companyUser?->getFirstMediaUrl('photo'),
                         'photo'    => $u?->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
                         'job_title' => $u?->companyUser?->jobTitle?->name,
                     ];
@@ -259,7 +263,6 @@ final class ProcedureWorkflowService
                 'user_id'   => $at->user_id,
                 'name'      => $user?->name,
                 'photo'    => $user?->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
-                // 'photo'    => $user?->companyUser?->getFirstMediaUrl('photo'),
                 'job_title' => $user?->companyUser?->jobTitle?->name,
             ];
         }
