@@ -33,6 +33,7 @@ final class InternalProcedureSettingPresenter
             'appears_after_id'   => $this->setting->appears_after_id,
             'sort_order'         => $this->setting->sort_order,
             'execute_type'       => $this->setting->execute_type,
+            'is_active'          => $this->setting->is_active,
             'percentage'         => $this->setting->percentage,
             'deadline_days'      => $this->setting->deadline_days,
             'deadline_hours'     => $this->setting->deadline_hours,

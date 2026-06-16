@@ -48,13 +48,21 @@ class ProcedureSettingController extends Controller
     public function approvalResponsibles(): JsonResponse
     {
         $type = (string) request()->query('type', '');
+        $form = (string) request()->query('form', '');
 
         if ($type === '') {
             return Json::error(__('The type query parameter is required.'), 422);
         }
 
+        $formKey = $form !== '' ? $form : null;
+
         return Json::item(
-            $this->workflowService->getApprovalResponsibles($type, (string) \Illuminate\Support\Facades\Auth::id()),
+            $this->workflowService->getApprovalResponsibles(
+                $type,
+                (string) \Illuminate\Support\Facades\Auth::id(),
+                [],
+                $formKey
+            ),
             message: 'Approval responsibles retrieved successfully',
         );
     }

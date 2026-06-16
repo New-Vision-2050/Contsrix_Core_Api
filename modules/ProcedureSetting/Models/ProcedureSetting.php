@@ -43,6 +43,7 @@ class ProcedureSetting extends Model
         'conditions',
         'appears_before_id',
         'appears_after_id',
+        'is_active',
     ];
 
     protected $casts = [
@@ -54,6 +55,7 @@ class ProcedureSetting extends Model
         'work_flow_id'                       => 'string',
         'sort_order'                         => 'integer',
         'conditions'                         => 'array',
+        'is_active'                          => 'int',
     ];
 
     public function getRelationshipToPrimaryModel(): string

@@ -33,6 +33,7 @@ class ProcedureSettingPresenter extends AbstractPresenter
             'deadline_days'  => $this->procedureSetting->deadline_days,
             'deadline_hours' => $this->procedureSetting->deadline_hours,
             'sort_order'        => $this->procedureSetting->sort_order,
+            'is_active'         => $this->procedureSetting->is_active,
             'parent_id'         => $this->procedureSetting->parent_id,
             'appears_before_id' => $this->procedureSetting->appears_before_id,
             'appears_after_id'  => $this->procedureSetting->appears_after_id,

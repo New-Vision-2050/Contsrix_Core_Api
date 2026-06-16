@@ -107,17 +107,55 @@ final class InternalProcedureSettingService
             );
         }
 
-        $update = array_filter([
-            'name'              => $data['name'] ?? null,
-            'type'              => $data['type'] ?? null,
-            'execute_type'      => $data['execute_type'] ?? null,
-            'appears_before_id' => array_key_exists('appears_before_id', $data) ? $data['appears_before_id'] : null,
-            'appears_after_id'  => array_key_exists('appears_after_id', $data) ? $data['appears_after_id'] : null,
-            'sort_order'        => $data['sort_order'] ?? null,
-            'percentage'        => $data['percentage'] ?? null,
-            'deadline_days'     => $data['deadline_days'] ?? null,
-            'deadline_hours'    => $data['deadline_hours'] ?? null,
-        ], static fn ($v) => $v !== null);
+        $update = [];
+
+        foreach (['name', 'type', 'execute_type', 'sort_order', 'percentage', 'deadline_days', 'deadline_hours'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $update[$field] = $data[$field];
+            }
+        }
+
+        if (array_key_exists('appears_before_id', $data)) {
+            $update['appears_before_id'] = $data['appears_before_id'];
+        }
+
+        if (array_key_exists('appears_after_id', $data)) {
+            $update['appears_after_id'] = $data['appears_after_id'];
+        }
+
+        if (array_key_exists('is_active', $data)) {
+            $update['is_active'] = $data['is_active'];
+        }
+
+        if (array_key_exists('form', $data)) {
+            $form = InternalProcessForm::tryFrom($data['form']);
+
+            if ($form === null) {
+                throw new \InvalidArgumentException("Invalid form key: [{$data['form']}]");
+            }
+
+            $type = $data['type'] ?? $setting->type;
+
+            if (! in_array($type, $form->applicableTypes(), true)) {
+                throw new \InvalidArgumentException(
+                    "Form [{$form->value}] is not applicable to procedure type [{$type}]."
+                );
+            }
+
+            $existing = ProcedureSetting::query()
+                ->where('parent_id', $parentId)
+                ->where('form', $form->value)
+                ->where('id', '!=', $id)
+                ->first();
+
+            if ($existing !== null) {
+                throw new \InvalidArgumentException(
+                    "Internal procedure with form [{$form->value}] already exists under this parent."
+                );
+            }
+
+            $update['form'] = $form->value;
+        }
 
         if (isset($data['conditions']) && is_array($data['conditions'])) {
             $update['conditions'] = array_merge($setting->conditions ?? [], $this->normalizeConditions($data['conditions']));
