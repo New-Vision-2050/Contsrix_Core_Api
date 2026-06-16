@@ -66,8 +66,12 @@ class InternalProcedureSettingsSeeder extends Seeder
             return ProcedureSetting::withoutGlobalScopes()->findOrFail($existingId);
         }
 
-        return ProcedureSetting::query()->create([
-            'id'           => (string) Str::uuid(),
+        // Use DB::table() to bypass BelongsToTenant which overrides company_id on create.
+        $newId = (string) Str::uuid();
+        $now   = now();
+
+        DB::table('procedure_settings')->insert([
+            'id'           => $newId,
             'company_id'   => $companyId,
             'work_flow_id' => $workFlow->id,
             'name'         => $type->labelAr(),
@@ -75,7 +79,11 @@ class InternalProcedureSettingsSeeder extends Seeder
             'execute_type' => 'sequence',
             'sort_order'   => 0,
             'percentage'   => 0,
+            'created_at'   => $now,
+            'updated_at'   => $now,
         ]);
+
+        return ProcedureSetting::withoutGlobalScopes()->findOrFail($newId);
     }
 
     private function seedForParent(ProcedureSetting $parent): void
@@ -109,7 +117,9 @@ class InternalProcedureSettingsSeeder extends Seeder
                 continue;
             }
 
-            ProcedureSetting::query()->create([
+            // Use DB::table() to bypass BelongsToTenant which overrides company_id on create.
+            $now = now();
+            DB::table('procedure_settings')->insert([
                 'id'           => (string) Str::uuid(),
                 'company_id'   => $parent->company_id,
                 'parent_id'    => $parent->id,
@@ -118,8 +128,10 @@ class InternalProcedureSettingsSeeder extends Seeder
                 'type'         => $type,
                 'execute_type' => 'sequence',
                 'sort_order'   => $order,
-                'conditions'   => InternalProcessCondition::defaultValuesForForm($form),
+                'conditions'   => json_encode(InternalProcessCondition::defaultValuesForForm($form)),
                 'percentage'   => 0,
+                'created_at'   => $now,
+                'updated_at'   => $now,
             ]);
 
             $this->command?->info(sprintf(
