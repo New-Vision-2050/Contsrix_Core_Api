@@ -169,7 +169,16 @@ final class ProcedureWorkflowService
             $query->whereNull('parent_id');
         }
 
-        $setting = $query->first();
+        $settings = $query->first();
+        $setting= ProcedureSetting::query()->whereIn("parent_id",$settings->pluck("id"))
+            ->where('type', $procedureType)
+            ->orderBy('sort_order')
+            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
+                $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
+            }])]);
+        return $setting;
+
+
 
         if (!$setting) {
             return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
