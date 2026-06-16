@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
 class UpdateInternalProcedureSettingRequest extends FormRequest
 {
@@ -19,6 +20,8 @@ class UpdateInternalProcedureSettingRequest extends FormRequest
         return array_merge([
             'name'              => ['sometimes', 'string', 'max:255'],
             'type'              => ['sometimes', 'string', Rule::in(ProcedureSettingType::values())],
+            'form'              => ['sometimes', 'string', Rule::in(InternalProcessForm::values())],
+            'is_active'         => ['sometimes', 'boolean'],
             'execute_type'      => ['sometimes', 'string', 'in:parallel,sequence'],
             'conditions'        => ['sometimes', 'array'],
             'appears_before_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
@@ -32,6 +35,11 @@ class UpdateInternalProcedureSettingRequest extends FormRequest
 
     private function resolveFormKey(): ?string
     {
+        $form = $this->input('form');
+        if (is_string($form) && $form !== '') {
+            return $form;
+        }
+
         $id = $this->route('internalProcedureId');
         if (! is_string($id) || $id === '') {
             return null;
