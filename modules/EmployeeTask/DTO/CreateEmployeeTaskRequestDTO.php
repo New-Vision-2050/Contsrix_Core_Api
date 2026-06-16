@@ -9,6 +9,9 @@ final class CreateEmployeeTaskRequestDTO
     public function __construct(
         public readonly string  $userId,
         public readonly string  $title,
+        public readonly string  $employee_task_type_id,
+        public readonly string  $itemType,
+        public readonly string  $itemId,
         public readonly float   $durationHours,
         public readonly string  $taskDate,
         public readonly float   $taskLatitude,
@@ -18,6 +21,7 @@ final class CreateEmployeeTaskRequestDTO
         public readonly ?string $approvalResponsibleId    = null,
         public readonly ?string $assignmentResponsibleId  = null,
         public readonly ?string $notes                    = null,
+        public readonly ?array  $files                    = null,
     ) {}
 
     public function toArray(): array
@@ -25,6 +29,9 @@ final class CreateEmployeeTaskRequestDTO
         return [
             'user_id'                    => $this->userId,
             'title'                      => $this->title,
+            'employee_task_type_id'      => $this->employee_task_type_id,
+            'item_type'                  => $this->itemType,
+            'item_id'                    => $this->itemId,
             'description'                => $this->description,
             'project_id'                 => $this->projectId,
             'approval_responsible_id'    => $this->approvalResponsibleId,

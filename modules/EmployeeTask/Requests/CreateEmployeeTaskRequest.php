@@ -18,6 +18,9 @@ class CreateEmployeeTaskRequest extends FormRequest
         return [
             'title'                     => ['required', 'string', 'max:255'],
             'description'               => ['nullable', 'string'],
+            'employee_task_type_id'     => ['nullable', 'string', 'exists:employee_task_types,id'],
+            'item_type'                 => ['nullable', 'string', 'max:255'],
+            'item_id'                   => ['nullable', 'uuid'],
             'project_id'                => ['nullable', 'uuid'],
             'approval_responsible_id'   => ['nullable', 'uuid'],
             'assignment_responsible_id' => ['nullable', 'uuid'],
@@ -26,6 +29,8 @@ class CreateEmployeeTaskRequest extends FormRequest
             'task_latitude'             => ['required', 'numeric', 'between:-90,90'],
             'task_longitude'            => ['required', 'numeric', 'between:-180,180'],
             'notes'                     => ['nullable', 'string'],
+            'files'                     => ['nullable', 'array'],
+            'files.*'                   => ['file', 'max:20480'],
         ];
     }
 }

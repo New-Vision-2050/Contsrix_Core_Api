@@ -135,6 +135,9 @@ class EmployeeTaskController extends Controller
             $dto = new CreateEmployeeTaskRequestDTO(
                 userId:                  (string) Auth::id(),
                 title:                   $request->input('title'),
+                employee_task_type_id:   $request->input('employee_task_type_id'),
+                itemType:                $request->input('item_type'),
+                itemId:                  $request->input('item_id'),
                 durationHours:           (float) $request->input('duration_hours'),
                 taskDate:                $request->input('task_date'),
                 taskLatitude:            (float) $request->input('task_latitude'),
@@ -144,6 +147,7 @@ class EmployeeTaskController extends Controller
                 approvalResponsibleId:   $request->input('approval_responsible_id'),
                 assignmentResponsibleId: $request->input('assignment_responsible_id'),
                 notes:                   $request->input('notes'),
+                files:                   $request->file('files'),
             );
 
             $task = $this->requestService->create($dto);
@@ -369,10 +373,12 @@ class EmployeeTaskController extends Controller
             request()->validate([
                 'notes' => ['nullable', 'string', 'max:2000'],
                 'file'  => ['nullable', 'file', 'max:20480'],
+                'files' => ['nullable', 'array'],
+                'files.*' => ['file', 'max:20480'],
                 'internal_procedure_setting_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
             ]);
 
-            $uploadedFiles = request()->hasFile('file') ? request()->file('file') : null;
+            $uploadedFiles = request()->file('files') ?? request()->file('file');
 
             $approval = $this->approvalService->create(
                 taskId: $id,

@@ -58,6 +58,9 @@ final class EmployeeTaskRequestPresenter
             'user'                       => $task->relationLoaded('user') && $task->user
                 ? ['id' => $task->user->id, 'name' => $task->user->name]
                 : null,
+            'task_type'                       => $task->relationLoaded('taskType') && $task->taskType
+                ? ['id' => $task->taskType->id, 'key' => $task->taskType->key, 'title' => $task->taskType->title]
+                : null,
             'current_step'               => $this->presentCurrentStep($task),
             'sessions'                   => $task->relationLoaded('sessions')
                 ? EmployeeTaskSessionPresenter::collection($task->sessions)
