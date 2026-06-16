@@ -153,7 +153,7 @@ final class ProcedureWorkflowService
      *   action_takers: list<array{user_id:string,name:?string}>
      * }
      */
-    public function getApprovalResponsibles(string $procedureType, ?string $createdByUserId = null, array $context = [], ?string $formKey = null): array
+    public function getApprovalResponsibles(string $procedureType, ?string $createdByUserId = null, array $context = [], ?string $formKey = null)
     {
         /** @var ProcedureSetting|null $setting */
         $query = ProcedureSetting::query()
@@ -170,6 +170,7 @@ final class ProcedureWorkflowService
         }
 
         $setting = $query->first();
+        return $setting;
 
         if (!$setting) {
             return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
