@@ -437,20 +437,42 @@ final class ProcedureWorkflowService
 
     /**
      * Recursively find the first descendant setting that has at least one step.
+     * Prioritises internal-procedure children (form IS NOT NULL) first,
+     * ordered by sort_order, then falls back to non-internal children.
      * Used when a parent/internal procedure has no direct steps but stores
      * them on a nested child (legacy data pattern).
      */
     private function findFirstDescendantWithSteps(string $parentId): ?ProcedureSetting
     {
-        $children = ProcedureSetting::query()
+        $eager = ['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
+            $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
+        }])];
+
+        $internalChildren = ProcedureSetting::query()
             ->where('parent_id', $parentId)
-            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
-                $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
-            }])])
+            ->whereNotNull('form')
+            ->with($eager)
             ->orderBy('sort_order')
             ->get();
 
-        foreach ($children as $child) {
+        foreach ($internalChildren as $child) {
+            if ($child->steps->isNotEmpty()) {
+                return $child;
+            }
+            $descendant = $this->findFirstDescendantWithSteps($child->id);
+            if ($descendant) {
+                return $descendant;
+            }
+        }
+
+        $otherChildren = ProcedureSetting::query()
+            ->where('parent_id', $parentId)
+            ->whereNull('form')
+            ->with($eager)
+            ->orderBy('sort_order')
+            ->get();
+
+        foreach ($otherChildren as $child) {
             if ($child->steps->isNotEmpty()) {
                 return $child;
             }
