@@ -46,6 +46,7 @@ class WorkFlowForBranchesSeeder extends Seeder
                 foreach (ProcedureSettingType::cases() as $type) {
                     $workFlowId = DB::table('work_flows')
                         ->where('company_id', (string) $companyId)
+                        ->where('name', 'default')
                         ->where('type', $type->value)
                         ->value('id');
 

@@ -23,6 +23,7 @@ use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
 use Modules\Process\Models\ProcessStep;
 use Modules\Process\Services\ProcessWorkflowService;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\Shared\Media\Services\FileUploadService;
 
 class EmployeeTaskRequestService
@@ -39,7 +40,7 @@ class EmployeeTaskRequestService
     {
         $procedureType = ProcedureSettingType::EmployeeTask->value;
         $context       = $dto->projectId ? ['project_id' => $dto->projectId] : [];
-        $preview       = $this->workflow->getApprovalResponsibles($procedureType, $dto->userId, $context, \Modules\Shared\InternalProcessType\Enums\InternalProcessForm::StartTask->value);
+        $preview       = $this->workflow->getApprovalResponsibles($procedureType, $dto->userId, $context, InternalProcessForm::CreateTask->value);
 
         $data                  = $dto->toArray();
         $data['serial_number'] = $this->repository->generateSerialNumber();
@@ -99,7 +100,7 @@ class EmployeeTaskRequestService
 
         $settings = ProcedureSetting::query()
             ->whereIn('parent_id', $parentIds)
-            ->where('form', InternalProcessForm::StartTask->value)
+            ->where('form', InternalProcessForm::CreateTask->value)
             ->whereNotNull('form')
             ->orderBy('sort_order')
             ->get();
