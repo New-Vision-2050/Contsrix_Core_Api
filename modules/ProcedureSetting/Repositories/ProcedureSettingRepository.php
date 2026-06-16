@@ -46,6 +46,17 @@ class ProcedureSettingRepository extends BaseRepository
             'steps.concernedManagementHierarchies.managementHierarchy',
             'escalationManagementHierarchy:id,name,type,company_id',
             'workFlow:id,name,company_id',
+            'internalProcedures' => function ($q) {
+                $q->orderBy('sort_order');
+            },
+            'internalProcedures.steps' => function ($q) {
+                $q->orderBy('step_order');
+            },
+            'internalProcedures.steps.branch',
+            'internalProcedures.steps.management',
+            'internalProcedures.steps.escalationManagementHierarchy:id,name,type,company_id',
+            'internalProcedures.steps.actionTakers.user',
+            'internalProcedures.steps.concernedManagementHierarchies.managementHierarchy',
         ])->findOrFail($id->toString());
     }
 
