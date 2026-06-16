@@ -91,6 +91,12 @@ class ProcedureSettingController extends Controller
             return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow, $filters) : null);
         }
 
+        if (isset($filters['parent_id']) && ! isset($filters['type']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
+            $items = $this->procedureSettingService->listByParentId((string) $filters['parent_id']);
+
+            return Json::items(ProcedureSettingPresenter::collection($items));
+        }
+
         if (isset($filters['branch_id'])) {
             $workFlow = $this->procedureSettingService->firstByWorkFlowFilters($filters);
 

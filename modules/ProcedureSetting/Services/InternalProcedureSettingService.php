@@ -137,8 +137,11 @@ final class InternalProcedureSettingService
 
     public function findParentByType(string $type, ?string $companyId = null): ?ProcedureSetting
     {
-        $query = ProcedureSetting::query()
+        // withoutGlobalScopes() bypasses BelongsToTenant so the parent can be
+        // found even when the query tenant-context doesn't match the stored company_id.
+        $query = ProcedureSetting::withoutGlobalScopes()
             ->whereNull('parent_id')
+            ->whereNull('form')
             ->where('type', $type);
 
         if ($companyId !== null && $companyId !== '') {
