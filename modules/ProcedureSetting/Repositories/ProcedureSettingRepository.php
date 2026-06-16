@@ -173,16 +173,37 @@ class ProcedureSettingRepository extends BaseRepository
             WorkFlow::defaultForCompany((string) $companyId, $type);
         }
 
+        if ($parentId !== null) {
+            $query = WorkFlow::query()
+                ->with(['managementHierarchies:id,name,type,company_id'])
+                ->where('type', $type)
+                ->where('name', 'default');
+
+            if ($companyId !== null && $companyId !== '') {
+                $query->where('company_id', (string) $companyId);
+            }
+
+            $workFlow = $query->orderBy('id')->first();
+
+            if ($workFlow) {
+                $children = ProcedureSetting::query()
+                    ->where('parent_id', $parentId)
+                    ->orderBy('sort_order')
+                    ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id'])
+                    ->get();
+
+                $workFlow->setRelation('procedureSettings', $children);
+            }
+
+            return $workFlow;
+        }
+
         $query = WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings' => function ($q) use ($parentId) {
-                    if ($parentId !== null) {
-                        $q->where('parent_id', $parentId);
-                    } else {
-                        $q->whereNull('parent_id');
-                    }
-                    $q->orderBy('sort_order')
+                'procedureSettings' => function ($q) {
+                    $q->whereNull('parent_id')
+                      ->orderBy('sort_order')
                       ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
