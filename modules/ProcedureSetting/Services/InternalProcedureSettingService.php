@@ -74,7 +74,7 @@ final class InternalProcedureSettingService
 
         $conditions = InternalProcessCondition::defaultValuesForForm($form);
         if (isset($data['conditions']) && is_array($data['conditions'])) {
-            $conditions = array_merge($conditions, $data['conditions']);
+            $conditions = array_merge($conditions, $this->normalizeConditions($data['conditions']));
         }
 
         return ProcedureSetting::query()->create([
@@ -120,7 +120,7 @@ final class InternalProcedureSettingService
         ], static fn ($v) => $v !== null);
 
         if (isset($data['conditions']) && is_array($data['conditions'])) {
-            $update['conditions'] = array_merge($setting->conditions ?? [], $data['conditions']);
+            $update['conditions'] = array_merge($setting->conditions ?? [], $this->normalizeConditions($data['conditions']));
         }
 
         $setting->update($update);
@@ -204,5 +204,43 @@ final class InternalProcedureSettingService
         return (int) ProcedureSetting::query()
             ->where('parent_id', $parentId)
             ->max('sort_order') + 1;
+    }
+
+    /**
+     * Convert frontend conditions format [{key: "AllowDuringShift", value: true}, ...]
+     * into backend associative array format {allow_during_shift: true, ...}.
+     */
+    private function normalizeConditions(array $input): array
+    {
+        if ($input === []) {
+            return [];
+        }
+
+        // If already an associative array (has string keys), return as-is
+        $firstKey = array_key_first($input);
+        if (! is_int($firstKey)) {
+            return $input;
+        }
+
+        $normalized = [];
+        foreach ($input as $item) {
+            if (! is_array($item) || ! array_key_exists('key', $item)) {
+                continue;
+            }
+            $key = (string) $item['key'];
+            $value = $item['value'] ?? null;
+
+            // Map PascalCase enum names (e.g. AllowDuringShift) to snake_case values
+            $snakeKey = Str::snake($key);
+            $enum = InternalProcessCondition::tryFrom($snakeKey);
+
+            if ($enum !== null) {
+                $normalized[$enum->value] = $value;
+            } else {
+                $normalized[$snakeKey] = $value;
+            }
+        }
+
+        return $normalized;
     }
 }
