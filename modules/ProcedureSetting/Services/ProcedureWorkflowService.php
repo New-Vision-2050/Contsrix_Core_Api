@@ -66,8 +66,11 @@ final class ProcedureWorkflowService
      */
     public function resolveFirstStepBySettingId(string $procedureSettingId): ProcedureSettingStep
     {
+        $ids = [$procedureSettingId];
+        $ids = array_merge($ids, $this->collectDescendantIds($procedureSettingId));
+
         $firstStep = ProcedureSettingStep::query()
-            ->where('procedure_setting_id', $procedureSettingId)
+            ->whereIn('procedure_setting_id', $ids)
             ->orderBy('step_order')
             ->first();
 
@@ -100,8 +103,11 @@ final class ProcedureWorkflowService
 
         $nextStep = null;
         if ($procedureSettingId && $currentStep->step_order !== null) {
+            $ids = [$procedureSettingId];
+            $ids = array_merge($ids, $this->collectDescendantIds($procedureSettingId));
+
             $nextStep = ProcedureSettingStep::query()
-                ->where('procedure_setting_id', $procedureSettingId)
+                ->whereIn('procedure_setting_id', $ids)
                 ->where('step_order', '>', $currentStep->step_order)
                 ->orderBy('step_order')
                 ->first();
@@ -452,5 +458,20 @@ final class ProcedureWorkflowService
         }
 
         return null;
+    }
+
+    private function collectDescendantIds(string $parentId): array
+    {
+        $children = ProcedureSetting::query()
+            ->where('parent_id', $parentId)
+            ->pluck('id')
+            ->all();
+
+        $result = $children;
+        foreach ($children as $childId) {
+            $result = array_merge($result, $this->collectDescendantIds($childId));
+        }
+
+        return $result;
     }
 }

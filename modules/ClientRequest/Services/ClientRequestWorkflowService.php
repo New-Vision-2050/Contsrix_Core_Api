@@ -76,9 +76,12 @@ class ClientRequestWorkflowService
                     continue;
                 }
 
+                $ids = [$setting->id];
+                $ids = array_merge($ids, $this->collectDescendantIds($setting->id));
+
                 $steps = ProcedureSettingStep::query()
                     ->with(['actionTakers' => static fn ($q) => $q->orderBy('id')])
-                    ->where('procedure_setting_id', $setting->id)
+                    ->whereIn('procedure_setting_id', $ids)
                     ->orderBy('step_order')
                     ->get();
 
@@ -498,6 +501,21 @@ class ClientRequestWorkflowService
      * When the client_request workflow process completes (parallel: all steps approved;
      * sequence: last step approved), mark the request as accepted and open it for price-offer.
      */
+    private function collectDescendantIds(string $parentId): array
+    {
+        $children = ProcedureSetting::query()
+            ->where('parent_id', $parentId)
+            ->pluck('id')
+            ->all();
+
+        $result = $children;
+        foreach ($children as $childId) {
+            $result = array_merge($result, $this->collectDescendantIds($childId));
+        }
+
+        return $result;
+    }
+
     private function advanceClientRequestToPriceOfferAfterWorkflow(string $clientRequestId): void
     {
         $clientRequest = ClientRequest::query()
