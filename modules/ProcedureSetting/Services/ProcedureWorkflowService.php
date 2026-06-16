@@ -169,6 +169,14 @@ final class ProcedureWorkflowService
             return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
         }
 
+        if ($setting->steps->isEmpty()) {
+            $setting = $this->findFirstDescendantWithSteps($setting->id);
+        }
+
+        if (!$setting) {
+            return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
+        }
+
         $firstStep = $setting->steps->first();
 
         if (!$firstStep) {
@@ -416,5 +424,33 @@ final class ProcedureWorkflowService
         if (! $step->actionTakers->contains('user_id', $userId)) {
             throw ProcedureWorkflowException::notAuthorized();
         }
+    }
+
+    /**
+     * Recursively find the first descendant setting that has at least one step.
+     * Used when a parent/internal procedure has no direct steps but stores
+     * them on a nested child (legacy data pattern).
+     */
+    private function findFirstDescendantWithSteps(string $parentId): ?ProcedureSetting
+    {
+        $children = ProcedureSetting::query()
+            ->where('parent_id', $parentId)
+            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
+                $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
+            }])])
+            ->orderBy('sort_order')
+            ->get();
+
+        foreach ($children as $child) {
+            if ($child->steps->isNotEmpty()) {
+                return $child;
+            }
+            $descendant = $this->findFirstDescendantWithSteps($child->id);
+            if ($descendant) {
+                return $descendant;
+            }
+        }
+
+        return null;
     }
 }
