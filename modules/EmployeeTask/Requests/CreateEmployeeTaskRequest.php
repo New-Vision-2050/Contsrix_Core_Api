@@ -29,7 +29,8 @@ class CreateEmployeeTaskRequest extends FormRequest
             'task_latitude'             => ['required', 'numeric', 'between:-90,90'],
             'task_longitude'            => ['required', 'numeric', 'between:-180,180'],
             'notes'                     => ['nullable', 'string'],
+            'files'                     => ['nullable', 'array'],
+            'files.*'                   => ['file', 'max:20480'],
         ];
     }
 }
-

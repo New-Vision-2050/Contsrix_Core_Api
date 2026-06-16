@@ -9,18 +9,25 @@ use Illuminate\Routing\Controller;
 
 use BasePackage\Shared\Presenters\Json;
 use Modules\EmployeeTask\Services\EmployeeTaskTypeCRUDService;
+use Modules\EmployeeTask\Services\EmployeeTaskItemService;
+use Modules\EmployeeTask\Presenters\EmployeeTaskItemPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskTypePresenter;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskTypeDTO;
 use Illuminate\Http\Request;
 
 class EmployeeTaskTypeController extends Controller
 {
-    public function __construct(private readonly EmployeeTaskTypeCRUDService $service) {}
+    public function __construct(private readonly EmployeeTaskTypeCRUDService $service , private readonly EmployeeTaskItemService $itemService) {}
 
     public function index(): JsonResponse
     {
         $types = $this->service->list(request()->all());
         return Json::items(EmployeeTaskTypePresenter::collection($types));
+    }
+    public function getItems(): JsonResponse
+    {
+        $items = $this->itemService->list(request()->all());
+        return Json::items(EmployeeTaskItemPresenter::collection($items));
     }
 
     public function store(Request $request): JsonResponse

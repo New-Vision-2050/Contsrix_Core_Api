@@ -23,6 +23,7 @@ use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
 use Modules\Process\Models\ProcessStep;
 use Modules\Process\Services\ProcessWorkflowService;
+use Modules\Shared\Media\Services\FileUploadService;
 
 class EmployeeTaskRequestService
 {
@@ -30,6 +31,7 @@ class EmployeeTaskRequestService
         private readonly EmployeeTaskRepository   $repository,
         private readonly ProcedureWorkflowService $workflow,
         private readonly ProcessWorkflowService   $processService,
+        private readonly FileUploadService        $fileUploadService,
     ) {}
 
 
@@ -46,11 +48,33 @@ class EmployeeTaskRequestService
         if ($preview['auto_approve']) {
             $data['status']      = EmployeeTaskStatus::Approved->value;
             $data['approved_at'] = now();
-            return $this->repository->create($data);
+            $task = $this->repository->create($data);
+
+            if (!empty($dto->files)) {
+                $this->fileUploadService->uploadFile(
+                    model: $task,
+                    file: $dto->files,
+                    filePath: 'employee-tasks/attachments',
+                    collectionName: 'attachments',
+                    visibility: 'public',
+                );
+            }
+
+            return $task;
         }
 
         $data['status'] = EmployeeTaskStatus::Pending->value;
         $task = $this->repository->create($data);
+
+        if (!empty($dto->files)) {
+            $this->fileUploadService->uploadFile(
+                model: $task,
+                file: $dto->files,
+                filePath: 'employee-tasks/attachments',
+                collectionName: 'attachments',
+                visibility: 'public',
+            );
+        }
 
         $this->createProcessesForTask($task);
 

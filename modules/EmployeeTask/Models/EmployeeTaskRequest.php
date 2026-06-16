@@ -19,12 +19,15 @@ use Modules\User\Models\User;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Models\Process;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class EmployeeTaskRequest extends Model
+class EmployeeTaskRequest extends Model implements HasMedia
 {
     use UuidTrait;
     use BaseFilterable;
     use CustomBelongsToTenant;
+    use InteractsWithMedia;
 
     protected $table = 'employee_task_requests';
 
@@ -91,6 +94,11 @@ class EmployeeTaskRequest extends Model
         'cancelled_at'            => 'datetime',
         'location_confirmed_at'   => 'datetime',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('attachments');
+    }
 
     public function user(): BelongsTo
     {
