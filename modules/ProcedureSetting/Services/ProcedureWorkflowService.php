@@ -170,7 +170,6 @@ final class ProcedureWorkflowService
         }
 
         $setting = $query->first();
-        return $setting;
 
         if (!$setting) {
             return ['auto_approve' => true, 'step' => null, 'action_takers' => []];

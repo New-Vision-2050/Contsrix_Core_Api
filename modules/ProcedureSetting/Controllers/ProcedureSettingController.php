@@ -45,7 +45,7 @@ class ProcedureSettingController extends Controller
      * If `auto_approve` is true → no one needs to approve; the consuming
      * service should create the entity in its already-approved terminal state.
      */
-    public function approvalResponsibles()
+    public function approvalResponsibles(): JsonResponse
     {
         $type = (string) request()->query('type', '');
         $form = (string) request()->query('form', '');
@@ -55,15 +55,6 @@ class ProcedureSettingController extends Controller
         }
 
         $formKey = $form !== '' ? $form : null;
-
-
-        return $this->workflowService->getApprovalResponsibles(
-            $type,
-            (string) \Illuminate\Support\Facades\Auth::id(),
-            [],
-            $formKey
-        );
-
 
         return Json::item(
             $this->workflowService->getApprovalResponsibles(
