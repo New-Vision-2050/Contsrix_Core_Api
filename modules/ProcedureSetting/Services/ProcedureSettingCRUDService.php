@@ -46,9 +46,9 @@ class ProcedureSettingCRUDService
         return $this->repository->getDefaultWorkFlowForList();
     }
 
-    public function getDefaultWorkFlowByType(string $type, ?string $parentId = null): ?WorkFlow
+    public function getDefaultWorkFlowByType(string $type): ?WorkFlow
     {
-        return $this->repository->getDefaultWorkFlowByType($type, $parentId);
+        return $this->repository->getDefaultWorkFlowByType($type);
     }
 
     public function toggleBranchDefaultWorkFlows(int $branchId, bool $checked, string $type): ?WorkFlow

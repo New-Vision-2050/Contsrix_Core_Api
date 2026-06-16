@@ -86,24 +86,16 @@ class ProcedureSettingController extends Controller
         }
 
         if (isset($filters['type']) && isset($filters['parent_id']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
-            $defaultWorkFlow = $this->procedureSettingService->getDefaultWorkFlowByType(
-                (string) $filters['type'],
-                (string) $filters['parent_id'],
-            );
+            $workFlows = $this->procedureSettingService->listByWorkFlow($filters);
+            $workFlow  = $workFlows->firstWhere('name', 'default') ?? $workFlows->first();
 
-            return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow, $filters) : null);
+            return Json::item($workFlow ? $this->presentWorkFlow($workFlow, $filters) : null);
         }
 
         if (isset($filters['type']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
             $defaultWorkFlow = $this->procedureSettingService->getDefaultWorkFlowByType((string) $filters['type']);
 
             return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow, $filters) : null);
-        }
-
-        if (isset($filters['parent_id']) && ! isset($filters['type']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
-            $items = $this->procedureSettingService->listByParentId((string) $filters['parent_id']);
-
-            return Json::items(ProcedureSettingPresenter::collection($items));
         }
 
         if (isset($filters['branch_id'])) {

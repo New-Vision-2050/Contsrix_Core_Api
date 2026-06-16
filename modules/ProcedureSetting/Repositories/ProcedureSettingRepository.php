@@ -46,17 +46,6 @@ class ProcedureSettingRepository extends BaseRepository
             'steps.concernedManagementHierarchies.managementHierarchy',
             'escalationManagementHierarchy:id,name,type,company_id',
             'workFlow:id,name,company_id',
-            'internalProcedures' => function ($q) {
-                $q->orderBy('sort_order');
-            },
-            'internalProcedures.steps' => function ($q) {
-                $q->orderBy('step_order');
-            },
-            'internalProcedures.steps.branch',
-            'internalProcedures.steps.management',
-            'internalProcedures.steps.escalationManagementHierarchy:id,name,type,company_id',
-            'internalProcedures.steps.actionTakers.user',
-            'internalProcedures.steps.concernedManagementHierarchies.managementHierarchy',
         ])->findOrFail($id->toString());
     }
 
@@ -176,37 +165,12 @@ class ProcedureSettingRepository extends BaseRepository
         return $query->orderBy('name')->first();
     }
 
-    public function getDefaultWorkFlowByType(string $type, ?string $parentId = null): ?WorkFlow
+    public function getDefaultWorkFlowByType(string $type): ?WorkFlow
     {
         $companyId = tenant('id');
 
         if ($companyId !== null && $companyId !== '') {
             WorkFlow::defaultForCompany((string) $companyId, $type);
-        }
-
-        if ($parentId !== null) {
-            $query = WorkFlow::query()
-                ->with(['managementHierarchies:id,name,type,company_id'])
-                ->where('type', $type)
-                ->where('name', 'default');
-
-            if ($companyId !== null && $companyId !== '') {
-                $query->where('company_id', (string) $companyId);
-            }
-
-            $workFlow = $query->orderBy('id')->first();
-
-            if ($workFlow) {
-                $children = ProcedureSetting::query()
-                    ->where('parent_id', $parentId)
-                    ->orderBy('sort_order')
-                    ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id'])
-                    ->get();
-
-                $workFlow->setRelation('procedureSettings', $children);
-            }
-
-            return $workFlow;
         }
 
         $query = WorkFlow::query()
