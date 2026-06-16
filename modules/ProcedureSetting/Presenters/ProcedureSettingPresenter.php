@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Presenters;
 
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
 class ProcedureSettingPresenter extends AbstractPresenter
@@ -18,6 +19,10 @@ class ProcedureSettingPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $form = $this->procedureSetting->form
+            ? InternalProcessForm::tryFrom($this->procedureSetting->form)
+            : null;
+
         $data = [
             'id'           => $this->procedureSetting->id,
             'name'         => $this->procedureSetting->name,
@@ -27,6 +32,19 @@ class ProcedureSettingPresenter extends AbstractPresenter
             'percentage'   => $this->procedureSetting->percentage,
             'deadline_days'  => $this->procedureSetting->deadline_days,
             'deadline_hours' => $this->procedureSetting->deadline_hours,
+            'sort_order'        => $this->procedureSetting->sort_order,
+            'parent_id'         => $this->procedureSetting->parent_id,
+            'appears_before_id' => $this->procedureSetting->appears_before_id,
+            'appears_after_id'  => $this->procedureSetting->appears_after_id,
+            'form'              => $form ? [
+                'key'        => $form->value,
+                'label_ar'   => $form->labelAr(),
+                'conditions' => array_map(
+                    static fn ($c) => $c->toDefinition(),
+                    $form->conditions(),
+                ),
+            ] : null,
+            'conditions'        => $this->procedureSetting->conditions ?? [],
             'escalation_management_hierarchy_id' => $this->procedureSetting->escalation_management_hierarchy_id,
             'escalation_management_hierarchy'    => $this->escalationManagementHierarchyPayload(),
             'work_flow_id'       => $this->procedureSetting->work_flow_id,
