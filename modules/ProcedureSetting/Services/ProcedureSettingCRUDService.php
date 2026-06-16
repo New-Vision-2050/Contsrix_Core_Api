@@ -56,6 +56,11 @@ class ProcedureSettingCRUDService
         return $this->repository->toggleBranchDefaultWorkFlows($branchId, $checked, $type);
     }
 
+    public function listByParentId(string $parentId): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->repository->list(['parent_id' => $parentId]);
+    }
+
     public function get(UuidInterface $id): ProcedureSetting
     {
         return $this->repository->getProcedureSetting(
