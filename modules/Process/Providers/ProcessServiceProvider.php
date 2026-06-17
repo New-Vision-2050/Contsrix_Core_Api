@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Process\Providers;
 
-use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Illuminate\Support\Facades\Route;
+use Modules\Process\Services\WorkflowNotifierRegistry;
 
 class ProcessServiceProvider extends ModuleServiceProvider
 {
@@ -17,12 +18,13 @@ class ProcessServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         $this->registerTranslations();
-        //$this->registerConfig();
+        // $this->registerConfig();
         $this->registerMigrations();
     }
 
     public function register(): void
     {
+        $this->app->singleton(WorkflowNotifierRegistry::class);
         $this->registerRoutes();
     }
 
@@ -30,7 +32,7 @@ class ProcessServiceProvider extends ModuleServiceProvider
     {
         Route::prefix('api/v1/processes')
             ->middleware('api')
-            ->group($this->getModulePath() . '/Resources/routes/api.php');
+            ->group($this->getModulePath().'/Resources/routes/api.php');
 
     }
 }
