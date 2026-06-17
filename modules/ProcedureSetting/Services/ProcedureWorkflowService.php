@@ -171,7 +171,7 @@ final class ProcedureWorkflowService
             ->orderBy('sort_order')
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
                 $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
-            }])])->get();
+            }])])->first();
 
 
 
