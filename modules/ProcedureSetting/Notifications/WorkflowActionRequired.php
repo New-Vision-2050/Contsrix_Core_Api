@@ -4,22 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\ProcedureSetting\Notifications;
 
-use App\Channels\SmsChannel;
 use App\Notifications\Drivers\SMS\MoraSms;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Modules\Country\Models\Country;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\Process\Models\ProcessStep;
 
-class WorkflowActionRequired extends Notification implements ShouldQueue
+class WorkflowActionRequired extends Notification
 {
     use Queueable;
 
     /**
-     * @param array<string> $channels Delivery channels: 'mail', 'sms'
+     * @param  array<string>  $channels  Delivery channels: 'mail', 'sms'
      */
     public function __construct(
         public ?ProcessStep $processStep,
@@ -37,11 +35,11 @@ class WorkflowActionRequired extends Notification implements ShouldQueue
         $stepName = $this->templateStep->name ?? 'Workflow Step';
 
         return (new MailMessage)
-            ->subject(__('workflow.action_required') . ': ' . $stepName)
+            ->subject(__('workflow.action_required').': '.$stepName)
             ->markdown('emails.workflowActionRequired', [
                 'stepName' => $stepName,
                 'stepOrder' => $this->templateStep->step_order,
-                'processStepId' => $this->processStep->id,
+                'processStepId' => $this->processStep?->id,
             ]);
     }
 
@@ -52,13 +50,13 @@ class WorkflowActionRequired extends Notification implements ShouldQueue
 
         return $driver
             ->to($notifiable->phone)
-            ->line(__('workflow.action_required') . ': ' . $stepName);
+            ->line(__('workflow.action_required').': '.$stepName);
     }
 
     private function resolveSmsDriver(object $notifiable): MoraSms
     {
         if (! property_exists($notifiable, 'phone_code') || ! $notifiable->phone_code) {
-            return new MoraSms();
+            return new MoraSms;
         }
 
         $country = Country::query()
@@ -66,9 +64,9 @@ class WorkflowActionRequired extends Notification implements ShouldQueue
             ->first();
 
         if ($country && $country->smsDriver && $country->smsDriver->name === 'mora') {
-            return new MoraSms();
+            return new MoraSms;
         }
 
-        return new MoraSms();
+        return new MoraSms;
     }
 }
