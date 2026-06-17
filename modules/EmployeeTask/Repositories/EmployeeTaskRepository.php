@@ -28,7 +28,7 @@ class EmployeeTaskRepository
     public function findByIdWithRelations(string $id): ?EmployeeTaskRequest
     {
         return EmployeeTaskRequest::query()
-            ->with(['user', 'sessions', 'extensionRequests'])
+            ->with(['user', 'sessions', 'extensionRequests' , 'media'])
             ->find($id);
     }
 
