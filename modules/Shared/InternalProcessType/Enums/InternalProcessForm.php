@@ -6,6 +6,10 @@ namespace Modules\Shared\InternalProcessType\Enums;
 
 enum InternalProcessForm: string
 {
+    case CreateClientRequest = 'createClientRequest';
+    case CreatePriceOffer    = 'createPriceOffer';
+    case CreateContract      = 'createContract';
+    case CreateMeeting       = 'createMeeting';
     case CreateTask          = 'createTask';
     case StartTask           = 'startTask';
     case AssignOtherEmployee = 'assignOtherEmployee';
@@ -19,6 +23,10 @@ enum InternalProcessForm: string
     public function labelAr(): string
     {
         return match ($this) {
+            self::CreateClientRequest => 'إنشاء طلب عميل',
+            self::CreatePriceOffer    => 'إنشاء عرض سعر',
+            self::CreateContract      => 'إنشاء عقد',
+            self::CreateMeeting       => 'إنشاء اجتماع',
             self::CreateTask          => 'انشاء مهمة',
             self::StartTask           => 'بدء المهمة',
             self::AssignOtherEmployee => 'تحويل لموظف اخر',
@@ -35,7 +43,7 @@ enum InternalProcessForm: string
     public function conditions(): array
     {
         return match ($this) {
-            self::CreateTask, self::StartTask, self::ExtendTaskTime => [
+            self::CreateClientRequest, self::CreatePriceOffer, self::CreateContract, self::CreateMeeting, self::CreateTask, self::StartTask, self::ExtendTaskTime => [
                 InternalProcessCondition::AllowDuringShift,
                 InternalProcessCondition::AllowOutsideShift,
                 InternalProcessCondition::AllowOnHolidays,
@@ -85,6 +93,10 @@ enum InternalProcessForm: string
     public function applicableTypes(): array
     {
         return match ($this) {
+            self::CreateClientRequest => ['client_request'],
+            self::CreatePriceOffer    => ['price_offer'],
+            self::CreateContract      => ['contract'],
+            self::CreateMeeting       => ['meeting'],
             self::CreateTask          => ['employee_task'],
             self::StartTask           => ['employee_task'],
             self::ExtendTaskTime      => ['employee_task'],

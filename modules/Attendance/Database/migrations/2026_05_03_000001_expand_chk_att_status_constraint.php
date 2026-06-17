@@ -33,7 +33,7 @@ return new class extends Migration
         );
 
         if ($exists && $exists->cnt > 0) {
-            DB::statement("ALTER TABLE attendances DROP CHECK {$name}");
+            DB::statement("ALTER TABLE attendances DROP CONSTRAINT {$name}");
         }
     }
 };
