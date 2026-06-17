@@ -147,11 +147,7 @@ final class ProcedureWorkflowService
      *  - auto_approve = false when the first step has explicit action-takers
      *    → those users must approve.
      *
-     * @return array{
-     *   auto_approve: bool,
-     *   step: array{id:int,name:?string,step_order:int}|null,
-     *   action_takers: list<array{user_id:string,name:?string}>
-     * }
+     *
      */
     public function getApprovalResponsibles(string $procedureType, ?string $createdByUserId = null, array $context = [], ?string $formKey = null)
     {
@@ -176,6 +172,7 @@ final class ProcedureWorkflowService
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
                 $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
             }])]);
+
         return $setting;
 
 
