@@ -166,7 +166,7 @@ final class ProcedureWorkflowService
         }
 
         $settings = $query->first();
-        $setting= ProcedureSetting::query()->whereIn("parent_id",$settings->pluck("id"))
+        $setting = ProcedureSetting::query()->where("parent_id",$settings->id)
             ->where('type', $procedureType)
             ->orderBy('sort_order')
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
