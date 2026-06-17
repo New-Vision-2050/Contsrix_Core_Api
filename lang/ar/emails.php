@@ -1,6 +1,5 @@
 <?php
 
-
 return [
     'reset-password' => 'تغيير كلمه المرور',
     'login-with-otp' => 'الدخول عبر كلمه المرور المؤقته',
@@ -9,9 +8,9 @@ return [
     'you-tried-to-change-password-with' => 'لقد حاولت تغيير كلمه المرور عن طريق',
     'you-tried-to-first-login-with' => 'لقد حاولت الدخول للمرة الاولي عن طريق',
 
-    "you-tried-to-change-email-with"=>"لقد حاولت تغيير البريد الالكتروني عن طريق: :email",
-    "change-your-email" => "تغيير البريد الالكتروني عبر كلمة المرور المؤقتة",
-    "change-your-phone" => "تغيير رقم الهاتف عبر كلمة المرور المؤقتة",
+    'you-tried-to-change-email-with' => 'لقد حاولت تغيير البريد الالكتروني عن طريق: :email',
+    'change-your-email' => 'تغيير البريد الالكتروني عبر كلمة المرور المؤقتة',
+    'change-your-phone' => 'تغيير رقم الهاتف عبر كلمة المرور المؤقتة',
     'you-tried-to-login-with' => 'لقد حاولت الدخول عن طريق',
     'your-verification-code-is' => 'كلمه المرور المؤقته',
     'will-expire' => 'ستكون غير صالحة بعد : :time  دقيقة',
@@ -19,9 +18,9 @@ return [
     'new-vision' => 'نيو فيجن',
     'enter-otp' => 'ادخل كلمه المرور المؤقته',
     'rights' => 'كل الحقوق محفوظة لدي شركه نيو فيجي © 2025',
-    "you-are-added-to-company"=>"لقد تم اضافتك لشركة :company",
-    "your-domain-is"=>" النطاق الخاص بشركتك هو",
-    "serial_no"=>"رقم المعرف الخاص بشركتك هو",
+    'you-are-added-to-company' => 'لقد تم اضافتك لشركة :company',
+    'your-domain-is' => ' النطاق الخاص بشركتك هو',
+    'serial_no' => 'رقم المعرف الخاص بشركتك هو',
     'subject' => 'رد على رسالتك',
     'greeting' => 'مرحباً :name،',
     'thank_you' => 'شكراً لتواصلك معنا. لقد استلمنا رسالتك وإليك ردنا:',
@@ -29,5 +28,14 @@ return [
     'our_reply' => 'ردنا:',
     'further_questions' => 'إذا كان لديك أي أسئلة أخرى، لا تتردد في التواصل معنا مرة أخرى.',
     'salutation' => 'مع أطيب التحيات،',
+    'support' => 'الدعم الفني',
+    'workflow-action-required-subject' => 'إجراء مطلوب',
+    'workflow-action-required-subtitle' => 'تنبيه إجراء اعتماد',
+    'workflow-action-required-badge' => 'مهمة بانتظار المراجعة',
+    'workflow-action-required-message' => 'لديك مرحلة اعتماد جديدة تحتاج إلى المراجعة واتخاذ الإجراء المناسب من خلال النظام.',
+    'workflow-action-required-sms' => 'إجراء مطلوب في Constrix: :step',
+    'workflow-step-name' => 'اسم المرحلة',
+    'workflow-step-order' => 'ترتيب المرحلة',
+    'workflow-automated-message' => 'هذه رسالة آلية من نظام Constrix، برجاء عدم الرد على هذا البريد.',
 
 ];

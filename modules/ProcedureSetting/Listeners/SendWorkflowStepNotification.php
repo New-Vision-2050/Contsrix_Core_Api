@@ -51,15 +51,20 @@ class SendWorkflowStepNotification
 
         // 3. Send Laravel Notifications (email + SMS) to each user
         $users = User::query()->whereIn('id', $userIds)->get();
-        $notification = new WorkflowActionRequired(
-            $event->processStep,
-            $templateStep,
-            $channels,
-        );
 
         foreach ($users as $user) {
+            $userChannels = $this->channelsAvailableForUser($channels, $user, $event);
+
+            if ($userChannels === []) {
+                continue;
+            }
+
             try {
-                $user->notify($notification);
+                $user->notify(new WorkflowActionRequired(
+                    $event->processStep,
+                    $templateStep,
+                    $userChannels,
+                ));
             } catch (\Throwable $e) {
                 Log::error('WorkflowActionRequired notification failed', [
                     'user_id' => $user->id,
@@ -68,6 +73,29 @@ class SendWorkflowStepNotification
                 ]);
             }
         }
+    }
+
+    private function channelsAvailableForUser(array $channels, User $user, WorkflowStepActivated $event): array
+    {
+        $available = $channels;
+
+        if (in_array('mail', $available, true) && trim((string) $user->email) === '') {
+            Log::warning('WorkflowActionRequired mail skipped: user has no email', [
+                'user_id' => $user->id,
+                'process_step_id' => $event->processStep->id,
+            ]);
+            $available = array_values(array_diff($available, ['mail']));
+        }
+
+        if (in_array('sms', $available, true) && trim((string) $user->phone) === '') {
+            Log::warning('WorkflowActionRequired sms skipped: user has no phone', [
+                'user_id' => $user->id,
+                'process_step_id' => $event->processStep->id,
+            ]);
+            $available = array_values(array_diff($available, ['sms']));
+        }
+
+        return $available;
     }
 
     private function broadcastRealTime(WorkflowStepActivated $event): void

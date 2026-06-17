@@ -1,75 +1,106 @@
-<html xmlns="http://www.w3.org/1999/xhtml" lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}">
+<!DOCTYPE html>
+<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="color-scheme" content="light">
-    <meta name="supported-color-schemes" content="light">
-    <style>
-        @media only screen and (max-width: 600px) {
-            .inner-body { width: 100% !important; }
-            .footer { width: 100% !important; }
-        }
-        @media only screen and (max-width: 500px) {
-            .button { width: 100% !important; }
-        }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ __('emails.workflow-action-required-subject') }}</title>
 </head>
-<body style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #718096; line-height: 1.4; margin: 0; padding: 0; width: 100% !important;">
+<body style="margin:0; padding:0; background-color:#eef2f6; font-family:Tahoma, Arial, sans-serif; direction:{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }};">
 
-<table class="wrapper" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #edf2f7; margin: 0; padding: 0; width: 100%;">
-    <tbody>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#eef2f6; margin:0; padding:32px 0;">
     <tr>
         <td align="center">
-            <table class="content" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0; padding: 0; width: 100%;">
-                <tbody>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px; background:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 10px 30px rgba(15,76,129,0.10);">
                 <tr>
-                    <td class="body" width="100%" cellpadding="0" cellspacing="0" style="background-color: #edf2f7; border-bottom: 1px solid #edf2f7; border-top: 1px solid #edf2f7; margin: 0; padding: 0; width: 100%;">
-                        <table class="inner-body" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #ffffff; border-radius: 2px; box-shadow: 0 2px 0 rgba(0, 0, 150, 0.025); margin: 0 auto; padding: 0; width: 570px;">
-                            <tbody>
+                    <td style="background:linear-gradient(135deg, #0b3c68 0%, #135a96 100%); padding:28px 32px;">
+                        <table width="100%" role="presentation" cellspacing="0" cellpadding="0" border="0">
                             <tr>
-                                <td class="content-cell" style="max-width: 100vw; padding: 32px;">
-                                    <h1 dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}" style="color: #3d4852; font-size: 18px; font-weight: bold; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                        {{ __('workflow.action_required') }}
-                                    </h1>
-                                    <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                        {{ __('workflow.you_have_a_pending_step') }}: <strong>{{ $stepName }}</strong>
-                                    </p>
-                                    <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                        {{ __('workflow.step_order') }}: {{ $stepOrder }}
-                                    </p>
-                                    <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                        {{ __('workflow.please_review_and_act') }}
-                                    </p>
-                                    <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                        {{ __('emails.regards') }},<br>
-                                        {{ config('app.name') }}
-                                    </p>
+                                <td align="{{ app()->getLocale() == 'ar' ? 'right' : 'left' }}">
+                                    <div style="font-size:28px; font-weight:700; color:#ffffff; letter-spacing:0.4px;">
+                                        Constrix
+                                    </div>
+                                    <div style="font-size:13px; color:#dbeafe; margin-top:6px;">
+                                        {{ __('emails.workflow-action-required-subtitle') }}
+                                    </div>
                                 </td>
                             </tr>
-                            </tbody>
                         </table>
                     </td>
                 </tr>
                 <tr>
-                    <td>
-                        <table class="footer" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto; padding: 0; text-align: center; width: 570px;">
-                            <tbody>
-                            <tr>
-                                <td class="content-cell" align="center" style="max-width: 100vw; padding: 32px;">
-                                    <p style="line-height: 1.5em; margin-top: 0; color: #b0adc5; font-size: 12px; text-align: center;">
-                                        {{ __('emails.rights') }}
-                                    </p>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
+                    <td style="background:#f8fbff; padding:0 32px;">
+                        <div style="height:6px; background:linear-gradient(90deg,#2563eb,#10b981,#f59e0b); border-radius:0 0 10px 10px;"></div>
                     </td>
                 </tr>
-                </tbody>
+                <tr>
+                    <td style="padding:32px;">
+                        <div style="margin-bottom:18px;">
+                            <span style="display:inline-block; background:#e0edff; color:#1d4ed8; font-size:13px; font-weight:700; padding:10px 16px; border-radius:999px;">
+                                {{ __('emails.workflow-action-required-badge') }}
+                            </span>
+                        </div>
+
+                        <h1 style="margin:0 0 12px; font-size:28px; line-height:1.6; color:#0f172a; font-weight:700;">
+                            {{ __('emails.workflow-action-required-subject') }}
+                        </h1>
+
+                        <p style="margin:0 0 10px; font-size:15px; line-height:1.9; color:#334155;">
+                            {{ __('emails.greeting', ['name' => $data['name']]) }}
+                        </p>
+
+                        <p style="margin:0 0 24px; font-size:15px; line-height:2; color:#475569;">
+                            {{ __('emails.workflow-action-required-message') }}
+                        </p>
+
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; margin-bottom:28px;">
+                            <tr>
+                                <td style="padding:20px;">
+                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                        <tr>
+                                            <td style="padding:10px 0; font-size:14px; color:#64748b; width:34%; border-bottom:1px solid #e2e8f0;">
+                                                <strong>{{ __('emails.workflow-step-name') }}</strong>
+                                            </td>
+                                            <td style="padding:10px 0; font-size:14px; color:#0f172a; border-bottom:1px solid #e2e8f0;">
+                                                {{ $data['step_name'] }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding:10px 0; font-size:14px; color:#64748b;">
+                                                <strong>{{ __('emails.workflow-step-order') }}</strong>
+                                            </td>
+                                            <td style="padding:10px 0; font-size:14px; color:#0f172a;">
+                                                {{ $data['step_order'] ?? '-' }}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p style="margin:0 0 10px; font-size:15px; line-height:2; color:#475569;">
+                            {{ __('emails.regards') }},<br>
+                            <strong>{{ __('emails.new-vision') }}</strong>
+                        </p>
+
+                        <div style="background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:13px; line-height:1.9; padding:14px 16px; border-radius:12px; margin-top:24px;">
+                            {{ __('emails.workflow-automated-message') }}
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:22px 32px; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:center;">
+                        <p style="margin:0 0 8px; font-size:12px; color:#64748b;">
+                            © {{ date('Y') }} Constrix. {{ __('emails.rights') }}
+                        </p>
+                        <p style="margin:0; font-size:12px; color:#64748b;">
+                            {{ __('emails.support') }}:
+                            <a href="mailto:info@nv2030.com" style="color:#135a96; text-decoration:none;">info@nv2030.com</a>
+                        </p>
+                    </td>
+                </tr>
             </table>
         </td>
     </tr>
-    </tbody>
 </table>
 </body>
 </html>
