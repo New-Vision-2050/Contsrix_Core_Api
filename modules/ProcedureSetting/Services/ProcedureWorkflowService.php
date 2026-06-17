@@ -173,7 +173,6 @@ final class ProcedureWorkflowService
                 $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
             }])])->get();
 
-        return $setting;
 
 
 

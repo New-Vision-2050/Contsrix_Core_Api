@@ -55,12 +55,7 @@ class ProcedureSettingController extends Controller
         }
 
         $formKey = $form !== '' ? $form : null;
-        return $this->workflowService->getApprovalResponsibles(
-            $type,
-            (string) \Illuminate\Support\Facades\Auth::id(),
-            [],
-            $formKey
-        );
+
 
         return Json::item(
             $this->workflowService->getApprovalResponsibles(
