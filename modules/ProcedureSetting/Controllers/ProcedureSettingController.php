@@ -4,26 +4,27 @@ declare(strict_types=1);
 
 namespace Modules\ProcedureSetting\Controllers;
 
-use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Exports\ProcedureSettingExport;
 use Modules\ProcedureSetting\Handlers\DeleteProcedureSettingHandler;
 use Modules\ProcedureSetting\Handlers\UpdateProcedureSettingHandler;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\ProcedureSetting\Presenters\ProcedureSettingPresenter;
 use Modules\ProcedureSetting\Requests\CreateProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\DeleteProcedureSettingRequest;
+use Modules\ProcedureSetting\Requests\ExportProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\GetProcedureSettingListRequest;
 use Modules\ProcedureSetting\Requests\GetProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\ToggleBranchWorkFlowRequest;
 use Modules\ProcedureSetting\Requests\UpdateProcedureSettingRequest;
 use Modules\ProcedureSetting\Services\ProcedureSettingCRUDService;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
-use Modules\ProcedureSetting\Exports\ProcedureSettingExport;
-use Modules\ProcedureSetting\Requests\ExportProcedureSettingRequest;
-use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
-use Modules\ProcedureSetting\Models\WorkFlow;
 
 class ProcedureSettingController extends Controller
 {
@@ -32,8 +33,7 @@ class ProcedureSettingController extends Controller
         private UpdateProcedureSettingHandler $updateProcedureSettingHandler,
         private DeleteProcedureSettingHandler $deleteProcedureSettingHandler,
         private ProcedureWorkflowService $workflowService,
-    ) {
-    }
+    ) {}
 
     /**
      * GET /api/v1/procedure-settings/approval-responsibles?type=...
@@ -49,19 +49,20 @@ class ProcedureSettingController extends Controller
     {
         $type = (string) request()->query('type', '');
         $form = (string) request()->query('form', '');
+        $branchId = (string) request()->query('branch_id', '');
 
         if ($type === '') {
             return Json::error(__('The type query parameter is required.'), 422);
         }
 
         $formKey = $form !== '' ? $form : null;
-
+        $context = $branchId !== '' ? ['branch_id' => $branchId] : [];
 
         return Json::item(
             $this->workflowService->getApprovalResponsibles(
                 $type,
-                (string) \Illuminate\Support\Facades\Auth::id(),
-                [],
+                (string) Auth::id(),
+                $context,
                 $formKey
             ),
             message: 'Approval responsibles retrieved successfully',
@@ -96,7 +97,7 @@ class ProcedureSettingController extends Controller
 
         if (isset($filters['type']) && isset($filters['parent_id']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
             $workFlows = $this->procedureSettingService->listByWorkFlow($filters);
-            $workFlow  = $workFlows->firstWhere('name', 'default') ?? $workFlows->first();
+            $workFlow = $workFlows->firstWhere('name', 'default') ?? $workFlows->first();
 
             return Json::item($workFlow ? $this->presentWorkFlow($workFlow, $filters) : null);
         }
@@ -158,7 +159,7 @@ class ProcedureSettingController extends Controller
 
         $presenter = new ProcedureSettingPresenter($item);
 
-        return Json::item( $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteProcedureSettingRequest $request): JsonResponse
@@ -170,13 +171,11 @@ class ProcedureSettingController extends Controller
 
     /**
      * Export proceduresetting to a file
-     *
-     * @param ExportProcedureSettingRequest $request
      */
     public function export(ExportProcedureSettingRequest $request)
     {
         $format = $request->get('format', 'xlsx');
-        $fileName = 'procedure_setting.' . $format;
+        $fileName = 'procedure_setting.'.$format;
         $filters = $request->getFilters();
 
         return Excel::download(new ProcedureSettingExport($this->procedureSettingService, $filters), $fileName);
@@ -191,15 +190,15 @@ class ProcedureSettingController extends Controller
             : $workFlow->procedureSettings->whereNull('parent_id')->values();
 
         return [
-            'id'                 => $workFlow->id,
-            'name'               => $workFlow->name,
-            'type'               => $workFlow->type,
-            'branches'           => $workFlow->managementHierarchies
+            'id' => $workFlow->id,
+            'name' => $workFlow->name,
+            'type' => $workFlow->type,
+            'branches' => $workFlow->managementHierarchies
                 ->where('type', 'branch')
                 ->map(static fn ($branch): array => [
-                    'id'         => $branch->id,
-                    'name'       => $branch->name,
-                    'type'       => $branch->type,
+                    'id' => $branch->id,
+                    'name' => $branch->name,
+                    'type' => $branch->type,
                     'company_id' => $branch->company_id,
                 ])
                 ->values()

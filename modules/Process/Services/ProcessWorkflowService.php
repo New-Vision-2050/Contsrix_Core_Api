@@ -5,19 +5,18 @@ declare(strict_types=1);
 namespace Modules\Process\Services;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Collection;
-use Modules\Process\Enums\ProcessStatus;
-use Modules\Process\Models\Process;
-use Modules\Process\Models\ProcessStep;
-use Modules\ProcedureSetting\Models\ProcedureSetting;
-use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Events\WorkflowStepActivated;
 use Modules\ProcedureSetting\Jobs\AutoApproveWorkflowStep;
-
-use Modules\Process\Enums\ProcessStepStatus;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Services\ActionTakerResolver;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
+use Modules\Process\Models\Process;
+use Modules\Process\Models\ProcessStep;
 
 class ProcessWorkflowService
 {
@@ -26,13 +25,13 @@ class ProcessWorkflowService
     ) {}
 
     public function createProcessesFromSettings(
-            string $processableType,
-            string $processableId,
-            Collection $settings,
-            ?string $createdByUserId = null,
-            array $context = [],
-        ): ?Process {
-            $firstProcess = null;
+        string $processableType,
+        string $processableId,
+        Collection $settings,
+        ?string $createdByUserId = null,
+        array $context = [],
+    ): ?Process {
+        $firstProcess = null;
 
         foreach ($settings as $index => $setting) {
             /** @var ProcedureSetting $setting */
@@ -45,11 +44,11 @@ class ProcessWorkflowService
                     continue;
                 }
                 $snapshots[] = [
-                    'step_id'                            => $step->id,
-                    'template_step_order'                => $step->step_order,
-                    'assigned_user_id'                   => $resolvedUsers[0],
-                    'authorized_user_ids'                => $resolvedUsers,
-                    'specific_procedure_type'            => $step->action_taker_specific_procedure_type?->value,
+                    'step_id' => $step->id,
+                    'template_step_order' => $step->step_order,
+                    'assigned_user_id' => $resolvedUsers[0],
+                    'authorized_user_ids' => $resolvedUsers,
+                    'specific_procedure_type' => $step->action_taker_specific_procedure_type?->value,
                     'escalation_management_hierarchy_id' => $step->escalation_management_hierarchy_id,
                 ];
             }
@@ -71,24 +70,24 @@ class ProcessWorkflowService
             }
 
             $process = Process::create([
-                'processable_type'  => $processableType,
-                'processable_id'    => $processableId,
-                'execute_type'      => $setting->execute_type ?? 'sequence',
-                'status'            => $index === 0 ? ProcessStatus::InProgress : ProcessStatus::Pending,
+                'processable_type' => $processableType,
+                'processable_id' => $processableId,
+                'execute_type' => $setting->execute_type ?? 'sequence',
+                'status' => $index === 0 ? ProcessStatus::InProgress : ProcessStatus::Pending,
                 'template_snapshot' => $snapshots,
-                'sort_order'        => $sortOrder,
+                'sort_order' => $sortOrder,
             ]);
 
             if ($index === 0) {
                 $firstProcess = $process;
-                $this->initializeProcessSteps($process);
+                $this->initializeProcessSteps($process, $context);
             }
         }
 
         return $firstProcess;
     }
 
-    public function initializeProcessSteps(Process $process): void
+    public function initializeProcessSteps(Process $process, array $context = []): void
     {
         if ($process->steps()->exists()) {
             return;
@@ -101,23 +100,23 @@ class ProcessWorkflowService
 
         if ($process->execute_type === 'parallel') {
             foreach ($snapshot as $stepConfig) {
-                $this->createProcessStep($process, $stepConfig);
+                $this->createProcessStep($process, $stepConfig, $context);
             }
         } else {
-            $this->createProcessStep($process, $snapshot[0]);
+            $this->createProcessStep($process, $snapshot[0], $context);
         }
     }
 
-    private function createProcessStep(Process $process, array $stepConfig): void
+    private function createProcessStep(Process $process, array $stepConfig, array $context = []): void
     {
         $step = ProcessStep::create([
-            'process_id'                         => $process->id,
-            'step_id'                            => $stepConfig['step_id'],
-            'template_step_order'                => $stepConfig['template_step_order'] ?? null,
-            'assigned_user_id'                   => $stepConfig['assigned_user_id'],
-            'authorized_user_ids'                => $stepConfig['authorized_user_ids'] ?? null,
+            'process_id' => $process->id,
+            'step_id' => $stepConfig['step_id'],
+            'template_step_order' => $stepConfig['template_step_order'] ?? null,
+            'assigned_user_id' => $stepConfig['assigned_user_id'],
+            'authorized_user_ids' => $stepConfig['authorized_user_ids'] ?? null,
             'escalation_management_hierarchy_id' => $stepConfig['escalation_management_hierarchy_id'] ?? null,
-            'status'                             => 'pending',
+            'status' => 'pending',
         ]);
 
         $templateStep = ProcedureSettingStep::query()->find($stepConfig['step_id']);
@@ -133,7 +132,7 @@ class ProcessWorkflowService
             processStep: $step,
             templateStep: $templateStep,
             userIds: $authorizedUserIds,
-            context: [],
+            context: $context,
         ));
 
         // 2. Schedule auto-approve if skipping_period is configured
@@ -155,6 +154,7 @@ class ProcessWorkflowService
                 return $row;
             }
         }
+
         return null;
     }
 
@@ -162,6 +162,7 @@ class ProcessWorkflowService
     {
         return $snapshotRow['authorized_user_ids'] ?? [$snapshotRow['assigned_user_id']];
     }
+
     public function approveStep(string $id): ProcessStep
     {
         return DB::transaction(function () use ($id) {
@@ -188,9 +189,9 @@ class ProcessWorkflowService
             }
 
             $step->update([
-                'status'    => ProcessStepStatus::Approved,
+                'status' => ProcessStepStatus::Approved,
                 'action_by' => Auth::id(),
-                'acted_at'  => now(),
+                'acted_at' => now(),
             ]);
 
             $this->advanceProcessAfterAction($process);
@@ -220,14 +221,14 @@ class ProcessWorkflowService
             if (! in_array((string) Auth::id(), $authorizedUsers, true)) {
                 abort(403);
             }
-            if ($step->status !== ProcessStepStatus::Pending->value) {
+            if ($step->status !== ProcessStepStatus::Pending) {
                 abort(422, 'Process step is not pending.');
             }
 
             $step->update([
-                'status'    => ProcessStepStatus::Rejected,
+                'status' => ProcessStepStatus::Rejected,
                 'action_by' => Auth::id(),
-                'acted_at'  => now(),
+                'acted_at' => now(),
             ]);
 
             $isJobRole = ($snapshotRow['specific_procedure_type'] ?? null) === 'job_role';
@@ -268,9 +269,9 @@ class ProcessWorkflowService
             }
 
             $step->update([
-                'status'    => ProcessStepStatus::Approved,
+                'status' => ProcessStepStatus::Approved,
                 'action_by' => null,
-                'acted_at'  => now(),
+                'acted_at' => now(),
             ]);
 
             $this->advanceProcessAfterAction($process);
@@ -309,6 +310,7 @@ class ProcessWorkflowService
             }
         }
     }
+
     private function moveToNextProcessOrFinalize(Process $currentProcess): void
     {
         $nextProcess = Process::query()
@@ -327,6 +329,7 @@ class ProcessWorkflowService
             }
         }
     }
+
     public function getCurrentStep(Process $process): ?ProcessStep
     {
         return $process->steps()

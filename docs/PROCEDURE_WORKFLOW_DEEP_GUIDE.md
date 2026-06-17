@@ -8,19 +8,33 @@
 
 If you are reading this to implement **email notifications**, **SMS notifications**, **auto-approve (skipping_period)**, or **new features**, start here:
 
-### Centralized Notification System (Event + Listener)
+### Central Workflow Entry Point
 
-All notifications are now handled centrally. You do NOT need to modify individual services to add email/SMS.
+New Process-based workflow code should go through `WorkflowEngine`:
+
+- `WorkflowEngine::previewResponsibles()` previews the first action takers.
+- `WorkflowEngine::startWorkflow()` resolves settings, creates `Process` records, and activates the first step.
+- `WorkflowEngine::resolveParentSetting()` scopes by company + branch workflow, then falls back to the company default workflow.
+- `WorkflowEngine::resolveSettingsForEntry()` returns the parent setting for no-form workflows or matching child settings for form-based workflows.
+
+`ProcedureWorkflowService` still exists for template-step flows that do **not** create `Process` records, such as EmployeeTask extensions and completion approvals.
+
+### Centralized Notification System (Event + Listener + Registry)
+
+Process-based notifications are now handled centrally. Each module registers a `WorkflowNotifier` for its processable type.
 
 **Architecture**:
 - `WorkflowStepActivated` event is fired whenever a `ProcessStep` becomes active.
-- `SendWorkflowStepNotification` listener handles real-time broadcast + email + SMS.
+- `SendWorkflowStepNotification` listener handles real-time dispatch through `WorkflowNotifierRegistry` plus email + SMS.
+- `EmployeeTaskWorkflowNotifier` broadcasts `EmployeeTaskNotification` and real inbox counts.
+- `ClientRequestWorkflowNotifier` is registered for `client_request`; it is currently a no-op for real-time step activation and returns zero counts until ClientRequest has an inbox counter.
 - `WorkflowActionRequired` notification sends mail (via `toMail()`) and SMS (via `toSms()`).
 
 **For Process-based workflows** (EmployeeTaskRequest, ClientRequest):
 - `ProcessWorkflowService::createProcessStep()` automatically fires `WorkflowStepActivated`.
 - The listener reads `notify_by_email` and `notify_by_sms` flags from `ProcedureSettingStep`.
-- **No manual changes needed** in consuming services.
+- Real-time behavior is module-specific through the registered `WorkflowNotifier`.
+- Do not manually broadcast in the create path or notifications will be duplicated.
 
 **For non-Process workflows** (EmployeeTask extensions/approvals):
 - These call `dispatchStepNotifications()` directly since they don't create `ProcessStep` records.
@@ -39,13 +53,13 @@ All notifications are now handled centrally. You do NOT need to modify individua
 2. The core change is in `ActionTakerResolver::resolveUsersForStep()`.
 
 ### To Add a New Entity That Uses Workflows
-1. Follow the 6-step guide in **§19.4**.
-2. Copy the EmployeeTask pattern exactly.
-3. If the entity creates `Process` records, notifications are automatic via the event.
-4. If it doesn't create `Process` records, call `dispatchStepNotifications()` manually like extensions/approvals.
+1. Call `WorkflowEngine::startWorkflow()` when the entity enters a workflow.
+2. Register a `WorkflowNotifier` for the new `processable_type`.
+3. Reuse `ProcessWorkflowService::approveStep()` / `rejectStep()` or mirror the existing ClientRequest business rules if the entity needs custom status transitions.
+4. If it does not create `Process` records, use `ProcedureWorkflowService` and dispatch notifications manually like extensions/approvals.
 
 ### Critical Rule for Notifications
-`EmployeeTaskNotification` accepts `$userIds` explicitly. For `management_hierarchy` and `specific_procedures`, the template step has **EMPTY** `actionTakers`. You MUST resolve real user IDs via `ActionTakerResolver` or `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()` and pass them to the event constructor. Otherwise NO ONE receives the notification.
+`EmployeeTaskNotification` accepts `$userIds` explicitly. For `management_hierarchy` and `specific_procedures`, the template step has **EMPTY** `actionTakers`. For Process-based flows, `ProcessWorkflowService` resolves real user IDs into `authorized_user_ids` before firing `WorkflowStepActivated`; for non-Process flows, callers must resolve user IDs via `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()` and pass them to the event constructor.
 
 ---
 
@@ -55,8 +69,8 @@ All notifications are now handled centrally. You do NOT need to modify individua
 
 | Method | Returns | Parameters | Used By |
 |--------|---------|-----------|---------|
-| `resolveUsersForStep($step, $createdByUserId, $context = [])` | `array<string>` | `ProcedureSettingStep`, `?string`, `array` | ProcessWorkflowService, ProcedureWorkflowService, ClientRequestWorkflowService |
-| `resolveAssignedUserId($step, $createdByUserId, $context = [])` | `?string` | Same as above | ProcessWorkflowService, ClientRequestWorkflowService |
+| `resolveUsersForStep($step, $createdByUserId, $context = [])` | `array<string>` | `ProcedureSettingStep`, `?string`, `array` | ProcessWorkflowService, ProcedureWorkflowService, WorkflowEngine |
+| `resolveAssignedUserId($step, $createdByUserId, $context = [])` | `?string` | Same as above | ProcessWorkflowService |
 | `resolveManagerFromCreatorHierarchy($step, $createdByUserId, $context = [])` | `?string` | Same as above | ProcedureWorkflowService::userCanActOnStep, assertIsActionTaker |
 | `rejectionShouldFailProcess($step)` | `bool` | `ProcedureSettingStep` | ProcessWorkflowService::rejectStep |
 
@@ -68,15 +82,27 @@ All notifications are now handled centrally. You do NOT need to modify individua
 | `resolveFirstStepBySettingId($procedureSettingId)` | `ProcedureSettingStep` | `string` | EmployeeTaskExtensionService, EmployeeTaskApprovalService |
 | `advance($currentStepId, $procedureSettingId, $userId, $createdByUserId = null, $context = [])` | `ProcedureWorkflowResult` | `?int`, `?string`, `string`, `?string`, `array` | EmployeeTaskExtensionWorkflowService, EmployeeTaskApprovalService, EmployeeTaskRequestService |
 | `assertCanReject($currentStepId, $userId, $createdByUserId = null, $context = [])` | `void` | Same as advance | EmployeeTaskExtensionWorkflowService, EmployeeTaskApprovalService, EmployeeTaskRequestService |
-| `getApprovalResponsibles($procedureType, $createdByUserId = null, $context = [])` | `array{auto_approve: bool, step: ?array, action_takers: array}` | `string`, `?string`, `array` | EmployeeTaskRequestService (creation preview) |
+| `getApprovalResponsibles($procedureType, $createdByUserId = null, $context = [], $formKey = null)` | `array{auto_approve: bool, step: ?array, action_takers: array}` | `string`, `?string`, `array`, `?string` | ProcedureSettingController; delegates to `WorkflowEngine::previewResponsibles()` |
 | `userCanActOnStep($step, $userId, $createdByUserId = null, $context = [])` | `bool` | `ProcedureSettingStep`, `string`, `?string`, `array` | Inbox filtering (read-only check) |
 | `resolveActionTakerUserIdsForStep($step, $createdByUserId = null, $context = [])` | `array<string>` | `ProcedureSettingStep`, `?string`, `array` | Broadcasting (EmployeeTask services) |
+| `resolveProcedureSettingForBranch($procedureType, $companyId, $branchId)` | `?ProcedureSetting` | `string`, `string`, `?string` | Delegates to `WorkflowEngine::resolveParentSetting()` |
+| `resolveInternalProcedureSettingByForm($procedureCategoryType, $formKey, $companyId, $branchId = null)` | `?ProcedureSetting` | `string`, `string`, `string`, `?string` | EmployeeTask extension/approval creation; delegates to `WorkflowEngine::resolveSettingsForEntry()` |
+
+### WorkflowEngine
+
+| Method | Returns | Parameters | Used By |
+|--------|---------|-----------|---------|
+| `resolveParentSetting($type, $companyId, $branchId)` | `?ProcedureSetting` | `string`, `string`, `?string` | Shared company/branch/default workflow lookup |
+| `resolveSettingsForEntry($type, $formKey, $companyId, $branchId)` | `Collection<ProcedureSetting>` | `string`, `?string`, `string`, `?string` | Preview and workflow start |
+| `previewResponsibles($type, $formKey, $companyId, $branchId, $createdByUserId, $context = [])` | `array{auto_approve: bool, step: ?array, action_takers: array}` | `string`, `?string`, `string`, `?string`, `?string`, `array` | ProcedureSettingController, EmployeeTask creation |
+| `startWorkflow($processableType, $processableId, $type, $formKey, $companyId, $branchId, $createdByUserId = null, $context = [])` | `WorkflowStartResult` | `string`, `string`, `string`, `?string`, `string`, `?string`, `?string`, `array` | EmployeeTaskRequestService, ClientRequestWorkflowService |
 
 ### ProcessWorkflowService
 
 | Method | Returns | Parameters | Used By |
 |--------|---------|-----------|---------|
 | `createProcessesFromSettings($processableType, $processableId, $settings, $createdByUserId = null, $context = [])` | `?Process` | `string`, `string`, `Collection`, `?string`, `array` | EmployeeTaskRequestService, ClientRequestWorkflowService |
+| `initializeProcessSteps($process, $context = [])` | `void` | `Process`, `array` | ProcessWorkflowService internals |
 | `approveStep($id)` | `ProcessStep` | `string` (UUID) | ClientRequestWorkflowService, Process controllers |
 | `rejectStep($id)` | `ProcessStep` | `string` (UUID) | ClientRequestWorkflowService, Process controllers |
 | `getCurrentStep($process)` | `?ProcessStep` | `Process` | EmployeeTaskRequestService |
@@ -85,17 +111,18 @@ All notifications are now handled centrally. You do NOT need to modify individua
 
 | Method | Returns | Parameters |
 |--------|---------|-----------|
+| `startForClientRequest($cr)` | `?Process` | `ClientRequest` |
 | `createProcessForClientRequest($cr)` | `?Process` | `ClientRequest` |
 | `actOnPendingStepForCurrentUser($clientRequestId, $action)` | `void` | `string`, `string ('approve'|'reject')` |
 | `approve($processStepId)` | `ProcessStep` | `string` |
 | `reject($processStepId)` | `ProcessStep` | `string` |
-| `closeProcessOnClientRequestAccepted($clientRequestId, $actorId)` | `void` | `string`, `string` |
+| `syncAfterClientRequestStatusChange($cr, $newStatus)` | `void` | `ClientRequest`, `string` |
 
 ### EmployeeTaskRequestService
 
 | Method | Returns | Key Logic |
 |--------|---------|-----------|
-| `create($dto)` | `EmployeeTaskRequest` | Builds context, creates Process, resolves authorizedUserIds, broadcasts |
+| `create($dto)` | `EmployeeTaskRequest` | Resolves creator branch, previews via `WorkflowEngine`, starts workflow via `WorkflowEngine`, central event broadcasts |
 | `approve($id, $adminId)` | `EmployeeTaskRequest` | findPendingStepForActor + advance with context |
 | `reject($id, $adminId, $reason)` | `EmployeeTaskRequest` | findPendingStepForActor + assertCanReject with context |
 | `broadcastTaskNotification($task, $currentStep, $userIds = [])` | `void` | **CHANGED**: now takes `array $userIds` instead of deriving from actionTakers |
@@ -207,35 +234,47 @@ enum ProcedureSettingType: string
     case Meeting       = 'meeting';         // Parent category for meeting workflows
 }
 
+// Real namespace: Modules\Shared\InternalProcessType\Enums\InternalProcessForm
 enum InternalProcessForm: string
 {
-    case CreateTask          = 'create_task';
-    case StartTask           = 'start_task';
-    case ExtendTaskTime      = 'extend_task_time';
-    case SendForApproval     = 'send_for_approval';
-    case CancelTask          = 'cancel_task';
-    case ConfirmLocation     = 'confirm_location';
-    case EndTask             = 'end_task';
-    case AssignOtherEmployee = 'assign_other_employee';
-    case AttachAttachments   = 'attach_attachments';
+    case CreateClientRequest = 'createClientRequest';
+    case CreatePriceOffer    = 'createPriceOffer';
+    case CreateContract      = 'createContract';
+    case CreateMeeting       = 'createMeeting';
+    case CreateTask          = 'createTask';
+    case StartTask           = 'startTask';
+    case AssignOtherEmployee = 'assignOtherEmployee';
+    case ExtendTaskTime      = 'extendTaskTime';
+    case SendForApproval     = 'sendForApproval';
+    case CancelTask          = 'cancelTask';
+    case ConfirmLocation     = 'confirmLocation';
+    case EndTask             = 'endTask';
+    case AttachAttachments   = 'attachAttachments';
 
-    public static function applicableTo(string $categoryType): array
+    public function applicableTypes(): array
     {
-        return match ($categoryType) {
-            ProcedureSettingType::EmployeeTask->value => [
-                self::CreateTask,
-                self::StartTask,
-                self::ExtendTaskTime,
-                self::SendForApproval,
-                self::CancelTask,
-                self::ConfirmLocation,
-                self::EndTask,
-                self::AssignOtherEmployee,
-                self::AttachAttachments,
-            ],
-            default => [],
+        return match ($this) {
+            self::CreateClientRequest => ['client_request'],
+            self::CreatePriceOffer    => ['price_offer'],
+            self::CreateContract      => ['contract'],
+            self::CreateMeeting       => ['meeting'],
+            self::CreateTask,
+            self::StartTask,
+            self::ExtendTaskTime,
+            self::ConfirmLocation,
+            self::AssignOtherEmployee,
+            self::EndTask             => ['employee_task'],
+            self::CancelTask,
+            self::SendForApproval     => ['employee_task', 'client_request'],
+            self::AttachAttachments   => ['employee_task', 'client_request', 'price_offer', 'contract'],
         };
     }
+
+    public static function forType(string $procedureType): array;
+    public function labelAr(): string;
+    public function conditions(): array;
+    public function toDefinition(): array;
+    public static function values(): array;
 }
 
 enum InternalProcessCondition: string
@@ -329,7 +368,22 @@ tryAlternative:
 ```
 Entity created
   ↓
-WorkflowService.createProcessForEntity()
+WorkflowEngine::startWorkflow(
+  processableType, processableId,
+  type, formKey,
+  companyId, branchId,
+  createdByUserId, context
+)
+  ↓
+WorkflowEngine::resolveParentSetting()
+  ├─ try parent by company + branch workflow
+  └─ fallback to WorkFlow::defaultForCompany(companyId, type)
+  ↓
+WorkflowEngine::resolveSettingsForEntry()
+  ├─ formKey === null → run parent setting (ClientRequest style)
+  └─ formKey !== null → run matching child settings (EmployeeTask createTask style)
+  ↓
+ProcessWorkflowService::createProcessesFromSettings()
   ↓
 For each ProcedureSettingStep:
   resolvedUsers = ActionTakerResolver.resolveUsersForStep(step, creator_id, context)
@@ -345,9 +399,12 @@ For each ProcedureSettingStep:
 Process created with template_snapshot = snapshot
   ↓
 First ProcessStep created from snapshot[0]
+  ↓
+WorkflowStepActivated event fires with authorized user IDs and creation context
 ```
 
 **Trap**: Unresolvable steps are **silently skipped**. The workflow may have fewer steps than the template.
+If every step resolves to zero users, `WorkflowEngine::startWorkflow()` returns `autoApprove = true`.
 
 ---
 
@@ -379,11 +436,18 @@ Same as approve but:
 ## 8. ClientRequest Integration
 
 `ClientRequestWorkflowService::createProcessForClientRequest($cr)`:
-- Loads `ProcedureSetting` for type `client_request`.
-- Resolves users via `ActionTakerResolver`.
-- Stores `authorized_user_ids` + `specific_procedure_type` in snapshot.
+- Keeps the existing-process guard.
+- Calls `WorkflowEngine::startWorkflow()` with:
+  - `processableType = 'client_request'`
+  - `type = ProcedureSettingType::ClientRequest->value`
+  - `formKey = null`
+  - `companyId = $cr->company_id`
+  - `branchId = $cr->branch_id`
+  - `createdByUserId = $cr->created_by_user_id`
+- Parent setting resolution uses company + branch workflow and falls back to the company default workflow.
+- Snapshot creation and first step activation are delegated to `ProcessWorkflowService`.
 - `approve()` / `reject()`: Uses `assertActorCanActOnStep()` which reads `authorized_user_ids` from snapshot.
-- `closeProcessOnClientRequestAccepted()`: Auto-approves pending steps where actor is in `authorized_user_ids`.
+- `closeProcessOnClientRequestAccepted(ClientRequest $cr)`: Auto-approves pending steps where actor is in `authorized_user_ids`.
 
 ---
 
@@ -395,12 +459,12 @@ The EmployeeTask module now uses **Internal Procedure Settings** — child rows 
 
 ```
 Parent ProcedureSetting (type = 'employee_task')
-├── Child: form = 'create_task'          → Task creation workflow
-├── Child: form = 'start_task'           → Task start workflow
-├── Child: form = 'extend_task_time'     → Extension request workflow
-├── Child: form = 'send_for_approval'     → Completion approval workflow
-├── Child: form = 'end_task'             → Task end/completion workflow
-├── Child: form = 'confirm_location'    → Location confirmation (can have MULTIPLE)
+├── Child: form = 'createTask'          → Task creation workflow
+├── Child: form = 'startTask'           → Task start workflow
+├── Child: form = 'extendTaskTime'      → Extension request workflow
+├── Child: form = 'sendForApproval'     → Completion approval workflow
+├── Child: form = 'endTask'             → Task end/completion workflow
+├── Child: form = 'confirmLocation'     → Location confirmation (can have MULTIPLE)
 └── ... more children with same or different forms
 ```
 
@@ -415,24 +479,25 @@ Each child has:
 
 `ProcedureWorkflowService::resolveInternalProcedureSettingByForm()`:
 ```
-1. Find parent where type = 'employee_task' AND company_id = task.company_id
-2. Find first child where parent_id = parent.id AND form = 'extend_task_time'
-3. Return child with steps eager-loaded
+1. Delegates to WorkflowEngine::resolveSettingsForEntry()
+2. Finds parent by type + company + branch, with default workflow fallback
+3. Finds first child where parent_id = parent.id AND form = 'extendTaskTime'
+4. Return child with steps eager-loaded
 ```
 
-**CRITICAL**: When multiple children share the same `form` (e.g., two `confirm_location` entries), the backend must receive the specific `internal_procedure_setting_id` to load the correct child. The mobile app gets this ID from the `available-actions` API.
+**CRITICAL**: When multiple children share the same `form` (e.g., two `confirmLocation` entries), the backend must receive the specific `internal_procedure_setting_id` to load the correct child. The mobile app gets this ID from the `available-actions` API.
 
 ### 9.1 Task Request
 **Creation** (`EmployeeTaskRequestService::create()`):
 ```
 context = projectId ? ['project_id' => projectId] : []
-preview = workflow.getApprovalResponsibles(type = 'employee_task', userId, context)
+creator branch = user.userProfessionalData.branch_id
+preview = engine.previewResponsibles('employee_task', 'createTask', companyId, branchId, userId, context)
 create task record
-create Process with context
+engine.startWorkflow('employee_task', task->id, 'employee_task', 'createTask', companyId, branchId, userId, context)
 currentStep = processService.getCurrentStep(process)
 update task: approval_responsible_id = currentStep.assigned_user_id
-authorizedUserIds = snapshot['authorized_user_ids'] ?? [assigned_user_id]
-broadcast notification + inbox counts to authorizedUserIds
+WorkflowStepActivated event broadcasts notification + inbox counts centrally
 ```
 
 **Approval/Rejection**:
@@ -441,7 +506,7 @@ broadcast notification + inbox counts to authorizedUserIds
 
 ### 9.2 Task Extension
 **Creation** (`EmployeeTaskExtensionService::requestExtension()`):
-- Resolves child by `form = 'extend_task_time'` under parent `type = 'employee_task'`.
+- Resolves child by `form = 'extendTaskTime'` under parent `type = 'employee_task'`.
 - Optionally accepts explicit `internal_procedure_setting_id` for precise child selection.
 - No `project_id` context → `project_manager` falls back to alternative.
 - Resolves users with context, broadcasts to resolved IDs.
@@ -451,7 +516,7 @@ broadcast notification + inbox counts to authorizedUserIds
 
 ### 9.3 Task Completion Approval
 **Creation** (`EmployeeTaskApprovalService::create()`):
-- Resolves child by `form = 'send_for_approval'` under parent `type = 'employee_task'`.
+- Resolves child by `form = 'sendForApproval'` under parent `type = 'employee_task'`.
 - Optionally accepts explicit `internal_procedure_setting_id` for precise child selection.
 - Resolves first step users with `project_id` context.
 - Broadcasts to resolved IDs (not template `actionTakers`).
@@ -467,7 +532,7 @@ Returns all active child internal procedure settings for the task, ordered by co
   {
     "id": "child-uuid-1",
     "name": "تأكيد دخول الموقع",
-    "form": { "key": "confirm_location", "label_ar": "تأكيد الموقع" },
+    "form": { "key": "confirmLocation", "label_ar": "تأكيد الموقع" },
     "conditions": [...],
     "appears_before_id": "child-uuid-2",
     "sort_order": 1
@@ -475,7 +540,7 @@ Returns all active child internal procedure settings for the task, ordered by co
   {
     "id": "child-uuid-2",
     "name": "تأكيد خروج الموقع",
-    "form": { "key": "confirm_location", "label_ar": "تأكيد الموقع" },
+    "form": { "key": "confirmLocation", "label_ar": "تأكيد الموقع" },
     "conditions": [...],
     "appears_after_id": "child-uuid-1",
     "sort_order": 2
@@ -532,6 +597,25 @@ $q->where('assigned_user_id', $adminId)
 
 ## 12. Notification Broadcasting
 
+### Process-Based Activation
+
+For `Process` workflows, `ProcessWorkflowService::createProcessStep()` fires:
+
+```php
+new WorkflowStepActivated(
+    processStep: $step,
+    templateStep: $templateStep,
+    userIds: $authorizedUserIds,
+    context: $context,
+)
+```
+
+`SendWorkflowStepNotification` then:
+1. Looks up a module notifier from `WorkflowNotifierRegistry` by `process.processable_type`.
+2. Calls `WorkflowNotifier::notifyStepActivated()` for real-time module-specific behavior.
+3. Broadcasts `InboxCountsUpdated` with counts from `WorkflowNotifier::inboxCountsForUser()`.
+4. Sends `WorkflowActionRequired` by mail/SMS when `notify_by_email` or `notify_by_sms` is enabled.
+
 ### EmployeeTaskNotification Event
 
 ```php
@@ -543,12 +627,14 @@ new EmployeeTaskNotification($task, $currentStep, $userIds = [])
 
 **Critical Fix**: Previously, broadcasters loaded `actionTakers` from the template step. For `management_hierarchy` and `specific_procedures`, `actionTakers` is EMPTY → **NO ONE received notifications**.
 
-Now all creation paths call:
+Non-Process EmployeeTask extension/approval flows still call:
 ```php
 $userIds = $workflow->resolveActionTakerUserIdsForStep($firstStep, $task->user_id, $context);
 event(new EmployeeTaskNotification($task, $firstStep, $userIds));
 $requestService->broadcastInboxCounts($userIds);
 ```
+
+EmployeeTask task creation does not call this manually anymore; it uses `WorkflowStepActivated` through `WorkflowEngine::startWorkflow()`.
 
 ---
 
@@ -679,16 +765,16 @@ getAuthorizedUsersForStep(process, step)
 The system has **three notification channels**:
 1. **Real-time (WebSocket)** — Laravel Echo / Pusher
 2. **Email** — Configurable per step (`notify_by_email`)
-3. **WhatsApp** — Configurable per step (`notify_by_whatsapp`)
+3. **SMS** — Configurable per step (`notify_by_sms`)
 
-Currently, **only real-time is implemented**. Email and WhatsApp are stored as flags on `ProcedureSettingStep` but have NO dispatch logic yet. This section documents exactly where to add them.
+Real-time for Process-based workflows is routed through `WorkflowNotifierRegistry`. Email and SMS are handled by `SendWorkflowStepNotification` using `WorkflowActionRequired`.
 
 ### 17.1 Configuration Flags on ProcedureSettingStep
 
 | Field | Type | Meaning |
 |-------|------|---------|
 | `notify_by_email` | bool | If true, send email to action takers when step becomes active |
-| `notify_by_whatsapp` | bool | If true, send WhatsApp to action takers when step becomes active |
+| `notify_by_sms` | bool | If true, send SMS to action takers when step becomes active |
 
 These are set in the admin UI when configuring the procedure setting step. They are stored in the DB and available on every `ProcedureSettingStep` instance.
 
@@ -698,9 +784,9 @@ Notifications should be dispatched at these lifecycle events:
 
 1. **Step Becomes Active** — A new `ProcessStep` is created from the snapshot. This is when the action taker first learns they need to act.
 2. **Step is Approved** — The actor approved. Notify the entity owner (e.g., employee who submitted the task) that their request advanced.
-3. **Step is Rejected** — The actor rejected. Notify the entity owner.
-4. **Process Completes** — All steps done. Notify the entity owner of final status.
-5. **Escalation Timer Expires** — If `requires_approval_within_period` is true and time passes, escalate.
+3. **Step is Rejected** — The actor rejected. Entity-owner notifications are module-specific.
+4. **Process Completes** — All steps done. Entity-owner notifications are module-specific.
+5. **Auto-Approve Timer Expires** — If `requires_approval_within_period` and `skipping_period` are set, `AutoApproveWorkflowStep` can approve the pending step after the configured delay.
 
 ### 17.3 Real-Time Events (Already Implemented)
 
@@ -756,10 +842,9 @@ class EmployeeTaskNotification implements ShouldBroadcast
 ```
 
 **Broadcasted by**:
-- `EmployeeTaskRequestService::create()` — when task is created and enters workflow
-- `EmployeeTaskRequestService::approve()` — when a step is approved and next step becomes active
-- `EmployeeTaskExtensionService::create()` — when extension is created
-- `EmployeeTaskApprovalService::create()` — when completion approval is submitted
+- `EmployeeTaskWorkflowNotifier` — when a Process-based EmployeeTask step is activated centrally.
+- `EmployeeTaskExtensionService::create()` — when extension is created.
+- `EmployeeTaskApprovalService::create()` — when completion approval is submitted.
 
 **Key insight**: The event takes `$userIds` explicitly. If provided, channels are built from those IDs. If empty, it falls back to `$currentStep->actionTakers`. For `management_hierarchy` and `specific_procedures`, `actionTakers` is EMPTY, so the explicit `$userIds` parameter is **mandatory** for correct delivery.
 
@@ -814,113 +899,44 @@ Event:   client-request.status-changed
 Payload: {id, serial_number, status, action, company, created_by, reject_cause, updated_at, notification_type}
 ```
 
-### 17.4 Where to Add Email / WhatsApp / SMS
+### 17.4 Where to Add Module Real-Time Notifications
 
-#### Hook Point 1: `ProcessWorkflowService::createProcessStep()`
+#### Register a `WorkflowNotifier`
 
-**File**: `modules/Process/Services/ProcessWorkflowService.php`
-
-After a `ProcessStep` is created, this is the perfect place to check `notify_by_email` / `notify_by_whatsapp` on the template step and dispatch notifications.
+Create a notifier implementing:
 
 ```php
-private function createProcessStep(Process $process, array $stepConfig): void
+interface WorkflowNotifier
 {
-    $step = ProcessStep::create([...]);
+    public function notifyStepActivated(ProcessStep $step, array $userIds, array $context = []): void;
 
-    // HOOK: Add notification dispatch here
-    // $templateStep = ProcedureSettingStep::find($stepConfig['step_id']);
-    // if ($templateStep->notify_by_email) { dispatch(new SendStepEmail($step, $templateStep)); }
+    /** @return array{pending_tasks:int,pending_extensions:int,pending_approvals:int,total:int} */
+    public function inboxCountsForUser(string $userId): array;
 }
 ```
 
-**Note**: `createProcessStep` does NOT have the `ProcedureSettingStep` loaded. You must query it by `stepConfig['step_id']`.
-
-#### Hook Point 2: `ProcessWorkflowService::approveStep()` / `rejectStep()`
-
-After a step is acted on, notify the entity owner. The `Process` has `processable_type` and `processable_id`. You can resolve the owner from the entity.
+Then register it in the module service provider:
 
 ```php
-// Inside approveStep(), after step update:
-// $owner = $this->resolveEntityOwner($process);
-// if ($owner) { Mail::to($owner)->send(new StepApprovedMail($step)); }
+app(WorkflowNotifierRegistry::class)->register('your_processable_type', app(YourWorkflowNotifier::class));
 ```
 
-#### Hook Point 3: `ClientRequestWorkflowService::createProcessStepFromSnapshot()`
+Do not modify `SendWorkflowStepNotification` for each new module.
 
-**File**: `modules/ClientRequest/Services/ClientRequestWorkflowService.php`
+#### Existing Notifiers
 
-Same pattern as Hook Point 1, but for ClientRequest processes.
+- `EmployeeTaskWorkflowNotifier` sends `EmployeeTaskNotification` and real EmployeeTask inbox counts.
+- `ClientRequestWorkflowNotifier` is registered for `client_request`; step activation is currently no-op and counts are zero until a ClientRequest inbox exists.
 
-#### Hook Point 4: `EmployeeTaskRequestService::broadcastTaskNotification()`
+### 17.5 Email / SMS
 
-**File**: `modules/EmployeeTask/Services/EmployeeTaskRequestService.php`
+Email/SMS for Process-based flows are already centralized:
 
-This private method is called after a task enters a workflow step. It currently only broadcasts real-time. Add email/WhatsApp here.
+- `notify_by_email` adds `mail`.
+- `notify_by_sms` adds `sms`.
+- `WorkflowActionRequired` sends the mail/SMS notification.
 
-```php
-private function broadcastTaskNotification(EmployeeTaskRequest $task, ProcedureSettingStep $currentStep, array $userIds = []): void
-{
-    // Existing real-time broadcast...
-    event(new EmployeeTaskNotification($task, $currentStep, $userIds));
-
-    // NEW: Email notification
-    // if ($currentStep->notify_by_email) {
-    //     $users = User::whereIn('id', $userIds)->get();
-    //     foreach ($users as $user) {
-    //         Mail::to($user->email)->send(new EmployeeTaskActionRequiredMail($task, $currentStep));
-    //     }
-    // }
-
-    // NEW: WhatsApp notification
-    // if ($currentStep->notify_by_whatsapp) { ... }
-}
-```
-
-#### Hook Point 5: `EmployeeTaskRequestService::approve()` / `reject()`
-
-After workflow advance, the task status changes. Notify the employee who created the task.
-
-```php
-// Inside approve(), after final step:
-// Mail::to($task->user->email)->send(new EmployeeTaskApprovedMail($task));
-```
-
-#### Hook Point 6: `ProcedureWorkflowService::advanceProcessAfterAction()`
-
-When a process completes (all steps acted on), this is where to send completion notifications.
-
-### 17.5 Recommended Notification Service Pattern
-
-Rather than scattering notification logic across services, create a dedicated **NotificationDispatcher**:
-
-**Recommended file**: `modules/ProcedureSetting/Services/WorkflowNotificationDispatcher.php`
-
-```php
-class WorkflowNotificationDispatcher
-{
-    public function __construct(
-        private readonly MailSender $mailSender,
-        private readonly WhatsAppSender $whatsAppSender,
-    ) {}
-
-    public function dispatchStepNotifications(ProcessStep $step, ProcedureSettingStep $templateStep, array $userIds): void
-    {
-        if ($templateStep->notify_by_email) {
-            $this->mailSender->sendActionRequired($step, $userIds);
-        }
-        if ($templateStep->notify_by_whatsapp) {
-            $this->whatsAppSender->sendActionRequired($step, $userIds);
-        }
-    }
-
-    public function dispatchCompletionNotifications(Process $process): void
-    {
-        // Resolve entity owner and notify
-    }
-}
-```
-
-Then inject this dispatcher into `ProcessWorkflowService`, `ClientRequestWorkflowService`, and `EmployeeTaskRequestService`.
+Non-Process EmployeeTask extension/approval flows call `dispatchStepNotifications()` directly because they do not create `ProcessStep` records.
 
 ---
 
@@ -931,18 +947,22 @@ Then inject this dispatcher into `ProcessWorkflowService`, `ClientRequestWorkflo
 | Service | File | Responsibilities | Depends On |
 |---------|------|------------------|------------|
 | `ActionTakerResolver` | `modules/ProcedureSetting/Services/ActionTakerResolver.php` | Resolve authorized users for ANY step type | `User`, `ManagementHierarchy`, `ProjectManagement` |
-| `ProcedureWorkflowService` | `modules/ProcedureSetting/Services/ProcedureWorkflowService.php` | Single source of truth for workflow stepping | `ActionTakerResolver` |
+| `WorkflowEngine` | `modules/ProcedureSetting/Services/WorkflowEngine.php` | Central setting resolution, preview, and workflow start | `ActionTakerResolver`, `ProcessWorkflowService` |
+| `ProcedureWorkflowService` | `modules/ProcedureSetting/Services/ProcedureWorkflowService.php` | Template workflow stepping for non-Process flows; delegates preview/resolution to `WorkflowEngine` | `ActionTakerResolver`, `WorkflowEngine` |
 | `ProcessWorkflowService` | `modules/Process/Services/ProcessWorkflowService.php` | Creates processes, handles approve/reject | `ActionTakerResolver` |
-| `ClientRequestWorkflowService` | `modules/ClientRequest/Services/ClientRequestWorkflowService.php` | ClientRequest-specific workflow | `ActionTakerResolver` |
+| `WorkflowNotifierRegistry` | `modules/Process/Services/WorkflowNotifierRegistry.php` | Maps `processable_type` to module notifiers | Registered `WorkflowNotifier` instances |
+| `ClientRequestWorkflowService` | `modules/ClientRequest/Services/ClientRequestWorkflowService.php` | ClientRequest-specific approval/rejection/status transitions; starts workflow via `WorkflowEngine` | `WorkflowEngine` |
 
 ### 18.2 EmployeeTask Services
 
 | Service | File | Responsibilities | Depends On |
 |---------|------|------------------|------------|
-| `EmployeeTaskRequestService` | `modules/EmployeeTask/Services/EmployeeTaskRequestService.php` | Create/approve/reject/cancel tasks | `ProcessWorkflowService`, `ProcedureWorkflowService`, `EmployeeTaskRepository` |
+| `EmployeeTaskRequestService` | `modules/EmployeeTask/Services/EmployeeTaskRequestService.php` | Create/approve/reject/cancel tasks | `WorkflowEngine`, `ProcessWorkflowService`, `EmployeeTaskRepository` |
 | `EmployeeTaskExtensionWorkflowService` | `modules/EmployeeTask/Services/EmployeeTaskExtensionWorkflowService.php` | Approve/reject extensions via workflow | `ProcedureWorkflowService`, `EmployeeTaskRepository` |
 | `EmployeeTaskExtensionService` | `modules/EmployeeTask/Services/EmployeeTaskExtensionService.php` | Create extension requests | `ProcedureWorkflowService`, `EmployeeTaskRequestService` |
 | `EmployeeTaskApprovalService` | `modules/EmployeeTask/Services/EmployeeTaskApprovalService.php` | Create/approve/reject completion approvals | `ProcedureWorkflowService`, `EmployeeTaskRequestService` |
+| `EmployeeTaskWorkflowNotifier` | `modules/EmployeeTask/Services/EmployeeTaskWorkflowNotifier.php` | EmployeeTask step activation real-time + inbox counts | `EmployeeTaskRequestService` |
+| `ClientRequestWorkflowNotifier` | `modules/ClientRequest/Services/ClientRequestWorkflowNotifier.php` | ClientRequest notifier registration placeholder | none |
 
 ### 18.3 Presenters
 
@@ -994,39 +1014,43 @@ Then inject this dispatcher into `ProcessWorkflowService`, `ClientRequestWorkflo
    - `EmployeeTaskRequestService`
    - `EmployeeTaskExtensionService`
    - `EmployeeTaskApprovalService`
-4. **For Process-based flows** (ClientRequest, generic Process), add to `createProcessStep()` in `ProcessWorkflowService`.
+4. **For Process-based flows**, no change is needed in `ProcessWorkflowService`; it already fires `WorkflowStepActivated`.
 5. **Read `notify_by_email`** flag from the `ProcedureSettingStep`.
 6. **Resolve user emails** from `authorized_user_ids`.
 7. **Queue mail** using `Mail::queue()` to avoid blocking the HTTP response.
 
-### 19.3 Adding SMS/WhatsApp Notifications
+### 19.3 Adding SMS Notifications
 
 Same pattern as email, but:
-- Use a dedicated `SmsSender` or `WhatsAppSender` service.
+- Use a dedicated `SmsSender` service.
 - The sender service should be injected, not instantiated inline.
 - Store phone numbers on `User` model or a related profile model.
-- Respect the `notify_by_whatsapp` flag on `ProcedureSettingStep`.
+- Respect the `notify_by_sms` flag on `ProcedureSettingStep`.
 
 ### 19.4 Adding a New Entity That Uses Workflows
 
-Follow the EmployeeTask pattern:
+Use the centralized Process workflow path:
 
-1. **Create entity model** with `procedure_setting_id` and `current_procedure_step_id`.
-2. **Create workflow service** (or reuse `ProcedureWorkflowService`).
-3. **On creation**:
-   - Resolve first step via `ProcedureWorkflowService::resolveFirstStep()` or `getApprovalResponsibles()`.
-   - Create `Process` via `ProcessWorkflowService::createProcessesFromSettings()`.
-   - Store `current_procedure_step_id` on entity.
-   - Resolve `authorized_user_ids` from snapshot.
-   - Broadcast notifications to resolved users.
+1. **Create entity model** and register its `processable_type` in the `Process` morph map.
+2. **Call `WorkflowEngine::startWorkflow()`** on creation with the same type/form/company/branch/context inputs used by any preview.
+3. **Register a `WorkflowNotifier`** for the `processable_type` in the module provider.
 4. **On approval/rejection**:
    - Load pending `ProcessStep`.
    - Check `authorized_user_ids`.
-   - Call `ProcessWorkflowService::approveStep()` / `rejectStep()`.
-   - Update entity status.
-   - Broadcast to next step's users or entity owner.
+   - Call `ProcessWorkflowService::approveStep()` / `rejectStep()` or implement module-specific wrappers like ClientRequest.
+   - Apply module-specific terminal status changes.
 5. **Create presenter** with action taker fallback logic.
-6. **Update repository** inbox queries to check `authorized_user_ids`.
+6. **Update repository** inbox queries to check `authorized_user_ids` if the module exposes an inbox.
+
+Do not copy old inline parent/child ProcedureSetting queries into new modules.
+
+Legacy non-Process path:
+1. Use `ProcedureWorkflowService` directly.
+2. Persist `procedure_setting_id` and `current_procedure_step_id`.
+3. **On creation**:
+   - Resolve first step via `ProcedureWorkflowService::resolveFirstStep()` or `getApprovalResponsibles()`.
+   - Store `current_procedure_step_id` on entity.
+   - Resolve and dispatch notifications manually.
 
 ---
 
@@ -1048,13 +1072,21 @@ Follow the EmployeeTask pattern:
 
 ### Services
 - `modules/ProcedureSetting/Services/ActionTakerResolver.php`
+- `modules/ProcedureSetting/Services/WorkflowEngine.php`
 - `modules/ProcedureSetting/Services/ProcedureWorkflowService.php`
 - `modules/Process/Services/ProcessWorkflowService.php`
+- `modules/Process/Services/WorkflowNotifierRegistry.php`
 - `modules/ClientRequest/Services/ClientRequestWorkflowService.php`
+- `modules/ClientRequest/Services/ClientRequestWorkflowNotifier.php`
 - `modules/EmployeeTask/Services/EmployeeTaskRequestService.php`
+- `modules/EmployeeTask/Services/EmployeeTaskWorkflowNotifier.php`
 - `modules/EmployeeTask/Services/EmployeeTaskExtensionWorkflowService.php`
 - `modules/EmployeeTask/Services/EmployeeTaskExtensionService.php`
 - `modules/EmployeeTask/Services/EmployeeTaskApprovalService.php`
+
+### Contracts / DTOs
+- `modules/Process/Contracts/WorkflowNotifier.php`
+- `modules/ProcedureSetting/DTO/WorkflowStartResult.php`
 
 ### Presenters
 - `modules/ProcedureSetting/Presenters/ProcedureSettingStepPresenter.php`
@@ -1116,13 +1148,13 @@ Channels are named `employee-task.notification.{user_id}`. If you create a new e
 
 When querying snapshots, compare `snapshotRow['step_id']` to `$processStep->step_id` (both integers).
 
-### 21.5 The `notify_by_email` / `notify_by_whatsapp` Unimplemented Trap
+### 21.5 The `notify_by_email` / `notify_by_sms` Trap
 
-These booleans exist on the model and are persisted, but **NO CODE READS THEM YET**. If an AI is asked to "enable email notifications", it must WRITE the dispatch logic — the flag alone does nothing.
+These booleans are read by `SendWorkflowStepNotification` when `WorkflowStepActivated` fires for Process-based workflows. Non-Process workflows must call their manual `dispatchStepNotifications()` path.
 
 ### 21.6 The Escalation Timer Trap
 
-`requires_approval_within_period`, `approval_within_days`, `approval_within_hours` are stored but escalation logic is NOT implemented in the workflow services. The timers exist only as configuration.
+`skipping_period` auto-approve is implemented through `AutoApproveWorkflowStep` when `requires_approval_within_period` is true. Broader escalation handoff logic is not implemented.
 
 ### 21.7 The `is_view_only` and `is_return_with_notes` Trap
 
@@ -1167,7 +1199,7 @@ Callers check `$result->isFinal` to decide whether to apply terminal business lo
 
 ### 21.12 The `getApprovalResponsibles` Preview Trap
 
-`ProcedureWorkflowService::getApprovalResponsibles()` is called BEFORE the entity is created to show the user who will approve. It resolves the first step's action takers. If the first step uses `management_hierarchy` or `specific_procedures`, this method MUST use `ActionTakerResolver` to get real users. The return shape is:
+`ProcedureWorkflowService::getApprovalResponsibles()` is called BEFORE the entity is created to show the user who will approve. It delegates to `WorkflowEngine::previewResponsibles()` so preview uses the same company/branch/default-workflow resolution as creation. The return shape is:
 ```php
 [
     'auto_approve' => bool,
@@ -1218,14 +1250,16 @@ If you are a future AI reading this, these are the changes made to the codebase 
 
 ### New Service
 - `ActionTakerResolver` — NEW service. Before, resolution logic was scattered inline in `ClientRequestWorkflowService::resolveAssignedUserId()` and `resolveManagerFromCreatorHierarchy()`. Now centralized.
+- `WorkflowEngine` — Central service for resolving parent/child settings, previewing responsibles, and starting Process-based workflows.
+- `WorkflowNotifierRegistry` — Registry that maps `processable_type` to module-level `WorkflowNotifier` implementations.
 
 ### Refactored Services
-- `ProcessWorkflowService` — Refactored to use `ActionTakerResolver`. Added `context` parameter. Stores `authorized_user_ids` and `specific_procedure_type` in snapshots. `approveStep`/`rejectStep` now check `authorized_user_ids`.
-- `ClientRequestWorkflowService` — Refactored to use `ActionTakerResolver`. Added `context` support. Stores `authorized_user_ids` in snapshots. Added `getAuthorizedUsersForStep()` helper. Approval/rejection check `authorized_user_ids`.
-- `ProcedureWorkflowService` — Added `resolveActionTakerUserIdsForStep()` method.
+- `ProcessWorkflowService` — Refactored to use `ActionTakerResolver`. Added `context` parameter. Stores `authorized_user_ids` and `specific_procedure_type` in snapshots. `approveStep`/`rejectStep` now check `authorized_user_ids`; `rejectStep` compares enum-to-enum; `createProcessStep()` fires `WorkflowStepActivated` with context.
+- `ClientRequestWorkflowService` — Creation now calls `WorkflowEngine::startWorkflow()`. Approval/rejection and ClientRequest-specific status transitions remain in this service.
+- `ProcedureWorkflowService` — Added `resolveActionTakerUserIdsForStep()` and delegates preview/resolution to `WorkflowEngine`.
 
 ### EmployeeTask Services Updated
-- `EmployeeTaskRequestService` — Now passes `project_id` context. Uses `findPendingStepForActor()` (checks `authorized_user_ids`). `broadcastTaskNotification()` and `broadcastInboxCounts()` signatures changed to accept `array $userIds`.
+- `EmployeeTaskRequestService` — Now passes `project_id` context, previews and starts task creation via `WorkflowEngine`, uses `findPendingStepForActor()` (checks `authorized_user_ids`), and no longer manually broadcasts in the create path.
 - `EmployeeTaskExtensionWorkflowService` — Now passes `project_id` context to `advance()` and `assertCanReject()`.
 - `EmployeeTaskExtensionService` — Now resolves users with context, broadcasts to resolved IDs.
 - `EmployeeTaskApprovalService` — Now resolves users with context, broadcasts to resolved IDs.
@@ -1233,7 +1267,7 @@ If you are a future AI reading this, these are the changes made to the codebase 
 ### Notification Broadcasting Fix (CRITICAL BUG FIX)
 **Before**: Broadcasters loaded `actionTakers` from template step. For `management_hierarchy` and `specific_procedures`, `actionTakers` was EMPTY → **NO ONE received notifications**.
 
-**After**: All creation paths resolve actual user IDs via `ActionTakerResolver` or `resolveActionTakerUserIdsForStep()` and pass them explicitly to `EmployeeTaskNotification($task, $step, $userIds)`.
+**After**: Process-based creation paths store actual user IDs in `authorized_user_ids` and fire `WorkflowStepActivated`. Non-Process paths resolve user IDs via `resolveActionTakerUserIdsForStep()` and pass them explicitly to `EmployeeTaskNotification($task, $step, $userIds)`.
 
 ### Presenters Updated
 - `ProcedureSettingStepPresenter` — Added labels for new fields.
@@ -1255,13 +1289,13 @@ If you are a future AI reading this, these are the changes made to the codebase 
 #### Architecture Change
 - `ProcedureSetting` is now a **self-referencing table** with `parent_id`.
 - **Parent rows**: `parent_id = NULL`, `type` = category (`employee_task`, `client_request`, etc.)
-- **Child rows**: `parent_id = parent.id`, `form` = action key (`start_task`, `extend_task_time`, etc.)
+- **Child rows**: `parent_id = parent.id`, `form` = action key (`startTask`, `extendTaskTime`, etc.)
 - Each child has its own `name`, `steps`, `conditions`, `appears_before_id`, `appears_after_id`, `sort_order`
 
 #### Enum Changes
 - `ProcedureSettingType` simplified to categories only (`employee_task`, `client_request`, `price_offer`, `contract`, `meeting`)
 - Removed: `EmployeeTaskRequest`, `EmployeeTaskExtension`, `EmployeeTaskCompletionApproval` cases
-- `InternalProcessForm` enum added with `applicableTo()` method
+- `InternalProcessForm` enum added under `Modules\Shared\InternalProcessType\Enums` with `applicableTypes()`, `forType()`, `labelAr()`, `conditions()`, `toDefinition()`, and `values()`
 - `InternalProcessCondition` enum added for per-form condition definitions
 
 #### Database Changes
@@ -1275,7 +1309,7 @@ If you are a future AI reading this, these are the changes made to the codebase 
 - `GET /procedure-settings/{id}/available-forms` — Returns form definitions for admin UI
 
 #### Updated APIs
-- `GET /procedure-settings/approval-responsibles` — Now accepts `type` (category) + optional `form_key`
+- `GET /procedure-settings/approval-responsibles` — Accepts `type` (category), optional `form`, and optional `branch_id`
 - `POST /employee-tasks/{id}/request-approval` — Now accepts optional `internal_procedure_setting_id`
 - `POST /employee-tasks/{id}/extension-requests` — Now accepts optional `internal_procedure_setting_id`
 
@@ -1304,13 +1338,14 @@ EmployeeTaskRequestController::store()
   ↓
 EmployeeTaskRequestService::create(CreateEmployeeTaskRequestDTO)
   ├─→ builds context = ['project_id' => $dto->projectId] (if set)
-  ├─→ calls ProcedureWorkflowService::getApprovalResponsibles(type, userId, context)
-  │     ├─→ loads ProcedureSetting + steps
-  │     ├─→ ActionTakerResolver::resolveUsersForStep(firstStep, userId, context)
+  ├─→ resolves creator branch from userProfessionalData.branch_id
+  ├─→ calls WorkflowEngine::previewResponsibles('employee_task', 'createTask', companyId, branchId, userId, context)
+  │     ├─→ resolves parent by branch/default workflow
+  │     ├─→ resolves child form createTask
   │     └─→ returns preview with action_takers
   ├─→ creates EmployeeTaskRequest record
-  ├─→ loads ProcedureSettingStep steps
-  ├─→ ProcessWorkflowService::createProcessesFromSettings(type, task->id, settings, userId, context)
+  ├─→ WorkflowEngine::startWorkflow('employee_task', task->id, 'employee_task', 'createTask', companyId, branchId, userId, context)
+  │  └─→ ProcessWorkflowService::createProcessesFromSettings(...)
   │     ├─→ for each step:
   │     │     ├─→ ActionTakerResolver::resolveUsersForStep(step, userId, context)
   │     │     ├─→ if resolvedUsers === []: SKIP step
@@ -1319,13 +1354,7 @@ EmployeeTaskRequestService::create(CreateEmployeeTaskRequestDTO)
   │     └─→ creates first ProcessStep from snapshot[0]
   ├─→ ProcessWorkflowService::getCurrentStep(process) → ProcessStep
   ├─→ updates task: approval_responsible_id = currentStep->assigned_user_id, current_procedure_step_id = currentStep->step_id
-  ├─→ reads snapshot for current step → authorizedUserIds
-  ├─→ creates dummy ProcedureSettingStep with synthetic actionTakers
-  ├─→ broadcastTaskNotification(task, dummyStep, authorizedUserIds)
-  │     ├─→ event(new EmployeeTaskNotification(task, dummyStep, authorizedUserIds))
-  │     └─→ broadcasts to: employee-task.notification.{user_id} for each userId
-  └─→ broadcastInboxCounts(authorizedUserIds)
-        └─→ event(new InboxCountsUpdated(userId, ...)) for each userId
+  └─→ notifications fire centrally through WorkflowStepActivated → EmployeeTaskWorkflowNotifier
 ```
 
 ### 24.2 Task Approval (EmployeeTaskRequest)
@@ -1411,11 +1440,11 @@ After Fix (WORKING):
 | **AutoApproveWorkflowStep** | Queued job that auto-approves a step after the skipping_period delay. |
 | **Internal Procedure Setting** | Child row under a parent `ProcedureSetting` with a `form` key. Has its own steps, conditions, and ordering. |
 | **Parent Procedure Setting** | Category-level `ProcedureSetting` (`parent_id = NULL`). Groups related internal procedures. |
-| **Form Key** | Action identifier on a child: `start_task`, `extend_task_time`, `send_for_approval`, etc. Defined in `InternalProcessForm` enum. |
+| **Form Key** | Action identifier on a child: `startTask`, `extendTaskTime`, `sendForApproval`, etc. Defined in `InternalProcessForm` enum. |
 | **Conditions** | JSON array of `InternalProcessCondition` values on a child. UI/UX hints for the mobile app. |
 | **appears_before_id** | Ordering constraint: this child must appear BEFORE the referenced child in available-actions. |
 | **appears_after_id** | Ordering constraint: this child must appear AFTER the referenced child in available-actions. |
-| **InternalProcessForm** | Enum defining valid form keys per category. Has `applicableTo()` method. |
+| **InternalProcessForm** | Enum defining valid form keys per category. Has `applicableTypes()` and `forType()` methods. |
 | **InternalProcessCondition** | Enum defining valid condition keys (e.g., `AllowDuringShift`, `ApplyToAllBranches`). |
 
 ---
@@ -1589,7 +1618,7 @@ The actionable form. Created via `POST /procedure-settings/{parent_id}/internal-
 | Field | Meaning |
 |-------|---------|
 | `parent_id` | FK to the parent category row |
-| `form` | Action key: `start_task`, `extend_task_time`, `send_for_approval`, `cancel_task`, `confirm_location`, `assign_other_employee`, `attach_attachments` |
+| `form` | Action key: `startTask`, `extendTaskTime`, `sendForApproval`, `cancelTask`, `confirmLocation`, `assignOtherEmployee`, `attachAttachments` |
 | `name` | Display name (e.g., "تأكيد دخول الموقع") |
 | `conditions` | JSON array of `InternalProcessCondition` values |
 | `appears_before_id` | This child must appear BEFORE the referenced child |
@@ -1649,7 +1678,7 @@ class ProcedureSetting extends Model
 ```php
 ProcedureWorkflowService::resolveInternalProcedureSettingByForm(
     string $procedureCategoryType,  // 'employee_task'
-    string $formKey,               // 'extend_task_time'
+    string $formKey,               // 'extendTaskTime'
     string $companyId,
     ?string $branchId = null,
 ): ?ProcedureSetting
@@ -1683,9 +1712,9 @@ A parent can have multiple children with the same `form`:
 
 ```
 Parent (employee_task)
-├── Child A: form = "confirm_location", name = "تأكيد دخول الموقع"
-├── Child B: form = "extend_task_time", name = "تمديد وقت المهمة"
-└── Child C: form = "confirm_location", name = "تأكيد خروج الموقع"
+├── Child A: form = "confirmLocation", name = "تأكيد دخول الموقع"
+├── Child B: form = "extendTaskTime", name = "تمديد وقت المهمة"
+└── Child C: form = "confirmLocation", name = "تأكيد خروج الموقع"
 ```
 
 **Mobile Flow**:
@@ -1718,7 +1747,7 @@ GET /procedure-settings/{parent_procedure_setting_uuid}/internal-procedures
 POST /procedure-settings/{parent_procedure_setting_uuid}/internal-procedures
 body: {
   "name": "بدء مهمة العمل",
-  "form": "start_task",
+  "form": "startTask",
   "conditions": [],
   "appears_before_id": null,
   "appears_after_id": null,
@@ -1730,7 +1759,7 @@ Response: { "id": "auto-generated-child-uuid", ... }
 ```
 
 - **`name`**: Display name (e.g., "بدء مهمة العمل")
-- **`form`**: Must be a valid `InternalProcessForm` case (e.g., `start_task`)
+- **`form`**: Must be a valid `InternalProcessForm` case (e.g., `startTask`)
 - **`conditions`**: JSON array of condition objects
 - **`appears_before_id`** / **`appears_after_id`**: Ordering constraints (optional)
 - **`sort_order`**: Display priority (optional, fallback)
@@ -1757,7 +1786,7 @@ Returns the **first** child matching the form key under the parent. Useful for q
 
 **Example:**
 ```
-GET /procedure-settings/{parent_uuid}/internal-procedures/by-form/start_task
+GET /procedure-settings/{parent_uuid}/internal-procedures/by-form/startTask
 ```
 
 **Warning:** If multiple children share the same form, this returns only the first match. For precise selection, use the child UUID directly.
@@ -1771,7 +1800,7 @@ Returns all `InternalProcessForm` values applicable to the parent's category, wi
 ### 27.7 Seeding
 
 `InternalProcedureSettingsSeeder` auto-creates default children under each parent category:
-- `employee_task`: start_task, extend_task_time, send_for_approval, cancel_task, confirm_location, assign_other_employee, attach_attachments
+- `employee_task`: createTask, startTask, extendTaskTime, sendForApproval, cancelTask, confirmLocation, assignOtherEmployee, attachAttachments
 - Other categories: no defaults (extendable in future)
 
 ### 27.8 Conditions Schema
