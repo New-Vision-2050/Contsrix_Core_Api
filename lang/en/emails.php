@@ -7,9 +7,9 @@ return [
     'you-tried-to-change-password-with' => 'you tried to change password with',
     'you-tried-to-first-login-with' => 'you tried to first login with',
 
-    "you-tried-to-change-email-with"=>"you tried to change email with :email",
-    "change-your-email" => "change your email with otp",
-    "change-your-phone"=> "change your phone with otp",
+    'you-tried-to-change-email-with' => 'you tried to change email with :email',
+    'change-your-email' => 'change your email with otp',
+    'change-your-phone' => 'change your phone with otp',
     'you-tried-to-login-with' => 'you tried to login with',
 
     'your-verification-code-is' => 'Your verification code is',
@@ -18,9 +18,9 @@ return [
     'new-vision' => 'New Vision',
     'enter-otp' => 'enter otp',
     'rights' => '© 2025 New Vision . All rights reserved.',
-    "you-are-added-to-company"=>"your company has created :company ",
-    "your-domain-is"=>"your domain is",
-    'serial_no'=>"serial no",
+    'you-are-added-to-company' => 'your company has created :company ',
+    'your-domain-is' => 'your domain is',
+    'serial_no' => 'serial no',
     'subject' => 'Reply to Your Contact Message',
     'greeting' => 'Hello :name,',
     'thank_you' => 'Thank you for contacting us. We have received your message and here is our response:',
@@ -28,6 +28,14 @@ return [
     'our_reply' => 'Our Reply:',
     'further_questions' => 'If you have any further questions, please feel free to contact us again.',
     'salutation' => 'Best regards,',
-
+    'support' => 'Support',
+    'workflow-action-required-subject' => 'Action Required',
+    'workflow-action-required-subtitle' => 'Workflow Approval Alert',
+    'workflow-action-required-badge' => 'Pending Review',
+    'workflow-action-required-message' => 'You have a new workflow approval step waiting for your review. Please open the system and take the required action.',
+    'workflow-action-required-sms' => 'Action required in Constrix: :step',
+    'workflow-step-name' => 'Step Name',
+    'workflow-step-order' => 'Step Order',
+    'workflow-automated-message' => 'This is an automated message from Constrix. Please do not reply to this email.',
 
 ];

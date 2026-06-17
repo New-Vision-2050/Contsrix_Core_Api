@@ -33,13 +33,17 @@ class WorkflowActionRequired extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $stepName = $this->templateStep->name ?? 'Workflow Step';
+        $data = [
+            'name' => $notifiable->name ?? '',
+            'step_name' => $stepName,
+            'step_order' => $this->templateStep->step_order,
+            'process_step_id' => $this->processStep?->id,
+        ];
 
         return (new MailMessage)
-            ->subject(__('workflow.action_required').': '.$stepName)
+            ->subject(__('emails.workflow-action-required-subject').': '.$stepName)
             ->markdown('emails.workflowActionRequired', [
-                'stepName' => $stepName,
-                'stepOrder' => $this->templateStep->step_order,
-                'processStepId' => $this->processStep?->id,
+                'data' => $data,
             ]);
     }
 
@@ -50,7 +54,7 @@ class WorkflowActionRequired extends Notification
 
         return $driver
             ->to($notifiable->phone)
-            ->line(__('workflow.action_required').': '.$stepName);
+            ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]));
     }
 
     private function resolveSmsDriver(object $notifiable): MoraSms
