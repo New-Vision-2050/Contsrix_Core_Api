@@ -42,7 +42,7 @@ class WorkflowActionRequired extends Notification
 
         return (new MailMessage)
             ->subject(__('emails.workflow-action-required-subject').': '.$stepName)
-            ->markdown('emails.workflowActionRequired', [
+            ->view('emails.workflowActionRequired', [
                 'data' => $data,
             ]);
     }
