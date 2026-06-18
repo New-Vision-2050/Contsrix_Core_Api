@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use BasePackage\Shared\Presenters\Json;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
+use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Presenters\EmployeeTaskApprovalPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskExtensionPresenter;
@@ -20,6 +21,7 @@ use Modules\EmployeeTask\Requests\ApproveExtensionRequest;
 use Modules\EmployeeTask\Requests\RejectExtensionRequest;
 use Modules\EmployeeTask\Requests\RejectTaskRequest;
 use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
+use Modules\EmployeeTask\Services\EmployeeTaskEndRequestService;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionWorkflowService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
@@ -28,10 +30,11 @@ use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 class AdminEmployeeTaskController extends Controller
 {
     public function __construct(
-        private readonly EmployeeTaskRequestService         $requestService,
-        private readonly EmployeeTaskExtensionService       $extensionService,
+        private readonly EmployeeTaskRequestService           $requestService,
+        private readonly EmployeeTaskExtensionService         $extensionService,
         private readonly EmployeeTaskExtensionWorkflowService $extensionWorkflow,
-        private readonly EmployeeTaskApprovalService        $approvalService,
+        private readonly EmployeeTaskApprovalService          $approvalService,
+        private readonly EmployeeTaskEndRequestService        $endRequestService,
     ) {}
 
     public function index(): JsonResponse
@@ -67,24 +70,17 @@ class AdminEmployeeTaskController extends Controller
 
         $type = $filters['type'] ?? null;
 
-        $taskItems     = collect();
-        $extItems      = collect();
-        $approvalItems = collect();
-
-        if (!$type || $type === 'task_request') {
-            $taskItems = $this->requestService->inboxAll($adminId, $filters);
-        }
-        if (!$type || $type === 'extension_request') {
-            $extItems = $this->extensionService->listInboxAllForAdmin($adminId, $filters);
-        }
-        if (!$type || $type === 'task_approval') {
-            $approvalItems = $this->requestService->inboxAllApprovals($adminId, $filters);
-        }
+        $taskItems       = $this->requestService->inboxAll($adminId, $filters);
+        $extItems        = $this->extensionService->listInboxAllForAdmin($adminId, $filters);
+        $approvalItems   = $this->requestService->inboxAllApprovals($adminId, $filters);
+        $endRequestItems = $this->requestService->inboxAllEndRequests($adminId, $filters);
 
         $combined = collect()
-            ->merge($taskItems->map(fn ($t) => ['_type' => 'task_request',     '_model' => $t, '_at' => $t->created_at]))
-            ->merge($extItems->map(fn ($e)  => ['_type' => 'extension_request','_model' => $e, '_at' => $e->created_at]))
-            ->merge($approvalItems->map(fn ($a) => ['_type' => 'task_approval','_model' => $a, '_at' => $a->created_at]))
+            ->merge($taskItems->map(fn ($t)  => ['_type' => 'task_request',      '_model' => $t, '_at' => $t->created_at]))
+            ->merge($extItems->map(fn ($e)   => ['_type' => 'extension_request', '_model' => $e, '_at' => $e->created_at]))
+            ->merge($approvalItems->map(fn ($a) => ['_type' => 'task_approval',  '_model' => $a, '_at' => $a->created_at]))
+            ->merge($endRequestItems->map(fn ($r) => ['_type' => 'end_request',  '_model' => $r, '_at' => $r->created_at]))
+            ->sortByDesc('_at')
             ->values();
 
         $direction = str_ends_with($sort, '_desc') ? 'desc' : 'asc';
@@ -109,6 +105,7 @@ class AdminEmployeeTaskController extends Controller
                 'task_request'     => InboxItemPresenter::fromTaskRequest($entry['_model']),
                 'extension_request' => InboxItemPresenter::fromExtensionRequest($entry['_model']),
                 'task_approval'    => InboxItemPresenter::fromApprovalRequest($entry['_model']),
+                'end_request'      => InboxItemPresenter::fromEndRequest($entry['_model']),
             };
         })->all();
 
@@ -131,13 +128,22 @@ class AdminEmployeeTaskController extends Controller
     public function approve(string $id): JsonResponse
     {
         try {
-            if ($approval = EmployeeTaskApprovalRequest::find($id)) {
+            if (EmployeeTaskApprovalRequest::find($id)) {
                 $approval = $this->approvalService->approve(
                     $id,
                     (string) Auth::id(),
                     request()->input('approval_notes'),
                 );
                 return Json::item(EmployeeTaskApprovalPresenter::single($approval), message: 'Task approval request approved successfully');
+            }
+
+            if (EmployeeTaskEndRequest::find($id)) {
+                $endRequest = $this->endRequestService->approve(
+                    $id,
+                    (string) Auth::id(),
+                    request()->input('approval_notes'),
+                );
+                return Json::item(InboxItemPresenter::fromEndRequest($endRequest->load(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user'])), message: 'End request approved successfully');
             }
 
             if (EmployeeTaskExtensionRequest::find($id)) {
@@ -162,13 +168,22 @@ class AdminEmployeeTaskController extends Controller
     public function reject(RejectTaskRequest $request, string $id): JsonResponse
     {
         try {
-            if ($approval = EmployeeTaskApprovalRequest::find($id)) {
+            if (EmployeeTaskApprovalRequest::find($id)) {
                 $approval = $this->approvalService->reject(
                     $id,
                     (string) Auth::id(),
                     $request->input('rejection_reason'),
                 );
                 return Json::item(EmployeeTaskApprovalPresenter::single($approval), message: 'Task approval request rejected successfully');
+            }
+
+            if (EmployeeTaskEndRequest::find($id)) {
+                $endRequest = $this->endRequestService->reject(
+                    $id,
+                    (string) Auth::id(),
+                    $request->input('rejection_reason'),
+                );
+                return Json::item(InboxItemPresenter::fromEndRequest($endRequest->load(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user'])), message: 'End request rejected successfully');
             }
 
             if (EmployeeTaskExtensionRequest::find($id)) {
@@ -269,15 +284,17 @@ class AdminEmployeeTaskController extends Controller
         $adminId = (string) Auth::id();
         $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to']);
 
-        $taskCount     = $this->requestService->inboxAll($adminId, $filters)->count();
-        $extCount      = $this->extensionService->listInboxAllForAdmin($adminId, $filters)->count();
-        $approvalCount = $this->requestService->inboxAllApprovals($adminId, $filters)->count();
+        $taskCount       = $this->requestService->inboxAll($adminId, $filters)->count();
+        $extCount        = $this->extensionService->listInboxAllForAdmin($adminId, $filters)->count();
+        $approvalCount   = $this->requestService->inboxAllApprovals($adminId, $filters)->count();
+        $endRequestCount = $this->requestService->inboxAllEndRequests($adminId, $filters)->count();
 
         return Json::item([
-            'pending_tasks'      => $taskCount,
-            'pending_extensions' => $extCount,
-            'pending_approvals'  => $approvalCount,
-            'total'              => $taskCount + $extCount + $approvalCount,
+            'pending_tasks'        => $taskCount,
+            'pending_extensions'   => $extCount,
+            'pending_approvals'    => $approvalCount,
+            'pending_end_requests' => $endRequestCount,
+            'total'                => $taskCount + $extCount + $approvalCount + $endRequestCount,
         ], message: 'Inbox counts retrieved successfully');
     }
 }

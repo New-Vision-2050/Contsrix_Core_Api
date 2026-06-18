@@ -143,4 +143,19 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__('The selected internal procedure setting is invalid or does not belong to this task category.'), 422);
     }
+
+    public static function pendingEndRequestExists(): self
+    {
+        return new self(__('A pending end request already exists for this task.'), 422);
+    }
+
+    public static function endRequestNotFound(): self
+    {
+        return new self(__('Task end request not found.'), 404);
+    }
+
+    public static function endRequestAlreadyResolved(): self
+    {
+        return new self(__('This end request has already been resolved.'), 422);
+    }
 }

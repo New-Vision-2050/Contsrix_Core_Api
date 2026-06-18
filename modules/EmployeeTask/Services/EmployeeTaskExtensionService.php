@@ -14,7 +14,6 @@ use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
-use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
@@ -195,7 +194,7 @@ final class EmployeeTaskExtensionService
 
         return $this->workflow->resolveInternalProcedureSettingByForm(
             ProcedureSettingType::EmployeeTask->value,
-            InternalProcessForm::ExtendTaskTime->value,
+            'extendTaskTime',
             $task->company_id,
             $branchId,
         );
