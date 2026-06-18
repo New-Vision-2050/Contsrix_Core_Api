@@ -235,27 +235,37 @@ enum ProcedureSettingType: string
 }
 
 // Real namespace: Modules\Shared\InternalProcessType\Enums\InternalProcessForm
-// NOTE: Only the cases below are currently implemented. Forms like ExtendTaskTime,
-// SendForApproval, CancelTask, etc. are NOT enum cases — their form keys are used
-// as plain strings ('extendTaskTime', 'sendForApproval') in the services that need them.
 enum InternalProcessForm: string
 {
+    // ── Create forms (seeded automatically by InternalProcedureSettingsSeeder) ──
     case CreateClientRequest = 'createClientRequest';
     case CreatePriceOffer    = 'createPriceOffer';
     case CreateContract      = 'createContract';
     case CreateMeeting       = 'createMeeting';
-    case CreateTask        = 'createTask';
-    case StartTask         = 'startTask';
-    case EndTask           = 'endTask';
-    case AttachAttachments = 'attachAttachments';
+    case CreateTask          = 'createTask';
+
+    // ── End forms (seeded automatically by InternalProcedureSettingsSeeder) ────
+    case EndTask             = 'endTask';           // employee_task
+    case EndClientRequest    = 'endClientRequest';  // client_request
+    case EndPriceOffer       = 'endPriceOffer';     // price_offer
+    case EndContract         = 'endContract';       // contract
+    case EndMeeting          = 'endMeeting';        // meeting
+
+    // ── Other forms (not seeded automatically) ───────────────────────────────
+    case StartTask           = 'startTask';
+    case AttachAttachments   = 'attachAttachments';
 
     public function applicableTypes(): array
     {
         return match ($this) {
-            self::CreateClientRequest => ['client_request'],
-            self::CreatePriceOffer    => ['price_offer'],
-            self::CreateContract      => ['contract'],
-            self::CreateMeeting       => ['meeting'],
+            self::CreateClientRequest,
+            self::EndClientRequest    => ['client_request'],
+            self::CreatePriceOffer,
+            self::EndPriceOffer       => ['price_offer'],
+            self::CreateContract,
+            self::EndContract         => ['contract'],
+            self::CreateMeeting,
+            self::EndMeeting          => ['meeting'],
             self::CreateTask,
             self::StartTask,
             self::EndTask             => ['employee_task'],
@@ -267,7 +277,7 @@ enum InternalProcessForm: string
     //   CreateTask, StartTask  → AllowDuringShift, AllowOutsideShift, AllowOnHolidays
     //   EndTask                → CanExitOutsideLocation
     //   AttachAttachments      → MaxAttachments
-    //   all others             → [] (default)
+    //   all End* (non-task)    → [] (default)
 
     public static function forType(string $procedureType): array;
     public function labelAr(): string;
@@ -276,11 +286,13 @@ enum InternalProcessForm: string
     public static function values(): array;
 }
 
-// Form keys used as strings (not yet promoted to InternalProcessForm enum cases):
+// Form keys used as plain strings (no enum case — stored directly as form value in DB):
 //   'extendTaskTime'  — used by EmployeeTaskExtensionService
 //   'sendForApproval' — used by EmployeeTaskApprovalService
-// These are valid ProcedureSetting child form values in the database; they just
-// have no corresponding enum case currently.
+// These are valid ProcedureSetting child form values; they are NOT seeded automatically.
+
+// InternalProcedureSettingsSeeder seeds all forms whose value starts with 'create' or 'end'.
+// To add a new auto-seeded form, add it to InternalProcessForm and name it create* or end*.
 
 enum InternalProcessCondition: string
 {
