@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Listeners;
 
 use Illuminate\Support\Facades\Log;
-use Modules\EmployeeTask\Events\EmployeeTaskNotification;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
 use Modules\ProcedureSetting\Events\WorkflowStepActivated;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
+use Modules\Process\Services\WorkflowNotifierRegistry;
 use Modules\User\Models\User;
 
 /**
@@ -22,7 +22,7 @@ class SendWorkflowStepNotification
     public function handle(WorkflowStepActivated $event): void
     {
         $templateStep = $event->templateStep;
-        $userIds      = $event->userIds;
+        $userIds = $event->userIds;
 
         if ($userIds === []) {
             Log::warning('WorkflowStepActivated: no user IDs to notify', [
@@ -51,15 +51,20 @@ class SendWorkflowStepNotification
 
         // 3. Send Laravel Notifications (email + SMS) to each user
         $users = User::query()->whereIn('id', $userIds)->get();
-        $notification = new WorkflowActionRequired(
-            $event->processStep,
-            $templateStep,
-            $channels,
-        );
 
         foreach ($users as $user) {
+            $userChannels = $this->channelsAvailableForUser($channels, $user, $event);
+
+            if ($userChannels === []) {
+                continue;
+            }
+
             try {
-                $user->notify($notification);
+                $user->notify(new WorkflowActionRequired(
+                    $event->processStep,
+                    $templateStep,
+                    $userChannels,
+                ));
             } catch (\Throwable $e) {
                 Log::error('WorkflowActionRequired notification failed', [
                     'user_id' => $user->id,
@@ -70,44 +75,51 @@ class SendWorkflowStepNotification
         }
     }
 
+    private function channelsAvailableForUser(array $channels, User $user, WorkflowStepActivated $event): array
+    {
+        $available = $channels;
+
+        if (in_array('mail', $available, true) && trim((string) $user->email) === '') {
+            Log::warning('WorkflowActionRequired mail skipped: user has no email', [
+                'user_id' => $user->id,
+                'process_step_id' => $event->processStep->id,
+            ]);
+            $available = array_values(array_diff($available, ['mail']));
+        }
+
+        if (in_array('sms', $available, true) && trim((string) $user->phone) === '') {
+            Log::warning('WorkflowActionRequired sms skipped: user has no phone', [
+                'user_id' => $user->id,
+                'process_step_id' => $event->processStep->id,
+            ]);
+            $available = array_values(array_diff($available, ['sms']));
+        }
+
+        return $available;
+    }
+
     private function broadcastRealTime(WorkflowStepActivated $event): void
     {
-        $userIds = $event->userIds;
-
-        // Broadcast notification to each authorized user
-        // We need to resolve the entity (task) from the process to send EmployeeTaskNotification.
-        // Since the process is polymorphic, we resolve it dynamically.
         $process = $event->processStep->process;
         if ($process === null) {
             return;
         }
 
-        $processable = $process->processable;
-        if ($processable === null) {
+        $notifier = app(WorkflowNotifierRegistry::class)->for($process->processable_type);
+        if ($notifier === null) {
             return;
         }
 
-        // Only EmployeeTaskRequest has the real-time notification event
-        $processableType = $process->processable_type;
-        if ($processableType === 'employee_task' && method_exists($processable, 'load')) {
-            $processable->load(['user']);
+        $notifier->notifyStepActivated($event->processStep, $event->userIds, $event->context);
 
-            event(new EmployeeTaskNotification($processable, $event->templateStep, $userIds));
-        }
-
-        // Inbox counts update for ALL user types (task, extension, approval)
-        foreach ($userIds as $userId) {
-            // We need to resolve inbox counts from a repository. Since this listener
-            // is in ProcedureSetting module, we'll broadcast generic counts.
-            // The actual counts are calculated by the consuming service's repository.
-            // For now, we broadcast a simple event that frontend can handle.
-            // In a full implementation, inject EmployeeTaskRepository here.
+        foreach ($event->userIds as $userId) {
+            $counts = $notifier->inboxCountsForUser((string) $userId);
             event(new InboxCountsUpdated(
-                userId: $userId,
-                pendingTasks: 0,  // Will be recalculated by frontend or refined later
-                pendingExtensions: 0,
-                pendingApprovals: 0,
-                total: 0,
+                userId: (string) $userId,
+                pendingTasks: $counts['pending_tasks'],
+                pendingExtensions: $counts['pending_extensions'],
+                pendingApprovals: $counts['pending_approvals'],
+                total: $counts['total'],
             ));
         }
     }

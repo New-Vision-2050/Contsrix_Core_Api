@@ -90,18 +90,18 @@ class InternalProcedureSettingsSeeder extends Seeder
     {
         $type = $parent->type;
 
-        $forms = InternalProcessForm::forType($type);
+        $forms = array_values(
+            array_filter(
+                InternalProcessForm::forType($type),
+                static fn (InternalProcessForm $form): bool => str_starts_with($form->value, 'create'),
+            )
+        );
 
         if ($forms === []) {
             return;
         }
 
         foreach ($forms as $order => $form) {
-            // Only seed StartTask for now.
-            if ($form !== InternalProcessForm::StartTask) {
-                continue;
-            }
-
             // Use raw query to bypass tenant global scope completely.
             $alreadyExists = DB::table('procedure_settings')
                 ->where('parent_id', $parent->id)
@@ -117,11 +117,14 @@ class InternalProcedureSettingsSeeder extends Seeder
                 continue;
             }
 
+            $workFlow = $this->createWorkFlowForInternal($parent, $form->value, $type);
+
             // Use DB::table() to bypass BelongsToTenant which overrides company_id on create.
             $now = now();
             DB::table('procedure_settings')->insert([
                 'id'           => (string) Str::uuid(),
                 'company_id'   => $parent->company_id,
+                'work_flow_id' => $workFlow->id,
                 'parent_id'    => $parent->id,
                 'name'         => $form->labelAr(),
                 'form'         => $form->value,
@@ -140,5 +143,24 @@ class InternalProcedureSettingsSeeder extends Seeder
                 $parent->name,
             ));
         }
+    }
+
+    private function createWorkFlowForInternal(ProcedureSetting $parent, string $formValue, string $type): WorkFlow
+    {
+        $workFlow = WorkFlow::query()->create([
+            'id'         => (string) Str::uuid(),
+            'company_id' => $parent->company_id,
+            'name'       => $formValue,
+            'type'       => $type,
+        ]);
+
+        // Copy branch associations from parent workflow
+        $parentWorkFlow = WorkFlow::query()->find($parent->work_flow_id);
+        if ($parentWorkFlow !== null) {
+            $branchIds = $parentWorkFlow->managementHierarchies()->pluck('management_hierarchies.id')->all();
+            $workFlow->managementHierarchies()->syncWithoutDetaching($branchIds);
+        }
+
+        return $workFlow;
     }
 }

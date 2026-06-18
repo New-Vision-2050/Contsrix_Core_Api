@@ -42,9 +42,15 @@ class AdminInternalProcessTypeController extends Controller
 
     public function formOptions(): JsonResponse
     {
+        $type = request()->input('type');
+
+        $cases = $type !== null
+            ? InternalProcessForm::forType($type)
+            : InternalProcessForm::cases();
+
         $forms = array_map(
             static fn (InternalProcessForm $form): array => $form->toDefinition(),
-            InternalProcessForm::cases(),
+            $cases,
         );
 
         return Json::items(

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
@@ -77,10 +78,12 @@ final class InternalProcedureSettingService
             $conditions = array_merge($conditions, $this->normalizeConditions($data['conditions']));
         }
 
+        $workFlow = $this->createWorkFlowForInternal($parent, $form->value, $type);
+
         return ProcedureSetting::query()->create([
             'id'                => (string) Str::uuid(),
             'company_id'        => $parent->company_id,
-            'work_flow_id'      => $parent->work_flow_id,
+            'work_flow_id'      => $workFlow->id,
             'parent_id'         => $parent->id,
             'name'              => $data['name'] ?? $form->labelAr(),
             'form'              => $form->value,
@@ -242,6 +245,25 @@ final class InternalProcedureSettingService
         return (int) ProcedureSetting::query()
             ->where('parent_id', $parentId)
             ->max('sort_order') + 1;
+    }
+
+    private function createWorkFlowForInternal(ProcedureSetting $parent, string $formValue, string $type): WorkFlow
+    {
+        $workFlow = WorkFlow::query()->create([
+            'id'         => (string) Str::uuid(),
+            'company_id' => $parent->company_id,
+            'name'       => $formValue,
+            'type'       => $type,
+        ]);
+
+        // Copy branch associations from parent workflow
+        $parentWorkFlow = WorkFlow::query()->find($parent->work_flow_id);
+        if ($parentWorkFlow !== null) {
+            $branchIds = $parentWorkFlow->managementHierarchies()->pluck('management_hierarchies.id')->all();
+            $workFlow->managementHierarchies()->syncWithoutDetaching($branchIds);
+        }
+
+        return $workFlow;
     }
 
     /**

@@ -28,7 +28,9 @@ final class ProcedureWorkflowService
 {
     public function __construct(
         private readonly ActionTakerResolver $resolver,
+        private readonly WorkflowEngine $engine,
     ) {}
+
     /**
      * Resolve the first step for a procedure setting of a given type.
      *
@@ -44,13 +46,13 @@ final class ProcedureWorkflowService
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
             ->first();
 
-        if (!$setting) {
+        if (! $setting) {
             throw ProcedureWorkflowException::noStepsConfigured();
         }
 
         $firstStep = $setting->steps->first();
 
-        if (!$firstStep) {
+        if (! $firstStep) {
             throw ProcedureWorkflowException::noStepsConfigured();
         }
 
@@ -74,7 +76,7 @@ final class ProcedureWorkflowService
             ->orderBy('step_order')
             ->first();
 
-        if (!$firstStep) {
+        if (! $firstStep) {
             throw ProcedureWorkflowException::noStepsConfigured();
         }
 
@@ -86,9 +88,9 @@ final class ProcedureWorkflowService
      * current step. Caller decides whether to update the entity to the next
      * step or apply its terminal action based on $result->isFinal.
      *
-     * @param int|null    $currentStepId       The step the entity currently awaits.
-     * @param string|null $procedureSettingId  The parent procedure id.
-     * @param string      $userId              The user attempting to act.
+     * @param  int|null  $currentStepId  The step the entity currently awaits.
+     * @param  string|null  $procedureSettingId  The parent procedure id.
+     * @param  string  $userId  The user attempting to act.
      */
     public function advance(
         ?int $currentStepId,
@@ -115,8 +117,8 @@ final class ProcedureWorkflowService
 
         return new ProcedureWorkflowResult(
             currentStep: $currentStep,
-            nextStep:    $nextStep,
-            isFinal:     $nextStep === null,
+            nextStep: $nextStep,
+            isFinal: $nextStep === null,
         );
     }
 
@@ -146,142 +148,22 @@ final class ProcedureWorkflowService
      *    should create the entity in `approved` state directly.
      *  - auto_approve = false when the first step has explicit action-takers
      *    → those users must approve.
-     *
-     *
      */
     public function getApprovalResponsibles(string $procedureType, ?string $createdByUserId = null, array $context = [], ?string $formKey = null)
     {
-        /** @var ProcedureSetting|null $setting */
-        $query = ProcedureSetting::query()
-            ->where('type', $procedureType)
-            ->orderBy('sort_order')
-            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
-                $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
-            }])]);
+        $companyId = (string) tenant('id');
+        $branchId = isset($context['branch_id']) ? (string) $context['branch_id'] : null;
 
-        if ($formKey !== null) {
-            $query->whereNotNull('parent_id')->where('form', $formKey);
-        } else {
-            $query->whereNull('parent_id');
-        }
-
-        $settings = $query->first();
-        $setting = ProcedureSetting::query()->where("parent_id",$settings->id)
-            ->where('type', $procedureType)
-            ->orderBy('sort_order')
-            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
-                $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
-            }])])->first();
-
-
-
-
-        if (!$setting) {
-            return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
-        }
-
-        $result = $this->computeApprovalResponsiblesForSetting($setting, $createdByUserId, $context);
-
-        if ($result['auto_approve'] && $formKey === null) {
-            $descendant = $this->findFirstDescendantWithSteps($setting->id);
-            if ($descendant !== null) {
-                $result = $this->computeApprovalResponsiblesForSetting($descendant, $createdByUserId, $context);
-            }
-        }
-
-        return $result;
+        return $this->engine->previewResponsibles(
+            $procedureType,
+            $formKey,
+            $companyId,
+            $branchId,
+            $createdByUserId,
+            $context,
+        );
     }
 
-    private function computeApprovalResponsiblesForSetting(ProcedureSetting $setting, ?string $createdByUserId, array $context): array
-    {
-        $firstStep = $setting->steps->first();
-
-        if (!$firstStep) {
-            return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
-        }
-
-        $actionTakerType = $firstStep->action_taker_type?->value ?? 'specific_user';
-
-        if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
-            $resolvedUserId = $this->resolver->resolveManagerFromCreatorHierarchy($firstStep, $createdByUserId, $context);
-
-            if ($resolvedUserId !== null) {
-                $user = \Modules\User\Models\User::query()
-                    ->with(['companyUser', 'companyUser.jobTitle'])
-                    ->find($resolvedUserId);
-
-                return [
-                    'auto_approve'  => false,
-                    'step'          => [
-                        'id'         => $firstStep->id,
-                        'name'       => $firstStep->name,
-                        'step_order' => $firstStep->step_order,
-                    ],
-                    'action_takers' => [
-                        [
-                            'user_id'   => $resolvedUserId,
-                            'name'      => $user?->name,
-                            'photo'    => $user?->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
-                            'job_title' => $user?->companyUser?->jobTitle?->name,
-                        ],
-                    ],
-                ];
-            }
-        }
-
-        if ($actionTakerType === 'specific_procedures') {
-            $resolvedUserIds = $this->resolver->resolveUsersForStep($firstStep, $createdByUserId, $context);
-
-            if ($resolvedUserIds !== []) {
-                $users = \Modules\User\Models\User::query()
-                    ->whereIn('id', $resolvedUserIds)
-                    ->with(['companyUser', 'companyUser.jobTitle'])
-                    ->get(['id', 'name']);
-
-                $actionTakers = [];
-                foreach ($resolvedUserIds as $resolvedId) {
-                    $u = $users->firstWhere('id', $resolvedId);
-                    $actionTakers[] = [
-                        'user_id'   => $resolvedId,
-                        'name'      => $u?->name,
-                        'photo'    => $u?->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
-                        'job_title' => $u?->companyUser?->jobTitle?->name,
-                    ];
-                }
-
-                return [
-                    'auto_approve'  => false,
-                    'step'          => [
-                        'id'         => $firstStep->id,
-                        'name'       => $firstStep->name,
-                        'step_order' => $firstStep->step_order,
-                    ],
-                    'action_takers' => $actionTakers,
-                ];
-            }
-        }
-
-        $actionTakers = [];
-        foreach ($firstStep->actionTakers as $at) {
-            $user = $at->relationLoaded('user') ? $at->user : null;
-            $actionTakers[] = [
-                'user_id'   => $at->user_id,
-                'name'      => $user?->name,
-                'photo'    => $user?->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
-                'job_title' => $user?->companyUser?->jobTitle?->name,
-            ];
-        }
-
-        return [
-            'auto_approve'  => $actionTakers === [],
-            'step'          => [
-                'id'         => $firstStep->id,
-                'name'       => $firstStep->name,
-                'step_order' => $firstStep->step_order,
-            ],
-            'action_takers' => $actionTakers,
-        ];
-    }
     /**
      * Quick check used by inbox-style endpoints: would this user be allowed to
      * act on the given step? Returns true for open steps (no action-takers)
@@ -331,22 +213,8 @@ final class ProcedureWorkflowService
         string $companyId,
         ?string $branchId,
     ): ?ProcedureSetting {
-        $query = ProcedureSetting::query()
-            ->where('type', $procedureType)
-            ->whereNull('parent_id')
-            ->where('company_id', $companyId);
-
-        if ($branchId !== null && $branchId !== '') {
-            $query->whereHas('workFlow', function ($q) use ($branchId) {
-                $q->whereHas('managementHierarchies', function ($q) use ($branchId) {
-                    $q->where('management_hierarchies.id', $branchId);
-                });
-            });
-        }
-
-        return $query->orderBy('sort_order')->first();
+        return $this->engine->resolveParentSetting($procedureType, $companyId, $branchId);
     }
-
 
     /**
      * Resolve the InternalProcedureSetting (child row with form set) for a given
@@ -361,42 +229,26 @@ final class ProcedureWorkflowService
         string $companyId,
         ?string $branchId = null,
     ): ?ProcedureSetting {
-        $parentQuery = ProcedureSetting::query()
-            ->whereNull('parent_id')
-            ->where('type', $procedureCategoryType)
-            ->where('company_id', $companyId);
-
-        if ($branchId !== null && $branchId !== '') {
-            $parentQuery->whereHas('workFlow', function ($q) use ($branchId) {
-                $q->whereHas('managementHierarchies', function ($q) use ($branchId) {
-                    $q->where('management_hierarchies.id', $branchId);
-                });
-            });
-        }
-
-        $parent = $parentQuery->orderBy('sort_order')->first();
-
-        if (! $parent) {
-            return null;
-        }
-
-        return ProcedureSetting::query()
-            ->where('parent_id', $parent->id)
-            ->where('form', $formKey)
-            ->whereNotNull('form')
-            ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
+        $setting = $this->engine
+            ->resolveSettingsForEntry($procedureCategoryType, $formKey, $companyId, $branchId)
             ->first();
+
+        if ($setting !== null) {
+            $setting->load(['steps' => fn ($query) => $query->orderBy('step_order')]);
+        }
+
+        return $setting;
     }
 
     private function loadStep(?int $stepId): ProcedureSettingStep
     {
-        if (!$stepId) {
+        if (! $stepId) {
             throw ProcedureWorkflowException::noActiveStep();
         }
 
         $step = ProcedureSettingStep::with('actionTakers')->find($stepId);
 
-        if (!$step) {
+        if (! $step) {
             throw ProcedureWorkflowException::stepNotFound();
         }
 
@@ -438,56 +290,6 @@ final class ProcedureWorkflowService
         if (! $step->actionTakers->contains('user_id', $userId)) {
             throw ProcedureWorkflowException::notAuthorized();
         }
-    }
-
-    /**
-     * Recursively find the first descendant setting that has at least one step.
-     * Prioritises internal-procedure children (form IS NOT NULL) first,
-     * ordered by sort_order, then falls back to non-internal children.
-     * Used when a parent/internal procedure has no direct steps but stores
-     * them on a nested child (legacy data pattern).
-     */
-    private function findFirstDescendantWithSteps(string $parentId): ?ProcedureSetting
-    {
-        $eager = ['steps' => fn ($q) => $q->orderBy('step_order')->with(['actionTakers' => function ($q) {
-            $q->with(['user.companyUser', 'user.companyUser.jobTitle']);
-        }])];
-
-        $internalChildren = ProcedureSetting::query()
-            ->where('parent_id', $parentId)
-            ->whereNotNull('form')
-            ->with($eager)
-            ->orderBy('sort_order')
-            ->get();
-
-        foreach ($internalChildren as $child) {
-            if ($child->steps->isNotEmpty()) {
-                return $child;
-            }
-            $descendant = $this->findFirstDescendantWithSteps($child->id);
-            if ($descendant) {
-                return $descendant;
-            }
-        }
-
-        $otherChildren = ProcedureSetting::query()
-            ->where('parent_id', $parentId)
-            ->whereNull('form')
-            ->with($eager)
-            ->orderBy('sort_order')
-            ->get();
-
-        foreach ($otherChildren as $child) {
-            if ($child->steps->isNotEmpty()) {
-                return $child;
-            }
-            $descendant = $this->findFirstDescendantWithSteps($child->id);
-            if ($descendant) {
-                return $descendant;
-            }
-        }
-
-        return null;
     }
 
     private function collectDescendantIds(string $parentId): array
