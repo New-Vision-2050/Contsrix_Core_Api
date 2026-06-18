@@ -10,15 +10,10 @@ enum InternalProcessForm: string
     case CreatePriceOffer    = 'createPriceOffer';
     case CreateContract      = 'createContract';
     case CreateMeeting       = 'createMeeting';
-    case CreateTask          = 'createTask';
-    case StartTask           = 'startTask';
-    case AssignOtherEmployee = 'assignOtherEmployee';
-    case ExtendTaskTime      = 'extendTaskTime';
-    case SendForApproval     = 'sendForApproval';
-    case CancelTask          = 'cancelTask';
-    case ConfirmLocation     = 'confirmLocation';
-    case EndTask             = 'endTask';
-    case AttachAttachments   = 'attachAttachments';
+    case CreateTask        = 'createTask';
+    case StartTask         = 'startTask';
+    case EndTask           = 'endTask';
+    case AttachAttachments = 'attachAttachments';
 
     public function labelAr(): string
     {
@@ -27,14 +22,9 @@ enum InternalProcessForm: string
             self::CreatePriceOffer    => 'إنشاء عرض سعر',
             self::CreateContract      => 'إنشاء عقد',
             self::CreateMeeting       => 'إنشاء اجتماع',
-            self::CreateTask          => 'انشاء مهمة',
-            self::StartTask           => 'بدء المهمة',
-            self::AssignOtherEmployee => 'تحويل لموظف اخر',
-            self::ExtendTaskTime      => 'تمديد وقت المهمة',
-            self::SendForApproval     => 'ارسال للاعتماد',
-            self::CancelTask          => 'الغاء المهمة',
-            self::ConfirmLocation     => 'تأكيد الموقع',
-            self::EndTask             => 'انهاء المهمة',
+            self::CreateTask => 'انشاء مهمة',
+            self::StartTask  => 'بدء المهمة',
+            self::EndTask    => 'انهاء المهمة',
             self::AttachAttachments   => 'ارفاق مرفقات',
         };
     }
@@ -43,29 +33,18 @@ enum InternalProcessForm: string
     public function conditions(): array
     {
         return match ($this) {
-            self::CreateClientRequest, self::CreatePriceOffer, self::CreateContract, self::CreateMeeting, self::CreateTask, self::StartTask, self::ExtendTaskTime => [
+            self::CreateClientRequest, self::CreatePriceOffer, self::CreateContract, self::CreateMeeting, self::CreateTask, self::StartTask => [
                 InternalProcessCondition::AllowDuringShift,
                 InternalProcessCondition::AllowOutsideShift,
                 InternalProcessCondition::AllowOnHolidays,
-                InternalProcessCondition::ApplyToAllBranches,
                 InternalProcessCondition::HasTaskDuration,
                 InternalProcessCondition::MaxDurationHours,
             ],
-            self::AssignOtherEmployee, self::CancelTask => [
+            self::EndTask => [
                 InternalProcessCondition::AllowDuringShift,
-                InternalProcessCondition::AllowOutsideShift,
-                InternalProcessCondition::AllowOnHolidays,
-                InternalProcessCondition::ApplyToAllBranches,
-            ],
-            self::SendForApproval, self::EndTask => [
-                InternalProcessCondition::AllowDuringShift,
-                InternalProcessCondition::ApplyToAllBranches,
-            ],
-            self::ConfirmLocation => [
-                InternalProcessCondition::ApplyToAllBranches,
+                InternalProcessCondition::CanExitOutsideLocation,
             ],
             self::AttachAttachments => [
-                InternalProcessCondition::ApplyToAllBranches,
                 InternalProcessCondition::MaxAttachments,
             ],
         };
@@ -97,15 +76,10 @@ enum InternalProcessForm: string
             self::CreatePriceOffer    => ['price_offer'],
             self::CreateContract      => ['contract'],
             self::CreateMeeting       => ['meeting'],
-            self::CreateTask          => ['employee_task'],
-            self::StartTask           => ['employee_task'],
-            self::ExtendTaskTime      => ['employee_task'],
-            self::ConfirmLocation     => ['employee_task'],
-            self::AssignOtherEmployee => ['employee_task'],
-            self::CancelTask          => ['employee_task', 'client_request'],
-            self::SendForApproval     => ['employee_task', 'client_request'],
-            self::EndTask             => ['employee_task'],
-            self::AttachAttachments   => ['employee_task', 'client_request', 'price_offer', 'contract'],
+            self::CreateTask        => ['employee_task'],
+            self::StartTask         => ['employee_task'],
+            self::EndTask           => ['employee_task'],
+            self::AttachAttachments => ['client_request', 'price_offer', 'contract'],
         };
     }
 
