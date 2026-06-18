@@ -60,20 +60,46 @@ class AdminEmployeeTaskController extends Controller
     public function inbox(): JsonResponse
     {
         $adminId = (string) Auth::id();
-        $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to']);
+        $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to', 'type', 'duration_from', 'duration_to']);
         $perPage = (int) request()->input('per_page', 15);
         $page    = (int) request()->input('page', 1);
+        $sort    = request()->input('sort', 'created_at_desc');
 
-        $taskItems     = $this->requestService->inboxAll($adminId, $filters);
-        $extItems      = $this->extensionService->listInboxAllForAdmin($adminId, $filters);
-        $approvalItems = $this->requestService->inboxAllApprovals($adminId, $filters);
+        $type = $filters['type'] ?? null;
+
+        $taskItems     = collect();
+        $extItems      = collect();
+        $approvalItems = collect();
+
+        if (!$type || $type === 'task_request') {
+            $taskItems = $this->requestService->inboxAll($adminId, $filters);
+        }
+        if (!$type || $type === 'extension_request') {
+            $extItems = $this->extensionService->listInboxAllForAdmin($adminId, $filters);
+        }
+        if (!$type || $type === 'task_approval') {
+            $approvalItems = $this->requestService->inboxAllApprovals($adminId, $filters);
+        }
 
         $combined = collect()
             ->merge($taskItems->map(fn ($t) => ['_type' => 'task_request',     '_model' => $t, '_at' => $t->created_at]))
             ->merge($extItems->map(fn ($e)  => ['_type' => 'extension_request','_model' => $e, '_at' => $e->created_at]))
             ->merge($approvalItems->map(fn ($a) => ['_type' => 'task_approval','_model' => $a, '_at' => $a->created_at]))
-            ->sortByDesc('_at')
             ->values();
+
+        $direction = str_ends_with($sort, '_desc') ? 'desc' : 'asc';
+        $column    = str_replace(['_desc', '_asc'], '', $sort);
+
+        $combined = $combined->sortBy(function ($item) use ($column) {
+            $model = $item['_model'];
+            return match ($column) {
+                'task_date'      => $model->task_date ?? ($model->task->task_date ?? null),
+                'duration_hours' => $model->duration_hours ?? ($model->task->duration_hours ?? 0),
+                'title'          => $model->title ?? ($model->task->title ?? ''),
+                'status'         => $model->status,
+                default          => $item['_at'],
+            };
+        }, SORT_REGULAR, $direction === 'desc')->values();
 
         $total = $combined->count();
         $slice = $combined->slice(($page - 1) * $perPage, $perPage)->values();
