@@ -62,6 +62,12 @@ final class EmployeeTaskRequestPresenter
                 ? ['id' => $task->taskType->id, 'key' => $task->taskType->key, 'title' => $task->taskType->title]
                 : null,
             'current_step'               => $this->presentCurrentStep($task),
+            'attachments' => $task->relationLoaded('media')
+                ? $task->media->map(fn($media) => [
+                    'id'        => $media->id,
+                    'url'       => $media->getFullUrl(),
+                ])->values()->all()
+                : [],
             'sessions'                   => $task->relationLoaded('sessions')
                 ? EmployeeTaskSessionPresenter::collection($task->sessions)
                 : [],

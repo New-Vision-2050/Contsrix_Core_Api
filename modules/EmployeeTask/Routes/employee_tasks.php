@@ -13,6 +13,7 @@ use Modules\EmployeeTask\Controllers\EmployeeTaskController;
 Route::prefix('employee-tasks')->group(function () {
     Route::get('/',              [EmployeeTaskController::class, 'index']);
     Route::get('/types',              [EmployeeTaskTypeController::class, 'index']);
+    Route::get('/items',              [EmployeeTaskTypeController::class, 'getItems']);
 
     Route::get('/filters',       [EmployeeTaskController::class, 'filters']);
     Route::post('/',             [EmployeeTaskController::class, 'store']);

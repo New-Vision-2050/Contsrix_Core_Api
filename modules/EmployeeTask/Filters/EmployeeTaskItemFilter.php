@@ -6,7 +6,7 @@ namespace Modules\EmployeeTask\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
 
-class EmployeeTaskTypeFilter extends SearchModelFilter
+class EmployeeTaskItemFilter extends SearchModelFilter
 {
     public $relations = ['user', 'project'];
 
