@@ -7,6 +7,7 @@ namespace Modules\EmployeeTask\Providers;
 use Illuminate\Support\ServiceProvider;
 use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
 use Modules\EmployeeTask\Services\EmployeeTaskAutoCloseService;
+use Modules\EmployeeTask\Services\EmployeeTaskEndRequestService;
 use Modules\EmployeeTask\Services\EmployeeTaskAvailableActionsService;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionWorkflowService;
@@ -50,6 +51,7 @@ class EmployeeTaskServiceProvider extends ServiceProvider
         $this->app->singleton(EmployeeTaskLocationService::class);
         $this->app->singleton(EmployeeTaskReportService::class);
         $this->app->singleton(EmployeeTaskApprovalService::class);
+        $this->app->singleton(EmployeeTaskEndRequestService::class);
         $this->app->singleton(EmployeeTaskAvailableActionsService::class);
     }
 

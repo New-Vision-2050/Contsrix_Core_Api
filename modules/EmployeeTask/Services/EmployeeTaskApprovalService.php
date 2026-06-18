@@ -15,7 +15,6 @@ use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
-use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -225,7 +224,7 @@ final class EmployeeTaskApprovalService
 
         return $this->workflow->resolveInternalProcedureSettingByForm(
             ProcedureSettingType::EmployeeTask->value,
-            InternalProcessForm::SendForApproval->value,
+            'sendForApproval',
             $task->company_id,
             $branchId,
         );

@@ -242,6 +242,7 @@ class EmployeeTaskController extends Controller
                     latitude:  (float) $request->input('latitude'),
                     longitude: (float) $request->input('longitude'),
                     notes:     $request->input('notes'),
+                    internalProcedureSettingId: $request->input('internal_procedure_setting_id'),
                 ),
             );
 

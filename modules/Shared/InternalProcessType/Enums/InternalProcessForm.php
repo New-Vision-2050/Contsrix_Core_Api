@@ -33,20 +33,18 @@ enum InternalProcessForm: string
     public function conditions(): array
     {
         return match ($this) {
-            self::CreateClientRequest, self::CreatePriceOffer, self::CreateContract, self::CreateMeeting, self::CreateTask, self::StartTask => [
+            self::CreateTask, self::StartTask => [
                 InternalProcessCondition::AllowDuringShift,
                 InternalProcessCondition::AllowOutsideShift,
                 InternalProcessCondition::AllowOnHolidays,
-                InternalProcessCondition::HasTaskDuration,
-                InternalProcessCondition::MaxDurationHours,
             ],
             self::EndTask => [
-                InternalProcessCondition::AllowDuringShift,
                 InternalProcessCondition::CanExitOutsideLocation,
             ],
             self::AttachAttachments => [
                 InternalProcessCondition::MaxAttachments,
             ],
+            default => [],
         };
     }
 

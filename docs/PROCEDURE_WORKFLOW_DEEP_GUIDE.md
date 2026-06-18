@@ -235,21 +235,19 @@ enum ProcedureSettingType: string
 }
 
 // Real namespace: Modules\Shared\InternalProcessType\Enums\InternalProcessForm
+// NOTE: Only the cases below are currently implemented. Forms like ExtendTaskTime,
+// SendForApproval, CancelTask, etc. are NOT enum cases — their form keys are used
+// as plain strings ('extendTaskTime', 'sendForApproval') in the services that need them.
 enum InternalProcessForm: string
 {
     case CreateClientRequest = 'createClientRequest';
     case CreatePriceOffer    = 'createPriceOffer';
     case CreateContract      = 'createContract';
     case CreateMeeting       = 'createMeeting';
-    case CreateTask          = 'createTask';
-    case StartTask           = 'startTask';
-    case AssignOtherEmployee = 'assignOtherEmployee';
-    case ExtendTaskTime      = 'extendTaskTime';
-    case SendForApproval     = 'sendForApproval';
-    case CancelTask          = 'cancelTask';
-    case ConfirmLocation     = 'confirmLocation';
-    case EndTask             = 'endTask';
-    case AttachAttachments   = 'attachAttachments';
+    case CreateTask        = 'createTask';
+    case StartTask         = 'startTask';
+    case EndTask           = 'endTask';
+    case AttachAttachments = 'attachAttachments';
 
     public function applicableTypes(): array
     {
@@ -260,15 +258,16 @@ enum InternalProcessForm: string
             self::CreateMeeting       => ['meeting'],
             self::CreateTask,
             self::StartTask,
-            self::ExtendTaskTime,
-            self::ConfirmLocation,
-            self::AssignOtherEmployee,
             self::EndTask             => ['employee_task'],
-            self::CancelTask,
-            self::SendForApproval     => ['employee_task', 'client_request'],
-            self::AttachAttachments   => ['employee_task', 'client_request', 'price_offer', 'contract'],
+            self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
         };
     }
+
+    // conditions() returns InternalProcessCondition[] for each form:
+    //   CreateTask, StartTask  → AllowDuringShift, AllowOutsideShift, AllowOnHolidays
+    //   EndTask                → CanExitOutsideLocation
+    //   AttachAttachments      → MaxAttachments
+    //   all others             → [] (default)
 
     public static function forType(string $procedureType): array;
     public function labelAr(): string;
@@ -277,15 +276,21 @@ enum InternalProcessForm: string
     public static function values(): array;
 }
 
+// Form keys used as strings (not yet promoted to InternalProcessForm enum cases):
+//   'extendTaskTime'  — used by EmployeeTaskExtensionService
+//   'sendForApproval' — used by EmployeeTaskApprovalService
+// These are valid ProcedureSetting child form values in the database; they just
+// have no corresponding enum case currently.
+
 enum InternalProcessCondition: string
 {
-    case AllowDuringShift   = 'AllowDuringShift';
-    case AllowOutsideShift  = 'AllowOutsideShift';
-    case AllowOnHolidays    = 'AllowOnHolidays';
-    case ApplyToAllBranches = 'ApplyToAllBranches';
-    case HasTaskDuration    = 'HasTaskDuration';
-    case MaxDurationHours   = 'MaxDurationHours';
-    case MaxAttachments     = 'MaxAttachments';
+    case AllowDuringShift       = 'allow_during_shift';
+    case AllowOutsideShift      = 'allow_outside_shift';
+    case AllowOnHolidays        = 'allow_on_holidays';
+    case CanExitOutsideLocation = 'can_exit_outside_location';
+    case HasTaskDuration        = 'has_task_duration';
+    case MaxDurationHours       = 'max_duration_hours';
+    case MaxAttachments         = 'max_attachments';
 }
 ```
 
