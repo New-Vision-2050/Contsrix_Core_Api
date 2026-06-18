@@ -63,9 +63,12 @@ class AdminEmployeeTaskController extends Controller
     public function inbox(): JsonResponse
     {
         $adminId = (string) Auth::id();
-        $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to']);
+        $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to', 'type', 'duration_from', 'duration_to']);
         $perPage = (int) request()->input('per_page', 15);
         $page    = (int) request()->input('page', 1);
+        $sort    = request()->input('sort', 'created_at_desc');
+
+        $type = $filters['type'] ?? null;
 
         $taskItems       = $this->requestService->inboxAll($adminId, $filters);
         $extItems        = $this->extensionService->listInboxAllForAdmin($adminId, $filters);
@@ -79,6 +82,20 @@ class AdminEmployeeTaskController extends Controller
             ->merge($endRequestItems->map(fn ($r) => ['_type' => 'end_request',  '_model' => $r, '_at' => $r->created_at]))
             ->sortByDesc('_at')
             ->values();
+
+        $direction = str_ends_with($sort, '_desc') ? 'desc' : 'asc';
+        $column    = str_replace(['_desc', '_asc'], '', $sort);
+
+        $combined = $combined->sortBy(function ($item) use ($column) {
+            $model = $item['_model'];
+            return match ($column) {
+                'task_date'      => $model->task_date ?? ($model->task->task_date ?? null),
+                'duration_hours' => $model->duration_hours ?? ($model->task->duration_hours ?? 0),
+                'title'          => $model->title ?? ($model->task->title ?? ''),
+                'status'         => $model->status,
+                default          => $item['_at'],
+            };
+        }, SORT_REGULAR, $direction === 'desc')->values();
 
         $total = $combined->count();
         $slice = $combined->slice(($page - 1) * $perPage, $perPage)->values();

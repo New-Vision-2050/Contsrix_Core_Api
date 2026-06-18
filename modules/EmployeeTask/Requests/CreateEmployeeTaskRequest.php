@@ -19,7 +19,7 @@ class CreateEmployeeTaskRequest extends FormRequest
             'title'                     => ['required', 'string', 'max:255'],
             'description'               => ['nullable', 'string'],
             'employee_task_type_id'     => ['nullable', 'string', 'exists:employee_task_types,id'],
-            'item_type'                 => ['nullable', 'string', 'max:255'],
+            'item_type'                 => ['nullable', 'string', 'max:255'  , 'exists:employee_task_items,key'],
             'item_id'                   => ['nullable', 'uuid'],
             'project_id'                => ['nullable', 'uuid'],
             'approval_responsible_id'   => ['nullable', 'uuid'],

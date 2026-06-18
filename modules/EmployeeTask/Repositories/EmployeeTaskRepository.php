@@ -29,7 +29,7 @@ class EmployeeTaskRepository
     public function findByIdWithRelations(string $id): ?EmployeeTaskRequest
     {
         return EmployeeTaskRequest::query()
-            ->with(['user', 'sessions', 'extensionRequests'])
+            ->with(['user', 'sessions', 'extensionRequests' , 'media'])
             ->find($id);
     }
 
@@ -148,6 +148,7 @@ class EmployeeTaskRepository
     public function allInboxForAdmin(string $adminId, array $filters): Collection
     {
         $query = EmployeeTaskRequest::query()
+            ->filter($filters)
             ->where('employee_task_requests.status', 'pending')
             ->whereHas('processes', function ($q) use ($adminId) {
                 $q->where('status', ProcessStatus::InProgress)
@@ -164,18 +165,12 @@ class EmployeeTaskRepository
                 'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with(['steps.procedureSettingStep', 'steps.assignedUser'])
             ]);
 
-        if (!empty($filters['task_id'])) {
-            $query->where('id', $filters['task_id']);
-        }
-        if (!empty($filters['task_date'])) {
-            $query->whereDate('task_date', $filters['task_date']);
-        }
-        if (!empty($filters['date_from'])) {
-            $query->whereDate('task_date', '>=', $filters['date_from']);
-        }
-        if (!empty($filters['date_to'])) {
-            $query->whereDate('task_date', '<=', $filters['date_to']);
-        }
+            if (!empty($filters['duration_from'])) {
+                    $query->where('duration_hours', '>=', (float) $filters['duration_from']);
+                }
+                if (!empty($filters['duration_to'])) {
+                    $query->where('duration_hours', '<=', (float) $filters['duration_to']);
+                }
 
         return $query->get();
     }
@@ -197,9 +192,11 @@ class EmployeeTaskRepository
         if (!empty($filters['task_id'])) {
             $query->where('employee_task_request_id', $filters['task_id']);
         }
+
         if (!empty($filters['date_from'])) {
             $query->whereDate('created_at', '>=', $filters['date_from']);
         }
+
         if (!empty($filters['date_to'])) {
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
@@ -258,9 +255,11 @@ class EmployeeTaskRepository
         if (!empty($filters['task_id'])) {
             $query->where('employee_task_request_id', $filters['task_id']);
         }
+
         if (!empty($filters['date_from'])) {
             $query->whereDate('created_at', '>=', $filters['date_from']);
         }
+
         if (!empty($filters['date_to'])) {
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
