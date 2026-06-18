@@ -11,9 +11,10 @@ use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Jobs\AutoCloseTaskAtDurationExpiryJob;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
-use Modules\EmployeeTask\Models\EmployeeTaskSession;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\EmployeeTask\Repositories\EmployeeTaskSessionRepository;
+use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
+use Modules\EmployeeTask\Services\EmployeeTaskEndRequestService;
 use Modules\User\Models\User;
 
 final class EmployeeTaskLifecycleService
@@ -22,6 +23,8 @@ final class EmployeeTaskLifecycleService
         private readonly EmployeeTaskRepository        $taskRepo,
         private readonly EmployeeTaskSessionRepository $sessionRepo,
         private readonly EmployeeTaskLocationService   $locationService,
+        private readonly EmployeeTaskApprovalService   $approvalService,
+        private readonly EmployeeTaskEndRequestService $endRequestService,
     ) {}
 
     public function start(string $taskId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
@@ -150,10 +153,33 @@ final class EmployeeTaskLifecycleService
             throw EmployeeTaskException::invalidStatus($task->status, ...$validStatuses);
         }
 
+        if ($task->hasPendingEndRequest()) {
+            throw EmployeeTaskException::pendingEndRequestExists();
+        }
+
+        $procedureSetting = $this->endRequestService->resolveEndTaskProcedure(
+            $task,
+            $dto->internalProcedureSettingId,
+        );
+
+        if ($procedureSetting !== null) {
+            $this->endRequestService->create($task, $dto, $procedureSetting);
+            return $task->fresh()->load(['sessions']);
+        }
+
+        return $this->performEnd($task, $dto);
+    }
+
+    /**
+     * Execute the end-task business logic immediately (no procedure involved).
+     * Also called internally when an end request is auto-approved.
+     */
+    public function performEnd(EmployeeTaskRequest $task, EndTaskDTO $dto): EmployeeTaskRequest
+    {
         $timezone = $task->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
         $now      = CarbonImmutable::now($timezone);
 
-        $activeSession = $this->sessionRepo->findActiveByTask($taskId);
+        $activeSession = $this->sessionRepo->findActiveByTask($task->id);
 
         if ($activeSession) {
             $sessionStart    = CarbonImmutable::parse($activeSession->start_time, $timezone);
@@ -168,7 +194,7 @@ final class EmployeeTaskLifecycleService
             ]);
         }
 
-        $totalSessionMinutes = $this->sessionRepo->sumCompletedMinutes($taskId);
+        $totalSessionMinutes = $this->sessionRepo->sumCompletedMinutes($task->id);
         $timeFrom            = CarbonImmutable::parse($task->time_from, $timezone);
         $totalElapsedMinutes = max(0, (int) $timeFrom->diffInMinutes($now));
         $totalPauseMinutes   = max(0, $totalElapsedMinutes - $totalSessionMinutes);
@@ -184,7 +210,8 @@ final class EmployeeTaskLifecycleService
             'notes'               => $dto->notes ?? $task->notes,
         ]);
 
-        return $task->refresh()->load(['sessions']);
+        $task->refresh()->load(['sessions']);
+        return $task;
     }
 
     private function resolveTimezone(User $user): string

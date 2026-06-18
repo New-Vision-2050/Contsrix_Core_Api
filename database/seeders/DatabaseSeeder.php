@@ -43,6 +43,7 @@ use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\Shared\TimeUnit\Database\Seeders\TimeUnitsSeederTableSeeder;
 use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
 use Modules\EmployeeTask\Database\Seeders\EmployeeTaskTypeSeeder;
+use Modules\EmployeeTask\Database\Seeders\EmployeeTaskItemSeeder;
 use Modules\Shared\NatureWork\Database\Seeders\NatureWorkSeederTableSeeder;
 use Modules\Shared\SalaryType\Database\Seeders\SalaryTypeSeederTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesSeederTableSeeder;
@@ -88,6 +89,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CompanyModulesSeederTableSeeder::class);
         $this->call(RolesAndPermissionsSeeder::class);
         $this->call(EmployeeTaskTypeSeeder::class);
+        $this->call(EmployeeTaskItemSeeder::class);
 
 
         $this->call(SettingSeeder::class);

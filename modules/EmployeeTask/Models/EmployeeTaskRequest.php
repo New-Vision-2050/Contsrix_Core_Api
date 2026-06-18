@@ -152,6 +152,11 @@ class EmployeeTaskRequest extends Model implements HasMedia
         return $this->hasMany(EmployeeTaskApprovalRequest::class, 'employee_task_request_id');
     }
 
+    public function endRequests(): HasMany
+    {
+        return $this->hasMany(EmployeeTaskEndRequest::class, 'employee_task_request_id');
+    }
+
     public function isInStatus(EmployeeTaskStatus ...$statuses): bool
     {
         return in_array($this->status, array_map(fn (EmployeeTaskStatus $s) => $s->value, $statuses), true);
@@ -183,6 +188,13 @@ class EmployeeTaskRequest extends Model implements HasMedia
     public function hasPendingApprovalRequest(): bool
     {
         return $this->approvalRequests()
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    public function hasPendingEndRequest(): bool
+    {
+        return $this->endRequests()
             ->where('status', 'pending')
             ->exists();
     }

@@ -239,6 +239,11 @@ class EmployeeTaskRequestService
         return $this->repository->allApprovalInboxForAdmin($adminId, $filters);
     }
 
+    public function inboxAllEndRequests(string $adminId, array $filters = []): Collection
+    {
+        return $this->repository->allEndRequestInboxForAdmin($adminId, $filters);
+    }
+
     public function get(string $id): EmployeeTaskRequest
     {
         $task = $this->repository->findByIdWithRelations($id);

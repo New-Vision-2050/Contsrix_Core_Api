@@ -6,6 +6,7 @@ namespace Modules\EmployeeTask\Presenters;
 
 use Modules\Attendance\Support\HoursFormatter;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
+use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\Shared\Media\Presenters\MediaPresenter;
@@ -72,6 +73,31 @@ final class InboxItemPresenter
                 'reason'           => $extension->reason,
             ],
             'created_at' => $extension->created_at?->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    public static function fromEndRequest(EmployeeTaskEndRequest $endRequest): array
+    {
+        $locale = app()->getLocale();
+        $task   = $endRequest->relationLoaded('task') ? $endRequest->task : null;
+
+        return [
+            'id'         => $endRequest->id,
+            'type'       => 'end_request',
+            'type_label' => $locale === 'ar' ? 'طلب انهاء مهمة' : 'End Task Request',
+            'task'       => $task ? self::taskSummary($task) : null,
+            'employee'   => self::employee(
+                $endRequest->relationLoaded('requestedByUser') ? $endRequest->requestedByUser : null
+            ),
+            'status'     => $endRequest->status,
+            'current_step' => self::step($endRequest),
+            'summary'    => [
+                'notes'     => $endRequest->notes,
+                'latitude'  => (float) $endRequest->latitude,
+                'longitude' => (float) $endRequest->longitude,
+                'time_from' => $task?->time_from?->format('Y-m-d H:i:s'),
+            ],
+            'created_at' => $endRequest->created_at?->format('Y-m-d H:i:s'),
         ];
     }
 
