@@ -58,6 +58,45 @@ final class EmployeeTaskFormConditionService
     }
 
     /**
+     * Check location condition for the startTask form.
+     *
+     * Uses isWithinTaskRadiusForStart() because radius_meters is not yet
+     * snapshotted onto the task at this point — it is set inside start().
+     *
+     * @throws EmployeeTaskException when conditions are not met
+     */
+    public function checkStartTaskConditions(
+        EmployeeTaskRequest $task,
+        User                $user,
+        float               $latitude,
+        float               $longitude,
+    ): void {
+        $task->loadMissing('user.userProfessionalData');
+        $branchId = $task->user?->userProfessionalData?->branch_id !== null
+            ? (string) $task->user->userProfessionalData->branch_id
+            : null;
+
+        $conditions = $this->resolveConditions(
+            InternalProcessForm::StartTask->value,
+            $task->company_id,
+            $branchId,
+        );
+
+        if ($conditions === null) {
+            return;
+        }
+
+        $mustBeInLocation = (bool) ($conditions[InternalProcessCondition::MustBeInLocation->value] ?? false);
+
+        if ($mustBeInLocation) {
+            $inLocation = $this->locationService->isWithinTaskRadiusForStart($task, $user, $latitude, $longitude);
+            if (! $inLocation) {
+                throw EmployeeTaskException::cannotStartTaskOutsideLocation();
+            }
+        }
+    }
+
+    /**
      * Check location condition for the endTask form.
      *
      * @throws EmployeeTaskException when conditions are not met

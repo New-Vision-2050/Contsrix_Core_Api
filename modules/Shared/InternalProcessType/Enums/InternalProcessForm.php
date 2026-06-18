@@ -48,6 +48,9 @@ enum InternalProcessForm: string
                 InternalProcessCondition::AllowOutsideShift,
                 InternalProcessCondition::AllowOnHolidays,
             ],
+            self::StartTask => [
+                InternalProcessCondition::MustBeInLocation,
+            ],
             self::EndTask => [
                 InternalProcessCondition::CanExitOutsideLocation,
             ],

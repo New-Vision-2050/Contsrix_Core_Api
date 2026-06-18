@@ -40,6 +40,8 @@ final class EmployeeTaskLifecycleService
             throw EmployeeTaskException::notApproved();
         }
 
+        $this->conditionService->checkStartTaskConditions($task, $user, $dto->latitude, $dto->longitude);
+
         $timezone      = $this->resolveTimezone($user);
         $radiusMeters  = $this->locationService->snapshotRadiusFromConstraint($user);
         $now           = CarbonImmutable::now($timezone);

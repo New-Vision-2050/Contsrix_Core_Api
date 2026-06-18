@@ -178,4 +178,9 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__('You must be within the task location to end this task.'), 422);
     }
+
+    public static function cannotStartTaskOutsideLocation(): self
+    {
+        return new self(__('You must be within the task location to start this task.'), 422);
+    }
 }
