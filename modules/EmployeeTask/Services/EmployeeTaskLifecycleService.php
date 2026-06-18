@@ -20,11 +20,12 @@ use Modules\User\Models\User;
 final class EmployeeTaskLifecycleService
 {
     public function __construct(
-        private readonly EmployeeTaskRepository        $taskRepo,
-        private readonly EmployeeTaskSessionRepository $sessionRepo,
-        private readonly EmployeeTaskLocationService   $locationService,
-        private readonly EmployeeTaskApprovalService   $approvalService,
-        private readonly EmployeeTaskEndRequestService $endRequestService,
+        private readonly EmployeeTaskRepository           $taskRepo,
+        private readonly EmployeeTaskSessionRepository    $sessionRepo,
+        private readonly EmployeeTaskLocationService      $locationService,
+        private readonly EmployeeTaskApprovalService      $approvalService,
+        private readonly EmployeeTaskEndRequestService    $endRequestService,
+        private readonly EmployeeTaskFormConditionService $conditionService,
     ) {}
 
     public function start(string $taskId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
@@ -156,6 +157,8 @@ final class EmployeeTaskLifecycleService
         if ($task->hasPendingEndRequest()) {
             throw EmployeeTaskException::pendingEndRequestExists();
         }
+
+        $this->conditionService->checkEndTaskConditions($task, $dto->latitude, $dto->longitude);
 
         $procedureSetting = $this->endRequestService->resolveEndTaskProcedure(
             $task,

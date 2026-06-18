@@ -33,6 +33,7 @@ class EmployeeTaskRequestService
         private readonly WorkflowEngine $engine,
         private readonly ProcessWorkflowService $processService,
         private readonly FileUploadService $fileUploadService,
+        private readonly EmployeeTaskFormConditionService $conditionService,
     ) {}
 
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
@@ -44,6 +45,8 @@ class EmployeeTaskRequestService
             ? (string) $creator->userProfessionalData->branch_id
             : null;
         $companyId = (string) tenant('id');
+
+        $this->conditionService->checkCreateTaskConditions($dto->userId, $companyId, $branchId);
         $preview = $this->engine->previewResponsibles(
             $procedureType,
             InternalProcessForm::CreateTask->value,

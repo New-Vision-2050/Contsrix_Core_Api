@@ -2,7 +2,7 @@
 
 > **Purpose of this document:** A self-contained playbook for any developer or AI assistant working inside the Attendance module. Every class, interface, constant, relationship, business rule, and data-flow is documented here with the full implementation details needed to safely read, modify, or extend the module without needing to open every file individually.
 >
-> **Last updated:** 2026-05-18 — Added constraint management APIs: `attendance_constraint_locations` table, `AttendanceConstraintLocation` model, new `AttendanceConstraintController` methods (update basic info, get/assign employees, CRUD locations, get day-shifts), updated `AttendanceConstraintService` location merging to include table-based locations alongside existing `branch_locations` JSON, and updated INV-20. Added §24: EmployeeTask Module Integration (new `modules/EmployeeTask/` — parallel task hours system, intra-day report, GPS auto-close, extension requests).
+> **Last updated:** 2026-06-18 — Added §24.11: Procedure & Condition Integration — documents how `EmployeeTaskFormConditionService` consumes `AttendanceConstraintService::getTodaysWorkRulesForUser()` to gate `createTask` on shift/holiday status, and how `EmployeeTaskLocationService::isWithinTaskRadius()` gates `endTask` on GPS location. Added INV-T11.
 
 ---
 
@@ -52,9 +52,11 @@
     - [24.8 API Endpoints (17 total)](#248-api-endpoints-17-total)
     - [24.9 Key Invariants (INV-T1 through INV-T10)](#249-key-invariants-employeetask-specific)
     - [24.10 Permissions](#2410-permissions)
+    - [24.11 Procedure & Condition Integration](#2411-procedure--condition-integration) ← **NEW 2026-06-18**
     - [INV-18](#inv-18-re-clock-in-lateness-anchor-must-filter-previous-attendances-by-scheduled-period): Re-clock-in lateness anchor must filter previous rows by scheduled period (`start_time` + `end_time`), not by date alone
     - [INV-19](#inv-19-lateness-grace-lookup-reads-per-day-rules-from-weekly_scheduledaylateness_rules): Lateness grace-period lookup must read per-day rules from `weekly_schedule.{day}.lateness_rules`, not `time_rules.lateness_rules`
     - [INV-20](#inv-20-additional_locations-in-user-constrainttoday--mirrors-the-location-validation-used-at-clock-in): `additional_locations` in `user-constraint/today` — mirrors the location validation used at clock-in
+    - [INV-T11](#inv-t11--condition-check-must-fire-before-workflow-start): Condition check must fire before workflow start
 
 ---
 
@@ -2518,3 +2520,90 @@ EMPLOYEE_TASK_EXTENSION_CREATE  → employee-task.extensions.create
 EMPLOYEE_TASK_EXTENSION_APPROVE → employee-task.extensions.approve
 EMPLOYEE_TASK_REPORT_VIEW     → employee-task.reports.view
 ```
+
+---
+
+### 24.11 Procedure & Condition Integration
+
+**Added:** 2026-06-18
+
+The Procedure Workflow system can gate task lifecycle actions on attendance-derived conditions. This section documents which Attendance module services are consumed and how.
+
+#### 24.11.1 Overview
+
+`EmployeeTaskFormConditionService` (in `modules/EmployeeTask/Services/`) is the bridge between the Procedure Workflow system and the Attendance module. It resolves the child `ProcedureSetting` for a given form, reads its `conditions` JSON, and evaluates them against real-time attendance data.
+
+```
+EmployeeTaskRequestService::create()
+        │
+        ▼
+EmployeeTaskFormConditionService::checkCreateTaskConditions()
+        │
+        ├── ProcedureWorkflowService::resolveInternalProcedureSettingByForm()
+        │         returns child ProcedureSetting (or null → skip)
+        │
+        ├── AttendanceConstraintService::getTodaysWorkRulesForUser(User)
+        │         returns: is_holiday, current_work_period, all_work_periods
+        │
+        └── evaluates: allow_during_shift / allow_outside_shift / allow_on_holidays
+                  throws EmployeeTaskException (422) on violation
+
+
+EmployeeTaskLifecycleService::end()
+        │
+        ▼
+EmployeeTaskFormConditionService::checkEndTaskConditions()
+        │
+        ├── ProcedureWorkflowService::resolveInternalProcedureSettingByForm()
+        │
+        └── EmployeeTaskLocationService::isWithinTaskRadius($task, $lat, $lng)
+                  evaluates: can_exit_outside_location
+                  throws EmployeeTaskException (422) on violation
+```
+
+#### 24.11.2 AttendanceConstraintService Consumption
+
+**Method used:** `AttendanceConstraintService::getTodaysWorkRulesForUser(User $user): array`
+
+The condition service loads the `User` model with the following relations to support constraint resolution:
+- `professionalData.attendanceConstraint` — direct personal constraint (highest priority)
+- `userProfessionalData.branch` — used to find branch-default constraint
+- `userProfessionalData.department` — used in broad constraint lookup fallback
+
+**Return values consumed:**
+
+| Key | Type | Used for |
+|-----|------|---------|
+| `is_holiday` | `bool` | `AllowOnHolidays` condition check. `true` when `day_status` is `holiday` or `day_off_or_weekend`, or when no time constraint is assigned. |
+| `current_work_period` | `array\|null` | `AllowDuringShift` / `AllowOutsideShift` check. Non-null = employee is inside a scheduled work period right now. |
+
+**No attendance constraint assigned:** `getTodaysWorkRulesForUser` returns `is_holiday = false` and an empty `all_work_periods` / null `current_work_period`. The condition service treats this as "outside shift, not holiday" — only the `AllowOutsideShift` condition applies.
+
+#### 24.11.3 EmployeeTaskLocationService Consumption
+
+**Method used:** `EmployeeTaskLocationService::isWithinTaskRadius(EmployeeTaskRequest $task, float $lat, float $lng): bool`
+
+Uses `GeoDistance::haversine()` to compare the employee's GPS coordinates against the task's location anchor and `task.radius_meters` (snapshotted from the attendance constraint at task start — see INV-T4).
+
+Returns `true` if within radius, `false` if outside. The `can_exit_outside_location = false` condition blocks the end action when the employee is outside radius.
+
+#### 24.11.4 Condition Defaults (from InternalProcedureSettingsSeeder)
+
+| Form | Condition | Default |
+|------|-----------|---------|
+| `createTask` | `allow_during_shift` | `true` |
+| `createTask` | `allow_outside_shift` | `false` |
+| `createTask` | `allow_on_holidays` | `false` |
+| `endTask` | `can_exit_outside_location` | `true` |
+
+Admins can override these defaults via the internal procedure settings API.
+
+---
+
+#### INV-T11 — Condition Check Must Fire Before Workflow Start
+
+`EmployeeTaskFormConditionService::check*Conditions()` **must always be called before** `WorkflowEngine::previewResponsibles()` or `ProcedureWorkflowService::resolveInternalProcedureSettingByForm()` initiates any workflow work. Violating this order would allow a condition-blocked action to create orphan workflow/process records.
+
+Current call sites enforce this ordering:
+- `EmployeeTaskRequestService::create()` — condition check is the first statement after `$branchId` resolution.
+- `EmployeeTaskLifecycleService::end()` — condition check fires after status validation but before `resolveEndTaskProcedure()`.
