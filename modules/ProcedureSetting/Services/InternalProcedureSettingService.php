@@ -92,7 +92,7 @@ final class InternalProcedureSettingService
             'conditions'        => $conditions,
             'appears_before_id' => $data['appears_before_id'] ?? null,
             'appears_after_id'  => $data['appears_after_id'] ?? null,
-            'sort_order'        => $data['sort_order'] ?? $this->nextSortOrder($parentId),
+            'sort_order'        => $data['sort_order'] ?? $form->sortOrder(),
             'percentage'        => $data['percentage'] ?? 0,
             'deadline_days'     => $data['deadline_days'] ?? null,
             'deadline_hours'    => $data['deadline_hours'] ?? null,

@@ -58,6 +58,22 @@ enum InternalProcessForm: string
         };
     }
 
+    /**
+     * Natural sort weight for this form within a procedure type.
+     * create* forms are always first, end* forms are always last.
+     * Gaps (100 → 500 → 900) leave room for middle forms added via API.
+     */
+    public function sortOrder(): int
+    {
+        if (str_starts_with($this->value, 'create')) {
+            return 100;
+        }
+        if (str_starts_with($this->value, 'end')) {
+            return 900;
+        }
+        return 500;
+    }
+
     /** @return array{key: string, label_ar: string, conditions: list<array{key: string, type: string, label_ar: string}>} */
     public function toDefinition(): array
     {
@@ -97,16 +113,20 @@ enum InternalProcessForm: string
 
     /**
      * @param string $procedureType  A ProcedureSettingType::value
-     * @return list<self>
+     * @return list<self>             Sorted: create* first → middle → end* last
      */
     public static function forType(string $procedureType): array
     {
-        return array_values(
+        $forms = array_values(
             array_filter(
                 self::cases(),
                 static fn (self $form): bool => in_array($procedureType, $form->applicableTypes(), true),
             )
         );
+
+        usort($forms, static fn (self $a, self $b) => $a->sortOrder() <=> $b->sortOrder());
+
+        return $forms;
     }
 
     /** @return list<string> */

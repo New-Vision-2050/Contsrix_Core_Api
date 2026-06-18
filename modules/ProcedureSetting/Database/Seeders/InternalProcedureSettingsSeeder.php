@@ -103,18 +103,26 @@ class InternalProcedureSettingsSeeder extends Seeder
             return;
         }
 
-        foreach ($forms as $order => $form) {
+        foreach ($forms as $form) {
+            $sortOrder = $form->sortOrder();
+
             // Use raw query to bypass tenant global scope completely.
-            $alreadyExists = DB::table('procedure_settings')
+            $existingId = DB::table('procedure_settings')
                 ->where('parent_id', $parent->id)
                 ->where('form', $form->value)
-                ->exists();
+                ->value('id');
 
-            if ($alreadyExists) {
+            if ($existingId !== null) {
+                // Fix sort_order on existing records so ordering is always correct.
+                DB::table('procedure_settings')
+                    ->where('id', $existingId)
+                    ->update(['sort_order' => $sortOrder, 'updated_at' => now()]);
+
                 $this->command?->info(sprintf(
-                    'InternalProcedure [%s] already exists under [%s]. Skipping.',
+                    'Updated sort_order for [%s] under [%s] → %d.',
                     $form->value,
                     $parent->name,
+                    $sortOrder,
                 ));
                 continue;
             }
@@ -132,7 +140,7 @@ class InternalProcedureSettingsSeeder extends Seeder
                 'form'         => $form->value,
                 'type'         => $type,
                 'execute_type' => 'sequence',
-                'sort_order'   => $order,
+                'sort_order'   => $sortOrder,
                 'conditions'   => json_encode(InternalProcessCondition::defaultValuesForForm($form)),
                 'percentage'   => 0,
                 'created_at'   => $now,
