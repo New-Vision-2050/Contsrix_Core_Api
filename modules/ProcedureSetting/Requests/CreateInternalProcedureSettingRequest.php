@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
@@ -12,6 +13,40 @@ use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
 class CreateInternalProcedureSettingRequest extends FormRequest
 {
+    /**
+     * Normalize conditions from frontend indexed format [{key, value}] to
+     * backend associative format {allow_on_holidays: true, ...} before
+     * validation so that dot-notation sub-key rules resolve correctly.
+     */
+    protected function prepareForValidation(): void
+    {
+        $conditions = $this->input('conditions');
+
+        if (! is_array($conditions) || $conditions === []) {
+            return;
+        }
+
+        $firstKey = array_key_first($conditions);
+        if (! is_int($firstKey)) {
+            return;
+        }
+
+        $normalized = [];
+        foreach ($conditions as $item) {
+            if (! is_array($item) || ! array_key_exists('key', $item)) {
+                continue;
+            }
+
+            $snakeKey = Str::snake((string) $item['key']);
+            $enum     = InternalProcessCondition::tryFrom($snakeKey);
+            $key      = $enum !== null ? $enum->value : $snakeKey;
+
+            $normalized[$key] = $item['value'] ?? null;
+        }
+
+        $this->merge(['conditions' => $normalized]);
+    }
+
     public function rules(): array
     {
         return array_merge([
