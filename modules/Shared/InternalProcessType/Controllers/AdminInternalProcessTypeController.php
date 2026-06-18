@@ -61,9 +61,16 @@ class AdminInternalProcessTypeController extends Controller
 
     public function formsConditions(): JsonResponse
     {
+        $formKey = request()->input('type');
+        $form    = $formKey !== null ? InternalProcessForm::tryFrom($formKey) : null;
+
+        $conditions = $form !== null
+            ? $form->conditions()
+            : InternalProcessCondition::cases();
+
         $definitions = array_map(
             static fn (InternalProcessCondition $condition): array => $condition->toDefinition(),
-            InternalProcessCondition::cases(),
+            $conditions,
         );
 
         return Json::items(
