@@ -43,13 +43,30 @@ jobs:
           echo "SSH Key is set: ${{ secrets.DEPLOY_SSH_KEY != '' }}"
           echo "Branch: ${{ github.ref_name }}"
 
-      - name: Clean Old Data
+      - name: Test SSH Connection
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          timeout: 30s
+          command_timeout: 30s
+          script: |
+            echo "✅ SSH connection successful"
+            whoami
+            pwd
+
+      - name: Clean Old Data
+        if: success() || failure()
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          timeout: 30s
+          command_timeout: 30s
           script: |
               DEPLOY_DIR=/home/deployer/laravel/deployments/${{env.DEPLOYMENT_ID}}/code
               rm -rf $DEPLOY_DIR
@@ -61,6 +78,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          timeout: 120s
           source: "."
           target: "/home/deployer/laravel/deployments/${{ env.DEPLOYMENT_ID }}/code/"
 
@@ -124,6 +142,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          timeout: 30s
           command_timeout: 60m
           script: |
             #!/bin/bash
@@ -161,31 +180,31 @@ jobs:
             echo $DEPLOY_DIR
             chmod +x ./devops/deploy.sh
             ./devops/deploy.sh
-            
+
             # Create Firebase credentials inside the running container
             echo "Creating Firebase credentials in container..."
-            
+
             # Find the actual container name (deploy.sh uses random namespace)
             CONTAINER_NAME=$(docker ps --filter "label=traefik.http.routers.backend-${{env.DEPLOYMENT_ID}}.rule" --format "{{.Names}}" | head -n 1)
-            
+
             if [ -z "$CONTAINER_NAME" ]; then
               echo "❌ Could not find container for deployment ${{env.DEPLOYMENT_ID}}"
               docker ps --filter "name=backend" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
               exit 1
             fi
-            
+
             echo "Found container: $CONTAINER_NAME"
-            
+
             # Encode Firebase credentials as base64 for safe transfer
             FIREBASE_B64=$(echo '${{ secrets.FIREBASE_CREDENTIALS }}' | base64 -w 0)
-            
+
             # Decode and write to container
             echo "$FIREBASE_B64" | base64 -d | docker exec -i $CONTAINER_NAME bash -c 'cat > /var/www/public/firebase_credentials.json'
-            
+
             # Set secure permissions inside container
             docker exec $CONTAINER_NAME chmod 600 /var/www/public/firebase_credentials.json
             docker exec $CONTAINER_NAME chown www-data:www-data /var/www/public/firebase_credentials.json
-            
+
             # Validate JSON inside container
             if docker exec $CONTAINER_NAME bash -c 'command -v jq &> /dev/null'; then
               docker exec $CONTAINER_NAME bash -c 'jq empty /var/www/public/firebase_credentials.json' && \
@@ -195,11 +214,11 @@ jobs:
             else
               echo "⚠️  jq not available in container, skipping validation"
             fi
-            
+
             # Verify file exists
             docker exec $CONTAINER_NAME ls -la /var/www/public/firebase_credentials.json
             echo "✅ Firebase credentials deployed successfully to $CONTAINER_NAME"
-            
+
             rm -rf $DEPLOY_DIR
             echo "Deployment of $CONTAINER_NAME completed successfully."
 
@@ -219,7 +238,6 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == false
-    needs: deploy
     steps:
       - name: Set Deployment ID for Cleanup
         id: set_cleanup_deployment_id
@@ -237,6 +255,8 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          timeout: 30s
+          command_timeout: 5m
           script: |
             set -e
             set -x

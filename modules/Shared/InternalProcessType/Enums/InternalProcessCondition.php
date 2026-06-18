@@ -9,7 +9,7 @@ enum InternalProcessCondition: string
     case AllowDuringShift   = 'allow_during_shift';
     case AllowOutsideShift  = 'allow_outside_shift';
     case AllowOnHolidays    = 'allow_on_holidays';
-    case ApplyToAllBranches = 'apply_to_all_branches';
+//    case ApplyToAllBranches = 'apply_to_all_branches';
     case HasTaskDuration    = 'has_task_duration';
     case MaxDurationHours   = 'max_duration_hours';
     case MaxAttachments     = 'max_attachments';
@@ -28,7 +28,7 @@ enum InternalProcessCondition: string
             self::AllowDuringShift   => 'موظف داخل الدوام',
             self::AllowOutsideShift  => 'موظف خارج الدوام',
             self::AllowOnHolidays    => 'مسموح في العطلات',
-            self::ApplyToAllBranches => 'تعمل في جميع الفروع',
+//            self::ApplyToAllBranches => 'تعمل في جميع الفروع',
             self::HasTaskDuration    => 'مدة المهمة',
             self::MaxDurationHours   => 'أقصى مدة بالساعات',
             self::MaxAttachments     => 'أقصى عدد مرفقات',
@@ -81,8 +81,8 @@ enum InternalProcessCondition: string
             $defaults[$condition->value] = match ($condition->type()) {
                 InternalProcessConditionType::Int, InternalProcessConditionType::String => null,
                 InternalProcessConditionType::Bool => match ($condition) {
-                    self::AllowDuringShift, self::ApplyToAllBranches => true,
-                    default => false,
+                    self::AllowDuringShift,
+                    self::AllowOutsideShift, self::AllowOnHolidays, self::HasTaskDuration => false,
                 },
             };
         }
