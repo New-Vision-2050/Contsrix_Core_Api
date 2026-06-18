@@ -158,4 +158,24 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__('This end request has already been resolved.'), 422);
     }
+
+    public static function notAllowedDuringShift(): self
+    {
+        return new self(__('This action is not allowed while you are within a work shift.'), 422);
+    }
+
+    public static function notAllowedOutsideShift(): self
+    {
+        return new self(__('This action is only allowed during an active work shift.'), 422);
+    }
+
+    public static function notAllowedOnHolidays(): self
+    {
+        return new self(__('This action is not allowed on holidays or non-working days.'), 422);
+    }
+
+    public static function cannotEndTaskOutsideLocation(): self
+    {
+        return new self(__('You must be within the task location to end this task.'), 422);
+    }
 }

@@ -1,6 +1,8 @@
 # Procedure Workflow Deep Guide
 
 > Comprehensive implementation reference for AI assistants and developers.
+>
+> **Last updated:** 2026-06-18 — Added form condition enforcement (`EmployeeTaskFormConditionService`): `createTask` now checks shift/holiday conditions via `AttendanceConstraintService`; `endTask` now checks location condition via `EmployeeTaskLocationService`. Updated §27.8 (conditions JSON format), corrected §27.10.3 (conditions ARE enforced for specific forms), and added §28 Form Condition Enforcement.
 
 ---
 
@@ -57,6 +59,15 @@ Process-based notifications are now handled centrally. Each module registers a `
 2. Register a `WorkflowNotifier` for the new `processable_type`.
 3. Reuse `ProcessWorkflowService::approveStep()` / `rejectStep()` or mirror the existing ClientRequest business rules if the entity needs custom status transitions.
 4. If it does not create `Process` records, use `ProcedureWorkflowService` and dispatch notifications manually like extensions/approvals.
+
+### To Apply Form Conditions (Backend Enforcement)
+Form conditions stored on child `ProcedureSetting` records are enforced by `EmployeeTaskFormConditionService` **before** any workflow starts:
+
+1. `createTask` — checks `allow_during_shift`, `allow_outside_shift`, `allow_on_holidays` against the user's current attendance work-rules (via `AttendanceConstraintService::getTodaysWorkRulesForUser()`).
+2. `endTask` — checks `can_exit_outside_location` against the task geofence (via `EmployeeTaskLocationService::isWithinTaskRadius()`).
+3. `startTask` — no conditions defined; check is skipped entirely.
+
+If **no child ProcedureSetting is found** for the form, or its `conditions` column is empty, the check passes silently. See **§28** for full details.
 
 ### Critical Rule for Notifications
 `EmployeeTaskNotification` accepts `$userIds` explicitly. For `management_hierarchy` and `specific_procedures`, the template step has **EMPTY** `actionTakers`. For Process-based flows, `ProcessWorkflowService` resolves real user IDs into `authorized_user_ids` before firing `WorkflowStepActivated`; for non-Process flows, callers must resolve user IDs via `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()` and pass them to the event constructor.
@@ -148,6 +159,22 @@ Process-based notifications are now handled centrally. Each module registers a `
 | `create($taskId, $userId, $notes, $file)` | `EmployeeTaskApprovalRequest` | Resolves first step users with context, broadcasts to resolved IDs |
 | `approve($approvalId, $adminId, $approvalNotes)` | `EmployeeTaskApprovalRequest` | advance with context |
 | `reject($approvalId, $adminId, $rejectionReason)` | `EmployeeTaskApprovalRequest` | assertCanReject with context |
+
+### EmployeeTaskFormConditionService
+
+Backend enforcer for `InternalProcessForm` conditions. Called before workflow starts — throws `EmployeeTaskException` (HTTP 422) when a condition is violated.
+
+| Method | Returns | Parameters | Called By |
+|--------|---------|-----------|-----------|
+| `checkCreateTaskConditions($userId, $companyId, $branchId)` | `void` | `string`, `string`, `?string` | `EmployeeTaskRequestService::create()` |
+| `checkEndTaskConditions($task, $latitude, $longitude)` | `void` | `EmployeeTaskRequest`, `float`, `float` | `EmployeeTaskLifecycleService::end()` |
+
+**Internal flow:**
+1. Resolve the child `ProcedureSetting` via `ProcedureWorkflowService::resolveInternalProcedureSettingByForm()`.
+2. If null or `conditions` is empty → return (no-op).
+3. Read condition values from `$setting->conditions` (keyed by `InternalProcessCondition->value`).
+4. Evaluate against real-time attendance / location data.
+5. Throw on first violation.
 
 ---
 
@@ -274,10 +301,12 @@ enum InternalProcessForm: string
     }
 
     // conditions() returns InternalProcessCondition[] for each form:
-    //   CreateTask, StartTask  → AllowDuringShift, AllowOutsideShift, AllowOnHolidays
-    //   EndTask                → CanExitOutsideLocation
-    //   AttachAttachments      → MaxAttachments
-    //   all End* (non-task)    → [] (default)
+    //   CreateTask        → AllowDuringShift, AllowOutsideShift, AllowOnHolidays
+    //   StartTask         → [] (shift-period enforcement is owned by the Attendance
+    //                         module's constraint system, not the procedure form)
+    //   EndTask           → CanExitOutsideLocation
+    //   AttachAttachments → MaxAttachments
+    //   all others        → [] (default)
 
     public static function forType(string $procedureType): array;
     public function labelAr(): string;
@@ -1816,27 +1845,65 @@ Returns all `InternalProcessForm` values applicable to the parent's category, wi
 
 ### 27.7 Seeding
 
-`InternalProcedureSettingsSeeder` auto-creates default children under each parent category:
-- `employee_task`: createTask, startTask, extendTaskTime, sendForApproval, cancelTask, confirmLocation, assignOtherEmployee, attachAttachments
-- Other categories: no defaults (extendable in future)
+`InternalProcedureSettingsSeeder` auto-creates default children under each parent category.
+
+**Seeding rule:** any `InternalProcessForm` case whose value starts with `create` **or** `end` is seeded automatically. This covers:
+
+| Seeded form | Procedure category |
+|-------------|-------------------|
+| `createClientRequest` | `client_request` |
+| `createPriceOffer` | `price_offer` |
+| `createContract` | `contract` |
+| `createMeeting` | `meeting` |
+| `createTask` | `employee_task` |
+| `endTask` | `employee_task` |
+| `endClientRequest` | `client_request` |
+| `endPriceOffer` | `price_offer` |
+| `endContract` | `contract` |
+| `endMeeting` | `meeting` |
+
+Forms that are **not** seeded automatically (and must be created via API if needed):
+- `startTask`, `attachAttachments`, `extendTaskTime` (string-only), `sendForApproval` (string-only)
+
+**To add a new auto-seeded form:** add an `InternalProcessForm` case whose value starts with `create` or `end` — the seeder picks it up on next run without code changes.
 
 ### 27.8 Conditions Schema
 
-Each condition is stored as a JSON object:
+The `conditions` column on a child `ProcedureSetting` is a JSON **object** (not an array) keyed by the snake_case value of `InternalProcessCondition`:
 
 ```json
-[
-  { "key": "AllowDuringShift", "value": true },
-  { "key": "ApplyToAllBranches", "value": false },
-  { "key": "MaxDurationHours", "value": 8 }
-]
+{
+  "allow_during_shift": true,
+  "allow_outside_shift": false,
+  "allow_on_holidays": false
+}
 ```
 
-The `key` must match an `InternalProcessCondition` case. The `value` type depends on the condition:
-- Boolean conditions: `true`/`false`
-- Number conditions: integer
+```json
+{
+  "can_exit_outside_location": false
+}
+```
 
-Conditions are read by the frontend/mobile app. The backend does NOT enforce them (they are UI/UX hints).
+```json
+{
+  "max_attachments": 5
+}
+```
+
+The key is `InternalProcessCondition->value`. The value type depends on the condition:
+- **Boolean** conditions (`AllowDuringShift`, `AllowOutsideShift`, `AllowOnHolidays`, `CanExitOutsideLocation`, `HasTaskDuration`): `true` / `false`
+- **Integer** conditions (`MaxDurationHours`, `MaxAttachments`): integer
+
+`InternalProcessCondition::defaultValuesForForm($form)` returns the default object for a given form:
+- `createTask` → `{"allow_during_shift": true, "allow_outside_shift": false, "allow_on_holidays": false}`
+- `endTask` → `{"can_exit_outside_location": true}`
+- `attachAttachments` → `{"max_attachments": <default>}`
+- all others → `{}`
+
+**Backend enforcement:** conditions for `createTask` and `endTask` are enforced at runtime by `EmployeeTaskFormConditionService` (see §28). Other conditions are returned to the client for UI enforcement.
+
+> **Trap:** The historic documentation described conditions as `[{"key": "...", "value": ...}]` array format. This was incorrect. The actual stored format is a flat JSON object as shown above.
 
 ### 27.9 Ordering Constraints
 
@@ -1859,11 +1926,100 @@ If multiple children share the same form, this method returns only the first one
 
 Parent rows can have steps too (for Process-based workflows like task creation). Child rows have their own steps (for non-Process workflows like extensions/approvals). Do not confuse them.
 
-#### 27.10.3 Conditions Are UI Hints
+#### 27.10.3 Conditions: Backend-Enforced vs Client-Enforced
 
-The `conditions` JSON is stored and returned to clients but is NOT validated or enforced by the backend. The mobile/frontend app must read and apply them.
+**Some conditions are enforced by the backend.** As of 2026-06-18, the following conditions are validated server-side by `EmployeeTaskFormConditionService` before any workflow is started:
+
+| Form | Condition key | Enforcement |
+|------|--------------|-------------|
+| `createTask` | `allow_during_shift` | Attendance shift check (HTTP 422 if violated) |
+| `createTask` | `allow_outside_shift` | Attendance shift check (HTTP 422 if violated) |
+| `createTask` | `allow_on_holidays` | Attendance holiday check (HTTP 422 if violated) |
+| `endTask` | `can_exit_outside_location` | GPS radius check (HTTP 422 if violated) |
+
+All other conditions (e.g., `max_attachments`, `has_task_duration`) are **client-enforced**: stored and returned to the client app, which must apply them in the UI. The backend does not currently evaluate them.
 
 #### 27.10.4 `form` Must Match `InternalProcessForm` Cases
 
 When creating a child, the `form` value must be a valid `InternalProcessForm` case. Invalid values are rejected at the API level.
+
+---
+
+## 28. Form Condition Enforcement
+
+### 28.1 Overview
+
+`Modules\EmployeeTask\Services\EmployeeTaskFormConditionService` is the backend gate that evaluates child `ProcedureSetting` conditions before a task lifecycle action is allowed to proceed. It fires **before** the workflow preview / workflow start, so a condition violation never creates orphan workflow records.
+
+```
+Employee Request
+      │
+      ▼
+EmployeeTaskFormConditionService::check*Conditions()
+      │
+      ├── resolveInternalProcedureSettingByForm()  ← ProcedureWorkflowService
+      │         returns ?ProcedureSetting (child)
+      │
+      ├── if null or conditions empty → pass (no restriction)
+      │
+      ├── read $setting->conditions  (JSON object, see §27.8)
+      │
+      ├── evaluate shift/holiday/location
+      │
+      └── throw EmployeeTaskException (HTTP 422) on violation
+                    │
+                    ▼
+             WorkflowEngine::previewResponsibles()  ← proceeds only if no violation
+```
+
+### 28.2 createTask Condition Check
+
+**Called by:** `EmployeeTaskRequestService::create()` — immediately after resolving `$branchId` and before `$engine->previewResponsibles()`.
+
+**Conditions evaluated:**
+
+| Condition key | Default | Enforcement logic |
+|--------------|---------|------------------|
+| `allow_during_shift` | `true` | If the user's `current_work_period` is not null (they are inside a scheduled period right now), this must be `true`. |
+| `allow_outside_shift` | `false` | If the user has no active period, this must be `true`. |
+| `allow_on_holidays` | `false` | If `is_holiday = true` in work rules, this must be `true`. Holiday check runs first; shift checks are skipped on holidays. |
+
+**Attendance data source:** `AttendanceConstraintService::getTodaysWorkRulesForUser(User $user)` — returns `is_holiday` (bool) and `current_work_period` (?array). If no attendance constraint is assigned to the user, `current_work_period` is null (treated as outside shift) and `is_holiday` defaults to `false`.
+
+**User loading:** the service loads `professionalData.attendanceConstraint`, `userProfessionalData.branch`, and `userProfessionalData.department` for the constraint resolution query.
+
+### 28.3 endTask Condition Check
+
+**Called by:** `EmployeeTaskLifecycleService::end()` — after the pending-end-request guard, before `resolveEndTaskProcedure()`.
+
+**Conditions evaluated:**
+
+| Condition key | Default | Enforcement logic |
+|--------------|---------|------------------|
+| `can_exit_outside_location` | `true` | If `false`, the employee must be within `task.radius_meters` of `task.end_location` / task GPS anchor. Uses `EmployeeTaskLocationService::isWithinTaskRadius($task, $lat, $lng)`. |
+
+The task's `user.userProfessionalData` is lazy-loaded inside the service to resolve `branchId` for the procedure setting lookup.
+
+### 28.4 startTask
+
+`InternalProcessForm::StartTask` has `conditions() = []` (empty). No condition check is performed for start. Timing enforcement for task starts is owned by the Attendance module's constraint system.
+
+### 28.5 Exceptions Thrown
+
+| Exception method | HTTP | Message |
+|-----------------|------|---------|
+| `EmployeeTaskException::notAllowedDuringShift()` | 422 | "This action is not allowed while you are within a work shift." |
+| `EmployeeTaskException::notAllowedOutsideShift()` | 422 | "This action is only allowed during an active work shift." |
+| `EmployeeTaskException::notAllowedOnHolidays()` | 422 | "This action is not allowed on holidays or non-working days." |
+| `EmployeeTaskException::cannotEndTaskOutsideLocation()` | 422 | "You must be within the task location to end this task." |
+
+### 28.6 How to Add Condition Enforcement to a New Form
+
+1. Add the condition case to `InternalProcessCondition` if new.
+2. Return it from `InternalProcessForm::conditions()` for the target form.
+3. Update `InternalProcessCondition::defaultValuesForForm()` with sensible defaults.
+4. Add a new `check*Conditions()` method to `EmployeeTaskFormConditionService` (or create a new service for a different module).
+5. Call it from the relevant service method, **before** any workflow API call.
+6. Add a corresponding `EmployeeTaskException::*()` factory for the HTTP 422 response.
+7. Update §27.10.3 to document the new backend-enforced condition.
 

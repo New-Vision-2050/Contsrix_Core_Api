@@ -41,7 +41,9 @@ enum InternalProcessForm: string
     public function conditions(): array
     {
         return match ($this) {
-            self::CreateTask, self::StartTask => [
+            // Shift-period gating only on task creation — start/end timing is
+            // already enforced by the Attendance module's constraint system.
+            self::CreateTask => [
                 InternalProcessCondition::AllowDuringShift,
                 InternalProcessCondition::AllowOutsideShift,
                 InternalProcessCondition::AllowOnHolidays,
