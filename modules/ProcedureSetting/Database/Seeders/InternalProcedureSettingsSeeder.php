@@ -93,7 +93,9 @@ class InternalProcedureSettingsSeeder extends Seeder
         $forms = array_values(
             array_filter(
                 InternalProcessForm::forType($type),
-                static fn (InternalProcessForm $form): bool => str_starts_with($form->value, 'create'),
+                static fn (InternalProcessForm $form): bool =>
+                    str_starts_with($form->value, 'create') ||
+                    str_starts_with($form->value, 'end'),
             )
         );
 

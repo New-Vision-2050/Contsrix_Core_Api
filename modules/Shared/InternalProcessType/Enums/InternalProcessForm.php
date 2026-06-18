@@ -10,10 +10,14 @@ enum InternalProcessForm: string
     case CreatePriceOffer    = 'createPriceOffer';
     case CreateContract      = 'createContract';
     case CreateMeeting       = 'createMeeting';
-    case CreateTask        = 'createTask';
-    case StartTask         = 'startTask';
-    case EndTask           = 'endTask';
-    case AttachAttachments = 'attachAttachments';
+    case CreateTask          = 'createTask';
+    case StartTask           = 'startTask';
+    case EndTask             = 'endTask';
+    case EndClientRequest    = 'endClientRequest';
+    case EndPriceOffer       = 'endPriceOffer';
+    case EndContract         = 'endContract';
+    case EndMeeting          = 'endMeeting';
+    case AttachAttachments   = 'attachAttachments';
 
     public function labelAr(): string
     {
@@ -22,9 +26,13 @@ enum InternalProcessForm: string
             self::CreatePriceOffer    => 'إنشاء عرض سعر',
             self::CreateContract      => 'إنشاء عقد',
             self::CreateMeeting       => 'إنشاء اجتماع',
-            self::CreateTask => 'انشاء مهمة',
-            self::StartTask  => 'بدء المهمة',
-            self::EndTask    => 'انهاء المهمة',
+            self::CreateTask          => 'انشاء مهمة',
+            self::StartTask           => 'بدء المهمة',
+            self::EndTask             => 'انهاء المهمة',
+            self::EndClientRequest    => 'انهاء طلب عميل',
+            self::EndPriceOffer       => 'انهاء عرض سعر',
+            self::EndContract         => 'انهاء عقد',
+            self::EndMeeting          => 'انهاء اجتماع',
             self::AttachAttachments   => 'ارفاق مرفقات',
         };
     }
@@ -70,14 +78,18 @@ enum InternalProcessForm: string
     public function applicableTypes(): array
     {
         return match ($this) {
-            self::CreateClientRequest => ['client_request'],
-            self::CreatePriceOffer    => ['price_offer'],
-            self::CreateContract      => ['contract'],
-            self::CreateMeeting       => ['meeting'],
-            self::CreateTask        => ['employee_task'],
-            self::StartTask         => ['employee_task'],
-            self::EndTask           => ['employee_task'],
-            self::AttachAttachments => ['client_request', 'price_offer', 'contract'],
+            self::CreateClientRequest,
+            self::EndClientRequest    => ['client_request'],
+            self::CreatePriceOffer,
+            self::EndPriceOffer       => ['price_offer'],
+            self::CreateContract,
+            self::EndContract         => ['contract'],
+            self::CreateMeeting,
+            self::EndMeeting          => ['meeting'],
+            self::CreateTask,
+            self::StartTask,
+            self::EndTask             => ['employee_task'],
+            self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
         };
     }
 
