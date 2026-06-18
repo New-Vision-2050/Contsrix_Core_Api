@@ -90,9 +90,22 @@ class InternalProcedureSettingsSeeder extends Seeder
     {
         $type = $parent->type;
 
+        // All forms for this type, sorted by sortOrder() (create* → middle → end*).
+        $allForms = InternalProcessForm::forType($type);
+
+        // Ensure every existing child's sort_order reflects the canonical weight,
+        // even if it was seeded by an older version of this seeder.
+        foreach ($allForms as $form) {
+            DB::table('procedure_settings')
+                ->where('parent_id', $parent->id)
+                ->where('form', $form->value)
+                ->update(['sort_order' => $form->sortOrder(), 'updated_at' => now()]);
+        }
+
+        // Only auto-create children for create*/end* forms.
         $forms = array_values(
             array_filter(
-                InternalProcessForm::forType($type),
+                $allForms,
                 static fn (InternalProcessForm $form): bool =>
                     str_starts_with($form->value, 'create') ||
                     str_starts_with($form->value, 'end'),

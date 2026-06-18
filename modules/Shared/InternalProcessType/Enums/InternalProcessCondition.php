@@ -9,8 +9,9 @@ enum InternalProcessCondition: string
     case AllowDuringShift   = 'allow_during_shift';
     case AllowOutsideShift  = 'allow_outside_shift';
     case AllowOnHolidays       = 'allow_on_holidays';
-    case CanExitOutsideLocation = 'can_exit_outside_location';
-    case HasTaskDuration       = 'has_task_duration';
+    case CanExitOutsideLocation  = 'can_exit_outside_location';
+    case MustBeInLocation        = 'must_be_in_location';
+    case HasTaskDuration         = 'has_task_duration';
     case MaxDurationHours   = 'max_duration_hours';
     case MaxAttachments     = 'max_attachments';
 
@@ -28,8 +29,9 @@ enum InternalProcessCondition: string
             self::AllowDuringShift   => 'موظف داخل الدوام',
             self::AllowOutsideShift  => 'موظف خارج الدوام',
             self::AllowOnHolidays       => 'مسموح في العطلات',
-            self::CanExitOutsideLocation => 'يستطيع الخروج خارج الموقع',
-            self::HasTaskDuration       => 'مدة المهمة',
+            self::CanExitOutsideLocation  => 'يستطيع الخروج خارج الموقع',
+            self::MustBeInLocation        => 'يجب أن يكون داخل الموقع عند البدء',
+            self::HasTaskDuration         => 'مدة المهمة',
             self::MaxDurationHours   => 'أقصى مدة بالساعات',
             self::MaxAttachments     => 'أقصى عدد مرفقات',
         };
@@ -82,7 +84,8 @@ enum InternalProcessCondition: string
                 InternalProcessConditionType::Int, InternalProcessConditionType::String => null,
                 InternalProcessConditionType::Bool => match ($condition) {
                     self::AllowDuringShift, self::CanExitOutsideLocation => true,
-                    self::AllowOutsideShift, self::AllowOnHolidays, self::HasTaskDuration => false,
+                    self::AllowOutsideShift, self::AllowOnHolidays, self::HasTaskDuration,
+                    self::MustBeInLocation => false,
                 },
             };
         }

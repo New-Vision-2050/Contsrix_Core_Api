@@ -82,6 +82,23 @@ final class EmployeeTaskLocationService
     }
 
     /**
+     * Location check for the START action, before radius_meters is snapshotted onto the task.
+     * Uses the employee's constraint radius (same value that will be snapshotted in start()).
+     */
+    public function isWithinTaskRadiusForStart(EmployeeTaskRequest $task, User $user, float $lat, float $lng): bool
+    {
+        $radius = $this->snapshotRadiusFromConstraint($user);
+        $distance = GeoDistance::metres(
+            (float) $task->task_latitude,
+            (float) $task->task_longitude,
+            $lat,
+            $lng,
+        );
+
+        return $distance <= $radius;
+    }
+
+    /**
      * Process a GPS ping from the mobile app.
      * Returns an array with in_location flag and, if out, minutes_out / threshold.
      * Dispatches AutoCloseTaskIfOutOfLocationJob when threshold is exceeded.
