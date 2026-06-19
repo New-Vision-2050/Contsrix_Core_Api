@@ -25,8 +25,12 @@ class ActionTakerResolver
         $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
 
         return match ($actionTakerType) {
-            'management_hierarchy' => $this->resolveManagementHierarchyUsers($step, $createdByUserId),
-            'specific_procedures' => $this->resolveSpecificProcedureUsers($step, $createdByUserId, $context),
+            'management_hierarchy' => $this->resolveManagementHierarchyUsers($step, $createdByUserId, $context),
+            'specific_procedures'  => $this->resolveSpecificProcedureUsers($step, $createdByUserId, $context),
+
+            // The submitter themselves is the action taker.
+            'himself' => $createdByUserId !== null ? [$createdByUserId] : [],
+
             default => $this->resolveSpecificUserIds($step),
         };
     }
@@ -45,15 +49,150 @@ class ActionTakerResolver
         return $users[0] ?? null;
     }
 
+    // -------------------------------------------------------------------------
+    // Management-hierarchy resolution
+    // -------------------------------------------------------------------------
+
     /**
+     * For `deputy_manager` type: returns BOTH the branch/management manager AND
+     * all of their deputy managers so either one can act on the step.
+     *
+     * For all other hierarchy types: returns a single-element array (or empty).
+     *
      * @return list<string>
      */
-    private function resolveManagementHierarchyUsers(ProcedureSettingStep $step, ?string $createdByUserId): array
-    {
-        $userId = $this->resolveManagerFromCreatorHierarchy($step, $createdByUserId);
+    private function resolveManagementHierarchyUsers(
+        ProcedureSettingStep $step,
+        ?string $createdByUserId,
+        array $context = [],
+    ): array {
+        $hierarchyType = $step->action_taker_management_hierarchy_type?->value;
+
+        if ($hierarchyType === 'deputy_manager') {
+            return $this->resolveManagerAndDeputies($step, $createdByUserId);
+        }
+
+        $userId = $this->resolveManagerFromCreatorHierarchy($step, $createdByUserId, $context);
 
         return $userId !== null ? [$userId] : [];
     }
+
+    /**
+     * Resolve the branch/management MANAGER plus ALL deputy managers of the
+     * creator's hierarchy node. Every resolved user is authorized to act;
+     * whichever acts first advances the step.
+     *
+     * @return list<string>
+     */
+    private function resolveManagerAndDeputies(
+        ProcedureSettingStep $step,
+        ?string $createdByUserId,
+    ): array {
+        if ($createdByUserId === null) {
+            return $this->tryAlternatives($step, $createdByUserId);
+        }
+
+        $creator = User::query()->with('professionalData')->find($createdByUserId);
+
+        if ($creator === null) {
+            return $this->tryAlternatives($step, $createdByUserId);
+        }
+
+        $professionalData = $creator->professionalData;
+
+        if ($professionalData === null) {
+            return $this->tryAlternatives($step, $createdByUserId);
+        }
+
+        // Prefer the creator's branch; fall back to their management department.
+        $hierarchyId = $professionalData->branch_id ?? $professionalData->management_id ?? null;
+
+        if ($hierarchyId === null) {
+            return $this->tryAlternatives($step, $createdByUserId);
+        }
+
+        $hierarchy = ManagementHierarchy::query()
+            ->with('detail.deputyManagerRelations')
+            ->find($hierarchyId);
+
+        if ($hierarchy === null) {
+            return $this->tryAlternatives($step, $createdByUserId);
+        }
+
+        $users = [];
+
+        // Primary: the hierarchy manager.
+        if ($hierarchy->manager_id !== null) {
+            $users[(string) $hierarchy->manager_id] = true;
+        }
+
+        // All deputy managers via the detail pivot.
+        $detail = $hierarchy->detail;
+        if ($detail !== null) {
+            foreach ($detail->deputyManagerRelations as $relation) {
+                if ($relation->deputy_manager_id !== null) {
+                    $users[(string) $relation->deputy_manager_id] = true;
+                }
+            }
+        }
+
+        $result = array_keys($users);
+
+        if ($result === []) {
+            return $this->tryAlternatives($step, $createdByUserId);
+        }
+
+        return $result;
+    }
+
+    // -------------------------------------------------------------------------
+    // Specific-procedures resolution (parallel arrays)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Resolves users for all specific-procedure targets (array of type+id pairs).
+     * Results from all targets are merged and de-duplicated.
+     *
+     * @return list<string>
+     */
+    private function resolveSpecificProcedureUsers(
+        ProcedureSettingStep $step,
+        ?string $createdByUserId,
+        array $context,
+    ): array {
+        $types = (array) ($step->action_taker_specific_procedure_type ?? []);
+        $ids   = (array) ($step->action_taker_specific_procedure_id   ?? []);
+
+        if ($types === [] || $ids === []) {
+            return [];
+        }
+
+        $userIds = [];
+        foreach ($types as $index => $type) {
+            $id = $ids[$index] ?? null;
+            if ($type === null || $id === null) {
+                continue;
+            }
+
+            $resolved = match ((string) $type) {
+                'branch'     => $this->resolveBranchManager((int) $id),
+                'management' => $this->resolveManagementManager((int) $id),
+                'job_title'  => $this->resolveUsersByJobTitle((string) $id),
+                'job_role'   => $this->resolveUsersByJobRole((int) $id),
+                default      => [],
+            };
+
+            foreach ($resolved as $uid) {
+                $userIds[$uid] = $uid;
+            }
+        }
+
+        return array_values($userIds);
+    }
+
+    // -------------------------------------------------------------------------
+    // Specific-user resolution
+    // -------------------------------------------------------------------------
 
     /**
      * @return list<string>
@@ -72,29 +211,169 @@ class ActionTakerResolver
             ->all();
     }
 
+    // -------------------------------------------------------------------------
+    // Management-hierarchy single-user resolution (used for assigned_user_id)
+    // -------------------------------------------------------------------------
+
     /**
-     * @return list<string>
+     * Resolve the PRIMARY (single) manager for a management_hierarchy step.
+     *
+     * For `deputy_manager` type this returns the branch/management manager_id
+     * (the primary slot in the snapshot). Deputy managers are included in
+     * `authorized_user_ids` via `resolveManagementHierarchyUsers`.
+     *
+     * Used by:
+     *  - `resolveManagementHierarchyUsers` for non-deputy types
+     *  - `ProcedureWorkflowService::assertIsActionTaker` (non-Process path)
+     *  - `WorkflowEngine::computeApprovalResponsiblesForSetting`
      */
-    private function resolveSpecificProcedureUsers(
+    public function resolveManagerFromCreatorHierarchy(
         ProcedureSettingStep $step,
         ?string $createdByUserId,
-        array $context,
-    ): array {
-        $type = $step->action_taker_specific_procedure_type?->value;
-        $id   = $step->action_taker_specific_procedure_id;
+        array $context = [],
+    ): ?string {
+        $hierarchyType = $step->action_taker_management_hierarchy_type?->value;
 
-        if ($type === null || $id === null) {
-            return [];
+        if ($hierarchyType === null) {
+            return null;
         }
 
-        return match ($type) {
-            'branch' => $this->resolveBranchManager((int) $id),
-            'management' => $this->resolveManagementManager((int) $id),
-            'job_title' => $this->resolveUsersByJobTitle($id),
-            'job_role' => $this->resolveUsersByJobRole((int) $id),
-            default => [],
-        };
+        if ($hierarchyType === 'project_manager') {
+            return $this->resolveProjectManager($step, $createdByUserId, $context);
+        }
+
+        if ($createdByUserId === null) {
+            return $this->tryAlternatives($step, $createdByUserId);
+        }
+
+        $creator = User::query()
+            ->with('professionalData')
+            ->find($createdByUserId);
+
+        if ($creator === null) {
+            return $this->tryAlternatives($step, $createdByUserId);
+        }
+
+        $professionalData = $creator->professionalData;
+
+        if ($professionalData === null) {
+            return $this->tryAlternatives($step, $createdByUserId);
+        }
+
+        $resolved = $this->resolveByHierarchyType($hierarchyType, $professionalData);
+
+        if ($resolved !== null) {
+            return $resolved;
+        }
+
+        return $this->tryAlternatives($step, $createdByUserId);
     }
+
+    private function resolveProjectManager(
+        ProcedureSettingStep $step,
+        ?string $createdByUserId,
+        array $context = [],
+    ): ?string {
+        $projectId = $context['project_id'] ?? null;
+
+        if ($projectId !== null) {
+            $project = \Modules\Project\ProjectManagement\Models\ProjectManagement::query()
+                ->find($projectId);
+
+            if ($project !== null && $project->manager_id !== null) {
+                return (string) $project->manager_id;
+            }
+        }
+
+        return $this->tryAlternatives($step, $createdByUserId);
+    }
+
+    /**
+     * Tries each alternative hierarchy type in order, returning the first non-null user.
+     * `action_taker_alternative_management_hierarchy_type` is a JSON array of type strings.
+     */
+    private function tryAlternatives(ProcedureSettingStep $step, ?string $createdByUserId): ?string
+    {
+        $alternatives = (array) ($step->action_taker_alternative_management_hierarchy_type ?? []);
+
+        if ($alternatives === [] || $createdByUserId === null) {
+            return null;
+        }
+
+        $creator = User::query()
+            ->with('professionalData')
+            ->find($createdByUserId);
+
+        if ($creator === null) {
+            return null;
+        }
+
+        $professionalData = $creator->professionalData;
+
+        if ($professionalData === null) {
+            return null;
+        }
+
+        foreach ($alternatives as $alternativeType) {
+            $resolved = $this->resolveByHierarchyType((string) $alternativeType, $professionalData);
+            if ($resolved !== null) {
+                return $resolved;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve a single user ID from the creator's professional data for a given
+     * hierarchy type. Returns null when unresolvable.
+     *
+     * For `deputy_manager` this returns the first deputy manager (used in the
+     * alternative fallback chain where only one user is needed).
+     */
+    private function resolveByHierarchyType(string $hierarchyType, object $professionalData): ?string
+    {
+        $hierarchyId = match ($hierarchyType) {
+            'branch_manager'     => $professionalData->branch_id ?? null,
+            'management_manager' => $professionalData->management_id ?? null,
+            // For deputy_manager in a fallback: use branch first, then management.
+            'deputy_manager'     => $professionalData->branch_id ?? $professionalData->management_id ?? null,
+            default              => null,
+        };
+
+        if ($hierarchyId === null) {
+            return null;
+        }
+
+        $hierarchy = ManagementHierarchy::query()->find($hierarchyId);
+
+        if ($hierarchy === null) {
+            return null;
+        }
+
+        if ($hierarchyType === 'deputy_manager') {
+            // In fallback mode: return the first deputy manager.
+            $detail = $hierarchy->detail()->first();
+            if ($detail !== null) {
+                $deputyRelation = $detail->deputyManagerRelations()->first();
+                if ($deputyRelation !== null && $deputyRelation->deputy_manager_id !== null) {
+                    return (string) $deputyRelation->deputy_manager_id;
+                }
+            }
+
+            return null;
+        }
+
+        if ($hierarchy->manager_id === null) {
+            return null;
+        }
+
+        return (string) $hierarchy->manager_id;
+    }
+
+    // -------------------------------------------------------------------------
+    // Specific-procedure helpers
+    // -------------------------------------------------------------------------
 
     /**
      * @return list<string>
@@ -154,124 +433,17 @@ class ActionTakerResolver
             ->all();
     }
 
-    public function resolveManagerFromCreatorHierarchy(
-        ProcedureSettingStep $step,
-        ?string $createdByUserId,
-        array $context = [],
-    ): ?string {
-        $hierarchyType = $step->action_taker_management_hierarchy_type?->value;
-
-        if ($hierarchyType === null) {
-            return null;
-        }
-
-        if ($hierarchyType === 'project_manager') {
-            return $this->resolveProjectManager($step, $createdByUserId, $context);
-        }
-
-        if ($createdByUserId === null) {
-            return $this->tryAlternative($step, $createdByUserId);
-        }
-
-        $creator = User::query()
-            ->with('professionalData')
-            ->find($createdByUserId);
-
-        if ($creator === null) {
-            return $this->tryAlternative($step, $createdByUserId);
-        }
-
-        $professionalData = $creator->professionalData;
-
-        if ($professionalData === null) {
-            return $this->tryAlternative($step, $createdByUserId);
-        }
-
-        $hierarchyId = null;
-        if ($hierarchyType === 'branch_manager') {
-            $hierarchyId = $professionalData->branch_id;
-        } elseif ($hierarchyType === 'management_manager') {
-            $hierarchyId = $professionalData->management_id;
-        }
-
-        if ($hierarchyId === null) {
-            return $this->tryAlternative($step, $createdByUserId);
-        }
-
-        $hierarchy = ManagementHierarchy::query()->find($hierarchyId);
-
-        if ($hierarchy === null || $hierarchy->manager_id === null) {
-            return $this->tryAlternative($step, $createdByUserId);
-        }
-
-        return (string) $hierarchy->manager_id;
-    }
-
-    private function resolveProjectManager(
-        ProcedureSettingStep $step,
-        ?string $createdByUserId,
-        array $context = [],
-    ): ?string {
-        $projectId = $context['project_id'] ?? null;
-
-        if ($projectId !== null) {
-            $project = \Modules\Project\ProjectManagement\Models\ProjectManagement::query()
-                ->find($projectId);
-
-            if ($project !== null && $project->manager_id !== null) {
-                return (string) $project->manager_id;
-            }
-        }
-
-        return $this->tryAlternative($step, $createdByUserId);
-    }
-
-    private function tryAlternative(ProcedureSettingStep $step, ?string $createdByUserId): ?string
-    {
-        $alternativeType = $step->action_taker_alternative_management_hierarchy_type?->value;
-
-        if ($alternativeType === null || $createdByUserId === null) {
-            return null;
-        }
-
-        $creator = User::query()
-            ->with('professionalData')
-            ->find($createdByUserId);
-
-        if ($creator === null) {
-            return null;
-        }
-
-        $professionalData = $creator->professionalData;
-
-        if ($professionalData === null) {
-            return null;
-        }
-
-        $hierarchyId = null;
-        if ($alternativeType === 'branch_manager') {
-            $hierarchyId = $professionalData->branch_id;
-        } elseif ($alternativeType === 'management_manager') {
-            $hierarchyId = $professionalData->management_id;
-        }
-
-        if ($hierarchyId === null) {
-            return null;
-        }
-
-        $hierarchy = ManagementHierarchy::query()->find($hierarchyId);
-
-        if ($hierarchy === null || $hierarchy->manager_id === null) {
-            return null;
-        }
-
-        return (string) $hierarchy->manager_id;
-    }
+    // -------------------------------------------------------------------------
+    // Rejection rule
+    // -------------------------------------------------------------------------
 
     /**
      * Determine whether a rejection on a specific_procedure step should fail the process.
      * job_title  → yes (normal rejection)
      * job_role   → no  (rejection advances workflow)
+     *
+     * When the step has multiple specific-procedure types, rejection fails only
+     * if NO target is job_role.
      */
     public function rejectionShouldFailProcess(ProcedureSettingStep $step): bool
     {
@@ -279,6 +451,12 @@ class ActionTakerResolver
             return true;
         }
 
-        return $step->action_taker_specific_procedure_type?->value !== 'job_role';
+        $types = (array) ($step->action_taker_specific_procedure_type ?? []);
+
+        if ($types === []) {
+            return true;
+        }
+
+        return ! in_array('job_role', $types, true);
     }
 }

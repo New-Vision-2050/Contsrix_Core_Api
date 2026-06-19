@@ -44,11 +44,13 @@ class ProcessWorkflowService
                     continue;
                 }
                 $snapshots[] = [
-                    'step_id' => $step->id,
-                    'template_step_order' => $step->step_order,
-                    'assigned_user_id' => $resolvedUsers[0],
-                    'authorized_user_ids' => $resolvedUsers,
-                    'specific_procedure_type' => $step->action_taker_specific_procedure_type?->value,
+                    'step_id'                            => $step->id,
+                    'template_step_order'                => $step->step_order,
+                    'assigned_user_id'                   => $resolvedUsers[0],
+                    'authorized_user_ids'                => $resolvedUsers,
+                    // Store as array (action_taker_specific_procedure_type is now a JSON array).
+                    'specific_procedure_types'           => (array) ($step->action_taker_specific_procedure_type ?? []),
+                    'action_taker_type'                  => $step->action_taker_type?->value,
                     'escalation_management_hierarchy_id' => $step->escalation_management_hierarchy_id,
                 ];
             }
@@ -231,7 +233,14 @@ class ProcessWorkflowService
                 'acted_at' => now(),
             ]);
 
-            $isJobRole = ($snapshotRow['specific_procedure_type'] ?? null) === 'job_role';
+            // For specific_procedures steps: job_role targets advance on rejection
+            // (they are advisory), all other types fail the process.
+            $specificTypes = (array) ($snapshotRow['specific_procedure_types'] ?? []);
+            // Backward-compat: old snapshots stored a single string in 'specific_procedure_type'.
+            if ($specificTypes === [] && isset($snapshotRow['specific_procedure_type'])) {
+                $specificTypes = [$snapshotRow['specific_procedure_type']];
+            }
+            $isJobRole = in_array('job_role', $specificTypes, true);
 
             if ($isJobRole) {
                 $this->advanceProcessAfterAction($process);

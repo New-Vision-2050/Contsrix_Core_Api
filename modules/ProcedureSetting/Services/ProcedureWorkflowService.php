@@ -173,13 +173,8 @@ final class ProcedureWorkflowService
     {
         $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
 
-        if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
-            $resolvedUserId = $this->resolver->resolveManagerFromCreatorHierarchy($step, $createdByUserId, $context);
-
-            return $resolvedUserId !== null && $resolvedUserId === $userId;
-        }
-
-        if ($actionTakerType === 'specific_procedures') {
+        // Dynamic types: resolve all authorized users and check membership.
+        if (in_array($actionTakerType, ['management_hierarchy', 'specific_procedures', 'himself'], true)) {
             $resolvedUserIds = $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
 
             return in_array($userId, $resolvedUserIds, true);
@@ -259,17 +254,11 @@ final class ProcedureWorkflowService
     {
         $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
 
-        if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
-            $resolvedUserId = $this->resolver->resolveManagerFromCreatorHierarchy($step, $createdByUserId, $context);
-
-            if ($resolvedUserId !== null && $resolvedUserId === $userId) {
-                return;
-            }
-
-            throw ProcedureWorkflowException::notAuthorized();
-        }
-
-        if ($actionTakerType === 'specific_procedures') {
+        // For all dynamic types, resolve the full authorized-user list and check membership.
+        // - management_hierarchy: single manager OR manager+deputies (deputy_manager type)
+        // - specific_procedures:  array of branch/management/job_title/job_role targets
+        // - himself:              the original submitter only
+        if (in_array($actionTakerType, ['management_hierarchy', 'specific_procedures', 'himself'], true)) {
             $resolvedUserIds = $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
 
             if (in_array($userId, $resolvedUserIds, true)) {

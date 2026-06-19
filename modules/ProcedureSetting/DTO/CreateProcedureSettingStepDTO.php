@@ -7,8 +7,11 @@ namespace Modules\ProcedureSetting\DTO;
 class CreateProcedureSettingStepDTO
 {
     /**
-     * @param list<string>|null $action_taker_user_ids
-     * @param list<int>|null    $concerned_management_hierarchy_ids
+     * @param list<string>|null                                      $action_taker_user_ids
+     * @param list<int>|null                                         $concerned_management_hierarchy_ids
+     * @param list<string>|null                                      $action_taker_alternative_management_hierarchy_type
+     * @param list<string>|null                                      $action_taker_specific_procedure_type
+     * @param list<string>|null                                      $action_taker_specific_procedure_id
      */
     public function __construct(
         public readonly string $procedure_setting_id,
@@ -31,9 +34,14 @@ class CreateProcedureSettingStepDTO
         public readonly ?int $step_order = null,
         public readonly ?string $action_taker_type = null,
         public readonly ?string $action_taker_management_hierarchy_type = null,
-        public readonly ?string $action_taker_alternative_management_hierarchy_type = null,
-        public readonly ?string $action_taker_specific_procedure_type = null,
-        public readonly ?string $action_taker_specific_procedure_id = null,
+
+        /** Multiple fallback hierarchy types tried in order when the primary resolves to null. */
+        public readonly ?array $action_taker_alternative_management_hierarchy_type = null,
+
+        /** Parallel arrays: type[i] + id[i] form one specific-procedure target. */
+        public readonly ?array $action_taker_specific_procedure_type = null,
+        public readonly ?array $action_taker_specific_procedure_id = null,
+
         public readonly ?array $action_taker_user_ids = null,
         public readonly ?array $concerned_management_hierarchy_ids = null,
     ) {

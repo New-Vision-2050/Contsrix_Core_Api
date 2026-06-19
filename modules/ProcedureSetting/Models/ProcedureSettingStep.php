@@ -70,8 +70,18 @@ class ProcedureSettingStep extends Model
         'step_order'                         => 'integer',
         'action_taker_type'                              => \Modules\ProcedureSetting\Enums\ActionTakerType::class,
         'action_taker_management_hierarchy_type'         => \Modules\ProcedureSetting\Enums\ActionTakerManagementHierarchyType::class,
-        'action_taker_alternative_management_hierarchy_type' => \Modules\ProcedureSetting\Enums\ActionTakerManagementHierarchyType::class,
-        'action_taker_specific_procedure_type'           => \Modules\ProcedureSetting\Enums\ActionTakerSpecificProcedureType::class,
+
+        // Array of ActionTakerManagementHierarchyType values (JSON-encoded in DB).
+        // e.g. ["branch_manager", "deputy_manager"]
+        'action_taker_alternative_management_hierarchy_type' => 'array',
+
+        // Array of specific-procedure type strings (JSON-encoded in DB).
+        // e.g. ["branch", "management"]
+        'action_taker_specific_procedure_type' => 'array',
+
+        // Array of specific-procedure IDs (JSON-encoded in DB) parallel to the types array.
+        // e.g. ["5", "12"]
+        'action_taker_specific_procedure_id'   => 'array',
     ];
 
     public function getRelationshipToPrimaryModel(): string

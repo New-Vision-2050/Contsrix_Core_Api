@@ -41,10 +41,18 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'action_taker_type_label'            => $this->resolveActionTakerTypeLabel(),
             'action_taker_management_hierarchy_type' => $this->step->action_taker_management_hierarchy_type?->value,
             'action_taker_management_hierarchy_type_label' => $this->resolveHierarchyTypeLabel(),
-            'action_taker_alternative_management_hierarchy_type' => $this->step->action_taker_alternative_management_hierarchy_type?->value,
-            'action_taker_alternative_management_hierarchy_type_label' => $this->resolveAlternativeHierarchyTypeLabel(),
-            'action_taker_specific_procedure_type' => $this->step->action_taker_specific_procedure_type?->value,
-            'action_taker_specific_procedure_id'   => $this->step->action_taker_specific_procedure_id,
+
+            // Array of fallback types e.g. ["branch_manager","deputy_manager"]
+            'action_taker_alternative_management_hierarchy_type' => $this->step->action_taker_alternative_management_hierarchy_type ?? [],
+            'action_taker_alternative_management_hierarchy_type_labels' => $this->resolveAlternativeHierarchyTypeLabels(),
+
+            // Parallel arrays forming [{type,id}] pairs
+            'action_taker_specific_procedure_type' => $this->step->action_taker_specific_procedure_type ?? [],
+            'action_taker_specific_procedure_id'   => $this->step->action_taker_specific_procedure_id ?? [],
+
+            // Convenience combined format for frontend: [{type,id}]
+            'action_taker_specific_procedures' => $this->resolveSpecificProceduresCombined(),
+
             'action_taker_hierarchy'             => $this->resolveActionTakerHierarchyPayload(),
         ];
 
@@ -103,8 +111,9 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
     {
         return match ($this->step->action_taker_type?->value) {
             'management_hierarchy' => 'Management Hierarchy',
-            'specific_procedures'    => 'Specific Procedures',
-            default                  => 'Specific User',
+            'specific_procedures'  => 'Specific Procedures',
+            'himself'              => 'Himself',
+            default                => 'Specific User',
         };
     }
 
@@ -114,17 +123,52 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'branch_manager'     => 'Branch Manager',
             'management_manager' => 'Management Manager',
             'project_manager'    => 'Project Manager',
+            'deputy_manager'     => 'Deputy Manager',
             default              => null,
         };
     }
 
-    private function resolveAlternativeHierarchyTypeLabel(): ?string
+    /**
+     * Returns an array of labels matching the alternative types array.
+     * e.g. ["Branch Manager", "Deputy Manager"]
+     *
+     * @return list<string>
+     */
+    private function resolveAlternativeHierarchyTypeLabels(): array
     {
-        return match ($this->step->action_taker_alternative_management_hierarchy_type?->value) {
-            'branch_manager'     => 'Branch Manager',
-            'management_manager' => 'Management Manager',
-            default              => null,
-        };
+        $types = (array) ($this->step->action_taker_alternative_management_hierarchy_type ?? []);
+
+        return array_values(array_map(
+            fn (string $type) => match ($type) {
+                'branch_manager'     => 'Branch Manager',
+                'management_manager' => 'Management Manager',
+                'deputy_manager'     => 'Deputy Manager',
+                default              => $type,
+            },
+            $types,
+        ));
+    }
+
+    /**
+     * Combines the parallel type/id arrays into a single array of objects for convenience.
+     * Returns [{type: "branch", id: "5"}, ...]
+     *
+     * @return list<array{type: string, id: string}>
+     */
+    private function resolveSpecificProceduresCombined(): array
+    {
+        $types = (array) ($this->step->action_taker_specific_procedure_type ?? []);
+        $ids   = (array) ($this->step->action_taker_specific_procedure_id   ?? []);
+
+        $combined = [];
+        foreach ($types as $index => $type) {
+            $combined[] = [
+                'type' => (string) $type,
+                'id'   => (string) ($ids[$index] ?? ''),
+            ];
+        }
+
+        return $combined;
     }
 
     private function resolveActionTakerHierarchyPayload(): ?array
