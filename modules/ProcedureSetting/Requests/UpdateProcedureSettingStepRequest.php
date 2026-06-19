@@ -166,7 +166,6 @@ class UpdateProcedureSettingStepRequest extends FormRequest
                 'array',
                 'required_if:action_taker_type,specific_procedures',
                 'prohibited_unless:action_taker_type,specific_procedures',
-                'same_size:action_taker_specific_procedure_type',
             ],
             'action_taker_specific_procedure_id.*' => 'string',
 
