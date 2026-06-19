@@ -31,6 +31,6 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{procedureSettingId}/steps', [ProcedureSettingStepController::class, 'index']);
     Route::post('/{procedureSettingId}/steps', [ProcedureSettingStepController::class, 'store']);
     Route::get('/{procedureSettingId}/steps/{stepId}', [ProcedureSettingStepController::class, 'show']);
-    Route::put('/{procedureSettingId}/steps/{stepId}', [ProcedureSettingStepController::class, 'update']);
+    Route::post('/{procedureSettingId}/steps/{stepId}', [ProcedureSettingStepController::class, 'update']);
     Route::delete('/{procedureSettingId}/steps/{stepId}', [ProcedureSettingStepController::class, 'delete']);
 });
