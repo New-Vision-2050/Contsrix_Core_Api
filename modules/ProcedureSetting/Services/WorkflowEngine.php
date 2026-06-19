@@ -148,34 +148,11 @@ final class WorkflowEngine
 
         $actionTakerType = $firstStep->action_taker_type?->value ?? 'specific_user';
 
-        if ($actionTakerType === 'management_hierarchy' && $createdByUserId !== null) {
-            $resolvedUserId = $this->resolver->resolveManagerFromCreatorHierarchy($firstStep, $createdByUserId, $context);
+        // Dynamic types: resolve all users via ActionTakerResolver (handles deputy_manager
+        // multi-user, specific_procedures arrays, and himself).
+        $dynamicTypes = ['management_hierarchy', 'specific_procedures', 'himself'];
 
-            if ($resolvedUserId !== null) {
-                $user = User::query()
-                    ->with(['companyUser', 'companyUser.jobTitle'])
-                    ->find($resolvedUserId);
-
-                return [
-                    'auto_approve' => false,
-                    'step' => [
-                        'id' => $firstStep->id,
-                        'name' => $firstStep->name,
-                        'step_order' => $firstStep->step_order,
-                    ],
-                    'action_takers' => [
-                        [
-                            'user_id' => $resolvedUserId,
-                            'name' => $user?->name,
-                            'photo' => $user?->companyUser?->getFirstMedia('upload_user')?->getFullUrl(),
-                            'job_title' => $user?->companyUser?->jobTitle?->name,
-                        ],
-                    ],
-                ];
-            }
-        }
-
-        if ($actionTakerType === 'specific_procedures') {
+        if (in_array($actionTakerType, $dynamicTypes, true)) {
             $resolvedUserIds = $this->resolver->resolveUsersForStep($firstStep, $createdByUserId, $context);
 
             if ($resolvedUserIds !== []) {
@@ -188,9 +165,9 @@ final class WorkflowEngine
                 foreach ($resolvedUserIds as $resolvedId) {
                     $user = $users->firstWhere('id', $resolvedId);
                     $actionTakers[] = [
-                        'user_id' => $resolvedId,
-                        'name' => $user?->name,
-                        'photo' => $user?->companyUser?->getFirstMedia('upload_user')?->getFullUrl(),
+                        'user_id'   => $resolvedId,
+                        'name'      => $user?->name,
+                        'photo'     => $user?->companyUser?->getFirstMedia('upload_user')?->getFullUrl(),
                         'job_title' => $user?->companyUser?->jobTitle?->name,
                     ];
                 }
@@ -198,22 +175,26 @@ final class WorkflowEngine
                 return [
                     'auto_approve' => false,
                     'step' => [
-                        'id' => $firstStep->id,
-                        'name' => $firstStep->name,
+                        'id'         => $firstStep->id,
+                        'name'       => $firstStep->name,
                         'step_order' => $firstStep->step_order,
                     ],
                     'action_takers' => $actionTakers,
                 ];
             }
+
+            // Could not resolve any user → auto-approve.
+            return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
         }
 
+        // specific_user: read from the actionTakers pivot relation.
         $actionTakers = [];
         foreach ($firstStep->actionTakers as $actionTaker) {
             $user = $actionTaker->relationLoaded('user') ? $actionTaker->user : null;
             $actionTakers[] = [
-                'user_id' => $actionTaker->user_id,
-                'name' => $user?->name,
-                'photo' => $user?->companyUser?->getFirstMedia('upload_user')?->getFullUrl(),
+                'user_id'   => $actionTaker->user_id,
+                'name'      => $user?->name,
+                'photo'     => $user?->companyUser?->getFirstMedia('upload_user')?->getFullUrl(),
                 'job_title' => $user?->companyUser?->jobTitle?->name,
             ];
         }
@@ -221,8 +202,8 @@ final class WorkflowEngine
         return [
             'auto_approve' => $actionTakers === [],
             'step' => [
-                'id' => $firstStep->id,
-                'name' => $firstStep->name,
+                'id'         => $firstStep->id,
+                'name'       => $firstStep->name,
                 'step_order' => $firstStep->step_order,
             ],
             'action_takers' => $actionTakers,

@@ -2,7 +2,41 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-18 — Added form condition enforcement (`EmployeeTaskFormConditionService`): `createTask` now checks shift/holiday conditions via `AttendanceConstraintService`; `endTask` now checks location condition via `EmployeeTaskLocationService`. Updated §27.8 (conditions JSON format), corrected §27.10.3 (conditions ARE enforced for specific forms), and added §28 Form Condition Enforcement.
+> **Last updated:** 2026-06-19 — Added `himself` action-taker type, `deputy_manager` hierarchy type, array-based alternative/specific-procedure fields, and full workflow-engine propagation. See §29 for the complete change summary.
+
+---
+
+## ⚡ 2026-06-19 Breaking Changes (read first)
+
+### New `action_taker_type` values
+| Value | Behaviour |
+|---|---|
+| `himself` | The request submitter is the action taker. Only `approve` form is allowed. Resolver returns `[$createdByUserId]`. |
+
+### New `action_taker_management_hierarchy_type` / alternative values
+| Value | Behaviour |
+|---|---|
+| `deputy_manager` | When used as **primary** type: resolves the branch/management **manager + ALL deputy managers** into `authorized_user_ids`. Either one acting ends the step. When used in the **alternatives array**: resolves the first deputy manager as a single fallback user. |
+
+### `action_taker_alternative_management_hierarchy_type` is now an **array**
+- Old: `"branch_manager"` (string)
+- New: `["branch_manager", "deputy_manager"]` (JSON array)
+- Tried **in order**; first non-null result wins.
+
+### `action_taker_specific_procedure_type` + `action_taker_specific_procedure_id` are now **arrays**
+- Old: `"branch"` / `"5"` (single strings)
+- New: `["branch", "management"]` / `["5", "12"]` (parallel JSON arrays)
+- All targets are resolved and their users are **merged** into `authorized_user_ids`.
+- Rejection is non-fatal only when **at least one** target type is `job_role`.
+
+### Snapshot key renamed
+`ProcessWorkflowService` snapshot rows now store:
+- `specific_procedure_types` (array) — was `specific_procedure_type` (single string)
+- `action_taker_type` (new field added for future use)
+- Old snapshots with `specific_procedure_type` (string) are still read for backward compatibility.
+
+### `WorkflowEngine` preview unified
+`computeApprovalResponsiblesForSetting` now calls `ActionTakerResolver::resolveUsersForStep` for **all** dynamic types (`management_hierarchy`, `specific_procedures`, `himself`), eliminating the separate branch for single-manager lookup.
 
 ---
 
@@ -232,25 +266,34 @@ The system models **business approval workflows** as configurable chains of **st
 ```php
 enum ActionTakerType: string
 {
-    case SpecificUser = 'specific_user';
+    case SpecificUser        = 'specific_user';
     case ManagementHierarchy = 'management_hierarchy';
-    case SpecificProcedures = 'specific_procedures';
+    case SpecificProcedures  = 'specific_procedures';
+    case Himself             = 'himself'; // ⭐ NEW: submitter is the action taker; only "approve" form allowed
 }
 
 enum ActionTakerManagementHierarchyType: string
 {
-    case BranchManager = 'branch_manager';
+    case BranchManager     = 'branch_manager';
     case ManagementManager = 'management_manager';
-    case ProjectManager = 'project_manager';
+    case ProjectManager    = 'project_manager';
+    case DeputyManager     = 'deputy_manager'; // ⭐ NEW: resolves manager + ALL deputies (either can act)
 }
+
+// NOTE: action_taker_alternative_management_hierarchy_type is now a JSON ARRAY of these values,
+// not a single string. e.g. ["branch_manager", "deputy_manager"]. Tried in order; first wins.
 
 enum ActionTakerSpecificProcedureType: string
 {
-    case Branch = 'branch';       // Manager of specific branch_id
-    case Management = 'management'; // Manager of specific management_id
-    case JobTitle = 'job_title';   // ALL users with job_title_id
-    case JobRole = 'job_role';     // 1 = all mgmt managers, 2 = all branch managers
+    case Branch     = 'branch';      // Manager of specific branch_id
+    case Management = 'management';  // Manager of specific management_id
+    case JobTitle   = 'job_title';   // ALL users with job_title_id
+    case JobRole    = 'job_role';    // 1 = all mgmt managers, 2 = all branch managers
 }
+
+// NOTE: action_taker_specific_procedure_type and action_taker_specific_procedure_id are now
+// JSON ARRAYs (parallel). e.g. type=["branch","management"], id=["5","12"].
+// All targets are merged into authorized_user_ids. Rejection is non-fatal if ANY type is job_role.
 
 enum ProcedureSettingType: string
 {
@@ -345,13 +388,36 @@ enum InternalProcessCondition: string
 - **Trap**: `actionTakers` is empty for other types. Code that iterates it without fallback fails silently.
 
 ### 4.2 `management_hierarchy`
-- Assigned user resolved from **CREATOR'S** org chart.
-- Chain: creator → `UserProfessionalData` → `branch_id`/`management_id` → `ManagementHierarchy` → `manager_id`.
-- If any link fails → fallback to `action_taker_alternative_management_hierarchy_type`.
-- **Project Manager**: If type is `project_manager`, reads `context['project_id']` → `ProjectManagement.find(project_id).manager_id`. If no context or no manager → fallback.
+- Assigned user(s) resolved from **CREATOR'S** org chart.
+- Chain: creator → `UserProfessionalData` → `branch_id`/`management_id` → `ManagementHierarchy` → resolved user(s).
+- If any link fails → fallback to `action_taker_alternative_management_hierarchy_type` array (tried in order).
+- **Project Manager**: reads `context['project_id']` → `ProjectManagement.manager_id`. Falls back if unavailable.
+
+#### Sub-types (primary + alternatives)
+| Value | Resolution | Multi-user? |
+|---|---|---|
+| `branch_manager` | Creator's branch → `manager_id` | No (single) |
+| `management_manager` | Creator's management → `manager_id` | No (single) |
+| `project_manager` | `context['project_id']` → `ProjectManagement.manager_id` | No (single) |
+| `deputy_manager` ⭐ | Creator's branch/management → **`manager_id` + ALL deputy managers** | **YES** |
+
+#### `deputy_manager` behavior (primary type)
+When `action_taker_management_hierarchy_type = deputy_manager`:
+1. Resolves the branch/management **manager** (primary slot → `assigned_user_id`)
+2. Resolves **all deputy managers** from `management_hierarchy_details` → `management_hierarchy_deputy_managers`
+3. All are stored in `authorized_user_ids` → **any one acting ends the step**
+4. Notifications are sent to ALL of them
+
+#### `action_taker_alternative_management_hierarchy_type` (now an array)
+- **Was**: single string e.g. `"branch_manager"`
+- **Now**: JSON array e.g. `["branch_manager", "deputy_manager"]`
+- Tried in order; first non-null result wins
+- For `deputy_manager` in alternatives: returns the **first** deputy (single fallback user)
 
 ### 4.3 `specific_procedures`
 - No explicit `actionTakers`. Resolved dynamically.
+- **Was**: single `type`+`id` pair
+- **Now**: parallel JSON arrays — `type[i]`+`id[i]` = one target. All targets merged into `authorized_user_ids`.
 
 | Sub-type | Resolution |
 |----------|-----------|
@@ -362,8 +428,14 @@ enum InternalProcessCondition: string
 
 **Rejection Behavior**:
 - `job_role`: Rejection **advances** the workflow (does NOT fail).
-- `job_title`, `branch`, `management`: Rejection **fails** the process.
-- All other types: Rejection fails the process.
+- All other types: Rejection **fails** the process.
+- With multiple targets: rejection fails only if **NO target is `job_role`**.
+
+### 4.4 `himself` ⭐ NEW
+- The **original request submitter** (`createdByUserId`) is the action taker.
+- Resolver returns `[$createdByUserId]` directly.
+- Only the **`approve`** form is permitted for this action-taker type (enforced in request validation).
+- Typical use-case: a step where the submitter must review/acknowledge their own request.
 
 ---
 
@@ -2022,4 +2094,82 @@ The task's `user.userProfessionalData` is lazy-loaded inside the service to reso
 5. Call it from the relevant service method, **before** any workflow API call.
 6. Add a corresponding `EmployeeTaskException::*()` factory for the HTTP 422 response.
 7. Update §27.10.3 to document the new backend-enforced condition.
+
+---
+
+## 29. 2026-06-19 Feature: Deputy Manager, Himself, Array Fields
+
+### 29.1 Summary of all changes
+
+| Area | Change |
+|---|---|
+| `ActionTakerType` enum | Added `himself = 'himself'` |
+| `ActionTakerManagementHierarchyType` enum | Added `deputy_manager = 'deputy_manager'` |
+| `action_taker_alternative_management_hierarchy_type` DB column | Changed from `varchar(30)` to `text` (stores JSON array) |
+| `action_taker_specific_procedure_type` DB column | Changed from `varchar(30)` to `text` (stores JSON array) |
+| `action_taker_specific_procedure_id` DB column | Changed from `varchar(255)` to `text` (stores JSON array) |
+| `ProcedureSettingStep` model casts | `alternative_type` and both specific-procedure fields now cast as `array` |
+| `CreateProcedureSettingStepDTO` | `alternative_type`, `specific_type`, `specific_id` now `?array` |
+| Request validation (Create + Update) | All three fields accept arrays; `action_taker_type` accepts `himself`; `forms` restricted to `approve` when type is `himself` |
+| `ActionTakerResolver` | `deputy_manager` primary → returns manager + ALL deputies; `tryAlternatives` iterates array; `resolveSpecificProcedureUsers` iterates parallel arrays |
+| `ProcedureWorkflowService` | `assertIsActionTaker` + `userCanActOnStep` unified for `management_hierarchy`, `specific_procedures`, `himself` using `resolveUsersForStep` |
+| `ProcessWorkflowService` snapshot | `specific_procedure_types` (array) replaces `specific_procedure_type` (string); backward compat reads old key |
+| `ProcessWorkflowService::rejectStep` | `isJobRole` check uses `in_array` over the types array |
+| `WorkflowEngine` | `computeApprovalResponsiblesForSetting` unified to use `resolveUsersForStep` for all dynamic types |
+| `ProcedureSettingStepPresenter` | `alternative_type` returns array + labels array; `specific_procedures` returns parallel arrays + combined `[{type,id}]` convenience field |
+| Migration | `2026_06_19_000001_change_action_taker_columns_to_json_on_procedure_setting_steps.php` |
+
+### 29.2 `deputy_manager` data flow
+
+```
+step.action_taker_management_hierarchy_type = 'deputy_manager'
+
+ActionTakerResolver::resolveManagementHierarchyUsers()
+  └─ resolveManagerAndDeputies()
+       ├─ creator.professionalData.branch_id → ManagementHierarchy
+       │    ├─ .manager_id                   → user A
+       │    └─ .detail.deputyManagerRelations → users B, C, ...
+       └─ returns [A, B, C, ...]  ← ALL stored in authorized_user_ids
+
+ProcessWorkflowService::createProcessStep()
+  ├─ assigned_user_id   = A  (first / primary)
+  └─ authorized_user_ids = [A, B, C]
+
+WorkflowStepActivated fired with userIds = [A, B, C]
+  └─ All three receive notification
+
+approveStep() / assertIsActionTaker()
+  └─ checks Auth::id() ∈ authorized_user_ids → any one is sufficient
+```
+
+### 29.3 `himself` data flow
+
+```
+step.action_taker_type = 'himself'
+
+ActionTakerResolver::resolveUsersForStep()
+  └─ returns [$createdByUserId]
+
+ProcessWorkflowService snapshot:
+  ├─ assigned_user_id    = createdByUserId
+  └─ authorized_user_ids = [createdByUserId]
+
+Validation: forms field must be 'approve' (enforced in request)
+```
+
+### 29.4 Array specific-procedures data flow
+
+```
+step.action_taker_specific_procedure_type = ["branch", "management"]
+step.action_taker_specific_procedure_id   = ["5",      "12"]
+
+ActionTakerResolver::resolveSpecificProcedureUsers()
+  ├─ resolves branch 5  → manager X
+  ├─ resolves management 12 → manager Y
+  └─ returns [X, Y]  ← merged, de-duplicated
+
+Rejection:
+  - types = ["branch", "management"] → no job_role → process FAILS on rejection
+  - types = ["branch", "job_role"]   → has job_role → process ADVANCES on rejection
+```
 

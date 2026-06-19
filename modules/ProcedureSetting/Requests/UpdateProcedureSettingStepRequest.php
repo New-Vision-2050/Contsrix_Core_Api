@@ -96,7 +96,18 @@ class UpdateProcedureSettingStepRequest extends FormRequest
             'name'         => 'sometimes|nullable|string|max:255',
             'is_accept'    => 'sometimes|boolean',
             'is_approve'   => 'sometimes|boolean',
-            'forms'        => 'sometimes|nullable|string|in:approve,accept,financial',
+
+            // When action_taker_type is "himself" only the "approve" form is permitted.
+            'forms' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'in:approve,accept,financial',
+                Rule::when(
+                    $this->input('action_taker_type') === 'himself',
+                    ['in:approve'],
+                ),
+            ],
 
             'branch_id'      => ['sometimes', 'nullable', 'integer', Rule::exists('management_hierarchies', 'id')->where('type', 'branch')],
             'management_id' => 'sometimes|nullable|integer|exists:management_hierarchies,id',
@@ -116,38 +127,48 @@ class UpdateProcedureSettingStepRequest extends FormRequest
 
             'step_order' => 'sometimes|nullable|integer|min:0',
 
-            'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy,specific_procedures',
+            'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy,specific_procedures,himself',
+
             'action_taker_management_hierarchy_type' => [
                 'sometimes',
                 'nullable',
                 'string',
-                'in:branch_manager,management_manager,project_manager',
+                'in:branch_manager,management_manager,project_manager,deputy_manager',
                 'required_if:action_taker_type,management_hierarchy',
                 'prohibited_unless:action_taker_type,management_hierarchy',
             ],
+
+            // Array of fallback hierarchy types tried in order.
             'action_taker_alternative_management_hierarchy_type' => [
                 'sometimes',
                 'nullable',
-                'string',
-                'in:branch_manager,management_manager',
+                'array',
                 'prohibited_unless:action_taker_type,management_hierarchy',
-                'different:action_taker_management_hierarchy_type',
             ],
+            'action_taker_alternative_management_hierarchy_type.*' => [
+                'string',
+                'in:branch_manager,management_manager,deputy_manager',
+            ],
+
+            // Parallel arrays: type[i]+id[i] define each specific-procedure target.
             'action_taker_specific_procedure_type' => [
                 'sometimes',
                 'nullable',
-                'string',
-                'in:branch,management,job_title,job_role',
+                'array',
                 'required_if:action_taker_type,specific_procedures',
                 'prohibited_unless:action_taker_type,specific_procedures',
             ],
+            'action_taker_specific_procedure_type.*' => 'string|in:branch,management,job_title,job_role',
+
             'action_taker_specific_procedure_id' => [
                 'sometimes',
                 'nullable',
-                'string',
+                'array',
                 'required_if:action_taker_type,specific_procedures',
                 'prohibited_unless:action_taker_type,specific_procedures',
+                'same_size:action_taker_specific_procedure_type',
             ],
+            'action_taker_specific_procedure_id.*' => 'string',
 
             'action_taker_user_ids'   => [
                 'sometimes',

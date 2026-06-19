@@ -46,7 +46,17 @@ class CreateProcedureSettingStepRequest extends FormRequest
             'name'        => 'nullable|string|max:255',
             'is_accept'   => 'nullable|boolean',
             'is_approve'  => 'nullable|boolean',
-            'forms'       => 'nullable|string|in:approve,accept,financial',
+
+            // When action_taker_type is "himself" only the "approve" form is permitted.
+            'forms' => [
+                'nullable',
+                'string',
+                'in:approve,accept,financial',
+                Rule::when(
+                    $this->input('action_taker_type') === 'himself',
+                    ['in:approve'],
+                ),
+            ],
 
             'branch_id'      => ['nullable', 'integer', Rule::exists('management_hierarchies', 'id')->where('type', 'branch')],
             'management_id' => 'nullable|integer|exists:management_hierarchies,id',
@@ -66,34 +76,44 @@ class CreateProcedureSettingStepRequest extends FormRequest
 
             'step_order' => 'nullable|integer|min:0',
 
-            'action_taker_type' => 'nullable|string|in:specific_user,management_hierarchy,specific_procedures',
+            'action_taker_type' => 'nullable|string|in:specific_user,management_hierarchy,specific_procedures,himself',
+
             'action_taker_management_hierarchy_type' => [
                 'nullable',
                 'string',
-                'in:branch_manager,management_manager,project_manager',
+                'in:branch_manager,management_manager,project_manager,deputy_manager',
                 'required_if:action_taker_type,management_hierarchy',
                 'prohibited_unless:action_taker_type,management_hierarchy',
             ],
+
+            // Array of fallback hierarchy types tried in order (branch_manager, management_manager, deputy_manager).
             'action_taker_alternative_management_hierarchy_type' => [
                 'nullable',
-                'string',
-                'in:branch_manager,management_manager',
+                'array',
                 'prohibited_unless:action_taker_type,management_hierarchy',
-                'different:action_taker_management_hierarchy_type',
             ],
+            'action_taker_alternative_management_hierarchy_type.*' => [
+                'string',
+                'in:branch_manager,management_manager,deputy_manager',
+            ],
+
+            // Parallel arrays: type[i]+id[i] define each specific-procedure target.
             'action_taker_specific_procedure_type' => [
                 'nullable',
-                'string',
-                'in:branch,management,job_title,job_role',
+                'array',
                 'required_if:action_taker_type,specific_procedures',
                 'prohibited_unless:action_taker_type,specific_procedures',
             ],
+            'action_taker_specific_procedure_type.*' => 'string|in:branch,management,job_title,job_role',
+
             'action_taker_specific_procedure_id' => [
                 'nullable',
-                'string',
+                'array',
                 'required_if:action_taker_type,specific_procedures',
                 'prohibited_unless:action_taker_type,specific_procedures',
+                'same_size:action_taker_specific_procedure_type',
             ],
+            'action_taker_specific_procedure_id.*' => 'string',
 
             'action_taker_user_ids'   => [
                 'nullable',
@@ -139,9 +159,9 @@ class CreateProcedureSettingStepRequest extends FormRequest
             step_order:            isset($v['step_order']) ? (int) $v['step_order'] : null,
             action_taker_type:     $v['action_taker_type'] ?? null,
             action_taker_management_hierarchy_type: $v['action_taker_management_hierarchy_type'] ?? null,
-            action_taker_alternative_management_hierarchy_type: $v['action_taker_alternative_management_hierarchy_type'] ?? null,
-            action_taker_specific_procedure_type: $v['action_taker_specific_procedure_type'] ?? null,
-            action_taker_specific_procedure_id: $v['action_taker_specific_procedure_id'] ?? null,
+            action_taker_alternative_management_hierarchy_type: isset($v['action_taker_alternative_management_hierarchy_type']) ? (array) $v['action_taker_alternative_management_hierarchy_type'] : null,
+            action_taker_specific_procedure_type: isset($v['action_taker_specific_procedure_type']) ? (array) $v['action_taker_specific_procedure_type'] : null,
+            action_taker_specific_procedure_id: isset($v['action_taker_specific_procedure_id']) ? (array) $v['action_taker_specific_procedure_id'] : null,
             action_taker_user_ids: $v['action_taker_user_ids'] ?? null,
             concerned_management_hierarchy_ids: $v['concerned_management_hierarchy_ids'] ?? null,
         );
