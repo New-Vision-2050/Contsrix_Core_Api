@@ -17,7 +17,11 @@ class StakeholderRepository extends BaseRepository
 
     public function getStakeholderList(?int $page = null, ?int $perPage = 10): array
     {
-        return $this->paginatedList([], $page, $perPage);
+        return $this->paginated(
+            [],
+            page: $page,
+            perPage: $perPage,
+        );
     }
 
     public function getStakeholder(UuidInterface $id): Stakeholder
