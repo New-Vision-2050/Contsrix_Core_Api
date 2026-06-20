@@ -21,7 +21,7 @@ class StakeholderPresenter extends AbstractPresenter
         return [
             'id' => $this->stakeholder->id,
             'name' => $this->stakeholder->name,
-            'status' => $this->stakeholder->status,
+//            'status' => $this->stakeholder->status,
             'created_at' => $this->stakeholder->created_at,
             'updated_at' => $this->stakeholder->updated_at,
         ];
