@@ -16,6 +16,7 @@ use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
 use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
+use Modules\Stakeholder\Database\Seeders\StakeholderSeeder;
 use Modules\SubscriptionSystem\Modules\Database\Seeders\ModuleStructureSeeder;
 use Modules\UserInfo\ContractualRelationship\Database\Seeders\ContractualRelationshipTypeSeeder;
 use Modules\WebsiteCMS\WebsiteThemeSetting\Database\Seeders\DefaultWebsiteThemeSettingSeeder;
@@ -164,6 +165,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProjectPermissionsSeeder::class);
         $this->call(ProjectShareTypeSeeder::class);
         $this->call(InternalProcedureSettingsSeeder::class);
+        $this->call(StakeholderSeeder::class);
 
     }
 }
