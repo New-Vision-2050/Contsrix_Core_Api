@@ -26,7 +26,7 @@ class StakeholderSeeder extends Seeder
         foreach ($names as $name) {
             Stakeholder::firstOrCreate(
                 ['name' => $name],
-                ['status' => 1]
+                ['status' => 1,"name"=>$name]
             );
         }
     }
