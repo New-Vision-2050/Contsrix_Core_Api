@@ -15,6 +15,7 @@ class UpdateContractualRelationshipRequest extends FormRequest
             'contractual_relationship_type_id' => 'required|uuid|exists:contractual_relationship_types,id',
             'employment_name' => 'nullable|string|max:255',
             'registration_number' => 'nullable|string|max:255',
+            'stakeholder_id' => 'nullable|uuid|exists:stakeholders,id',
         ];
     }
 
@@ -26,6 +27,7 @@ class UpdateContractualRelationshipRequest extends FormRequest
             contractual_relationship_type_id: $this->get('contractual_relationship_type_id'),
             employment_name: $this->get('employment_name'),
             registration_number: $this->get('registration_number'),
+            stakeholder_id: $this->get('stakeholder_id'),
         );
     }
 }

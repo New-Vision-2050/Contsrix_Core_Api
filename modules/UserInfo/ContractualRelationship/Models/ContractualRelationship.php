@@ -25,6 +25,7 @@ class ContractualRelationship extends Model
         'contractual_relationship_type_id',
         'employment_name',
         'registration_number',
+        'stakeholder_id',
     ];
 
     protected $casts = [
@@ -34,5 +35,10 @@ class ContractualRelationship extends Model
     public function contractualRelationshipType()
     {
         return $this->belongsTo(ContractualRelationshipType::class, 'contractual_relationship_type_id');
+    }
+
+    public function stakeholder()
+    {
+        return $this->belongsTo(\Modules\Stakeholder\Models\Stakeholder::class, 'stakeholder_id');
     }
 }
