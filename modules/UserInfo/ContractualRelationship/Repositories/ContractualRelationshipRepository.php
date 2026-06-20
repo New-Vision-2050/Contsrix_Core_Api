@@ -20,7 +20,7 @@ class ContractualRelationshipRepository extends BaseRepository
         return $this->model->where([
             'global_id' => $globalId,
             'company_id' => $companyId,
-        ])->with('contractualRelationshipType')->first();
+        ])->with(['contractualRelationshipType', 'stakeholder'])->first();
     }
 
     public function createOrUpdateContractualRelationship(array $data): ContractualRelationship
@@ -32,7 +32,7 @@ class ContractualRelationshipRepository extends BaseRepository
 
         if ($contractualRelationship) {
             $contractualRelationship->update($data);
-            return $contractualRelationship->load('contractualRelationshipType');
+            return $contractualRelationship->load(['contractualRelationshipType', 'stakeholder']);
         }
 
         return $this->model->create($data);

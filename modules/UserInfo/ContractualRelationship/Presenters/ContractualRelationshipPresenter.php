@@ -27,6 +27,11 @@ class ContractualRelationshipPresenter extends AbstractPresenter
             ] : null,
             'employment_name' => $this->contractualRelationship->employment_name,
             'registration_number' => $this->contractualRelationship->registration_number,
+            'stakeholder_id' => $this->contractualRelationship->stakeholder_id,
+            'stakeholder' => $this->contractualRelationship->stakeholder ? [
+                'id' => $this->contractualRelationship->stakeholder->id,
+                'name' => $this->contractualRelationship->stakeholder->name,
+            ] : null,
         ];
     }
 }

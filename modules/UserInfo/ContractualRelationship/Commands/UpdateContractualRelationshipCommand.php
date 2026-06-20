@@ -12,6 +12,7 @@ class UpdateContractualRelationshipCommand
         public string $contractual_relationship_type_id,
         public ?string $employment_name,
         public ?string $registration_number,
+        public ?string $stakeholder_id = null,
     ) {
     }
 
@@ -23,6 +24,7 @@ class UpdateContractualRelationshipCommand
             'contractual_relationship_type_id' => $this->contractual_relationship_type_id,
             'employment_name' => $this->employment_name,
             'registration_number' => $this->registration_number,
+            'stakeholder_id' => $this->stakeholder_id,
         ]);
     }
 }
