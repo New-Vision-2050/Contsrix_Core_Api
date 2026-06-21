@@ -12,6 +12,25 @@ use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
 class CreateInternalProcedureSettingRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $map = [
+            'appears_before_ids' => 'appears_before_id',
+            'appears_after_ids'  => 'appears_after_id',
+        ];
+
+        $merge = [];
+        foreach ($map as $plural => $singular) {
+            if ($this->has($plural) && ! $this->has($singular)) {
+                $merge[$singular] = $this->input($plural);
+            }
+        }
+
+        if ($merge !== []) {
+            $this->merge($merge);
+        }
+    }
+
     public function rules(): array
     {
         return array_merge([

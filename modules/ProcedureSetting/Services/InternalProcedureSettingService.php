@@ -75,7 +75,9 @@ final class InternalProcedureSettingService
 
         $conditions = InternalProcessCondition::defaultValuesForForm($form);
         if (isset($data['conditions']) && is_array($data['conditions'])) {
-            $conditions = array_merge($conditions, $this->normalizeConditions($data['conditions']));
+            $incoming = $this->normalizeConditions($data['conditions']);
+            // New rich format (indexed list) — use as-is; old flat assoc — merge with defaults
+            $conditions = is_int(array_key_first($incoming) ?? null) ? $incoming : array_merge($conditions, $incoming);
         }
 
         $workFlow = $this->createWorkFlowForInternal($parent, $form->value, $type);
@@ -162,7 +164,11 @@ final class InternalProcedureSettingService
         }
 
         if (isset($data['conditions']) && is_array($data['conditions'])) {
-            $update['conditions'] = array_merge($setting->conditions ?? [], $this->normalizeConditions($data['conditions']));
+            $normalized = $this->normalizeConditions($data['conditions']);
+            // New rich format (indexed list) — replace entirely; old flat assoc — merge with existing
+            $update['conditions'] = is_int(array_key_first($normalized) ?? null)
+                ? $normalized
+                : array_merge($setting->conditions ?? [], $normalized);
         }
 
         $setting->update($update);
@@ -278,8 +284,10 @@ final class InternalProcedureSettingService
     }
 
     /**
-     * Convert frontend conditions format [{key: "AllowDuringShift", value: true}, ...]
-     * into backend associative array format {allow_during_shift: true, ...}.
+     * Normalise conditions from various frontend formats:
+     *  - New rich format (list):  [{key, is_active, sort_order, settings}]  → returned as-is
+     *  - Old indexed format:      [{key: "AllowDuringShift", value: true}]  → assoc {allow_during_shift: true}
+     *  - Already assoc flat:      {allow_during_shift: true}                → returned as-is
      */
     private function normalizeConditions(array $input): array
     {
@@ -287,23 +295,28 @@ final class InternalProcedureSettingService
             return [];
         }
 
-        // If already an associative array (has string keys), return as-is
-        $firstKey = array_key_first($input);
-        if (! is_int($firstKey)) {
+        // Already an associative array (old flat format) → pass through
+        if (! is_int(array_key_first($input))) {
             return $input;
         }
 
+        // Indexed array — distinguish new rich format from old [{key, value}] format
+        // New rich format items have 'is_active'; old format items have only 'key' + 'value'
+        $firstItem = reset($input);
+        if (is_array($firstItem) && array_key_exists('is_active', $firstItem)) {
+            return $input; // new rich format — pass through as-is
+        }
+
+        // Old indexed format [{key: "AllowDuringShift", value: true}]
         $normalized = [];
         foreach ($input as $item) {
             if (! is_array($item) || ! array_key_exists('key', $item)) {
                 continue;
             }
-            $key = (string) $item['key'];
-            $value = $item['value'] ?? null;
-
-            // Map PascalCase enum names (e.g. AllowDuringShift) to snake_case values
+            $key      = (string) $item['key'];
+            $value    = $item['value'] ?? null;
             $snakeKey = Str::snake($key);
-            $enum = InternalProcessCondition::tryFrom($snakeKey);
+            $enum     = InternalProcessCondition::tryFrom($snakeKey);
 
             if ($enum !== null) {
                 $normalized[$enum->value] = $value;
