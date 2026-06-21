@@ -46,13 +46,14 @@ return new class extends Migration
             }
         });
 
-        // Step 2 — widen columns to JSON BEFORE writing longer values
+        // Step 2 — widen to TEXT first (no JSON validation) so existing UUIDs fit
         Schema::table('procedure_settings', function (Blueprint $table): void {
-            $table->json('appears_before_id')->nullable()->change();
-            $table->json('appears_after_id')->nullable()->change();
+            $table->text('appears_before_id')->nullable()->change();
+            $table->text('appears_after_id')->nullable()->change();
         });
 
         // Step 3 — convert plain UUID strings to single-element JSON arrays
+        // (must happen while column is TEXT, before MySQL validates JSON on change)
         foreach (['appears_before_id', 'appears_after_id'] as $col) {
             DB::statement("
                 UPDATE procedure_settings
@@ -61,6 +62,10 @@ return new class extends Migration
                   AND JSON_VALID({$col}) = 0
             ");
         }
+
+        // Step 4 — now all values are valid JSON; safe to set the proper type
+        DB::statement('ALTER TABLE procedure_settings MODIFY appears_before_id JSON NULL');
+        DB::statement('ALTER TABLE procedure_settings MODIFY appears_after_id JSON NULL');
     }
 
     public function down(): void
