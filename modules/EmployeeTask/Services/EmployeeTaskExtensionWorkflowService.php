@@ -61,6 +61,8 @@ final class EmployeeTaskExtensionWorkflowService
             $adminId,
             $task->user_id,
             $context,
+            processableType: 'employee_task',
+            processableId: $task->id,
         );
 
         return DB::transaction(function () use ($extension, $task, $result, $adminId, $approvalNotes): EmployeeTaskExtensionRequest {

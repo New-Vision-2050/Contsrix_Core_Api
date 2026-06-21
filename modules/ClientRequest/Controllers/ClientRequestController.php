@@ -17,6 +17,7 @@ use Modules\ClientRequest\Requests\GetClientRequestListRequest;
 use Modules\ClientRequest\Requests\GetClientRequestRequest;
 use Modules\ClientRequest\Requests\ChangeClientRequestStatusRequest;
 use Modules\ClientRequest\Requests\UpdateClientRequestFullRequest;
+use Modules\ClientRequest\Services\ClientRequestAvailableActionsService;
 use Modules\ClientRequest\Services\ClientRequestCRUDService;
 use Modules\ClientRequest\Services\ClientRequestWorkflowService;
 use Modules\ClientRequest\Services\ClientRequestWidgetsService;
@@ -38,8 +39,8 @@ class ClientRequestController extends Controller
         private DeleteClientRequestHandler $deleteClientRequestHandler,
         private ClientRequestWidgetsService $clientRequestWidgetsService,
         private ClientRequestStatusWidgetsService $clientRequestStatusWidgetsService,
-    ) {
-    }
+        private ClientRequestAvailableActionsService $availableActionsService,
+    ) {}
 
     public function index(GetClientRequestListRequest $request): JsonResponse
     {
@@ -220,5 +221,12 @@ class ClientRequestController extends Controller
         });
 
         return Json::items($widgetData);
+    }
+
+    public function availableActions(string $id): JsonResponse
+    {
+        $actions = $this->availableActionsService->forClientRequest($id);
+
+        return Json::items($actions, message: 'Available actions retrieved successfully');
     }
 }

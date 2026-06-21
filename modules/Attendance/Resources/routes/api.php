@@ -2,13 +2,15 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Attendance\Controllers\AttendanceController;
+use Modules\Attendance\Controllers\AttendanceReportController;
+use Modules\Attendance\Controllers\LeaveBalanceController;
 use Modules\Attendance\Controllers\LeaveRequestController;
 use Modules\Attendance\Controllers\LeaveTypeController;
-use Modules\Attendance\Controllers\LeaveBalanceController;
-use Modules\Attendance\Controllers\AttendanceReportController;
 use Modules\Attendance\Controllers\LocationTrackingController;
 use Modules\Attendance\Controllers\UserAttendanceController;
 use Modules\RoleAndPermission\Enums\Permission;
+use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes - Attendance Module
@@ -19,10 +21,10 @@ use Modules\RoleAndPermission\Enums\Permission;
 | is assigned the "api" middleware group and "auth:api" middleware.
 |
 */
-Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(function () {
+Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(function () {
 
-// Attendance Management Routes
-Route::prefix('attendance')->group(function () {
+    // Attendance Management Routes
+    Route::prefix('attendance')->group(function () {
 
 Route::post('test', [AttendanceController::class, 'test'])
         ->name('attendance.test');
@@ -166,67 +168,49 @@ Route::prefix('leave')->group(function () {
     Route::post('check-conflicts', [LeaveRequestController::class, 'checkConflicts'])
         ->name('leave-requests.check-conflicts');
 
-    // Leave Types Management
-    // Route::apiResource('types', LeaveTypeController::class, [
-    //     'names' => [
-    //         'index' => 'leave-types.index',
-    //         'store' => 'leave-types.store',
-    //         'show' => 'leave-types.show',
-    //         'update' => 'leave-types.update',
-    //         'destroy' => 'leave-types.destroy',
-    //     ]
-    // ])->middleware('permission:manage-leave-types');
+        // Leave Types Management
+        // Route::apiResource('types', LeaveTypeController::class, [
+        //     'names' => [
+        //         'index' => 'leave-types.index',
+        //         'store' => 'leave-types.store',
+        //         'show' => 'leave-types.show',
+        //         'update' => 'leave-types.update',
+        //         'destroy' => 'leave-types.destroy',
+        //     ]
+        // ])->middleware('permission:manage-leave-types');
 
-    // Leave Balances
-    Route::prefix('balances')->group(function () {
-        // Route::get('/', [LeaveBalanceController::class, 'index'])
-        //     ->name('leave-balances.index');
+        // Leave Balances
+        Route::prefix('balances')->group(function () {
+            // Route::get('/', [LeaveBalanceController::class, 'index'])
+            //     ->name('leave-balances.index');
 
-        // Route::get('my-balances', [LeaveBalanceController::class, 'myBalances'])
-        //     ->name('leave-balances.my-balances');
+            // Route::get('my-balances', [LeaveBalanceController::class, 'myBalances'])
+            //     ->name('leave-balances.my-balances');
 
-        // Route::get('{userId}', [LeaveBalanceController::class, 'userBalances'])
-        //     ->middleware('permission:view-user-leave-balances')
-        //     ->name('leave-balances.user-balances');
+            // Route::get('{userId}', [LeaveBalanceController::class, 'userBalances'])
+            //     ->middleware('permission:view-user-leave-balances')
+            //     ->name('leave-balances.user-balances');
 
-        // // Balance Management (HR/Admin)
-        // Route::middleware('permission:manage-leave-balances')->group(function () {
-        //     Route::post('initialize', [LeaveBalanceController::class, 'initializeBalances'])
-        //         ->name('leave-balances.initialize');
+            // // Balance Management (HR/Admin)
+            // Route::middleware('permission:manage-leave-balances')->group(function () {
+            //     Route::post('initialize', [LeaveBalanceController::class, 'initializeBalances'])
+            //         ->name('leave-balances.initialize');
 
-        //     Route::post('adjust', [LeaveBalanceController::class, 'adjustBalance'])
-        //         ->name('leave-balances.adjust');
+            //     Route::post('adjust', [LeaveBalanceController::class, 'adjustBalance'])
+            //         ->name('leave-balances.adjust');
 
-        //     Route::post('reset-year', [LeaveBalanceController::class, 'resetForNewYear'])
-        //         ->name('leave-balances.reset-year');
-        // });
+            //     Route::post('reset-year', [LeaveBalanceController::class, 'resetForNewYear'])
+            //         ->name('leave-balances.reset-year');
+            // });
+        });
     });
-});
 
-// Attendance Reports
-Route::prefix('reports')->middleware('permission:view-attendance-reports')->group(function () {
-
-    // Route::get('attendance-summary', [AttendanceReportController::class, 'attendanceSummary'])
-    //     ->name('reports.attendance-summary');
-
-    // Route::get('overtime-report', [AttendanceReportController::class, 'overtimeReport'])
-    //     ->name('reports.overtime-report');
-
-    // Route::get('leave-utilization', [AttendanceReportController::class, 'leaveUtilization'])
-    //     ->name('reports.leave-utilization');
-
-    // Route::get('punctuality-report', [AttendanceReportController::class, 'punctualityReport'])
-    //     ->name('reports.punctuality-report');
-
-    // Route::get('absence-report', [AttendanceReportController::class, 'absenceReport'])
-    //     ->name('reports.absence-report');
-
-    // Route::get('team-attendance', [AttendanceReportController::class, 'teamAttendanceReport'])
-    //     ->name('reports.team-attendance');
-
-    // Route::post('export/leave-requests', [AttendanceReportController::class, 'exportLeaveRequests'])
-    //     ->name('reports.export-leave-requests');
-});
+    // HR Attendance & Contract Reports
+    Route::prefix('hr/attendance/reports')->group(function () {
+        Route::get('/', [AttendanceReportController::class, 'index'])
+            ->permission(Permission::ATTENDANCE_REPORTS_VIEW())
+            ->name('hr.attendance.reports.index');
+    });
 
 // Dashboard Statistics (for different user roles)
     Route::prefix('dashboard')->group(function () {

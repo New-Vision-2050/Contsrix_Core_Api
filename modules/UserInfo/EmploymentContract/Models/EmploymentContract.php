@@ -4,30 +4,31 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\EmploymentContract\Models;
 
-use BasePackage\Shared\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Modules\UserInfo\EmploymentContract\Database\factories\EmploymentContractFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Modules\Country\Models\Country;
 use Modules\Shared\NatureWork\Models\NatureWork;
 use Modules\Shared\RightTerminate\Models\RightTerminate;
 use Modules\Shared\TimeUnit\Models\TimeUnit;
 use Modules\Shared\TypeWorkingHour\Models\TypeWorkingHour;
-//use BasePackage\Shared\Traits\HasTranslations;
+use Modules\UserInfo\EmploymentContract\Database\factories\EmploymentContractFactory;
+// use BasePackage\Shared\Traits\HasTranslations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class EmploymentContract extends Model implements HasMedia
 {
-    use HasFactory;
-    use UuidTrait;
     use BaseFilterable;
+    use HasFactory;
     use InteractsWithMedia;
-    //use HasTranslations;
-    //use SoftDeletes;
+    use UuidTrait;
+    // use HasTranslations;
+    // use SoftDeletes;
 
-    //public array $translatable = [];
+    // public array $translatable = [];
 
     public $incrementing = false;
 
@@ -44,15 +45,15 @@ class EmploymentContract extends Model implements HasMedia
 
         'notice_period',
         'probation_period',
-        'nature_work_id',//
-        'type_working_hour_id',//
+        'nature_work_id', //
+        'type_working_hour_id', //
 
         'working_hours',
         'annual_leave',
         'country_id',
         'latitude',
         'longitude',
-        'right_terminate_id',//
+        'right_terminate_id', //
 
         'contract_duration_unit',
         'notice_period_unit',
@@ -67,7 +68,8 @@ class EmploymentContract extends Model implements HasMedia
     {
         return EmploymentContractFactory::new();
     }
-    public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
+
+    public function registerMediaConversions(?Media $media = null): void
     {
         $media->getFullUrl();
     }

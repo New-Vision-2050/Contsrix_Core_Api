@@ -2,7 +2,7 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-19 — Added `himself` action-taker type, `deputy_manager` hierarchy type, array-based alternative/specific-procedure fields, and full workflow-engine propagation. See §29 for the complete change summary.
+> **Last updated:** 2026-06-21 — Multi-module centralized taken-status expansion: generic `InternalProcedureAvailableActionsService` (Phase 1); `ClientRequest` integration with `createClientRequest`/`endClientRequest` marking + available-actions API (Phase 2); event-driven `WorkflowProcedureTaken` + `RecordInternalProcedureTaken` listener replacing all direct `markProcedureTaken()` calls in external modules (Phase 3). See §30 for full details, §29 for EmployeeTask baseline.
 
 ---
 
@@ -125,13 +125,16 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 |--------|---------|-----------|---------|
 | `resolveFirstStep($procedureType)` | `ProcedureSettingStep` | `string` | EmployeeTask services (at creation preview) |
 | `resolveFirstStepBySettingId($procedureSettingId)` | `ProcedureSettingStep` | `string` | EmployeeTaskExtensionService, EmployeeTaskApprovalService |
-| `advance($currentStepId, $procedureSettingId, $userId, $createdByUserId = null, $context = [])` | `ProcedureWorkflowResult` | `?int`, `?string`, `string`, `?string`, `array` | EmployeeTaskExtensionWorkflowService, EmployeeTaskApprovalService, EmployeeTaskRequestService |
-| `assertCanReject($currentStepId, $userId, $createdByUserId = null, $context = [])` | `void` | Same as advance | EmployeeTaskExtensionWorkflowService, EmployeeTaskApprovalService, EmployeeTaskRequestService |
+| `advance($currentStepId, $procedureSettingId, $userId, $createdByUserId = null, $context = [], $processableType = null, $processableId = null)` | `ProcedureWorkflowResult` | `?int`, `?string`, `string`, `?string`, `array`, `?string`, `?string` | All workflow approval services — **auto-marks taken** when `isFinal = true` and morph params provided |
+| `assertCanReject($currentStepId, $userId, $createdByUserId = null, $context = [])` | `void` | Same as advance (without morph params) | EmployeeTaskExtensionWorkflowService, EmployeeTaskApprovalService, EmployeeTaskEndRequestService |
 | `getApprovalResponsibles($procedureType, $createdByUserId = null, $context = [], $formKey = null)` | `array{auto_approve: bool, step: ?array, action_takers: array}` | `string`, `?string`, `array`, `?string` | ProcedureSettingController; delegates to `WorkflowEngine::previewResponsibles()` |
 | `userCanActOnStep($step, $userId, $createdByUserId = null, $context = [])` | `bool` | `ProcedureSettingStep`, `string`, `?string`, `array` | Inbox filtering (read-only check) |
 | `resolveActionTakerUserIdsForStep($step, $createdByUserId = null, $context = [])` | `array<string>` | `ProcedureSettingStep`, `?string`, `array` | Broadcasting (EmployeeTask services) |
 | `resolveProcedureSettingForBranch($procedureType, $companyId, $branchId)` | `?ProcedureSetting` | `string`, `string`, `?string` | Delegates to `WorkflowEngine::resolveParentSetting()` |
 | `resolveInternalProcedureSettingByForm($procedureCategoryType, $formKey, $companyId, $branchId = null)` | `?ProcedureSetting` | `string`, `string`, `string`, `?string` | EmployeeTask extension/approval creation; delegates to `WorkflowEngine::resolveSettingsForEntry()` |
+| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy = null)` | `void` | `string`, `string`, `string`, `?string` | All EmployeeTask action services; idempotent (`firstOrCreate`) |
+| `getTakenProcedureIds($processableType, $processableId)` | `list<string>` | `string`, `string` | `EmployeeTaskAvailableActionsService::forTask()` |
+| `isProcedureTaken($processableType, $processableId, $procedureSettingId)` | `bool` | `string`, `string`, `string` | Point checks against `internal_procedure_takens` table |
 
 ### WorkflowEngine
 
@@ -167,18 +170,19 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 
 | Method | Returns | Key Logic |
 |--------|---------|-----------|
-| `create($dto)` | `EmployeeTaskRequest` | Resolves creator branch, previews via `WorkflowEngine`, starts workflow via `WorkflowEngine`, central event broadcasts |
-| `approve($id, $adminId)` | `EmployeeTaskRequest` | findPendingStepForActor + advance with context |
-| `reject($id, $adminId, $reason)` | `EmployeeTaskRequest` | findPendingStepForActor + assertCanReject with context |
-| `broadcastTaskNotification($task, $currentStep, $userIds = [])` | `void` | **CHANGED**: now takes `array $userIds` instead of deriving from actionTakers |
-| `broadcastInboxCounts($userIds, $filters = [])` | `void` | **CHANGED**: now takes `array $userIds` instead of `ProcedureSettingStep` |
+| `create($dto)` | `EmployeeTaskRequest` | Resolves creator branch, previews via `WorkflowEngine`, creates task, calls `markCreateTaskProceduresTaken()`, starts workflow |
+| `approve($id, $adminId)` | `EmployeeTaskRequest` | findPendingStepForActor + `ProcessWorkflowService::approveStep` (Process-based) |
+| `reject($id, $adminId, $reason)` | `EmployeeTaskRequest` | findPendingStepForActor + `ProcessWorkflowService::rejectStep` |
+| `broadcastTaskNotification($task, $currentStep, $userIds = [])` | `void` | Takes `array $userIds` instead of deriving from actionTakers |
+| `broadcastInboxCounts($userIds, $filters = [])` | `void` | Takes `array $userIds` instead of `ProcedureSettingStep` |
+| `markCreateTaskProceduresTaken($task, $userId)` *(private)* | `void` | Finds all active `createTask`-form children and records each via `markProcedureTaken()` |
 
 ### EmployeeTaskExtensionWorkflowService
 
-| Method | Returns |
-|--------|---------|
-| `approve($extensionId, $adminId, $approvalNotes = null)` | `EmployeeTaskExtensionRequest` |
-| `reject($extensionId, $adminId, $rejectionReason)` | `EmployeeTaskExtensionRequest` |
+| Method | Returns | Key Change |
+|--------|---------|-----------|
+| `approve($extensionId, $adminId, $approvalNotes = null)` | `EmployeeTaskExtensionRequest` | Passes `processableType`/`processableId` to `advance()` — taken auto-recorded on final step |
+| `reject($extensionId, $adminId, $rejectionReason)` | `EmployeeTaskExtensionRequest` | No change |
 
 ### EmployeeTaskExtensionService
 
@@ -190,9 +194,15 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 
 | Method | Returns | Key Logic |
 |--------|---------|-----------|
-| `create($taskId, $userId, $notes, $file)` | `EmployeeTaskApprovalRequest` | Resolves first step users with context, broadcasts to resolved IDs |
-| `approve($approvalId, $adminId, $approvalNotes)` | `EmployeeTaskApprovalRequest` | advance with context |
-| `reject($approvalId, $adminId, $rejectionReason)` | `EmployeeTaskApprovalRequest` | assertCanReject with context |
+| `create($taskId, $userId, $notes, $file)` | `EmployeeTaskApprovalRequest` | Resolves first step users with context, broadcasts. If auto-approved and `internalProcedureSettingId` provided → `markProcedureTaken()` |
+| `approve($approvalId, $adminId, $approvalNotes)` | `EmployeeTaskApprovalRequest` | Passes morph params to `advance()` — taken auto-recorded on final step |
+| `reject($approvalId, $adminId, $rejectionReason)` | `EmployeeTaskApprovalRequest` | `assertCanReject` with context; taken is NOT recorded on rejection |
+
+### EmployeeTaskAvailableActionsService
+
+| Method | Returns | Key Logic |
+|--------|---------|-----------|
+| `forTask($taskId)` | `list<array>` | Loads active child procedures, calls `getTakenProcedureIds()` from central morph table, filters by `appears_after_id` / `appears_before_id`, returns ordered visible list |
 
 ### EmployeeTaskFormConditionService
 
@@ -643,7 +653,7 @@ WorkflowStepActivated event broadcasts notification + inbox counts centrally
 
 `GET /employee-tasks/{taskId}/available-actions`
 
-Returns all active child internal procedure settings for the task, ordered by constraints:
+Returns all **active** (`is_active = true`) child internal procedure settings for the task, filtered by ordering dependencies (`appears_before_id` / `appears_after_id`):
 
 ```json
 [
@@ -664,6 +674,96 @@ Returns all active child internal procedure settings for the task, ordered by co
     "sort_order": 2
   }
 ]
+```
+
+#### Inactive Status
+
+Each internal procedure setting has an `is_active` boolean field (default: `true`). When set to `false`:
+- The procedure is **excluded** from the `available-actions` API response.
+- It can be toggled via `PUT /procedure-settings/{id}/internal-procedures/{internalProcedureId}/set-status` with body `{ "is_active": false }`.
+- It can also be set during **create** (`POST /procedure-settings/{id}/internal-procedures`) and **update** (`PUT /procedure-settings/{id}/internal-procedures/{internalProcedureId}`) via the `is_active` field.
+
+#### Ordering Dependencies (`appears_before_id` / `appears_after_id`)
+
+Each internal procedure can declare ordering constraints:
+
+- **`appears_after_id`**: This procedure only appears **after** the referenced procedure has been "taken" (completed/approved). If the referenced procedure is not yet taken, this procedure is **hidden**.
+- **`appears_before_id`**: This procedure only appears **before** the referenced procedure has been "taken". Once the referenced procedure is taken, this procedure is **hidden**.
+
+#### "Taken" Status Definition
+
+A procedure is considered "taken" when it has been completed or approved. The "taken" status is tracked centrally in the **`internal_procedure_takens`** morph table, managed by `ProcedureWorkflowService`.
+
+| Form | Taken When | How it's recorded |
+|------|-----------|-------------------|
+| `createTask` | Always taken (the task itself exists) | `EmployeeTaskRequestService::create()` calls `markProcedureTaken()` for all active `createTask` procedures |
+| `startTask` | Employee starts the task | `EmployeeTaskController::start()` calls `markProcedureTaken()` with the `internal_procedure_setting_id` from the request |
+| `endTask` | Task is ended directly (no procedure) | `EmployeeTaskLifecycleService::end()` calls `markProcedureTaken()` |
+| `endTask` (via end request) | End request is approved through workflow | `ProcedureWorkflowService::advance()` auto-marks when `isFinal = true` |
+| `confirmLocation` | Location is confirmed via ping | `EmployeeTaskController::locationPing()` calls `markProcedureTaken()` |
+| `extendTaskTime` | Extension request is approved through workflow | `ProcedureWorkflowService::advance()` auto-marks when `isFinal = true` |
+| `sendForApproval` | Approval request is approved through workflow | `ProcedureWorkflowService::advance()` auto-marks when `isFinal = true` |
+
+#### Central Morph Table: `internal_procedure_takens`
+
+Instead of storing taken IDs on each entity, a dedicated morph table centralizes the tracking:
+
+```
+internal_procedure_takens
+  id                  (UUID, PK)
+  company_id          (UUID, tenant)
+  processable_type    (string, morph type e.g. 'employee_task')
+  processable_id      (UUID, morph ID)
+  procedure_setting_id (UUID, FK → procedure_settings)
+  form                (string, nullable)
+  taken_by            (UUID, nullable)
+  taken_at            (timestamp)
+```
+
+**Unique constraint**: `(processable_type, processable_id, procedure_setting_id)` — prevents duplicate entries.
+
+**ProcedureWorkflowService** provides three central methods:
+
+| Method | Description |
+|--------|-------------|
+| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy)` | Records a procedure as taken (idempotent via `firstOrCreate`) |
+| `getTakenProcedureIds($processableType, $processableId)` | Returns all taken procedure setting IDs for an entity |
+| `isProcedureTaken($processableType, $processableId, $procedureSettingId)` | Checks if a specific procedure is taken |
+
+**Auto-marking in `advance()`**: When `advance()` is called with `processableType` and `processableId` parameters and the workflow reaches its final step (`isFinal = true`), the procedure is automatically marked as taken. Callers no longer need to manually call `markProcedureTaken()` after workflow completion.
+
+#### Per-Procedure Granularity
+
+When multiple procedures share the same form (e.g., two `confirmLocation` procedures), only the specific procedure that was acted upon is marked as "taken" in the morph table. The `internal_procedure_setting_id` parameter passed by the mobile app determines which specific procedure gets marked.
+
+Each action endpoint (`startTask`, `endTask`, `locationPing`, `requestApproval`, `storeExtension`) accepts an optional `internal_procedure_setting_id` parameter. When provided, that specific procedure is marked as taken.
+
+#### Example Scenario
+
+```
+Procedures:
+  A: createTask (sort_order: 100)
+  B: confirmLocation, appears_after_id = A (sort_order: 200)
+  C: startTask, appears_after_id = A (sort_order: 300)
+  D: sendForApproval, appears_after_id = B (sort_order: 400)
+
+Timeline:
+  1. Task created → A is taken
+  2. available-actions returns: B, C (both appear after A which is taken)
+  3. User confirms location → B is taken
+  4. available-actions returns: C, D (D appears after B which is now taken)
+  5. User starts task → C is taken
+  6. available-actions returns: D
+  7. User sends for approval → D is taken (after admin approval)
+  8. available-actions returns: [] (all taken)
+```
+
+If `C` had `appears_before_id = B` instead:
+```
+  1. Task created → A is taken
+  2. available-actions returns: B, C
+  3. User confirms location → B is taken
+  4. available-actions returns: D (C is hidden because B is taken and C appears_before B)
 ```
 
 **Duplicate Forms**: Two children can share the same `form` key. The mobile app MUST send back the specific `id` of the tapped item, not just the `form` key.
@@ -1447,6 +1547,63 @@ If you are a future AI reading this, these are the changes made to the codebase 
 
 ---
 
+### June 2026 — Centralized Taken-Procedure Tracking
+
+#### Problem
+Taken status was stored as a JSON array (`taken_internal_procedure_ids`) on `employee_task_requests`, with logic scattered across services inferring taken state from sessions, `location_confirmed_at`, and approved request records.
+
+#### Solution: `internal_procedure_takens` Morph Table
+
+A dedicated table in the `ProcedureSetting` module centralizes tracking for any entity type:
+
+```
+internal_procedure_takens
+  id                   UUID PK
+  company_id           UUID  (tenant-scoped)
+  processable_type     string  (e.g. 'employee_task')
+  processable_id       UUID
+  procedure_setting_id UUID  FK → procedure_settings (cascade delete)
+  form                 string nullable  (denormalized for fast reads)
+  taken_by             UUID nullable
+  taken_at             timestamp
+  UNIQUE (processable_type, processable_id, procedure_setting_id)
+```
+
+**Model**: `Modules\ProcedureSetting\Models\InternalProcedureTaken` — `MorphTo processable`, `BelongsTo procedureSetting`, tenant-scoped via `BelongsToTenant`.
+
+#### New Methods on `ProcedureWorkflowService`
+
+| Method | Behaviour |
+|--------|-----------|
+| `markProcedureTaken($type, $id, $settingId, $takenBy)` | Idempotent `firstOrCreate`; resolves `form` from setting |
+| `getTakenProcedureIds($type, $id)` | Returns `list<string>` of all taken setting IDs |
+| `isProcedureTaken($type, $id, $settingId)` | Boolean point-check |
+| `advance(..., $processableType, $processableId)` | Extended signature — auto-calls `markProcedureTaken()` when `isFinal = true` |
+
+#### How Each Form Gets Taken
+
+| Form | Mechanism |
+|------|-----------|
+| `createTask` | `EmployeeTaskRequestService::markCreateTaskProceduresTaken()` on every task creation |
+| `startTask` | `EmployeeTaskController::start()` calls `markProcedureTaken()` with `internal_procedure_setting_id` |
+| `confirmLocation` | `EmployeeTaskController::locationPing()` calls `markProcedureTaken()` on first in-location confirmation |
+| `endTask` (direct) | `EmployeeTaskLifecycleService::end()` calls `markProcedureTaken()` |
+| `endTask` (via request) | `advance()` auto-marks on final step of end-request workflow |
+| `extendTaskTime` | `advance()` auto-marks on final step of extension workflow |
+| `sendForApproval` | `advance()` auto-marks on final step of approval workflow |
+| Any (auto-approve) | Caller explicitly calls `markProcedureTaken()` when skipping workflow |
+
+#### New Migrations
+- `ProcedureSetting/Migrations/2026_06_19_000002_create_internal_procedure_takens_table.php`
+- `EmployeeTask/Migrations/2026_06_19_000003_drop_taken_internal_procedure_ids_from_employee_task_requests.php`
+
+#### Removed
+- `employee_task_requests.taken_internal_procedure_ids` JSON column
+- `EmployeeTaskRequest::markInternalProcedureTaken()`, `isInternalProcedureTaken()`, `takenInternalProcedureIds()`
+- `EmployeeTaskAvailableActionsService::resolveTakenProcedureIds()` — 6 separate DB queries replaced by one `getTakenProcedureIds()` call
+
+---
+
 ## 24. Data Flow Diagrams
 
 ### 24.1 Task Creation (EmployeeTaskRequest)
@@ -1462,6 +1619,10 @@ EmployeeTaskRequestService::create(CreateEmployeeTaskRequestDTO)
   │     ├─→ resolves child form createTask
   │     └─→ returns preview with action_takers
   ├─→ creates EmployeeTaskRequest record
+  ├─→ markCreateTaskProceduresTaken(task, userId)            ← NEW: central taken tracking
+  │     ├─→ resolveParentSetting() → parent ProcedureSetting for company/branch
+  │     ├─→ query: all active createTask-form children under parent
+  │     └─→ markProcedureTaken('employee_task', task->id, settingId, userId) for each
   ├─→ WorkflowEngine::startWorkflow('employee_task', task->id, 'employee_task', 'createTask', companyId, branchId, userId, context)
   │  └─→ ProcessWorkflowService::createProcessesFromSettings(...)
   │     ├─→ for each step:
@@ -2172,4 +2333,142 @@ Rejection:
   - types = ["branch", "management"] → no job_role → process FAILS on rejection
   - types = ["branch", "job_role"]   → has job_role → process ADVANCES on rejection
 ```
+
+---
+
+## 30. Multi-Module Centralized Taken-Status Expansion (2026-06-21)
+
+### 30.1 Motivation
+
+Phase 1 centralised taken-status tracking for `EmployeeTask` in `internal_procedure_takens`. This section documents the three-phase expansion to all modules.
+
+---
+
+### 30.2 Phase 1 — Generic `InternalProcedureAvailableActionsService`
+
+**File**: `modules/ProcedureSetting/Services/InternalProcedureAvailableActionsService.php`
+
+A single, module-agnostic service that encapsulates all available-actions filtering logic. Any module calls `forProcessable()` — no duplication needed.
+
+```php
+$actions = $this->actionsService->forProcessable(
+    processableType: 'employee_task',   // or 'client_request', etc.
+    processableId:   $task->id,
+    procedureCategoryType: ProcedureSettingType::EmployeeTask->value,
+    companyId:       $task->company_id,
+    branchId:        $branchId,         // nullable
+);
+```
+
+**Filtering rules (applied internally)**:
+- `is_active = true`
+- `appears_after_id`: referenced procedure must be taken → else hidden
+- `appears_before_id`: referenced procedure must NOT be taken → else hidden
+
+**Module wrappers** (thin, only resolve entity context):
+- `EmployeeTaskAvailableActionsService::forTask(string $taskId)` → resolves branch from `userProfessionalData`, calls `forProcessable()`
+- `ClientRequestAvailableActionsService::forClientRequest(string $id)` → resolves `branch_id` from model, calls `forProcessable()`
+
+**Adding a new module** takes ~10 lines:
+```php
+final class FooAvailableActionsService
+{
+    public function __construct(
+        private readonly InternalProcedureAvailableActionsService $actionsService,
+    ) {}
+
+    public function forFoo(string $fooId): array
+    {
+        $foo = Foo::query()->findOrFail($fooId);
+        return $this->actionsService->forProcessable(
+            'foo', $foo->id, ProcedureSettingType::Foo->value,
+            $foo->company_id, $foo->branch_id,
+        );
+    }
+}
+```
+
+---
+
+### 30.3 Phase 2 — ClientRequest Integration
+
+#### Marking procedures as taken
+
+| Trigger | Form marked taken | Location |
+|---------|-------------------|----------|
+| CR created | `createClientRequest` | `ClientRequestCRUDService::markCreateProceduresTaken()` |
+| CR workflow fully approved (all steps) | `endClientRequest` | `ClientRequestWorkflowService::markEndProceduresTaken()` |
+
+Both methods:
+1. Call `WorkflowEngine::resolveParentSetting(type, companyId, branchId)` to find the parent `ProcedureSetting`.
+2. Query active children with the relevant `form` key.
+3. Fire `WorkflowProcedureTaken` event for each (see §30.4).
+
+#### Available-actions API endpoint
+
+```
+GET /api/v1/client-requests/{id}/available-actions
+Permission: CLIENT_REQUEST_VIEW
+```
+
+Returns the same structure as `GET /employee-tasks/{id}/available-actions`:
+```json
+[
+  {
+    "id": "uuid",
+    "name": "إنشاء طلب عميل",
+    "form": { "key": "createClientRequest", "label_ar": "إنشاء طلب عميل" },
+    "conditions": [],
+    "appears_before_id": null,
+    "appears_after_id": null,
+    "sort_order": 100
+  }
+]
+```
+
+---
+
+### 30.4 Phase 3 — Event-Driven Architecture
+
+#### Zero-coupling design
+
+External modules fire a domain event instead of injecting `ProcedureWorkflowService` just to mark procedures.
+
+**Event**: `Modules\ProcedureSetting\Events\WorkflowProcedureTaken`
+
+```php
+new WorkflowProcedureTaken(
+    processableType:    'client_request',
+    processableId:      $cr->id,
+    procedureSettingId: $settingId,
+    takenBy:            $userId,      // nullable
+)
+```
+
+**Listener**: `Modules\ProcedureSetting\Listeners\RecordInternalProcedureTaken`
+- Registered in `ProcedureSettingServiceProvider::registerEventListeners()`
+- Calls `ProcedureWorkflowService::markProcedureTaken()` → writes to `internal_procedure_takens`
+
+#### Call-site map after Phase 3
+
+| Where | Change |
+|-------|--------|
+| `EmployeeTaskController::start()` | `event(new WorkflowProcedureTaken(...))` — removed `ProcedureWorkflowService` injection |
+| `EmployeeTaskController::locationPing()` | `event(new WorkflowProcedureTaken(...))` — removed injection |
+| `EmployeeTaskLifecycleService::end()` | `Event::dispatch(new WorkflowProcedureTaken(...))` — removed injection |
+| `EmployeeTaskExtensionService::requestExtension()` | `event(...)` — injection kept (still uses `resolveFirstStepBySettingId`) |
+| `EmployeeTaskApprovalService::create()` (auto-approve) | `event(...)` — injection kept (still uses other `ProcedureWorkflowService` methods) |
+| `EmployeeTaskRequestService::markCreateTaskProceduresTaken()` | `event(...)` — removed `ProcedureWorkflowService` injection |
+| `ClientRequestCRUDService::markCreateProceduresTaken()` | `event(...)` — never had the injection; uses `WorkflowEngine` |
+| `ClientRequestWorkflowService::markEndProceduresTaken()` | `event(...)` — already had `WorkflowEngine` injection |
+| `ProcedureWorkflowService::advance()` (when `isFinal`) | **Direct call** — internal to ProcedureSetting module, no event needed |
+
+#### Adding a new module (full recipe)
+
+1. Add `YourType = 'your_type'` to `ProcedureSettingType` enum.
+2. Create `YourModule\Services\YourAvailableActionsService` (thin wrapper, ~10 lines).
+3. In entity creation service: fire `WorkflowProcedureTaken('your_type', $id, $settingId, $userId)` for each `createX`-form setting.
+4. In entity completion service: fire `WorkflowProcedureTaken('your_type', $id, $settingId, $userId)` for each `endX`-form setting.
+5. Add `GET /{id}/available-actions` route with `VIEW` permission.
+6. No changes to `ProcedureSetting` module code required — the event listener handles everything automatically.
 

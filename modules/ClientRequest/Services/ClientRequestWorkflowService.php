@@ -10,12 +10,14 @@ use Illuminate\Support\Facades\Log;
 use Modules\ClientRequest\Events\ClientRequestStatusChanged;
 use Modules\ClientRequest\Models\ClientRequest;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\WorkflowEngine;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
 use Modules\Process\Models\ProcessStep;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
 class ClientRequestWorkflowService
 {
@@ -477,6 +479,8 @@ class ClientRequestWorkflowService
         $clientRequest->update($updates);
         $clientRequest->refresh();
 
+        $this->markEndProceduresTaken($clientRequest);
+
         $clientRequest->load(['company', 'createdByUser', 'receiverEmployees']);
 
         foreach ($clientRequest->receiverEmployees as $employee) {
@@ -484,6 +488,38 @@ class ClientRequestWorkflowService
                 $clientRequest,
                 ClientRequest::STATUS_ACCEPTED,
                 (string) $employee->id,
+            ));
+        }
+    }
+
+    private function markEndProceduresTaken(ClientRequest $cr): void
+    {
+        $branchId = $cr->branch_id !== null ? (string) $cr->branch_id : null;
+
+        $parentSetting = $this->engine->resolveParentSetting(
+            ProcedureSettingType::ClientRequest->value,
+            $cr->company_id,
+            $branchId,
+        );
+
+        if ($parentSetting === null) {
+            return;
+        }
+
+        $endSettings = ProcedureSetting::query()
+            ->where('parent_id', $parentSetting->id)
+            ->where('form', InternalProcessForm::EndClientRequest->value)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        $actorId = Auth::check() ? (string) Auth::id() : null;
+
+        foreach ($endSettings as $settingId) {
+            event(new WorkflowProcedureTaken(
+                'client_request',
+                $cr->id,
+                $settingId,
+                $actorId,
             ));
         }
     }

@@ -58,13 +58,14 @@ class AttendanceCalendarPresenter extends AbstractPresenter
     private function presentSummary(array $summary): array
     {
         return [
-            'total_days'     => $summary['total_days'] ?? 0,
-            'present_count'  => $summary['present_count'] ?? 0,
-            'late_count'     => $summary['late_count'] ?? 0,
-            'absent_count'   => $summary['absent_count'] ?? 0,
-            'leave_count'    => $summary['leave_count'] ?? 0,
-            'off_count'      => $summary['off_count'] ?? 0,
-            'required_count' => $summary['required_count'] ?? 0,
+            'total_days'       => $summary['total_days'] ?? 0,
+            'present_count'    => $summary['present_count'] ?? 0,
+            'late_count'       => $summary['late_count'] ?? 0,
+            'absent_count'     => $summary['absent_count'] ?? 0,
+            'leave_count'      => $summary['leave_count'] ?? 0,
+            'off_count'        => $summary['off_count'] ?? 0,
+            'required_count'   => $summary['required_count'] ?? 0,
+            'total_work_hours' => $summary['total_work_hours'] ?? 0.0,
         ];
     }
 }

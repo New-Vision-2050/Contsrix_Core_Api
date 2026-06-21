@@ -6,6 +6,7 @@ namespace Modules\Attendance\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\LeaveRequest;
 use Modules\User\Models\User;
@@ -74,6 +75,7 @@ class AttendanceCalendarService
         $leaveCount   = 0;
         $offCount     = 0;
         $requiredCount = 0;
+        $totalWorkHours = $this->calculateTotalWorkHoursFromGroupedAttendances($attendances);
 
         while ($cursor->lte($rangeEnd)) {
             $dateString = $cursor->toDateString();
@@ -131,6 +133,7 @@ class AttendanceCalendarService
                 'leave_count'       => $leaveCount,
                 'off_count'         => $offCount,
                 'required_count'    => $requiredCount,
+                'total_work_hours'  => $totalWorkHours,
             ],
         ];
     }
@@ -339,12 +342,135 @@ class AttendanceCalendarService
             return null;
         }
 
-        $total = 0.0;
+        $totalMinutes = 0;
         foreach ($attendances as $attendance) {
-            $total += (float) ($attendance->total_work_hours ?? 0);
+            $totalMinutes += $this->calculateWorkedMinutes($attendance);
         }
 
-        return $total > 0 ? round($total, 2) : null;
+        return $totalMinutes > 0 ? round($totalMinutes / 60, 2) : null;
+    }
+
+    /**
+     * Calculate total work hours from grouped attendances.
+     *
+     * @param Collection<string, Collection<int, Attendance>> $groupedAttendances
+     */
+    private function calculateTotalWorkHoursFromGroupedAttendances(Collection $groupedAttendances): float
+    {
+        $totalMinutes = 0;
+
+        foreach ($groupedAttendances as $attendances) {
+            foreach ($attendances as $attendance) {
+                $totalMinutes += $this->calculateWorkedMinutes($attendance);
+            }
+        }
+
+        return round($totalMinutes / 60, 2);
+    }
+
+    /**
+     * Calculate worked minutes for an attendance record.
+     */
+    private function calculateWorkedMinutes(Attendance $attendance): int
+    {
+        foreach (['worked_minutes', 'work_duration'] as $attribute) {
+            $minutes = $this->durationAttributeToMinutes($attendance->getAttribute($attribute));
+            if ($minutes !== null) {
+                return $minutes;
+            }
+        }
+
+        $totalWorkHours = $attendance->getAttribute('total_work_hours');
+        if (is_numeric($totalWorkHours) && (float) $totalWorkHours > 0) {
+            return max(0, (int) round((float) $totalWorkHours * 60));
+        }
+
+        $clockIn = $attendance->getAttribute('clock_in_time');
+        $clockOut = $attendance->getAttribute('clock_out_time');
+        if (!$clockIn || !$clockOut) {
+            return 0;
+        }
+
+        try {
+            $timezone = $attendance->getAttribute('timezone') ?: null;
+            $workedMinutes = $this->toCarbon($clockIn, $timezone)
+                ->diffInMinutes($this->toCarbon($clockOut, $timezone), false);
+        } catch (\Exception) {
+            return 0;
+        }
+
+        return max(
+            0,
+            (int) round($workedMinutes - $this->calculateBreakMinutes($attendance, $timezone))
+        );
+    }
+
+    /**
+     * Convert a persisted duration attribute into minutes.
+     */
+    private function durationAttributeToMinutes(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            return max(0, (int) round((float) $value));
+        }
+
+        if (is_string($value) && preg_match('/^(\d{1,3}):([0-5]\d)(?::([0-5]\d))?$/', $value, $matches)) {
+            $hours = (int) $matches[1];
+            $minutes = (int) $matches[2];
+            $seconds = isset($matches[3]) ? (int) $matches[3] : 0;
+
+            return max(0, ($hours * 60) + $minutes + (int) round($seconds / 60));
+        }
+
+        return null;
+    }
+
+    /**
+     * Calculate break minutes from persisted totals or loaded break records.
+     */
+    private function calculateBreakMinutes(Attendance $attendance, ?string $timezone = null): int
+    {
+        $totalBreakHours = $attendance->getAttribute('total_break_hours');
+        if (is_numeric($totalBreakHours) && (float) $totalBreakHours > 0) {
+            return max(0, (int) round((float) $totalBreakHours * 60));
+        }
+
+        if (!$attendance->relationLoaded('breaks')) {
+            return 0;
+        }
+
+        $totalMinutes = 0;
+
+        foreach ($attendance->getRelation('breaks') as $break) {
+            $durationMinutes = $break->duration_minutes ?? null;
+            if (is_numeric($durationMinutes) && (int) $durationMinutes > 0) {
+                $totalMinutes += (int) $durationMinutes;
+                continue;
+            }
+
+            $startTime = $break->start_time ?? null;
+            $endTime = $break->end_time ?? null;
+            if (!$startTime || !$endTime) {
+                continue;
+            }
+
+            try {
+                $totalMinutes += max(
+                    0,
+                    (int) round(
+                        $this->toCarbon($startTime, $timezone)
+                            ->diffInMinutes($this->toCarbon($endTime, $timezone), false)
+                    )
+                );
+            } catch (\Exception) {
+            }
+        }
+
+        return $totalMinutes;
     }
 
     /**
@@ -389,12 +515,30 @@ class AttendanceCalendarService
         $historyColumns = [
             'id', 'user_id', 'company_id', 'status', 'timezone',
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
-            'late_minutes', 'overtime_hours', 'total_work_hours',
+            'late_minutes', 'overtime_hours', 'total_work_hours', 'total_break_hours',
             'business_date', 'day_status', 'is_late', 'is_absent', 'is_holiday',
         ];
 
+        foreach (['worked_minutes', 'work_duration'] as $durationColumn) {
+            if (Schema::hasColumn('attendances', $durationColumn)) {
+                $historyColumns[] = $durationColumn;
+            }
+        }
+
         $records = Attendance::query()
             ->select($historyColumns)
+            ->with(['breaks' => function ($query) {
+                $query->select(
+                    'id',
+                    'attendance_id',
+                    'company_id',
+                    'start_time',
+                    'end_time',
+                    'duration_minutes'
+                )
+                    ->whereNotNull('start_time')
+                    ->whereNotNull('end_time');
+            }])
             ->where('user_id', $user->id)
             ->where('status', '!=', Attendance::STATUS_WAITING)
             ->where(function ($q) use ($dateStart, $dateEnd) {

@@ -88,6 +88,7 @@ final class InternalProcedureSettingService
             'name'              => $data['name'] ?? $form->labelAr(),
             'form'              => $form->value,
             'type'              => $type,
+            'is_active'         => $data['is_active'] ?? true,
             'execute_type'      => $data['execute_type'] ?? 'sequence',
             'conditions'        => $conditions,
             'appears_before_id' => $data['appears_before_id'] ?? null,
@@ -166,6 +167,16 @@ final class InternalProcedureSettingService
 
         $setting->update($update);
         $setting->loadMissing(['steps' => fn ($q) => $q->orderBy('step_order'), 'steps.actionTakers.user']);
+
+        return $setting->fresh();
+    }
+
+    public function setStatus(string $parentId, string $id, bool $isActive): ProcedureSetting
+    {
+        $this->findParentOrFail($parentId);
+        $setting = $this->findChildOrFail($id, $parentId);
+
+        $setting->update(['is_active' => $isActive]);
 
         return $setting->fresh();
     }
