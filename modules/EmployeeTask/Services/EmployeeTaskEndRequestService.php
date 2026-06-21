@@ -123,6 +123,8 @@ final class EmployeeTaskEndRequestService
             $adminId,
             $task->user_id,
             $context,
+            processableType: 'employee_task',
+            processableId: $task->id,
         );
 
         return DB::transaction(function () use ($endRequest, $task, $result, $adminId, $approvalNotes): EmployeeTaskEndRequest {

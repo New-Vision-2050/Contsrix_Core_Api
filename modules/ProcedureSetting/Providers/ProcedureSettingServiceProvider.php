@@ -7,7 +7,9 @@ namespace Modules\ProcedureSetting\Providers;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Events\WorkflowStepActivated;
+use Modules\ProcedureSetting\Listeners\RecordInternalProcedureTaken;
 use Modules\ProcedureSetting\Listeners\SendWorkflowStepNotification;
 
 class ProcedureSettingServiceProvider extends ModuleServiceProvider
@@ -35,6 +37,11 @@ class ProcedureSettingServiceProvider extends ModuleServiceProvider
         Event::listen(
             WorkflowStepActivated::class,
             SendWorkflowStepNotification::class,
+        );
+
+        Event::listen(
+            WorkflowProcedureTaken::class,
+            RecordInternalProcedureTaken::class,
         );
     }
 

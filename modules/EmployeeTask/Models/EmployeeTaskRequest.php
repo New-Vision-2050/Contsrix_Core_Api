@@ -92,7 +92,7 @@ class EmployeeTaskRequest extends Model implements HasMedia
         'approved_at'             => 'datetime',
         'rejected_at'             => 'datetime',
         'cancelled_at'            => 'datetime',
-        'location_confirmed_at'   => 'datetime',
+        'location_confirmed_at'            => 'datetime',
     ];
 
     public function registerMediaCollections(): void

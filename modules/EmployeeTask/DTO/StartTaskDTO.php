@@ -9,5 +9,6 @@ final class StartTaskDTO
     public function __construct(
         public readonly float  $latitude,
         public readonly float  $longitude,
+        public readonly ?string $internalProcedureSettingId = null,
     ) {}
 }

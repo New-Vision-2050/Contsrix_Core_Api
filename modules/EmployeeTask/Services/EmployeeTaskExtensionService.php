@@ -14,6 +14,7 @@ use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
@@ -72,6 +73,15 @@ final class EmployeeTaskExtensionService
 
             $extension = EmployeeTaskExtensionRequest::query()->create($data);
             $task->update(['last_extension_status' => 'extension_pending']);
+
+            if ($procedureSetting === null && $dto->internalProcedureSettingId) {
+                event(new WorkflowProcedureTaken(
+                    'employee_task',
+                    $task->id,
+                    $dto->internalProcedureSettingId,
+                    $dto->userId,
+                ));
+            }
 
             if ($procedureSetting !== null) {
                 $firstStep = $this->workflow->resolveFirstStepBySettingId($procedureSetting->id);

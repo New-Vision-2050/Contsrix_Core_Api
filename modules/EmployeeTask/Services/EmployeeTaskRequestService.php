@@ -15,6 +15,8 @@ use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Services\WorkflowEngine;
 use Modules\Process\Enums\ProcessStatus;
@@ -75,6 +77,8 @@ class EmployeeTaskRequestService
                 );
             }
 
+            $this->markCreateTaskProceduresTaken($task, $dto->userId);
+
             return $task;
         }
 
@@ -91,9 +95,45 @@ class EmployeeTaskRequestService
             );
         }
 
+        $this->markCreateTaskProceduresTaken($task, $dto->userId);
+
         $this->createProcessesForTask($task);
 
         return $task;
+    }
+
+    /**
+     * Mark all createTask-form internal procedures as "taken" for the newly
+     * created task. Since the task itself exists, createTask is always taken.
+     */
+    private function markCreateTaskProceduresTaken(EmployeeTaskRequest $task, string $userId): void
+    {
+        $parentSetting = $this->engine->resolveParentSetting(
+            ProcedureSettingType::EmployeeTask->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
+
+        if ($parentSetting === null) {
+            return;
+        }
+
+        $createTaskSettings = ProcedureSetting::query()
+            ->where('parent_id', $parentSetting->id)
+            ->where('form', InternalProcessForm::CreateTask->value)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        foreach ($createTaskSettings as $settingId) {
+            event(new WorkflowProcedureTaken(
+                'employee_task',
+                $task->id,
+                $settingId,
+                $userId,
+            ));
+        }
     }
 
     private function createProcessesForTask(EmployeeTaskRequest $task): void

@@ -24,6 +24,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         ->permission(Permission::CLIENT_REQUEST_CREATE());
     Route::post('/export', [ClientRequestController::class, 'export'])
         ->permission(Permission::CLIENT_REQUEST_EXPORT());
+    Route::get('/{id}/available-actions', [ClientRequestController::class, 'availableActions'])
+        ->permission(Permission::CLIENT_REQUEST_VIEW());
     Route::get('/{id}', [ClientRequestController::class, 'show'])
         ->permission(Permission::CLIENT_REQUEST_VIEW());
     Route::put('/{id}', [ClientRequestController::class, 'update'])

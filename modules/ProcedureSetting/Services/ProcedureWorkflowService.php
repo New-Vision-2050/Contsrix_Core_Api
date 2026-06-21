@@ -6,6 +6,7 @@ namespace Modules\ProcedureSetting\Services;
 
 use Modules\ProcedureSetting\DTO\ProcedureWorkflowResult;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
+use Modules\ProcedureSetting\Models\InternalProcedureTaken;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 
@@ -88,9 +89,15 @@ final class ProcedureWorkflowService
      * current step. Caller decides whether to update the entity to the next
      * step or apply its terminal action based on $result->isFinal.
      *
+     * When $processableType and $processableId are provided and the workflow
+     * is final, the internal procedure is automatically marked as "taken" in
+     * the central internal_procedure_takens morph table.
+     *
      * @param  int|null  $currentStepId  The step the entity currently awaits.
      * @param  string|null  $procedureSettingId  The parent procedure id.
      * @param  string  $userId  The user attempting to act.
+     * @param  string|null  $processableType  Morph type of the entity (e.g. 'employee_task').
+     * @param  string|null  $processableId  Morph ID of the entity.
      */
     public function advance(
         ?int $currentStepId,
@@ -98,6 +105,8 @@ final class ProcedureWorkflowService
         string $userId,
         ?string $createdByUserId = null,
         array $context = [],
+        ?string $processableType = null,
+        ?string $processableId = null,
     ): ProcedureWorkflowResult {
         $currentStep = $this->loadStep($currentStepId);
 
@@ -115,10 +124,17 @@ final class ProcedureWorkflowService
                 ->first();
         }
 
+        $isFinal = $nextStep === null;
+
+        // Auto-mark the internal procedure as taken when the workflow is final.
+        if ($isFinal && $processableType !== null && $processableId !== null && $procedureSettingId !== null) {
+            $this->markProcedureTaken($processableType, $processableId, $procedureSettingId, $userId);
+        }
+
         return new ProcedureWorkflowResult(
             currentStep: $currentStep,
             nextStep: $nextStep,
-            isFinal: $nextStep === null,
+            isFinal: $isFinal,
         );
     }
 
@@ -233,6 +249,67 @@ final class ProcedureWorkflowService
         }
 
         return $setting;
+    }
+
+    /**
+     * Mark an internal procedure as "taken" for a given processable entity.
+     *
+     * Central entry point for recording that a procedure has been completed
+     * or approved. Uses the internal_procedure_takens morph table so any
+     * entity type can track its taken procedures.
+     */
+    public function markProcedureTaken(
+        string $processableType,
+        string $processableId,
+        string $procedureSettingId,
+        ?string $takenBy = null,
+    ): void {
+        $setting = ProcedureSetting::find($procedureSettingId);
+
+        InternalProcedureTaken::query()->firstOrCreate(
+            [
+                'processable_type'      => $processableType,
+                'processable_id'        => $processableId,
+                'procedure_setting_id'  => $procedureSettingId,
+            ],
+            [
+                'company_id'   => $setting?->company_id ?? (string) tenant('id'),
+                'form'         => $setting?->form,
+                'taken_by'     => $takenBy,
+                'taken_at'     => now(),
+            ],
+        );
+    }
+
+    /**
+     * Get all taken internal procedure setting IDs for a given processable entity.
+     *
+     * @return list<string>
+     */
+    public function getTakenProcedureIds(string $processableType, string $processableId): array
+    {
+        return InternalProcedureTaken::query()
+            ->where('processable_type', $processableType)
+            ->where('processable_id', $processableId)
+            ->pluck('procedure_setting_id')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Check whether a specific internal procedure has been taken for an entity.
+     */
+    public function isProcedureTaken(
+        string $processableType,
+        string $processableId,
+        string $procedureSettingId,
+    ): bool {
+        return InternalProcedureTaken::query()
+            ->where('processable_type', $processableType)
+            ->where('processable_id', $processableId)
+            ->where('procedure_setting_id', $procedureSettingId)
+            ->exists();
     }
 
     private function loadStep(?int $stepId): ProcedureSettingStep

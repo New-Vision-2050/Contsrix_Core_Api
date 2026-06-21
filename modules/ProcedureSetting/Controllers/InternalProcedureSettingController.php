@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Modules\ProcedureSetting\Presenters\InternalProcedureSettingPresenter;
 use Modules\ProcedureSetting\Requests\CreateInternalProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\GetInternalProcedureSettingListRequest;
+use Modules\ProcedureSetting\Requests\SetStatusInternalProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\UpdateInternalProcedureSettingRequest;
 use Modules\ProcedureSetting\Services\InternalProcedureSettingService;
 
@@ -93,6 +94,19 @@ class InternalProcedureSettingController extends Controller
         return Json::item(
             InternalProcedureSettingPresenter::single($setting),
             message: 'Internal procedure setting updated successfully',
+        );
+    }
+
+    /**
+     * PUT /procedure-settings/{id}/internal-procedures/{internalProcedureId}/set-status
+     */
+    public function setStatus(SetStatusInternalProcedureSettingRequest $request, string $id, string $internalProcedureId): JsonResponse
+    {
+        $setting = $this->service->setStatus($id, $internalProcedureId, $request->isActive());
+
+        return Json::item(
+            InternalProcedureSettingPresenter::single($setting),
+            message: 'Internal procedure setting status updated successfully',
         );
     }
 

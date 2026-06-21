@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\EmployeeTask\Services;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Event;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
@@ -15,6 +16,7 @@ use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\EmployeeTask\Repositories\EmployeeTaskSessionRepository;
 use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
 use Modules\EmployeeTask\Services\EmployeeTaskEndRequestService;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\User\Models\User;
 
 final class EmployeeTaskLifecycleService
@@ -172,7 +174,17 @@ final class EmployeeTaskLifecycleService
             return $task->fresh()->load(['sessions']);
         }
 
-        return $this->performEnd($task, $dto);
+        $task = $this->performEnd($task, $dto);
+
+        if ($dto->internalProcedureSettingId) {
+            Event::dispatch(new WorkflowProcedureTaken(
+                'employee_task',
+                $task->id,
+                $dto->internalProcedureSettingId,
+            ));
+        }
+
+        return $task;
     }
 
     /**

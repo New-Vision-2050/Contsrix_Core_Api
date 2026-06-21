@@ -53,6 +53,7 @@ class CreateInternalProcedureSettingRequest extends FormRequest
             'name'              => ['sometimes', 'string', 'max:255'],
             'type'              => ['required', 'string', Rule::in(ProcedureSettingType::values())],
             'form'              => ['required', 'string', Rule::in(InternalProcessForm::values())],
+            'is_active'         => ['sometimes', 'boolean'],
             'execute_type'      => ['sometimes', 'string', 'in:parallel,sequence'],
             'conditions'        => ['sometimes', 'array'],
             'appears_before_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],

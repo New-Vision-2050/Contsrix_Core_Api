@@ -15,6 +15,7 @@ use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -94,6 +95,10 @@ final class EmployeeTaskApprovalService
                 $approval = EmployeeTaskApprovalRequest::query()->create($data);
                 $this->handleFileUpload($approval, $file);
 
+                if ($internalProcedureSettingId) {
+                    event(new WorkflowProcedureTaken('employee_task', $task->id, $internalProcedureSettingId, $userId));
+                }
+
                 $task->update(['status' => EmployeeTaskStatus::Approved->value, 'approved_at' => now()]);
                 return $approval->load('media');
             }
@@ -140,6 +145,8 @@ final class EmployeeTaskApprovalService
             $adminId,
             $task->user_id,
             $context,
+            processableType: 'employee_task',
+            processableId: $task->id,
         );
 
         return DB::transaction(function () use ($approval, $task, $result, $adminId, $approvalNotes): EmployeeTaskApprovalRequest {

@@ -19,6 +19,7 @@ class LocationPingRequest extends FormRequest
             'latitude'  => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'timestamp' => ['required', 'string'],
+            'internal_procedure_setting_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
         ];
     }
 }

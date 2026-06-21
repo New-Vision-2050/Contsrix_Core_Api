@@ -12,6 +12,11 @@ use Modules\ClientRequest\Events\ClientRequestCreated;
 use Modules\ClientRequest\Events\ClientRequestStatusChanged;
 use Modules\ClientRequest\Models\ClientRequest;
 use Modules\ClientRequest\Repositories\ClientRequestRepository;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Services\WorkflowEngine;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 
@@ -21,8 +26,8 @@ class ClientRequestCRUDService
 
     public function __construct(
         private ClientRequestRepository $repository,
-    ) {
-    }
+        private WorkflowEngine $engine,
+    ) {}
 
     public function create(CreateClientRequestDTO $createClientRequestDTO): ClientRequest
     {
@@ -34,11 +39,45 @@ class ClientRequestCRUDService
         );
 
         $clientRequest->load(['company', 'createdByUser', 'receiverEmployees']);
+
+        $this->markCreateProceduresTaken($clientRequest);
+
         foreach ($clientRequest->receiverEmployees as $employee) {
             event(new ClientRequestCreated($clientRequest, (string) $employee->id));
         }
 
         return $clientRequest;
+    }
+
+    private function markCreateProceduresTaken(ClientRequest $cr): void
+    {
+        $takenBy = $cr->created_by_user_id;
+        $branchId = $cr->branch_id !== null ? (string) $cr->branch_id : null;
+
+        $parentSetting = $this->engine->resolveParentSetting(
+            ProcedureSettingType::ClientRequest->value,
+            $cr->company_id,
+            $branchId,
+        );
+
+        if ($parentSetting === null) {
+            return;
+        }
+
+        $createSettings = ProcedureSetting::query()
+            ->where('parent_id', $parentSetting->id)
+            ->where('form', InternalProcessForm::CreateClientRequest->value)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        foreach ($createSettings as $settingId) {
+            event(new WorkflowProcedureTaken(
+                'client_request',
+                $cr->id,
+                $settingId,
+                $takenBy,
+            ));
+        }
     }
 
     public function list(array $filters = [], int $page = 1, int $perPage = 10): array
@@ -86,7 +125,7 @@ class ClientRequestCRUDService
     public function update(UpdateClientRequestDTO $updateClientRequestDTO): ClientRequest
     {
         $uuid = \Ramsey\Uuid\Uuid::fromString($updateClientRequestDTO->id);
-        
+
         $this->repository->updateClientRequest(
             $uuid,
             $updateClientRequestDTO->toArray(),

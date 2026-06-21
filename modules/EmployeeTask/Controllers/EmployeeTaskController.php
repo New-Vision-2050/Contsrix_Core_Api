@@ -29,6 +29,7 @@ use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 use Modules\User\Models\User;
 
@@ -193,9 +194,19 @@ class EmployeeTaskController extends Controller
                 new StartTaskDTO(
                     latitude:  (float) $request->input('latitude'),
                     longitude: (float) $request->input('longitude'),
+                    internalProcedureSettingId: $request->input('internal_procedure_setting_id'),
                 ),
                 $user,
             );
+
+            if ($request->input('internal_procedure_setting_id')) {
+                event(new WorkflowProcedureTaken(
+                    'employee_task',
+                    $task->id,
+                    $request->input('internal_procedure_setting_id'),
+                    (string) Auth::id(),
+                ));
+            }
 
             return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task started successfully');
         } catch (EmployeeTaskException $e) {
@@ -315,6 +326,16 @@ class EmployeeTaskController extends Controller
             // can show "تأكيد الموقع" as completed.
             if ($result['in_location'] && !$task->location_confirmed_at) {
                 $task->update(['location_confirmed_at' => now()]);
+
+                $procedureSettingId = $request->input('internal_procedure_setting_id');
+                if ($procedureSettingId) {
+                    event(new WorkflowProcedureTaken(
+                        'employee_task',
+                        $task->id,
+                        $procedureSettingId,
+                        (string) Auth::id(),
+                    ));
+                }
             }
 
             return Json::item($result, message: 'Location ping processed');
