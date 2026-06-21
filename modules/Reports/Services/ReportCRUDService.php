@@ -131,7 +131,7 @@ class ReportCRUDService
                 gender:          null,
             ),
             step3: new \Modules\Reports\DTO\ReportWizardStep3DTO(
-                attendanceDataTypeIds:       ReportEnums::attendanceDataTypes(),
+                attendanceDataTypeIds:       ReportEnums::attendanceDetailColumns(),
                 displayMode:                 ReportEnums::DISPLAY_MODE_EMPLOYEE_PER_PAGE,
                 attendancePattern:           ReportEnums::ATT_PATTERN_ALL,
                 attendanceRateMin:           ReportEnums::ATT_RATE_NO_FILTER,
