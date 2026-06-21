@@ -22,6 +22,7 @@ class AttendanceDashboardService
     {
         $user = $this->repository->getEmployeeForCompany($filters->company_id, $filters->employee_id);
         $contract = $this->resolveContract($filters->company_id, $user);
+        $serviceStartDate = $this->resolveServiceStartDate($filters->company_id, $user);
         $countryId = $contract?->country_id !== null ? (string) $contract->country_id : null;
         $publicHolidays = $this->repository->countPublicHolidayDaysInPeriod(
             $filters->periodStart(),
@@ -37,7 +38,10 @@ class AttendanceDashboardService
         $dailyHours = AttendanceReportCalculator::resolveDailyWorkingHours(
             $contract?->working_hours !== null ? (int) $contract->working_hours : null,
         );
-        $leaveAllowance = (float) ($contract?->annual_leave ?? 0);
+        $leaveAllowance = AttendanceReportCalculator::annualLeaveEntitlement(
+            $serviceStartDate,
+            $filters->periodEnd(),
+        );
         $requiredHours = AttendanceReportCalculator::contractRequiredHours($attendanceDays, $dailyHours);
 
         $attendanceTotals = $this->repository->getAttendanceTotals($filters);
@@ -78,5 +82,14 @@ class AttendanceDashboardService
         }
 
         return $this->repository->getEmploymentContract($companyId, (string) $user->global_company_user_id);
+    }
+
+    private function resolveServiceStartDate(string $companyId, User $user): ?string
+    {
+        if ($user->global_company_user_id === null) {
+            return null;
+        }
+
+        return $this->repository->getOfficialServiceStartDate($companyId, (string) $user->global_company_user_id);
     }
 }

@@ -20,6 +20,7 @@ class AttendanceReportRowPresenter extends AbstractPresenter
             'days_in_month' => (int) ($this->row['days_in_month'] ?? 0),
             'required_attendance_days' => (int) ($this->row['required_attendance_days'] ?? 0),
             'used_leaves' => (int) ($this->row['used_leaves'] ?? 0),
+            'earned_leave_days' => (float) ($this->row['earned_leave_days'] ?? 0),
             'month_holidays' => (int) ($this->row['month_holidays'] ?? 0),
             'required_hours' => (float) ($this->row['required_hours'] ?? 0),
             'actual_attendance_days' => (int) ($this->row['actual_attendance_days'] ?? 0),

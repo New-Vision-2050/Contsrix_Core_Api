@@ -113,6 +113,25 @@ class AttendanceReportRepository extends BaseRepository
             ->first();
     }
 
+    public function getOfficialServiceStartDate(string $companyId, string $globalId): ?string
+    {
+        $result = EmploymentContract::query()
+            ->where('company_id', $companyId)
+            ->where('global_id', $globalId)
+            ->where(function ($query) {
+                $query->whereNotNull('commencement_date')
+                    ->orWhereNotNull('start_date');
+            })
+            ->selectRaw('MIN(COALESCE(commencement_date, start_date)) AS service_start_date')
+            ->first();
+
+        $serviceStartDate = $result?->service_start_date;
+
+        return $serviceStartDate !== null && $serviceStartDate !== ''
+            ? (string) $serviceStartDate
+            : null;
+    }
+
     public function sumApprovedLeaveDays(
         string $companyId,
         string $userId,

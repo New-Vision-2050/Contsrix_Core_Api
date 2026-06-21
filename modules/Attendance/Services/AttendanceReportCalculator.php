@@ -14,6 +14,10 @@ use Carbon\CarbonPeriod;
  */
 final class AttendanceReportCalculator
 {
+    public const BASE_ANNUAL_LEAVE_ALLOWANCE = 21;
+    public const SENIOR_ANNUAL_LEAVE_ALLOWANCE = 30;
+    public const SENIOR_SERVICE_YEARS_THRESHOLD = 5;
+
     public static function contractRequiredHours(int $attendanceDays, float $dailyWorkingHours): float
     {
         return round($attendanceDays * $dailyWorkingHours, 1);
@@ -108,6 +112,38 @@ final class AttendanceReportCalculator
     public static function monthlyRequiredHours(int $requiredAttendanceDays, float $dailyWorkingHours): float
     {
         return self::contractRequiredHours($requiredAttendanceDays, $dailyWorkingHours);
+    }
+
+    public static function serviceYears(?string $serviceStartDate, string $asOfDate): ?int
+    {
+        if ($serviceStartDate === null || trim($serviceStartDate) === '') {
+            return null;
+        }
+
+        $startDate = Carbon::parse($serviceStartDate)->startOfDay();
+        $endDate = Carbon::parse($asOfDate)->startOfDay();
+
+        if ($endDate->lt($startDate)) {
+            return 0;
+        }
+
+        return (int) $startDate->diffInYears($endDate);
+    }
+
+    public static function annualLeaveEntitlement(?string $serviceStartDate, string $asOfDate): int
+    {
+        $serviceYears = self::serviceYears($serviceStartDate, $asOfDate);
+
+        if ($serviceYears !== null && $serviceYears > self::SENIOR_SERVICE_YEARS_THRESHOLD) {
+            return self::SENIOR_ANNUAL_LEAVE_ALLOWANCE;
+        }
+
+        return self::BASE_ANNUAL_LEAVE_ALLOWANCE;
+    }
+
+    public static function earnedLeaveDays(float|int $leaveAllowance): float
+    {
+        return round((float) $leaveAllowance / 12, 2);
     }
 
     public static function requiredAttendanceDays(string $fromDate, string $toDate, int $publicHolidays): int

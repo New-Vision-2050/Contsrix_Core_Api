@@ -29,6 +29,27 @@ class AttendanceReportCalculatorTest extends TestCase
         $this->assertSame(9.0, AttendanceReportCalculator::remainingLeaves(21, 12));
     }
 
+    public function test_annual_leave_entitlement_for_five_or_fewer_service_years(): void
+    {
+        $this->assertSame(21, AttendanceReportCalculator::annualLeaveEntitlement('2020-06-21', '2025-06-21'));
+    }
+
+    public function test_annual_leave_entitlement_for_more_than_five_service_years(): void
+    {
+        $this->assertSame(30, AttendanceReportCalculator::annualLeaveEntitlement('2019-01-01', '2025-05-31'));
+    }
+
+    public function test_annual_leave_entitlement_defaults_to_minimum_when_start_date_is_missing(): void
+    {
+        $this->assertSame(21, AttendanceReportCalculator::annualLeaveEntitlement(null, '2025-05-31'));
+    }
+
+    public function test_earned_leave_days_are_monthly_fraction_of_annual_entitlement(): void
+    {
+        $this->assertSame(1.75, AttendanceReportCalculator::earnedLeaveDays(21));
+        $this->assertSame(2.5, AttendanceReportCalculator::earnedLeaveDays(30));
+    }
+
     public function test_minutes_to_hours(): void
     {
         $this->assertSame(0.5, AttendanceReportCalculator::minutesToHours(30));

@@ -58,6 +58,7 @@ Tenancy: company resolved via `InitializeTenancyByRequestData`
           "days_in_month": 31,
           "required_attendance_days": 21,
           "used_leaves": 2,
+          "earned_leave_days": 1.75,
           "month_holidays": 1,
           "required_hours": 168,
           "actual_attendance_days": 5,

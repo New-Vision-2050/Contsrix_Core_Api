@@ -129,6 +129,7 @@ components:
         days_in_month: { type: integer }
         required_attendance_days: { type: integer }
         used_leaves: { type: integer }
+        earned_leave_days: { type: number, example: 1.75 }
         month_holidays: { type: integer }
         required_hours: { type: number }
         actual_attendance_days: { type: integer }

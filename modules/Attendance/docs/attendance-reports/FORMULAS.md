@@ -21,8 +21,9 @@ Implementation class: `Modules\Attendance\Services\AttendanceReportCalculator`
 
 ### contract.leave_allowance
 - **Definition:** Annual leave entitlement days.
-- **Source:** `employment_contracts.annual_leave`
-- **Formula:** Direct read
+- **Source:** Earliest official employment contract service date for the employee (`commencement_date`, falling back to `start_date`).
+- **Formula:** Full completed service years as of the report period end date. `service_years <= 5` gives `21`; `service_years > 5` gives `30`.
+- **Fallback:** If no employment contract start/commencement date exists, use the minimum entitlement `21`.
 - **Example:** `21`
 
 ---
@@ -85,6 +86,10 @@ Implementation class: `Modules\Attendance\Services\AttendanceReportCalculator`
 ### used_leaves
 - **Formula:** Approved leave overlap days inside the month only. Example: May 30 to June 3 counts 2 days in May and 3 days in June.
 
+### earned_leave_days
+- **Formula:** `contract.leave_allowance / 12`, rounded to 2 decimals.
+- **Examples:** `21 / 12 = 1.75`; `30 / 12 = 2.50`.
+
 ### month_holidays
 - **Source:** `public_holiday_days` joined to `public_holidays`
 - **Formula:** `COUNT(DISTINCT public_holiday_days.date)` where day is a weekday inside the month, `public_holidays.is_active = true`, and `public_holidays.country_id = employment_contracts.country_id`
@@ -102,7 +107,7 @@ Implementation class: `Modules\Attendance\Services\AttendanceReportCalculator`
 - **Formula:** Same as `used_leaves` for the month (days charged to balance)
 
 ### remaining_leave_balance
-- **Formula:** `annual_leave − cumulative approved leave from period start through month end`
+- **Formula:** Derived annual leave entitlement minus cumulative approved leave from period start through month end.
 
 ### remaining_hours
 - **Formula:** `required_hours − actual_worked_hours` (min 0)

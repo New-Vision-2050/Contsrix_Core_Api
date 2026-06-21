@@ -31,10 +31,14 @@ class AttendanceReportService
 
         $user = $this->repository->getEmployeeForCompany($filters->company_id, $filters->employee_id);
         $contract = $this->resolveContract($filters->company_id, $user);
+        $serviceStartDate = $this->resolveServiceStartDate($filters->company_id, $user);
         $dailyHours = AttendanceReportCalculator::resolveDailyWorkingHours(
             $contract?->working_hours !== null ? (int) $contract->working_hours : null,
         );
-        $leaveAllowance = (float) ($contract?->annual_leave ?? 0);
+        $leaveAllowance = AttendanceReportCalculator::annualLeaveEntitlement(
+            $serviceStartDate,
+            $filters->periodEnd(),
+        );
         $countryId = $contract?->country_id !== null ? (string) $contract->country_id : null;
 
         $monthlyAggregates = $this->repository->getMonthlyAttendanceAggregates($filters, $months);
@@ -119,6 +123,7 @@ class AttendanceReportService
             'days_in_month' => $daysInMonth,
             'required_attendance_days' => $requiredAttendanceDays,
             'used_leaves' => (int) round($usedLeaves),
+            'earned_leave_days' => AttendanceReportCalculator::earnedLeaveDays($leaveAllowance),
             'month_holidays' => $monthHolidays,
             'required_hours' => $requiredHours,
             'actual_attendance_days' => $actualDays,
@@ -203,5 +208,14 @@ class AttendanceReportService
         }
 
         return $this->repository->getEmploymentContract($companyId, (string) $user->global_company_user_id);
+    }
+
+    private function resolveServiceStartDate(string $companyId, User $user): ?string
+    {
+        if ($user->global_company_user_id === null) {
+            return null;
+        }
+
+        return $this->repository->getOfficialServiceStartDate($companyId, (string) $user->global_company_user_id);
     }
 }

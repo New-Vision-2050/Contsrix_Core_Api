@@ -33,9 +33,33 @@ class AttendanceReportServiceTest extends BaseAttendanceReportTestCase
         $this->assertSame(40.0, $row['actual_worked_hours']);
         $this->assertSame(2, $row['delays']);
         $this->assertSame(2.0, $row['overtime']);
+        $this->assertSame(1.75, $row['earned_leave_days']);
         $this->assertArrayNotHasKey('deductions', $row);
         $this->assertArrayNotHasKey('additions', $row);
         $this->assertSame('approved', $row['status']);
+    }
+
+    public function test_monthly_earned_leave_days_uses_senior_entitlement(): void
+    {
+        EmploymentContract::query()
+            ->where('company_id', $this->company->id)
+            ->where('global_id', $this->globalId)
+            ->update([
+                'commencement_date' => '2018-01-01',
+                'annual_leave' => 0,
+            ]);
+
+        $filters = new AttendanceReportFilterDTO(
+            company_id: $this->company->id,
+            employee_id: (string) $this->employee->id,
+            from_date: '2025-05-01',
+            to_date: '2025-05-31',
+        );
+
+        $row = app(AttendanceReportService::class)->listMonthlyReports($filters)['data'][0];
+
+        $this->assertSame(2.5, $row['earned_leave_days']);
+        $this->assertSame(28, $row['remaining_leave_balance']);
     }
 
     public function test_monthly_used_leaves_matches_approved_requests(): void

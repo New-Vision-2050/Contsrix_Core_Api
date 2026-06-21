@@ -31,6 +31,7 @@ class AttendanceReportPresenterTest extends BaseAttendanceReportTestCase
             'days_in_month' => 31,
             'required_attendance_days' => 21,
             'used_leaves' => 2,
+            'earned_leave_days' => 1.75,
             'month_holidays' => 8,
             'required_hours' => 168,
             'actual_attendance_days' => 21,
@@ -45,6 +46,7 @@ class AttendanceReportPresenterTest extends BaseAttendanceReportTestCase
         ]))->getData();
 
         $this->assertSame('May 2025', $presented['month']);
+        $this->assertSame(1.75, $presented['earned_leave_days']);
         $this->assertSame(0, $presented['remaining_attendance_days']);
         $this->assertSame(7.0, $presented['remaining_hours']);
         $this->assertArrayNotHasKey('deductions', $presented);
