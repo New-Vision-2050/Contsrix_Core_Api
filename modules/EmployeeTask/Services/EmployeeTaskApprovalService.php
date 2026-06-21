@@ -104,6 +104,23 @@ final class EmployeeTaskApprovalService
             }
 
             $firstStep = $this->workflow->resolveFirstStepBySettingId($procedureSetting->id);
+
+            if ($firstStep === null) {
+                $data['status']                    = 'approved';
+                $data['current_procedure_step_id'] = null;
+                $data['reviewed_at']               = now();
+
+                $approval = EmployeeTaskApprovalRequest::query()->create($data);
+                $this->handleFileUpload($approval, $file);
+
+                if ($internalProcedureSettingId) {
+                    event(new WorkflowProcedureTaken('employee_task', $task->id, $internalProcedureSettingId, $userId));
+                }
+
+                $task->update(['status' => EmployeeTaskStatus::Approved->value, 'approved_at' => now()]);
+                return $approval->load('media');
+            }
+
             $data['status']                    = 'pending';
             $data['current_procedure_step_id'] = $firstStep->id;
 
@@ -255,6 +272,11 @@ final class EmployeeTaskApprovalService
 
         if (! $setting) {
             throw EmployeeTaskException::invalidProcedureSetting();
+        }
+
+        // No steps configured → auto-approve (return null so caller skips workflow)
+        if ($setting->steps->isEmpty()) {
+            return null;
         }
 
         return $setting;
