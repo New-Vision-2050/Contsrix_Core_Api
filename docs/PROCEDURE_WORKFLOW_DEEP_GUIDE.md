@@ -2,7 +2,7 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-21 — Multi-module centralized taken-status expansion (§30); `appears_after_id` / `appears_before_id` changed from single UUID to **JSON arrays** supporting multiple prerequisites (§27.9, §30.5); migration `2026_06_21_000001` converts existing rows automatically.
+> **Last updated:** 2026-06-21 — Multi-module centralized taken-status expansion (§30); `appears_after_id` / `appears_before_id` changed from single UUID to **JSON arrays** supporting multiple prerequisites (§27.9, §30.5); migration `2026_06_21_000001` converts existing rows automatically; **Rich conditions system** for `startTask` — new `InternalProcessConditionCategory` enum, `settingsSchema()`, `GET /forms-conditions` API, dual-format `EmployeeTaskFormConditionService`, 5 new condition types (§28, §31).
 
 ---
 
@@ -2256,28 +2256,44 @@ EmployeeTaskFormConditionService::check*Conditions()
 
 The task's `user.userProfessionalData` is lazy-loaded inside the service to resolve `branchId` for the procedure setting lookup.
 
-### 28.4 startTask
+### 28.4 startTask Condition Check (new rich array format)
 
-`InternalProcessForm::StartTask` has `conditions() = []` (empty). No condition check is performed for start. Timing enforcement for task starts is owned by the Attendance module's constraint system.
+**Called by:** `EmployeeTaskController::start()` via `EmployeeTaskLifecycleService::start()`.
+
+`InternalProcessForm::StartTask` maps to 5 rich conditions (each evaluated only when `is_active = true`):
+
+| Condition key | Category | Enforcement logic | Configurable settings |
+|--------------|----------|------------------|-----------------------|
+| `inside_shift_time` | `time` | Current server time within `[start_time − tolerance, end_time − tolerance]` | `start_time`, `end_time`, `allow_before_start_minutes`, `allow_before_end_minutes` |
+| `inside_task_location` | `location` | Haversine distance ≤ `settings.radius_meters` | `radius_meters` |
+| `employee_has_attendance` | `attendance` | Must have active clock-in record (`clock_out IS NULL`) | none |
+| `task_is_approved` | `task_status` | `task.status` must equal `approved` | none |
+| `no_open_task` | `open_task` | No other task for user with `status = in_progress` | none |
+
+> See §31 for the full conditions system design and frontend integration guide.
 
 ### 28.5 Exceptions Thrown
 
-| Exception method | HTTP | Message |
-|-----------------|------|---------|
-| `EmployeeTaskException::notAllowedDuringShift()` | 422 | "This action is not allowed while you are within a work shift." |
-| `EmployeeTaskException::notAllowedOutsideShift()` | 422 | "This action is only allowed during an active work shift." |
-| `EmployeeTaskException::notAllowedOnHolidays()` | 422 | "This action is not allowed on holidays or non-working days." |
-| `EmployeeTaskException::cannotEndTaskOutsideLocation()` | 422 | "You must be within the task location to end this task." |
+| Exception method | HTTP | When thrown |
+|-----------------|------|-------------|
+| `notAllowedDuringShift()` | 422 | createTask: user is inside shift, `allow_during_shift = false` |
+| `notAllowedOutsideShift()` | 422 | createTask: user is outside shift, `allow_outside_shift = false` |
+| `notAllowedOnHolidays()` | 422 | createTask: today is a holiday, `allow_on_holidays = false` |
+| `cannotEndTaskOutsideLocation()` | 422 | endTask: employee is outside radius, `can_exit_outside_location = false` |
+| `outsideShiftTimeWindow()` | 422 | startTask: current time outside configured window |
+| `employeeHasNoAttendance()` | 422 | startTask: no active attendance record |
+| `taskNotApproved()` | 422 | startTask: task not in `approved` status |
+| `hasOtherOpenTask()` | 422 | startTask: employee already has an `in_progress` task |
+| `cannotStartTaskOutsideLocation()` | 422 | startTask: outside `inside_task_location` radius |
 
-### 28.6 How to Add Condition Enforcement to a New Form
+### 28.6 How to Add a New Condition
 
-1. Add the condition case to `InternalProcessCondition` if new.
-2. Return it from `InternalProcessForm::conditions()` for the target form.
-3. Update `InternalProcessCondition::defaultValuesForForm()` with sensible defaults.
-4. Add a new `check*Conditions()` method to `EmployeeTaskFormConditionService` (or create a new service for a different module).
-5. Call it from the relevant service method, **before** any workflow API call.
-6. Add a corresponding `EmployeeTaskException::*()` factory for the HTTP 422 response.
-7. Update §27.10.3 to document the new backend-enforced condition.
+1. Add enum case to `InternalProcessCondition` (with `category()`, `labelAr()`, `settingsSchema()`).
+2. Register it in `InternalProcessForm::conditions()` for the target form.
+3. Add a private `assert*()` method in `EmployeeTaskFormConditionService`.
+4. Dispatch it from the appropriate `check*Conditions()` block (only when `is_active = true`).
+5. Add an `EmployeeTaskException::yourError()` factory.
+6. See `docs/CONDITIONS_SYSTEM_GUIDE.md` for the full extension recipe.
 
 ---
 
@@ -2531,3 +2547,161 @@ new WorkflowProcedureTaken(
 | `ProcedureSetting/Presenters/InternalProcedureSettingPresenter.php` | Output key renamed to plural, always returns `[]` not `null` |
 | `ProcedureSetting/Presenters/ProcedureSettingPresenter.php` | Same |
 
+---
+
+## 31. Rich Conditions System (2026-06-21)
+
+> Full reference: `docs/CONDITIONS_SYSTEM_GUIDE.md`
+
+### 31.1 Problem Solved
+
+The old `conditions` column was a flat JSON object (`{"allow_during_shift": true}`) — values only, no metadata. Frontend had no way to know what conditions exist for a form, what their display labels are, or what configurable sub-fields they need.
+
+The new system adds:
+- A discovery endpoint the frontend calls once per form type.
+- A `settings_schema` per condition describing its configurable parameters.
+- A rich stored format with `is_active`, `sort_order`, and `settings`.
+
+---
+
+### 31.2 New Enums
+
+#### `InternalProcessConditionCategory` (new file)
+
+`modules/Shared/InternalProcessType/Enums/InternalProcessConditionCategory.php`
+
+| Case | Value | `labelAr()` |
+|------|-------|-------------|
+| `Time` | `time` | وقت |
+| `Location` | `location` | موقع |
+| `Attendance` | `attendance` | حضور |
+| `TaskStatus` | `task_status` | حالة المهمة |
+| `OpenTask` | `open_task` | مهمة مفتوحة |
+| `Shift` | `shift` | دوام |
+| `Duration` | `duration` | مدة |
+| `Attachment` | `attachment` | مرفقات |
+
+#### `InternalProcessConditionType` — added `Time = 'time'`
+
+Used for `HH:MM` string values stored in `settings`.
+
+---
+
+### 31.3 New Methods on `InternalProcessCondition`
+
+| Method | Returns | Purpose |
+|--------|---------|---------|
+| `category()` | `InternalProcessConditionCategory` | Groups condition by kind |
+| `settingsSchema()` | `list<array{key, type, label_ar, default}>` | Describes configurable parameters for this condition |
+| `toDefinition()` | array | Full shape sent to frontend via `formsConditions` endpoint |
+| `validationRulesForForm()` | `array<string, list>` | **Changed** — now validates the rich array format: `conditions.*.key`, `conditions.*.is_active`, `conditions.*.sort_order`, `conditions.*.settings` |
+| `defaultValuesForForm()` | `list<array>` | **Changed** — returns list of condition objects with `settingsSchema` defaults |
+
+---
+
+### 31.4 New Conditions for `startTask`
+
+`InternalProcessForm::StartTask::conditions()` now returns:
+
+```php
+[
+    InternalProcessCondition::InsideShiftTime,       // inside_shift_time
+    InternalProcessCondition::InsideTaskLocation,    // inside_task_location
+    InternalProcessCondition::EmployeeHasAttendance, // employee_has_attendance
+    InternalProcessCondition::TaskIsApproved,        // task_is_approved
+    InternalProcessCondition::NoOpenTask,            // no_open_task
+]
+```
+
+---
+
+### 31.5 Discovery API
+
+```
+GET /api/v1/admin/procedure-settings/forms-conditions?type=startTask
+```
+
+Returns one definition object per condition in the form:
+
+```json
+{
+  "key": "inside_shift_time",
+  "type": "time",
+  "category": "time",
+  "category_label_ar": "وقت",
+  "label_ar": "داخل وقت الدوام",
+  "settings_schema": [
+    { "key": "start_time",                 "type": "time", "label_ar": "من",                                   "default": "08:00" },
+    { "key": "end_time",                   "type": "time", "label_ar": "إلى",                                  "default": "17:00" },
+    { "key": "allow_before_start_minutes", "type": "int",  "label_ar": "يسمح قبل بداية الدوام بـ (دقيقة)", "default": 0 },
+    { "key": "allow_before_end_minutes",   "type": "int",  "label_ar": "يسمح قبل نهاية الدوام بـ (دقيقة)", "default": 0 }
+  ]
+}
+```
+
+**Route:** `modules/ProcedureSetting/Resources/routes/api.php`
+**Controller method:** `InternalProcedureSettingController::formsConditions(Request $request)`
+**No authentication middleware change** — sits inside the existing `auth:api` group.
+
+---
+
+### 31.6 Frontend Flow
+
+```
+1. GET /forms-conditions?type=startTask
+      → receive array of condition definitions (each with settings_schema)
+
+2. Render table rows — one per definition:
+      toggle  |  label_ar  |  category_label_ar  |  settings inputs
+
+3. For each settings_schema field:
+      type = 'time'   → time picker (HH:MM)
+      type = 'int'    → number input
+      type = 'bool'   → checkbox / toggle
+
+4. On save  →  POST or PUT with:
+   "conditions": [
+     { "key": "inside_shift_time", "is_active": true, "sort_order": 1,
+       "settings": { "start_time": "08:00", "end_time": "17:00",
+                     "allow_before_start_minutes": 30, "allow_before_end_minutes": 0 } },
+     { "key": "inside_task_location", "is_active": true, "sort_order": 2,
+       "settings": { "radius_meters": 150 } },
+     { "key": "employee_has_attendance", "is_active": false, "sort_order": 3, "settings": {} },
+     { "key": "task_is_approved",        "is_active": false, "sort_order": 4, "settings": {} },
+     { "key": "no_open_task",            "is_active": true,  "sort_order": 5, "settings": {} }
+   ]
+```
+
+---
+
+### 31.7 Backend Dual-Format Support
+
+`EmployeeTaskFormConditionService::indexConditions(array $conditions)` normalises both formats into a keyed map `['condition_key' => {key, is_active, sort_order, settings}]`:
+
+```
+New format (array_is_list = true):
+  [{key: "inside_shift_time", is_active: true, ...}]  →  ['inside_shift_time' => {…}]
+
+Old format (associative):
+  {"allow_during_shift": true}  →  ['allow_during_shift' => {key, is_active: true, settings: []}]
+```
+
+This means **old `createTask`/`endTask` procedures stored in the database continue to work unchanged**.
+
+---
+
+### 31.8 Files Changed in This Feature
+
+| File | Change |
+|------|--------|
+| `modules/Shared/InternalProcessType/Enums/InternalProcessConditionCategory.php` | **New** |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessConditionType.php` | Added `Time` case |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | 5 new cases; new `category()`, `settingsSchema()`; updated `toDefinition()`, `validationRulesForForm()`, `defaultValuesForForm()` |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | `StartTask` conditions updated to 5 new rich cases |
+| `modules/ProcedureSetting/Controllers/InternalProcedureSettingController.php` | Added `formsConditions()` |
+| `modules/ProcedureSetting/Resources/routes/api.php` | Added `GET /forms-conditions` |
+| `modules/ProcedureSetting/Requests/CreateInternalProcedureSettingRequest.php` | Removed `prepareForValidation()` normalization |
+| `modules/ProcedureSetting/Requests/UpdateInternalProcedureSettingRequest.php` | Same |
+| `modules/EmployeeTask/Exceptions/EmployeeTaskException.php` | Added 4 new exception factories |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | Full rewrite with `indexConditions()`, 5 new `assert*()` methods, `AttendanceRepository` injection |
+| `docs/CONDITIONS_SYSTEM_GUIDE.md` | **New** — standalone guide for AI/frontend/backend |
