@@ -12,9 +12,10 @@ use Illuminate\Support\Facades\Schema;
  * JSON arrays, allowing a procedure to depend on / precede multiple others.
  *
  * Steps:
- *  1. Drop the FK constraints (JSON columns cannot have FK constraints).
- *  2. Convert any existing single-UUID string values to single-element JSON arrays.
- *  3. Change the column type to JSON (nullable).
+ *  1. Drop FK constraints (JSON columns cannot have FK constraints).
+ *  2. Change column type to TEXT/JSON first — must happen before data conversion
+ *     because the existing uuid(36) column is too short for a JSON array string.
+ *  3. Convert any existing plain UUID strings to single-element JSON arrays.
  */
 return new class extends Migration
 {
@@ -22,6 +23,7 @@ return new class extends Migration
     {
         $existingFks = collect(Schema::getForeignKeys('procedure_settings'))->pluck('name');
 
+        // Step 1 — drop FKs
         Schema::table('procedure_settings', function (Blueprint $table) use ($existingFks): void {
             if ($existingFks->contains('ps_appears_before_fk')) {
                 $table->dropForeign('ps_appears_before_fk');
@@ -31,8 +33,13 @@ return new class extends Migration
             }
         });
 
-        // Convert existing single-UUID strings to single-element JSON arrays.
-        // Rows that are already valid JSON arrays or NULL are left untouched.
+        // Step 2 — widen columns to JSON BEFORE writing longer values
+        Schema::table('procedure_settings', function (Blueprint $table): void {
+            $table->json('appears_before_id')->nullable()->change();
+            $table->json('appears_after_id')->nullable()->change();
+        });
+
+        // Step 3 — convert plain UUID strings to single-element JSON arrays
         foreach (['appears_before_id', 'appears_after_id'] as $col) {
             DB::statement("
                 UPDATE procedure_settings
@@ -41,11 +48,6 @@ return new class extends Migration
                   AND JSON_VALID({$col}) = 0
             ");
         }
-
-        Schema::table('procedure_settings', function (Blueprint $table): void {
-            $table->json('appears_before_id')->nullable()->change();
-            $table->json('appears_after_id')->nullable()->change();
-        });
     }
 
     public function down(): void
