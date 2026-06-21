@@ -27,7 +27,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{id}/available-forms', [InternalProcedureSettingController::class, 'availableForms']);
     Route::get('/{id}/internal-procedures/by-form/{formKey}', [InternalProcedureSettingController::class, 'showByForm']);
     Route::post('/internal-procedures', [InternalProcedureSettingController::class, 'store']);
-    Route::put('/{id}/internal-procedures/{internalProcedureId}', [InternalProcedureSettingController::class, 'update']);
+    Route::post('/{id}/internal-procedures/{internalProcedureId}', [InternalProcedureSettingController::class, 'update']);
     Route::put('/{id}/internal-procedures/{internalProcedureId}/set-status', [InternalProcedureSettingController::class, 'setStatus']);
     Route::delete('/{id}/internal-procedures/{internalProcedureId}', [InternalProcedureSettingController::class, 'destroy']);
 
