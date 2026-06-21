@@ -68,7 +68,14 @@ final class EmployeeTaskExtensionService
             } else {
                 $data['status'] = 'pending';
                 $firstStep = $this->workflow->resolveFirstStepBySettingId($procedureSetting->id);
-                $data['current_procedure_step_id'] = $firstStep->id;
+                if ($firstStep === null) {
+                    $data['status'] = 'approved';
+                    $data['current_procedure_step_id'] = null;
+                    $data['reviewed_at'] = now();
+                    $procedureSetting = null;
+                } else {
+                    $data['current_procedure_step_id'] = $firstStep->id;
+                }
             }
 
             $extension = EmployeeTaskExtensionRequest::query()->create($data);
@@ -228,6 +235,11 @@ final class EmployeeTaskExtensionService
 
         if (! $setting) {
             throw EmployeeTaskException::invalidProcedureSetting();
+        }
+
+        // No steps configured → auto-approve (return null so caller skips workflow)
+        if ($setting->steps->isEmpty()) {
+            return null;
         }
 
         return $setting;

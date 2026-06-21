@@ -66,8 +66,11 @@ final class ProcedureWorkflowService
      * Used when an entity inherits a procedure from a parent (e.g. extension
      * requests inheriting the parent task's procedure_setting_id) rather than
      * resolving from a type string.
+     *
+     * Returns null when no steps are configured so callers can auto-approve
+     * instead of throwing a 500 error.
      */
-    public function resolveFirstStepBySettingId(string $procedureSettingId): ProcedureSettingStep
+    public function resolveFirstStepBySettingId(string $procedureSettingId): ?ProcedureSettingStep
     {
         $ids = [$procedureSettingId];
         $ids = array_merge($ids, $this->collectDescendantIds($procedureSettingId));
@@ -76,10 +79,6 @@ final class ProcedureWorkflowService
             ->whereIn('procedure_setting_id', $ids)
             ->orderBy('step_order')
             ->first();
-
-        if (! $firstStep) {
-            throw ProcedureWorkflowException::noStepsConfigured();
-        }
 
         return $firstStep;
     }
@@ -246,6 +245,12 @@ final class ProcedureWorkflowService
 
         if ($setting !== null) {
             $setting->load(['steps' => fn ($query) => $query->orderBy('step_order')]);
+
+            // No steps configured → treat as auto-approve (return null so callers
+            // skip the workflow and handle the action directly).
+            if ($setting->steps->isEmpty()) {
+                return null;
+            }
         }
 
         return $setting;

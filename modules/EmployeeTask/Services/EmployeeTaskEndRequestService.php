@@ -16,6 +16,7 @@ use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\EmployeeTask\Repositories\EmployeeTaskSessionRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
@@ -75,6 +76,10 @@ final class EmployeeTaskEndRequestService
     ): EmployeeTaskEndRequest {
         return DB::transaction(function () use ($task, $dto, $procedureSetting): EmployeeTaskEndRequest {
             $firstStep = $this->workflow->resolveFirstStepBySettingId($procedureSetting->id);
+
+            if ($firstStep === null) {
+                throw ProcedureWorkflowException::noStepsConfigured();
+            }
 
             $endRequest = EmployeeTaskEndRequest::query()->create([
                 'employee_task_request_id' => $task->id,
@@ -255,6 +260,11 @@ final class EmployeeTaskEndRequestService
 
         if (! $setting) {
             throw EmployeeTaskException::invalidProcedureSetting();
+        }
+
+        // No steps configured → auto-approve (return null so caller skips workflow)
+        if ($setting->steps->isEmpty()) {
+            return null;
         }
 
         return $setting;
