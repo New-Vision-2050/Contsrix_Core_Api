@@ -1,0 +1,158 @@
+openapi: 3.0.3
+info:
+  title: HR Attendance Reports API
+  version: 1.0.0
+  description: Contract & attendance reporting dashboard for Contsrix Core API
+servers:
+  - url: /api/v1
+paths:
+  /hr/attendance/reports:
+    get:
+      summary: Dashboard summary + monthly table
+      tags: [HR Attendance Reports]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: employee_id
+          required: true
+          description: Current-company user id. Users use UUID string ids in this project.
+          schema:
+            type: string
+        - in: query
+          name: from_date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: to_date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: year
+          description: Required when month is provided.
+          schema:
+            type: integer
+        - in: query
+          name: month
+          description: Calendar month. Requires year.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - in: query
+          name: page
+          description: Monthly reports page number.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: per_page
+          description: Monthly rows per page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 12
+      responses:
+        '200':
+          description: Report payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '403':
+          description: Selected employee is outside the current company or request authorization failed.
+        '404':
+          description: Missing route permission or resource not found.
+        '422':
+          description: Validation failed.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ReportResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: success
+        payload:
+          type: object
+          properties:
+            employee:
+              $ref: '#/components/schemas/EmployeeSummary'
+            contract:
+              $ref: '#/components/schemas/ContractSummary'
+            achieved:
+              $ref: '#/components/schemas/AchievedSummary'
+            remaining:
+              $ref: '#/components/schemas/RemainingSummary'
+            monthly_reports:
+              $ref: '#/components/schemas/MonthlyReports'
+    EmployeeSummary:
+      type: object
+      properties:
+        id: { type: string, example: '6a780f41-b5db-4fd9-9daa-900b9c7f0a4d' }
+        name: { type: string, example: 'John Doe' }
+    ContractSummary:
+      type: object
+      properties:
+        attendance_days: { type: integer, example: 21 }
+        required_hours: { type: number, example: 168 }
+        leave_allowance: { type: integer, example: 21 }
+    AchievedSummary:
+      type: object
+      properties:
+        attendance_days: { type: integer }
+        worked_hours: { type: number }
+        used_leaves: { type: integer }
+        used_holidays: { type: integer }
+    RemainingSummary:
+      type: object
+      properties:
+        attendance_days: { type: integer }
+        worked_hours: { type: number }
+        remaining_leaves: { type: integer }
+    MonthlyRow:
+      type: object
+      properties:
+        month: { type: string, example: 'May 2025' }
+        days_in_month: { type: integer }
+        required_attendance_days: { type: integer }
+        used_leaves: { type: integer }
+        month_holidays: { type: integer }
+        required_hours: { type: number }
+        actual_attendance_days: { type: integer }
+        remaining_attendance_days: { type: integer }
+        leave_balance_used: { type: integer }
+        remaining_leave_balance: { type: integer }
+        actual_worked_hours: { type: number }
+        remaining_hours: { type: number }
+        delays: { type: integer }
+        overtime: { type: number }
+        status: { type: string }
+    MonthlyReports:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonthlyRow'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    Pagination:
+      type: object
+      properties:
+        current_page: { type: integer, example: 1 }
+        per_page: { type: integer, example: 12 }
+        total: { type: integer, example: 24 }
+        last_page: { type: integer, example: 2 }

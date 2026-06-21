@@ -1,0 +1,59 @@
+{
+  "info": {
+    "name": "HR Attendance Reports",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Attendance Report",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/hr/attendance/reports?employee_id={{employee_id}}&from_date=2025-05-01&to_date=2025-05-31&page=1&per_page=12",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "hr", "attendance", "reports"],
+          "query": [
+            { "key": "employee_id", "value": "{{employee_id}}" },
+            { "key": "from_date", "value": "2025-05-01" },
+            { "key": "to_date", "value": "2025-05-31" },
+            { "key": "year", "value": "2025", "disabled": true },
+            { "key": "month", "value": "5", "disabled": true },
+            { "key": "page", "value": "1" },
+            { "key": "per_page", "value": "12" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('response uses Json::item payload envelope', function () {",
+              "  var json = pm.response.json();",
+              "  pm.expect(json).to.have.property('payload');",
+              "  pm.expect(json.payload).to.have.property('employee');",
+              "  pm.expect(json.payload).to.have.property('contract');",
+              "  pm.expect(json.payload).to.have.property('achieved');",
+              "  pm.expect(json.payload).to.have.property('remaining');",
+              "  pm.expect(json.payload).to.have.property('monthly_reports');",
+              "  pm.expect(json.payload.monthly_reports).to.have.property('pagination');",
+              "  pm.expect(json.payload).to.not.have.property('data');",
+              "  pm.expect(json.payload).to.not.have.property('pagination');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" },
+    { "key": "employee_id", "value": "" }
+  ]
+}
