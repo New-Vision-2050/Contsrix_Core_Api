@@ -6,48 +6,117 @@ namespace Modules\Shared\InternalProcessType\Enums;
 
 enum InternalProcessCondition: string
 {
-    case AllowDuringShift   = 'allow_during_shift';
-    case AllowOutsideShift  = 'allow_outside_shift';
-    case AllowOnHolidays       = 'allow_on_holidays';
+    // ── Legacy flat-format conditions (createTask / endTask) ─────────────────
+    case AllowDuringShift        = 'allow_during_shift';
+    case AllowOutsideShift       = 'allow_outside_shift';
+    case AllowOnHolidays         = 'allow_on_holidays';
     case CanExitOutsideLocation  = 'can_exit_outside_location';
     case MustBeInLocation        = 'must_be_in_location';
     case HasTaskDuration         = 'has_task_duration';
-    case MaxDurationHours   = 'max_duration_hours';
-    case MaxAttachments     = 'max_attachments';
+    case MaxDurationHours        = 'max_duration_hours';
+    case MaxAttachments          = 'max_attachments';
+
+    // ── Rich conditions with settings schema (startTask and beyond) ──────────
+    case InsideShiftTime         = 'inside_shift_time';
+    case InsideTaskLocation      = 'inside_task_location';
+    case EmployeeHasAttendance   = 'employee_has_attendance';
+    case TaskIsApproved          = 'task_is_approved';
+    case NoOpenTask              = 'no_open_task';
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function type(): InternalProcessConditionType
     {
         return match ($this) {
             self::MaxDurationHours, self::MaxAttachments => InternalProcessConditionType::Int,
-            default => InternalProcessConditionType::Bool,
+            self::InsideShiftTime                        => InternalProcessConditionType::Time,
+            default                                      => InternalProcessConditionType::Bool,
+        };
+    }
+
+    public function category(): InternalProcessConditionCategory
+    {
+        return match ($this) {
+            self::InsideShiftTime                            => InternalProcessConditionCategory::Time,
+            self::InsideTaskLocation,
+            self::MustBeInLocation,
+            self::CanExitOutsideLocation                     => InternalProcessConditionCategory::Location,
+            self::EmployeeHasAttendance                      => InternalProcessConditionCategory::Attendance,
+            self::TaskIsApproved                             => InternalProcessConditionCategory::TaskStatus,
+            self::NoOpenTask                                 => InternalProcessConditionCategory::OpenTask,
+            self::AllowDuringShift,
+            self::AllowOutsideShift,
+            self::AllowOnHolidays                            => InternalProcessConditionCategory::Shift,
+            self::HasTaskDuration,
+            self::MaxDurationHours                           => InternalProcessConditionCategory::Duration,
+            self::MaxAttachments                             => InternalProcessConditionCategory::Attachment,
         };
     }
 
     public function labelAr(): string
     {
         return match ($this) {
-            self::AllowDuringShift   => 'موظف داخل الدوام',
-            self::AllowOutsideShift  => 'موظف خارج الدوام',
-            self::AllowOnHolidays       => 'مسموح في العطلات',
-            self::CanExitOutsideLocation  => 'يستطيع الخروج خارج الموقع',
-            self::MustBeInLocation        => 'يجب أن يكون داخل الموقع عند البدء',
-            self::HasTaskDuration         => 'مدة المهمة',
-            self::MaxDurationHours   => 'أقصى مدة بالساعات',
-            self::MaxAttachments     => 'أقصى عدد مرفقات',
+            self::AllowDuringShift       => 'موظف داخل الدوام',
+            self::AllowOutsideShift      => 'موظف خارج الدوام',
+            self::AllowOnHolidays        => 'مسموح في العطلات',
+            self::CanExitOutsideLocation => 'يستطيع الخروج خارج الموقع',
+            self::MustBeInLocation       => 'يجب أن يكون داخل الموقع عند البدء',
+            self::HasTaskDuration        => 'مدة المهمة',
+            self::MaxDurationHours       => 'أقصى مدة بالساعات',
+            self::MaxAttachments         => 'أقصى عدد مرفقات',
+            self::InsideShiftTime        => 'داخل وقت الدوام',
+            self::InsideTaskLocation     => 'داخل موقع المهمة',
+            self::EmployeeHasAttendance  => 'الموظف مسجل حضور',
+            self::TaskIsApproved         => 'المهمة معتمدة',
+            self::NoOpenTask             => 'لا يوجد مهمة مفتوحة',
         };
     }
 
-    /** @return array{key: string, type: string, label_ar: string} */
+    /**
+     * Settings fields the frontend must render for this condition.
+     * Each entry describes one configurable parameter.
+     *
+     * @return list<array{key: string, type: string, label_ar: string, default: mixed}>
+     */
+    public function settingsSchema(): array
+    {
+        return match ($this) {
+            self::InsideShiftTime => [
+                ['key' => 'start_time',                 'type' => 'time', 'label_ar' => 'من',                                    'default' => '08:00'],
+                ['key' => 'end_time',                   'type' => 'time', 'label_ar' => 'إلى',                                   'default' => '17:00'],
+                ['key' => 'allow_before_start_minutes', 'type' => 'int',  'label_ar' => 'يسمح قبل بداية الدوام بـ (دقيقة)',  'default' => 0],
+                ['key' => 'allow_before_end_minutes',   'type' => 'int',  'label_ar' => 'يسمح قبل نهاية الدوام بـ (دقيقة)', 'default' => 0],
+            ],
+            self::InsideTaskLocation => [
+                ['key' => 'radius_meters', 'type' => 'int', 'label_ar' => 'نطاق السماح (متر)', 'default' => 100],
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * Full definition sent to the frontend via GET /procedure-settings/forms-conditions.
+     *
+     * @return array{key: string, type: string, category: string, category_label_ar: string, label_ar: string, settings_schema: list<array>}
+     */
     public function toDefinition(): array
     {
         return [
-            'key'      => $this->value,
-            'type'     => $this->type()->value,
-            'label_ar' => $this->labelAr(),
+            'key'               => $this->value,
+            'type'              => $this->type()->value,
+            'category'          => $this->category()->value,
+            'category_label_ar' => $this->category()->labelAr(),
+            'label_ar'          => $this->labelAr(),
+            'settings_schema'   => $this->settingsSchema(),
         ];
     }
 
-    /** @return array<string, list<string>> */
+    /**
+     * Validation rules for the NEW rich-array conditions format:
+     *   conditions = [ { key, is_active, sort_order, settings: {...} }, ... ]
+     *
+     * @return array<string, list<string>>
+     */
     public static function validationRulesForForm(?string $formKey, string $prefix = 'conditions'): array
     {
         if ($formKey === null || $formKey === '') {
@@ -59,38 +128,40 @@ enum InternalProcessCondition: string
             return [];
         }
 
-        $rules = [];
-        foreach ($form->conditions() as $condition) {
-            $key = "{$prefix}.{$condition->value}";
+        $validKeys = array_map(static fn (self $c) => $c->value, $form->conditions());
 
-            $rules[$key] = match ($condition->type()) {
-                InternalProcessConditionType::Int => $condition === self::MaxDurationHours
-                    ? ['nullable', 'integer', 'min:1', 'max:24', 'required_if:' . $prefix . '.has_task_duration,true']
-                    : ['nullable', 'integer', 'min:1', 'max:100'],
-                InternalProcessConditionType::String => ['nullable', 'string', 'max:255'],
-                InternalProcessConditionType::Bool => ['nullable', 'boolean'],
-            };
+        if (empty($validKeys)) {
+            return [];
         }
 
-        return $rules;
+        return [
+            "{$prefix}"              => ['nullable', 'array'],
+            "{$prefix}.*.key"        => ['required', 'string', 'in:' . implode(',', $validKeys)],
+            "{$prefix}.*.is_active"  => ['nullable', 'boolean'],
+            "{$prefix}.*.sort_order" => ['nullable', 'integer', 'min:0'],
+            "{$prefix}.*.settings"   => ['nullable', 'array'],
+        ];
     }
 
-    /** @return array<string, bool|int|string|null> */
+    /**
+     * Default condition objects for a form — used when creating a new internal procedure.
+     * Returns a list of condition objects with defaults from settingsSchema().
+     *
+     * @return list<array{key: string, is_active: bool, sort_order: int, settings: array<string, mixed>}>
+     */
     public static function defaultValuesForForm(InternalProcessForm $form): array
     {
-        $defaults = [];
-        foreach ($form->conditions() as $condition) {
-            $defaults[$condition->value] = match ($condition->type()) {
-                InternalProcessConditionType::Int, InternalProcessConditionType::String => null,
-                InternalProcessConditionType::Bool => match ($condition) {
-                    self::AllowDuringShift, self::CanExitOutsideLocation => true,
-                    self::AllowOutsideShift, self::AllowOnHolidays, self::HasTaskDuration,
-                    self::MustBeInLocation => false,
-                },
-            };
+        $result = [];
+        foreach ($form->conditions() as $i => $condition) {
+            $result[] = [
+                'key'        => $condition->value,
+                'is_active'  => false,
+                'sort_order' => $i + 1,
+                'settings'   => array_column($condition->settingsSchema(), 'default', 'key'),
+            ];
         }
 
-        return $defaults;
+        return $result;
     }
 
     /** @return list<string> */

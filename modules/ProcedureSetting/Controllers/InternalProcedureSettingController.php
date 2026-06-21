@@ -7,12 +7,15 @@ namespace Modules\ProcedureSetting\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Modules\ProcedureSetting\Presenters\InternalProcedureSettingPresenter;
 use Modules\ProcedureSetting\Requests\CreateInternalProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\GetInternalProcedureSettingListRequest;
 use Modules\ProcedureSetting\Requests\SetStatusInternalProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\UpdateInternalProcedureSettingRequest;
 use Modules\ProcedureSetting\Services\InternalProcedureSettingService;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
 class InternalProcedureSettingController extends Controller
 {
@@ -47,6 +50,28 @@ class InternalProcedureSettingController extends Controller
             InternalProcedureSettingPresenter::single($setting),
             message: 'Internal procedure setting retrieved successfully',
         );
+    }
+
+    /**
+     * GET /procedure-settings/forms-conditions?type=startTask
+     * Returns available condition definitions + settings schema for a form type.
+     * Used by the frontend to render the conditions configuration UI.
+     */
+    public function formsConditions(Request $request): JsonResponse
+    {
+        $formKey = (string) $request->query('type', '');
+        $form    = InternalProcessForm::tryFrom($formKey);
+
+        if ($form === null) {
+            return Json::error('Invalid or missing form type. Pass ?type=startTask', 422);
+        }
+
+        $definitions = array_map(
+            static fn (InternalProcessCondition $c): array => $c->toDefinition(),
+            $form->conditions(),
+        );
+
+        return Json::items($definitions, message: 'Form conditions retrieved successfully');
     }
 
     /**

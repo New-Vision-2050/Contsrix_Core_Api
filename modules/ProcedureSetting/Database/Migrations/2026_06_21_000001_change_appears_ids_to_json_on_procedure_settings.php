@@ -33,6 +33,19 @@ return new class extends Migration
             }
         });
 
+        // Step 1b — drop the underlying indexes MySQL retains after FK removal
+        // (JSON columns cannot have regular indexes)
+        $existingIndexes = collect(Schema::getIndexes('procedure_settings'))->pluck('name');
+
+        Schema::table('procedure_settings', function (Blueprint $table) use ($existingIndexes): void {
+            if ($existingIndexes->contains('ps_appears_before_fk')) {
+                $table->dropIndex('ps_appears_before_fk');
+            }
+            if ($existingIndexes->contains('ps_appears_after_fk')) {
+                $table->dropIndex('ps_appears_after_fk');
+            }
+        });
+
         // Step 2 — widen columns to JSON BEFORE writing longer values
         Schema::table('procedure_settings', function (Blueprint $table): void {
             $table->json('appears_before_id')->nullable()->change();

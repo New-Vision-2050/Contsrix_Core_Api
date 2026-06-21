@@ -183,4 +183,24 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__('You must be within the task location to start this task.'), 422);
     }
+
+    public static function outsideShiftTimeWindow(): self
+    {
+        return new self(__('This action is only allowed within the configured shift time window.'), 422);
+    }
+
+    public static function employeeHasNoAttendance(): self
+    {
+        return new self(__('The employee must be clocked in (have an active attendance record) to perform this action.'), 422);
+    }
+
+    public static function taskNotApproved(): self
+    {
+        return new self(__('The task must be in approved status before it can be started.'), 422);
+    }
+
+    public static function hasOtherOpenTask(): self
+    {
+        return new self(__('The employee already has an open task in progress.'), 422);
+    }
 }
