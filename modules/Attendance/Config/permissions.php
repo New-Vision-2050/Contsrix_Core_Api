@@ -14,6 +14,8 @@ return
         'EMPLOYEE_ATTENDANCE_CONSTRAINTS_CREATE' => 'human-resources.attendance*attendance-constraints.create',
         'EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE' => 'human-resources.attendance*attendance-constraints.update',
         'EMPLOYEE_ATTENDANCE_CONSTRAINTS_DELETE' => 'human-resources.attendance*attendance-constraints.delete',
-    ]
+
+        'ATTENDANCE_REPORTS_VIEW' => 'human-resources.attendance*attendance-reports.view',
+    ],
 ];
  

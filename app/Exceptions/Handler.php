@@ -2,14 +2,15 @@
 
 namespace App\Exceptions;
 
-use Spatie\Permission\Exceptions\UnauthorizedException;
-use Throwable;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Exceptions\UnauthorizedException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Throwable;
+
 class Handler
 {
     public static function handle(Throwable $e): JsonResponse
@@ -26,22 +27,23 @@ class Handler
                 'message' => __('validation.unauthenticated'),
             ], 401),
 
-            $e instanceof AuthorizationException => response()->json([
+            $e instanceof AuthorizationException,
+            $e instanceof AccessDeniedHttpException => response()->json([
                 'success' => false,
                 'message' => __('validation.unauthorized'),
             ], 403),
             $e instanceof UnauthorizedException => response()->json([
                 'success' => false,
                 'message' => __('validation.unauthorized'),
-                'error' => $e->getMessage() , // Hide error details in production
-                "trace"=> $e->getTrace(), // Hide error details in production <==>
+                'error' => $e->getMessage(), // Hide error details in production
+                'trace' => $e->getTrace(), // Hide error details in production <==>
             ], 404),
 
             $e instanceof NotFoundHttpException => response()->json([
                 'success' => false,
                 'message' => __('validation.resource_not_found'),
-                'error' => $e->getMessage() , // Hide error details in production
-                "trace"=> $e->getTrace(), // Hide error details in production <==>
+                'error' => $e->getMessage(), // Hide error details in production
+                'trace' => $e->getTrace(), // Hide error details in production <==>
             ], 404),
 
             $e instanceof CustomException => response()->json([
@@ -52,10 +54,9 @@ class Handler
             default => response()->json([
                 'success' => false,
                 'message' => 'Something went wrong, please try again later.',
-                'error' =>  $e->getMessage() , // Hide error details in production
-                "trace"=> $e->getTrace() , // Hide error details in production <==>
+                'error' => $e->getMessage(), // Hide error details in production
+                'trace' => $e->getTrace(), // Hide error details in production <==>
             ], 500),
         };
     }
-
 }
