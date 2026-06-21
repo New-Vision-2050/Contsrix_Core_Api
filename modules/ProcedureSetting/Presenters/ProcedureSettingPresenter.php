@@ -35,8 +35,8 @@ class ProcedureSettingPresenter extends AbstractPresenter
             'sort_order'        => $this->procedureSetting->sort_order,
             'is_active'         => $this->procedureSetting->is_active,
             'parent_id'         => $this->procedureSetting->parent_id,
-            'appears_before_id' => $this->procedureSetting->appears_before_id,
-            'appears_after_id'  => $this->procedureSetting->appears_after_id,
+            'appears_before_ids' => $this->procedureSetting->appears_before_id ?? [],
+            'appears_after_ids'  => $this->procedureSetting->appears_after_id  ?? [],
             'form'              => $form ? [
                 'key'        => $form->value,
                 'label_ar'   => $form->labelAr(),

@@ -13,8 +13,8 @@ use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
  *
  * Filtering rules applied:
  *  - is_active = true
- *  - appears_after_id:  referenced procedure must be "taken" (else hidden)
- *  - appears_before_id: referenced procedure must NOT be "taken" (else hidden)
+ *  - appears_after_id:  ALL referenced procedures must be "taken" (else hidden)
+ *  - appears_before_id: if ANY referenced procedure is "taken", this is hidden
  *
  * "Taken" status is read centrally from internal_procedure_takens via
  * ProcedureWorkflowService::getTakenProcedureIds().
@@ -33,8 +33,8 @@ final class InternalProcedureAvailableActionsService
      *     name: string,
      *     form: array{key: string, label_ar: string}|null,
      *     conditions: array,
-     *     appears_before_id: string|null,
-     *     appears_after_id: string|null,
+     *     appears_before_ids: list<string>,
+     *     appears_after_ids: list<string>,
      *     sort_order: int|null,
      * }>
      */
@@ -62,27 +62,38 @@ final class InternalProcedureAvailableActionsService
 
         return $items
             ->filter(function (ProcedureSetting $setting) use ($takenIds): bool {
-                if ($setting->appears_after_id !== null && ! in_array($setting->appears_after_id, $takenIds, true)) {
-                    return false;
+                $afterIds  = $setting->appears_after_id  ?? [];
+                $beforeIds = $setting->appears_before_id ?? [];
+
+                // ALL prerequisites must be taken
+                foreach ($afterIds as $id) {
+                    if (! in_array($id, $takenIds, true)) {
+                        return false;
+                    }
                 }
-                if ($setting->appears_before_id !== null && in_array($setting->appears_before_id, $takenIds, true)) {
-                    return false;
+
+                // Hide once ANY "before" guard has been taken
+                foreach ($beforeIds as $id) {
+                    if (in_array($id, $takenIds, true)) {
+                        return false;
+                    }
                 }
+
                 return true;
             })
             ->map(function (ProcedureSetting $setting): array {
                 $form = $setting->form ? InternalProcessForm::tryFrom($setting->form) : null;
                 return [
-                    'id'                => $setting->id,
-                    'name'              => $setting->name,
-                    'form'              => $form !== null ? [
+                    'id'                 => $setting->id,
+                    'name'               => $setting->name,
+                    'form'               => $form !== null ? [
                         'key'      => $form->value,
                         'label_ar' => $form->labelAr(),
                     ] : null,
-                    'conditions'        => $setting->conditions ?? [],
-                    'appears_before_id' => $setting->appears_before_id,
-                    'appears_after_id'  => $setting->appears_after_id,
-                    'sort_order'        => $setting->sort_order,
+                    'conditions'         => $setting->conditions ?? [],
+                    'appears_before_ids' => $setting->appears_before_id ?? [],
+                    'appears_after_ids'  => $setting->appears_after_id  ?? [],
+                    'sort_order'         => $setting->sort_order,
                 ];
             })
             ->values()

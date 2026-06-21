@@ -55,6 +55,8 @@ class ProcedureSetting extends Model
         'work_flow_id'                       => 'string',
         'sort_order'                         => 'integer',
         'conditions'                         => 'array',
+        'appears_before_id'                  => 'array',
+        'appears_after_id'                   => 'array',
         'is_active'                          => 'int',
     ];
 
@@ -104,16 +106,6 @@ class ProcedureSetting extends Model
     {
         return $this->hasMany(self::class, 'parent_id')
             ->whereNotNull('form');
-    }
-
-    public function appearsBeforeEntry()
-    {
-        return $this->belongsTo(self::class, 'appears_before_id');
-    }
-
-    public function appearsAfterEntry()
-    {
-        return $this->belongsTo(self::class, 'appears_after_id');
     }
 
     public function isInternalProcedure(): bool

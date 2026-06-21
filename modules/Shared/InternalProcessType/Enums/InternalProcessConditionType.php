@@ -9,6 +9,7 @@ enum InternalProcessConditionType: string
     case Bool   = 'bool';
     case Int    = 'int';
     case String = 'string';
+    case Time   = 'time';
 
     /** @return list<string> */
     public static function values(): array

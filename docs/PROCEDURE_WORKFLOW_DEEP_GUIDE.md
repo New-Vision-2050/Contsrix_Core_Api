@@ -2,7 +2,7 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-21 — Multi-module centralized taken-status expansion: generic `InternalProcedureAvailableActionsService` (Phase 1); `ClientRequest` integration with `createClientRequest`/`endClientRequest` marking + available-actions API (Phase 2); event-driven `WorkflowProcedureTaken` + `RecordInternalProcedureTaken` listener replacing all direct `markProcedureTaken()` calls in external modules (Phase 3). See §30 for full details, §29 for EmployeeTask baseline.
+> **Last updated:** 2026-06-21 — Multi-module centralized taken-status expansion (§30); `appears_after_id` / `appears_before_id` changed from single UUID to **JSON arrays** supporting multiple prerequisites (§27.9, §30.5); migration `2026_06_21_000001` converts existing rows automatically; **Rich conditions system** for `startTask` — new `InternalProcessConditionCategory` enum, `settingsSchema()`, `GET /forms-conditions` API, dual-format `EmployeeTaskFormConditionService`, 5 new condition types (§28, §31).
 
 ---
 
@@ -202,7 +202,7 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 
 | Method | Returns | Key Logic |
 |--------|---------|-----------|
-| `forTask($taskId)` | `list<array>` | Loads active child procedures, calls `getTakenProcedureIds()` from central morph table, filters by `appears_after_id` / `appears_before_id`, returns ordered visible list |
+| `forTask($taskId)` | `list<array>` | Loads active child procedures, calls `getTakenProcedureIds()` from central morph table, filters by `appears_after_ids` (ALL must be taken) / `appears_before_ids` (hide if ANY taken), returns ordered visible list |
 
 ### EmployeeTaskFormConditionService
 
@@ -600,7 +600,7 @@ Each child has:
 - Its own `name` (display label)
 - Its own `steps` (workflow steps)
 - Its own `conditions` (JSON array of InternalProcessCondition)
-- `appears_before_id` / `appears_after_id` (ordering constraints)
+- `appears_before_ids` / `appears_after_ids` (ordering constraints — JSON arrays of UUIDs)
 - `sort_order` (display order)
 
 ### Resolving a Child Procedure Setting
@@ -653,7 +653,7 @@ WorkflowStepActivated event broadcasts notification + inbox counts centrally
 
 `GET /employee-tasks/{taskId}/available-actions`
 
-Returns all **active** (`is_active = true`) child internal procedure settings for the task, filtered by ordering dependencies (`appears_before_id` / `appears_after_id`):
+Returns all **active** (`is_active = true`) child internal procedure settings for the task, filtered by ordering dependencies (`appears_before_ids` / `appears_after_ids`):
 
 ```json
 [
@@ -662,7 +662,8 @@ Returns all **active** (`is_active = true`) child internal procedure settings fo
     "name": "تأكيد دخول الموقع",
     "form": { "key": "confirmLocation", "label_ar": "تأكيد الموقع" },
     "conditions": [...],
-    "appears_before_id": "child-uuid-2",
+    "appears_before_ids": ["child-uuid-2"],
+    "appears_after_ids": [],
     "sort_order": 1
   },
   {
@@ -670,7 +671,8 @@ Returns all **active** (`is_active = true`) child internal procedure settings fo
     "name": "تأكيد خروج الموقع",
     "form": { "key": "confirmLocation", "label_ar": "تأكيد الموقع" },
     "conditions": [...],
-    "appears_after_id": "child-uuid-1",
+    "appears_before_ids": [],
+    "appears_after_ids": ["child-uuid-1"],
     "sort_order": 2
   }
 ]
@@ -683,12 +685,12 @@ Each internal procedure setting has an `is_active` boolean field (default: `true
 - It can be toggled via `PUT /procedure-settings/{id}/internal-procedures/{internalProcedureId}/set-status` with body `{ "is_active": false }`.
 - It can also be set during **create** (`POST /procedure-settings/{id}/internal-procedures`) and **update** (`PUT /procedure-settings/{id}/internal-procedures/{internalProcedureId}`) via the `is_active` field.
 
-#### Ordering Dependencies (`appears_before_id` / `appears_after_id`)
+#### Ordering Dependencies (`appears_before_ids` / `appears_after_ids`)
 
-Each internal procedure can declare ordering constraints:
+Each internal procedure can declare ordering constraints as **arrays of UUIDs** (multiple prerequisites supported):
 
-- **`appears_after_id`**: This procedure only appears **after** the referenced procedure has been "taken" (completed/approved). If the referenced procedure is not yet taken, this procedure is **hidden**.
-- **`appears_before_id`**: This procedure only appears **before** the referenced procedure has been "taken". Once the referenced procedure is taken, this procedure is **hidden**.
+- **`appears_after_ids`** *(array)*: **ALL** referenced procedures must be "taken" before this procedure is shown. If any prerequisite is not yet taken, this procedure is **hidden** (AND logic).
+- **`appears_before_ids`** *(array)*: This procedure is hidden once **ANY** of the referenced procedures is "taken" (OR logic). Send an empty array `[]` to disable.
 
 #### "Taken" Status Definition
 
@@ -743,9 +745,9 @@ Each action endpoint (`startTask`, `endTask`, `locationPing`, `requestApproval`,
 ```
 Procedures:
   A: createTask (sort_order: 100)
-  B: confirmLocation, appears_after_id = A (sort_order: 200)
-  C: startTask, appears_after_id = A (sort_order: 300)
-  D: sendForApproval, appears_after_id = B (sort_order: 400)
+  B: confirmLocation, appears_after_ids = [A] (sort_order: 200)
+  C: startTask, appears_after_ids = [A] (sort_order: 300)
+  D: sendForApproval, appears_after_ids = [A, B] (sort_order: 400)  ← requires BOTH A and B
 
 Timeline:
   1. Task created → A is taken
@@ -758,7 +760,7 @@ Timeline:
   8. available-actions returns: [] (all taken)
 ```
 
-If `C` had `appears_before_id = B` instead:
+If `C` had `appears_before_ids = [B]` instead:
 ```
   1. Task created → A is taken
   2. available-actions returns: B, C
@@ -1508,7 +1510,7 @@ If you are a future AI reading this, these are the changes made to the codebase 
 - `ProcedureSetting` is now a **self-referencing table** with `parent_id`.
 - **Parent rows**: `parent_id = NULL`, `type` = category (`employee_task`, `client_request`, etc.)
 - **Child rows**: `parent_id = parent.id`, `form` = action key (`startTask`, `extendTaskTime`, etc.)
-- Each child has its own `name`, `steps`, `conditions`, `appears_before_id`, `appears_after_id`, `sort_order`
+- Each child has its own `name`, `steps`, `conditions`, `appears_before_ids` (JSON array), `appears_after_ids` (JSON array), `sort_order`
 
 #### Enum Changes
 - `ProcedureSettingType` simplified to categories only (`employee_task`, `client_request`, `price_offer`, `contract`, `meeting`)
@@ -1517,7 +1519,8 @@ If you are a future AI reading this, these are the changes made to the codebase 
 - `InternalProcessCondition` enum added for per-form condition definitions
 
 #### Database Changes
-- Added to `procedure_settings`: `parent_id` (UUID, nullable, FK to self), `form` (string, nullable), `conditions` (JSON, nullable), `appears_before_id` (UUID, nullable), `appears_after_id` (UUID, nullable)
+- Added to `procedure_settings`: `parent_id` (UUID, nullable, FK to self), `form` (string, nullable), `conditions` (JSON, nullable), `appears_before_id` (JSON array, nullable), `appears_after_id` (JSON array, nullable)
+- Migration `2026_06_21_000001`: changed `appears_before_id` / `appears_after_id` from single `uuid` to `json` arrays; dropped FK constraints; auto-converts existing single-UUID rows
 - Dropped `internal_process_types` table
 - Removed `employee_task_requests.internal_process_type_id` column
 
@@ -1721,8 +1724,8 @@ After Fix (WORKING):
 | **Parent Procedure Setting** | Category-level `ProcedureSetting` (`parent_id = NULL`). Groups related internal procedures. |
 | **Form Key** | Action identifier on a child: `startTask`, `extendTaskTime`, `sendForApproval`, etc. Defined in `InternalProcessForm` enum. |
 | **Conditions** | JSON array of `InternalProcessCondition` values on a child. UI/UX hints for the mobile app. |
-| **appears_before_id** | Ordering constraint: this child must appear BEFORE the referenced child in available-actions. |
-| **appears_after_id** | Ordering constraint: this child must appear AFTER the referenced child in available-actions. |
+| **appears_before_ids** | Ordering constraint (JSON array): this child is hidden once ANY referenced procedure is taken. Empty array = no constraint. |
+| **appears_after_ids** | Ordering constraint (JSON array): this child is visible only when ALL referenced procedures are taken. Empty array = always visible. |
 | **InternalProcessForm** | Enum defining valid form keys per category. Has `applicableTypes()` and `forType()` methods. |
 | **InternalProcessCondition** | Enum defining valid condition keys (e.g., `AllowDuringShift`, `ApplyToAllBranches`). |
 
@@ -1900,8 +1903,8 @@ The actionable form. Created via `POST /procedure-settings/{parent_id}/internal-
 | `form` | Action key: `startTask`, `extendTaskTime`, `sendForApproval`, `cancelTask`, `confirmLocation`, `assignOtherEmployee`, `attachAttachments` |
 | `name` | Display name (e.g., "تأكيد دخول الموقع") |
 | `conditions` | JSON array of `InternalProcessCondition` values |
-| `appears_before_id` | This child must appear BEFORE the referenced child |
-| `appears_after_id` | This child must appear AFTER the referenced child |
+| `appears_before_ids` | JSON array of UUIDs — hide this child once ANY referenced procedure is taken |
+| `appears_after_ids` | JSON array of UUIDs — show this child only when ALL referenced procedures are taken |
 | `sort_order` | Display order |
 | `is_active` | Whether this child is enabled |
 | `is_internal_procedure` | `true` (always, for children) |
@@ -2028,8 +2031,8 @@ body: {
   "name": "بدء مهمة العمل",
   "form": "startTask",
   "conditions": [],
-  "appears_before_id": null,
-  "appears_after_id": null,
+  "appears_before_ids": [],
+  "appears_after_ids": [],
   "sort_order": 1,
   "is_active": true
 }
@@ -2040,7 +2043,7 @@ Response: { "id": "auto-generated-child-uuid", ... }
 - **`name`**: Display name (e.g., "بدء مهمة العمل")
 - **`form`**: Must be a valid `InternalProcessForm` case (e.g., `startTask`)
 - **`conditions`**: JSON array of condition objects
-- **`appears_before_id`** / **`appears_after_id`**: Ordering constraints (optional)
+- **`appears_before_ids`** / **`appears_after_ids`**: Ordering constraints — arrays of procedure-setting UUIDs (optional, default `[]`)
 - **`sort_order`**: Display priority (optional, fallback)
 - **`is_active`**: Boolean (optional, default true)
 
@@ -2140,14 +2143,34 @@ The key is `InternalProcessCondition->value`. The value type depends on the cond
 
 ### 27.9 Ordering Constraints
 
-`appears_before_id` and `appears_after_id` create a DAG of ordering:
+`appears_before_ids` and `appears_after_ids` are **JSON arrays of UUIDs** forming a DAG of ordering dependencies.
 
-```
-Child B (appears_before_id = Child C.id)
-Child C (appears_after_id = Child B.id)
+#### Logic rules
+
+| Field | Logic | Meaning |
+|-------|-------|---------|
+| `appears_after_ids` | **AND** | Show only when **all** listed procedures are taken |
+| `appears_before_ids` | **OR** | Hide as soon as **any** listed procedure is taken |
+
+#### Example
+
+```json
+"appears_after_ids":  ["uuid-A", "uuid-B"],
+"appears_before_ids": ["uuid-C"]
 ```
 
-This means: Child B must appear BEFORE Child C in the available-actions list. The `sort_order` column is a fallback.
+This procedure is visible only when **both A and B are taken** and **C is not yet taken**.
+
+#### API input/output
+```json
+// Input (create/update)
+{ "appears_after_ids": ["uuid-A", "uuid-B"], "appears_before_ids": [] }
+
+// Output (presenter / available-actions)
+{ "appears_after_ids": ["uuid-A", "uuid-B"], "appears_before_ids": [] }
+```
+
+Empty arrays `[]` and `null` are both treated as "no constraint". The `sort_order` column controls display ordering within the visible set.
 
 ### 27.10 Traps
 
@@ -2233,28 +2256,44 @@ EmployeeTaskFormConditionService::check*Conditions()
 
 The task's `user.userProfessionalData` is lazy-loaded inside the service to resolve `branchId` for the procedure setting lookup.
 
-### 28.4 startTask
+### 28.4 startTask Condition Check (new rich array format)
 
-`InternalProcessForm::StartTask` has `conditions() = []` (empty). No condition check is performed for start. Timing enforcement for task starts is owned by the Attendance module's constraint system.
+**Called by:** `EmployeeTaskController::start()` via `EmployeeTaskLifecycleService::start()`.
+
+`InternalProcessForm::StartTask` maps to 5 rich conditions (each evaluated only when `is_active = true`):
+
+| Condition key | Category | Enforcement logic | Configurable settings |
+|--------------|----------|------------------|-----------------------|
+| `inside_shift_time` | `time` | Current server time within `[start_time − tolerance, end_time − tolerance]` | `start_time`, `end_time`, `allow_before_start_minutes`, `allow_before_end_minutes` |
+| `inside_task_location` | `location` | Haversine distance ≤ `settings.radius_meters` | `radius_meters` |
+| `employee_has_attendance` | `attendance` | Must have active clock-in record (`clock_out IS NULL`) | none |
+| `task_is_approved` | `task_status` | `task.status` must equal `approved` | none |
+| `no_open_task` | `open_task` | No other task for user with `status = in_progress` | none |
+
+> See §31 for the full conditions system design and frontend integration guide.
 
 ### 28.5 Exceptions Thrown
 
-| Exception method | HTTP | Message |
-|-----------------|------|---------|
-| `EmployeeTaskException::notAllowedDuringShift()` | 422 | "This action is not allowed while you are within a work shift." |
-| `EmployeeTaskException::notAllowedOutsideShift()` | 422 | "This action is only allowed during an active work shift." |
-| `EmployeeTaskException::notAllowedOnHolidays()` | 422 | "This action is not allowed on holidays or non-working days." |
-| `EmployeeTaskException::cannotEndTaskOutsideLocation()` | 422 | "You must be within the task location to end this task." |
+| Exception method | HTTP | When thrown |
+|-----------------|------|-------------|
+| `notAllowedDuringShift()` | 422 | createTask: user is inside shift, `allow_during_shift = false` |
+| `notAllowedOutsideShift()` | 422 | createTask: user is outside shift, `allow_outside_shift = false` |
+| `notAllowedOnHolidays()` | 422 | createTask: today is a holiday, `allow_on_holidays = false` |
+| `cannotEndTaskOutsideLocation()` | 422 | endTask: employee is outside radius, `can_exit_outside_location = false` |
+| `outsideShiftTimeWindow()` | 422 | startTask: current time outside configured window |
+| `employeeHasNoAttendance()` | 422 | startTask: no active attendance record |
+| `taskNotApproved()` | 422 | startTask: task not in `approved` status |
+| `hasOtherOpenTask()` | 422 | startTask: employee already has an `in_progress` task |
+| `cannotStartTaskOutsideLocation()` | 422 | startTask: outside `inside_task_location` radius |
 
-### 28.6 How to Add Condition Enforcement to a New Form
+### 28.6 How to Add a New Condition
 
-1. Add the condition case to `InternalProcessCondition` if new.
-2. Return it from `InternalProcessForm::conditions()` for the target form.
-3. Update `InternalProcessCondition::defaultValuesForForm()` with sensible defaults.
-4. Add a new `check*Conditions()` method to `EmployeeTaskFormConditionService` (or create a new service for a different module).
-5. Call it from the relevant service method, **before** any workflow API call.
-6. Add a corresponding `EmployeeTaskException::*()` factory for the HTTP 422 response.
-7. Update §27.10.3 to document the new backend-enforced condition.
+1. Add enum case to `InternalProcessCondition` (with `category()`, `labelAr()`, `settingsSchema()`).
+2. Register it in `InternalProcessForm::conditions()` for the target form.
+3. Add a private `assert*()` method in `EmployeeTaskFormConditionService`.
+4. Dispatch it from the appropriate `check*Conditions()` block (only when `is_active = true`).
+5. Add an `EmployeeTaskException::yourError()` factory.
+6. See `docs/CONDITIONS_SYSTEM_GUIDE.md` for the full extension recipe.
 
 ---
 
@@ -2362,8 +2401,8 @@ $actions = $this->actionsService->forProcessable(
 
 **Filtering rules (applied internally)**:
 - `is_active = true`
-- `appears_after_id`: referenced procedure must be taken → else hidden
-- `appears_before_id`: referenced procedure must NOT be taken → else hidden
+- `appears_after_ids` *(array)*: **ALL** IDs must be in `takenIds` → else hidden (AND)
+- `appears_before_ids` *(array)*: **ANY** ID in `takenIds` → hidden (OR)
 
 **Module wrappers** (thin, only resolve entity context):
 - `EmployeeTaskAvailableActionsService::forTask(string $taskId)` → resolves branch from `userProfessionalData`, calls `forProcessable()`
@@ -2419,8 +2458,8 @@ Returns the same structure as `GET /employee-tasks/{id}/available-actions`:
     "name": "إنشاء طلب عميل",
     "form": { "key": "createClientRequest", "label_ar": "إنشاء طلب عميل" },
     "conditions": [],
-    "appears_before_id": null,
-    "appears_after_id": null,
+    "appears_before_ids": [],
+    "appears_after_ids": [],
     "sort_order": 100
   }
 ]
@@ -2472,3 +2511,197 @@ new WorkflowProcedureTaken(
 5. Add `GET /{id}/available-actions` route with `VIEW` permission.
 6. No changes to `ProcedureSetting` module code required — the event listener handles everything automatically.
 
+---
+
+### 30.5 Multi-Value `appears_after_ids` / `appears_before_ids` (2026-06-21)
+
+#### What changed
+
+`appears_after_id` and `appears_before_id` on `procedure_settings` changed from **single UUID** columns to **JSON array** columns, enabling a procedure to depend on or precede multiple others simultaneously.
+
+| | Before | After |
+|--|--------|-------|
+| DB column type | `uuid` (nullable) | `json` (nullable) |
+| FK constraint | Yes (`nullOnDelete`) | **Removed** (JSON can't have FKs) |
+| Model cast | none (raw string) | `'array'` |
+| API input | `"appears_after_id": "uuid"` | `"appears_after_id": ["uuid1", "uuid2"]` |
+| API output key | `appears_after_id` | `appears_after_ids` |
+| Empty / null | `null` | `[]` |
+
+#### Logic semantics
+
+| Field | Logic | Rule |
+|-------|-------|------|
+| `appears_after_ids` | **AND** | Procedure is shown only when **all** IDs in this array are taken |
+| `appears_before_ids` | **OR** | Procedure is hidden as soon as **any** ID in this array is taken |
+
+#### Files changed
+
+| File | Change |
+|------|--------|
+| `ProcedureSetting/Database/Migrations/2026_06_21_000001_...php` | Drops FKs, converts existing rows, changes column type |
+| `ProcedureSetting/Models/ProcedureSetting.php` | Added `array` casts; removed `belongsTo` relations |
+| `ProcedureSetting/Services/InternalProcedureAvailableActionsService.php` | Filter loop replaces single-value check; output uses plural keys |
+| `ProcedureSetting/Requests/CreateInternalProcedureSettingRequest.php` | `'appears_after_id' => ['nullable','array']` + `'appears_after_id.*' => ['uuid','exists:...']` |
+| `ProcedureSetting/Requests/UpdateInternalProcedureSettingRequest.php` | Same |
+| `ProcedureSetting/Presenters/InternalProcedureSettingPresenter.php` | Output key renamed to plural, always returns `[]` not `null` |
+| `ProcedureSetting/Presenters/ProcedureSettingPresenter.php` | Same |
+
+---
+
+## 31. Rich Conditions System (2026-06-21)
+
+> Full reference: `docs/CONDITIONS_SYSTEM_GUIDE.md`
+
+### 31.1 Problem Solved
+
+The old `conditions` column was a flat JSON object (`{"allow_during_shift": true}`) — values only, no metadata. Frontend had no way to know what conditions exist for a form, what their display labels are, or what configurable sub-fields they need.
+
+The new system adds:
+- A discovery endpoint the frontend calls once per form type.
+- A `settings_schema` per condition describing its configurable parameters.
+- A rich stored format with `is_active`, `sort_order`, and `settings`.
+
+---
+
+### 31.2 New Enums
+
+#### `InternalProcessConditionCategory` (new file)
+
+`modules/Shared/InternalProcessType/Enums/InternalProcessConditionCategory.php`
+
+| Case | Value | `labelAr()` |
+|------|-------|-------------|
+| `Time` | `time` | وقت |
+| `Location` | `location` | موقع |
+| `Attendance` | `attendance` | حضور |
+| `TaskStatus` | `task_status` | حالة المهمة |
+| `OpenTask` | `open_task` | مهمة مفتوحة |
+| `Shift` | `shift` | دوام |
+| `Duration` | `duration` | مدة |
+| `Attachment` | `attachment` | مرفقات |
+
+#### `InternalProcessConditionType` — added `Time = 'time'`
+
+Used for `HH:MM` string values stored in `settings`.
+
+---
+
+### 31.3 New Methods on `InternalProcessCondition`
+
+| Method | Returns | Purpose |
+|--------|---------|---------|
+| `category()` | `InternalProcessConditionCategory` | Groups condition by kind |
+| `settingsSchema()` | `list<array{key, type, label_ar, default}>` | Describes configurable parameters for this condition |
+| `toDefinition()` | array | Full shape sent to frontend via `formsConditions` endpoint |
+| `validationRulesForForm()` | `array<string, list>` | **Changed** — now validates the rich array format: `conditions.*.key`, `conditions.*.is_active`, `conditions.*.sort_order`, `conditions.*.settings` |
+| `defaultValuesForForm()` | `list<array>` | **Changed** — returns list of condition objects with `settingsSchema` defaults |
+
+---
+
+### 31.4 New Conditions for `startTask`
+
+`InternalProcessForm::StartTask::conditions()` now returns:
+
+```php
+[
+    InternalProcessCondition::InsideShiftTime,       // inside_shift_time
+    InternalProcessCondition::InsideTaskLocation,    // inside_task_location
+    InternalProcessCondition::EmployeeHasAttendance, // employee_has_attendance
+    InternalProcessCondition::TaskIsApproved,        // task_is_approved
+    InternalProcessCondition::NoOpenTask,            // no_open_task
+]
+```
+
+---
+
+### 31.5 Discovery API
+
+```
+GET /api/v1/admin/procedure-settings/forms-conditions?type=startTask
+```
+
+Returns one definition object per condition in the form:
+
+```json
+{
+  "key": "inside_shift_time",
+  "type": "time",
+  "category": "time",
+  "category_label_ar": "وقت",
+  "label_ar": "داخل وقت الدوام",
+  "settings_schema": [
+    { "key": "start_time",                 "type": "time", "label_ar": "من",                                   "default": "08:00" },
+    { "key": "end_time",                   "type": "time", "label_ar": "إلى",                                  "default": "17:00" },
+    { "key": "allow_before_start_minutes", "type": "int",  "label_ar": "يسمح قبل بداية الدوام بـ (دقيقة)", "default": 0 },
+    { "key": "allow_before_end_minutes",   "type": "int",  "label_ar": "يسمح قبل نهاية الدوام بـ (دقيقة)", "default": 0 }
+  ]
+}
+```
+
+**Route:** `modules/ProcedureSetting/Resources/routes/api.php`
+**Controller method:** `InternalProcedureSettingController::formsConditions(Request $request)`
+**No authentication middleware change** — sits inside the existing `auth:api` group.
+
+---
+
+### 31.6 Frontend Flow
+
+```
+1. GET /forms-conditions?type=startTask
+      → receive array of condition definitions (each with settings_schema)
+
+2. Render table rows — one per definition:
+      toggle  |  label_ar  |  category_label_ar  |  settings inputs
+
+3. For each settings_schema field:
+      type = 'time'   → time picker (HH:MM)
+      type = 'int'    → number input
+      type = 'bool'   → checkbox / toggle
+
+4. On save  →  POST or PUT with:
+   "conditions": [
+     { "key": "inside_shift_time", "is_active": true, "sort_order": 1,
+       "settings": { "start_time": "08:00", "end_time": "17:00",
+                     "allow_before_start_minutes": 30, "allow_before_end_minutes": 0 } },
+     { "key": "inside_task_location", "is_active": true, "sort_order": 2,
+       "settings": { "radius_meters": 150 } },
+     { "key": "employee_has_attendance", "is_active": false, "sort_order": 3, "settings": {} },
+     { "key": "task_is_approved",        "is_active": false, "sort_order": 4, "settings": {} },
+     { "key": "no_open_task",            "is_active": true,  "sort_order": 5, "settings": {} }
+   ]
+```
+
+---
+
+### 31.7 Backend Dual-Format Support
+
+`EmployeeTaskFormConditionService::indexConditions(array $conditions)` normalises both formats into a keyed map `['condition_key' => {key, is_active, sort_order, settings}]`:
+
+```
+New format (array_is_list = true):
+  [{key: "inside_shift_time", is_active: true, ...}]  →  ['inside_shift_time' => {…}]
+
+Old format (associative):
+  {"allow_during_shift": true}  →  ['allow_during_shift' => {key, is_active: true, settings: []}]
+```
+
+This means **old `createTask`/`endTask` procedures stored in the database continue to work unchanged**.
+
+---
+
+### 31.8 Files Changed in This Feature
+
+| File | Change |
+|------|--------|
+| `modules/Shared/InternalProcessType/Enums/InternalProcessConditionCategory.php` | **New** |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessConditionType.php` | Added `Time` case |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | 5 new cases; new `category()`, `settingsSchema()`; updated `toDefinition()`, `validationRulesForForm()`, `defaultValuesForForm()` |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | `StartTask` conditions updated to 5 new rich cases |
+| `modules/ProcedureSetting/Controllers/InternalProcedureSettingController.php` | Added `formsConditions()` |
+| `modules/ProcedureSetting/Resources/routes/api.php` | Added `GET /forms-conditions` |
+| `modules/ProcedureSetting/Requests/CreateInternalProcedureSettingRequest.php` | Removed `prepareForValidation()` normalization |
+| `modules/ProcedureSetting/Requests/UpdateInternalProcedureSettingRequest.php` | Same |
+| `modules/EmployeeTask/Exceptions/EmployeeTaskException.php` | Added 4 new exception factories |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | Full rewrite with `indexConditions()`, 5 new `assert*()` methods, `AttendanceRepository` injection |
+| `docs/CONDITIONS_SYSTEM_GUIDE.md` | **New** — standalone guide for AI/frontend/backend |
