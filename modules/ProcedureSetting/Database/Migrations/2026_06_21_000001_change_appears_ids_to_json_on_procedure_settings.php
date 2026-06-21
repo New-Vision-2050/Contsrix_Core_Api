@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -19,13 +20,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('procedure_settings', function (\Illuminate\Database\Schema\Blueprint $table) {
-            foreach (['ps_appears_before_fk', 'ps_appears_after_fk'] as $fk) {
-                try {
-                    $table->dropForeign($fk);
-                } catch (\Throwable) {
-                    // FK may not exist in all environments
-                }
+        $existingFks = collect(Schema::getForeignKeys('procedure_settings'))->pluck('name');
+
+        Schema::table('procedure_settings', function (Blueprint $table) use ($existingFks): void {
+            if ($existingFks->contains('ps_appears_before_fk')) {
+                $table->dropForeign('ps_appears_before_fk');
+            }
+            if ($existingFks->contains('ps_appears_after_fk')) {
+                $table->dropForeign('ps_appears_after_fk');
             }
         });
 
@@ -40,7 +42,7 @@ return new class extends Migration
             ");
         }
 
-        Schema::table('procedure_settings', function (\Illuminate\Database\Schema\Blueprint $table) {
+        Schema::table('procedure_settings', function (Blueprint $table): void {
             $table->json('appears_before_id')->nullable()->change();
             $table->json('appears_after_id')->nullable()->change();
         });
@@ -48,7 +50,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('procedure_settings', function (\Illuminate\Database\Schema\Blueprint $table) {
+        Schema::table('procedure_settings', function (Blueprint $table): void {
             $table->string('appears_before_id', 36)->nullable()->change();
             $table->string('appears_after_id', 36)->nullable()->change();
         });
@@ -63,16 +65,17 @@ return new class extends Migration
             ");
         }
 
-        Schema::table('procedure_settings', function (\Illuminate\Database\Schema\Blueprint $table) {
-            try {
+        $existingFks = collect(Schema::getForeignKeys('procedure_settings'))->pluck('name');
+
+        Schema::table('procedure_settings', function (Blueprint $table) use ($existingFks): void {
+            if (! $existingFks->contains('ps_appears_before_fk')) {
                 $table->foreign('appears_before_id', 'ps_appears_before_fk')
                     ->references('id')->on('procedure_settings')->nullOnDelete();
-            } catch (\Throwable) {}
-
-            try {
+            }
+            if (! $existingFks->contains('ps_appears_after_fk')) {
                 $table->foreign('appears_after_id', 'ps_appears_after_fk')
                     ->references('id')->on('procedure_settings')->nullOnDelete();
-            } catch (\Throwable) {}
+            }
         });
     }
 };

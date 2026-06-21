@@ -2,7 +2,7 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-21 — Multi-module centralized taken-status expansion: generic `InternalProcedureAvailableActionsService` (Phase 1); `ClientRequest` integration with `createClientRequest`/`endClientRequest` marking + available-actions API (Phase 2); event-driven `WorkflowProcedureTaken` + `RecordInternalProcedureTaken` listener replacing all direct `markProcedureTaken()` calls in external modules (Phase 3). See §30 for full details, §29 for EmployeeTask baseline.
+> **Last updated:** 2026-06-21 — Multi-module centralized taken-status expansion (§30); `appears_after_id` / `appears_before_id` changed from single UUID to **JSON arrays** supporting multiple prerequisites (§27.9, §30.5); migration `2026_06_21_000001` converts existing rows automatically.
 
 ---
 
@@ -202,7 +202,7 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 
 | Method | Returns | Key Logic |
 |--------|---------|-----------|
-| `forTask($taskId)` | `list<array>` | Loads active child procedures, calls `getTakenProcedureIds()` from central morph table, filters by `appears_after_id` / `appears_before_id`, returns ordered visible list |
+| `forTask($taskId)` | `list<array>` | Loads active child procedures, calls `getTakenProcedureIds()` from central morph table, filters by `appears_after_ids` (ALL must be taken) / `appears_before_ids` (hide if ANY taken), returns ordered visible list |
 
 ### EmployeeTaskFormConditionService
 
@@ -600,7 +600,7 @@ Each child has:
 - Its own `name` (display label)
 - Its own `steps` (workflow steps)
 - Its own `conditions` (JSON array of InternalProcessCondition)
-- `appears_before_id` / `appears_after_id` (ordering constraints)
+- `appears_before_ids` / `appears_after_ids` (ordering constraints — JSON arrays of UUIDs)
 - `sort_order` (display order)
 
 ### Resolving a Child Procedure Setting
@@ -653,7 +653,7 @@ WorkflowStepActivated event broadcasts notification + inbox counts centrally
 
 `GET /employee-tasks/{taskId}/available-actions`
 
-Returns all **active** (`is_active = true`) child internal procedure settings for the task, filtered by ordering dependencies (`appears_before_id` / `appears_after_id`):
+Returns all **active** (`is_active = true`) child internal procedure settings for the task, filtered by ordering dependencies (`appears_before_ids` / `appears_after_ids`):
 
 ```json
 [
@@ -662,7 +662,8 @@ Returns all **active** (`is_active = true`) child internal procedure settings fo
     "name": "تأكيد دخول الموقع",
     "form": { "key": "confirmLocation", "label_ar": "تأكيد الموقع" },
     "conditions": [...],
-    "appears_before_id": "child-uuid-2",
+    "appears_before_ids": ["child-uuid-2"],
+    "appears_after_ids": [],
     "sort_order": 1
   },
   {
@@ -670,7 +671,8 @@ Returns all **active** (`is_active = true`) child internal procedure settings fo
     "name": "تأكيد خروج الموقع",
     "form": { "key": "confirmLocation", "label_ar": "تأكيد الموقع" },
     "conditions": [...],
-    "appears_after_id": "child-uuid-1",
+    "appears_before_ids": [],
+    "appears_after_ids": ["child-uuid-1"],
     "sort_order": 2
   }
 ]
@@ -683,12 +685,12 @@ Each internal procedure setting has an `is_active` boolean field (default: `true
 - It can be toggled via `PUT /procedure-settings/{id}/internal-procedures/{internalProcedureId}/set-status` with body `{ "is_active": false }`.
 - It can also be set during **create** (`POST /procedure-settings/{id}/internal-procedures`) and **update** (`PUT /procedure-settings/{id}/internal-procedures/{internalProcedureId}`) via the `is_active` field.
 
-#### Ordering Dependencies (`appears_before_id` / `appears_after_id`)
+#### Ordering Dependencies (`appears_before_ids` / `appears_after_ids`)
 
-Each internal procedure can declare ordering constraints:
+Each internal procedure can declare ordering constraints as **arrays of UUIDs** (multiple prerequisites supported):
 
-- **`appears_after_id`**: This procedure only appears **after** the referenced procedure has been "taken" (completed/approved). If the referenced procedure is not yet taken, this procedure is **hidden**.
-- **`appears_before_id`**: This procedure only appears **before** the referenced procedure has been "taken". Once the referenced procedure is taken, this procedure is **hidden**.
+- **`appears_after_ids`** *(array)*: **ALL** referenced procedures must be "taken" before this procedure is shown. If any prerequisite is not yet taken, this procedure is **hidden** (AND logic).
+- **`appears_before_ids`** *(array)*: This procedure is hidden once **ANY** of the referenced procedures is "taken" (OR logic). Send an empty array `[]` to disable.
 
 #### "Taken" Status Definition
 
@@ -743,9 +745,9 @@ Each action endpoint (`startTask`, `endTask`, `locationPing`, `requestApproval`,
 ```
 Procedures:
   A: createTask (sort_order: 100)
-  B: confirmLocation, appears_after_id = A (sort_order: 200)
-  C: startTask, appears_after_id = A (sort_order: 300)
-  D: sendForApproval, appears_after_id = B (sort_order: 400)
+  B: confirmLocation, appears_after_ids = [A] (sort_order: 200)
+  C: startTask, appears_after_ids = [A] (sort_order: 300)
+  D: sendForApproval, appears_after_ids = [A, B] (sort_order: 400)  ← requires BOTH A and B
 
 Timeline:
   1. Task created → A is taken
@@ -758,7 +760,7 @@ Timeline:
   8. available-actions returns: [] (all taken)
 ```
 
-If `C` had `appears_before_id = B` instead:
+If `C` had `appears_before_ids = [B]` instead:
 ```
   1. Task created → A is taken
   2. available-actions returns: B, C
@@ -1508,7 +1510,7 @@ If you are a future AI reading this, these are the changes made to the codebase 
 - `ProcedureSetting` is now a **self-referencing table** with `parent_id`.
 - **Parent rows**: `parent_id = NULL`, `type` = category (`employee_task`, `client_request`, etc.)
 - **Child rows**: `parent_id = parent.id`, `form` = action key (`startTask`, `extendTaskTime`, etc.)
-- Each child has its own `name`, `steps`, `conditions`, `appears_before_id`, `appears_after_id`, `sort_order`
+- Each child has its own `name`, `steps`, `conditions`, `appears_before_ids` (JSON array), `appears_after_ids` (JSON array), `sort_order`
 
 #### Enum Changes
 - `ProcedureSettingType` simplified to categories only (`employee_task`, `client_request`, `price_offer`, `contract`, `meeting`)
@@ -1517,7 +1519,8 @@ If you are a future AI reading this, these are the changes made to the codebase 
 - `InternalProcessCondition` enum added for per-form condition definitions
 
 #### Database Changes
-- Added to `procedure_settings`: `parent_id` (UUID, nullable, FK to self), `form` (string, nullable), `conditions` (JSON, nullable), `appears_before_id` (UUID, nullable), `appears_after_id` (UUID, nullable)
+- Added to `procedure_settings`: `parent_id` (UUID, nullable, FK to self), `form` (string, nullable), `conditions` (JSON, nullable), `appears_before_id` (JSON array, nullable), `appears_after_id` (JSON array, nullable)
+- Migration `2026_06_21_000001`: changed `appears_before_id` / `appears_after_id` from single `uuid` to `json` arrays; dropped FK constraints; auto-converts existing single-UUID rows
 - Dropped `internal_process_types` table
 - Removed `employee_task_requests.internal_process_type_id` column
 
@@ -1721,8 +1724,8 @@ After Fix (WORKING):
 | **Parent Procedure Setting** | Category-level `ProcedureSetting` (`parent_id = NULL`). Groups related internal procedures. |
 | **Form Key** | Action identifier on a child: `startTask`, `extendTaskTime`, `sendForApproval`, etc. Defined in `InternalProcessForm` enum. |
 | **Conditions** | JSON array of `InternalProcessCondition` values on a child. UI/UX hints for the mobile app. |
-| **appears_before_id** | Ordering constraint: this child must appear BEFORE the referenced child in available-actions. |
-| **appears_after_id** | Ordering constraint: this child must appear AFTER the referenced child in available-actions. |
+| **appears_before_ids** | Ordering constraint (JSON array): this child is hidden once ANY referenced procedure is taken. Empty array = no constraint. |
+| **appears_after_ids** | Ordering constraint (JSON array): this child is visible only when ALL referenced procedures are taken. Empty array = always visible. |
 | **InternalProcessForm** | Enum defining valid form keys per category. Has `applicableTypes()` and `forType()` methods. |
 | **InternalProcessCondition** | Enum defining valid condition keys (e.g., `AllowDuringShift`, `ApplyToAllBranches`). |
 
@@ -1900,8 +1903,8 @@ The actionable form. Created via `POST /procedure-settings/{parent_id}/internal-
 | `form` | Action key: `startTask`, `extendTaskTime`, `sendForApproval`, `cancelTask`, `confirmLocation`, `assignOtherEmployee`, `attachAttachments` |
 | `name` | Display name (e.g., "تأكيد دخول الموقع") |
 | `conditions` | JSON array of `InternalProcessCondition` values |
-| `appears_before_id` | This child must appear BEFORE the referenced child |
-| `appears_after_id` | This child must appear AFTER the referenced child |
+| `appears_before_ids` | JSON array of UUIDs — hide this child once ANY referenced procedure is taken |
+| `appears_after_ids` | JSON array of UUIDs — show this child only when ALL referenced procedures are taken |
 | `sort_order` | Display order |
 | `is_active` | Whether this child is enabled |
 | `is_internal_procedure` | `true` (always, for children) |
@@ -2028,8 +2031,8 @@ body: {
   "name": "بدء مهمة العمل",
   "form": "startTask",
   "conditions": [],
-  "appears_before_id": null,
-  "appears_after_id": null,
+  "appears_before_ids": [],
+  "appears_after_ids": [],
   "sort_order": 1,
   "is_active": true
 }
@@ -2040,7 +2043,7 @@ Response: { "id": "auto-generated-child-uuid", ... }
 - **`name`**: Display name (e.g., "بدء مهمة العمل")
 - **`form`**: Must be a valid `InternalProcessForm` case (e.g., `startTask`)
 - **`conditions`**: JSON array of condition objects
-- **`appears_before_id`** / **`appears_after_id`**: Ordering constraints (optional)
+- **`appears_before_ids`** / **`appears_after_ids`**: Ordering constraints — arrays of procedure-setting UUIDs (optional, default `[]`)
 - **`sort_order`**: Display priority (optional, fallback)
 - **`is_active`**: Boolean (optional, default true)
 
@@ -2140,14 +2143,34 @@ The key is `InternalProcessCondition->value`. The value type depends on the cond
 
 ### 27.9 Ordering Constraints
 
-`appears_before_id` and `appears_after_id` create a DAG of ordering:
+`appears_before_ids` and `appears_after_ids` are **JSON arrays of UUIDs** forming a DAG of ordering dependencies.
 
-```
-Child B (appears_before_id = Child C.id)
-Child C (appears_after_id = Child B.id)
+#### Logic rules
+
+| Field | Logic | Meaning |
+|-------|-------|---------|
+| `appears_after_ids` | **AND** | Show only when **all** listed procedures are taken |
+| `appears_before_ids` | **OR** | Hide as soon as **any** listed procedure is taken |
+
+#### Example
+
+```json
+"appears_after_ids":  ["uuid-A", "uuid-B"],
+"appears_before_ids": ["uuid-C"]
 ```
 
-This means: Child B must appear BEFORE Child C in the available-actions list. The `sort_order` column is a fallback.
+This procedure is visible only when **both A and B are taken** and **C is not yet taken**.
+
+#### API input/output
+```json
+// Input (create/update)
+{ "appears_after_ids": ["uuid-A", "uuid-B"], "appears_before_ids": [] }
+
+// Output (presenter / available-actions)
+{ "appears_after_ids": ["uuid-A", "uuid-B"], "appears_before_ids": [] }
+```
+
+Empty arrays `[]` and `null` are both treated as "no constraint". The `sort_order` column controls display ordering within the visible set.
 
 ### 27.10 Traps
 
@@ -2362,8 +2385,8 @@ $actions = $this->actionsService->forProcessable(
 
 **Filtering rules (applied internally)**:
 - `is_active = true`
-- `appears_after_id`: referenced procedure must be taken → else hidden
-- `appears_before_id`: referenced procedure must NOT be taken → else hidden
+- `appears_after_ids` *(array)*: **ALL** IDs must be in `takenIds` → else hidden (AND)
+- `appears_before_ids` *(array)*: **ANY** ID in `takenIds` → hidden (OR)
 
 **Module wrappers** (thin, only resolve entity context):
 - `EmployeeTaskAvailableActionsService::forTask(string $taskId)` → resolves branch from `userProfessionalData`, calls `forProcessable()`
@@ -2419,8 +2442,8 @@ Returns the same structure as `GET /employee-tasks/{id}/available-actions`:
     "name": "إنشاء طلب عميل",
     "form": { "key": "createClientRequest", "label_ar": "إنشاء طلب عميل" },
     "conditions": [],
-    "appears_before_id": null,
-    "appears_after_id": null,
+    "appears_before_ids": [],
+    "appears_after_ids": [],
     "sort_order": 100
   }
 ]
@@ -2471,4 +2494,40 @@ new WorkflowProcedureTaken(
 4. In entity completion service: fire `WorkflowProcedureTaken('your_type', $id, $settingId, $userId)` for each `endX`-form setting.
 5. Add `GET /{id}/available-actions` route with `VIEW` permission.
 6. No changes to `ProcedureSetting` module code required — the event listener handles everything automatically.
+
+---
+
+### 30.5 Multi-Value `appears_after_ids` / `appears_before_ids` (2026-06-21)
+
+#### What changed
+
+`appears_after_id` and `appears_before_id` on `procedure_settings` changed from **single UUID** columns to **JSON array** columns, enabling a procedure to depend on or precede multiple others simultaneously.
+
+| | Before | After |
+|--|--------|-------|
+| DB column type | `uuid` (nullable) | `json` (nullable) |
+| FK constraint | Yes (`nullOnDelete`) | **Removed** (JSON can't have FKs) |
+| Model cast | none (raw string) | `'array'` |
+| API input | `"appears_after_id": "uuid"` | `"appears_after_id": ["uuid1", "uuid2"]` |
+| API output key | `appears_after_id` | `appears_after_ids` |
+| Empty / null | `null` | `[]` |
+
+#### Logic semantics
+
+| Field | Logic | Rule |
+|-------|-------|------|
+| `appears_after_ids` | **AND** | Procedure is shown only when **all** IDs in this array are taken |
+| `appears_before_ids` | **OR** | Procedure is hidden as soon as **any** ID in this array is taken |
+
+#### Files changed
+
+| File | Change |
+|------|--------|
+| `ProcedureSetting/Database/Migrations/2026_06_21_000001_...php` | Drops FKs, converts existing rows, changes column type |
+| `ProcedureSetting/Models/ProcedureSetting.php` | Added `array` casts; removed `belongsTo` relations |
+| `ProcedureSetting/Services/InternalProcedureAvailableActionsService.php` | Filter loop replaces single-value check; output uses plural keys |
+| `ProcedureSetting/Requests/CreateInternalProcedureSettingRequest.php` | `'appears_after_id' => ['nullable','array']` + `'appears_after_id.*' => ['uuid','exists:...']` |
+| `ProcedureSetting/Requests/UpdateInternalProcedureSettingRequest.php` | Same |
+| `ProcedureSetting/Presenters/InternalProcedureSettingPresenter.php` | Output key renamed to plural, always returns `[]` not `null` |
+| `ProcedureSetting/Presenters/ProcedureSettingPresenter.php` | Same |
 
