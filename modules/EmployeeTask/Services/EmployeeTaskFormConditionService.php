@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Modules\EmployeeTask\Services;
 
 use Carbon\Carbon;
-use Modules\Attendance\Repositories\AttendanceRepository;
 use Modules\Attendance\Services\AttendanceConstraintService;
-use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
@@ -15,40 +13,37 @@ use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
-use Ramsey\Uuid\Uuid;
 
 /**
  * Evaluates InternalProcessForm conditions stored on child ProcedureSetting records.
  *
- * Supports two storage formats:
+ * Active forms:
+ *   createTask — rich-array format with mode-aware AllowDuringShift (shift | specific_time)
  *
- *   OLD (flat object, used by createTask / endTask):
- *     {"allow_during_shift": true, "can_exit_outside_location": false}
+ * startTask and endTask have no conditions; their check methods are no-ops.
  *
- *   NEW (rich array, used by startTask and beyond):
- *     [
- *       {"key": "inside_shift_time",   "is_active": true,  "sort_order": 1, "settings": {"start_time": "08:00", ...}},
- *       {"key": "inside_task_location","is_active": true,  "sort_order": 2, "settings": {"radius_meters": 100}},
- *       {"key": "employee_has_attendance","is_active": true,"sort_order": 3, "settings": {}},
- *       {"key": "task_is_approved",    "is_active": false, "sort_order": 4, "settings": {}},
- *       {"key": "no_open_task",        "is_active": true,  "sort_order": 5, "settings": {}}
- *     ]
+ * Storage format (createTask):
+ *   NEW (rich array):
+ *     [{"key": "allow_during_shift", "is_active": true, "sort_order": 1,
+ *       "settings": {"mode": "specific_time", "start_time": "08:00", "end_time": "17:00"}}]
  *
- * Format is auto-detected: a list (array_is_list) = new; associative = old.
+ *   OLD (flat associative, backward-compat for existing DB rows):
+ *     {"allow_during_shift": true, ...}
  */
 final class EmployeeTaskFormConditionService
 {
     public function __construct(
         private readonly AttendanceConstraintService $attendanceConstraintService,
-        private readonly AttendanceRepository        $attendanceRepository,
-        private readonly EmployeeTaskLocationService  $locationService,
         private readonly ProcedureWorkflowService     $workflow,
     ) {}
 
     // ─── Public API ──────────────────────────────────────────────────────────
 
     /**
-     * Check shift/holiday conditions for the createTask form.
+     * Check all createTask conditions:
+     *   - shift / holiday gating  (AllowDuringShift / AllowOutsideShift / AllowOnHolidays)
+     *   - maximum task duration   (MaxTaskDuration)
+     *   - maximum scheduled date  (MaxScheduledDateOffset)
      *
      * @throws EmployeeTaskException
      */
@@ -56,6 +51,8 @@ final class EmployeeTaskFormConditionService
         string  $userId,
         string  $companyId,
         ?string $branchId,
+        float   $durationHours,
+        string  $taskDate,
     ): void {
         $conditions = $this->resolveConditions(
             InternalProcessForm::CreateTask->value,
@@ -68,125 +65,40 @@ final class EmployeeTaskFormConditionService
         }
 
         $map = $this->indexConditions($conditions);
+
         $this->assertShiftConditions($map, $userId);
+
+        // ── max_task_duration ────────────────────────────────────────────────
+        $maxDurationCond = $map[InternalProcessCondition::MaxTaskDuration->value] ?? null;
+        if ($maxDurationCond && ($maxDurationCond['is_active'] ?? false)) {
+            $this->assertMaxTaskDuration($durationHours, $maxDurationCond['settings'] ?? []);
+        }
+
+        // ── max_scheduled_date_offset ─────────────────────────────────────────
+        $maxDateCond = $map[InternalProcessCondition::MaxScheduledDateOffset->value] ?? null;
+        if ($maxDateCond && ($maxDateCond['is_active'] ?? false)) {
+            $this->assertMaxScheduledDateOffset($taskDate, $maxDateCond['settings'] ?? []);
+        }
     }
 
     /**
-     * Check all active conditions for the startTask form (new rich format).
-     *
-     * Conditions evaluated (each only when is_active = true):
-     *   inside_shift_time       — current time is within the configured time window
-     *   inside_task_location    — employee is within settings.radius_meters of task location
-     *   employee_has_attendance — employee has an active clocked-in attendance record
-     *   task_is_approved        — task status is approved (or beyond)
-     *   no_open_task            — employee has no other task currently in_progress
-     *
-     * @throws EmployeeTaskException
+     * No conditions are configured for startTask.
      */
     public function checkStartTaskConditions(
         EmployeeTaskRequest $task,
         User                $user,
         float               $latitude,
         float               $longitude,
-    ): void {
-        $task->loadMissing('user.userProfessionalData');
-        $branchId = $task->user?->userProfessionalData?->branch_id !== null
-            ? (string) $task->user->userProfessionalData->branch_id
-            : null;
-
-        $conditions = $this->resolveConditions(
-            InternalProcessForm::StartTask->value,
-            $task->company_id,
-            $branchId,
-        );
-
-        if ($conditions === null) {
-            return;
-        }
-
-        $map = $this->indexConditions($conditions);
-
-        // ── inside_shift_time ────────────────────────────────────────────────
-        $shiftCond = $map[InternalProcessCondition::InsideShiftTime->value] ?? null;
-        if ($shiftCond && ($shiftCond['is_active'] ?? false)) {
-            $this->assertInsideShiftTime($shiftCond['settings'] ?? []);
-        }
-
-        // ── inside_task_location ─────────────────────────────────────────────
-        $locationCond = $map[InternalProcessCondition::InsideTaskLocation->value] ?? null;
-        if ($locationCond && ($locationCond['is_active'] ?? false)) {
-            $radius = (int) ($locationCond['settings']['radius_meters'] ?? 100);
-            $this->assertInsideTaskLocation($task, $user, $latitude, $longitude, $radius);
-        }
-
-        // ── employee_has_attendance ──────────────────────────────────────────
-        $attendanceCond = $map[InternalProcessCondition::EmployeeHasAttendance->value] ?? null;
-        if ($attendanceCond && ($attendanceCond['is_active'] ?? false)) {
-            $this->assertEmployeeHasAttendance((string) $user->id);
-        }
-
-        // ── task_is_approved ─────────────────────────────────────────────────
-        $approvedCond = $map[InternalProcessCondition::TaskIsApproved->value] ?? null;
-        if ($approvedCond && ($approvedCond['is_active'] ?? false)) {
-            $this->assertTaskIsApproved($task);
-        }
-
-        // ── no_open_task ─────────────────────────────────────────────────────
-        $noOpenCond = $map[InternalProcessCondition::NoOpenTask->value] ?? null;
-        if ($noOpenCond && ($noOpenCond['is_active'] ?? false)) {
-            $this->assertNoOpenTask((string) $user->id, (string) $task->id);
-        }
-
-        // ── Legacy: must_be_in_location (old flat format, backward-compat) ──
-        if (isset($map[InternalProcessCondition::MustBeInLocation->value])) {
-            $mustBe = (bool) ($map[InternalProcessCondition::MustBeInLocation->value]['is_active'] ?? false);
-            if ($mustBe) {
-                $inLocation = $this->locationService->isWithinTaskRadiusForStart($task, $user, $latitude, $longitude);
-                if (! $inLocation) {
-                    throw EmployeeTaskException::cannotStartTaskOutsideLocation();
-                }
-            }
-        }
-    }
+    ): void {}
 
     /**
-     * Check location condition for the endTask form.
-     *
-     * @throws EmployeeTaskException
+     * No conditions are configured for endTask.
      */
     public function checkEndTaskConditions(
         EmployeeTaskRequest $task,
         float               $latitude,
         float               $longitude,
-    ): void {
-        $task->loadMissing('user.userProfessionalData');
-        $branchId = $task->user?->userProfessionalData?->branch_id !== null
-            ? (string) $task->user->userProfessionalData->branch_id
-            : null;
-
-        $conditions = $this->resolveConditions(
-            InternalProcessForm::EndTask->value,
-            $task->company_id,
-            $branchId,
-        );
-
-        if ($conditions === null) {
-            return;
-        }
-
-        $map = $this->indexConditions($conditions);
-
-        $canExitOutside = (bool) ($map[InternalProcessCondition::CanExitOutsideLocation->value]['is_active']
-            ?? $map[InternalProcessCondition::CanExitOutsideLocation->value]
-            ?? true);
-
-        if (! $canExitOutside) {
-            $inLocation = $this->locationService->isWithinTaskRadius($task, $latitude, $longitude);
-            if (! $inLocation) {
-                throw EmployeeTaskException::cannotEndTaskOutsideLocation();
-            }
-        }
-    }
+    ): void {}
 
     // ─── Private helpers ─────────────────────────────────────────────────────
 
@@ -251,9 +163,26 @@ final class EmployeeTaskFormConditionService
     /**
      * Evaluate AllowDuringShift / AllowOutsideShift / AllowOnHolidays.
      * Works with both old flat format and new normalized map.
+     *
+     * AllowDuringShift now supports two modes via settings.mode:
+     *   'shift'         (default) — checks the employee's actual attendance schedule.
+     *   'specific_time' — checks the current time against a fixed start_time/end_time window.
      */
     private function assertShiftConditions(array $map, string $userId): void
     {
+        $duringShiftCond = $map[InternalProcessCondition::AllowDuringShift->value] ?? null;
+
+        // specific_time mode: bypass attendance system, check fixed time window instead
+        if ($duringShiftCond && ($duringShiftCond['is_active'] ?? false)) {
+            $mode = $duringShiftCond['settings']['mode'] ?? 'shift';
+            if ($mode === 'specific_time') {
+                $this->assertInsideSpecificTimeWindow($duringShiftCond['settings'] ?? []);
+
+                return;
+            }
+        }
+
+        // shift mode (default): use attendance constraint system
         $user = User::query()
             ->with([
                 'professionalData.attendanceConstraint',
@@ -280,7 +209,7 @@ final class EmployeeTaskFormConditionService
         }
 
         if ($isDuringShift) {
-            $allowDuringShift = (bool) ($map[InternalProcessCondition::AllowDuringShift->value]['is_active'] ?? true);
+            $allowDuringShift = (bool) ($duringShiftCond['is_active'] ?? true);
             if (! $allowDuringShift) {
                 throw EmployeeTaskException::notAllowedDuringShift();
             }
@@ -293,102 +222,52 @@ final class EmployeeTaskFormConditionService
     }
 
     /**
-     * Check that the current time falls within the configured shift time window.
-     *
-     * Effective window:
-     *   start = start_time  − allow_before_start_minutes
-     *   end   = end_time    − allow_before_end_minutes   (must finish X min before shift end)
+     * Enforce the maximum allowed task duration.
      *
      * @throws EmployeeTaskException
      */
-    private function assertInsideShiftTime(array $settings): void
+    private function assertMaxTaskDuration(float $durationHours, array $settings): void
     {
-        $startTime           = $settings['start_time'] ?? '00:00';
-        $endTime             = $settings['end_time']   ?? '23:59';
-        $beforeStartMinutes  = (int) ($settings['allow_before_start_minutes'] ?? 0);
-        $beforeEndMinutes    = (int) ($settings['allow_before_end_minutes']   ?? 0);
+        $maxHours = (int) ($settings['max_hours'] ?? 8);
+        if ($durationHours > $maxHours) {
+            throw EmployeeTaskException::taskDurationExceedsLimit($maxHours);
+        }
+    }
 
-        $now            = Carbon::now();
-        $effectiveStart = Carbon::parse($startTime)->subMinutes($beforeStartMinutes);
-        $effectiveEnd   = Carbon::parse($endTime)->subMinutes($beforeEndMinutes);
+    /**
+     * Enforce the maximum number of days from today for the task's scheduled date.
+     *
+     * @throws EmployeeTaskException
+     */
+    private function assertMaxScheduledDateOffset(string $taskDate, array $settings): void
+    {
+        $maxDays = (int) ($settings['max_days'] ?? 30);
+        $limit   = Carbon::today()->addDays($maxDays);
+        $date    = Carbon::parse($taskDate)->startOfDay();
 
-        if ($now->lt($effectiveStart) || $now->gt($effectiveEnd)) {
+        if ($date->gt($limit)) {
+            throw EmployeeTaskException::taskDateTooFarInFuture($maxDays);
+        }
+    }
+
+    /**
+     * Check the current time falls within a fixed start_time / end_time window.
+     * Used by AllowDuringShift when settings.mode = 'specific_time'.
+     *
+     * @throws EmployeeTaskException
+     */
+    private function assertInsideSpecificTimeWindow(array $settings): void
+    {
+        $startTime = $settings['start_time'] ?? '00:00';
+        $endTime   = $settings['end_time']   ?? '23:59';
+
+        $now   = Carbon::now();
+        $start = Carbon::parse($startTime);
+        $end   = Carbon::parse($endTime);
+
+        if ($now->lt($start) || $now->gt($end)) {
             throw EmployeeTaskException::outsideShiftTimeWindow();
         }
     }
 
-    /**
-     * Check the employee is within the given radius of the task location.
-     *
-     * @throws EmployeeTaskException
-     */
-    private function assertInsideTaskLocation(
-        EmployeeTaskRequest $task,
-        User                $user,
-        float               $latitude,
-        float               $longitude,
-        int                 $radiusMeters,
-    ): void {
-        if ((float) $task->task_latitude === 0.0 && (float) $task->task_longitude === 0.0) {
-            return;
-        }
-
-        $distance = \Modules\EmployeeTask\Support\GeoDistance::metres(
-            (float) $task->task_latitude,
-            (float) $task->task_longitude,
-            $latitude,
-            $longitude,
-        );
-
-        if ($distance > $radiusMeters) {
-            throw EmployeeTaskException::cannotStartTaskOutsideLocation();
-        }
-    }
-
-    /**
-     * Check the user has an active (clocked-in) attendance record today.
-     *
-     * @throws EmployeeTaskException
-     */
-    private function assertEmployeeHasAttendance(string $userId): void
-    {
-        $attendance = $this->attendanceRepository->getCurrentAttendance(
-            Uuid::fromString($userId),
-            withUser: false,
-        );
-
-        if ($attendance === null) {
-            throw EmployeeTaskException::employeeHasNoAttendance();
-        }
-    }
-
-    /**
-     * Check the task is in approved status (ready to start).
-     *
-     * @throws EmployeeTaskException
-     */
-    private function assertTaskIsApproved(EmployeeTaskRequest $task): void
-    {
-        if (! $task->isInStatus(EmployeeTaskStatus::Approved)) {
-            throw EmployeeTaskException::taskNotApproved();
-        }
-    }
-
-    /**
-     * Check the user does not have another task currently in_progress.
-     *
-     * @throws EmployeeTaskException
-     */
-    private function assertNoOpenTask(string $userId, string $excludeTaskId): void
-    {
-        $hasOpen = EmployeeTaskRequest::query()
-            ->where('user_id', $userId)
-            ->where('id', '!=', $excludeTaskId)
-            ->where('status', EmployeeTaskStatus::InProgress->value)
-            ->exists();
-
-        if ($hasOpen) {
-            throw EmployeeTaskException::hasOtherOpenTask();
-        }
-    }
 }
