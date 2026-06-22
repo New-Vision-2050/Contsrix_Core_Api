@@ -66,6 +66,20 @@ class ActionTakerResolver
         ?string $createdByUserId,
         array $context = [],
     ): array {
+        // ── New canonical format: action_taker_management_hierarchies ───────
+        // Array of {action_taker_management_hierarchy_type, is_Deputy_Director} objects.
+        // Iterate each row, resolve the manager (and deputies if flagged), merge all.
+        $hierarchies = $step->action_taker_management_hierarchies;
+        if (!empty($hierarchies)) {
+            return $this->resolveFromManagementHierarchiesArray(
+                $hierarchies,
+                $step,
+                $createdByUserId,
+                $context,
+            );
+        }
+
+        // ── Legacy fallback: single type + alternatives ─────────────────────
         $hierarchyType = $step->action_taker_management_hierarchy_type?->value;
 
         if ($hierarchyType === 'deputy_manager') {
@@ -75,6 +89,149 @@ class ActionTakerResolver
         $userId = $this->resolveManagerFromCreatorHierarchy($step, $createdByUserId, $context);
 
         return $userId !== null ? [$userId] : [];
+    }
+
+    /**
+     * Resolve users from the new action_taker_management_hierarchies array format.
+     * Each row: {action_taker_management_hierarchy_type: string, is_Deputy_Director: bool}
+     * Returns merged + de-duplicated user IDs from all rows.
+     *
+     * @param list<array{action_taker_management_hierarchy_type: string, is_Deputy_Director: bool}> $hierarchies
+     * @return list<string>
+     */
+    private function resolveFromManagementHierarchiesArray(
+        array $hierarchies,
+        ProcedureSettingStep $step,
+        ?string $createdByUserId,
+        array $context = [],
+    ): array {
+        $users = [];
+
+        foreach ($hierarchies as $row) {
+            $type = $row['action_taker_management_hierarchy_type'] ?? '';
+            $isDeputy = (bool) ($row['is_Deputy_Director'] ?? false);
+
+            if ($type === '') {
+                continue;
+            }
+
+            // Resolve the manager for this hierarchy type.
+            $managerId = $this->resolveManagerByType($type, $step, $createdByUserId, $context);
+
+            if ($managerId !== null) {
+                $users[$managerId] = true;
+            }
+
+            // If deputy flag is set, also include all deputy managers.
+            if ($isDeputy) {
+                $deputyIds = $this->resolveDeputyManagersForType($type, $createdByUserId);
+                foreach ($deputyIds as $deputyId) {
+                    $users[$deputyId] = true;
+                }
+            }
+        }
+
+        return array_keys($users);
+    }
+
+    /**
+     * Resolve a single manager user ID for a given hierarchy type.
+     * Used by the new array format resolver.
+     */
+    private function resolveManagerByType(
+        string $hierarchyType,
+        ProcedureSettingStep $step,
+        ?string $createdByUserId,
+        array $context = [],
+    ): ?string {
+        if ($hierarchyType === 'project_manager') {
+            // Resolve project manager directly — do NOT call tryAlternatives
+            // (which reads legacy fields). If unresolvable, return null so the
+            // caller loop moves to the next row in the array.
+            $projectId = $context['project_id'] ?? null;
+            if ($projectId !== null) {
+                $project = \Modules\Project\ProjectManagement\Models\ProjectManagement::query()
+                    ->find($projectId);
+                if ($project !== null && $project->manager_id !== null) {
+                    return (string) $project->manager_id;
+                }
+            }
+            return null;
+        }
+
+        if ($createdByUserId === null) {
+            return null;
+        }
+
+        $creator = User::query()
+            ->with('professionalData')
+            ->find($createdByUserId);
+
+        if ($creator === null) {
+            return null;
+        }
+
+        $professionalData = $creator->professionalData;
+        if ($professionalData === null) {
+            return null;
+        }
+
+        return $this->resolveByHierarchyType($hierarchyType, $professionalData);
+    }
+
+    /**
+     * Resolve all deputy manager user IDs for a given hierarchy type.
+     * Looks up the creator's branch/management hierarchy and returns deputy managers.
+     *
+     * @return list<string>
+     */
+    private function resolveDeputyManagersForType(string $hierarchyType, ?string $createdByUserId): array
+    {
+        if ($createdByUserId === null) {
+            return [];
+        }
+
+        $creator = User::query()->with('professionalData')->find($createdByUserId);
+        if ($creator === null) {
+            return [];
+        }
+
+        $professionalData = $creator->professionalData;
+        if ($professionalData === null) {
+            return [];
+        }
+
+        $hierarchyId = match ($hierarchyType) {
+            'branch_manager'     => $professionalData->branch_id ?? null,
+            'management_manager' => $professionalData->management_id ?? null,
+            // project_manager has no hierarchy-level deputies.
+            'project_manager'    => null,
+            default              => $professionalData->branch_id ?? $professionalData->management_id ?? null,
+        };
+
+        if ($hierarchyId === null) {
+            return [];
+        }
+
+        $hierarchy = ManagementHierarchy::query()
+            ->with('detail.deputyManagerRelations')
+            ->find($hierarchyId);
+
+        if ($hierarchy === null) {
+            return [];
+        }
+
+        $deputyIds = [];
+        $detail = $hierarchy->detail;
+        if ($detail !== null) {
+            foreach ($detail->deputyManagerRelations as $relation) {
+                if ($relation->deputy_manager_id !== null) {
+                    $deputyIds[(string) $relation->deputy_manager_id] = true;
+                }
+            }
+        }
+
+        return array_keys($deputyIds);
     }
 
     /**
@@ -232,6 +389,57 @@ class ActionTakerResolver
         ?string $createdByUserId,
         array $context = [],
     ): ?string {
+        // ── New canonical format: iterate rows in order ───────────────────
+        // First row that successfully resolves a manager wins. If a row can't
+        // resolve (e.g. project_manager without project_id), skip it and try
+        // the next row. Do NOT call tryAlternatives (which reads legacy fields).
+        $hierarchies = $step->action_taker_management_hierarchies;
+        if (!empty($hierarchies)) {
+            // Preload creator once for all rows.
+            $creator = null;
+            $professionalData = null;
+            if ($createdByUserId !== null) {
+                $creator = User::query()
+                    ->with('professionalData')
+                    ->find($createdByUserId);
+                $professionalData = $creator?->professionalData;
+            }
+
+            foreach ($hierarchies as $row) {
+                $rowType = $row['action_taker_management_hierarchy_type'] ?? '';
+                if ($rowType === '') {
+                    continue;
+                }
+
+                // project_manager resolves from context, not professionalData.
+                if ($rowType === 'project_manager') {
+                    $projectId = $context['project_id'] ?? null;
+                    if ($projectId !== null) {
+                        $project = \Modules\Project\ProjectManagement\Models\ProjectManagement::query()
+                            ->find($projectId);
+                        if ($project !== null && $project->manager_id !== null) {
+                            return (string) $project->manager_id;
+                        }
+                    }
+                    // No project_id or project not found → skip to next row.
+                    continue;
+                }
+
+                // Other types need professionalData.
+                if ($professionalData === null) {
+                    continue;
+                }
+
+                $resolved = $this->resolveByHierarchyType($rowType, $professionalData);
+                if ($resolved !== null) {
+                    return $resolved;
+                }
+            }
+
+            return null;
+        }
+
+        // ── Legacy fallback ─────────────────────────────────────────────────
         $hierarchyType = $step->action_taker_management_hierarchy_type?->value;
 
         if ($hierarchyType === null) {

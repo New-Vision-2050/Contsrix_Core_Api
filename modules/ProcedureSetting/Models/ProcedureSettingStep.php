@@ -50,6 +50,7 @@ class ProcedureSettingStep extends Model
         'action_taker_alternative_management_hierarchy_type',
         'action_taker_specific_procedure_type',
         'action_taker_specific_procedure_id',
+        'action_taker_management_hierarchies',
     ];
 
     protected $casts = [
@@ -82,6 +83,9 @@ class ProcedureSettingStep extends Model
         // Array of specific-procedure IDs (JSON-encoded in DB) parallel to the types array.
         // e.g. ["5", "12"]
         'action_taker_specific_procedure_id'   => 'array',
+
+        // Array of {action_taker_management_hierarchy_type, is_Deputy_Director} objects.
+        'action_taker_management_hierarchies'  => 'array',
     ];
 
     public function getRelationshipToPrimaryModel(): string

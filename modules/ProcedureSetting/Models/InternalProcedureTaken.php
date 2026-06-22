@@ -8,6 +8,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\User\Models\User;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class InternalProcedureTaken extends Model
@@ -54,5 +55,10 @@ class InternalProcedureTaken extends Model
     public function procedureSetting(): BelongsTo
     {
         return $this->belongsTo(ProcedureSetting::class, 'procedure_setting_id');
+    }
+
+    public function takenByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'taken_by');
     }
 }

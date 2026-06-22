@@ -23,11 +23,13 @@ use Modules\EmployeeTask\Requests\CreateExtensionRequest;
 use Modules\EmployeeTask\Requests\EndTaskRequest;
 use Modules\EmployeeTask\Requests\LocationPingRequest;
 use Modules\EmployeeTask\Requests\StartTaskRequest;
+use Modules\EmployeeTask\Presenters\TaskProcedurePresenter;
 use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
 use Modules\EmployeeTask\Services\EmployeeTaskAvailableActionsService;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
+use Modules\EmployeeTask\Services\EmployeeTaskProceduresService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
@@ -42,6 +44,7 @@ class EmployeeTaskController extends Controller
         private readonly EmployeeTaskExtensionService         $extensionService,
         private readonly EmployeeTaskApprovalService          $approvalService,
         private readonly EmployeeTaskAvailableActionsService  $availableActionsService,
+        private readonly EmployeeTaskProceduresService        $proceduresService,
     ) {}
 
     public function index(): JsonResponse
@@ -514,5 +517,26 @@ class EmployeeTaskController extends Controller
         $actions = $this->availableActionsService->forTask($id);
 
         return Json::items($actions, message: 'Available actions retrieved successfully');
+    }
+
+    /**
+     * GET /employee-tasks/{id}/procedures
+     *
+     * Returns the timeline of all taken (completed) procedures for a task,
+     * ordered by taken_at ascending, plus a summary block matching the
+     * mobile "الإجراءات" tab UI (total, last action, start date, progress %).
+     */
+    public function procedures(string $id): JsonResponse
+    {
+        try {
+            $result = $this->proceduresService->forTask($id);
+
+            return Json::item([
+                'items'   => TaskProcedurePresenter::collection($result['items']),
+                'summary' => $result['summary'],
+            ], message: 'Procedures retrieved successfully');
+        } catch (EmployeeTaskException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
     }
 }

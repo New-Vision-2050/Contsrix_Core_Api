@@ -46,6 +46,9 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'action_taker_alternative_management_hierarchy_type' => $this->step->action_taker_alternative_management_hierarchy_type ?? [],
             'action_taker_alternative_management_hierarchy_type_labels' => $this->resolveAlternativeHierarchyTypeLabels(),
 
+            // New canonical format: array of {action_taker_management_hierarchy_type, is_Deputy_Director} objects.
+            'action_taker_management_hierarchies' => $this->resolveActionTakerManagementHierarchies(),
+
             // Parallel arrays forming [{type,id}] pairs
             'action_taker_specific_procedure_type' => $this->step->action_taker_specific_procedure_type ?? [],
             'action_taker_specific_procedure_id'   => $this->step->action_taker_specific_procedure_id ?? [],
@@ -181,6 +184,61 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'type'  => $this->step->action_taker_management_hierarchy_type?->value,
             'label' => $this->resolveHierarchyTypeLabel(),
         ];
+    }
+
+    /**
+     * Returns the action_taker_management_hierarchies array from the new column.
+     * If the new column is empty, builds it from legacy fields for backward compatibility.
+     *
+     * @return list<array{action_taker_management_hierarchy_type: string, is_Deputy_Director: bool}>
+     */
+    private function resolveActionTakerManagementHierarchies(): array
+    {
+        $hierarchies = $this->step->action_taker_management_hierarchies;
+
+        if (!empty($hierarchies)) {
+            return array_map(static function (array $item): array {
+                return [
+                    'action_taker_management_hierarchy_type' => $item['action_taker_management_hierarchy_type'] ?? '',
+                    'is_Deputy_Director'                     => (bool) ($item['is_Deputy_Director'] ?? false),
+                ];
+            }, $hierarchies);
+        }
+
+        // Backward-compatible build from legacy fields.
+        $result = [];
+
+        $primaryType = $this->step->action_taker_management_hierarchy_type?->value;
+        if ($primaryType !== null && $primaryType !== '') {
+            if ($primaryType === 'deputy_manager') {
+                $result[] = [
+                    'action_taker_management_hierarchy_type' => '',
+                    'is_Deputy_Director'                     => true,
+                ];
+            } else {
+                $result[] = [
+                    'action_taker_management_hierarchy_type' => $primaryType,
+                    'is_Deputy_Director'                     => false,
+                ];
+            }
+        }
+
+        $alternatives = (array) ($this->step->action_taker_alternative_management_hierarchy_type ?? []);
+        foreach ($alternatives as $altType) {
+            if ($altType === 'deputy_manager') {
+                $result[] = [
+                    'action_taker_management_hierarchy_type' => '',
+                    'is_Deputy_Director'                     => true,
+                ];
+            } else {
+                $result[] = [
+                    'action_taker_management_hierarchy_type' => (string) $altType,
+                    'is_Deputy_Director'                     => false,
+                ];
+            }
+        }
+
+        return $result;
     }
 
     private function escalationManagementHierarchyPayload(): ?array
