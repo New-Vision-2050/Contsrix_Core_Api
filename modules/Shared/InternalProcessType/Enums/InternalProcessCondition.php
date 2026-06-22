@@ -16,6 +16,10 @@ enum InternalProcessCondition: string
     case MaxDurationHours        = 'max_duration_hours';
     case MaxAttachments          = 'max_attachments';
 
+    // ── Rich conditions for createTask ──────────────────────────────────────
+    case MaxTaskDuration         = 'max_task_duration';
+    case MaxScheduledDateOffset  = 'max_scheduled_date_offset';
+
     // ── Rich conditions with settings schema (startTask and beyond) ──────────
     case InsideShiftTime         = 'inside_shift_time';
     case InsideTaskLocation      = 'inside_task_location';
@@ -37,7 +41,8 @@ enum InternalProcessCondition: string
     public function category(): InternalProcessConditionCategory
     {
         return match ($this) {
-            self::InsideShiftTime                            => InternalProcessConditionCategory::Time,
+            self::InsideShiftTime,
+            self::MaxScheduledDateOffset                     => InternalProcessConditionCategory::Time,
             self::InsideTaskLocation,
             self::MustBeInLocation,
             self::CanExitOutsideLocation                     => InternalProcessConditionCategory::Location,
@@ -48,7 +53,8 @@ enum InternalProcessCondition: string
             self::AllowOutsideShift,
             self::AllowOnHolidays                            => InternalProcessConditionCategory::Shift,
             self::HasTaskDuration,
-            self::MaxDurationHours                           => InternalProcessConditionCategory::Duration,
+            self::MaxDurationHours,
+            self::MaxTaskDuration                            => InternalProcessConditionCategory::Duration,
             self::MaxAttachments                             => InternalProcessConditionCategory::Attachment,
         };
     }
@@ -64,6 +70,8 @@ enum InternalProcessCondition: string
             self::HasTaskDuration        => 'مدة المهمة',
             self::MaxDurationHours       => 'أقصى مدة بالساعات',
             self::MaxAttachments         => 'أقصى عدد مرفقات',
+            self::MaxTaskDuration        => 'الحد الأقصى لمدة المهمة',
+            self::MaxScheduledDateOffset => 'الحد الأقصى لتاريخ المهمة',
             self::InsideShiftTime        => 'داخل وقت الدوام',
             self::InsideTaskLocation     => 'داخل موقع المهمة',
             self::EmployeeHasAttendance  => 'الموظف مسجل حضور',
@@ -81,6 +89,32 @@ enum InternalProcessCondition: string
     public function settingsSchema(): array
     {
         return match ($this) {
+            self::AllowDuringShift => [
+                [
+                    'key'      => 'mode',
+                    'type'     => 'select',
+                    'label_ar' => 'نوع الشرط',
+                    'default'  => 'shift',
+                    'options'  => [
+                        ['value' => 'shift',         'label_ar' => 'داخل الدوام'],
+                        ['value' => 'specific_time', 'label_ar' => 'وقت محدد'],
+                    ],
+                ],
+                [
+                    'key'          => 'start_time',
+                    'type'         => 'time',
+                    'label_ar'     => 'من',
+                    'default'      => '08:00',
+                    'visible_when' => ['key' => 'mode', 'value' => 'specific_time'],
+                ],
+                [
+                    'key'          => 'end_time',
+                    'type'         => 'time',
+                    'label_ar'     => 'إلى',
+                    'default'      => '17:00',
+                    'visible_when' => ['key' => 'mode', 'value' => 'specific_time'],
+                ],
+            ],
             self::InsideShiftTime => [
                 ['key' => 'start_time',                 'type' => 'time', 'label_ar' => 'من',                                    'default' => '08:00'],
                 ['key' => 'end_time',                   'type' => 'time', 'label_ar' => 'إلى',                                   'default' => '17:00'],
@@ -89,6 +123,12 @@ enum InternalProcessCondition: string
             ],
             self::InsideTaskLocation => [
                 ['key' => 'radius_meters', 'type' => 'int', 'label_ar' => 'نطاق السماح (متر)', 'default' => 100],
+            ],
+            self::MaxTaskDuration => [
+                ['key' => 'max_hours', 'type' => 'int', 'label_ar' => 'الحد الأقصى للمدة (ساعة)', 'default' => 8],
+            ],
+            self::MaxScheduledDateOffset => [
+                ['key' => 'max_days', 'type' => 'int', 'label_ar' => 'الحد الأقصى للتاريخ (أيام)', 'default' => 30],
             ],
             default => [],
         };

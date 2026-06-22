@@ -1,5 +1,5 @@
 # Conditions System Guide
-> Last updated: 2026-06-21  
+> Last updated: 2026-06-22  
 > Applies to: `modules/ProcedureSetting` · `modules/EmployeeTask` · `modules/Shared/InternalProcessType`
 
 ---
@@ -74,95 +74,169 @@ There are **two formats** — the system supports both to allow backward-compati
 
 ---
 
-## 3. Available Conditions (startTask)
+## 2b. Settings-Schema Field Types
 
-Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=startTask`.
+Each entry in a condition's `settings_schema` array has a `type` field:
 
-### `inside_shift_time`
-- **Category**: `time` (وقت)
-- **Label**: داخل وقت الدوام
-- **Evaluation**: current server time must be within `[start_time − allow_before_start_minutes, end_time − allow_before_end_minutes]`
-- **Settings schema**:
+| `type` | UI widget | Notes |
+|--------|-----------|-------|
+| `time` | Time picker (HH:mm) | Stored as `"HH:mm"` string |
+| `int` | Number input | Stored as integer |
+| `select` | Dropdown list | Has `options` array; stored value is one of `options[].value` |
 
-| key | type | label_ar | default |
-|-----|------|----------|---------|
-| `start_time` | `time` | من | `"08:00"` |
-| `end_time` | `time` | إلى | `"17:00"` |
-| `allow_before_start_minutes` | `int` | يسمح قبل بداية الدوام بـ (دقيقة) | `0` |
-| `allow_before_end_minutes` | `int` | يسمح قبل نهاية الدوام بـ (دقيقة) | `0` |
+### `select` schema entry
 
-### `inside_task_location`
-- **Category**: `location` (موقع)
-- **Label**: داخل موقع المهمة
-- **Evaluation**: Haversine distance from employee GPS to task coordinates ≤ `radius_meters`
-- **Settings schema**:
+```json
+{
+  "key": "mode",
+  "type": "select",
+  "label_ar": "نوع الشرط",
+  "default": "shift",
+  "options": [
+    { "value": "shift",         "label_ar": "داخل الدوام" },
+    { "value": "specific_time", "label_ar": "وقت محدد" }
+  ]
+}
+```
 
-| key | type | label_ar | default |
-|-----|------|----------|---------|
-| `radius_meters` | `int` | نطاق السماح (متر) | `100` |
+### `visible_when` — Conditional field display
 
-### `employee_has_attendance`
-- **Category**: `attendance` (حضور)
-- **Label**: الموظف مسجل حضور
-- **Evaluation**: Employee must have an active clock-in attendance record (`attendance.clock_out IS NULL`)
-- **Settings**: none
+Any settings-schema entry may include a `visible_when` object:
 
-### `task_is_approved`
-- **Category**: `task_status` (حالة المهمة)
-- **Label**: المهمة معتمدة
-- **Evaluation**: Task `status` must equal `approved`
-- **Settings**: none
+```json
+{
+  "key": "start_time",
+  "type": "time",
+  "label_ar": "من",
+  "default": "08:00",
+  "visible_when": { "key": "mode", "value": "specific_time" }
+}
+```
 
-### `no_open_task`
-- **Category**: `open_task` (مهمة مفتوحة)
-- **Label**: لا يوجد مهمة مفتوحة
-- **Evaluation**: Employee must have no other task with `status = in_progress`
-- **Settings**: none
+The frontend must **show this field only when** `settings[visible_when.key] === visible_when.value`. When the controlling field changes, re-evaluate visibility instantly (no submit required).
 
 ---
 
-## 4. Frontend Integration
+## 3. Available Conditions (createTask)
+
+Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=createTask`.
+
+### `allow_during_shift`
+- **Category**: `shift` (دوام)
+- **Label**: موظف داخل الدوام
+- **Evaluation**: Controlled by `settings.mode`:
+  - **`shift`** (default) — checks whether the current time falls inside the employee's active attendance period (via `AttendanceConstraintService`). Disabled → throws `notAllowedDuringShift`.
+  - **`specific_time`** — checks whether the current time falls within the configured `start_time`–`end_time` window. Falls outside → throws `outsideShiftTimeWindow`.
+- **Settings schema**:
+
+| key | type | label_ar | default | extra |
+|-----|------|----------|---------|-------|
+| `mode` | `select` | نوع الشرط | `"shift"` | options: `shift`, `specific_time` |
+| `start_time` | `time` | من | `"08:00"` | `visible_when: {key: mode, value: specific_time}` |
+| `end_time` | `time` | إلى | `"17:00"` | `visible_when: {key: mode, value: specific_time}` |
+
+### `allow_outside_shift`
+- **Category**: `shift` (دوام)
+- **Label**: موظف خارج الدوام
+- **Evaluation**: In `shift` mode of `allow_during_shift`, if employee is **not** in an active shift and this flag is disabled → throws `notAllowedOutsideShift`.
+- **Settings**: none
+
+### `allow_on_holidays`
+- **Category**: `shift` (دوام)
+- **Label**: مسموح في العطلات
+- **Evaluation**: In `shift` mode, if today is a holiday/non-working day and this flag is disabled → throws `notAllowedOnHolidays`.
+- **Settings**: none
+
+### `max_task_duration`
+- **Category**: `duration` (مدة)
+- **Label**: الحد الأقصى لمدة المهمة
+- **Evaluation**: `dto.durationHours > settings.max_hours` → throws `taskDurationExceedsLimit(maxHours)` (422)
+- **Settings schema**:
+
+| key | type | label_ar | default |
+|-----|------|----------|---------|
+| `max_hours` | `int` | الحد الأقصى للمدة (ساعة) | `8` |
+
+### `max_scheduled_date_offset`
+- **Category**: `time` (وقت)
+- **Label**: الحد الأقصى لتاريخ المهمة
+- **Evaluation**: `dto.taskDate > today + max_days` → throws `taskDateTooFarInFuture(maxDays)` (422)
+- **Settings schema**:
+
+| key | type | label_ar | default |
+|-----|------|----------|---------|
+| `max_days` | `int` | الحد الأقصى للتاريخ (أيام) | `30` |
+
+---
+
+## 4. Available Conditions (startTask / endTask)
+
+> **No conditions are defined for `startTask` or `endTask`.**  
+> `GET /api/v1/admin/procedure-settings/forms-conditions?type=startTask` returns an empty `data` array.  
+> The check methods `checkStartTaskConditions()` and `checkEndTaskConditions()` are no-ops.
+
+---
+
+## 5. Frontend Integration
 
 ### Step 1 — Fetch condition definitions
 
 ```
-GET /api/v1/admin/procedure-settings/forms-conditions?type=startTask
+GET /api/v1/admin/procedure-settings/forms-conditions?type=createTask
 Authorization: Bearer <token>
 ```
 
-**Response**:
+**Response** (createTask):
 ```json
 {
   "data": [
     {
-      "key": "inside_shift_time",
-      "type": "time",
-      "category": "time",
-      "category_label_ar": "وقت",
-      "label_ar": "داخل وقت الدوام",
+      "key": "allow_during_shift",
+      "type": "bool",
+      "category": "shift",
+      "category_label_ar": "دوام",
+      "label_ar": "موظف داخل الدوام",
       "settings_schema": [
-        { "key": "start_time",                 "type": "time", "label_ar": "من",                                   "default": "08:00" },
-        { "key": "end_time",                   "type": "time", "label_ar": "إلى",                                  "default": "17:00" },
-        { "key": "allow_before_start_minutes", "type": "int",  "label_ar": "يسمح قبل بداية الدوام بـ (دقيقة)", "default": 0 },
-        { "key": "allow_before_end_minutes",   "type": "int",  "label_ar": "يسمح قبل نهاية الدوام بـ (دقيقة)", "default": 0 }
+        {
+          "key": "mode",
+          "type": "select",
+          "label_ar": "نوع الشرط",
+          "default": "shift",
+          "options": [
+            { "value": "shift",         "label_ar": "داخل الدوام" },
+            { "value": "specific_time", "label_ar": "وقت محدد" }
+          ]
+        },
+        {
+          "key": "start_time",
+          "type": "time",
+          "label_ar": "من",
+          "default": "08:00",
+          "visible_when": { "key": "mode", "value": "specific_time" }
+        },
+        {
+          "key": "end_time",
+          "type": "time",
+          "label_ar": "إلى",
+          "default": "17:00",
+          "visible_when": { "key": "mode", "value": "specific_time" }
+        }
       ]
     },
     {
-      "key": "inside_task_location",
+      "key": "allow_outside_shift",
       "type": "bool",
-      "category": "location",
-      "category_label_ar": "موقع",
-      "label_ar": "داخل موقع المهمة",
-      "settings_schema": [
-        { "key": "radius_meters", "type": "int", "label_ar": "نطاق السماح (متر)", "default": 100 }
-      ]
+      "category": "shift",
+      "category_label_ar": "دوام",
+      "label_ar": "موظف خارج الدوام",
+      "settings_schema": []
     },
     {
-      "key": "employee_has_attendance",
+      "key": "allow_on_holidays",
       "type": "bool",
-      "category": "attendance",
-      "category_label_ar": "حضور",
-      "label_ar": "الموظف مسجل حضور",
+      "category": "shift",
+      "category_label_ar": "دوام",
+      "label_ar": "مسموح في العطلات",
       "settings_schema": []
     }
   ]
@@ -177,13 +251,92 @@ Use `settings_schema` to render input fields per condition. Column mapping:
 |-----------|-----------|
 | ترتيب | `sort_order` (editable integer) |
 | الحالة | `is_active` (toggle) |
-| الشرط | `label_ar` (from definition) |
+| الشرط | `label_ar` (static label) — if the condition's `settings_schema` contains a `select` field, render a **dropdown** in this column using that field's `options` |
 | نوع الشرط | `category_label_ar` (from definition) |
-| إعدادات الشرط | render each `settings_schema` field |
+| إعدادات الشرط | render each `settings_schema` field; **hide** fields whose `visible_when` condition is not satisfied by the current `settings` values |
+
+#### Rendering `select` settings fields
+
+When a settings-schema entry has `"type": "select"`:
+1. Render a dropdown using `options[]` (`value`/`label_ar`).
+2. Store the selected `value` in `settings[key]`.
+3. Re-evaluate `visible_when` for all sibling fields immediately on change.
+
+#### Rendering `visible_when` conditional fields
+
+```js
+// Show field only if the controlling sibling has the required value
+const isVisible = (field, currentSettings) => {
+  if (!field.visible_when) return true;
+  return currentSettings[field.visible_when.key] === field.visible_when.value;
+};
+```
 
 ### Step 3 — Send on save (POST / PUT)
 
-Include `conditions` as a JSON array in the request body:
+Include `conditions` as a JSON array. **Both forms (`createTask` and `startTask`) use the same rich-array format.**
+
+**createTask example** — all five conditions active:
+
+```json
+{
+  "form": "createTask",
+  "type": "employee_task",
+  "conditions": [
+    {
+      "key": "allow_during_shift",
+      "is_active": true,
+      "sort_order": 1,
+      "settings": {
+        "mode": "specific_time",
+        "start_time": "08:00",
+        "end_time": "17:00"
+      }
+    },
+    {
+      "key": "allow_outside_shift",
+      "is_active": false,
+      "sort_order": 2,
+      "settings": {}
+    },
+    {
+      "key": "allow_on_holidays",
+      "is_active": true,
+      "sort_order": 3,
+      "settings": {}
+    },
+    {
+      "key": "max_task_duration",
+      "is_active": true,
+      "sort_order": 4,
+      "settings": { "max_hours": 12 }
+    },
+    {
+      "key": "max_scheduled_date_offset",
+      "is_active": true,
+      "sort_order": 5,
+      "settings": { "max_days": 20 }
+    }
+  ]
+}
+```
+
+**createTask example** — `allow_during_shift` in default `shift` mode (start_time/end_time are ignored by the backend):
+
+```json
+{
+  "conditions": [
+    {
+      "key": "allow_during_shift",
+      "is_active": true,
+      "sort_order": 1,
+      "settings": { "mode": "shift" }
+    }
+  ]
+}
+```
+
+**startTask example**:
 
 ```json
 {
@@ -205,9 +358,7 @@ Include `conditions` as a JSON array in the request body:
       "key": "inside_task_location",
       "is_active": true,
       "sort_order": 2,
-      "settings": {
-        "radius_meters": 200
-      }
+      "settings": { "radius_meters": 200 }
     },
     {
       "key": "employee_has_attendance",
@@ -235,46 +386,62 @@ Include `conditions` as a JSON array in the request body:
 
 ---
 
-## 5. Backend Evaluation Flow (EmployeeTask — startTask)
+## 6. Backend Evaluation Flow (EmployeeTask — startTask / endTask)
 
 ```
 EmployeeTaskController::start()
-  └── EmployeeTaskFormConditionService::checkStartTaskConditions($task, $user, $lat, $lon)
-        ├── resolveConditions('startTask', companyId, branchId)
-        │     └── ProcedureWorkflowService::resolveInternalProcedureSettingByForm()
-        │           returns ProcedureSetting|null  (conditions = array or null)
-        ├── indexConditions($conditions)         ← normalises both old+new formats
-        │     returns ['condition_key' => {key, is_active, sort_order, settings}]
-        │
-        ├── [inside_shift_time is_active=true]
-        │     assertInsideShiftTime($settings)
-        │       Carbon::now() must be in [start_time−toleranceA, end_time−toleranceB]
-        │       throws outsideShiftTimeWindow (422)
-        │
-        ├── [inside_task_location is_active=true]
-        │     assertInsideTaskLocation($task, $user, $lat, $lon, $radius)
-        │       GeoDistance::metres(...) ≤ radius_meters
-        │       throws cannotStartTaskOutsideLocation (422)
-        │
-        ├── [employee_has_attendance is_active=true]
-        │     assertEmployeeHasAttendance($userId)
-        │       AttendanceRepository::getCurrentAttendance() must not be null
-        │       throws employeeHasNoAttendance (422)
-        │
-        ├── [task_is_approved is_active=true]
-        │     assertTaskIsApproved($task)
-        │       task->status must equal 'approved'
-        │       throws taskNotApproved (422)
-        │
-        └── [no_open_task is_active=true]
-              assertNoOpenTask($userId, excludeTaskId)
-                no other task for user with status=in_progress
-                throws hasOtherOpenTask (422)
+  └── EmployeeTaskFormConditionService::checkStartTaskConditions(...)  ← no-op, returns immediately
+
+EmployeeTaskLifecycleService::end()
+  └── EmployeeTaskFormConditionService::checkEndTaskConditions(...)    ← no-op, returns immediately
 ```
 
 ---
 
-## 6. Adding New Condition Types
+## 7. Backend Evaluation Flow (EmployeeTask — createTask)
+
+```
+EmployeeTaskRequestService::create()
+  └── EmployeeTaskFormConditionService::checkCreateTaskConditions($userId, $companyId, $branchId,
+                                                                    $dto->durationHours, $dto->taskDate)
+        ├── resolveConditions('createTask', companyId, branchId)
+        │     returns ProcedureSetting|null  (conditions = array or null)
+        ├── indexConditions($conditions)   ← normalises both old+new formats
+        │
+        └── assertShiftConditions($map, $userId)
+              ├── [allow_during_shift is_active=true, settings.mode='specific_time']
+              │     assertInsideSpecificTimeWindow($settings)
+              │       Carbon::now() must be in [start_time, end_time]
+              │       throws outsideShiftTimeWindow (422)
+              │       return  (holiday/outside-shift checks skipped)
+              │
+              └── [shift mode (default)]
+                    load User + attendanceConstraint
+                    getTodaysWorkRulesForUser($user)
+                    ├── [is_holiday=true]
+                    │     check allow_on_holidays.is_active
+                    │     throws notAllowedOnHolidays (422)
+                    ├── [isDuringShift=true]
+                    │     check allow_during_shift.is_active
+                    │     throws notAllowedDuringShift (422)
+                    └── [isDuringShift=false]
+                          check allow_outside_shift.is_active
+                          throws notAllowedOutsideShift (422)
+
+        ├── [max_task_duration is_active=true]
+        │     assertMaxTaskDuration($durationHours, $settings)
+        │       durationHours > settings.max_hours
+        │       throws taskDurationExceedsLimit(maxHours) (422)
+        │
+        └── [max_scheduled_date_offset is_active=true]
+              assertMaxScheduledDateOffset($taskDate, $settings)
+                Carbon::parse(taskDate) > Carbon::today()->addDays(max_days)
+                throws taskDateTooFarInFuture(maxDays) (422)
+```
+
+---
+
+## 8. Adding New Condition Types
 
 ### Step 1 — Add enum case
 ```php
@@ -338,7 +505,7 @@ public static function yourConditionFailed(): self
 
 ---
 
-## 7. Files Changed in This Feature
+## 9. Files Changed in This Feature
 
 | File | Change |
 |------|--------|
@@ -348,6 +515,10 @@ public static function yourConditionFailed(): self
 | `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | Updated `startTask` conditions to use 5 new rich cases |
 | `modules/ProcedureSetting/Controllers/InternalProcedureSettingController.php` | Added `formsConditions()` method |
 | `modules/ProcedureSetting/Resources/routes/api.php` | Added `GET /forms-conditions` route |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessConditionType.php` | Added `Select = 'select'` case |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | Added `settingsSchema()` for `AllowDuringShift` (mode selector + visible_when time fields) |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | `StartTask` and `EndTask` conditions → `[]` |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `assertShiftConditions()` checks `settings.mode`; added `assertInsideSpecificTimeWindow()`; `checkStartTaskConditions` + `checkEndTaskConditions` are no-ops; removed dead helpers and unused constructor deps |
 | `modules/ProcedureSetting/Requests/CreateInternalProcedureSettingRequest.php` | Removed old `prepareForValidation()` normalization; `validationRulesForForm()` now validates rich array format |
 | `modules/ProcedureSetting/Requests/UpdateInternalProcedureSettingRequest.php` | Same as above |
 | `modules/EmployeeTask/Exceptions/EmployeeTaskException.php` | Added `outsideShiftTimeWindow`, `employeeHasNoAttendance`, `taskNotApproved`, `hasOtherOpenTask` |

@@ -10,6 +10,7 @@ enum InternalProcessConditionType: string
     case Int    = 'int';
     case String = 'string';
     case Time   = 'time';
+    case Select = 'select';
 
     /** @return list<string> */
     public static function values(): array

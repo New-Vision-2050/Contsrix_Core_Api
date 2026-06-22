@@ -47,17 +47,11 @@ enum InternalProcessForm: string
                 InternalProcessCondition::AllowDuringShift,
                 InternalProcessCondition::AllowOutsideShift,
                 InternalProcessCondition::AllowOnHolidays,
+                InternalProcessCondition::MaxTaskDuration,
+                InternalProcessCondition::MaxScheduledDateOffset,
             ],
-            self::StartTask => [
-                InternalProcessCondition::InsideShiftTime,
-                InternalProcessCondition::InsideTaskLocation,
-                InternalProcessCondition::EmployeeHasAttendance,
-                InternalProcessCondition::TaskIsApproved,
-                InternalProcessCondition::NoOpenTask,
-            ],
-            self::EndTask => [
-                InternalProcessCondition::CanExitOutsideLocation,
-            ],
+            self::StartTask => [],
+            self::EndTask   => [],
             self::AttachAttachments => [
                 InternalProcessCondition::MaxAttachments,
             ],

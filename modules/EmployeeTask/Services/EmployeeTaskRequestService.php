@@ -48,7 +48,13 @@ class EmployeeTaskRequestService
             : null;
         $companyId = (string) tenant('id');
 
-        $this->conditionService->checkCreateTaskConditions($dto->userId, $companyId, $branchId);
+        $this->conditionService->checkCreateTaskConditions(
+            $dto->userId,
+            $companyId,
+            $branchId,
+            $dto->durationHours,
+            $dto->taskDate,
+        );
         $preview = $this->engine->previewResponsibles(
             $procedureType,
             InternalProcessForm::CreateTask->value,
