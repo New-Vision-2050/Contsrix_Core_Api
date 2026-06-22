@@ -79,7 +79,7 @@ class AttendanceConstraintLocationUpdateTest extends TestCase
         );
     }
 
-    public function test_it_updates_additional_location_by_uuid(): void
+    public function test_scoped_route_updates_additional_location_by_uuid(): void
     {
         $constraint = $this->createConstraint();
         $location = AttendanceConstraintLocation::query()->create([
@@ -92,13 +92,14 @@ class AttendanceConstraintLocationUpdateTest extends TestCase
             'created_by' => $this->actor->id,
         ]);
 
-        $response = TestResponse::fromBaseResponse($this->controller->updateLocation(
+        $response = TestResponse::fromBaseResponse($this->controller->updateConstraintLocation(
             $this->request([
                 'name' => 'Updated additional',
                 'latitude' => 30.06574497540264,
                 'longitude' => 31.395688214910898,
                 'radius' => 200,
             ]),
+            (string) $constraint->id,
             (string) $location->id,
         ));
 
@@ -111,6 +112,46 @@ class AttendanceConstraintLocationUpdateTest extends TestCase
             'name' => 'Updated additional',
             'radius' => 200,
         ]);
+    }
+
+    public function test_scoped_route_updates_branch_location_when_duplicate_branch_ids_exist(): void
+    {
+        $first = $this->createConstraint([
+            'branch_locations' => [
+                '54' => [
+                    'name' => 'First branch',
+                    'latitude' => 30.1,
+                    'longitude' => 31.1,
+                    'radius' => 100,
+                ],
+            ],
+        ]);
+        $second = $this->createConstraint([
+            'branch_locations' => [
+                [
+                    'branch_id' => '54',
+                    'name' => 'Second branch',
+                    'latitude' => 30.2,
+                    'longitude' => 31.2,
+                    'radius' => 150,
+                ],
+            ],
+        ]);
+
+        $response = TestResponse::fromBaseResponse($this->controller->updateConstraintLocation(
+            $this->request(['radius' => 250]),
+            (string) $second->id,
+            '54',
+        ));
+
+        $response->assertOk()
+            ->assertJsonPath('payload.id', '54')
+            ->assertJsonPath('payload.name', 'Second branch')
+            ->assertJsonPath('payload.radius', 250);
+        $this->assertSuccessfulLocationPayload($response);
+
+        $this->assertSame(100, $first->fresh()->branch_locations['54']['radius']);
+        $this->assertSame(250, $second->fresh()->branch_locations[0]['radius']);
     }
 
     public function test_legacy_route_updates_unambiguous_branch_location(): void
@@ -175,6 +216,29 @@ class AttendanceConstraintLocationUpdateTest extends TestCase
 
         $this->assertSame(100, $first->fresh()->branch_locations['54']['radius']);
         $this->assertSame(150, $second->fresh()->branch_locations[0]['radius']);
+    }
+
+    public function test_scoped_route_returns_not_found_for_missing_location(): void
+    {
+        $constraint = $this->createConstraint([
+            'branch_locations' => [
+                '54' => [
+                    'name' => 'Branch',
+                    'latitude' => 30.1,
+                    'longitude' => 31.1,
+                    'radius' => 100,
+                ],
+            ],
+        ]);
+
+        $response = TestResponse::fromBaseResponse($this->controller->updateConstraintLocation(
+            $this->request(['radius' => 250]),
+            (string) $constraint->id,
+            'missing-location',
+        ));
+
+        $response->assertStatus(404)
+            ->assertJsonPath('message.code', 'location_not_found');
     }
 
     public function test_missing_location_returns_not_found(): void

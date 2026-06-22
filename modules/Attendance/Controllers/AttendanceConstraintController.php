@@ -796,6 +796,19 @@ class AttendanceConstraintController extends Controller
      */
     public function updateLocation(Request $request, string $locationId): JsonResponse
     {
+        return $this->updateLocationById($request, $locationId);
+    }
+
+    /**
+     * Update a specific location by ID scoped to a constraint.
+     */
+    public function updateConstraintLocation(Request $request, string $constraintId, string $locationId): JsonResponse
+    {
+        return $this->updateLocationById($request, $locationId, $constraintId);
+    }
+
+    private function updateLocationById(Request $request, string $locationId, ?string $constraintId = null): JsonResponse
+    {
         $request->validate([
             'name'      => ['sometimes', 'nullable', 'string', 'max:255'],
             'latitude'  => ['sometimes', 'required', 'numeric', 'between:-90,90'],
@@ -822,9 +835,26 @@ class AttendanceConstraintController extends Controller
         $locationQuery = AttendanceConstraintLocation::where('id', $locationId)
             ->where('company_id', $companyId);
 
+        if ($constraintId !== null) {
+            $locationQuery->where('attendance_constraint_id', $constraintId);
+        }
+
         $location = $locationQuery->first();
         if ($location) {
             return $this->updateAdditionalLocation($location, $data);
+        }
+
+        if ($constraintId !== null) {
+            $constraint = AttendanceConstraint::query()
+                ->where('id', $constraintId)
+                ->where('company_id', $companyId)
+                ->first();
+
+            if (!$constraint) {
+                return Json::error('Location not found', 'location_not_found', null, [], 404);
+            }
+
+            return $this->updateBranchLocation($locationId, $data, $constraint);
         }
 
         return $this->updateBranchLocation($locationId, $data);
@@ -845,9 +875,28 @@ class AttendanceConstraintController extends Controller
         ], message: 'Location updated successfully');
     }
 
-    private function updateBranchLocation(string $locationId, array $data): JsonResponse
+    private function updateBranchLocation(string $locationId, array $data, ?AttendanceConstraint $scopedConstraint = null): JsonResponse
     {
         $companyId = (string) Auth::user()->company_id;
+
+        if ($scopedConstraint) {
+            if (!$this->findBranchLocation($scopedConstraint, $locationId)) {
+                return Json::error('Location not found', 'location_not_found', null, [], 404);
+            }
+
+            $updatedLocation = $this->replaceBranchLocation($scopedConstraint, $locationId, $data);
+
+            $this->constraintService->bumpApplicableConstraintsCacheForCompany($companyId);
+
+            return Json::item([
+                'id'        => $updatedLocation['id'],
+                'name'      => $updatedLocation['name'] ?? null,
+                'latitude'  => isset($updatedLocation['latitude']) ? (float) $updatedLocation['latitude'] : null,
+                'longitude' => isset($updatedLocation['longitude']) ? (float) $updatedLocation['longitude'] : null,
+                'radius'    => isset($updatedLocation['radius']) ? (int) $updatedLocation['radius'] : null,
+            ], message: 'Location updated successfully');
+        }
+
         $constraintsQuery = AttendanceConstraint::query()
             ->where('company_id', $companyId)
             ->whereNotNull('branch_locations');

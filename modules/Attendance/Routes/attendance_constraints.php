@@ -172,6 +172,10 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.locations.store');
 
+    Route::put('/{constraint}/locations/{locationId}', [AttendanceConstraintController::class, 'updateConstraintLocation'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+        ->name('attendance.constraints.locations.scoped-update');
+
     Route::put('/locations/{locationId}', [AttendanceConstraintController::class, 'updateLocation'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.locations.update');
