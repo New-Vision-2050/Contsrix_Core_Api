@@ -203,4 +203,14 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__('The employee already has an open task in progress.'), 422);
     }
+
+    public static function taskDurationExceedsLimit(int $maxHours): self
+    {
+        return new self(__("The task duration cannot exceed {$maxHours} hours."), 422);
+    }
+
+    public static function taskDateTooFarInFuture(int $maxDays): self
+    {
+        return new self(__("The task date cannot be more than {$maxDays} days from today."), 422);
+    }
 }
