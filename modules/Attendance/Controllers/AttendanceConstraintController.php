@@ -803,9 +803,7 @@ class AttendanceConstraintController extends Controller
             'radius'    => ['sometimes', 'required', 'integer', 'min:1', 'max:10000'],
         ]);
 
-        $location = AttendanceConstraintLocation::where('id', $locationId)
-            ->where('company_id', Auth::user()->company_id)
-            ->firstOrFail();
+        $companyId = (string) Auth::user()->company_id;
 
         $data = [];
         if ($request->has('name')) {
@@ -821,17 +819,129 @@ class AttendanceConstraintController extends Controller
             $data['radius'] = $request->input('radius');
         }
 
+        $locationQuery = AttendanceConstraintLocation::where('id', $locationId)
+            ->where('company_id', $companyId);
+
+        $location = $locationQuery->first();
+        if ($location) {
+            return $this->updateAdditionalLocation($location, $data);
+        }
+
+        return $this->updateBranchLocation($locationId, $data);
+    }
+
+    private function updateAdditionalLocation(AttendanceConstraintLocation $location, array $data): JsonResponse
+    {
         $location->update($data);
 
         $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
 
         return Json::item([
-            'id'        => $location->id,
-            'name'      => $location->name,
-            'latitude'  => $location->latitude,
-            'longitude' => $location->longitude,
-            'radius'    => $location->radius,
+            'id'            => $location->id,
+            'name'          => $location->name,
+            'latitude'      => $location->latitude,
+            'longitude'     => $location->longitude,
+            'radius'        => $location->radius,
         ], message: 'Location updated successfully');
+    }
+
+    private function updateBranchLocation(string $locationId, array $data): JsonResponse
+    {
+        $companyId = (string) Auth::user()->company_id;
+        $constraintsQuery = AttendanceConstraint::query()
+            ->where('company_id', $companyId)
+            ->whereNotNull('branch_locations');
+
+        $matches = $constraintsQuery
+            ->get()
+            ->map(fn(AttendanceConstraint $constraint) => [
+                'constraint' => $constraint,
+                'location'   => $this->findBranchLocation($constraint, $locationId),
+            ])
+            ->filter(fn(array $match) => $match['location'] !== null)
+            ->values();
+
+        if ($matches->isEmpty()) {
+            return Json::error('Location not found', 'location_not_found', null, [], 404);
+        }
+
+        if ($matches->count() > 1) {
+            return Json::error(
+                'Location ID matches multiple constraints. The location cannot be updated without a unique match.',
+                'ambiguous_location_id',
+                null,
+                [],
+                409
+            );
+        }
+
+        /** @var AttendanceConstraint $constraint */
+        $constraint = $matches->first()['constraint'];
+        $updatedLocation = $this->replaceBranchLocation($constraint, $locationId, $data);
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany($companyId);
+
+        return Json::item([
+            'id'            => $updatedLocation['id'],
+            'name'          => $updatedLocation['name'] ?? null,
+            'latitude'      => isset($updatedLocation['latitude']) ? (float) $updatedLocation['latitude'] : null,
+            'longitude'     => isset($updatedLocation['longitude']) ? (float) $updatedLocation['longitude'] : null,
+            'radius'        => isset($updatedLocation['radius']) ? (int) $updatedLocation['radius'] : null,
+        ], message: 'Location updated successfully');
+    }
+
+    private function findBranchLocation(AttendanceConstraint $constraint, string $locationId): ?array
+    {
+        foreach ($constraint->branch_locations ?? [] as $branchId => $location) {
+            if (!is_array($location)) {
+                continue;
+            }
+
+            if ($this->branchLocationMatches($branchId, $location, $locationId)) {
+                return $this->formatBranchLocation($branchId, $location, $locationId);
+            }
+        }
+
+        return null;
+    }
+
+    private function replaceBranchLocation(AttendanceConstraint $constraint, string $locationId, array $data): array
+    {
+        $branchLocations = $constraint->branch_locations ?? [];
+        $updatedLocation = null;
+
+        foreach ($branchLocations as $branchId => $location) {
+            if (!is_array($location) || !$this->branchLocationMatches($branchId, $location, $locationId)) {
+                continue;
+            }
+
+            $location = array_merge($location, $data);
+            $branchLocations[$branchId] = $location;
+            $updatedLocation = $this->formatBranchLocation($branchId, $location, $locationId);
+            break;
+        }
+
+        $constraint->branch_locations = $branchLocations;
+        $constraint->save();
+
+        return $updatedLocation;
+    }
+
+    private function branchLocationMatches(int|string $branchId, array $location, string $locationId): bool
+    {
+        return (string) $branchId === $locationId
+            || (string) ($location['branch_id'] ?? '') === $locationId
+            || (string) ($location['id'] ?? '') === $locationId;
+    }
+
+    private function formatBranchLocation(int|string $branchId, array $location, string $fallbackId): array
+    {
+        $branchId = (string) ($location['branch_id'] ?? $branchId);
+
+        return array_merge($location, [
+            'id' => (string) ($location['id'] ?? $branchId ?: $fallbackId),
+            'branch_id' => $branchId ?: $fallbackId,
+        ]);
     }
 
     /**

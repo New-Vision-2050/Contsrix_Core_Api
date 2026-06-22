@@ -172,11 +172,11 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.locations.store');
 
-    Route::put('/locations/{location}', [AttendanceConstraintController::class, 'updateLocation'])
+    Route::put('/locations/{locationId}', [AttendanceConstraintController::class, 'updateLocation'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.locations.update');
 
-    Route::delete('/locations/{location}', [AttendanceConstraintController::class, 'deleteLocation'])
+    Route::delete('/locations/{locationId}', [AttendanceConstraintController::class, 'deleteLocation'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_DELETE())
         ->name('attendance.constraints.locations.destroy');
 
