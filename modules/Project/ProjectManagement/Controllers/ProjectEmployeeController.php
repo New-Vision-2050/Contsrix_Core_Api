@@ -9,6 +9,7 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Modules\Attendance\Services\AttendanceStatusService;
 use Modules\Project\ProjectManagement\Services\ProjectEmployeeService;
 use Modules\Project\ProjectManagement\Requests\AssignEmployeesRequest;
 use Modules\Project\ProjectManagement\Presenters\ProjectEmployeePresenter;
@@ -21,7 +22,8 @@ use Modules\Company\CompanyCore\Models\Company;
 class ProjectEmployeeController extends Controller
 {
     public function __construct(
-        private ProjectEmployeeService $service
+        private ProjectEmployeeService $service,
+        private AttendanceStatusService $attendanceStatusService
     ) {
     }
 
@@ -69,11 +71,31 @@ class ProjectEmployeeController extends Controller
             }
 
             $companyId = $request->query('company_id');
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date', now()->toDateString());
 
             $employees = $this->service->getProjectEmployees($projectId, $companyId);
+            $userIds = $employees
+                ->pluck('user_id')
+                ->filter()
+                ->unique()
+                ->values();
 
-            $data = $employees->map(function ($employee) {
-                return (new ProjectEmployeePresenter($employee))->getData();
+            $attendanceStatusByUserId = $this->attendanceStatusService->buildForUsers($userIds, array_filter([
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ], static fn ($value) => $value !== null && $value !== ''));
+
+            $data = $employees->map(function ($employee) use ($attendanceStatusByUserId, $startDate) {
+                $presented = (new ProjectEmployeePresenter($employee))->getData();
+                $userId = $employee->user_id ? (string) $employee->user_id : null;
+
+                return array_merge(
+                    $presented,
+                    $userId && $attendanceStatusByUserId->has($userId)
+                        ? $attendanceStatusByUserId->get($userId)
+                        : $this->attendanceStatusService->syntheticAbsent($employee->user, $startDate)
+                );
             });
 
             return Json::items($data->toArray());
