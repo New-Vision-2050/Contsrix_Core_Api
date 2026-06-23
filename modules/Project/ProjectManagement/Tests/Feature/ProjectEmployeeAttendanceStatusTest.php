@@ -68,12 +68,14 @@ class ProjectEmployeeAttendanceStatusTest extends BaseAttendanceReportTestCase
         $this->assertExistingAttendanceFieldsMatch($payload, $holidayUser, $holidayAttendance);
 
         $missingRow = $payload->firstWhere('user.id', (string) $missingUser->id);
-        $this->assertSame('مطلوب للحضور', $missingRow['employee_status']);
-        $this->assertSame(Attendance::STATUS_ABSENT, $missingRow['status']);
-        $this->assertSame(1, $missingRow['is_absent']);
-        $this->assertSame(0, $missingRow['is_late']);
-        $this->assertSame(0, $missingRow['is_holiday']);
-        $this->assertSame('غائب', $missingRow['day_status']);
+        $this->assertSame('مطلوب للحضور', $missingRow['attendance']['employee_status']);
+        $this->assertSame(Attendance::STATUS_ABSENT, $missingRow['attendance']['status']);
+        $this->assertSame(1, $missingRow['attendance']['is_absent']);
+        $this->assertSame(0, $missingRow['attendance']['is_late']);
+        $this->assertSame(0, $missingRow['attendance']['is_holiday']);
+        $this->assertSame('غائب', $missingRow['attendance']['day_status']);
+        $this->assertSame('2025-06-23', $missingRow['attendance']['work_date']);
+        $this->assertNull($missingRow['attendance']['clock_in_time']);
     }
 
     public function test_project_employee_response_keeps_existing_shape_when_enriched(): void
@@ -96,8 +98,10 @@ class ProjectEmployeeAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.0.user.id', (string) $user->id)
             ->assertJsonPath('payload.0.user.name', 'Shape Employee')
             ->assertJsonPath('payload.0.company.id', (string) $this->company->id)
-            ->assertJsonPath('payload.0.status', Attendance::STATUS_ABSENT)
-            ->assertJsonPath('payload.0.day_status', 'غائب');
+            ->assertJsonPath('payload.0.attendance.status', Attendance::STATUS_ABSENT)
+            ->assertJsonPath('payload.0.attendance.day_status', 'غائب')
+            ->assertJsonMissingPath('payload.0.status')
+            ->assertJsonMissingPath('payload.0.day_status');
     }
 
     private function createProject(): ProjectManagement
@@ -165,8 +169,8 @@ class ProjectEmployeeAttendanceStatusTest extends BaseAttendanceReportTestCase
         $expected = (new AttendanceTeamPresenter($attendance))->present();
         $row = $payload->firstWhere('user.id', (string) $user->id);
 
-        foreach (['status', 'is_absent', 'is_late', 'is_holiday', 'day_status'] as $field) {
-            $this->assertSame($expected[$field], $row[$field]);
+        foreach (['status', 'is_absent', 'is_late', 'is_holiday', 'day_status', 'work_date', 'clock_in_time'] as $field) {
+            $this->assertSame($expected[$field], $row['attendance'][$field]);
         }
     }
 }

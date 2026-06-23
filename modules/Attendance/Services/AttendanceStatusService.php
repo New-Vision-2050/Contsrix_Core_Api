@@ -108,6 +108,8 @@ class AttendanceStatusService
                 'is_late' => (int) ($presented['is_late'] ?? 0),
                 'is_holiday' => (int) ($presented['is_holiday'] ?? 0),
                 'day_status' => $presented['day_status'] ?? '',
+                'work_date' => $presented['work_date'] ?? $requestedDate,
+                'clock_in_time' => $presented['clock_in_time'] ?? null,
             ];
         }
 
@@ -123,6 +125,8 @@ class AttendanceStatusService
             'is_late' => 0,
             'is_holiday' => 0,
             'day_status' => 'غائب',
+            'work_date' => $requestedDate,
+            'clock_in_time' => null,
         ];
     }
 

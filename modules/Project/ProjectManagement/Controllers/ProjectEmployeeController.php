@@ -90,12 +90,11 @@ class ProjectEmployeeController extends Controller
                 $presented = (new ProjectEmployeePresenter($employee))->getData();
                 $userId = $employee->user_id ? (string) $employee->user_id : null;
 
-                return array_merge(
-                    $presented,
-                    $userId && $attendanceStatusByUserId->has($userId)
-                        ? $attendanceStatusByUserId->get($userId)
-                        : $this->attendanceStatusService->syntheticAbsent($employee->user, $startDate)
-                );
+                $presented['attendance'] = $userId && $attendanceStatusByUserId->has($userId)
+                    ? $attendanceStatusByUserId->get($userId)
+                    : $this->attendanceStatusService->syntheticAbsent($employee->user, $startDate);
+
+                return $presented;
             });
 
             return Json::items($data->toArray());

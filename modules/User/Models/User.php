@@ -25,6 +25,7 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -297,6 +298,14 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'user_id',
             'attendance_constraint_id'
         );
+    }
+
+    public function projects(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(ProjectManagement::class, 'project_employees', 'user_id', 'project_id')
+            ->withoutGlobalScopes()
+            ->withPivot('assigned_at', 'assigned_by_user_id')
+            ->withTimestamps();
     }
 
     /**
