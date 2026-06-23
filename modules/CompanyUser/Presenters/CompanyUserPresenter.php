@@ -34,7 +34,33 @@ class CompanyUserPresenter extends AbstractPresenter
             return (new self($item, null, $role))->getData();
         })->toArray();
     }
+    private function calculateContractEndDate(): ?string
+    {
+        $contract = $this->companyUser->employmentContract;
 
+        if (!$contract || !$contract->start_date || !$contract->contract_duration) {
+            return null;
+        }
+
+        $startDate = $contract->start_date;
+        // لو start_date كان Carbon object ناخد منه النص
+        if ($startDate instanceof \Carbon\Carbon) {
+            $startDate = $startDate->format('Y-m-d');
+        }
+
+        $duration = (int) $contract->contract_duration;
+        if ($duration <= 0) {
+            return null;
+        }
+
+        // ✅ أضف "years" لو المدة بالسنوات، أو "months" لو بالشهور
+        $endTimestamp = strtotime("+{$duration} years", strtotime($startDate));
+        if ($endTimestamp === false) {
+            return null;
+        }
+
+        return date('Y-m-d', $endTimestamp);
+    }
     private function resolveStatus(): mixed
     {
         if ($this->role === null) {
@@ -54,7 +80,25 @@ class CompanyUserPresenter extends AbstractPresenter
 
         return null;
     }
+    private function generateWhatsAppUrl(): ?string
+    {
+        $rawNumber = $this->companyUser->whatsapp;
+        if (!$rawNumber) {
+            return null;
+        }
 
+        $cleanNumber = preg_replace('/[^0-9]/', '', $rawNumber);
+
+        // if (strlen($cleanNumber) <= 10) {
+        //     $phoneCode = $this->companyUser->users->first()?->phone_code;
+        //     if ($phoneCode) {
+        //         $cleanCode = preg_replace('/[^0-9]/', '', $phoneCode);
+        //         $cleanNumber = $cleanCode . $cleanNumber;
+        //     }
+        // }
+
+        return 'https://wa.me/' . $cleanNumber;
+    }
     protected function present(bool $isListing = false): array
     {
         return [
@@ -90,6 +134,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'address_attendance' =>  $this->companyUser->address_attendance??'-',
             'image_url' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
             'bank_account' => $this->companyUser->bankAccount ? (new BankAccountPresenter($this->companyUser->bankAccount))->getData() : null,
+            // 'bank_account' => $this->companyUser->bankAccount ? (new BankAccountPresenter($this->companyUser->bankAccount))->getData() : null,
             'user_professional_data' => $this->companyUser->userProfessionalData ? (new UserProfessionalDataPresenter($this->companyUser->userProfessionalData))->getData():null,
             "currency"=> $this->companyUser->currency?(new CountryCurrencyPresenter($this->companyUser->currency))->getData():null,
             "photo"=>$this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
@@ -97,7 +142,9 @@ class CompanyUserPresenter extends AbstractPresenter
             // Extended fields
             'phone_code' => $this->companyUser->users->first()?->phone_code,
             'nickname' => $this->companyUser->nickname,
-            'birthdate_gregorian' => $this->companyUser->birthdate_gregorian,
+            'birthdate_gregorian' => $this->companyUser->birthdate_gregorian
+                ? \Carbon\Carbon::parse($this->companyUser->birthdate_gregorian)->format('Y-m-d')
+                : null,
             'birthdate_hijri' => $this->companyUser->birthdate_hijri,
             'nationality' => $this->companyUser->country?->name,
             'postal_code' => $this->companyUser->postal_code,
@@ -107,7 +154,8 @@ class CompanyUserPresenter extends AbstractPresenter
             'job_type' => $this->companyUser->userProfessionalData?->jobType?->name,
             'job_code' => $this->companyUser->userProfessionalData?->job_code,
             'attendance_constraint' => $this->companyUser->userProfessionalData?->attendanceConstraint?->constraint_name,
-            'whatsapp' => $this->companyUser->whatsapp,
+            'whatsapp' => $this->generateWhatsAppUrl(),
+            // 'whatsapp' => $this->companyUser->whatsapp,
             'linkedin' => $this->companyUser->linkedin,
             'facebook' => $this->companyUser->facebook,
             'instagram' => $this->companyUser->instagram,
@@ -125,7 +173,8 @@ class CompanyUserPresenter extends AbstractPresenter
             'employment-info' => $this->companyUser->userProfessionalData?->jobTitle?->name,
             'contact-info' => $this->companyUser->contactInfo?->phone,
             'social-media' => implode(', ', array_keys(array_filter([
-                'WhatsApp' => $this->companyUser->whatsapp,
+                // 'WhatsApp' => $this->companyUser->whatsapp,
+                'WhatsApp' => $this->generateWhatsAppUrl(),
                 'LinkedIn' => $this->companyUser->linkedin,
                 'Facebook' => $this->companyUser->facebook,
                 'Instagram' => $this->companyUser->instagram,
@@ -151,7 +200,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'passport-info' => $this->companyUser->passport ?: null,
             'residence-info' => $this->companyUser->residence ?: null,
             'number_of_projects' => null,
-            'end_date' => null,
+            'end_date' => $this->calculateContractEndDate(),
             'broker' => null,
 
         ];
