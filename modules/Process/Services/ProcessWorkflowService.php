@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Events\WorkflowStepActivated;
 use Modules\ProcedureSetting\Jobs\AutoApproveWorkflowStep;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
@@ -72,12 +73,16 @@ class ProcessWorkflowService
             }
 
             $process = Process::create([
-                'processable_type' => $processableType,
-                'processable_id' => $processableId,
-                'execute_type' => $setting->execute_type ?? 'sequence',
-                'status' => $index === 0 ? ProcessStatus::InProgress : ProcessStatus::Pending,
-                'template_snapshot' => $snapshots,
-                'sort_order' => $sortOrder,
+                'processable_type'      => $processableType,
+                'processable_id'        => $processableId,
+                'execute_type'          => $setting->execute_type ?? 'sequence',
+                'status'                => $index === 0 ? ProcessStatus::InProgress : ProcessStatus::Pending,
+                'template_snapshot'     => $snapshots,
+                'sort_order'            => $sortOrder,
+                // Only store for internal (child) procedure settings — those that have
+                // a form key set. When this process completes, WorkflowProcedureTaken
+                // is fired so the available-actions API unlocks downstream procedures.
+                'procedure_setting_id'  => $setting->form !== null ? $setting->id : null,
             ]);
 
             if ($index === 0) {
@@ -305,6 +310,7 @@ class ProcessWorkflowService
                 $this->createProcessStep($process, $snapshot[$actedCount]);
             } else {
                 $process->update(['status' => ProcessStatus::Completed]);
+                $this->fireProcedureTakenIfApplicable($process);
                 $this->moveToNextProcessOrFinalize($process);
             }
         } else {
@@ -315,9 +321,29 @@ class ProcessWorkflowService
 
             if ($acted === $total && $total > 0) {
                 $process->update(['status' => ProcessStatus::Completed]);
+                $this->fireProcedureTakenIfApplicable($process);
                 $this->moveToNextProcessOrFinalize($process);
             }
         }
+    }
+
+    /**
+     * Fire WorkflowProcedureTaken for this process when it has a linked
+     * internal procedure setting (form != null). This marks the procedure
+     * as "taken" in the central morph table so that the available-actions
+     * API can unlock any downstream procedures that depend on it.
+     */
+    private function fireProcedureTakenIfApplicable(Process $process): void
+    {
+        if (empty($process->procedure_setting_id)) {
+            return;
+        }
+
+        event(new WorkflowProcedureTaken(
+            processableType:    $process->processable_type,
+            processableId:      $process->processable_id,
+            procedureSettingId: $process->procedure_setting_id,
+        ));
     }
 
     private function moveToNextProcessOrFinalize(Process $currentProcess): void

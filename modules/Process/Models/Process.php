@@ -29,13 +29,15 @@ class Process extends Model
         'status',
         'sort_order',
         'template_snapshot',
+        'procedure_setting_id',
     ];
 
     protected $casts = [
-        'id'                 => 'string',
-        'processable_id'     => 'string',
-        'status'             => ProcessStatus::class,
-        'template_snapshot'  => 'array',
+        'id'                   => 'string',
+        'processable_id'       => 'string',
+        'procedure_setting_id' => 'string',
+        'status'               => ProcessStatus::class,
+        'template_snapshot'    => 'array',
     ];
 
     protected static function boot(): void
