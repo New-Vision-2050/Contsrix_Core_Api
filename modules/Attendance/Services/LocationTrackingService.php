@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Modules\Attendance\Services;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Modules\Attendance\Models\Attendance;
+use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 
 class LocationTrackingService
 {
@@ -64,6 +66,23 @@ class LocationTrackingService
      */
     public function getTodaysActiveAttendance(array $filters = [])
     {
+        $projectId = $filters['project_id'] ?? null;
+        unset($filters['project_id']);
+
+        $projectUserIds = null;
+        if ($projectId !== null && $projectId !== '') {
+            $projectUserIds = ProjectEmployee::query()
+                ->where('project_id', $projectId)
+                ->pluck('user_id')
+                ->filter()
+                ->unique()
+                ->values();
+
+            if ($projectUserIds->isEmpty()) {
+                return new EloquentCollection();
+            }
+        }
+
         // Get the start and end of the current day based on the app's timezone.
     $startOfDay = now()->startOfDay();
     $endOfDay = now()->endOfDay();
@@ -71,6 +90,7 @@ class LocationTrackingService
     $subQuery = Attendance::whereBetween('clock_in_time', [$startOfDay, $endOfDay])
         ->where('is_absent', false)
         ->where('is_holiday', false)
+        ->when($projectUserIds !== null, fn ($query) => $query->whereIn('user_id', $projectUserIds->all()))
         ->filter($filters)
         ->select('user_id', \DB::raw('MAX(clock_in_time) as latest_clock_in'))
         ->groupBy('user_id');
