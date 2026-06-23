@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace Modules\Attendance\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use Modules\Attendance\DTO\ClockInDTO;
-use Ramsey\Uuid\Uuid;
 
 class LiveTrackingRequest extends FormRequest
 {
@@ -17,7 +14,8 @@ class LiveTrackingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'project_id' => ['nullable', 'uuid'],
+            'company_id' => ['nullable', 'uuid'],
         ];
     }
 

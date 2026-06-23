@@ -6,6 +6,7 @@ namespace Modules\Attendance\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -177,7 +178,22 @@ class AttendanceReportRepository extends BaseRepository
 
         return $this->sumApprovedLeaveDays($companyId, $userId, $start, $end);
     }
+    public function countAllPublicHolidayDaysInPeriod(string $fromDate, string $toDate, ?string $countryId): int
+    {
+        if ($countryId === null || $countryId === '') {
+            return 0;
+        }
 
+        return PublicHolidayDay::query()
+            ->join('public_holidays', 'public_holiday_days.public_holiday_id', '=', 'public_holidays.id')
+            ->where('public_holidays.country_id', $countryId)
+            ->where('public_holidays.is_active', true)
+            ->whereBetween('public_holiday_days.date', [$fromDate, $toDate])
+            ->distinct()
+            ->pluck('public_holiday_days.date')
+            ->unique(fn ($date) => Carbon::parse($date)->toDateString())
+            ->count();
+    }
     public function countPublicHolidayDaysInMonth(int $year, int $month, ?string $countryId): int
     {
         $start = sprintf('%04d-%02d-01', $year, $month);
@@ -185,7 +201,19 @@ class AttendanceReportRepository extends BaseRepository
 
         return $this->countPublicHolidayDaysInPeriod($start, $end, $countryId);
     }
+    public function countWeekendDaysInMonth(int $year, int $month): int
+    {
+        $start = Carbon::create($year, $month, 1)->startOfDay();
+        $end = $start->copy()->endOfMonth();
 
+        $weekendDays = 0;
+        foreach (CarbonPeriod::create($start, $end) as $day) {
+            if ($day->isWeekend()) {
+                $weekendDays++;
+            }
+        }
+        return $weekendDays;
+    }
     public function countPublicHolidayDaysInPeriod(string $fromDate, string $toDate, ?string $countryId): int
     {
         if ($countryId === null || $countryId === '') {

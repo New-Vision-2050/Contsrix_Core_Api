@@ -665,6 +665,7 @@ class AttendanceConstraintController extends Controller
 
         $users = User::withoutTenancy()
             ->whereIn('id', $pagedIds)
+            ->with(['projects:id,name'])
             ->get()
             ->map(fn($u) => [
                 'id'     => $u->id,
@@ -672,6 +673,13 @@ class AttendanceConstraintController extends Controller
                 'email'  => $u->email,
                 'phone'  => $u->phone ?? null,
                 'source' => isset($mainSet[(string) $u->id]) ? 'main' : 'additional',
+                'projects' => $u->projects
+                    ->map(fn($project) => [
+                        'id' => (string) $project->id,
+                        'name' => $project->name,
+                    ])
+                    ->values()
+                    ->all(),
             ])
             ->values()
             ->all();
