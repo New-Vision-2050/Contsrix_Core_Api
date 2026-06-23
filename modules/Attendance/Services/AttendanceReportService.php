@@ -96,12 +96,28 @@ class AttendanceReportService
         [$year, $month] = array_map('intval', explode('-', $monthKey));
         $carbon = Carbon::create($year, $month, 1);
         $daysInMonth = $carbon->daysInMonth;
-        $monthHolidays = $this->repository->countPublicHolidayDaysInMonth($year, $month, $countryId);
+
+        // 1. أيام نهاية الأسبوع في هذا الشهر
+        $weekendDays = $this->repository->countWeekendDaysInMonth($year, $month);
+
+        // 2. جميع أيام العطل الرسمية في هذا الشهر (بما في ذلك الواقعة في نهاية الأسبوع)
+        $officialHolidaysAll = $this->repository->countAllPublicHolidayDaysInPeriod(
+            $carbon->toDateString(),
+            $carbon->copy()->endOfMonth()->toDateString(),
+            $countryId
+        );
+
+        // 3. إجمالي أيام العطل الشهرية = نهاية الأسبوع + العطل الرسمية
+        $monthHolidays = $weekendDays + $officialHolidaysAll;
+
+        // 4. أيام الحضور المطلوبة تبقى معتمدة على الدالة القديمة التي تستثني نهاية الأسبوع
+        $officialHolidaysWorkdays = $this->repository->countPublicHolidayDaysInMonth($year, $month, $countryId);
         $requiredAttendanceDays = AttendanceReportCalculator::requiredAttendanceDays(
             $carbon->toDateString(),
             $carbon->copy()->endOfMonth()->toDateString(),
-            $monthHolidays,
+            $officialHolidaysWorkdays,
         );
+
         $usedLeaves = $this->repository->sumApprovedLeaveDaysForMonth(
             $filters->company_id,
             $filters->employee_id,
