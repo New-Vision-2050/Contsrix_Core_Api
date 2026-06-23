@@ -108,6 +108,7 @@ class AttendanceStatusService
                 'is_late' => (int) ($presented['is_late'] ?? 0),
                 'is_holiday' => (int) ($presented['is_holiday'] ?? 0),
                 'day_status' => $presented['day_status'] ?? '',
+                ...$this->attendanceConstraintFields($user),
                 'work_date' => $presented['work_date'] ?? $requestedDate,
                 'clock_in_time' => $presented['clock_in_time'] ?? null,
             ];
@@ -125,8 +126,25 @@ class AttendanceStatusService
             'is_late' => 0,
             'is_holiday' => 0,
             'day_status' => 'غائب',
+            ...$this->attendanceConstraintFields($user),
             'work_date' => $requestedDate,
             'clock_in_time' => null,
+        ];
+    }
+
+    /**
+     * @return array{attendance_constraint_id: ?string, attendance_constraint: ?array}
+     */
+    private function attendanceConstraintFields(?User $user): array
+    {
+        $constraint = $user?->userProfessionalData?->attendanceConstraint;
+
+        return [
+            'attendance_constraint_id' => $constraint?->id ? (string) $constraint->id : null,
+            'attendance_constraint' => $constraint ? [
+                'id' => (string) $constraint->id,
+                'constraint_name' => $constraint->constraint_name,
+            ] : null,
         ];
     }
 

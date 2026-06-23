@@ -67,12 +67,21 @@ class LocationTrackingService
     public function getTodaysActiveAttendance(array $filters = [])
     {
         $projectId = $filters['project_id'] ?? null;
-        unset($filters['project_id']);
+        $companyId = $filters['company_id'] ?? null;
+        unset($filters['project_id'], $filters['company_id']);
 
         $projectUserIds = null;
         if ($projectId !== null && $projectId !== '') {
-            $projectUserIds = ProjectEmployee::query()
+            $projectEmployeeQuery = $companyId !== null && $companyId !== ''
+                ? ProjectEmployee::withoutGlobalScopes()
+                : ProjectEmployee::query();
+
+            $projectUserIds = $projectEmployeeQuery
                 ->where('project_id', $projectId)
+                ->when(
+                    $companyId !== null && $companyId !== '',
+                    fn ($query) => $query->where('company_id', $companyId)
+                )
                 ->pluck('user_id')
                 ->filter()
                 ->unique()

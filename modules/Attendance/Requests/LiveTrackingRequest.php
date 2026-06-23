@@ -15,6 +15,7 @@ class LiveTrackingRequest extends FormRequest
     {
         return [
             'project_id' => ['nullable', 'uuid'],
+            'company_id' => ['nullable', 'uuid'],
         ];
     }
 

@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
@@ -90,6 +91,59 @@ class LiveTrackingProjectFilterTest extends BaseAttendanceReportTestCase
         $this->assertFalse($payload->contains(fn (array $row): bool => $row['user']['id'] === (string) $outsideUser->id));
     }
 
+    public function test_live_tracking_with_project_id_and_company_id_uses_matching_project_employee_company(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-23 12:00:00'));
+
+        $project = $this->createProject();
+        $otherCompany = $this->createCompany('Other Project Membership Company');
+        $currentCompanyUser = $this->createLiveTrackingUser('Current Company Project User');
+        $otherCompanyMembershipUser = $this->createLiveTrackingUser('Other Company Membership User');
+
+        $this->assignToProject($project, $currentCompanyUser, $this->company->id);
+        $this->assignToProject($project, $otherCompanyMembershipUser, $otherCompany->id);
+        $this->createActiveAttendance($currentCompanyUser);
+        $otherCompanyMembershipAttendance = $this->createActiveAttendance($otherCompanyMembershipUser);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/attendance/live-tracking?'.http_build_query([
+                'project_id' => $project->id,
+                'company_id' => $otherCompany->id,
+            ]));
+
+        $response->assertOk()
+            ->assertJsonPath('payload.0.attendance_id', (string) $otherCompanyMembershipAttendance->id);
+
+        $payload = collect($response->json('payload'));
+
+        $this->assertCount(1, $payload);
+        $this->assertSame((string) $otherCompanyMembershipUser->id, $payload->first()['user']['id']);
+        $this->assertFalse($payload->contains(fn (array $row): bool => $row['user']['id'] === (string) $currentCompanyUser->id));
+    }
+
+    public function test_live_tracking_with_project_id_and_company_id_returns_empty_when_membership_company_does_not_match(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-23 12:00:00'));
+
+        $project = $this->createProject();
+        $otherCompany = $this->createCompany('Empty Membership Company');
+        $projectUser = $this->createLiveTrackingUser('Project User');
+
+        $this->assignToProject($project, $projectUser, $this->company->id);
+        $this->createActiveAttendance($projectUser);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/attendance/live-tracking?'.http_build_query([
+                'project_id' => $project->id,
+                'company_id' => $otherCompany->id,
+            ]));
+
+        $response->assertOk()
+            ->assertJsonPath('payload', []);
+    }
+
     public function test_live_tracking_project_filter_returns_empty_payload_for_empty_project(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-23 12:00:00'));
@@ -116,6 +170,38 @@ class LiveTrackingProjectFilterTest extends BaseAttendanceReportTestCase
             ->getJson('/api/v1/attendance/live-tracking?project_id=not-a-uuid')
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['project_id']);
+    }
+
+    public function test_live_tracking_company_id_must_be_uuid(): void
+    {
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/attendance/live-tracking?company_id=not-a-uuid')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['company_id']);
+    }
+
+    private function createCompany(string $name): Company
+    {
+        $company = Company::withoutEvents(fn () => Company::query()->create([
+            'id' => (string) Str::uuid(),
+            'name' => ['en' => $name],
+            'user_name' => Str::slug($name).'-'.Str::random(6),
+            'email' => Str::slug($name).'-'.Str::random(6).'@example.test',
+            'phone' => '01000000000',
+            'country_id' => $this->country->id,
+            'company_type_id' => (string) Str::uuid(),
+            'company_field_id' => (string) Str::uuid(),
+            'registration_type_id' => (string) Str::uuid(),
+            'general_manager_id' => (string) Str::uuid(),
+            'is_active' => 1,
+            'complete_data' => 1,
+            'serial_no' => 'LIVE-TRACK-'.Str::upper(Str::random(8)),
+        ]));
+
+        $company->domains()->firstOrCreate(['domain' => Str::slug($name).'-'.Str::random(6).'.test']);
+
+        return $company;
     }
 
     private function createProject(): ProjectManagement
@@ -159,13 +245,13 @@ class LiveTrackingProjectFilterTest extends BaseAttendanceReportTestCase
         return $user;
     }
 
-    private function assignToProject(ProjectManagement $project, User $user): ProjectEmployee
+    private function assignToProject(ProjectManagement $project, User $user, ?string $companyId = null): ProjectEmployee
     {
         return ProjectEmployee::query()->create([
             'id' => (string) Str::uuid(),
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'company_id' => $this->company->id,
+            'company_id' => $companyId ?? $this->company->id,
             'assigned_at' => now(),
             'assigned_by_user_id' => $this->actor->id,
         ]);
