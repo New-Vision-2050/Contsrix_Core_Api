@@ -101,16 +101,21 @@ class EmployeeTaskRequestService
             );
         }
 
-        $this->markCreateTaskProceduresTaken($task, $dto->userId);
-
+        // Do NOT mark createTask procedures as taken here.
+        // When there is a real approval workflow, the procedure is marked as taken
+        // only once the Process reaches Completed status (via ProcessWorkflowService
+        // firing WorkflowProcedureTaken). This prevents startTask (or any procedure
+        // that appears_after createTask) from appearing before the admin approves.
         $this->createProcessesForTask($task);
 
         return $task;
     }
 
     /**
-     * Mark all createTask-form internal procedures as "taken" for the newly
-     * created task. Since the task itself exists, createTask is always taken.
+     * Mark all createTask-form internal procedures as "taken" for this task.
+     * Only called when there is no pending approval workflow (auto-approve paths).
+     * When a real workflow exists, the taken status is recorded by
+     * ProcessWorkflowService::fireProcedureTakenIfApplicable() when the process completes.
      */
     private function markCreateTaskProceduresTaken(EmployeeTaskRequest $task, string $userId): void
     {
@@ -166,6 +171,11 @@ class EmployeeTaskRequestService
                 'status' => EmployeeTaskStatus::Approved->value,
                 'approved_at' => now(),
             ]);
+
+            // All workflow steps resolved to empty users at runtime (edge case).
+            // Mark createTask procedures taken immediately so available-actions
+            // correctly unlocks downstream procedures.
+            $this->markCreateTaskProceduresTaken($task, (string) $task->user_id);
 
             return;
         }

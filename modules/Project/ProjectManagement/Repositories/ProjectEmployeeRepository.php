@@ -19,7 +19,12 @@ class ProjectEmployeeRepository extends BaseRepository
     {
         $query = $this->model
             ->where('project_id', $projectId)
-            ->with(['user', 'assignedBy', 'projectRole.permissions', 'company']);
+            ->with([
+                'user.userProfessionalData.attendanceConstraint',
+                'assignedBy',
+                'projectRole.permissions',
+                'company',
+            ]);
 
         if ($companyId) {
             $query->where('company_id', $companyId);

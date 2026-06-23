@@ -2,7 +2,9 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-22 — `action_taker_management_hierarchies` refactor: new JSON array of `{action_taker_management_hierarchy_type, is_Deputy_Director}` objects replaces deprecated single `action_taker_management_hierarchy_type` + `action_taker_alternative_management_hierarchy_type` fields. `deputy_manager` type replaced by `is_Deputy_Director` boolean flag. `ActionTakerResolver` updated to iterate array rows, skip unresolvable types (e.g. `project_manager` without `project_id`), and merge manager + deputy users. See §5.1, §32.
+> **Last updated:** 2026-06-23 — `procedure_setting_id` on `processes`: `createTask` procedure now marked taken ONLY after workflow approval (not on task creation). See §9.4, §23.
+>
+> **Previous:** 2026-06-22 — `action_taker_management_hierarchies` refactor: new JSON array of `{action_taker_management_hierarchy_type, is_Deputy_Director}` objects replaces deprecated single `action_taker_management_hierarchy_type` + `action_taker_alternative_management_hierarchy_type` fields. `deputy_manager` type replaced by `is_Deputy_Director` boolean flag. `ActionTakerResolver` updated to iterate array rows, skip unresolvable types (e.g. `project_manager` without `project_id`), and merge manager + deputy users. See §5.1, §32.
 
 ---
 
@@ -723,7 +725,7 @@ A procedure is considered "taken" when it has been completed or approved. The "t
 
 | Form | Taken When | How it's recorded |
 |------|-----------|-------------------|
-| `createTask` | Always taken (the task itself exists) | `EmployeeTaskRequestService::create()` calls `markProcedureTaken()` for all active `createTask` procedures |
+| `createTask` | **Auto-approve path**: marked immediately on task creation. **Real workflow path**: marked when all Process steps are approved (`ProcessWorkflowService::fireProcedureTakenIfApplicable()`) | `WorkflowProcedureTaken` event fired by `ProcessWorkflowService` on process `Completed`; or immediately via `markCreateTaskProceduresTaken()` when no approvers exist |
 | `startTask` | Employee starts the task | `EmployeeTaskController::start()` calls `markProcedureTaken()` with the `internal_procedure_setting_id` from the request |
 | `endTask` | Task is ended directly (no procedure) | `EmployeeTaskLifecycleService::end()` calls `markProcedureTaken()` |
 | `endTask` (via end request) | End request is approved through workflow | `ProcedureWorkflowService::advance()` auto-marks when `isFinal = true` |
@@ -1612,7 +1614,7 @@ internal_procedure_takens
 
 | Form | Mechanism |
 |------|-----------|
-| `createTask` | `EmployeeTaskRequestService::markCreateTaskProceduresTaken()` on every task creation |
+| `createTask` | **Auto-approve**: `markCreateTaskProceduresTaken()` called immediately (preview says no steps, or runtime resolves to empty users). **With approvers**: `ProcessWorkflowService::fireProcedureTakenIfApplicable()` fires `WorkflowProcedureTaken` when `Process.status` → `Completed` |
 | `startTask` | `EmployeeTaskController::start()` calls `markProcedureTaken()` with `internal_procedure_setting_id` |
 | `confirmLocation` | `EmployeeTaskController::locationPing()` calls `markProcedureTaken()` on first in-location confirmation |
 | `endTask` (direct) | `EmployeeTaskLifecycleService::end()` calls `markProcedureTaken()` |
@@ -1624,6 +1626,13 @@ internal_procedure_takens
 #### New Migrations
 - `ProcedureSetting/Migrations/2026_06_19_000002_create_internal_procedure_takens_table.php`
 - `EmployeeTask/Migrations/2026_06_19_000003_drop_taken_internal_procedure_ids_from_employee_task_requests.php`
+- `Process/Migrations/2026_06_23_000001_add_procedure_setting_id_to_processes.php` — adds nullable `procedure_setting_id` UUID column to `processes`. Populated only for child/internal procedure settings (those with `form != null`). When the process reaches `Completed`, `ProcessWorkflowService::fireProcedureTakenIfApplicable()` fires `WorkflowProcedureTaken` for this setting ID.
+
+#### `processes.procedure_setting_id` Rules
+- `null` for parent-level (ClientRequest, PriceOffer) processes — no event fires.
+- Set to `$setting->id` for any child `ProcedureSetting` where `form !== null` (e.g. `createTask`, `endTask`).
+- On process `Completed`, `WorkflowProcedureTaken` is dispatched automatically — **no manual `markProcedureTaken()` call needed by callers**.
+- Idempotent: `RecordInternalProcedureTaken` uses `firstOrCreate`, so double-firing is harmless.
 
 #### Removed
 - `employee_task_requests.taken_internal_procedure_ids` JSON column

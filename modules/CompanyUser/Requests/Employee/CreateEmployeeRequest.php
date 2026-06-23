@@ -33,7 +33,7 @@ class CreateEmployeeRequest extends FormRequest
 
             'phone' => [
                 'required', "phone"
-                , new PhoneEmailConsistencyRule($this->input('email'))
+//                , new PhoneEmailConsistencyRule($this->input('email'))
             ],
             'email' => [
                 'required',
