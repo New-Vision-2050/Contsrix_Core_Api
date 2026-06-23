@@ -102,6 +102,7 @@ class AttendanceStatusService
             );
 
             return [
+                'id' => $presented['id'] ?? null,
                 'employee_status' => $presented['employee_status'],
                 'status' => $presented['status'] ?? null,
                 'is_absent' => (int) ($presented['is_absent'] ?? 0),
@@ -120,6 +121,7 @@ class AttendanceStatusService
     public function syntheticAbsent(?User $user, ?string $requestedDate = null): array
     {
         return [
+            'id' => null,
             'employee_status' => 'مطلوب للحضور',
             'status' => Attendance::STATUS_ABSENT,
             'is_absent' => 1,
