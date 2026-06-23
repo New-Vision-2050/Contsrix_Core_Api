@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Attendance\Controllers\AttendanceController;
+use Modules\Attendance\Controllers\DashboardOverviewController;
 use Modules\Attendance\Controllers\AttendanceReportController;
 use Modules\Attendance\Controllers\LeaveBalanceController;
 use Modules\Attendance\Controllers\LeaveRequestController;
@@ -214,6 +215,8 @@ Route::prefix('leave')->group(function () {
 
 // Dashboard Statistics (for different user roles)
     Route::prefix('dashboard')->group(function () {
+        Route::get('overview', DashboardOverviewController::class)
+            ->name('dashboard.overview');
 
         // Employee Dashboard
         Route::get('employee-stats', [AttendanceController::class, 'getEmployeeStats'])
