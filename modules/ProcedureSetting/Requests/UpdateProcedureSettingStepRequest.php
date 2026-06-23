@@ -129,16 +129,17 @@ class UpdateProcedureSettingStepRequest extends FormRequest
 
             'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy,specific_procedures,himself',
 
+            // ── Deprecated (legacy) ──────────────────────────────────────────
+            // Replaced by action_taker_management_hierarchies array of objects.
+            // Still accepted for backward compatibility but not required.
             'action_taker_management_hierarchy_type' => [
                 'sometimes',
                 'nullable',
                 'string',
                 'in:branch_manager,management_manager,project_manager,deputy_manager',
-                'required_if:action_taker_type,management_hierarchy',
                 'prohibited_unless:action_taker_type,management_hierarchy',
             ],
 
-            // Array of fallback hierarchy types tried in order.
             'action_taker_alternative_management_hierarchy_type' => [
                 'sometimes',
                 'nullable',
@@ -148,6 +149,27 @@ class UpdateProcedureSettingStepRequest extends FormRequest
             'action_taker_alternative_management_hierarchy_type.*' => [
                 'string',
                 'in:branch_manager,management_manager,deputy_manager',
+            ],
+
+            // ── New format (canonical) ───────────────────────────────────────
+            // Array of {action_taker_management_hierarchy_type, is_Deputy_Director} objects.
+            // Required when action_taker_type === "management_hierarchy".
+            'action_taker_management_hierarchies' => [
+                'sometimes',
+                'nullable',
+                'array',
+                'max:3',
+                'required_if:action_taker_type,management_hierarchy',
+                'prohibited_unless:action_taker_type,management_hierarchy',
+            ],
+            'action_taker_management_hierarchies.*.action_taker_management_hierarchy_type' => [
+                'required',
+                'string',
+                'in:project_manager,branch_manager,management_manager',
+            ],
+            'action_taker_management_hierarchies.*.is_Deputy_Director' => [
+                'nullable',
+                'boolean',
             ],
 
             // Parallel arrays: type[i]+id[i] define each specific-procedure target.

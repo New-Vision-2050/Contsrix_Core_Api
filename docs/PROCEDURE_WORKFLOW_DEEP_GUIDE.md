@@ -2,7 +2,7 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-21 — Multi-module centralized taken-status expansion (§30); `appears_after_id` / `appears_before_id` changed from single UUID to **JSON arrays** supporting multiple prerequisites (§27.9, §30.5); migration `2026_06_21_000001` converts existing rows automatically; **Rich conditions system** for `startTask` — new `InternalProcessConditionCategory` enum, `settingsSchema()`, `GET /forms-conditions` API, dual-format `EmployeeTaskFormConditionService`, 5 new condition types (§28, §31).
+> **Last updated:** 2026-06-22 — `action_taker_management_hierarchies` refactor: new JSON array of `{action_taker_management_hierarchy_type, is_Deputy_Director}` objects replaces deprecated single `action_taker_management_hierarchy_type` + `action_taker_alternative_management_hierarchy_type` fields. `deputy_manager` type replaced by `is_Deputy_Director` boolean flag. `ActionTakerResolver` updated to iterate array rows, skip unresolvable types (e.g. `project_manager` without `project_id`), and merge manager + deputy users. See §5.1, §32.
 
 ---
 
@@ -466,12 +466,37 @@ rejectionShouldFailProcess($step): bool
 
 ```
 action_taker_type:
-  'management_hierarchy'  → resolveManagementHierarchyUsers() → [single_id]
+  'management_hierarchy'  → resolveManagementHierarchyUsers() → [ids...]
   'specific_procedures'   → resolveSpecificProcedureUsers()   → [many_ids...]
   default                 → resolveSpecificUserIds()          → [from actionTakers]
 ```
 
-### Fallback Chain
+### New Format: `action_taker_management_hierarchies` (2026-06-22)
+
+The `action_taker_management_hierarchies` column stores a JSON array of objects:
+```json
+[
+  {"action_taker_management_hierarchy_type": "branch_manager", "is_Deputy_Director": false},
+  {"action_taker_management_hierarchy_type": "management_manager", "is_Deputy_Director": true}
+]
+```
+
+**Resolution behavior** (`resolveFromManagementHierarchiesArray`):
+1. Iterate each row in array order.
+2. For each row, resolve the manager by `action_taker_management_hierarchy_type`:
+   - `project_manager` → looks up `context['project_id']` → `ProjectManagement.manager_id`. If no `project_id` or project not found → **skip row**, continue to next.
+   - `branch_manager` → creator's `professionalData.branch_id` → `ManagementHierarchy.manager_id`
+   - `management_manager` → creator's `professionalData.management_id` → `ManagementHierarchy.manager_id`
+3. If `is_Deputy_Director === true`, also resolve all deputy managers for that hierarchy node and add them.
+4. All resolved user IDs are **merged and de-duplicated**.
+5. **Any one** of those users accepting/approving advances the step.
+
+**Key behaviors:**
+- If a row can't resolve (e.g. `project_manager` on an EmployeeTask without `project_id`), it is **silently skipped** — the next row is tried.
+- `deputy_manager` is no longer a valid type value. Use `is_Deputy_Director: true` on any row instead.
+- Legacy fields (`action_taker_management_hierarchy_type`, `action_taker_alternative_management_hierarchy_type`) still work as fallback when the new column is empty.
+
+### Fallback Chain (legacy format)
 
 ```
 resolveManagerFromCreatorHierarchy:
@@ -2705,3 +2730,82 @@ This means **old `createTask`/`endTask` procedures stored in the database contin
 | `modules/EmployeeTask/Exceptions/EmployeeTaskException.php` | Added 4 new exception factories |
 | `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | Full rewrite with `indexConditions()`, 5 new `assert*()` methods, `AttendanceRepository` injection |
 | `docs/CONDITIONS_SYSTEM_GUIDE.md` | **New** — standalone guide for AI/frontend/backend |
+
+---
+
+## 32. action_taker_management_hierarchies Refactor (2026-06-22)
+
+### Background
+
+The old format used two separate fields:
+- `action_taker_management_hierarchy_type` — single string (e.g. `"branch_manager"`)
+- `action_taker_alternative_management_hierarchy_type` — JSON array of fallback type strings
+
+The new format uses a single JSON column:
+- `action_taker_management_hierarchies` — array of `{action_taker_management_hierarchy_type, is_Deputy_Director}` objects
+
+### What Changed
+
+| Aspect | Old | New |
+|--------|-----|-----|
+| DB column | `action_taker_management_hierarchy_type` (string) + `action_taker_alternative_management_hierarchy_type` (text/JSON) | `action_taker_management_hierarchies` (text/JSON) |
+| Deputy handling | `deputy_manager` as a type value | `is_Deputy_Director: true` boolean flag on any row |
+| Max entries | Unlimited alternatives | Max 3 rows |
+| Allowed types | `branch_manager`, `management_manager`, `project_manager`, `deputy_manager` | `branch_manager`, `management_manager`, `project_manager` (no `deputy_manager`) |
+| Resolution | Primary type → fallback alternatives in order | All rows resolved, users merged; any one user accepting advances step |
+| Unresolvable row | N/A (single primary + fallbacks) | Silently skipped (e.g. `project_manager` without `project_id` → try next row) |
+
+### Resolution Logic (ActionTakerResolver)
+
+```
+resolveUsersForStep(step, createdByUserId, context)
+  └─ resolveManagementHierarchyUsers()
+       ├─ if step.action_taker_management_hierarchies is not empty:
+       │    └─ resolveFromManagementHierarchiesArray()
+       │         ├─ for each row in array:
+       │         │    ├─ resolve manager by type (branch_manager, management_manager, project_manager)
+       │         │    ├─ if is_Deputy_Director: also resolve all deputy managers for that hierarchy
+       │         │    └─ merge into result set (de-duplicated)
+       │         └─ return all unique user IDs
+       │
+       └─ else (legacy fallback):
+            ├─ if type === 'deputy_manager': resolveManagerAndDeputies()
+            └─ else: resolveManagerFromCreatorHierarchy() → [single_id]
+```
+
+### "One Accept Advances Step" Behavior
+
+When `is_Deputy_Director: true` is set on a row, both the manager AND all deputy managers are resolved. Any one of them accepting/approving the step advances it — there is no requirement for all to act.
+
+Example: `[{type: "branch_manager", is_Deputy_Director: true}]`
+- Resolves: branch manager (user A) + all deputy managers (users B, C)
+- Any of A, B, or C can approve → step advances
+
+### Skipping Unresolvable Rows
+
+If a row's type cannot resolve, it is silently skipped and the next row is tried:
+
+Example: `[{type: "project_manager", is_Deputy_Director: false}, {type: "branch_manager", is_Deputy_Director: false}]`
+- EmployeeTask without `project_id` → `project_manager` row skipped
+- `branch_manager` row resolves → step proceeds with branch manager
+
+### Backward Compatibility
+
+- Legacy fields remain in DB, model `$fillable`, and `$casts`.
+- GET endpoints return both old and new format fields.
+- If `action_taker_management_hierarchies` column is empty, presenter builds the array from legacy fields.
+- `deputy_manager` enum case kept in `ActionTakerManagementHierarchyType` for reading old data.
+- Legacy requests with old fields still accepted (validation relaxed: `required_if` removed from `action_taker_management_hierarchy_type`).
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `modules/ProcedureSetting/Database/Migrations/2026_06_22_000001_add_action_taker_management_hierarchies_to_procedure_setting_steps.php` | **New** — adds column |
+| `modules/ProcedureSetting/Models/ProcedureSettingStep.php` | Added to `$fillable` and `$casts` |
+| `modules/ProcedureSetting/Requests/CreateProcedureSettingStepRequest.php` | New validation rules; legacy `required_if` removed |
+| `modules/ProcedureSetting/Requests/UpdateProcedureSettingStepRequest.php` | Same with `sometimes` |
+| `modules/ProcedureSetting/DTO/CreateProcedureSettingStepDTO.php` | New field in constructor + `toArray()` |
+| `modules/ProcedureSetting/Presenters/ProcedureSettingStepPresenter.php` | Returns new field; backward-compat build from legacy |
+| `modules/ProcedureSetting/Services/ActionTakerResolver.php` | New methods: `resolveFromManagementHierarchiesArray`, `resolveManagerByType`, `resolveDeputyManagersForType`; updated `resolveManagementHierarchyUsers` + `resolveManagerFromCreatorHierarchy` |
+| `docs/PROCEDURE_STEPS_API_CHANGES.md` | **New** — changelog |

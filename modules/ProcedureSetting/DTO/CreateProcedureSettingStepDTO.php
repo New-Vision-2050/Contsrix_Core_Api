@@ -12,6 +12,7 @@ class CreateProcedureSettingStepDTO
      * @param list<string>|null                                      $action_taker_alternative_management_hierarchy_type
      * @param list<string>|null                                      $action_taker_specific_procedure_type
      * @param list<string>|null                                      $action_taker_specific_procedure_id
+     * @param list<array{action_taker_management_hierarchy_type: string, is_Deputy_Director: bool}>|null $action_taker_management_hierarchies
      */
     public function __construct(
         public readonly string $procedure_setting_id,
@@ -44,6 +45,9 @@ class CreateProcedureSettingStepDTO
 
         public readonly ?array $action_taker_user_ids = null,
         public readonly ?array $concerned_management_hierarchy_ids = null,
+
+        /** New canonical format: array of {action_taker_management_hierarchy_type, is_Deputy_Director} objects. */
+        public readonly ?array $action_taker_management_hierarchies = null,
     ) {
     }
 
@@ -76,6 +80,7 @@ class CreateProcedureSettingStepDTO
             'action_taker_alternative_management_hierarchy_type' => $this->action_taker_alternative_management_hierarchy_type,
             'action_taker_specific_procedure_type' => $this->action_taker_specific_procedure_type,
             'action_taker_specific_procedure_id'   => $this->action_taker_specific_procedure_id,
+            'action_taker_management_hierarchies'  => $this->action_taker_management_hierarchies,
         ];
 
         if ($this->action_taker_user_ids !== null) {
