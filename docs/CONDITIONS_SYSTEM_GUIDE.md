@@ -153,9 +153,9 @@ Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=createTa
 
 ### `inside_custom_locations`
 - **Category**: `location` (موقع)
-- **Label**: داخل المواقع المخصصة
-- **Form group**: `precondition`
-- **Evaluation**: If active, verifies that the task's GPS coordinates (`taskLatitude`, `taskLongitude`) lie inside at least one of the custom polygon areas configured in `settings.polygons`. If outside all polygons → throws `outsideCustomLocations`.
+- **Label**: موقع المهمة داخل المناطق المخصصة
+- **Form group**: `in_form`
+- **Evaluation**: If active, verifies that the **task's GPS coordinates** (`task_latitude`, `task_longitude` from the create-task form) lie inside at least one of the custom polygon areas configured in `settings.polygons`. If outside all polygons → throws `outsideCustomLocations`. **Note:** This checks the task location the employee enters when creating the task, NOT the employee's current GPS location.
 - **Settings schema**:
 
 | key | type | label_ar | default | extra |
@@ -479,15 +479,18 @@ EmployeeTaskRequestService::create()
         │       if current GPS is outside ALL locations → throws notAllowedOutsideLocation (422)
         │       (radius comes from each location's attendance constraint config)
         │
-        ├── assertCustomLocationConditions($map, $taskLat, $taskLng)
-        │     [inside_custom_locations is_active=true]
-        │       load settings.polygons[]
-        │       if task GPS is outside ALL polygons → throws outsideCustomLocations (422)
+        ├─ in_form checks ───────────────────────────────────────────────────────
         │
         ├── [max_task_duration is_active=true]
         │     assertMaxTaskDuration($durationHours, $settings)
         │       durationHours > settings.max_hours
         │       throws taskDurationExceedsLimit(maxHours) (422)
+        │
+        ├── [inside_custom_locations is_active=true]
+        │     assertCustomLocationConditions($map, $taskLat, $taskLng)
+        │       load settings.polygons[]
+        │       if task GPS is outside ALL polygons → throws outsideCustomLocations (422)
+        │       (checks task location from form, NOT employee's current GPS)
         │
         └── [max_scheduled_date_offset is_active=true]
               assertMaxScheduledDateOffset($userId, $taskDate, $settings)
