@@ -7,6 +7,7 @@ namespace Modules\Shared\InternalProcessType\Enums;
 enum InternalProcessConditionCategory: string
 {
     case Time        = 'time';
+    case Calendar    = 'calendar';
     case Location    = 'location';
     case Attendance  = 'attendance';
     case TaskStatus  = 'task_status';
@@ -19,6 +20,7 @@ enum InternalProcessConditionCategory: string
     {
         return match ($this) {
             self::Time        => 'وقت',
+            self::Calendar    => 'تقويم',
             self::Location    => 'موقع',
             self::Attendance  => 'حضور',
             self::TaskStatus  => 'حالة المهمة',
