@@ -9,6 +9,7 @@ use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Support\GeoDistance;
+use Modules\EmployeeTask\Support\GeoPolygon;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
@@ -55,6 +56,8 @@ final class EmployeeTaskFormConditionService
         ?string $branchId,
         float   $durationHours,
         string  $taskDate,
+        float   $taskLatitude,
+        float   $taskLongitude,
         ?float  $currentLatitude = null,
         ?float  $currentLongitude = null,
     ): void {
@@ -72,6 +75,7 @@ final class EmployeeTaskFormConditionService
 
         $this->assertShiftConditions($map, $userId);
         $this->assertLocationConditions($map, $userId, $currentLatitude, $currentLongitude);
+        $this->assertCustomLocationConditions($map, $taskLatitude, $taskLongitude);
 
         // ── max_task_duration ────────────────────────────────────────────────
         $maxDurationCond = $map[InternalProcessCondition::MaxTaskDuration->value] ?? null;
@@ -387,6 +391,32 @@ final class EmployeeTaskFormConditionService
 
         if ($now->lt($start) || $now->gt($end)) {
             throw EmployeeTaskException::outsideShiftTimeWindow();
+        }
+    }
+
+    /**
+     * Check that the task location falls inside at least one of the custom
+     * polygon areas drawn by the admin in the procedure-setting UI.
+     *
+     * @throws EmployeeTaskException
+     */
+    private function assertCustomLocationConditions(
+        array $map,
+        float $taskLatitude,
+        float $taskLongitude,
+    ): void {
+        $cond = $map[InternalProcessCondition::InsideCustomLocations->value] ?? null;
+        if (! $cond || ! ($cond['is_active'] ?? false)) {
+            return;
+        }
+
+        $polygons = $cond['settings']['polygons'] ?? [];
+        if (empty($polygons)) {
+            return;
+        }
+
+        if (! GeoPolygon::isPointInAnyPolygon($taskLatitude, $taskLongitude, $polygons)) {
+            throw EmployeeTaskException::outsideCustomLocations();
         }
     }
 

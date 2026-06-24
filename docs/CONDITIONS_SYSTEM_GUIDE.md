@@ -83,6 +83,7 @@ Each entry in a condition's `settings_schema` array has a `type` field:
 | `time` | Time picker (HH:mm) | Stored as `"HH:mm"` string |
 | `int` | Number input | Stored as integer |
 | `select` | Dropdown list | Has `options` array; stored value is one of `options[].value` |
+| `map_polygons` | Map with polygon drawing | Stored as array of polygons; each polygon is an ordered list of `{lat, lng}` vertices. Frontend renders an interactive map where the admin can draw multiple closed polygon areas. |
 
 ### `select` schema entry
 
@@ -149,6 +150,19 @@ Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=createTa
 - **Form group**: `precondition`
 - **Evaluation**: In `shift` mode, if today is a holiday/non-working day and this flag is disabled → throws `notAllowedOnHolidays`.
 - **Settings**: none
+
+### `inside_custom_locations`
+- **Category**: `location` (موقع)
+- **Label**: داخل المواقع المخصصة
+- **Form group**: `precondition`
+- **Evaluation**: If active, verifies that the task's GPS coordinates (`taskLatitude`, `taskLongitude`) lie inside at least one of the custom polygon areas configured in `settings.polygons`. If outside all polygons → throws `outsideCustomLocations`.
+- **Settings schema**:
+
+| key | type | label_ar | default | extra |
+|-----|------|----------|---------|-------|
+| `polygons` | `map_polygons` | المواقع المحددة على الخريطة | `[]` | Array of polygons; each polygon = ordered list of `{lat, lng}` vertices |
+
+> **Frontend AI note:** `type: "map_polygons"` is a custom schema type. Render an interactive map component that allows the admin to draw multiple closed polygon shapes. Store the result as `settings.polygons: [ [ {lat, lng}, ... ], [ {lat, lng}, ... ] ]`.
 
 ### `max_task_duration`
 - **Category**: `duration` (مدة)
@@ -464,6 +478,11 @@ EmployeeTaskRequestService::create()
         │       collect location_work + additional_locations
         │       if current GPS is outside ALL locations → throws notAllowedOutsideLocation (422)
         │       (radius comes from each location's attendance constraint config)
+        │
+        ├── assertCustomLocationConditions($map, $taskLat, $taskLng)
+        │     [inside_custom_locations is_active=true]
+        │       load settings.polygons[]
+        │       if task GPS is outside ALL polygons → throws outsideCustomLocations (422)
         │
         ├── [max_task_duration is_active=true]
         │     assertMaxTaskDuration($durationHours, $settings)

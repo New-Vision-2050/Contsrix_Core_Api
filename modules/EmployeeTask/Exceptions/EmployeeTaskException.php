@@ -223,4 +223,9 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__('The task date cannot be after your employment contract end date.'), 422);
     }
+
+    public static function outsideCustomLocations(): self
+    {
+        return new self(__('The task location must be within one of the designated areas.'), 422);
+    }
 }
