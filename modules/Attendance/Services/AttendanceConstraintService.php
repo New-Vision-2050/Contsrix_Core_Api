@@ -974,7 +974,9 @@ class AttendanceConstraintService
                 }
             }
 
-            if (!$branchData && count($constraint->branch_locations) === 1) {
+            // If no branch match found, use the first stored location regardless of count.
+            // This allows a directly-assigned constraint to work regardless of the user's branch.
+            if (!$branchData) {
                 $branchData = $constraint->branch_locations[0];
             }
 
