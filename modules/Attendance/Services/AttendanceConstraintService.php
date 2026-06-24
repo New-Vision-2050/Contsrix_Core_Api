@@ -1000,6 +1000,19 @@ class AttendanceConstraintService
                     if ($branch && ((float)$branch->latitude !== 0.0 || (float)$branch->longitude !== 0.0)) {
                         $latitude = (float) $branch->latitude;
                         $longitude = (float) $branch->longitude;
+                    } else {
+                        // Fallback to management_hierarchies table (source of truth for branch data).
+                        $mh = \Modules\Company\ManagementHierarchy\Models\ManagementHierarchy::find($userBranchId);
+                        Log::info('buildLocationRules: fallback to management_hierarchies table', [
+                            'userBranchId' => $userBranchId,
+                            'mh_found' => $mh ? true : false,
+                            'mh_latitude' => $mh?->latitude,
+                            'mh_longitude' => $mh?->longitude,
+                        ]);
+                        if ($mh && ((float)$mh->latitude !== 0.0 || (float)$mh->longitude !== 0.0)) {
+                            $latitude = (float) $mh->latitude;
+                            $longitude = (float) $mh->longitude;
+                        }
                     }
                 }
 
@@ -1032,15 +1045,16 @@ class AttendanceConstraintService
             // Fallback to the branch master record if allowed-zone coordinates are missing/zero.
             if (($latitude === 0.0 && $longitude === 0.0) || empty($firstZone['latitude']) || empty($firstZone['longitude'])) {
                 $branch = \Modules\Company\ManagementHierarchy\Models\Branch::where('management_hierarchy_id', $userBranchId)->first();
-                Log::info('buildLocationRules: allowed_zones fallback to branches table', [
-                    'userBranchId' => $userBranchId,
-                    'branch_found' => $branch ? true : false,
-                    'branch_latitude' => $branch?->latitude,
-                    'branch_longitude' => $branch?->longitude,
-                ]);
                 if ($branch && ((float)$branch->latitude !== 0.0 || (float)$branch->longitude !== 0.0)) {
                     $latitude = (float) $branch->latitude;
                     $longitude = (float) $branch->longitude;
+                } else {
+                    // Fallback to management_hierarchies table (source of truth for branch data).
+                    $mh = \Modules\Company\ManagementHierarchy\Models\ManagementHierarchy::find($userBranchId);
+                    if ($mh && ((float)$mh->latitude !== 0.0 || (float)$mh->longitude !== 0.0)) {
+                        $latitude = (float) $mh->latitude;
+                        $longitude = (float) $mh->longitude;
+                    }
                 }
             }
 
@@ -1165,7 +1179,10 @@ class AttendanceConstraintService
 
     private function resolveConstraintsFromDb(User $user): Collection
     {
-        $constraint = $user->professionalData?->attendanceConstraint;
+        // Check both professionalData (non-tenant-scoped) and userProfessionalData (tenant-scoped)
+        // for a directly assigned attendance_constraint_id.
+        $constraint = $user->professionalData?->attendanceConstraint
+            ?? $user->userProfessionalData?->attendanceConstraint;
         if ($constraint) {
             return collect([$constraint]);
         }
