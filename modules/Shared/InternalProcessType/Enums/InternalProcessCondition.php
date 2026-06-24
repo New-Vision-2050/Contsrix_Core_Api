@@ -66,8 +66,8 @@ enum InternalProcessCondition: string
     public function formGroupLabelAr(): string
     {
         return match ($this->formGroup()) {
-            'precondition' => 'شروط النماذج',
-            'in_form'      => 'ترتيب الاجراء',
+            'precondition' => 'شروط قبل النموذج',
+            'in_form'      => 'شروط داخل النموذج',
         };
     }
 
