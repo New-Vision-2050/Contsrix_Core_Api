@@ -2846,6 +2846,7 @@ New `InternalProcessCondition::InsideCustomLocations` allows admins to define cu
 
 ### Key Behaviour
 
+- **Form group**: `in_form` (not a precondition — it validates the task's location data entered in the form).
 - **Settings schema type**: `map_polygons` — stored as array of polygons, each polygon is an ordered list of `{lat, lng}` vertices.
 - **Backend check**: `EmployeeTaskFormConditionService::assertCustomLocationConditions()` uses `GeoPolygon::isPointInAnyPolygon()` (ray-casting algorithm).
 - **Exception thrown**: `EmployeeTaskException::outsideCustomLocations()` (422).

@@ -56,6 +56,7 @@ enum InternalProcessCondition: string
         return match ($this) {
             self::MaxTaskDuration,
             self::MaxScheduledDateOffset,
+            self::InsideCustomLocations,
             self::HasTaskDuration,
             self::MaxDurationHours,
             self::MaxAttachments          => 'in_form',
@@ -109,7 +110,7 @@ enum InternalProcessCondition: string
             self::MaxScheduledDateOffset => 'الحد الأقصى لتاريخ المهمة',
             self::InsideShiftTime        => 'داخل وقت الدوام',
             self::InsideTaskLocation     => 'داخل موقع المهمة',
-            self::InsideCustomLocations  => 'داخل المواقع المخصصة',
+            self::InsideCustomLocations  => 'موقع المهمة داخل المناطق المخصصة',
             self::EmployeeHasAttendance  => 'الموظف مسجل حضور',
             self::TaskIsApproved         => 'المهمة معتمدة',
             self::NoOpenTask             => 'لا يوجد مهمة مفتوحة',
