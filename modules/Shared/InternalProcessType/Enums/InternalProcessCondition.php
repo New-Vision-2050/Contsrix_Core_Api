@@ -161,7 +161,23 @@ enum InternalProcessCondition: string
                 ['key' => 'max_hours', 'type' => 'int', 'label_ar' => 'الحد الأقصى للمدة (ساعة)', 'default' => 8],
             ],
             self::MaxScheduledDateOffset => [
-                ['key' => 'max_days', 'type' => 'int', 'label_ar' => 'الحد الأقصى للتاريخ (أيام)', 'default' => 30],
+                [
+                    'key'      => 'mode',
+                    'type'     => 'select',
+                    'label_ar' => 'نوع الشرط',
+                    'default'  => 'max_task_date',
+                    'options'  => [
+                        ['value' => 'max_task_date', 'label_ar' => 'الحد الأقصى لتاريخ المهمة'],
+                        ['value' => 'end_contract',  'label_ar' => 'نهاية عقد الموظف'],
+                    ],
+                ],
+                [
+                    'key'          => 'max_days',
+                    'type'         => 'int',
+                    'label_ar'     => 'الحد الأقصى للتاريخ (أيام)',
+                    'default'      => 30,
+                    'visible_when' => ['key' => 'mode', 'value' => 'max_task_date'],
+                ],
             ],
             default => [],
         };

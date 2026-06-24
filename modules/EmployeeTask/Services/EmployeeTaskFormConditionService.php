@@ -82,7 +82,7 @@ final class EmployeeTaskFormConditionService
         // ── max_scheduled_date_offset ─────────────────────────────────────────
         $maxDateCond = $map[InternalProcessCondition::MaxScheduledDateOffset->value] ?? null;
         if ($maxDateCond && ($maxDateCond['is_active'] ?? false)) {
-            $this->assertMaxScheduledDateOffset($taskDate, $maxDateCond['settings'] ?? []);
+            $this->assertMaxScheduledDateOffset($userId, $taskDate, $maxDateCond['settings'] ?? []);
         }
     }
 
@@ -323,14 +323,50 @@ final class EmployeeTaskFormConditionService
      *
      * @throws EmployeeTaskException
      */
-    private function assertMaxScheduledDateOffset(string $taskDate, array $settings): void
+    private function assertMaxScheduledDateOffset(string $userId, string $taskDate, array $settings): void
     {
-        $maxDays = (int) ($settings['max_days'] ?? 30);
-        $limit   = Carbon::today()->addDays($maxDays);
-        $date    = Carbon::parse($taskDate)->startOfDay();
+        $mode = $settings['mode'] ?? 'max_task_date';
 
-        if ($date->gt($limit)) {
-            throw EmployeeTaskException::taskDateTooFarInFuture($maxDays);
+        if ($mode === 'max_task_date') {
+            $maxDays = (int) ($settings['max_days'] ?? 30);
+            $limit   = Carbon::today()->addDays($maxDays);
+            $date    = Carbon::parse($taskDate)->startOfDay();
+
+            if ($date->gt($limit)) {
+                throw EmployeeTaskException::taskDateTooFarInFuture($maxDays);
+            }
+
+            return;
+        }
+
+        if ($mode === 'end_contract') {
+            $user = User::with('companyUser.employmentContract.contractDurationUnit')
+                ->find($userId);
+
+            $contract = $user?->companyUser?->employmentContract;
+
+            if ($contract === null || $contract->start_date === null) {
+                return;
+            }
+
+            $endDate = Carbon::parse($contract->start_date);
+            $duration = (int) $contract->contract_duration;
+
+            $unit = $contract->contractDurationUnit;
+            if ($unit !== null) {
+                match ($unit->code ?? null) {
+                    'day'   => $endDate->addDays($duration),
+                    'month' => $endDate->addMonths($duration),
+                    'year'  => $endDate->addYears($duration),
+                    default => null,
+                };
+            }
+
+            $taskDateCarbon = Carbon::parse($taskDate)->startOfDay();
+
+            if ($taskDateCarbon->gt($endDate)) {
+                throw EmployeeTaskException::taskDateExceedsContractEndDate();
+            }
         }
     }
 

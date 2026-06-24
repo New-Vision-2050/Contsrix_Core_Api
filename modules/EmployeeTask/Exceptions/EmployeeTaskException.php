@@ -218,4 +218,9 @@ final class EmployeeTaskException extends RuntimeException
     {
         return new self(__("The task date cannot be more than {$maxDays} days from today."), 422);
     }
+
+    public static function taskDateExceedsContractEndDate(): self
+    {
+        return new self(__('The task date cannot be after your employment contract end date.'), 422);
+    }
 }
