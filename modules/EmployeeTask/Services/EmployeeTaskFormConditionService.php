@@ -284,14 +284,9 @@ final class EmployeeTaskFormConditionService
             return;
         }
 
-        // Use condition-level radius override if present, otherwise fall back to each location's own radius
-        $conditionRadius = isset($locationCond['settings']['radius_meters'])
-            ? (int) $locationCond['settings']['radius_meters']
-            : null;
-
         $isInsideAnyLocation = false;
         foreach ($locations as $loc) {
-            $radius = $conditionRadius ?? (int) ($loc['radius'] ?? 100);
+            $radius = (int) ($loc['radius'] ?? 100);
             $distance = GeoDistance::metres(
                 (float) $loc['latitude'],
                 (float) $loc['longitude'],

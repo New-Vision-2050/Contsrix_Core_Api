@@ -38,6 +38,39 @@ enum InternalProcessCondition: string
         };
     }
 
+    /**
+     * UI grouping for conditions within a form.
+     *
+     * - "precondition"  → gatekeeping rules that run before the form is accepted
+     *                     (shift, location, attendance, task status, etc.)
+     * - "in_form"       → constraints on individual form input fields
+     *                     (duration, date, attachments, etc.)
+     *
+     * The frontend reads this value to split conditions into tabs automatically.
+     * Adding a condition here with the correct group is all that is required;
+     * no frontend code changes are needed.
+     */
+    public function formGroup(): string
+    {
+        return match ($this) {
+            self::MaxTaskDuration,
+            self::MaxScheduledDateOffset,
+            self::HasTaskDuration,
+            self::MaxDurationHours,
+            self::MaxAttachments          => 'in_form',
+
+            default                       => 'precondition',
+        };
+    }
+
+    public function formGroupLabelAr(): string
+    {
+        return match ($this->formGroup()) {
+            'precondition' => 'شروط النماذج',
+            'in_form'      => 'ترتيب الاجراء',
+        };
+    }
+
     public function category(): InternalProcessConditionCategory
     {
         return match ($this) {
@@ -115,9 +148,6 @@ enum InternalProcessCondition: string
                     'visible_when' => ['key' => 'mode', 'value' => 'specific_time'],
                 ],
             ],
-            self::AllowOutsideShift => [
-                ['key' => 'radius_meters', 'type' => 'int', 'label_ar' => 'نطاق السماح (متر)', 'default' => 100],
-            ],
             self::InsideShiftTime => [
                 ['key' => 'start_time',                 'type' => 'time', 'label_ar' => 'من',                                    'default' => '08:00'],
                 ['key' => 'end_time',                   'type' => 'time', 'label_ar' => 'إلى',                                   'default' => '17:00'],
@@ -140,17 +170,19 @@ enum InternalProcessCondition: string
     /**
      * Full definition sent to the frontend via GET /procedure-settings/forms-conditions.
      *
-     * @return array{key: string, type: string, category: string, category_label_ar: string, label_ar: string, settings_schema: list<array>}
+     * @return array{key: string, type: string, category: string, category_label_ar: string, label_ar: string, form_group: string, form_group_label_ar: string, settings_schema: list<array>}
      */
     public function toDefinition(): array
     {
         return [
-            'key'               => $this->value,
-            'type'              => $this->type()->value,
-            'category'          => $this->category()->value,
-            'category_label_ar' => $this->category()->labelAr(),
-            'label_ar'          => $this->labelAr(),
-            'settings_schema'   => $this->settingsSchema(),
+            'key'                 => $this->value,
+            'type'                => $this->type()->value,
+            'category'            => $this->category()->value,
+            'category_label_ar'   => $this->category()->labelAr(),
+            'label_ar'            => $this->labelAr(),
+            'form_group'          => $this->formGroup(),
+            'form_group_label_ar' => $this->formGroupLabelAr(),
+            'settings_schema'     => $this->settingsSchema(),
         ];
     }
 
