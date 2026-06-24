@@ -24,8 +24,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraintLocation;
 use Modules\Attendance\Presenters\ConstraintListPresenter;
+use Carbon\Carbon;
 use Modules\Attendance\Presenters\ConstraintPresenter;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Modules\User\Models\User;
@@ -641,6 +643,10 @@ class AttendanceConstraintController extends Controller
         $page    = max(1, (int) $request->input('page', 1));
         $perPage = max(1, (int) $request->input('per_page', 10));
 
+        $startDate = $request->input('start_date');
+        $endDate   = $request->input('end_date');
+        $date      = $startDate ?? $endDate ?? now()->format('Y-m-d');
+
         $mainUserIds = UserProfessionalData::where('attendance_constraint_id', $constraintId)
             ->where('company_id', $companyId)
             ->pluck('user_id')
@@ -663,24 +669,43 @@ class AttendanceConstraintController extends Controller
 
         $mainSet = array_flip($mainUserIds);
 
+        // Fetch attendance records for the paged users on the requested date.
+        $attendanceRecords = Attendance::query()
+            ->where('company_id', $companyId)
+            ->whereIn('user_id', $pagedIds)
+            ->where('business_date', $date)
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn($records) => $records->sortByDesc('clock_in_time')->first());
+
         $users = User::withoutTenancy()
             ->whereIn('id', $pagedIds)
             ->with(['projects:id,name'])
             ->get()
-            ->map(fn($u) => [
-                'id'     => $u->id,
-                'name'   => $u->name,
-                'email'  => $u->email,
-                'phone'  => $u->phone ?? null,
-                'source' => isset($mainSet[(string) $u->id]) ? 'main' : 'additional',
-                'projects' => $u->projects
-                    ->map(fn($project) => [
-                        'id' => (string) $project->id,
-                        'name' => $project->name,
-                    ])
-                    ->values()
-                    ->all(),
-            ])
+            ->map(function ($u) use ($mainSet, $attendanceRecords) {
+                $attendance = $attendanceRecords[(string) $u->id] ?? null;
+
+                return [
+                    'id'     => $u->id,
+                    'name'   => $u->name,
+                    'email'  => $u->email,
+                    'phone'  => $u->phone ?? null,
+                    'source' => isset($mainSet[(string) $u->id]) ? 'main' : 'additional',
+                    'projects' => $u->projects
+                        ->map(fn($project) => [
+                            'id' => (string) $project->id,
+                            'name' => $project->name,
+                        ])
+                        ->values()
+                        ->all(),
+                    'is_absent'  => $attendance ? (int) $attendance->is_absent : 0,
+                    'is_holiday' => $attendance ? (int) $attendance->is_holiday : 0,
+                    'is_late'    => $attendance ? (int) $attendance->is_late : 0,
+                    'day_status' => $attendance
+                        ? __('validation.day_status.' . ($attendance->day_status ?? 'work_day'))
+                        : __('validation.day_status.work_day'),
+                ];
+            })
             ->values()
             ->all();
 

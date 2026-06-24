@@ -6,6 +6,7 @@ namespace Modules\Attendance\Tests\Feature;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
@@ -52,15 +53,28 @@ class ConstraintEmployeesProjectsTest extends BaseAttendanceReportTestCase
         $this->assertSame([
             ['id' => (string) $projectA->id, 'name' => 'Project A'],
         ], $oneProjectRow['projects']);
+        // Default attendance values when no attendance record exists for today
+        $this->assertSame(0, $oneProjectRow['is_absent']);
+        $this->assertSame(0, $oneProjectRow['is_holiday']);
+        $this->assertSame(0, $oneProjectRow['is_late']);
+        $this->assertNotEmpty($oneProjectRow['day_status']);
 
         $multiProjectRow = $payload->firstWhere('id', (string) $multiProjectUser->id);
         $this->assertEqualsCanonicalizing([
             ['id' => (string) $projectB->id, 'name' => 'Project B'],
             ['id' => (string) $projectC->id, 'name' => 'Project C'],
         ], $multiProjectRow['projects']);
+        $this->assertSame(0, $multiProjectRow['is_absent']);
+        $this->assertSame(0, $multiProjectRow['is_holiday']);
+        $this->assertSame(0, $multiProjectRow['is_late']);
+        $this->assertNotEmpty($multiProjectRow['day_status']);
 
         $noProjectRow = $payload->firstWhere('id', (string) $noProjectUser->id);
         $this->assertSame([], $noProjectRow['projects']);
+        $this->assertSame(0, $noProjectRow['is_absent']);
+        $this->assertSame(0, $noProjectRow['is_holiday']);
+        $this->assertSame(0, $noProjectRow['is_late']);
+        $this->assertNotEmpty($noProjectRow['day_status']);
     }
 
     public function test_constraint_employees_projects_preserve_pagination(): void
@@ -107,6 +121,92 @@ class ConstraintEmployeesProjectsTest extends BaseAttendanceReportTestCase
         $multiEmployeeQueries = $this->countQueriesForConstraintEmployees($constraint);
 
         $this->assertSame($singleEmployeeQueries, $multiEmployeeQueries);
+    }
+
+    public function test_constraint_employees_reflect_attendance_status_for_requested_date(): void
+    {
+        $constraint = $this->createConstraint();
+        $lateUser = $this->createConstraintUser('Late Employee', $constraint);
+        $holidayUser = $this->createConstraintUser('Holiday Employee', $constraint);
+        $absentUser = $this->createConstraintUser('Absent Employee', $constraint);
+
+        $date = '2025-05-15';
+
+        Attendance::query()->create([
+            'id' => (string) Str::uuid(),
+            'user_id' => $lateUser->id,
+            'company_id' => $this->company->id,
+            'clock_in_time' => $date . ' 08:15:00',
+            'clock_out_time' => $date . ' 17:00:00',
+            'business_date' => $date,
+            'total_work_hours' => 8,
+            'is_late' => true,
+            'is_absent' => false,
+            'is_holiday' => false,
+            'day_status' => 'work_day',
+            'status' => 'approved',
+        ]);
+
+        Attendance::query()->create([
+            'id' => (string) Str::uuid(),
+            'user_id' => $holidayUser->id,
+            'company_id' => $this->company->id,
+            'clock_in_time' => null,
+            'clock_out_time' => null,
+            'business_date' => $date,
+            'total_work_hours' => 0,
+            'is_late' => false,
+            'is_absent' => false,
+            'is_holiday' => true,
+            'day_status' => 'holiday',
+            'status' => 'holiday',
+        ]);
+
+        Attendance::query()->create([
+            'id' => (string) Str::uuid(),
+            'user_id' => $absentUser->id,
+            'company_id' => $this->company->id,
+            'clock_in_time' => null,
+            'clock_out_time' => null,
+            'business_date' => $date,
+            'total_work_hours' => 0,
+            'is_late' => false,
+            'is_absent' => true,
+            'is_holiday' => false,
+            'day_status' => 'absent',
+            'status' => 'absent',
+        ]);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/attendance/constraints/'.$constraint->id.'/employees?'.http_build_query([
+                'page' => 1,
+                'per_page' => 10,
+                'start_date' => $date,
+                'end_date' => $date,
+            ]));
+
+        $response->assertOk();
+
+        $payload = collect($response->json('payload'));
+
+        $lateRow = $payload->firstWhere('id', (string) $lateUser->id);
+        $this->assertSame(0, $lateRow['is_absent']);
+        $this->assertSame(0, $lateRow['is_holiday']);
+        $this->assertSame(1, $lateRow['is_late']);
+        $this->assertSame(__('validation.day_status.work_day'), $lateRow['day_status']);
+
+        $holidayRow = $payload->firstWhere('id', (string) $holidayUser->id);
+        $this->assertSame(0, $holidayRow['is_absent']);
+        $this->assertSame(1, $holidayRow['is_holiday']);
+        $this->assertSame(0, $holidayRow['is_late']);
+        $this->assertSame(__('validation.day_status.holiday'), $holidayRow['day_status']);
+
+        $absentRow = $payload->firstWhere('id', (string) $absentUser->id);
+        $this->assertSame(1, $absentRow['is_absent']);
+        $this->assertSame(0, $absentRow['is_holiday']);
+        $this->assertSame(0, $absentRow['is_late']);
+        $this->assertSame(__('validation.day_status.absent'), $absentRow['day_status']);
     }
 
     private function createConstraint(): AttendanceConstraint

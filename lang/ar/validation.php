@@ -526,7 +526,8 @@ return [
         'holiday'=>'اجازه',
         'day_off_or_weekend'=>'اجازه',
         'in_location'=>'في الموقع',
-        'clocked_out'=> 'تم الانصراف'
+        'clocked_out'=> 'تم الانصراف',
+        'absent'=> 'غائب',
     ],
 
     'unique_translation' => ':attribute بـ :locale مستخدم بالفعل.',
