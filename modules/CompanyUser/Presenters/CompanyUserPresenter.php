@@ -99,6 +99,32 @@ class CompanyUserPresenter extends AbstractPresenter
 
         return 'https://wa.me/' . $cleanNumber;
     }
+
+    private function presentAttendanceConstraints(CompanyUser $companyUser): array
+    {
+        $constraints = [];
+        $primary = $companyUser->userProfessionalData?->attendanceConstraint;
+        if ($primary) {
+            $constraints[] = [
+                'id'   => $primary->id,
+                'name' => $primary->constraint_name,
+                'type' => 'primary',
+            ];
+        }
+
+        $users = $companyUser->users()->with('additionalAttendanceConstraints')->get();
+        foreach ($users as $user) {
+            foreach ($user->additionalAttendanceConstraints as $constraint) {
+                $constraints[] = [
+                    'id'   => $constraint->id,
+                    'name' => $constraint->constraint_name,
+                    'type' => 'additional',
+                ];
+            }
+        }
+
+        return $constraints;
+    }
     protected function present(bool $isListing = false): array
     {
         return [
@@ -153,7 +179,8 @@ class CompanyUserPresenter extends AbstractPresenter
             'department' => $this->companyUser->userProfessionalData?->department?->name,
             'job_type' => $this->companyUser->userProfessionalData?->jobType?->name,
             'job_code' => $this->companyUser->userProfessionalData?->job_code,
-            'attendance_constraint' => $this->companyUser->userProfessionalData?->attendanceConstraint?->constraint_name,
+            'attendance_constraints' => $this->presentAttendanceConstraints($this->companyUser),
+            // 'attendance_constraint' => $this->companyUser->userProfessionalData?->attendanceConstraint?->constraint_name,
             'whatsapp' => $this->generateWhatsAppUrl(),
             // 'whatsapp' => $this->companyUser->whatsapp,
             'linkedin' => $this->companyUser->linkedin,
