@@ -1,5 +1,5 @@
 # Conditions System Guide
-> Last updated: 2026-06-22  
+> Last updated: 2026-06-24  
 > Applies to: `modules/ProcedureSetting` · `modules/EmployeeTask` · `modules/Shared/InternalProcessType`
 
 ---
@@ -124,6 +124,7 @@ Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=createTa
 ### `allow_during_shift`
 - **Category**: `shift` (دوام)
 - **Label**: موظف داخل الدوام
+- **Form group**: `precondition`
 - **Evaluation**: Controlled by `settings.mode`:
   - **`shift`** (default) — checks whether the current time falls inside the employee's active attendance period (via `AttendanceConstraintService`). Disabled → throws `notAllowedDuringShift`.
   - **`specific_time`** — checks whether the current time falls within the configured `start_time`–`end_time` window. Falls outside → throws `outsideShiftTimeWindow`.
@@ -136,20 +137,23 @@ Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=createTa
 | `end_time` | `time` | إلى | `"17:00"` | `visible_when: {key: mode, value: specific_time}` |
 
 ### `allow_outside_shift`
-- **Category**: `shift` (دوام)
-- **Label**: موظف خارج الدوام
-- **Evaluation**: In `shift` mode of `allow_during_shift`, if employee is **not** in an active shift and this flag is disabled → throws `notAllowedOutsideShift`.
+- **Category**: `location` (موقع)
+- **Label**: موظف خارج موقع الدوام
+- **Form group**: `precondition`
+- **Evaluation**: If this condition is **inactive** (`is_active = false`) and the employee's current GPS coordinates are **outside** all configured work locations (from `AttendanceConstraintService`), throws `notAllowedOutsideLocation`. Uses each location's own `radius` from the attendance constraint; no separate radius setting on the condition.
 - **Settings**: none
 
 ### `allow_on_holidays`
 - **Category**: `shift` (دوام)
 - **Label**: مسموح في العطلات
+- **Form group**: `precondition`
 - **Evaluation**: In `shift` mode, if today is a holiday/non-working day and this flag is disabled → throws `notAllowedOnHolidays`.
 - **Settings**: none
 
 ### `max_task_duration`
 - **Category**: `duration` (مدة)
 - **Label**: الحد الأقصى لمدة المهمة
+- **Form group**: `in_form`
 - **Evaluation**: `dto.durationHours > settings.max_hours` → throws `taskDurationExceedsLimit(maxHours)` (422)
 - **Settings schema**:
 
@@ -160,6 +164,7 @@ Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=createTa
 ### `max_scheduled_date_offset`
 - **Category**: `time` (وقت)
 - **Label**: الحد الأقصى لتاريخ المهمة
+- **Form group**: `in_form`
 - **Evaluation**: `dto.taskDate > today + max_days` → throws `taskDateTooFarInFuture(maxDays)` (422)
 - **Settings schema**:
 
@@ -254,6 +259,31 @@ Use `settings_schema` to render input fields per condition. Column mapping:
 | الشرط | `label_ar` (static label) — if the condition's `settings_schema` contains a `select` field, render a **dropdown** in this column using that field's `options` |
 | نوع الشرط | `category_label_ar` (from definition) |
 | إعدادات الشرط | render each `settings_schema` field; **hide** fields whose `visible_when` condition is not satisfied by the current `settings` values |
+
+### Tabbed grouping (dynamic)
+
+Each condition definition now includes `form_group` and `form_group_label_ar`:
+
+| Field | Example | Meaning |
+|-------|---------|---------|
+| `form_group` | `"precondition"` | Logical UI group key |
+| `form_group_label_ar` | `"شروط النماذج"` | Arabic tab title |
+
+**Frontend rule**: After fetching conditions from `GET /forms-conditions`, **group them by `form_group`** and render each group as a separate tab (or section). Do **not** hard-code condition keys into tabs.
+
+```js
+// Example grouping logic (no hard-coded condition keys)
+const groups = Object.groupBy(
+  conditions,
+  c => c.form_group          // "precondition" | "in_form"
+);
+
+// Tabs:
+//   "شروط النماذج"   → groups['precondition']
+//   "ترتيب الاجراء"  → groups['in_form']
+```
+
+> Adding a new condition to the backend with the correct `formGroup()` value is sufficient; the frontend will automatically place it in the right tab.
 
 #### Rendering `select` settings fields
 
@@ -408,26 +438,30 @@ EmployeeTaskRequestService::create()
         │     returns ProcedureSetting|null  (conditions = array or null)
         ├── indexConditions($conditions)   ← normalises both old+new formats
         │
-        └── assertShiftConditions($map, $userId)
-              ├── [allow_during_shift is_active=true, settings.mode='specific_time']
-              │     assertInsideSpecificTimeWindow($settings)
-              │       Carbon::now() must be in [start_time, end_time]
-              │       throws outsideShiftTimeWindow (422)
-              │       return  (holiday/outside-shift checks skipped)
-              │
-              └── [shift mode (default)]
-                    load User + attendanceConstraint
-                    getTodaysWorkRulesForUser($user)
-                    ├── [is_holiday=true]
-                    │     check allow_on_holidays.is_active
-                    │     throws notAllowedOnHolidays (422)
-                    ├── [isDuringShift=true]
-                    │     check allow_during_shift.is_active
-                    │     throws notAllowedDuringShift (422)
-                    └── [isDuringShift=false]
-                          check allow_outside_shift.is_active
-                          throws notAllowedOutsideShift (422)
-
+        ├── assertShiftConditions($map, $userId)
+        │     ├── [allow_during_shift is_active=true, settings.mode='specific_time']
+        │     │     assertInsideSpecificTimeWindow($settings)
+        │     │       Carbon::now() must be in [start_time, end_time]
+        │     │       throws outsideShiftTimeWindow (422)
+        │     │       return  (holiday checks skipped)
+        │     │
+        │     └── [shift mode (default)]
+        │           load User + attendanceConstraint
+        │           getTodaysWorkRulesForUser($user)
+        │           ├── [is_holiday=true]
+        │           │     check allow_on_holidays.is_active
+        │           │     throws notAllowedOnHolidays (422)
+        │           └── [isDuringShift=true]
+        │                 check allow_during_shift.is_active
+        │                 throws notAllowedDuringShift (422)
+        │
+        ├── assertLocationConditions($map, $userId, $lat, $lng)
+        │     [allow_outside_shift is_active=false]
+        │       getTodaysWorkRulesForUser($user)
+        │       collect location_work + additional_locations
+        │       if current GPS is outside ALL locations → throws notAllowedOutsideLocation (422)
+        │       (radius comes from each location's attendance constraint config)
+        │
         ├── [max_task_duration is_active=true]
         │     assertMaxTaskDuration($durationHours, $settings)
         │       durationHours > settings.max_hours
@@ -449,7 +483,7 @@ EmployeeTaskRequestService::create()
 case YourCondition = 'your_condition';
 ```
 
-### Step 2 — Add to `category()`, `labelAr()`, `settingsSchema()`
+### Step 2 — Add to `category()`, `labelAr()`, `formGroup()`, `settingsSchema()`
 ```php
 public function category(): InternalProcessConditionCategory
 {
@@ -463,6 +497,14 @@ public function labelAr(): string
 {
     return match ($this) {
         self::YourCondition => 'Arabic label here',
+        // ...
+    };
+}
+
+public function formGroup(): string
+{
+    return match ($this) {
+        self::YourCondition => 'precondition',  // or 'in_form'
         // ...
     };
 }
@@ -511,14 +553,14 @@ public static function yourConditionFailed(): self
 |------|--------|
 | `modules/Shared/InternalProcessType/Enums/InternalProcessConditionCategory.php` | **New** — category enum (time, location, attendance, task_status, open_task, shift, duration, attachment) |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessConditionType.php` | Added `Time = 'time'` case |
-| `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | Added 5 new cases, `category()`, `settingsSchema()`, updated `toDefinition()`, `validationRulesForForm()`, `defaultValuesForForm()` |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | Added `formGroup()`, `formGroupLabelAr()`, updated `toDefinition()` to emit `form_group` + `form_group_label_ar`; `category()` and `settingsSchema()` updated for location-based `allow_outside_shift` |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | Updated `startTask` conditions to use 5 new rich cases |
 | `modules/ProcedureSetting/Controllers/InternalProcedureSettingController.php` | Added `formsConditions()` method |
 | `modules/ProcedureSetting/Resources/routes/api.php` | Added `GET /forms-conditions` route |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessConditionType.php` | Added `Select = 'select'` case |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | Added `settingsSchema()` for `AllowDuringShift` (mode selector + visible_when time fields) |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | `StartTask` and `EndTask` conditions → `[]` |
-| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `assertShiftConditions()` checks `settings.mode`; added `assertInsideSpecificTimeWindow()`; `checkStartTaskConditions` + `checkEndTaskConditions` are no-ops; removed dead helpers and unused constructor deps |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `assertShiftConditions()` no longer evaluates `allow_outside_shift`; new `assertLocationConditions()` performs GPS check against attendance-constraint locations; `checkCreateTaskConditions` accepts `$currentLatitude` / `$currentLongitude` |
 | `modules/ProcedureSetting/Requests/CreateInternalProcedureSettingRequest.php` | Removed old `prepareForValidation()` normalization; `validationRulesForForm()` now validates rich array format |
 | `modules/ProcedureSetting/Requests/UpdateInternalProcedureSettingRequest.php` | Same as above |
 | `modules/EmployeeTask/Exceptions/EmployeeTaskException.php` | Added `outsideShiftTimeWindow`, `employeeHasNoAttendance`, `taskNotApproved`, `hasOtherOpenTask` |
