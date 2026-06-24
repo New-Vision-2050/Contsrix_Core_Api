@@ -180,6 +180,14 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'passport-info',
             'residence-info',
 
+            // UserInfo Individual Fields
+            'iban',
+            'contract_number',
+            'contract_start_date',
+            'notice_period',
+            'contract_duration',
+            'salary',
+
             // Other
             'broker',
             'number_of_projects',
