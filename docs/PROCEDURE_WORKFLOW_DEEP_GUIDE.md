@@ -101,7 +101,7 @@ Form conditions stored on child `ProcedureSetting` records are enforced by `Empl
 
 1. `createTask` — checks `allow_during_shift`, `allow_outside_shift`, `allow_on_holidays`, `inside_custom_locations` against the user's current attendance work-rules and custom polygon areas (via `AttendanceConstraintService::getTodaysWorkRulesForUser()` and `GeoPolygon`).
 2. `endTask` — checks `can_exit_outside_location` against the task geofence (via `EmployeeTaskLocationService::isWithinTaskRadius()`).
-3. `startTask` — no conditions defined; check is skipped entirely.
+3. `startTask` — checks `allow_on_holidays` against the user's attendance work-rules. If today is a holiday and the condition is inactive, the task cannot be started.
 
 If **no child ProcedureSetting is found** for the form, or its `conditions` column is empty, the check passes silently. See **§28** for full details.
 
@@ -360,8 +360,7 @@ enum InternalProcessForm: string
     // conditions() returns InternalProcessCondition[] for each form:
     //   CreateTask        → AllowDuringShift, AllowOutsideShift, AllowOnHolidays,
     //                       InsideCustomLocations, MaxTaskDuration, MaxScheduledDateOffset
-    //   StartTask         → [] (shift-period enforcement is owned by the Attendance
-    //                         module's constraint system, not the procedure form)
+    //   StartTask         → AllowOnHolidays (holiday gating on task start)
     //   EndTask           → CanExitOutsideLocation
     //   AttachAttachments → MaxAttachments
     //   all others        → [] (default)
@@ -2862,7 +2861,8 @@ New `InternalProcessCondition::InsideCustomLocations` allows admins to define cu
 | `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | Added `InsideCustomLocations` to `CreateTask` conditions list |
 | `modules/EmployeeTask/Support/GeoPolygon.php` | **New** — ray-casting point-in-polygon algorithm |
 | `modules/EmployeeTask/Exceptions/EmployeeTaskException.php` | Added `outsideCustomLocations()` |
-| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `checkCreateTaskConditions()` now accepts `$taskLatitude` / `$taskLongitude`; new `assertCustomLocationConditions()` method; new `getPreConditionResults()` method for mobile precondition check API; new `getInFormConditionsPreview()` method for mobile in-form constraints preview |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `checkCreateTaskConditions()` now accepts `$taskLatitude` / `$taskLongitude`; new `assertCustomLocationConditions()` method; new `getPreConditionResults()` method for mobile precondition check API; new `getInFormConditionsPreview()` method for mobile in-form constraints preview; `checkStartTaskConditions()` now evaluates `AllowOnHolidays` for `startTask` form |
 | `modules/EmployeeTask/Services/EmployeeTaskRequestService.php` | Passes `$taskLatitude` / `$taskLongitude` from DTO to condition service |
 | `modules/EmployeeTask/Controllers/EmployeeTaskController.php` | Added `preConditions()` method for `GET /employee-tasks/pre-conditions`; added `inFormConditions()` method for `GET /employee-tasks/in-form-conditions` |
 | `modules/EmployeeTask/Routes/employee_tasks.php` | Added `GET /pre-conditions` and `GET /in-form-conditions` routes |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | `StartTask` conditions now include `AllowOnHolidays` |
