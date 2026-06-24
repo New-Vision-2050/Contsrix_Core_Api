@@ -165,12 +165,15 @@ Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=createTa
 - **Category**: `time` (وقت)
 - **Label**: الحد الأقصى لتاريخ المهمة
 - **Form group**: `in_form`
-- **Evaluation**: `dto.taskDate > today + max_days` → throws `taskDateTooFarInFuture(maxDays)` (422)
+- **Evaluation**: Controlled by `settings.mode`:
+  - **`max_task_date`** (default) — `dto.taskDate > today + max_days` → throws `taskDateTooFarInFuture(maxDays)` (422)
+  - **`end_contract`** — `dto.taskDate > employee contract end date` → throws `taskDateExceedsContractEndDate()` (422). Contract end date is calculated from `EmploymentContract.start_date + contract_duration` (using the linked `TimeUnit` code: day/month/year). No additional settings needed for this mode.
 - **Settings schema**:
 
-| key | type | label_ar | default |
-|-----|------|----------|---------|
-| `max_days` | `int` | الحد الأقصى للتاريخ (أيام) | `30` |
+| key | type | label_ar | default | extra |
+|-----|------|----------|---------|-------|
+| `mode` | `select` | نوع الشرط | `"max_task_date"` | options: `max_task_date`, `end_contract` |
+| `max_days` | `int` | الحد الأقصى للتاريخ (أيام) | `30` | `visible_when: {key: mode, value: max_task_date}` |
 
 ---
 
@@ -468,9 +471,16 @@ EmployeeTaskRequestService::create()
         │       throws taskDurationExceedsLimit(maxHours) (422)
         │
         └── [max_scheduled_date_offset is_active=true]
-              assertMaxScheduledDateOffset($taskDate, $settings)
-                Carbon::parse(taskDate) > Carbon::today()->addDays(max_days)
-                throws taskDateTooFarInFuture(maxDays) (422)
+              assertMaxScheduledDateOffset($userId, $taskDate, $settings)
+                mode = settings.mode ?? 'max_task_date'
+                ├── [mode = 'max_task_date']
+                │     Carbon::parse(taskDate) > Carbon::today()->addDays(max_days)
+                │     throws taskDateTooFarInFuture(maxDays) (422)
+                └── [mode = 'end_contract']
+                      load User + companyUser.employmentContract.contractDurationUnit
+                      contractEnd = start_date + contract_duration (by TimeUnit code: day/month/year)
+                      Carbon::parse(taskDate) > contractEnd
+                      throws taskDateExceedsContractEndDate() (422)
 ```
 
 ---
