@@ -146,6 +146,8 @@ class EmployeeTaskController extends Controller
                 taskDate:                $request->input('task_date'),
                 taskLatitude:            (float) $request->input('task_latitude'),
                 taskLongitude:           (float) $request->input('task_longitude'),
+                currentLatitude:         $request->input('current_latitude') !== null ? (float) $request->input('current_latitude') : null,
+                currentLongitude:        $request->input('current_longitude') !== null ? (float) $request->input('current_longitude') : null,
                 description:             $request->input('description'),
                 projectId:               $request->input('project_id'),
                 approvalResponsibleId:   $request->input('approval_responsible_id'),

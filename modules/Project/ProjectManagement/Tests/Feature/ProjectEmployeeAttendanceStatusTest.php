@@ -76,6 +76,7 @@ class ProjectEmployeeAttendanceStatusTest extends BaseAttendanceReportTestCase
         $this->assertExistingAttendanceFieldsMatch($payload, $holidayUser, $holidayAttendance);
 
         $missingRow = $payload->firstWhere('user.id', (string) $missingUser->id);
+        $this->assertNull($missingRow['attendance']['id']);
         $this->assertSame('مطلوب للحضور', $missingRow['attendance']['employee_status']);
         $this->assertSame(Attendance::STATUS_ABSENT, $missingRow['attendance']['status']);
         $this->assertSame(1, $missingRow['attendance']['is_absent']);
@@ -115,6 +116,7 @@ class ProjectEmployeeAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.0.user.id', (string) $user->id)
             ->assertJsonPath('payload.0.user.name', 'Shape Employee')
             ->assertJsonPath('payload.0.company.id', (string) $this->company->id)
+            ->assertJsonPath('payload.0.attendance.id', null)
             ->assertJsonPath('payload.0.attendance.status', Attendance::STATUS_ABSENT)
             ->assertJsonPath('payload.0.attendance.day_status', 'غائب')
             ->assertJsonMissingPath('payload.0.status')
@@ -247,6 +249,8 @@ class ProjectEmployeeAttendanceStatusTest extends BaseAttendanceReportTestCase
         $attendance->load(AttendanceTeamPresenter::requiredRelations());
         $expected = (new AttendanceTeamPresenter($attendance))->present();
         $row = $payload->firstWhere('user.id', (string) $user->id);
+
+        $this->assertSame($expected['id'], $row['attendance']['id']);
 
         foreach (['status', 'is_absent', 'is_late', 'is_holiday', 'day_status', 'work_date', 'clock_in_time'] as $field) {
             $this->assertSame($expected[$field], $row['attendance'][$field]);
