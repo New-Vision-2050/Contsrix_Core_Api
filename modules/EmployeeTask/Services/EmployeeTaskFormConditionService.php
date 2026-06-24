@@ -94,8 +94,9 @@ final class EmployeeTaskFormConditionService
      * Evaluate precondition-type (form_group = 'precondition') createTask conditions
      * and return individual pass/fail results without throwing.
      *
-     * Used by the mobile app to show a precondition checklist before opening
-     * the create-task form.
+     * ALWAYS returns all 3 preconditions so the mobile app can show a fixed
+     * checklist UI. When a condition is not configured, it shows as passed
+     * (green checkmark) because the admin is not enforcing it.
      *
      * @return array{
      *   all_passed: bool,
@@ -115,52 +116,68 @@ final class EmployeeTaskFormConditionService
             $branchId,
         );
 
-        if ($conditions === null) {
-            return [
-                'all_passed'   => true,
-                'conditions'   => [],
-            ];
-        }
-
-        $map = $this->indexConditions($conditions);
+        $map = $conditions === null ? [] : $this->indexConditions($conditions);
         $results = [];
         $allPassed = true;
 
-        // ── Holiday check ────────────────────────────────────────────────────
-        $holidayResult = $this->evaluateHolidayCondition($map, $userId);
-        if ($holidayResult !== null) {
-            $results[] = [
-                'key'     => $holidayResult['key'],
-                'label_ar' => $holidayResult['label_ar'],
-                'passed'  => $holidayResult['passed'],
-                'message' => $holidayResult['message'],
-            ];
-            if (! $holidayResult['passed']) {
-                $allPassed = false;
-            }
-        }
-
-        // ── Shift check ────────────────────────────────────────────────────────
+        // ── 1. Shift check ───────────────────────────────────────────────────
         $shiftResult = $this->evaluateShiftCondition($map, $userId);
-        if ($shiftResult !== null) {
-            $results[] = [
-                'key'     => $shiftResult['key'],
-                'label_ar' => $shiftResult['label_ar'],
-                'passed'  => $shiftResult['passed'],
-                'message' => $shiftResult['message'],
+        if ($shiftResult === null) {
+            $shiftResult = [
+                'key'      => InternalProcessCondition::AllowDuringShift->value,
+                'label_ar' => InternalProcessCondition::AllowDuringShift->labelAr(),
+                'passed'   => true,
+                'message'  => null,
             ];
-            if (! $shiftResult['passed']) {
-                $allPassed = false;
-            }
+        }
+        $results[] = [
+            'key'      => $shiftResult['key'],
+            'label_ar' => $shiftResult['label_ar'],
+            'passed'   => $shiftResult['passed'],
+            'message'  => $shiftResult['message'],
+        ];
+        if (! $shiftResult['passed']) {
+            $allPassed = false;
         }
 
-        // ── Location check (employee current location vs work areas) ─────────
+        // ── 2. Holiday check ─────────────────────────────────────────────────
+        $holidayResult = $this->evaluateHolidayCondition($map, $userId);
+        if ($holidayResult === null) {
+            $holidayResult = [
+                'key'      => InternalProcessCondition::AllowOnHolidays->value,
+                'label_ar' => InternalProcessCondition::AllowOnHolidays->labelAr(),
+                'passed'   => true,
+                'message'  => null,
+            ];
+        }
+        $results[] = [
+            'key'      => $holidayResult['key'],
+            'label_ar' => $holidayResult['label_ar'],
+            'passed'   => $holidayResult['passed'],
+            'message'  => $holidayResult['message'],
+        ];
+        if (! $holidayResult['passed']) {
+            $allPassed = false;
+        }
+
+        // ── 3. Location check (employee current location vs work areas) ──────
         $locationResult = $this->evaluateLocationCondition($map, $userId, $currentLatitude, $currentLongitude);
-        if ($locationResult !== null) {
-            $results[] = $locationResult;
-            if (! $locationResult['passed']) {
-                $allPassed = false;
-            }
+        if ($locationResult === null) {
+            $locationResult = [
+                'key'      => 'location_inside_work_area',
+                'label_ar' => 'التواجد داخل نطاق العمل',
+                'passed'   => true,
+                'message'  => null,
+            ];
+        }
+        $results[] = [
+            'key'      => $locationResult['key'],
+            'label_ar' => $locationResult['label_ar'],
+            'passed'   => $locationResult['passed'],
+            'message'  => $locationResult['message'],
+        ];
+        if (! $locationResult['passed']) {
+            $allPassed = false;
         }
 
         return [

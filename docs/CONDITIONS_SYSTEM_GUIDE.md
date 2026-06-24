@@ -520,7 +520,7 @@ Authorization: Bearer <token>
 - `current_latitude` (optional, float) — employee's current GPS latitude
 - `current_longitude` (optional, float) — employee's current GPS longitude
 
-**Response:**
+**Response — ALWAYS returns all 3 preconditions (fixed checklist for mobile UI):**
 ```json
 {
   "status": true,
@@ -550,6 +550,14 @@ Authorization: Bearer <token>
   }
 }
 ```
+
+**Important:** The API always returns exactly these 3 items so the mobile app can render a fixed checklist UI. When a precondition is **not configured** in the admin panel, it shows `passed: true` (green checkmark) because the admin is not enforcing it.
+
+| Condition | `key` | `passed: true` means | `passed: false` means |
+|-----------|-------|----------------------|------------------------|
+| Shift | `allow_during_shift` | Employee is inside work shift (or shift check not configured) | Employee is outside work shift AND admin requires shift time |
+| Holiday | `allow_on_holidays` | Today is not a holiday, or holidays are allowed | Today is a holiday AND admin blocks holidays |
+| Work area | `location_inside_work_area` | Employee GPS is inside a work area (or location check not configured) | Employee GPS is outside all work areas AND admin enforces location |
 
 **Mobile behaviour:**
 - If `all_passed` is `true` → show the create-task form.
