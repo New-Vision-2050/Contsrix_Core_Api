@@ -45,12 +45,12 @@ enum InternalProcessCondition: string
             self::MaxScheduledDateOffset                     => InternalProcessConditionCategory::Time,
             self::InsideTaskLocation,
             self::MustBeInLocation,
+            self::AllowOutsideShift,
             self::CanExitOutsideLocation                     => InternalProcessConditionCategory::Location,
             self::EmployeeHasAttendance                      => InternalProcessConditionCategory::Attendance,
             self::TaskIsApproved                             => InternalProcessConditionCategory::TaskStatus,
             self::NoOpenTask                                 => InternalProcessConditionCategory::OpenTask,
             self::AllowDuringShift,
-            self::AllowOutsideShift,
             self::AllowOnHolidays                            => InternalProcessConditionCategory::Shift,
             self::HasTaskDuration,
             self::MaxDurationHours,
@@ -63,7 +63,7 @@ enum InternalProcessCondition: string
     {
         return match ($this) {
             self::AllowDuringShift       => 'موظف داخل الدوام',
-            self::AllowOutsideShift      => 'موظف خارج الدوام',
+            self::AllowOutsideShift      => 'موظف خارج موقع الدوام',
             self::AllowOnHolidays        => 'مسموح في العطلات',
             self::CanExitOutsideLocation => 'يستطيع الخروج خارج الموقع',
             self::MustBeInLocation       => 'يجب أن يكون داخل الموقع عند البدء',
@@ -114,6 +114,9 @@ enum InternalProcessCondition: string
                     'default'      => '17:00',
                     'visible_when' => ['key' => 'mode', 'value' => 'specific_time'],
                 ],
+            ],
+            self::AllowOutsideShift => [
+                ['key' => 'radius_meters', 'type' => 'int', 'label_ar' => 'نطاق السماح (متر)', 'default' => 100],
             ],
             self::InsideShiftTime => [
                 ['key' => 'start_time',                 'type' => 'time', 'label_ar' => 'من',                                    'default' => '08:00'],

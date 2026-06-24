@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\EmployeeTask\Support\GeoDistance;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
@@ -41,7 +42,8 @@ final class EmployeeTaskFormConditionService
 
     /**
      * Check all createTask conditions:
-     *   - shift / holiday gating  (AllowDuringShift / AllowOutsideShift / AllowOnHolidays)
+     *   - shift / holiday gating  (AllowDuringShift / AllowOnHolidays)
+     *   - location gating         (AllowOutsideShift — now location-based)
      *   - maximum task duration   (MaxTaskDuration)
      *   - maximum scheduled date  (MaxScheduledDateOffset)
      *
@@ -53,6 +55,8 @@ final class EmployeeTaskFormConditionService
         ?string $branchId,
         float   $durationHours,
         string  $taskDate,
+        ?float  $currentLatitude = null,
+        ?float  $currentLongitude = null,
     ): void {
         $conditions = $this->resolveConditions(
             InternalProcessForm::CreateTask->value,
@@ -67,6 +71,7 @@ final class EmployeeTaskFormConditionService
         $map = $this->indexConditions($conditions);
 
         $this->assertShiftConditions($map, $userId);
+        $this->assertLocationConditions($map, $userId, $currentLatitude, $currentLongitude);
 
         // ── max_task_duration ────────────────────────────────────────────────
         $maxDurationCond = $map[InternalProcessCondition::MaxTaskDuration->value] ?? null;
@@ -161,12 +166,15 @@ final class EmployeeTaskFormConditionService
     }
 
     /**
-     * Evaluate AllowDuringShift / AllowOutsideShift / AllowOnHolidays.
+     * Evaluate AllowDuringShift / AllowOnHolidays.
      * Works with both old flat format and new normalized map.
      *
      * AllowDuringShift now supports two modes via settings.mode:
      *   'shift'         (default) — checks the employee's actual attendance schedule.
      *   'specific_time' — checks the current time against a fixed start_time/end_time window.
+     *
+     * NOTE: AllowOutsideShift has been repurposed as a location condition
+     *       and is evaluated separately in assertLocationConditions().
      */
     private function assertShiftConditions(array $map, string $userId): void
     {
@@ -213,11 +221,92 @@ final class EmployeeTaskFormConditionService
             if (! $allowDuringShift) {
                 throw EmployeeTaskException::notAllowedDuringShift();
             }
-        } else {
-            $allowOutsideShift = (bool) ($map[InternalProcessCondition::AllowOutsideShift->value]['is_active'] ?? true);
-            if (! $allowOutsideShift) {
-                throw EmployeeTaskException::notAllowedOutsideShift();
+        }
+        // When outside shift, no shift-based block (AllowOutsideShift is now a location check).
+    }
+
+    /**
+     * Evaluate AllowOutsideShift as a location-based condition.
+     * If the condition is active (is_active = true), the employee is ALLOWED
+     * to create tasks when outside their work location.
+     * If inactive (is_active = false) and the employee is outside all work
+     * locations, an exception is thrown.
+     *
+     * @throws EmployeeTaskException
+     */
+    private function assertLocationConditions(
+        array $map,
+        string $userId,
+        ?float $currentLatitude,
+        ?float $currentLongitude,
+    ): void {
+        $locationCond = $map[InternalProcessCondition::AllowOutsideShift->value] ?? null;
+        $allowOutsideLocation = (bool) ($locationCond['is_active'] ?? true);
+
+        // If allowed outside location, or condition not configured → skip check
+        if ($allowOutsideLocation) {
+            return;
+        }
+
+        // No GPS data provided → cannot enforce location restriction
+        if ($currentLatitude === null || $currentLongitude === null) {
+            return;
+        }
+
+        $user = User::query()
+            ->with([
+                'professionalData.attendanceConstraint',
+                'userProfessionalData.branch',
+            ])
+            ->find($userId);
+
+        if ($user === null) {
+            return;
+        }
+
+        $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user);
+        $mainLocation = $workRules['location_work'] ?? null;
+        $additionalLocations = $workRules['additional_locations'] ?? [];
+
+        // Gather all locations to check against
+        $locations = [];
+        if ($mainLocation && isset($mainLocation['latitude'], $mainLocation['longitude'], $mainLocation['radius'])) {
+            $locations[] = $mainLocation;
+        }
+        foreach ($additionalLocations as $loc) {
+            if (isset($loc['latitude'], $loc['longitude'], $loc['radius'])) {
+                $locations[] = $loc;
             }
+        }
+
+        // If no work locations are configured, we cannot enforce the restriction
+        if (empty($locations)) {
+            return;
+        }
+
+        // Use condition-level radius override if present, otherwise fall back to each location's own radius
+        $conditionRadius = isset($locationCond['settings']['radius_meters'])
+            ? (int) $locationCond['settings']['radius_meters']
+            : null;
+
+        $isInsideAnyLocation = false;
+        foreach ($locations as $loc) {
+            $radius = $conditionRadius ?? (int) ($loc['radius'] ?? 100);
+            $distance = GeoDistance::metres(
+                (float) $loc['latitude'],
+                (float) $loc['longitude'],
+                $currentLatitude,
+                $currentLongitude,
+            );
+
+            if ($distance <= $radius) {
+                $isInsideAnyLocation = true;
+                break;
+            }
+        }
+
+        if (! $isInsideAnyLocation) {
+            throw EmployeeTaskException::notAllowedOutsideLocation();
         }
     }
 

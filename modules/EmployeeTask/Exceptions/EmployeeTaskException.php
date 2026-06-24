@@ -189,6 +189,11 @@ final class EmployeeTaskException extends RuntimeException
         return new self(__('This action is only allowed within the configured shift time window.'), 422);
     }
 
+    public static function notAllowedOutsideLocation(): self
+    {
+        return new self(__('This action is not allowed when you are outside your assigned work location.'), 422);
+    }
+
     public static function employeeHasNoAttendance(): self
     {
         return new self(__('The employee must be clocked in (have an active attendance record) to perform this action.'), 422);
