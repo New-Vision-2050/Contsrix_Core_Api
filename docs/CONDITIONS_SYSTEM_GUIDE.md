@@ -267,7 +267,7 @@ Each condition definition now includes `form_group` and `form_group_label_ar`:
 | Field | Example | Meaning |
 |-------|---------|---------|
 | `form_group` | `"precondition"` | Logical UI group key |
-| `form_group_label_ar` | `"شروط النماذج"` | Arabic tab title |
+| `form_group_label_ar` | `"شروط قبل النموذج"` | Arabic tab title |
 
 **Frontend rule**: After fetching conditions from `GET /forms-conditions`, **group them by `form_group`** and render each group as a separate tab (or section). Do **not** hard-code condition keys into tabs.
 
@@ -279,8 +279,8 @@ const groups = Object.groupBy(
 );
 
 // Tabs:
-//   "شروط النماذج"   → groups['precondition']
-//   "ترتيب الاجراء"  → groups['in_form']
+//   "شروط قبل النموذج"   → groups['precondition']
+//   "شروط داخل النموذج"  → groups['in_form']
 ```
 
 > Adding a new condition to the backend with the correct `formGroup()` value is sufficient; the frontend will automatically place it in the right tab.
