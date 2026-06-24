@@ -75,6 +75,7 @@ class UserAttendanceService
 
         $user->loadMissing([
             'professionalData.attendanceConstraint',
+            'userProfessionalData.attendanceConstraint',
             'userProfessionalData.branch.address.country.timezones',
             'userProfessionalData.department',
         ]);
