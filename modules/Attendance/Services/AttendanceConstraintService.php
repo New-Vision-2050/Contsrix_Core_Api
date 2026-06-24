@@ -1179,10 +1179,10 @@ class AttendanceConstraintService
 
     private function resolveConstraintsFromDb(User $user): Collection
     {
-        // Check both professionalData (non-tenant-scoped) and userProfessionalData (tenant-scoped)
+        // Check userProfessionalData (tenant-scoped) first, then professionalData (non-tenant-scoped)
         // for a directly assigned attendance_constraint_id.
-        $constraint = $user->professionalData?->attendanceConstraint
-            ?? $user->userProfessionalData?->attendanceConstraint;
+        $constraint = $user->userProfessionalData?->attendanceConstraint
+            ?? $user->professionalData?->attendanceConstraint;
         if ($constraint) {
             return collect([$constraint]);
         }
