@@ -467,6 +467,26 @@ final class EmployeeTaskFormConditionService
     }
 
     /**
+     * Check whether the current time is inside any of the scheduled work periods.
+     * Uses the Carbon instances produced by AttendanceConstraintService so the
+     * comparison is timezone-aware, matching the attendance module logic.
+     */
+    private function isCurrentlyInAnyWorkPeriod(array $periods): bool
+    {
+        $now = Carbon::now();
+        foreach ($periods as $period) {
+            $start = $period['period_start_time_carbon'] ?? null;
+            $end   = $period['period_end_time_carbon'] ?? null;
+
+            if ($start instanceof Carbon && $end instanceof Carbon && $now->between($start, $end, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Evaluate shift precondition.
      * Returns null when the condition is not configured / not enforced.
      *
@@ -538,7 +558,7 @@ final class EmployeeTaskFormConditionService
             return null; // holiday logic handled by evaluateHolidayCondition
         }
 
-        $isDuringShift = ($workRules['current_work_period'] ?? null) !== null;
+        $isDuringShift = $this->isCurrentlyInAnyWorkPeriod($workRules['all_work_periods'] ?? []);
 
         if ($isDuringShift) {
             return [
