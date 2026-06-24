@@ -582,10 +582,24 @@ class AttendanceConstraintService
                 ->first();
         };
 
-        // Find the winning TIME and LOCATION constraints.
-        // These keys might need to be adjusted based on your AttendanceConstraint model structure
+        // Find the winning TIME constraint.
         $timeConstraint = $selectWinningConstraint(fn($c) => isset($c->constraint_config['time_rules']));
-        $locationConstraint = $selectWinningConstraint(fn($c) => !empty($c->branch_locations) || isset($c->constraint_config['location_rules']));
+
+        // Find the winning LOCATION constraint.
+        // Prefer constraints whose branch_locations contain valid (non-zero) coordinates
+        // over those with missing/zero coordinates, regardless of priority.
+        $locationCandidates = $constraints->filter(
+            fn($c) => !empty($c->branch_locations) || isset($c->constraint_config['location_rules'])
+        );
+
+        $locationConstraint = $locationCandidates
+            ->sortByDesc(function ($c) {
+                // Constraints with valid coordinates sort higher than those without.
+                return $this->constraintHasValidCoordinates($c) ? 1 : 0;
+            })
+            ->sortByDesc('priority')
+            ->sortByDesc('created_at')
+            ->first();
 
         // Build the rule summaries from the winning constraints.
         $timeRulesResult = $this->buildTimeRules($timeConstraint, $now);
@@ -896,11 +910,57 @@ class AttendanceConstraintService
         return $branchLocations->merge($tableLocations)->values()->all();
     }
 
+    /**
+     * Check if a constraint has at least one branch_location or allowed_zone
+     * with non-zero latitude and longitude.
+     */
+    private function constraintHasValidCoordinates(AttendanceConstraint $constraint): bool
+    {
+        // Check branch_locations JSON column
+        if (!empty($constraint->branch_locations)) {
+            foreach ($constraint->branch_locations as $loc) {
+                if (!is_array($loc)) continue;
+                $lat = (float)($loc['latitude'] ?? 0);
+                $lng = (float)($loc['longitude'] ?? 0);
+                if ($lat !== 0.0 || $lng !== 0.0) {
+                    return true;
+                }
+            }
+        }
+
+        // Check constraint_config.location_rules.allowed_zones
+        $allowedZones = $constraint->constraint_config['location_rules']['allowed_zones'] ?? [];
+        if (!empty($allowedZones)) {
+            foreach ($allowedZones as $zone) {
+                $lat = (float)($zone['latitude'] ?? 0);
+                $lng = (float)($zone['longitude'] ?? 0);
+                if ($lat !== 0.0 || $lng !== 0.0) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private function buildLocationRules(?AttendanceConstraint $constraint, User $user): ?array
     {
-        if (!$constraint || !$user->userProfessionalData?->branch_id) return null;
+        if (!$constraint || !$user->userProfessionalData?->branch_id) {
+            Log::info('buildLocationRules: early null return', [
+                'has_constraint' => $constraint ? true : false,
+                'has_branch_id' => $user->userProfessionalData?->branch_id ? true : false,
+            ]);
+            return null;
+        }
         $userBranchId = (string) $user->userProfessionalData->branch_id;
         $userBranchName = $user->userProfessionalData->branch->name ?? 'Unknown Branch';
+
+        Log::info('buildLocationRules: starting', [
+            'constraint_id' => $constraint->id,
+            'user_branch_id' => $userBranchId,
+            'branch_locations_raw' => $constraint->branch_locations,
+            'constraint_config_location_rules' => $constraint->constraint_config['location_rules'] ?? null,
+        ]);
 
         if (!empty($constraint->branch_locations)) {
             $branchData = collect($constraint->branch_locations)->firstWhere('branch_id', $userBranchId);
@@ -922,14 +982,31 @@ class AttendanceConstraintService
                 $latitude = (float)($branchData['latitude'] ?? 0);
                 $longitude = (float)($branchData['longitude'] ?? 0);
 
+                Log::info('buildLocationRules: branchData found', [
+                    'branchData' => $branchData,
+                    'latitude_parsed' => $latitude,
+                    'longitude_parsed' => $longitude,
+                ]);
+
                 // Fallback to the branch master record if stored location coordinates are missing/zero.
                 if (($latitude === 0.0 && $longitude === 0.0) || empty($branchData['latitude']) || empty($branchData['longitude'])) {
                     $branch = \Modules\Company\ManagementHierarchy\Models\Branch::where('management_hierarchy_id', $userBranchId)->first();
+                    Log::info('buildLocationRules: fallback to branches table', [
+                        'userBranchId' => $userBranchId,
+                        'branch_found' => $branch ? true : false,
+                        'branch_latitude' => $branch?->latitude,
+                        'branch_longitude' => $branch?->longitude,
+                    ]);
                     if ($branch && ((float)$branch->latitude !== 0.0 || (float)$branch->longitude !== 0.0)) {
                         $latitude = (float) $branch->latitude;
                         $longitude = (float) $branch->longitude;
                     }
                 }
+
+                Log::info('buildLocationRules: returning from branch_locations', [
+                    'final_latitude' => $latitude,
+                    'final_longitude' => $longitude,
+                ]);
 
                 return [
                     'name' => $branchData['name'] ?? $userBranchName,
@@ -946,9 +1023,21 @@ class AttendanceConstraintService
             $latitude = (float)($firstZone['latitude'] ?? 0);
             $longitude = (float)($firstZone['longitude'] ?? 0);
 
+            Log::info('buildLocationRules: using allowed_zones fallback', [
+                'firstZone' => $firstZone,
+                'latitude_parsed' => $latitude,
+                'longitude_parsed' => $longitude,
+            ]);
+
             // Fallback to the branch master record if allowed-zone coordinates are missing/zero.
             if (($latitude === 0.0 && $longitude === 0.0) || empty($firstZone['latitude']) || empty($firstZone['longitude'])) {
                 $branch = \Modules\Company\ManagementHierarchy\Models\Branch::where('management_hierarchy_id', $userBranchId)->first();
+                Log::info('buildLocationRules: allowed_zones fallback to branches table', [
+                    'userBranchId' => $userBranchId,
+                    'branch_found' => $branch ? true : false,
+                    'branch_latitude' => $branch?->latitude,
+                    'branch_longitude' => $branch?->longitude,
+                ]);
                 if ($branch && ((float)$branch->latitude !== 0.0 || (float)$branch->longitude !== 0.0)) {
                     $latitude = (float) $branch->latitude;
                     $longitude = (float) $branch->longitude;
@@ -962,6 +1051,10 @@ class AttendanceConstraintService
                 'radius' => (int)($firstZone['radius'] ?? 0)
             ];
         }
+
+        Log::info('buildLocationRules: no location data found, returning null', [
+            'constraint_id' => $constraint->id,
+        ]);
         return null;
     }
 
