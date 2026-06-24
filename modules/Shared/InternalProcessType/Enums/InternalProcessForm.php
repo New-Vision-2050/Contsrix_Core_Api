@@ -47,6 +47,7 @@ enum InternalProcessForm: string
                 InternalProcessCondition::AllowDuringShift,
                 InternalProcessCondition::AllowOutsideShift,
                 InternalProcessCondition::AllowOnHolidays,
+                InternalProcessCondition::InsideCustomLocations,
                 InternalProcessCondition::MaxTaskDuration,
                 InternalProcessCondition::MaxScheduledDateOffset,
             ],

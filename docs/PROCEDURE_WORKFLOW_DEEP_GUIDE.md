@@ -2,7 +2,7 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-23 — `procedure_setting_id` on `processes`: `createTask` procedure now marked taken ONLY after workflow approval (not on task creation). See §9.4, §23.
+> **Last updated:** 2026-06-24 — Added `InsideCustomLocations` condition with `map_polygons` settings schema for custom polygon areas on task creation. See §3, §28, §31.
 >
 > **Previous:** 2026-06-22 — `action_taker_management_hierarchies` refactor: new JSON array of `{action_taker_management_hierarchy_type, is_Deputy_Director}` objects replaces deprecated single `action_taker_management_hierarchy_type` + `action_taker_alternative_management_hierarchy_type` fields. `deputy_manager` type replaced by `is_Deputy_Director` boolean flag. `ActionTakerResolver` updated to iterate array rows, skip unresolvable types (e.g. `project_manager` without `project_id`), and merge manager + deputy users. See §5.1, §32.
 
@@ -99,7 +99,7 @@ Process-based notifications are now handled centrally. Each module registers a `
 ### To Apply Form Conditions (Backend Enforcement)
 Form conditions stored on child `ProcedureSetting` records are enforced by `EmployeeTaskFormConditionService` **before** any workflow starts:
 
-1. `createTask` — checks `allow_during_shift`, `allow_outside_shift`, `allow_on_holidays` against the user's current attendance work-rules (via `AttendanceConstraintService::getTodaysWorkRulesForUser()`).
+1. `createTask` — checks `allow_during_shift`, `allow_outside_shift`, `allow_on_holidays`, `inside_custom_locations` against the user's current attendance work-rules and custom polygon areas (via `AttendanceConstraintService::getTodaysWorkRulesForUser()` and `GeoPolygon`).
 2. `endTask` — checks `can_exit_outside_location` against the task geofence (via `EmployeeTaskLocationService::isWithinTaskRadius()`).
 3. `startTask` — no conditions defined; check is skipped entirely.
 
@@ -212,7 +212,7 @@ Backend enforcer for `InternalProcessForm` conditions. Called before workflow st
 
 | Method | Returns | Parameters | Called By |
 |--------|---------|-----------|-----------|
-| `checkCreateTaskConditions($userId, $companyId, $branchId)` | `void` | `string`, `string`, `?string` | `EmployeeTaskRequestService::create()` |
+| `checkCreateTaskConditions($userId, $companyId, $branchId, $durationHours, $taskDate, $taskLatitude, $taskLongitude, $currentLatitude, $currentLongitude)` | `void` | `string`, `string`, `?string`, `float`, `string`, `float`, `float`, `?float`, `?float` | `EmployeeTaskRequestService::create()` |
 | `checkEndTaskConditions($task, $latitude, $longitude)` | `void` | `EmployeeTaskRequest`, `float`, `float` | `EmployeeTaskLifecycleService::end()` |
 
 **Internal flow:**
@@ -356,7 +356,8 @@ enum InternalProcessForm: string
     }
 
     // conditions() returns InternalProcessCondition[] for each form:
-    //   CreateTask        → AllowDuringShift, AllowOutsideShift, AllowOnHolidays
+    //   CreateTask        → AllowDuringShift, AllowOutsideShift, AllowOnHolidays,
+    //                       InsideCustomLocations, MaxTaskDuration, MaxScheduledDateOffset
     //   StartTask         → [] (shift-period enforcement is owned by the Attendance
     //                         module's constraint system, not the procedure form)
     //   EndTask           → CanExitOutsideLocation
@@ -384,9 +385,18 @@ enum InternalProcessCondition: string
     case AllowOutsideShift      = 'allow_outside_shift';
     case AllowOnHolidays        = 'allow_on_holidays';
     case CanExitOutsideLocation = 'can_exit_outside_location';
+    case MustBeInLocation       = 'must_be_in_location';
     case HasTaskDuration        = 'has_task_duration';
     case MaxDurationHours       = 'max_duration_hours';
     case MaxAttachments         = 'max_attachments';
+    case MaxTaskDuration        = 'max_task_duration';
+    case MaxScheduledDateOffset = 'max_scheduled_date_offset';
+    case InsideShiftTime        = 'inside_shift_time';
+    case InsideTaskLocation     = 'inside_task_location';
+    case InsideCustomLocations  = 'inside_custom_locations';
+    case EmployeeHasAttendance  = 'employee_has_attendance';
+    case TaskIsApproved         = 'task_is_approved';
+    case NoOpenTask             = 'no_open_task';
 }
 ```
 
@@ -2689,9 +2699,11 @@ Returns one definition object per condition in the form:
       toggle  |  label_ar  |  category_label_ar  |  settings inputs
 
 3. For each settings_schema field:
-      type = 'time'   → time picker (HH:MM)
-      type = 'int'    → number input
-      type = 'bool'   → checkbox / toggle
+      type = 'time'          → time picker (HH:MM)
+      type = 'int'           → number input
+      type = 'bool'          → checkbox / toggle
+      type = 'select'        → dropdown list
+      type = 'map_polygons'  → interactive map with polygon drawing (stored as array of polygon vertex arrays)
 
 4. On save  →  POST or PUT with:
    "conditions": [
@@ -2700,9 +2712,14 @@ Returns one definition object per condition in the form:
                      "allow_before_start_minutes": 30, "allow_before_end_minutes": 0 } },
      { "key": "inside_task_location", "is_active": true, "sort_order": 2,
        "settings": { "radius_meters": 150 } },
-     { "key": "employee_has_attendance", "is_active": false, "sort_order": 3, "settings": {} },
-     { "key": "task_is_approved",        "is_active": false, "sort_order": 4, "settings": {} },
-     { "key": "no_open_task",            "is_active": true,  "sort_order": 5, "settings": {} }
+     { "key": "inside_custom_locations", "is_active": true, "sort_order": 3,
+       "settings": { "polygons": [
+         [{ "lat": 24.7136, "lng": 46.6753 }, { "lat": 24.7140, "lng": 46.6760 }, { "lat": 24.7130, "lng": 46.6760 }],
+         [{ "lat": 24.7200, "lng": 46.6800 }, { "lat": 24.7210, "lng": 46.6810 }, { "lat": 24.7200, "lng": 46.6810 }]
+       ] } },
+     { "key": "employee_has_attendance", "is_active": false, "sort_order": 4, "settings": {} },
+     { "key": "task_is_approved",        "is_active": false, "sort_order": 5, "settings": {} },
+     { "key": "no_open_task",            "is_active": true,  "sort_order": 6, "settings": {} }
    ]
 ```
 
@@ -2818,3 +2835,29 @@ Example: `[{type: "project_manager", is_Deputy_Director: false}, {type: "branch_
 | `modules/ProcedureSetting/Presenters/ProcedureSettingStepPresenter.php` | Returns new field; backward-compat build from legacy |
 | `modules/ProcedureSetting/Services/ActionTakerResolver.php` | New methods: `resolveFromManagementHierarchiesArray`, `resolveManagerByType`, `resolveDeputyManagersForType`; updated `resolveManagementHierarchyUsers` + `resolveManagerFromCreatorHierarchy` |
 | `docs/PROCEDURE_STEPS_API_CHANGES.md` | **New** — changelog |
+
+---
+
+## 33. InsideCustomLocations Condition (2026-06-24)
+
+### Background
+
+New `InternalProcessCondition::InsideCustomLocations` allows admins to define custom polygon areas on a map. When the condition is active, the employee's task location (`task_latitude`, `task_longitude`) must fall inside at least one of the configured polygons.
+
+### Key Behaviour
+
+- **Settings schema type**: `map_polygons` — stored as array of polygons, each polygon is an ordered list of `{lat, lng}` vertices.
+- **Backend check**: `EmployeeTaskFormConditionService::assertCustomLocationConditions()` uses `GeoPolygon::isPointInAnyPolygon()` (ray-casting algorithm).
+- **Exception thrown**: `EmployeeTaskException::outsideCustomLocations()` (422).
+- **Task location**: The task's GPS coordinates (from `CreateEmployeeTaskRequestDTO::$taskLatitude` / `$taskLongitude`) are checked, NOT the employee's current location.
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | Added `InsideCustomLocations` case with `labelAr()`, `category()`, `formGroup()`, and `settingsSchema()` containing `type: 'map_polygons'` |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | Added `InsideCustomLocations` to `CreateTask` conditions list |
+| `modules/EmployeeTask/Support/GeoPolygon.php` | **New** — ray-casting point-in-polygon algorithm |
+| `modules/EmployeeTask/Exceptions/EmployeeTaskException.php` | Added `outsideCustomLocations()` |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `checkCreateTaskConditions()` now accepts `$taskLatitude` / `$taskLongitude`; new `assertCustomLocationConditions()` method |
+| `modules/EmployeeTask/Services/EmployeeTaskRequestService.php` | Passes `$taskLatitude` / `$taskLongitude` from DTO to condition service |

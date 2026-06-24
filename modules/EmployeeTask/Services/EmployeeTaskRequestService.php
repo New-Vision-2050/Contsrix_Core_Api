@@ -54,6 +54,8 @@ class EmployeeTaskRequestService
             $branchId,
             $dto->durationHours,
             $dto->taskDate,
+            $dto->taskLatitude,
+            $dto->taskLongitude,
             $dto->currentLatitude,
             $dto->currentLongitude,
         );

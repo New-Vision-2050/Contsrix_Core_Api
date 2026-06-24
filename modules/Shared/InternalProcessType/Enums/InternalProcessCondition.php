@@ -23,6 +23,7 @@ enum InternalProcessCondition: string
     // ── Rich conditions with settings schema (startTask and beyond) ──────────
     case InsideShiftTime         = 'inside_shift_time';
     case InsideTaskLocation      = 'inside_task_location';
+    case InsideCustomLocations   = 'inside_custom_locations';
     case EmployeeHasAttendance   = 'employee_has_attendance';
     case TaskIsApproved          = 'task_is_approved';
     case NoOpenTask              = 'no_open_task';
@@ -77,6 +78,7 @@ enum InternalProcessCondition: string
             self::InsideShiftTime                             => InternalProcessConditionCategory::Time,
             self::MaxScheduledDateOffset                     => InternalProcessConditionCategory::Calendar,
             self::InsideTaskLocation,
+            self::InsideCustomLocations,
             self::MustBeInLocation,
             self::AllowOutsideShift,
             self::CanExitOutsideLocation                     => InternalProcessConditionCategory::Location,
@@ -107,6 +109,7 @@ enum InternalProcessCondition: string
             self::MaxScheduledDateOffset => 'الحد الأقصى لتاريخ المهمة',
             self::InsideShiftTime        => 'داخل وقت الدوام',
             self::InsideTaskLocation     => 'داخل موقع المهمة',
+            self::InsideCustomLocations  => 'داخل المواقع المخصصة',
             self::EmployeeHasAttendance  => 'الموظف مسجل حضور',
             self::TaskIsApproved         => 'المهمة معتمدة',
             self::NoOpenTask             => 'لا يوجد مهمة مفتوحة',
@@ -156,6 +159,14 @@ enum InternalProcessCondition: string
             ],
             self::InsideTaskLocation => [
                 ['key' => 'radius_meters', 'type' => 'int', 'label_ar' => 'نطاق السماح (متر)', 'default' => 100],
+            ],
+            self::InsideCustomLocations => [
+                [
+                    'key'      => 'polygons',
+                    'type'     => 'map_polygons',
+                    'label_ar' => 'المواقع المحددة على الخريطة',
+                    'default'  => [],
+                ],
             ],
             self::MaxTaskDuration => [
                 ['key' => 'max_hours', 'type' => 'int', 'label_ar' => 'الحد الأقصى للمدة (ساعة)', 'default' => 8],
