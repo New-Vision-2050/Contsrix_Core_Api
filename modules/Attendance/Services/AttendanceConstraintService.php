@@ -919,10 +919,22 @@ class AttendanceConstraintService
             }
 
             if ($branchData) {
+                $latitude = (float)($branchData['latitude'] ?? 0);
+                $longitude = (float)($branchData['longitude'] ?? 0);
+
+                // Fallback to the branch master record if stored location coordinates are missing/zero.
+                if (($latitude === 0.0 && $longitude === 0.0) || empty($branchData['latitude']) || empty($branchData['longitude'])) {
+                    $branch = \Modules\Company\ManagementHierarchy\Models\Branch::where('management_hierarchy_id', $userBranchId)->first();
+                    if ($branch && ((float)$branch->latitude !== 0.0 || (float)$branch->longitude !== 0.0)) {
+                        $latitude = (float) $branch->latitude;
+                        $longitude = (float) $branch->longitude;
+                    }
+                }
+
                 return [
                     'name' => $branchData['name'] ?? $userBranchName,
-                    'latitude' => (float)($branchData['latitude'] ?? 0),
-                    'longitude' => (float)($branchData['longitude'] ?? 0),
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
                     'radius' => (int)($branchData['radius'] ?? 0)
                 ];
             }
@@ -931,10 +943,22 @@ class AttendanceConstraintService
         $locationRules = $constraint->constraint_config['location_rules'] ?? [];
         if (!empty($locationRules['allowed_zones'])) {
             $firstZone = $locationRules['allowed_zones'][0];
+            $latitude = (float)($firstZone['latitude'] ?? 0);
+            $longitude = (float)($firstZone['longitude'] ?? 0);
+
+            // Fallback to the branch master record if allowed-zone coordinates are missing/zero.
+            if (($latitude === 0.0 && $longitude === 0.0) || empty($firstZone['latitude']) || empty($firstZone['longitude'])) {
+                $branch = \Modules\Company\ManagementHierarchy\Models\Branch::where('management_hierarchy_id', $userBranchId)->first();
+                if ($branch && ((float)$branch->latitude !== 0.0 || (float)$branch->longitude !== 0.0)) {
+                    $latitude = (float) $branch->latitude;
+                    $longitude = (float) $branch->longitude;
+                }
+            }
+
             return [
                 'name' => $firstZone['name'] ?? $userBranchName,
-                'latitude' => (float)($firstZone['latitude'] ?? 0),
-                'longitude' => (float)($firstZone['longitude'] ?? 0),
+                'latitude' => $latitude,
+                'longitude' => $longitude,
                 'radius' => (int)($firstZone['radius'] ?? 0)
             ];
         }
