@@ -91,6 +91,178 @@ final class EmployeeTaskFormConditionService
     }
 
     /**
+     * Evaluate precondition-type (form_group = 'precondition') createTask conditions
+     * and return individual pass/fail results without throwing.
+     *
+     * Used by the mobile app to show a precondition checklist before opening
+     * the create-task form.
+     *
+     * @return array{
+     *   all_passed: bool,
+     *   conditions: list<array{key: string, label_ar: string, passed: bool, message: ?string}>
+     * }
+     */
+    public function getPreConditionResults(
+        string  $userId,
+        string  $companyId,
+        ?string $branchId,
+        ?float  $currentLatitude = null,
+        ?float  $currentLongitude = null,
+    ): array {
+        $conditions = $this->resolveConditions(
+            InternalProcessForm::CreateTask->value,
+            $companyId,
+            $branchId,
+        );
+
+        if ($conditions === null) {
+            return [
+                'all_passed'   => true,
+                'conditions'   => [],
+            ];
+        }
+
+        $map = $this->indexConditions($conditions);
+        $results = [];
+        $allPassed = true;
+
+        // ── Holiday check ────────────────────────────────────────────────────
+        $holidayResult = $this->evaluateHolidayCondition($map, $userId);
+        if ($holidayResult !== null) {
+            $results[] = [
+                'key'     => $holidayResult['key'],
+                'label_ar' => $holidayResult['label_ar'],
+                'passed'  => $holidayResult['passed'],
+                'message' => $holidayResult['message'],
+            ];
+            if (! $holidayResult['passed']) {
+                $allPassed = false;
+            }
+        }
+
+        // ── Shift check ────────────────────────────────────────────────────────
+        $shiftResult = $this->evaluateShiftCondition($map, $userId);
+        if ($shiftResult !== null) {
+            $results[] = [
+                'key'     => $shiftResult['key'],
+                'label_ar' => $shiftResult['label_ar'],
+                'passed'  => $shiftResult['passed'],
+                'message' => $shiftResult['message'],
+            ];
+            if (! $shiftResult['passed']) {
+                $allPassed = false;
+            }
+        }
+
+        // ── Location check (employee current location vs work areas) ─────────
+        $locationResult = $this->evaluateLocationCondition($map, $userId, $currentLatitude, $currentLongitude);
+        if ($locationResult !== null) {
+            $results[] = $locationResult;
+            if (! $locationResult['passed']) {
+                $allPassed = false;
+            }
+        }
+
+        return [
+            'all_passed' => $allPassed,
+            'conditions' => $results,
+        ];
+    }
+
+    /**
+     * Return active in_form conditions for the createTask form so the mobile
+     * app can display them as hints/constraints before the employee submits.
+     *
+     * Output is NORMALIZED — every item has the same shape:
+     *   key, label_ar, is_active, mode, constraints
+     *
+     * Includes: max_task_duration, max_scheduled_date_offset,
+     *           inside_custom_locations, has_task_duration, etc.
+     *
+     * @return list<array{key: string, label_ar: string, is_active: true, mode: ?string, constraints: array}>
+     */
+    public function getInFormConditionsPreview(
+        string  $companyId,
+        ?string $branchId,
+    ): array {
+        $conditions = $this->resolveConditions(
+            InternalProcessForm::CreateTask->value,
+            $companyId,
+            $branchId,
+        );
+
+        if ($conditions === null) {
+            return [];
+        }
+
+        $map = $this->indexConditions($conditions);
+        $results = [];
+
+        foreach ($map as $item) {
+            $condEnum = InternalProcessCondition::tryFrom($item['key'] ?? '');
+            if ($condEnum === null) {
+                continue;
+            }
+
+            if ($condEnum->formGroup() !== 'in_form') {
+                continue;
+            }
+
+            if (! ($item['is_active'] ?? false)) {
+                continue;
+            }
+
+            $settings = $item['settings'] ?? [];
+
+            $preview = match ($condEnum) {
+                InternalProcessCondition::MaxTaskDuration => [
+                    'mode'        => null,
+                    'constraints' => ['max_hours' => (int) ($settings['max_hours'] ?? 8)],
+                ],
+
+                InternalProcessCondition::MaxScheduledDateOffset => [
+                    'mode'        => $settings['mode'] ?? 'max_task_date',
+                    'constraints' => ($settings['mode'] ?? 'max_task_date') === 'max_task_date'
+                        ? ['max_days' => (int) ($settings['max_days'] ?? 30)]
+                        : [],
+                ],
+
+                InternalProcessCondition::InsideCustomLocations => [
+                    'mode'        => null,
+                    'constraints' => ['polygons' => $settings['polygons'] ?? []],
+                ],
+
+                InternalProcessCondition::HasTaskDuration => [
+                    'mode'        => null,
+                    'constraints' => ['required' => true],
+                ],
+
+                InternalProcessCondition::MaxDurationHours => [
+                    'mode'        => null,
+                    'constraints' => ['max_hours' => (int) ($settings['max_hours'] ?? 8)],
+                ],
+
+                InternalProcessCondition::MaxAttachments => [
+                    'mode'        => null,
+                    'constraints' => ['max_count' => (int) ($settings['max_count'] ?? 5)],
+                ],
+
+                default => ['mode' => null, 'constraints' => []],
+            };
+
+            $results[] = [
+                'key'         => $condEnum->value,
+                'label_ar'    => $condEnum->labelAr(),
+                'is_active'   => true,
+                'mode'        => $preview['mode'],
+                'constraints' => $preview['constraints'],
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
      * No conditions are configured for startTask.
      */
     public function checkStartTaskConditions(
@@ -182,16 +354,118 @@ final class EmployeeTaskFormConditionService
      */
     private function assertShiftConditions(array $map, string $userId): void
     {
+        $shiftResult = $this->evaluateShiftCondition($map, $userId);
+        if ($shiftResult !== null && ! $shiftResult['passed']) {
+            match ($shiftResult['exception']) {
+                'notAllowedDuringShift'  => throw EmployeeTaskException::notAllowedDuringShift(),
+                'outsideShiftTimeWindow' => throw EmployeeTaskException::outsideShiftTimeWindow(),
+            };
+        }
+
+        $holidayResult = $this->evaluateHolidayCondition($map, $userId);
+        if ($holidayResult !== null && ! $holidayResult['passed']) {
+            throw EmployeeTaskException::notAllowedOnHolidays();
+        }
+    }
+
+    /**
+     * Evaluate holiday precondition.
+     * Returns null when the condition is not configured / not enforced.
+     *
+     * @return array{key: string, label_ar: string, passed: bool, message: ?string, exception: string}|null
+     */
+    private function evaluateHolidayCondition(array $map, string $userId): ?array
+    {
+        $user = User::query()
+            ->with([
+                'professionalData.attendanceConstraint',
+                'userProfessionalData.branch',
+                'userProfessionalData.department',
+            ])
+            ->find($userId);
+
+        if ($user === null) {
+            return null;
+        }
+
+        $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user);
+        $isHoliday = (bool) ($workRules['is_holiday'] ?? false);
+
+        if (! $isHoliday) {
+            return null; // not a holiday → no holiday check needed
+        }
+
+        $allowOnHolidays = (bool) ($map[InternalProcessCondition::AllowOnHolidays->value]['is_active'] ?? true);
+
+        if ($allowOnHolidays) {
+            return [
+                'key'       => InternalProcessCondition::AllowOnHolidays->value,
+                'label_ar'  => InternalProcessCondition::AllowOnHolidays->labelAr(),
+                'passed'    => true,
+                'message'   => null,
+                'exception' => 'notAllowedOnHolidays',
+            ];
+        }
+
+        return [
+            'key'       => InternalProcessCondition::AllowOnHolidays->value,
+            'label_ar'  => InternalProcessCondition::AllowOnHolidays->labelAr(),
+            'passed'    => false,
+            'message'   => 'Task creation is not allowed on holidays.',
+            'exception' => 'notAllowedOnHolidays',
+        ];
+    }
+
+    /**
+     * Evaluate shift precondition.
+     * Returns null when the condition is not configured / not enforced.
+     *
+     * @return array{key: string, label_ar: string, passed: bool, message: ?string, exception: string}|null
+     */
+    private function evaluateShiftCondition(array $map, string $userId): ?array
+    {
         $duringShiftCond = $map[InternalProcessCondition::AllowDuringShift->value] ?? null;
 
-        // specific_time mode: bypass attendance system, check fixed time window instead
-        if ($duringShiftCond && ($duringShiftCond['is_active'] ?? false)) {
-            $mode = $duringShiftCond['settings']['mode'] ?? 'shift';
-            if ($mode === 'specific_time') {
-                $this->assertInsideSpecificTimeWindow($duringShiftCond['settings'] ?? []);
+        // Not configured → skip
+        if ($duringShiftCond === null) {
+            return null;
+        }
 
-                return;
+        $isActive = (bool) ($duringShiftCond['is_active'] ?? false);
+
+        // Inactive → not enforcing shift requirement
+        if (! $isActive) {
+            return null;
+        }
+
+        $mode = $duringShiftCond['settings']['mode'] ?? 'shift';
+
+        // specific_time mode
+        if ($mode === 'specific_time') {
+            $startTime = $duringShiftCond['settings']['start_time'] ?? '00:00';
+            $endTime   = $duringShiftCond['settings']['end_time']   ?? '23:59';
+            $now       = Carbon::now();
+            $start     = Carbon::parse($startTime);
+            $end       = Carbon::parse($endTime);
+            $inWindow  = ! ($now->lt($start) || $now->gt($end));
+
+            if ($inWindow) {
+                return [
+                    'key'       => InternalProcessCondition::AllowDuringShift->value,
+                    'label_ar'  => InternalProcessCondition::AllowDuringShift->labelAr(),
+                    'passed'    => true,
+                    'message'   => null,
+                    'exception' => 'outsideShiftTimeWindow',
+                ];
             }
+
+            return [
+                'key'       => InternalProcessCondition::AllowDuringShift->value,
+                'label_ar'  => InternalProcessCondition::AllowDuringShift->labelAr(),
+                'passed'    => false,
+                'message'   => 'Current time is outside the allowed shift window.',
+                'exception' => 'outsideShiftTimeWindow',
+            ];
         }
 
         // shift mode (default): use attendance constraint system
@@ -204,29 +478,35 @@ final class EmployeeTaskFormConditionService
             ->find($userId);
 
         if ($user === null) {
-            return;
+            return null;
         }
 
         $workRules     = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user);
         $isHoliday     = (bool) ($workRules['is_holiday'] ?? false);
-        $isDuringShift = ($workRules['current_work_period'] ?? null) !== null;
 
         if ($isHoliday) {
-            $allowOnHolidays = (bool) ($map[InternalProcessCondition::AllowOnHolidays->value]['is_active'] ?? true);
-            if (! $allowOnHolidays) {
-                throw EmployeeTaskException::notAllowedOnHolidays();
-            }
-
-            return;
+            return null; // holiday logic handled by evaluateHolidayCondition
         }
+
+        $isDuringShift = ($workRules['current_work_period'] ?? null) !== null;
 
         if ($isDuringShift) {
-            $allowDuringShift = (bool) ($duringShiftCond['is_active'] ?? true);
-            if (! $allowDuringShift) {
-                throw EmployeeTaskException::notAllowedDuringShift();
-            }
+            return [
+                'key'       => InternalProcessCondition::AllowDuringShift->value,
+                'label_ar'  => InternalProcessCondition::AllowDuringShift->labelAr(),
+                'passed'    => true,
+                'message'   => null,
+                'exception' => 'notAllowedDuringShift',
+            ];
         }
-        // When outside shift, no shift-based block (AllowOutsideShift is now a location check).
+
+        return [
+            'key'       => InternalProcessCondition::AllowDuringShift->value,
+            'label_ar'  => InternalProcessCondition::AllowDuringShift->labelAr(),
+            'passed'    => false,
+            'message'   => 'You are not currently within your work shift.',
+            'exception' => 'notAllowedDuringShift',
+        ];
     }
 
     /**
@@ -244,17 +524,40 @@ final class EmployeeTaskFormConditionService
         ?float $currentLatitude,
         ?float $currentLongitude,
     ): void {
+        $result = $this->evaluateLocationCondition($map, $userId, $currentLatitude, $currentLongitude);
+        if ($result !== null && ! $result['passed']) {
+            throw EmployeeTaskException::notAllowedOutsideLocation();
+        }
+    }
+
+    /**
+     * Evaluate location precondition.
+     * Returns null when the condition is not configured / not enforced.
+     *
+     * @return array{key: string, label_ar: string, passed: bool, message: ?string}|null
+     */
+    private function evaluateLocationCondition(
+        array $map,
+        string $userId,
+        ?float $currentLatitude,
+        ?float $currentLongitude,
+    ): ?array {
         $locationCond = $map[InternalProcessCondition::AllowOutsideShift->value] ?? null;
         $allowOutsideLocation = (bool) ($locationCond['is_active'] ?? true);
 
         // If allowed outside location, or condition not configured → skip check
         if ($allowOutsideLocation) {
-            return;
+            return null;
         }
 
         // No GPS data provided → cannot enforce location restriction
         if ($currentLatitude === null || $currentLongitude === null) {
-            return;
+            return [
+                'key'      => 'location_inside_work_area',
+                'label_ar'  => 'التواجد داخل نطاق العمل',
+                'passed'    => false,
+                'message'   => 'Location data is required to verify work area.',
+            ];
         }
 
         $user = User::query()
@@ -265,7 +568,7 @@ final class EmployeeTaskFormConditionService
             ->find($userId);
 
         if ($user === null) {
-            return;
+            return null;
         }
 
         $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user);
@@ -285,7 +588,7 @@ final class EmployeeTaskFormConditionService
 
         // If no work locations are configured, we cannot enforce the restriction
         if (empty($locations)) {
-            return;
+            return null;
         }
 
         $isInsideAnyLocation = false;
@@ -304,9 +607,21 @@ final class EmployeeTaskFormConditionService
             }
         }
 
-        if (! $isInsideAnyLocation) {
-            throw EmployeeTaskException::notAllowedOutsideLocation();
+        if ($isInsideAnyLocation) {
+            return [
+                'key'      => 'location_inside_work_area',
+                'label_ar'  => 'التواجد داخل نطاق العمل',
+                'passed'    => true,
+                'message'   => null,
+            ];
         }
+
+        return [
+            'key'      => 'location_inside_work_area',
+            'label_ar'  => 'التواجد داخل نطاق العمل',
+            'passed'    => false,
+            'message'   => 'You are outside the designated work area.',
+        ];
     }
 
     /**

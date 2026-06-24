@@ -507,7 +507,139 @@ EmployeeTaskRequestService::create()
 
 ---
 
-## 8. Adding New Condition Types
+## 8. Precondition Check API (Mobile)
+
+Before opening the create-task form, the mobile app should call:
+
+```
+GET /api/v1/employee-tasks/pre-conditions?current_latitude={lat}&current_longitude={lng}
+Authorization: Bearer <token>
+```
+
+**Query params:**
+- `current_latitude` (optional, float) — employee's current GPS latitude
+- `current_longitude` (optional, float) — employee's current GPS longitude
+
+**Response:**
+```json
+{
+  "status": true,
+  "message": "Preconditions retrieved successfully",
+  "data": {
+    "all_passed": false,
+    "conditions": [
+      {
+        "key": "allow_during_shift",
+        "label_ar": "موظف داخل الدوام",
+        "passed": false,
+        "message": "You are not currently within your work shift."
+      },
+      {
+        "key": "allow_on_holidays",
+        "label_ar": "مسموح في العطلات",
+        "passed": true,
+        "message": null
+      },
+      {
+        "key": "location_inside_work_area",
+        "label_ar": "التواجد داخل نطاق العمل",
+        "passed": false,
+        "message": "You are outside the designated work area."
+      }
+    ]
+  }
+}
+```
+
+**Mobile behaviour:**
+- If `all_passed` is `true` → show the create-task form.
+- If `all_passed` is `false` → show a modal like the image with red X marks for each `passed: false` condition and the corresponding `label_ar` / `message`.
+
+---
+
+## 9. In-Form Conditions Preview API (Mobile)
+
+After preconditions pass, the mobile app should call this to know what in-form constraints to display inside the create-task form:
+
+```
+GET /api/v1/employee-tasks/in-form-conditions
+Authorization: Bearer <token>
+```
+
+**Response (NORMALIZED — every item has the same shape):**
+```json
+{
+  "status": true,
+  "message": "In-form conditions retrieved successfully",
+  "data": {
+    "conditions": [
+      {
+        "key": "max_task_duration",
+        "label_ar": "الحد الأقصى لمدة المهمة",
+        "is_active": true,
+        "mode": null,
+        "constraints": {
+          "max_hours": 8
+        }
+      },
+      {
+        "key": "max_scheduled_date_offset",
+        "label_ar": "الحد الأقصى لتاريخ المهمة",
+        "is_active": true,
+        "mode": "max_task_date",
+        "constraints": {
+          "max_days": 30
+        }
+      },
+      {
+        "key": "inside_custom_locations",
+        "label_ar": "موقع المهمة داخل المناطق المخصصة",
+        "is_active": true,
+        "mode": null,
+        "constraints": {
+          "polygons": [
+            [
+              {"lat": 24.7136, "lng": 46.6753},
+              {"lat": 24.7140, "lng": 46.6760},
+              {"lat": 24.7130, "lng": 46.6765}
+            ]
+          ]
+        }
+      }
+    ]
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `key` | `string` | Condition identifier (same as enum value) |
+| `label_ar` | `string` | Arabic human-readable label |
+| `is_active` | `bool` | Always `true` in this endpoint (inactive conditions are hidden) |
+| `mode` | `string\|null` | Sub-mode of the condition; `null` when the condition has no modes |
+| `constraints` | `object` | Flattened settings relevant to the active mode; empty `{}` when no extra data needed |
+
+**Mode reference:**
+
+| Condition | `mode` values | `constraints` when active |
+|-----------|---------------|---------------------------|
+| `max_task_duration` | `null` | `{ max_hours: int }` |
+| `max_scheduled_date_offset` | `"max_task_date"` \| `"end_contract"` | `{ max_days: int }` (only when `mode = max_task_date`) |
+| `inside_custom_locations` | `null` | `{ polygons: array[] }` |
+| `has_task_duration` | `null` | `{ required: true }` |
+| `max_duration_hours` | `null` | `{ max_hours: int }` |
+| `max_attachments` | `null` | `{ max_count: int }` |
+
+**Mobile behaviour:**
+- Render each condition as a hint / constraint inside the form:
+  - `max_task_duration` → show "Max hours: 8" next to duration field, validate client-side
+  - `inside_custom_locations` → draw polygons on map, validate task pin is inside one
+  - `max_scheduled_date_offset` + `mode: max_task_date` → disable dates beyond `max_days` in date picker
+  - `max_scheduled_date_offset` + `mode: end_contract` → show hint "Date must be before contract end"
+
+---
+
+## 10. Adding New Condition Types
 
 ### Step 1 — Add enum case
 ```php

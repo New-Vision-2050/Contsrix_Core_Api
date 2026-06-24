@@ -29,6 +29,7 @@ use Modules\EmployeeTask\Services\EmployeeTaskAvailableActionsService;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
+use Modules\EmployeeTask\Services\EmployeeTaskFormConditionService;
 use Modules\EmployeeTask\Services\EmployeeTaskProceduresService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
@@ -45,6 +46,7 @@ class EmployeeTaskController extends Controller
         private readonly EmployeeTaskApprovalService          $approvalService,
         private readonly EmployeeTaskAvailableActionsService  $availableActionsService,
         private readonly EmployeeTaskProceduresService        $proceduresService,
+        private readonly EmployeeTaskFormConditionService     $conditionService,
     ) {}
 
     public function index(): JsonResponse
@@ -131,6 +133,49 @@ class EmployeeTaskController extends Controller
             'projects' => $projects,
             'duration' => $duration,
         ], message: 'Filter metadata retrieved successfully');
+    }
+
+    public function preConditions(): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        $user->load('userProfessionalData');
+
+        $companyId = (string) tenant('id');
+        $branchId = $user->userProfessionalData?->branch_id !== null
+            ? (string) $user->userProfessionalData->branch_id
+            : null;
+
+        $results = $this->conditionService->getPreConditionResults(
+            (string) $user->id,
+            $companyId,
+            $branchId,
+            request()->input('current_latitude') !== null ? (float) request()->input('current_latitude') : null,
+            request()->input('current_longitude') !== null ? (float) request()->input('current_longitude') : null,
+        );
+
+        return Json::item([
+            'all_passed' => $results['all_passed'],
+            'conditions' => $results['conditions'],
+        ], message: 'Preconditions retrieved successfully');
+    }
+
+    public function inFormConditions(): JsonResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        $user->load('userProfessionalData');
+
+        $companyId = (string) tenant('id');
+        $branchId = $user->userProfessionalData?->branch_id !== null
+            ? (string) $user->userProfessionalData->branch_id
+            : null;
+
+        $conditions = $this->conditionService->getInFormConditionsPreview($companyId, $branchId);
+
+        return Json::item([
+            'conditions' => $conditions,
+        ], message: 'In-form conditions retrieved successfully');
     }
 
     public function store(CreateEmployeeTaskRequest $request): JsonResponse

@@ -16,6 +16,8 @@ Route::prefix('employee-tasks')->group(function () {
     Route::get('/items',              [EmployeeTaskTypeController::class, 'getItems']);
 
     Route::get('/filters',       [EmployeeTaskController::class, 'filters']);
+    Route::get('/pre-conditions', [EmployeeTaskController::class, 'preConditions']);
+    Route::get('/in-form-conditions', [EmployeeTaskController::class, 'inFormConditions']);
     Route::post('/',             [EmployeeTaskController::class, 'store']);
     Route::get('/{id}', [EmployeeTaskController::class, 'show']);
 
