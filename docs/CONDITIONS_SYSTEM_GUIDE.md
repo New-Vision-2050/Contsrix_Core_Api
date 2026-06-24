@@ -193,9 +193,16 @@ Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=createTa
 
 ## 4. Available Conditions (startTask / endTask)
 
-> **No conditions are defined for `startTask` or `endTask`.**  
-> `GET /api/v1/admin/procedure-settings/forms-conditions?type=startTask` returns an empty `data` array.  
-> The check methods `checkStartTaskConditions()` and `checkEndTaskConditions()` are no-ops.
+### `startTask`
+
+| Condition | Category | Form Group | Label (AR) | Settings Schema | Evaluation |
+|-----------|----------|------------|------------|-----------------|------------|
+| `allow_on_holidays` | `shift` | `precondition` | مسموح في العطلات | — (bool) | If `is_active=false`, starting a task on a holiday throws `notAllowedOnHolidays` (422). |
+
+### `endTask`
+
+> **No conditions are defined for `endTask`.**  
+> `checkEndTaskConditions()` is a no-op.
 
 ---
 
@@ -433,19 +440,30 @@ Include `conditions` as a JSON array. **Both forms (`createTask` and `startTask`
 
 ---
 
-## 6. Backend Evaluation Flow (EmployeeTask — startTask / endTask)
+## 6. Backend Evaluation Flow (EmployeeTask — startTask)
 
 ```
 EmployeeTaskController::start()
-  └── EmployeeTaskFormConditionService::checkStartTaskConditions(...)  ← no-op, returns immediately
+  └── EmployeeTaskFormConditionService::checkStartTaskConditions($task, $user, $latitude, $longitude)
+        ├── resolveConditions('startTask', companyId, branchId)
+        │     returns ProcedureSetting|null
+        ├── indexConditions($conditions)
+        │
+        └── evaluateHolidayCondition($map, $userId)
+              if today is a holiday AND allow_on_holidays is inactive
+              → throws notAllowedOnHolidays (422)
+```
 
+## 7. Backend Evaluation Flow (EmployeeTask — endTask)
+
+```
 EmployeeTaskLifecycleService::end()
   └── EmployeeTaskFormConditionService::checkEndTaskConditions(...)    ← no-op, returns immediately
 ```
 
 ---
 
-## 7. Backend Evaluation Flow (EmployeeTask — createTask)
+## 8. Backend Evaluation Flow (EmployeeTask — createTask)
 
 ```
 EmployeeTaskRequestService::create()
@@ -507,7 +525,7 @@ EmployeeTaskRequestService::create()
 
 ---
 
-## 8. Precondition Check API (Mobile)
+## 9. Precondition Check API (Mobile)
 
 Before opening the create-task form, the mobile app should call:
 
@@ -565,7 +583,7 @@ Authorization: Bearer <token>
 
 ---
 
-## 9. In-Form Conditions Preview API (Mobile)
+## 10. In-Form Conditions Preview API (Mobile)
 
 After preconditions pass, the mobile app should call this to know what in-form constraints to display inside the create-task form:
 
@@ -647,7 +665,7 @@ Authorization: Bearer <token>
 
 ---
 
-## 10. Adding New Condition Types
+## 11. Adding New Condition Types
 
 ### Step 1 — Add enum case
 ```php
@@ -719,21 +737,19 @@ public static function yourConditionFailed(): self
 
 ---
 
-## 9. Files Changed in This Feature
+## 12. Files Changed in This Feature
 
 | File | Change |
 |------|--------|
 | `modules/Shared/InternalProcessType/Enums/InternalProcessConditionCategory.php` | **New** — category enum (time, location, attendance, task_status, open_task, shift, duration, attachment) |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessConditionType.php` | Added `Time = 'time'` case |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | Added `formGroup()`, `formGroupLabelAr()`, updated `toDefinition()` to emit `form_group` + `form_group_label_ar`; `category()` and `settingsSchema()` updated for location-based `allow_outside_shift` |
-| `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | Updated `startTask` conditions to use 5 new rich cases |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | `CreateTask` conditions expanded with 5 new rich cases; `StartTask` conditions now include `AllowOnHolidays`; `EndTask` conditions → `[]` |
 | `modules/ProcedureSetting/Controllers/InternalProcedureSettingController.php` | Added `formsConditions()` method |
 | `modules/ProcedureSetting/Resources/routes/api.php` | Added `GET /forms-conditions` route |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessConditionType.php` | Added `Select = 'select'` case |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | Added `settingsSchema()` for `AllowDuringShift` (mode selector + visible_when time fields) |
-| `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | `StartTask` and `EndTask` conditions → `[]` |
-| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `assertShiftConditions()` no longer evaluates `allow_outside_shift`; new `assertLocationConditions()` performs GPS check against attendance-constraint locations; `checkCreateTaskConditions` accepts `$currentLatitude` / `$currentLongitude` |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `assertShiftConditions()` no longer evaluates `allow_outside_shift`; new `assertLocationConditions()` performs GPS check against attendance-constraint locations; `checkCreateTaskConditions` accepts `$currentLatitude` / `$currentLongitude`; `checkStartTaskConditions` now evaluates `AllowOnHolidays`; `indexConditions()` helper for dual-format support |
 | `modules/ProcedureSetting/Requests/CreateInternalProcedureSettingRequest.php` | Removed old `prepareForValidation()` normalization; `validationRulesForForm()` now validates rich array format |
 | `modules/ProcedureSetting/Requests/UpdateInternalProcedureSettingRequest.php` | Same as above |
 | `modules/EmployeeTask/Exceptions/EmployeeTaskException.php` | Added `outsideShiftTimeWindow`, `employeeHasNoAttendance`, `taskNotApproved`, `hasOtherOpenTask` |
-| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | Full rewrite — evaluates new rich conditions, `indexConditions()` helper for dual-format support, new private assertion methods |

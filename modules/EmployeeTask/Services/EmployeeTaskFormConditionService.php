@@ -12,6 +12,7 @@ use Modules\EmployeeTask\Support\GeoDistance;
 use Modules\EmployeeTask\Support\GeoPolygon;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
+use Modules\ProcedureSetting\Services\WorkflowEngine;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
@@ -37,6 +38,7 @@ final class EmployeeTaskFormConditionService
     public function __construct(
         private readonly AttendanceConstraintService $attendanceConstraintService,
         private readonly ProcedureWorkflowService     $workflow,
+        private readonly WorkflowEngine               $engine,
     ) {}
 
     // ─── Public API ──────────────────────────────────────────────────────────
@@ -280,14 +282,39 @@ final class EmployeeTaskFormConditionService
     }
 
     /**
-     * No conditions are configured for startTask.
+     * Check startTask conditions:
+     *   - holiday gating (AllowOnHolidays)
+     *
+     * @throws EmployeeTaskException
      */
     public function checkStartTaskConditions(
         EmployeeTaskRequest $task,
         User                $user,
         float               $latitude,
         float               $longitude,
-    ): void {}
+    ): void {
+        $companyId = (string) tenant('id');
+        $branchId = $user->userProfessionalData?->branch_id !== null
+            ? (string) $user->userProfessionalData->branch_id
+            : null;
+
+        $conditions = $this->resolveConditions(
+            InternalProcessForm::StartTask->value,
+            $companyId,
+            $branchId,
+        );
+
+        if ($conditions === null) {
+            return;
+        }
+
+        $map = $this->indexConditions($conditions);
+
+        $holidayResult = $this->evaluateHolidayCondition($map, (string) $user->id);
+        if ($holidayResult !== null && ! $holidayResult['passed']) {
+            throw EmployeeTaskException::notAllowedOnHolidays();
+        }
+    }
 
     /**
      * No conditions are configured for endTask.
@@ -303,18 +330,24 @@ final class EmployeeTaskFormConditionService
     /**
      * Resolve stored conditions from the matching child ProcedureSetting.
      * Returns null when no setting or conditions are empty → check passes silently.
+     *
+     * NOTE: Uses WorkflowEngine::resolveSettingsForEntry directly instead of
+     * ProcedureWorkflowService::resolveInternalProcedureSettingByForm because
+     * the latter returns null when steps are empty, even if conditions exist.
      */
     private function resolveConditions(
         string  $formKey,
         string  $companyId,
         ?string $branchId,
     ): ?array {
-        $setting = $this->workflow->resolveInternalProcedureSettingByForm(
+        $settings = $this->engine->resolveSettingsForEntry(
             ProcedureSettingType::EmployeeTask->value,
             $formKey,
             $companyId,
             $branchId,
         );
+
+        $setting = $settings->first();
 
         if ($setting === null || empty($setting->conditions)) {
             return null;
