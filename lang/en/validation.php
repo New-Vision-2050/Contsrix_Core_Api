@@ -562,7 +562,8 @@ return [
         'holiday'=>'holiday',
         'day_off_or_weekend'=> 'day off or weekend',
         'in_location'=>'in loction',
-        'clocked_out'=> 'clocked out'
+        'clocked_out'=> 'clocked out',
+        'absent'=> 'absent',
     ],
 
     'unique_translation' => 'The :locale :attribute has already been taken.',
