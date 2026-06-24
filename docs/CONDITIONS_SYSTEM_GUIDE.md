@@ -162,7 +162,7 @@ Returned by `GET /api/v1/admin/procedure-settings/forms-conditions?type=createTa
 | `max_hours` | `int` | الحد الأقصى للمدة (ساعة) | `8` |
 
 ### `max_scheduled_date_offset`
-- **Category**: `time` (وقت)
+- **Category**: `calendar` (تقويم)
 - **Label**: الحد الأقصى لتاريخ المهمة
 - **Form group**: `in_form`
 - **Evaluation**: Controlled by `settings.mode`:

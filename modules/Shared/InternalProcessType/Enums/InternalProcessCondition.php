@@ -74,8 +74,8 @@ enum InternalProcessCondition: string
     public function category(): InternalProcessConditionCategory
     {
         return match ($this) {
-            self::InsideShiftTime,
-            self::MaxScheduledDateOffset                     => InternalProcessConditionCategory::Time,
+            self::InsideShiftTime                             => InternalProcessConditionCategory::Time,
+            self::MaxScheduledDateOffset                     => InternalProcessConditionCategory::Calendar,
             self::InsideTaskLocation,
             self::MustBeInLocation,
             self::AllowOutsideShift,
