@@ -213,6 +213,8 @@ Backend enforcer for `InternalProcessForm` conditions. Called before workflow st
 | Method | Returns | Parameters | Called By |
 |--------|---------|-----------|-----------|
 | `checkCreateTaskConditions($userId, $companyId, $branchId, $durationHours, $taskDate, $taskLatitude, $taskLongitude, $currentLatitude, $currentLongitude)` | `void` | `string`, `string`, `?string`, `float`, `string`, `float`, `float`, `?float`, `?float` | `EmployeeTaskRequestService::create()` |
+| `getPreConditionResults($userId, $companyId, $branchId, $currentLatitude, $currentLongitude)` | `array{all_passed: bool, conditions: array}` | `string`, `string`, `?string`, `?float`, `?float` | `EmployeeTaskController::preConditions()` |
+| `getInFormConditionsPreview($companyId, $branchId)` | `list<array{key: string, label_ar: string, is_active: true, mode: ?string, constraints: array}>` | `string`, `?string` | `EmployeeTaskController::inFormConditions()` |
 | `checkEndTaskConditions($task, $latitude, $longitude)` | `void` | `EmployeeTaskRequest`, `float`, `float` | `EmployeeTaskLifecycleService::end()` |
 
 **Internal flow:**
@@ -2860,5 +2862,7 @@ New `InternalProcessCondition::InsideCustomLocations` allows admins to define cu
 | `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | Added `InsideCustomLocations` to `CreateTask` conditions list |
 | `modules/EmployeeTask/Support/GeoPolygon.php` | **New** — ray-casting point-in-polygon algorithm |
 | `modules/EmployeeTask/Exceptions/EmployeeTaskException.php` | Added `outsideCustomLocations()` |
-| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `checkCreateTaskConditions()` now accepts `$taskLatitude` / `$taskLongitude`; new `assertCustomLocationConditions()` method |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | `checkCreateTaskConditions()` now accepts `$taskLatitude` / `$taskLongitude`; new `assertCustomLocationConditions()` method; new `getPreConditionResults()` method for mobile precondition check API; new `getInFormConditionsPreview()` method for mobile in-form constraints preview |
 | `modules/EmployeeTask/Services/EmployeeTaskRequestService.php` | Passes `$taskLatitude` / `$taskLongitude` from DTO to condition service |
+| `modules/EmployeeTask/Controllers/EmployeeTaskController.php` | Added `preConditions()` method for `GET /employee-tasks/pre-conditions`; added `inFormConditions()` method for `GET /employee-tasks/in-form-conditions` |
+| `modules/EmployeeTask/Routes/employee_tasks.php` | Added `GET /pre-conditions` and `GET /in-form-conditions` routes |
