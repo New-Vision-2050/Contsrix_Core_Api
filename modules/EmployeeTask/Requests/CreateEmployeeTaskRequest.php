@@ -28,6 +28,8 @@ class CreateEmployeeTaskRequest extends FormRequest
             'task_date'                 => ['required', 'date_format:Y-m-d'],
             'task_latitude'             => ['required', 'numeric', 'between:-90,90'],
             'task_longitude'            => ['required', 'numeric', 'between:-180,180'],
+            'current_latitude'            => ['nullable', 'numeric', 'between:-90,90'],
+            'current_longitude'           => ['nullable', 'numeric', 'between:-180,180'],
             'notes'                     => ['nullable', 'string'],
             'files'                     => ['nullable', 'array'],
             'files.*'                   => ['file', 'max:20480'],

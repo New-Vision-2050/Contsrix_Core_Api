@@ -54,6 +54,8 @@ class EmployeeTaskRequestService
             $branchId,
             $dto->durationHours,
             $dto->taskDate,
+            $dto->currentLatitude,
+            $dto->currentLongitude,
         );
         $preview = $this->engine->previewResponsibles(
             $procedureType,

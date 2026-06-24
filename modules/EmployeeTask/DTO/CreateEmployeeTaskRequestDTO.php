@@ -16,6 +16,8 @@ final class CreateEmployeeTaskRequestDTO
         public readonly string  $taskDate,
         public readonly float   $taskLatitude,
         public readonly float   $taskLongitude,
+        public readonly ?float  $currentLatitude          = null,
+        public readonly ?float  $currentLongitude         = null,
         public readonly ?string $description              = null,
         public readonly ?string $projectId                = null,
         public readonly ?string $approvalResponsibleId    = null,
