@@ -426,20 +426,15 @@ final class EmployeeTaskFormConditionService
      */
     private function evaluateHolidayCondition(array $map, string $userId): ?array
     {
-        $user = User::query()
-            ->with([
-                'professionalData.attendanceConstraint',
-                'userProfessionalData.branch',
-                'userProfessionalData.department',
-            ])
-            ->find($userId);
+        $user = $this->loadUserWithBranchTimezone($userId);
 
         if ($user === null) {
             return null;
         }
 
-        $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user);
-        $isHoliday = (bool) ($workRules['is_holiday'] ?? false);
+        $timezone   = $this->resolveBranchTimezone($user);
+        $workRules  = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user, null, $timezone);
+        $isHoliday  = (bool) ($workRules['is_holiday'] ?? false);
 
         if (! $isHoliday) {
             return null; // not a holiday → no holiday check needed
@@ -473,13 +468,15 @@ final class EmployeeTaskFormConditionService
      */
     private function isCurrentlyInAnyWorkPeriod(array $periods): bool
     {
-        $now = Carbon::now();
         foreach ($periods as $period) {
             $start = $period['period_start_time_carbon'] ?? null;
             $end   = $period['period_end_time_carbon'] ?? null;
 
-            if ($start instanceof Carbon && $end instanceof Carbon && $now->between($start, $end, true)) {
-                return true;
+            if ($start instanceof Carbon && $end instanceof Carbon) {
+                $now = Carbon::now($start->getTimezone());
+                if ($now->between($start, $end, true)) {
+                    return true;
+                }
             }
         }
 
@@ -510,13 +507,20 @@ final class EmployeeTaskFormConditionService
 
         $mode = $duringShiftCond['settings']['mode'] ?? 'shift';
 
+        // Load user once for both modes (timezone resolution + attendance constraints)
+        $user = $this->loadUserWithBranchTimezone($userId);
+        if ($user === null) {
+            return null;
+        }
+        $timezone = $this->resolveBranchTimezone($user);
+
         // specific_time mode
         if ($mode === 'specific_time') {
             $startTime = $duringShiftCond['settings']['start_time'] ?? '00:00';
             $endTime   = $duringShiftCond['settings']['end_time']   ?? '23:59';
-            $now       = Carbon::now();
-            $start     = Carbon::parse($startTime);
-            $end       = Carbon::parse($endTime);
+            $now       = Carbon::now($timezone);
+            $start     = Carbon::parse($startTime, $timezone)->setDateFrom($now);
+            $end       = Carbon::parse($endTime, $timezone)->setDateFrom($now);
             $inWindow  = ! ($now->lt($start) || $now->gt($end));
 
             if ($inWindow) {
@@ -539,20 +543,8 @@ final class EmployeeTaskFormConditionService
         }
 
         // shift mode (default): use attendance constraint system
-        $user = User::query()
-            ->with([
-                'professionalData.attendanceConstraint',
-                'userProfessionalData.branch',
-                'userProfessionalData.department',
-            ])
-            ->find($userId);
-
-        if ($user === null) {
-            return null;
-        }
-
-        $workRules     = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user);
-        $isHoliday     = (bool) ($workRules['is_holiday'] ?? false);
+        $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user, null, $timezone);
+        $isHoliday = (bool) ($workRules['is_holiday'] ?? false);
 
         if ($isHoliday) {
             return null; // holiday logic handled by evaluateHolidayCondition
@@ -630,18 +622,14 @@ final class EmployeeTaskFormConditionService
             ];
         }
 
-        $user = User::query()
-            ->with([
-                'professionalData.attendanceConstraint',
-                'userProfessionalData.branch',
-            ])
-            ->find($userId);
+        $user = $this->loadUserWithBranchTimezone($userId);
 
         if ($user === null) {
             return null;
         }
 
-        $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user);
+        $timezone  = $this->resolveBranchTimezone($user);
+        $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user, null, $timezone);
         $mainLocation = $workRules['location_work'] ?? null;
         $additionalLocations = $workRules['additional_locations'] ?? [];
 
@@ -803,6 +791,40 @@ final class EmployeeTaskFormConditionService
         if (! GeoPolygon::isPointInAnyPolygon($taskLatitude, $taskLongitude, $polygons)) {
             throw EmployeeTaskException::outsideCustomLocations();
         }
+    }
+
+    /**
+     * Load the target user with all relations needed for attendance constraint
+     * resolution, including the branch → address → country → timezones chain
+     * so we can resolve the user's branch timezone without a second query.
+     */
+    private function loadUserWithBranchTimezone(string $userId): ?User
+    {
+        return User::query()
+            ->with([
+                'professionalData.attendanceConstraint',
+                'userProfessionalData.branch',
+                'userProfessionalData.branch.address.country.timezones',
+                'userProfessionalData.department',
+            ])
+            ->find($userId);
+    }
+
+    /**
+     * Resolve the timezone from the target user's branch, mirroring
+     * UserAttendanceService::timezoneFromUserBranch(). Falls back to
+     * the request timezone helper, then the app default.
+     */
+    private function resolveBranchTimezone(?User $user): string
+    {
+        if ($user !== null) {
+            $timezones = $user->userProfessionalData?->branch?->address?->country?->timezones;
+            if (is_array($timezones) && isset($timezones[0]['zoneName']) && is_string($timezones[0]['zoneName'])) {
+                return $timezones[0]['zoneName'];
+            }
+        }
+
+        return getTimeZoneBranchByRequest() ?? config('app.timezone');
     }
 
 }
