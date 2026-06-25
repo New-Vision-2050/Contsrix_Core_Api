@@ -137,6 +137,7 @@ components:
         leave_balance_used: { type: integer }
         remaining_leave_balance: { type: integer }
         actual_worked_hours: { type: number }
+        calculated_hours: { type: number, description: 'Worked hours minus early clock-in period (work-law hours)' }
         remaining_hours: { type: number }
         delays: { type: integer }
         overtime: { type: number }

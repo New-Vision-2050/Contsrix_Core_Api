@@ -100,6 +100,12 @@ Implementation class: `Modules\Attendance\Services\AttendanceReportCalculator`
 ### actual_attendance_days / actual_worked_hours
 - Same present-day and hour sums as dashboard but scoped to month
 
+### calculated_hours
+- **Definition:** Worked hours excluding early clock-in period (work-law hours).
+- **Source:** `attendances.total_work_hours`, `attendances.clock_in_time`, `attendances.start_time`
+- **Formula:** `SUM(total_work_hours) − SUM(early_clock_in_minutes) / 60` where `early_clock_in_minutes = GREATEST(0, TIMESTAMPDIFF(MINUTE, clock_in_time, start_time))` when `clock_in_time < start_time`, else 0.
+- **Example:** If an employee worked 8.5h but clocked in 30 min early, `calculated_hours = 8.0`.
+
 ### remaining_attendance_days
 - **Formula:** `required_attendance_days − actual_attendance_days` (min 0)
 

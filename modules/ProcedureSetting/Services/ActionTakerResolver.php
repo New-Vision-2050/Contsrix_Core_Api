@@ -151,6 +151,7 @@ class ActionTakerResolver
             $projectId = $context['project_id'] ?? null;
             if ($projectId !== null) {
                 $project = \Modules\Project\ProjectManagement\Models\ProjectManagement::query()
+                    ->withoutGlobalScopes()
                     ->find($projectId);
                 if ($project !== null && $project->manager_id !== null) {
                     return (string) $project->manager_id;
@@ -416,6 +417,7 @@ class ActionTakerResolver
                     $projectId = $context['project_id'] ?? null;
                     if ($projectId !== null) {
                         $project = \Modules\Project\ProjectManagement\Models\ProjectManagement::query()
+                            ->withoutGlobalScopes()
                             ->find($projectId);
                         if ($project !== null && $project->manager_id !== null) {
                             return (string) $project->manager_id;
@@ -486,6 +488,7 @@ class ActionTakerResolver
 
         if ($projectId !== null) {
             $project = \Modules\Project\ProjectManagement\Models\ProjectManagement::query()
+                ->withoutGlobalScopes()
                 ->find($projectId);
 
             if ($project !== null && $project->manager_id !== null) {

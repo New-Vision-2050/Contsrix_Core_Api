@@ -108,6 +108,7 @@ final class ReportEnums
     public const ATT_COL_DELAY        = 'delay';
     public const ATT_COL_OVERTIME     = 'overtime';
     public const ATT_COL_TOTAL_HOURS  = 'total_hours';
+    public const ATT_COL_CALCULATED_HOURS = 'calculated_hours';
 
     public const ATT_PATTERN_ALL                = 'all';
     public const ATT_PATTERN_ABSENTEES_ONLY     = 'absentees_only';
@@ -281,6 +282,7 @@ final class ReportEnums
             self::ATT_COL_DELAY,
             self::ATT_COL_OVERTIME,
             self::ATT_COL_TOTAL_HOURS,
+            self::ATT_COL_CALCULATED_HOURS,
         ];
     }
 

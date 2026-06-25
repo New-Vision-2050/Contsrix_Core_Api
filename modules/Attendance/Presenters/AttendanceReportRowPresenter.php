@@ -28,6 +28,7 @@ class AttendanceReportRowPresenter extends AbstractPresenter
             'leave_balance_used' => (int) ($this->row['leave_balance_used'] ?? 0),
             'remaining_leave_balance' => (int) ($this->row['remaining_leave_balance'] ?? 0),
             'actual_worked_hours' => (float) ($this->row['actual_worked_hours'] ?? 0),
+            'calculated_hours' => (float) ($this->row['calculated_hours'] ?? 0),
             'remaining_hours' => (float) ($this->row['remaining_hours'] ?? 0),
             'delays' => (int) ($this->row['delays'] ?? 0),
             'overtime' => (float) ($this->row['overtime'] ?? 0),
