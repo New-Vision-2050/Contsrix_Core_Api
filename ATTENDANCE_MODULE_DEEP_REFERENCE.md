@@ -465,12 +465,17 @@ public function evaluate(CalculatorInput $input): array   // returns [bool, int]
 
 **Formula:**
 ```
-scheduledMinutes = scheduledStart.diffInMinutes(scheduledEnd)
-overtimeMinutes  = max(0, netWorkMinutes - scheduledMinutes)
-capMinutes       = round(maxOverTimeHours * 60)
-overtime         = min(overtimeMinutes, capMinutes)
-result           = round(overtime / 60, 2)
+scheduledMinutes   = scheduledStart.diffInMinutes(scheduledEnd)
+effectiveClockIn   = max(clockIn, scheduledStart)         // early arrival clamped
+effectiveGross     = effectiveClockIn.diffInMinutes(clockOut)
+effectiveNet       = max(0, effectiveGross - totalBreakMinutes)
+overtimeMinutes    = max(0, effectiveNet - scheduledMinutes)
+capMinutes         = round(maxOverTimeHours * 60)
+overtime           = min(overtimeMinutes, capMinutes)
+result             = round(overtime / 60, 2)
 ```
+
+Early clock-in time (before `scheduledStart`) does NOT count toward overtime. Only time worked after `scheduledEnd` produces overtime.
 
 If `maxOverTimeHours == 0` → cap is 0 → no overtime recorded.
 
