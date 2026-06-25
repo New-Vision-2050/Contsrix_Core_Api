@@ -21,7 +21,7 @@ class CreateEmployeeTaskRequest extends FormRequest
             'employee_task_type_id'     => ['nullable', 'string', 'exists:employee_task_types,id'],
             'item_type'                 => ['nullable', 'string', 'max:255'  , 'exists:employee_task_items,key'],
             'item_id'                   => ['nullable', 'uuid'],
-            'project_id'                => ['nullable', 'uuid'],
+            'project_id'                => ['nullable', 'uuid','exists:projects,id'],
             'approval_responsible_id'   => ['nullable', 'uuid'],
             'assignment_responsible_id' => ['nullable', 'uuid'],
             'duration_hours'            => ['required', 'numeric', 'min:0.25', 'max:24'],
