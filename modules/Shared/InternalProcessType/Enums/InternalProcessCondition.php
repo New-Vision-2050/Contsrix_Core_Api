@@ -267,6 +267,57 @@ enum InternalProcessCondition: string
         return $result;
     }
 
+    /**
+     * Generate a preview array for in-form display from stored settings.
+     *
+     * Automatically:
+     *   - extracts 'mode' if a mode field exists in the schema
+     *   - fills in defaults from settingsSchema() for missing keys
+     *   - respects visible_when filters (only includes fields relevant to the active mode)
+     *   - passes through raw settings when schema is empty (legacy conditions)
+     *
+     * @return array{mode: ?string, constraints: array<string, mixed>}
+     */
+    public function toPreview(array $settings): array
+    {
+        $schema = $this->settingsSchema();
+
+        // ── Extract mode (any schema field with key='mode') ───────────────
+        $mode = null;
+        foreach ($schema as $field) {
+            if (($field['key'] ?? null) === 'mode') {
+                $mode = $settings['mode'] ?? $field['default'] ?? null;
+                break;
+            }
+        }
+
+        // ── Build constraints from schema (excluding mode itself) ─────────
+        $constraints = [];
+        foreach ($schema as $field) {
+            $key = $field['key'] ?? null;
+            if ($key === null || $key === 'mode') {
+                continue;
+            }
+
+            // Skip fields that are conditionally visible for a different mode
+            if (isset($field['visible_when']) && ($field['visible_when']['value'] ?? null) !== $mode) {
+                continue;
+            }
+
+            $constraints[$key] = $settings[$key] ?? $field['default'] ?? null;
+        }
+
+        // ── Legacy conditions with no schema: pass through raw settings ───
+        if ($schema === [] && $settings !== []) {
+            $constraints = $settings;
+        }
+
+        return [
+            'mode'        => $mode,
+            'constraints' => $constraints,
+        ];
+    }
+
     /** @return list<string> */
     public static function storageKeys(): array
     {

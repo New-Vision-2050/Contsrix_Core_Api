@@ -2,7 +2,9 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-24 — Added `InsideCustomLocations` condition with `map_polygons` settings schema for custom polygon areas on task creation. See §3, §28, §31.
+> **Last updated:** 2026-06-25 — Condition evaluation refactored to registry-driven dispatch (Open/Closed Principle). Each condition now has a dedicated `ConditionEvaluator` class; new conditions are added without modifying `EmployeeTaskFormConditionService`. See §34. Full guide: `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md`.
+>
+> **Previous:** 2026-06-24 — Added `InsideCustomLocations` condition with `map_polygons` settings schema for custom polygon areas on task creation. See §3, §28, §31.
 >
 > **Previous:** 2026-06-22 — `action_taker_management_hierarchies` refactor: new JSON array of `{action_taker_management_hierarchy_type, is_Deputy_Director}` objects replaces deprecated single `action_taker_management_hierarchy_type` + `action_taker_alternative_management_hierarchy_type` fields. `deputy_manager` type replaced by `is_Deputy_Director` boolean flag. `ActionTakerResolver` updated to iterate array rows, skip unresolvable types (e.g. `project_manager` without `project_id`), and merge manager + deputy users. See §5.1, §32.
 
@@ -2333,12 +2335,16 @@ The task's `user.userProfessionalData` is lazy-loaded inside the service to reso
 
 ### 28.6 How to Add a New Condition
 
+> **Updated 2026-06-25:** The condition system now uses a registry-driven evaluator pattern. See §34 for full details.
+
 1. Add enum case to `InternalProcessCondition` (with `category()`, `labelAr()`, `settingsSchema()`).
 2. Register it in `InternalProcessForm::conditions()` for the target form.
-3. Add a private `assert*()` method in `EmployeeTaskFormConditionService`.
-4. Dispatch it from the appropriate `check*Conditions()` block (only when `is_active = true`).
-5. Add an `EmployeeTaskException::yourError()` factory.
-6. See `docs/CONDITIONS_SYSTEM_GUIDE.md` for the full extension recipe.
+3. Add an `EmployeeTaskException::yourError()` factory.
+4. Create a new evaluator class implementing `ConditionEvaluator` in `modules/EmployeeTask/Conditions/`.
+5. Register the evaluator in `EmployeeTaskServiceProvider` (add to the `ConditionEvaluatorRegistry` constructor + singleton).
+6. Add an exception case to `throwFromResult()` in `EmployeeTaskFormConditionService`.
+7. **No changes** to `checkCreateTaskConditions()`, `evaluateAndThrow()`, or `getPreConditionResults()`.
+8. See `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md` for the full step-by-step recipe.
 
 ---
 
@@ -2866,3 +2872,106 @@ New `InternalProcessCondition::InsideCustomLocations` allows admins to define cu
 | `modules/EmployeeTask/Controllers/EmployeeTaskController.php` | Added `preConditions()` method for `GET /employee-tasks/pre-conditions`; added `inFormConditions()` method for `GET /employee-tasks/in-form-conditions` |
 | `modules/EmployeeTask/Routes/employee_tasks.php` | Added `GET /pre-conditions` and `GET /in-form-conditions` routes |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php` | `StartTask` conditions now include `AllowOnHolidays` |
+
+---
+
+## 34. Registry-Driven Condition Evaluation (2026-06-25)
+
+> **Full implementation guide:** `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md`
+
+### 34.1 Problem
+
+The old `EmployeeTaskFormConditionService` had hard-coded `if`/`assert*()` calls for each condition:
+
+```php
+$this->assertShiftConditions($map, $userId);
+$this->assertLocationConditions($map, $userId, $lat, $lng);
+$this->assertCustomLocationConditions($map, $taskLat, $taskLng);
+
+$maxDurationCond = $map[InternalProcessCondition::MaxTaskDuration->value] ?? null;
+if ($maxDurationCond && ($maxDurationCond['is_active'] ?? false)) {
+    $this->assertMaxTaskDuration($durationHours, $maxDurationCond['settings'] ?? []);
+}
+// ... repeat for each condition
+```
+
+Adding a new condition required modifying `checkCreateTaskConditions()`, adding a new `assert*()` method, and wiring it into the flow. This violates the Open/Closed Principle.
+
+### 34.2 Solution: Strategy + Registry Pattern
+
+Each condition is now handled by a dedicated **evaluator class** implementing the `ConditionEvaluator` interface. A **registry** maps condition enum values to their evaluators. The service dispatches dynamically — it never hard-codes which conditions to check.
+
+### 34.3 Architecture
+
+```
+EmployeeTaskFormConditionService::checkCreateTaskConditions()
+      │
+      ├── resolveConditionMap()  →  loads + normalizes conditions from DB
+      ├── builds ConditionContext  →  carries all request data
+      └── evaluateAndThrow($map, $ctx)
+              │
+              foreach condition in map:
+                  ├── registry->get($condEnum)  →  find evaluator
+                  ├── evaluator->evaluate($condData, $ctx)  →  ?ConditionResult
+                  └── if result->passed === false → throwFromResult($result)
+```
+
+### 34.4 Core Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `ConditionEvaluator` (interface) | `Conditions/ConditionEvaluator.php` | Strategy contract: `condition()` + `evaluate()` |
+| `ConditionContext` (DTO) | `Conditions/ConditionContext.php` | Immutable data bag (userId, coordinates, duration, taskDate, etc.) |
+| `ConditionResult` (DTO) | `Conditions/ConditionResult.php` | Evaluation output (key, labelAr, passed, message, exception, context) |
+| `ConditionEvaluatorRegistry` | `Conditions/ConditionEvaluatorRegistry.php` | Maps `InternalProcessCondition` → evaluator; provides `get()` and `forFormGroup()` |
+| `ResolvesUserAttendance` (trait) | `Conditions/ResolvesUserAttendance.php` | Shared user loading + timezone resolution for attendance-based evaluators |
+
+### 34.5 Registered Evaluators
+
+| Evaluator | Condition | Form Group | Exception Key |
+|-----------|-----------|------------|---------------|
+| `AllowDuringShiftEvaluator` | `allow_during_shift` | precondition | `notAllowedDuringShift` / `outsideShiftTimeWindow` |
+| `AllowOnHolidaysEvaluator` | `allow_on_holidays` | precondition | `notAllowedOnHolidays` |
+| `AllowOutsideShiftEvaluator` | `allow_outside_shift` | precondition | `notAllowedOutsideLocation` |
+| `InsideCustomLocationsEvaluator` | `inside_custom_locations` | in_form | `outsideCustomLocations` |
+| `MaxTaskDurationEvaluator` | `max_task_duration` | in_form | `taskDurationExceedsLimit` |
+| `MaxScheduledDateOffsetEvaluator` | `max_scheduled_date_offset` | in_form | `taskDateTooFarInFuture` / `taskDateExceedsContractEndDate` |
+
+### 34.6 Exception Mapping
+
+`throwFromResult()` in `EmployeeTaskFormConditionService` maps `ConditionResult::$exception` to `EmployeeTaskException` factories. Evaluators that need parameters (e.g. `maxHours`, `maxDays`) pass them via `ConditionResult::$context`.
+
+### 34.7 How to Add a New Condition (Open/Closed)
+
+1. Add enum case to `InternalProcessCondition` (with `category()`, `labelAr()`, `settingsSchema()`).
+2. Register in `InternalProcessForm::conditions()`.
+3. Add exception factory to `EmployeeTaskException`.
+4. Create evaluator class implementing `ConditionEvaluator` in `modules/EmployeeTask/Conditions/`.
+5. Register evaluator in `EmployeeTaskServiceProvider` (add to registry constructor + singleton).
+6. Add exception case to `throwFromResult()`.
+7. **Zero changes** to `checkCreateTaskConditions()`, `evaluateAndThrow()`, `getPreConditionResults()`, or any existing evaluator.
+
+### 34.8 Backward Compatibility
+
+- The dual-format `indexConditions()` normalizer is preserved — old flat associative conditions still work.
+- Unknown condition keys (no registered evaluator) are silently skipped, preventing breakage during partial deployments.
+- All existing exception types and HTTP 422 responses are preserved.
+
+### 34.9 Files Changed
+
+| File | Change |
+|------|--------|
+| `modules/EmployeeTask/Conditions/ConditionEvaluator.php` | **New** — interface |
+| `modules/EmployeeTask/Conditions/ConditionContext.php` | **New** — DTO |
+| `modules/EmployeeTask/Conditions/ConditionResult.php` | **New** — DTO |
+| `modules/EmployeeTask/Conditions/ConditionEvaluatorRegistry.php` | **New** — registry |
+| `modules/EmployeeTask/Conditions/ResolvesUserAttendance.php` | **New** — shared trait |
+| `modules/EmployeeTask/Conditions/AllowDuringShiftEvaluator.php` | **New** — evaluator |
+| `modules/EmployeeTask/Conditions/AllowOnHolidaysEvaluator.php` | **New** — evaluator |
+| `modules/EmployeeTask/Conditions/AllowOutsideShiftEvaluator.php` | **New** — evaluator |
+| `modules/EmployeeTask/Conditions/InsideCustomLocationsEvaluator.php` | **New** — evaluator |
+| `modules/EmployeeTask/Conditions/MaxTaskDurationEvaluator.php` | **New** — evaluator |
+| `modules/EmployeeTask/Conditions/MaxScheduledDateOffsetEvaluator.php` | **New** — evaluator |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | Replaced scattered `assert*()` calls with `evaluateAndThrow()` dispatch; `getPreConditionResults()` iterates registry; added `resolveConditionMap()`, `evaluateAndThrow()`, `throwFromResult()` |
+| `modules/EmployeeTask/Providers/EmployeeTaskServiceProvider.php` | Registers `ConditionEvaluatorRegistry` + all 6 evaluators as singletons |
+| `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md` | **New** — full implementation guide |
