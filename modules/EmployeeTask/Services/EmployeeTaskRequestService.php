@@ -7,11 +7,13 @@ namespace Modules\EmployeeTask\Services;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Carbon\CarbonImmutable;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Events\EmployeeTaskNotification;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
+use Modules\EmployeeTask\Jobs\AutoRejectStaleTaskJob;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
@@ -42,7 +44,9 @@ class EmployeeTaskRequestService
     {
         $procedureType = ProcedureSettingType::EmployeeTask->value;
         $context = $dto->projectId ? ['project_id' => $dto->projectId] : [];
-        $creator = User::query()->with('userProfessionalData')->find($dto->userId);
+        $creator = User::query()
+            ->with(['userProfessionalData.branch.address.country'])
+            ->find($dto->userId);
         $branchId = $creator?->userProfessionalData?->branch_id !== null
             ? (string) $creator->userProfessionalData->branch_id
             : null;
@@ -89,6 +93,8 @@ class EmployeeTaskRequestService
 
             $this->markCreateTaskProceduresTaken($task, $dto->userId);
 
+            $this->dispatchStaleRejectionJob($task, $creator);
+
             return $task;
         }
 
@@ -111,6 +117,8 @@ class EmployeeTaskRequestService
         // firing WorkflowProcedureTaken). This prevents startTask (or any procedure
         // that appears_after createTask) from appearing before the admin approves.
         $this->createProcessesForTask($task);
+
+        $this->dispatchStaleRejectionJob($task, $creator);
 
         return $task;
     }
@@ -149,6 +157,40 @@ class EmployeeTaskRequestService
                 $userId,
             ));
         }
+    }
+
+    /**
+     * Dispatch a delayed job that fires at midnight (end of task_date)
+     * in the employee's branch timezone. If the task is still pending or
+     * approved at that point, it will be auto-rejected.
+     */
+    private function dispatchStaleRejectionJob(EmployeeTaskRequest $task, ?User $creator): void
+    {
+        $timezone = $this->resolveCreatorTimezone($creator);
+        $taskDate = CarbonImmutable::parse($task->task_date, $timezone);
+        $midnightAfter = $taskDate->endOfDay();
+
+        $now = CarbonImmutable::now($timezone);
+
+        if ($midnightAfter->lessThanOrEqualTo($now)) {
+            return;
+        }
+
+        $delaySeconds = $now->diffInSeconds($midnightAfter);
+
+        AutoRejectStaleTaskJob::dispatch(
+            taskId:    $task->id,
+            companyId: $task->company_id,
+        )->delay($delaySeconds);
+    }
+
+    private function resolveCreatorTimezone(?User $creator): string
+    {
+        $timezones = $creator?->userProfessionalData?->branch?->address?->country?->timezones;
+        if (is_array($timezones) && isset($timezones[0]['zoneName'])) {
+            return $timezones[0]['zoneName'];
+        }
+        return getTimeZoneBranchByRequest() ?? config('app.timezone', 'Asia/Riyadh');
     }
 
     private function createProcessesForTask(EmployeeTaskRequest $task): void

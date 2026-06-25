@@ -7,6 +7,7 @@ namespace Modules\ProcedureSetting\Providers;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\ProcedureSetting\Conditions\ConditionEvaluationService;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Events\WorkflowStepActivated;
 use Modules\ProcedureSetting\Listeners\RecordInternalProcedureTaken;
@@ -30,6 +31,8 @@ class ProcedureSettingServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         $this->registerRoutes();
+
+        $this->app->singleton(ConditionEvaluationService::class);
     }
 
     private function registerEventListeners(): void

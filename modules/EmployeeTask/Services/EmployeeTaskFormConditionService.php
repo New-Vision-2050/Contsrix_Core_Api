@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\EmployeeTask\Services;
 
-use Carbon\Carbon;
-use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\EmployeeTask\Conditions\EmployeeTaskExceptionResolver;
+use Modules\ProcedureSetting\Conditions\ConditionEvaluatorRegistry;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
-use Modules\EmployeeTask\Support\GeoDistance;
-use Modules\EmployeeTask\Support\GeoPolygon;
+use Modules\ProcedureSetting\Conditions\ConditionContext;
+use Modules\ProcedureSetting\Conditions\ConditionEvaluationService;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
-use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\ProcedureSetting\Services\WorkflowEngine;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
@@ -20,35 +19,29 @@ use Modules\User\Models\User;
 /**
  * Evaluates InternalProcessForm conditions stored on child ProcedureSetting records.
  *
+ * Uses a registry-driven dispatch pattern: each condition key is handled by
+ * a dedicated ConditionEvaluator class registered in the service provider.
+ * Adding a new condition = create evaluator class + register it. No changes
+ * to this service are needed (Open/Closed Principle).
+ *
  * Active forms:
  *   createTask — rich-array format with mode-aware AllowDuringShift (shift | specific_time)
- *
- * startTask and endTask have no conditions; their check methods are no-ops.
- *
- * Storage format (createTask):
- *   NEW (rich array):
- *     [{"key": "allow_during_shift", "is_active": true, "sort_order": 1,
- *       "settings": {"mode": "specific_time", "start_time": "08:00", "end_time": "17:00"}}]
- *
- *   OLD (flat associative, backward-compat for existing DB rows):
- *     {"allow_during_shift": true, ...}
+ *   startTask  — holiday gating
+ *   endTask    — no conditions (no-op)
  */
 final class EmployeeTaskFormConditionService
 {
     public function __construct(
-        private readonly AttendanceConstraintService $attendanceConstraintService,
-        private readonly ProcedureWorkflowService     $workflow,
+        private readonly ConditionEvaluatorRegistry   $registry,
+        private readonly ConditionEvaluationService   $evaluationService,
+        private readonly EmployeeTaskExceptionResolver $resolver,
         private readonly WorkflowEngine               $engine,
     ) {}
 
     // ─── Public API ──────────────────────────────────────────────────────────
 
     /**
-     * Check all createTask conditions:
-     *   - shift / holiday gating  (AllowDuringShift / AllowOnHolidays)
-     *   - location gating         (AllowOutsideShift — now location-based)
-     *   - maximum task duration   (MaxTaskDuration)
-     *   - maximum scheduled date  (MaxScheduledDateOffset)
+     * Check all createTask conditions by dispatching to registered evaluators.
      *
      * @throws EmployeeTaskException
      */
@@ -63,40 +56,36 @@ final class EmployeeTaskFormConditionService
         ?float  $currentLatitude = null,
         ?float  $currentLongitude = null,
     ): void {
-        $conditions = $this->resolveConditions(
+        $map = $this->resolveConditionMap(
             InternalProcessForm::CreateTask->value,
             $companyId,
             $branchId,
         );
 
-        if ($conditions === null) {
+        if ($map === null) {
             return;
         }
 
-        $map = $this->indexConditions($conditions);
+        $ctx = new ConditionContext(
+            userId: $userId,
+            companyId: $companyId,
+            branchId: $branchId,
+            currentLatitude: $currentLatitude,
+            currentLongitude: $currentLongitude,
+            taskLatitude: $taskLatitude,
+            taskLongitude: $taskLongitude,
+            durationHours: $durationHours,
+            taskDate: $taskDate,
+        );
 
-        $this->assertShiftConditions($map, $userId);
-        $this->assertLocationConditions($map, $userId, $currentLatitude, $currentLongitude);
-        $this->assertCustomLocationConditions($map, $taskLatitude, $taskLongitude);
-
-        // ── max_task_duration ────────────────────────────────────────────────
-        $maxDurationCond = $map[InternalProcessCondition::MaxTaskDuration->value] ?? null;
-        if ($maxDurationCond && ($maxDurationCond['is_active'] ?? false)) {
-            $this->assertMaxTaskDuration($durationHours, $maxDurationCond['settings'] ?? []);
-        }
-
-        // ── max_scheduled_date_offset ─────────────────────────────────────────
-        $maxDateCond = $map[InternalProcessCondition::MaxScheduledDateOffset->value] ?? null;
-        if ($maxDateCond && ($maxDateCond['is_active'] ?? false)) {
-            $this->assertMaxScheduledDateOffset($userId, $taskDate, $maxDateCond['settings'] ?? []);
-        }
+        $this->evaluationService->evaluateAndThrow($this->registry, $map, $ctx, $this->resolver);
     }
 
     /**
      * Evaluate precondition-type (form_group = 'precondition') createTask conditions
      * and return individual pass/fail results without throwing.
      *
-     * ALWAYS returns all 3 preconditions so the mobile app can show a fixed
+     * ALWAYS returns all precondition results so the mobile app can show a fixed
      * checklist UI. When a condition is not configured, it shows as passed
      * (green checkmark) because the admin is not enforcing it.
      *
@@ -112,80 +101,27 @@ final class EmployeeTaskFormConditionService
         ?float  $currentLatitude = null,
         ?float  $currentLongitude = null,
     ): array {
-        $conditions = $this->resolveConditions(
+        $map = $this->resolveConditionMap(
             InternalProcessForm::CreateTask->value,
             $companyId,
             $branchId,
         );
 
-        $map = $conditions === null ? [] : $this->indexConditions($conditions);
-        $results = [];
-        $allPassed = true;
+        $map = $map ?? [];
+        $ctx = new ConditionContext(
+            userId: $userId,
+            companyId: $companyId,
+            branchId: $branchId,
+            currentLatitude: $currentLatitude,
+            currentLongitude: $currentLongitude,
+        );
 
-        // ── 1. Shift check ───────────────────────────────────────────────────
-        $shiftResult = $this->evaluateShiftCondition($map, $userId);
-        if ($shiftResult === null) {
-            $shiftResult = [
-                'key'      => InternalProcessCondition::AllowDuringShift->value,
-                'label_ar' => InternalProcessCondition::AllowDuringShift->labelAr(),
-                'passed'   => true,
-                'message'  => null,
-            ];
-        }
-        $results[] = [
-            'key'      => $shiftResult['key'],
-            'label_ar' => $shiftResult['label_ar'],
-            'passed'   => $shiftResult['passed'],
-            'message'  => $shiftResult['message'],
-        ];
-        if (! $shiftResult['passed']) {
-            $allPassed = false;
-        }
-
-        // ── 2. Holiday check ─────────────────────────────────────────────────
-        $holidayResult = $this->evaluateHolidayCondition($map, $userId);
-        if ($holidayResult === null) {
-            $holidayResult = [
-                'key'      => InternalProcessCondition::AllowOnHolidays->value,
-                'label_ar' => InternalProcessCondition::AllowOnHolidays->labelAr(),
-                'passed'   => true,
-                'message'  => null,
-            ];
-        }
-        $results[] = [
-            'key'      => $holidayResult['key'],
-            'label_ar' => $holidayResult['label_ar'],
-            'passed'   => $holidayResult['passed'],
-            'message'  => $holidayResult['message'],
-        ];
-        if (! $holidayResult['passed']) {
-            $allPassed = false;
-        }
-
-        // ── 3. Location check (employee current location vs work areas) ──────
-        $locationResult = $this->evaluateLocationCondition($map, $userId, $currentLatitude, $currentLongitude);
-        if ($locationResult === null) {
-            $locationResult = [
-                'key'      => 'location_inside_work_area',
-                'label_ar' => 'التواجد داخل نطاق العمل',
-                'passed'   => true,
-                'message'  => null,
-            ];
-        }
-        $results[] = [
-            'key'      => $locationResult['key'],
-            'label_ar' => $locationResult['label_ar'],
-            'passed'   => $locationResult['passed'],
-            'message'  => $locationResult['message'],
-        ];
-        if (! $locationResult['passed']) {
-            $allPassed = false;
-        }
-
-        return [
-            'all_passed' => $allPassed,
-            'conditions' => $results,
-        ];
+        return $this->evaluationService->evaluateForResults(
+            $this->registry,
+            $map,
+            $ctx,
+            'precondition',
+        );
     }
 
     /**
@@ -195,8 +131,10 @@ final class EmployeeTaskFormConditionService
      * Output is NORMALIZED — every item has the same shape:
      *   key, label_ar, is_active, mode, constraints
      *
-     * Includes: max_task_duration, max_scheduled_date_offset,
-     *           inside_custom_locations, has_task_duration, etc.
+     * The preview is generated automatically from each condition's
+     * settingsSchema() via InternalProcessCondition::toPreview().
+     * Adding a new in_form condition with a settingsSchema() automatically
+     * makes it appear here — no match block to update.
      *
      * @return list<array{key: string, label_ar: string, is_active: true, mode: ?string, constraints: array}>
      */
@@ -204,17 +142,16 @@ final class EmployeeTaskFormConditionService
         string  $companyId,
         ?string $branchId,
     ): array {
-        $conditions = $this->resolveConditions(
+        $map = $this->resolveConditionMap(
             InternalProcessForm::CreateTask->value,
             $companyId,
             $branchId,
         );
 
-        if ($conditions === null) {
+        if ($map === null) {
             return [];
         }
 
-        $map = $this->indexConditions($conditions);
         $results = [];
 
         foreach ($map as $item) {
@@ -231,43 +168,7 @@ final class EmployeeTaskFormConditionService
                 continue;
             }
 
-            $settings = $item['settings'] ?? [];
-
-            $preview = match ($condEnum) {
-                InternalProcessCondition::MaxTaskDuration => [
-                    'mode'        => null,
-                    'constraints' => ['max_hours' => (int) ($settings['max_hours'] ?? 8)],
-                ],
-
-                InternalProcessCondition::MaxScheduledDateOffset => [
-                    'mode'        => $settings['mode'] ?? 'max_task_date',
-                    'constraints' => ($settings['mode'] ?? 'max_task_date') === 'max_task_date'
-                        ? ['max_days' => (int) ($settings['max_days'] ?? 30)]
-                        : [],
-                ],
-
-                InternalProcessCondition::InsideCustomLocations => [
-                    'mode'        => null,
-                    'constraints' => ['polygons' => $settings['polygons'] ?? []],
-                ],
-
-                InternalProcessCondition::HasTaskDuration => [
-                    'mode'        => null,
-                    'constraints' => ['required' => true],
-                ],
-
-                InternalProcessCondition::MaxDurationHours => [
-                    'mode'        => null,
-                    'constraints' => ['max_hours' => (int) ($settings['max_hours'] ?? 8)],
-                ],
-
-                InternalProcessCondition::MaxAttachments => [
-                    'mode'        => null,
-                    'constraints' => ['max_count' => (int) ($settings['max_count'] ?? 5)],
-                ],
-
-                default => ['mode' => null, 'constraints' => []],
-            };
+            $preview = $condEnum->toPreview($item['settings'] ?? []);
 
             $results[] = [
                 'key'         => $condEnum->value,
@@ -298,22 +199,25 @@ final class EmployeeTaskFormConditionService
             ? (string) $user->userProfessionalData->branch_id
             : null;
 
-        $conditions = $this->resolveConditions(
+        $map = $this->resolveConditionMap(
             InternalProcessForm::StartTask->value,
             $companyId,
             $branchId,
         );
 
-        if ($conditions === null) {
+        if ($map === null) {
             return;
         }
 
-        $map = $this->indexConditions($conditions);
+        $ctx = new ConditionContext(
+            userId: (string) $user->id,
+            companyId: $companyId,
+            branchId: $branchId,
+            currentLatitude: $latitude,
+            currentLongitude: $longitude,
+        );
 
-        $holidayResult = $this->evaluateHolidayCondition($map, (string) $user->id);
-        if ($holidayResult !== null && ! $holidayResult['passed']) {
-            throw EmployeeTaskException::notAllowedOnHolidays();
-        }
+        $this->evaluationService->evaluateAndThrow($this->registry, $map, $ctx, $this->resolver);
     }
 
     /**
@@ -328,14 +232,12 @@ final class EmployeeTaskFormConditionService
     // ─── Private helpers ─────────────────────────────────────────────────────
 
     /**
-     * Resolve stored conditions from the matching child ProcedureSetting.
+     * Resolve + normalize stored conditions into a keyed map.
      * Returns null when no setting or conditions are empty → check passes silently.
      *
-     * NOTE: Uses WorkflowEngine::resolveSettingsForEntry directly instead of
-     * ProcedureWorkflowService::resolveInternalProcedureSettingByForm because
-     * the latter returns null when steps are empty, even if conditions exist.
+     * @return array<string, array{key: string, is_active: bool, sort_order: int, settings: array}>|null
      */
-    private function resolveConditions(
+    private function resolveConditionMap(
         string  $formKey,
         string  $companyId,
         ?string $branchId,
@@ -353,7 +255,7 @@ final class EmployeeTaskFormConditionService
             return null;
         }
 
-        return $setting->conditions;
+        return $this->indexConditions($setting->conditions);
     }
 
     /**
@@ -389,442 +291,6 @@ final class EmployeeTaskFormConditionService
         }
 
         return $map;
-    }
-
-    /**
-     * Evaluate AllowDuringShift / AllowOnHolidays.
-     * Works with both old flat format and new normalized map.
-     *
-     * AllowDuringShift now supports two modes via settings.mode:
-     *   'shift'         (default) — checks the employee's actual attendance schedule.
-     *   'specific_time' — checks the current time against a fixed start_time/end_time window.
-     *
-     * NOTE: AllowOutsideShift has been repurposed as a location condition
-     *       and is evaluated separately in assertLocationConditions().
-     */
-    private function assertShiftConditions(array $map, string $userId): void
-    {
-        $shiftResult = $this->evaluateShiftCondition($map, $userId);
-        if ($shiftResult !== null && ! $shiftResult['passed']) {
-            match ($shiftResult['exception']) {
-                'notAllowedDuringShift'  => throw EmployeeTaskException::notAllowedDuringShift(),
-                'outsideShiftTimeWindow' => throw EmployeeTaskException::outsideShiftTimeWindow(),
-            };
-        }
-
-        $holidayResult = $this->evaluateHolidayCondition($map, $userId);
-        if ($holidayResult !== null && ! $holidayResult['passed']) {
-            throw EmployeeTaskException::notAllowedOnHolidays();
-        }
-    }
-
-    /**
-     * Evaluate holiday precondition.
-     * Returns null when the condition is not configured / not enforced.
-     *
-     * @return array{key: string, label_ar: string, passed: bool, message: ?string, exception: string}|null
-     */
-    private function evaluateHolidayCondition(array $map, string $userId): ?array
-    {
-        $user = $this->loadUserWithBranchTimezone($userId);
-
-        if ($user === null) {
-            return null;
-        }
-
-        $timezone   = $this->resolveBranchTimezone($user);
-        $workRules  = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user, null, $timezone);
-        $isHoliday  = (bool) ($workRules['is_holiday'] ?? false);
-
-        if (! $isHoliday) {
-            return null; // not a holiday → no holiday check needed
-        }
-
-        $allowOnHolidays = (bool) ($map[InternalProcessCondition::AllowOnHolidays->value]['is_active'] ?? true);
-
-        if ($allowOnHolidays) {
-            return [
-                'key'       => InternalProcessCondition::AllowOnHolidays->value,
-                'label_ar'  => InternalProcessCondition::AllowOnHolidays->labelAr(),
-                'passed'    => true,
-                'message'   => null,
-                'exception' => 'notAllowedOnHolidays',
-            ];
-        }
-
-        return [
-            'key'       => InternalProcessCondition::AllowOnHolidays->value,
-            'label_ar'  => InternalProcessCondition::AllowOnHolidays->labelAr(),
-            'passed'    => false,
-            'message'   => 'Task creation is not allowed on holidays.',
-            'exception' => 'notAllowedOnHolidays',
-        ];
-    }
-
-    /**
-     * Check whether the current time is inside any of the scheduled work periods.
-     * Uses the Carbon instances produced by AttendanceConstraintService so the
-     * comparison is timezone-aware, matching the attendance module logic.
-     */
-    private function isCurrentlyInAnyWorkPeriod(array $periods): bool
-    {
-        foreach ($periods as $period) {
-            $start = $period['period_start_time_carbon'] ?? null;
-            $end   = $period['period_end_time_carbon'] ?? null;
-
-            if ($start instanceof Carbon && $end instanceof Carbon) {
-                $now = Carbon::now($start->getTimezone());
-                if ($now->between($start, $end, true)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Evaluate shift precondition.
-     * Returns null when the condition is not configured / not enforced.
-     *
-     * @return array{key: string, label_ar: string, passed: bool, message: ?string, exception: string}|null
-     */
-    private function evaluateShiftCondition(array $map, string $userId): ?array
-    {
-        $duringShiftCond = $map[InternalProcessCondition::AllowDuringShift->value] ?? null;
-
-        // Not configured → skip
-        if ($duringShiftCond === null) {
-            return null;
-        }
-
-        $isActive = (bool) ($duringShiftCond['is_active'] ?? false);
-
-        // Inactive → not enforcing shift requirement
-        if (! $isActive) {
-            return null;
-        }
-
-        $mode = $duringShiftCond['settings']['mode'] ?? 'shift';
-
-        // Load user once for both modes (timezone resolution + attendance constraints)
-        $user = $this->loadUserWithBranchTimezone($userId);
-        if ($user === null) {
-            return null;
-        }
-        $timezone = $this->resolveBranchTimezone($user);
-
-        // specific_time mode
-        if ($mode === 'specific_time') {
-            $startTime = $duringShiftCond['settings']['start_time'] ?? '00:00';
-            $endTime   = $duringShiftCond['settings']['end_time']   ?? '23:59';
-            $now       = Carbon::now($timezone);
-            $start     = Carbon::parse($startTime, $timezone)->setDateFrom($now);
-            $end       = Carbon::parse($endTime, $timezone)->setDateFrom($now);
-            $inWindow  = ! ($now->lt($start) || $now->gt($end));
-
-            if ($inWindow) {
-                return [
-                    'key'       => InternalProcessCondition::AllowDuringShift->value,
-                    'label_ar'  => InternalProcessCondition::AllowDuringShift->labelAr(),
-                    'passed'    => true,
-                    'message'   => null,
-                    'exception' => 'outsideShiftTimeWindow',
-                ];
-            }
-
-            return [
-                'key'       => InternalProcessCondition::AllowDuringShift->value,
-                'label_ar'  => InternalProcessCondition::AllowDuringShift->labelAr(),
-                'passed'    => false,
-                'message'   => 'Current time is outside the allowed shift window.',
-                'exception' => 'outsideShiftTimeWindow',
-            ];
-        }
-
-        // shift mode (default): use attendance constraint system
-        $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user, null, $timezone);
-        $isHoliday = (bool) ($workRules['is_holiday'] ?? false);
-
-        if ($isHoliday) {
-            return null; // holiday logic handled by evaluateHolidayCondition
-        }
-
-        $isDuringShift = $this->isCurrentlyInAnyWorkPeriod($workRules['all_work_periods'] ?? []);
-
-        if ($isDuringShift) {
-            return [
-                'key'       => InternalProcessCondition::AllowDuringShift->value,
-                'label_ar'  => InternalProcessCondition::AllowDuringShift->labelAr(),
-                'passed'    => true,
-                'message'   => null,
-                'exception' => 'notAllowedDuringShift',
-            ];
-        }
-
-        return [
-            'key'       => InternalProcessCondition::AllowDuringShift->value,
-            'label_ar'  => InternalProcessCondition::AllowDuringShift->labelAr(),
-            'passed'    => false,
-            'message'   => 'You are not currently within your work shift.',
-            'exception' => 'notAllowedDuringShift',
-        ];
-    }
-
-    /**
-     * Evaluate AllowOutsideShift as a location-based condition.
-     * If the condition is active (is_active = true), the employee is ALLOWED
-     * to create tasks when outside their work location.
-     * If inactive (is_active = false) and the employee is outside all work
-     * locations, an exception is thrown.
-     *
-     * @throws EmployeeTaskException
-     */
-    private function assertLocationConditions(
-        array $map,
-        string $userId,
-        ?float $currentLatitude,
-        ?float $currentLongitude,
-    ): void {
-        $result = $this->evaluateLocationCondition($map, $userId, $currentLatitude, $currentLongitude);
-        if ($result !== null && ! $result['passed']) {
-            throw EmployeeTaskException::notAllowedOutsideLocation();
-        }
-    }
-
-    /**
-     * Evaluate location precondition.
-     * Returns null when the condition is not configured / not enforced.
-     *
-     * @return array{key: string, label_ar: string, passed: bool, message: ?string}|null
-     */
-    private function evaluateLocationCondition(
-        array $map,
-        string $userId,
-        ?float $currentLatitude,
-        ?float $currentLongitude,
-    ): ?array {
-        $locationCond = $map[InternalProcessCondition::AllowOutsideShift->value] ?? null;
-        $allowOutsideLocation = (bool) ($locationCond['is_active'] ?? true);
-
-        // If allowed outside location, or condition not configured → skip check
-        if ($allowOutsideLocation) {
-            return null;
-        }
-
-        // No GPS data provided → cannot enforce location restriction
-        if ($currentLatitude === null || $currentLongitude === null) {
-            return [
-                'key'      => 'location_inside_work_area',
-                'label_ar'  => 'التواجد داخل نطاق العمل',
-                'passed'    => false,
-                'message'   => 'Location data is required to verify work area.',
-            ];
-        }
-
-        $user = $this->loadUserWithBranchTimezone($userId);
-
-        if ($user === null) {
-            return null;
-        }
-
-        $timezone  = $this->resolveBranchTimezone($user);
-        $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user, null, $timezone);
-        $mainLocation = $workRules['location_work'] ?? null;
-        $additionalLocations = $workRules['additional_locations'] ?? [];
-
-        // Gather all locations to check against
-        $locations = [];
-        if ($mainLocation && isset($mainLocation['latitude'], $mainLocation['longitude'], $mainLocation['radius'])) {
-            $locations[] = $mainLocation;
-        }
-        foreach ($additionalLocations as $loc) {
-            if (isset($loc['latitude'], $loc['longitude'], $loc['radius'])) {
-                $locations[] = $loc;
-            }
-        }
-
-        // If no work locations are configured, we cannot enforce the restriction
-        if (empty($locations)) {
-            return null;
-        }
-
-        $isInsideAnyLocation = false;
-        foreach ($locations as $loc) {
-            $radius = (int) ($loc['radius'] ?? 100);
-            $distance = GeoDistance::metres(
-                (float) $loc['latitude'],
-                (float) $loc['longitude'],
-                $currentLatitude,
-                $currentLongitude,
-            );
-
-            if ($distance <= $radius) {
-                $isInsideAnyLocation = true;
-                break;
-            }
-        }
-
-        if ($isInsideAnyLocation) {
-            return [
-                'key'      => 'location_inside_work_area',
-                'label_ar'  => 'التواجد داخل نطاق العمل',
-                'passed'    => true,
-                'message'   => null,
-            ];
-        }
-
-        return [
-            'key'      => 'location_inside_work_area',
-            'label_ar'  => 'التواجد داخل نطاق العمل',
-            'passed'    => false,
-            'message'   => 'You are outside the designated work area.',
-        ];
-    }
-
-    /**
-     * Enforce the maximum allowed task duration.
-     *
-     * @throws EmployeeTaskException
-     */
-    private function assertMaxTaskDuration(float $durationHours, array $settings): void
-    {
-        $maxHours = (int) ($settings['max_hours'] ?? 8);
-        if ($durationHours > $maxHours) {
-            throw EmployeeTaskException::taskDurationExceedsLimit($maxHours);
-        }
-    }
-
-    /**
-     * Enforce the maximum number of days from today for the task's scheduled date.
-     *
-     * @throws EmployeeTaskException
-     */
-    private function assertMaxScheduledDateOffset(string $userId, string $taskDate, array $settings): void
-    {
-        $mode = $settings['mode'] ?? 'max_task_date';
-
-        if ($mode === 'max_task_date') {
-            $maxDays = (int) ($settings['max_days'] ?? 30);
-            $limit   = Carbon::today()->addDays($maxDays);
-            $date    = Carbon::parse($taskDate)->startOfDay();
-
-            if ($date->gt($limit)) {
-                throw EmployeeTaskException::taskDateTooFarInFuture($maxDays);
-            }
-
-            return;
-        }
-
-        if ($mode === 'end_contract') {
-            $user = User::with('companyUser.employmentContract.contractDurationUnit')
-                ->find($userId);
-
-            $contract = $user?->companyUser?->employmentContract;
-
-            if ($contract === null || $contract->start_date === null) {
-                return;
-            }
-
-            $endDate = Carbon::parse($contract->start_date);
-            $duration = (int) $contract->contract_duration;
-
-            $unit = $contract->contractDurationUnit;
-            if ($unit !== null) {
-                match ($unit->code ?? null) {
-                    'day'   => $endDate->addDays($duration),
-                    'month' => $endDate->addMonths($duration),
-                    'year'  => $endDate->addYears($duration),
-                    default => null,
-                };
-            }
-
-            $taskDateCarbon = Carbon::parse($taskDate)->startOfDay();
-
-            if ($taskDateCarbon->gt($endDate)) {
-                throw EmployeeTaskException::taskDateExceedsContractEndDate();
-            }
-        }
-    }
-
-    /**
-     * Check the current time falls within a fixed start_time / end_time window.
-     * Used by AllowDuringShift when settings.mode = 'specific_time'.
-     *
-     * @throws EmployeeTaskException
-     */
-    private function assertInsideSpecificTimeWindow(array $settings): void
-    {
-        $startTime = $settings['start_time'] ?? '00:00';
-        $endTime   = $settings['end_time']   ?? '23:59';
-
-        $now   = Carbon::now();
-        $start = Carbon::parse($startTime);
-        $end   = Carbon::parse($endTime);
-
-        if ($now->lt($start) || $now->gt($end)) {
-            throw EmployeeTaskException::outsideShiftTimeWindow();
-        }
-    }
-
-    /**
-     * Check that the task location falls inside at least one of the custom
-     * polygon areas drawn by the admin in the procedure-setting UI.
-     *
-     * @throws EmployeeTaskException
-     */
-    private function assertCustomLocationConditions(
-        array $map,
-        float $taskLatitude,
-        float $taskLongitude,
-    ): void {
-        $cond = $map[InternalProcessCondition::InsideCustomLocations->value] ?? null;
-        if (! $cond || ! ($cond['is_active'] ?? false)) {
-            return;
-        }
-
-        $polygons = $cond['settings']['polygons'] ?? [];
-        if (empty($polygons)) {
-            return;
-        }
-
-        if (! GeoPolygon::isPointInAnyPolygon($taskLatitude, $taskLongitude, $polygons)) {
-            throw EmployeeTaskException::outsideCustomLocations();
-        }
-    }
-
-    /**
-     * Load the target user with all relations needed for attendance constraint
-     * resolution, including the branch → address → country → timezones chain
-     * so we can resolve the user's branch timezone without a second query.
-     */
-    private function loadUserWithBranchTimezone(string $userId): ?User
-    {
-        return User::query()
-            ->with([
-                'professionalData.attendanceConstraint',
-                'userProfessionalData.branch',
-                'userProfessionalData.branch.address.country.timezones',
-                'userProfessionalData.department',
-            ])
-            ->find($userId);
-    }
-
-    /**
-     * Resolve the timezone from the target user's branch, mirroring
-     * UserAttendanceService::timezoneFromUserBranch(). Falls back to
-     * the request timezone helper, then the app default.
-     */
-    private function resolveBranchTimezone(?User $user): string
-    {
-        if ($user !== null) {
-            $timezones = $user->userProfessionalData?->branch?->address?->country?->timezones;
-            if (is_array($timezones) && isset($timezones[0]['zoneName']) && is_string($timezones[0]['zoneName'])) {
-                return $timezones[0]['zoneName'];
-            }
-        }
-
-        return getTimeZoneBranchByRequest() ?? config('app.timezone');
     }
 
 }
