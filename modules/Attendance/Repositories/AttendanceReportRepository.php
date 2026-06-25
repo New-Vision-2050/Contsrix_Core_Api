@@ -93,6 +93,19 @@ class AttendanceReportRepository extends BaseRepository
                     THEN business_date
                 END) AS actual_attendance_days,
                 COALESCE(SUM(total_work_hours), 0) AS actual_worked_hours,
+                COALESCE(
+                    SUM(total_work_hours)
+                    - SUM(
+                        CASE
+                            WHEN clock_in_time IS NOT NULL
+                                AND start_time IS NOT NULL
+                                AND clock_in_time < start_time
+                            THEN GREATEST(0, TIMESTAMPDIFF(MINUTE, clock_in_time, start_time)) / 60.0
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS calculated_hours,
                 COALESCE(SUM(overtime_hours), 0) AS overtime,
                 COALESCE(SUM(CASE WHEN COALESCE(is_late, 0) = 1 THEN 1 ELSE 0 END), 0) AS delays,
                 COALESCE(SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END), 0) AS rejected_count,

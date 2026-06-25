@@ -66,6 +66,7 @@ Tenancy: company resolved via `InitializeTenancyByRequestData`
           "leave_balance_used": 2,
           "remaining_leave_balance": 19,
           "actual_worked_hours": 40,
+          "calculated_hours": 38.5,
           "remaining_hours": 128,
           "delays": 2,
           "overtime": 2,

@@ -147,6 +147,7 @@ class AttendanceReportService
             'leave_balance_used' => $leaveBalanceUsed,
             'remaining_leave_balance' => $remainingLeaveBalance,
             'actual_worked_hours' => $workedHours,
+            'calculated_hours' => round((float) ($monthAggregate->calculated_hours ?? 0), 1),
             'remaining_hours' => AttendanceReportCalculator::remainingHours($requiredHours, $workedHours),
             'delays' => (int) ($monthAggregate->delays ?? 0),
             'overtime' => round((float) ($monthAggregate->overtime ?? 0), 1),

@@ -193,6 +193,7 @@ class ReportDataExtractionService
                     'overtime_minutes'    => 0,
                     'early_leave_minutes' => (int) ($d->early_departure_minutes ?? 0),
                     'total_work_hours'    => 0.0,
+                    'calculated_hours'    => 0.0,
                     'notes'               => (string) ($d->notes ?? ''),
                     'attendance_sessions' => [],
                     'task_sessions'       => [],
@@ -201,6 +202,13 @@ class ReportDataExtractionService
 
             $groupedDaily[$gid][$date]['overtime_minutes'] += (int) round((float) ($d->overtime_minutes ?? 0));
             $groupedDaily[$gid][$date]['total_work_hours']  += (float) ($d->total_work_hours ?? 0);
+
+            // calculated_hours = total_work_hours minus early clock-in period
+            $earlyMinutes = 0;
+            if (!empty($d->clock_in_time) && !empty($d->start_time) && $d->clock_in_time < $d->start_time) {
+                $earlyMinutes = (int) round((strtotime($d->start_time) - strtotime($d->clock_in_time)) / 60);
+            }
+            $groupedDaily[$gid][$date]['calculated_hours'] += round((float) ($d->total_work_hours ?? 0) - ($earlyMinutes / 60), 2);
 
             if (!empty($d->clock_in_time)) {
                 $groupedDaily[$gid][$date]['attendance_sessions'][] = [
@@ -227,6 +235,7 @@ class ReportDataExtractionService
                     'overtime_minutes'    => 0,
                     'early_leave_minutes' => 0,
                     'total_work_hours'    => 0.0,
+                    'calculated_hours'    => 0.0,
                     'notes'               => '',
                     'attendance_sessions' => [],
                     'task_sessions'       => [],
@@ -234,6 +243,7 @@ class ReportDataExtractionService
             }
 
             $groupedDaily[$gid][$date]['total_work_hours'] += (float) ($t->total_task_hours ?? 0);
+            $groupedDaily[$gid][$date]['calculated_hours'] += (float) ($t->total_task_hours ?? 0);
             $groupedDaily[$gid][$date]['task_sessions'][]   = [
                 'task_time_in'  => $t->time_from ? substr((string) $t->time_from, 11, 5) : '',
                 'task_time_out' => $t->time_to   ? substr((string) $t->time_to,   11, 5) : '',

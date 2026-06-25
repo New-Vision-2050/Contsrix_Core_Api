@@ -149,23 +149,24 @@
                 $showDelay   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_DELAY]);
                 $showOT      = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OVERTIME]);
                 $showTotal   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TOTAL_HOURS]);
+                $showCalculated = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_CALCULATED_HOURS]);
 
-                // employee_per_page: always 2 (#, date) + 1 status badge + up to 12 optional
+                // employee_per_page: always 2 (#, date) + 1 status badge + up to 13 optional
                 $empColCount   = 2 + 1 + (int)$showDay + (int)$showBranch + (int)$showMgmt
                                + (int)$showOffIn + (int)$showOffOut
                                + (int)$showActIn + (int)$showActOut
                                + (int)$showTaskIn + (int)$showTaskOut
-                               + (int)$showDelay + (int)$showOT + (int)$showTotal;
-                $empMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal;
+                               + (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
+                $empMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $empTotColspan = $empColCount - $empMetricCols;
 
-                // by_day: always 2 (#, employee) + up to 11 optional (no day col)
+                // by_day: always 2 (#, employee) + up to 12 optional (no day col)
                 $dayColCount   = 2 + (int)$showBranch + (int)$showMgmt
                                + (int)$showOffIn + (int)$showOffOut
                                + (int)$showActIn + (int)$showActOut
                                + (int)$showTaskIn + (int)$showTaskOut
-                               + (int)$showDelay + (int)$showOT + (int)$showTotal;
-                $dayMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal;
+                               + (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
+                $dayMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $dayTotColspan = $dayColCount - $dayMetricCols;
             @endphp
 
@@ -190,6 +191,7 @@
                     $dSumDelay   = 0;
                     $dSumOT      = 0;
                     $dSumWorkMin = 0;
+                    $dSumCalcMin = 0;
                 @endphp
                 <div @unless($loop->first) class="page-break" @endunless>
                 <table style="margin-bottom:2px; border:none;">
@@ -215,6 +217,7 @@
                             @if ($showDelay)<th class="tcol">{{ $lang === 'ar' ? 'تأخير'      : 'Delay' }}</th>@endif
                             @if ($showOT)<th class="tcol">{{ $lang === 'ar' ? 'إضافي'      : 'Overtime' }}</th>@endif
                             @if ($showTotal)<th class="hcol">{{ $lang === 'ar' ? 'إجمالي'     : 'Total' }}</th>@endif
+                            @if ($showCalculated)<th class="hcol">{{ $lang === 'ar' ? 'ساعات قانونية' : 'Calc.Hrs' }}</th>@endif
                         </tr>
                     </thead>
                     <tbody>
@@ -238,6 +241,7 @@
                                     $dSumDelay   += (int) ($d['late_minutes']    ?? 0);
                                     $dSumOT      += (int) ($d['overtime_minutes'] ?? 0);
                                     $dSumWorkMin += (int) round((float) ($d['total_work_hours'] ?? 0) * 60);
+                                    $dSumCalcMin += (int) round((float) ($d['calculated_hours'] ?? 0) * 60);
                                     $dSeq++;
                                 @endphp
                                 @for ($ri = 0; $ri < $subRowCount; $ri++)
@@ -262,6 +266,7 @@
                                             @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>@endif
                                             @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif
                                             @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours']  ?? 0) }}</td>@endif
+                                            @if ($showCalculated)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['calculated_hours'] ?? 0) }}</td>@endif
                                         @endif
                                     </tr>
                                 @endfor
@@ -272,6 +277,7 @@
                             @if ($showDelay)<td class="num">{{ $toHoursMinutes($dSumDelay) }}</td>@endif
                             @if ($showOT)<td class="num">{{ $toHoursMinutes($dSumOT) }}</td>@endif
                             @if ($showTotal)<td class="num">{{ $toHoursMinutes($dSumWorkMin) }}</td>@endif
+                            @if ($showCalculated)<td class="num">{{ $toHoursMinutes($dSumCalcMin) }}</td>@endif
                         </tr>
                     </tbody>
                 </table>
@@ -289,6 +295,7 @@
                     $sumDelay     = 0;
                     $sumOT        = 0;
                     $sumWorkMin   = 0;
+                    $sumCalcMin   = 0;
                     $empPresentCount = collect($empDaily)->where('display_status', 'present')->count();
                     $empAbsentCount  = collect($empDaily)->where('display_status', 'absent')->count();
                     $empHolidayCount = collect($empDaily)->where('display_status', 'holiday')->count();
@@ -330,6 +337,7 @@
                             @if ($showDelay)<th class="tcol">{{ $lang === 'ar' ? 'تأخير'          : 'Delay' }}</th>@endif
                             @if ($showOT)<th class="tcol">{{ $lang === 'ar' ? 'إضافي'          : 'Overtime' }}</th>@endif
                             @if ($showTotal)<th class="hcol">{{ $lang === 'ar' ? 'إجمالي ساعات'   : 'Total Hrs' }}</th>@endif
+                            @if ($showCalculated)<th class="hcol">{{ $lang === 'ar' ? 'ساعات قانونية' : 'Calc.Hrs' }}</th>@endif
                         </tr>
                     </thead>
                     <tbody>
@@ -339,6 +347,7 @@
                                 $sumDelay     += (int)   ($d['late_minutes']     ?? 0);
                                 $sumOT        += (int)   ($d['overtime_minutes'] ?? 0);
                                 $sumWorkMin   += (int)   round((float) ($d['total_work_hours'] ?? 0) * 60);
+                                $sumCalcMin   += (int)   round((float) ($d['calculated_hours'] ?? 0) * 60);
                                 $dateStr       = (string) ($d['date'] ?? '');
                                 $dayNum        = $dateStr ? date('N', strtotime($dateStr)) : '';
                                 $dayLabel      = $dayNum !== '' ? ($dayNames[(string) $dayNum] ?? '') : '';
@@ -387,6 +396,7 @@
                                         @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes'] ?? 0) }}</td>@endif
                                         @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif
                                         @if ($showTotal)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['total_work_hours'] ?? 0) }}</td>@endif
+                                        @if ($showCalculated)<td rowspan="{{ $subRowCount }}" class="num hcol" style="vertical-align:middle;">{{ $workHoursToHM($d['calculated_hours'] ?? 0) }}</td>@endif
                                     @endif
                                 </tr>
                             @endfor
@@ -396,6 +406,7 @@
                             @if ($showDelay)<td class="num">{{ $toHoursMinutes($sumDelay) }}</td>@endif
                             @if ($showOT)<td class="num">{{ $toHoursMinutes($sumOT) }}</td>@endif
                             @if ($showTotal)<td class="num">{{ $toHoursMinutes($sumWorkMin) }}</td>@endif
+                            @if ($showCalculated)<td class="num">{{ $toHoursMinutes($sumCalcMin) }}</td>@endif
                         </tr>
                         <tr>
                             <td colspan="{{ $empColCount }}" style="padding: 18px 10px 6px; border-top: none; text-align: {{ $align }};">
