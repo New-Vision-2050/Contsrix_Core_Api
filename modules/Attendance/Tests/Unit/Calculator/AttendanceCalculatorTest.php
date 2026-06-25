@@ -304,6 +304,64 @@ class AttendanceCalculatorTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Early clock-in must NOT inflate overtime
+    // -------------------------------------------------------------------------
+
+    public function test_early_clock_in_does_not_produce_overtime(): void
+    {
+        // Scheduled 09:00–17:00 (8h). Clock in 30 min early at 08:30, clock out at 17:00.
+        // total_work_hours = 8.5h (includes the early 30 min), but overtime must be 0.
+        $result = $this->calculator->calculate($this->input(
+            schedStart: '2024-01-15 09:00',
+            schedEnd:   '2024-01-15 17:00',
+            clockIn:    '2024-01-15 08:30',
+            clockOut:   '2024-01-15 17:00',
+            gracePeriodMinutes: 0,
+            maxOverTimeHours: 1.0,
+        ));
+
+        $this->assertSame(8.5, $result->totalWorkHours, 'Work hours include early time');
+        $this->assertSame(0.0, $result->overtimeHours, 'Early clock-in must not produce overtime');
+        $this->assertFalse($result->isLate);
+        $this->assertFalse($result->isEarlyDeparture);
+    }
+
+    public function test_early_clock_in_with_late_clock_out_counts_only_post_shift_overtime(): void
+    {
+        // Scheduled 09:00–17:00 (8h). Clock in 08:30, clock out 18:00.
+        // Effective work from 09:00→18:00 = 9h; OT = 1h (not 1.5h).
+        $result = $this->calculator->calculate($this->input(
+            schedStart: '2024-01-15 09:00',
+            schedEnd:   '2024-01-15 17:00',
+            clockIn:    '2024-01-15 08:30',
+            clockOut:   '2024-01-15 18:00',
+            gracePeriodMinutes: 0,
+            maxOverTimeHours: 2.0,
+        ));
+
+        $this->assertSame(9.5, $result->totalWorkHours, 'Work hours include early 30 min');
+        $this->assertSame(1.0, $result->overtimeHours, 'Overtime = 1h (only post-shift), not 1.5h');
+    }
+
+    public function test_early_clock_in_with_break_does_not_inflate_overtime(): void
+    {
+        // Scheduled 09:00–17:00 (8h). Clock in 08:30, 30 min break, clock out 17:00.
+        // Effective: 09:00→17:00 = 480 min gross, − 30 break = 450 net; scheduled = 480 → 0 OT.
+        $result = $this->calculator->calculate($this->input(
+            schedStart: '2024-01-15 09:00',
+            schedEnd:   '2024-01-15 17:00',
+            clockIn:    '2024-01-15 08:30',
+            clockOut:   '2024-01-15 17:00',
+            breakMinutes: 30,
+            gracePeriodMinutes: 0,
+            maxOverTimeHours: 1.0,
+        ));
+
+        $this->assertSame(8.0, $result->totalWorkHours, 'Net work = 8h (8.5h gross − 0.5h break)');
+        $this->assertSame(0.0, $result->overtimeHours, 'No overtime despite early clock-in');
+    }
+
+    // -------------------------------------------------------------------------
     // Breaks
     // -------------------------------------------------------------------------
 
