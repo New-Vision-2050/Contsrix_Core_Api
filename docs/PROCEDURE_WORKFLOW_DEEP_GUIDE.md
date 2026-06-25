@@ -2,7 +2,9 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-25 — Condition evaluation refactored to registry-driven dispatch (Open/Closed Principle). Each condition now has a dedicated `ConditionEvaluator` class; new conditions are added without modifying `EmployeeTaskFormConditionService`. See §34. Full guide: `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md`.
+> **Last updated:** 2026-06-25 (rev 2) — Condition evaluation core centralized to `modules/ProcedureSetting/Conditions/` for cross-module reuse. `ConditionEvaluationService` (central engine) + `ExceptionResolver` interface added. `getInFormConditionsPreview()` now auto-generates via `InternalProcessCondition::toPreview()`. See §34. Full guide: `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md`.
+>
+> **Previous:** 2026-06-25 (rev 1) — Condition evaluation refactored to registry-driven dispatch (Open/Closed Principle). Each condition now has a dedicated `ConditionEvaluator` class; new conditions are added without modifying `EmployeeTaskFormConditionService`.
 >
 > **Previous:** 2026-06-24 — Added `InsideCustomLocations` condition with `map_polygons` settings schema for custom polygon areas on task creation. See §3, §28, §31.
 >
@@ -642,6 +644,16 @@ Each child has:
 - Its own `conditions` (JSON array of InternalProcessCondition)
 - `appears_before_ids` / `appears_after_ids` (ordering constraints — JSON arrays of UUIDs)
 - `sort_order` (display order)
+
+> **⚠ Unregistered Form Keys:** `extendTaskTime` and `sendForApproval` are **NOT** registered in the `InternalProcessForm` enum (see §3). They are used as raw string literals in `EmployeeTaskExtensionService` and `EmployeeTaskApprovalService` respectively. This means:
+> - No condition definitions — `EmployeeTaskFormConditionService` does not evaluate conditions for these forms.
+> - Not listed in `InternalProcessForm::forType('employee_task')` — only `createTask`, `startTask`, `endTask` are returned.
+> - No label, no sort order, no `applicableTypes()` mapping, no validation rules, no default condition values.
+> - Not auto-seeded by `InternalProcedureSettingsSeeder` (only seeds forms starting with `create` or `end`).
+> - They still work at runtime because `resolveInternalProcedureSettingByForm()` queries the raw `form` column value directly.
+>
+> **Full details and registration steps:** See `modules/EmployeeTask/EMPLOYEE_TASK_MODULE_GUIDE.md` → "Unregistered Form Keys" section.
+> **Attendance integration context:** See `ATTENDANCE_MODULE_DEEP_REFERENCE.md` §24.12.
 
 ### Resolving a Child Procedure Setting
 
@@ -2875,58 +2887,68 @@ New `InternalProcessCondition::InsideCustomLocations` allows admins to define cu
 
 ---
 
-## 34. Registry-Driven Condition Evaluation (2026-06-25)
+## 34. Centralized Condition Evaluation (2026-06-25, rev 2)
 
 > **Full implementation guide:** `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md`
 
 ### 34.1 Problem
 
-The old `EmployeeTaskFormConditionService` had hard-coded `if`/`assert*()` calls for each condition:
+The old `EmployeeTaskFormConditionService` had hard-coded `if`/`assert*()` calls for each condition. Adding a new condition required modifying `checkCreateTaskConditions()`, adding a new `assert*()` method, and wiring it into the flow. This violated the Open/Closed Principle and made the system EmployeeTask-only.
 
-```php
-$this->assertShiftConditions($map, $userId);
-$this->assertLocationConditions($map, $userId, $lat, $lng);
-$this->assertCustomLocationConditions($map, $taskLat, $taskLng);
+### 34.2 Solution: Strategy + Registry + Central Engine
 
-$maxDurationCond = $map[InternalProcessCondition::MaxTaskDuration->value] ?? null;
-if ($maxDurationCond && ($maxDurationCond['is_active'] ?? false)) {
-    $this->assertMaxTaskDuration($durationHours, $maxDurationCond['settings'] ?? []);
-}
-// ... repeat for each condition
-```
+The condition evaluation system was refactored in two phases:
 
-Adding a new condition required modifying `checkCreateTaskConditions()`, adding a new `assert*()` method, and wiring it into the flow. This violates the Open/Closed Principle.
+1. **Rev 1** — Registry-driven dispatch: each condition gets a dedicated evaluator class implementing `ConditionEvaluator`. A registry maps enum values to evaluators.
+2. **Rev 2** — Centralization: core infrastructure (interface, DTOs, registry, evaluation engine) moved to `modules/ProcedureSetting/Conditions/` so any module can reuse it. Module-specific exception mapping via `ExceptionResolver` interface. In-form preview auto-generated via `toPreview()`.
 
-### 34.2 Solution: Strategy + Registry Pattern
-
-Each condition is now handled by a dedicated **evaluator class** implementing the `ConditionEvaluator` interface. A **registry** maps condition enum values to their evaluators. The service dispatches dynamically — it never hard-codes which conditions to check.
-
-### 34.3 Architecture
+### 34.3 Two-Layer Architecture
 
 ```
-EmployeeTaskFormConditionService::checkCreateTaskConditions()
-      │
-      ├── resolveConditionMap()  →  loads + normalizes conditions from DB
-      ├── builds ConditionContext  →  carries all request data
-      └── evaluateAndThrow($map, $ctx)
-              │
-              foreach condition in map:
-                  ├── registry->get($condEnum)  →  find evaluator
-                  ├── evaluator->evaluate($condData, $ctx)  →  ?ConditionResult
-                  └── if result->passed === false → throwFromResult($result)
+┌─────────────────────────────────────────────────────────────────┐
+│  modules/ProcedureSetting/Conditions/  (SHARED INFRASTRUCTURE)  │
+│                                                                 │
+│  ConditionEvaluator        (interface)                          │
+│  ConditionContext          (DTO — data bag)                     │
+│  ConditionResult           (DTO — evaluation result)            │
+│  ConditionEvaluatorRegistry (condition enum → evaluator map)    │
+│  ExceptionResolver         (interface — module-specific throws) │
+│  ConditionEvaluationService (central engine — evaluateAndThrow) │
+└─────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │ uses
+                              │
+┌─────────────────────────────────────────────────────────────────┐
+│  modules/EmployeeTask/Conditions/  (MODULE-SPECIFIC)            │
+│                                                                 │
+│  6 evaluator classes  ── implement ConditionEvaluator           │
+│  EmployeeTaskExceptionResolver ── implements ExceptionResolver  │
+│  ResolvesUserAttendance ── trait (shared user logic)            │
+│  ConditionEvaluator/Context/Result/Registry ── deprecated stubs │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 34.4 Core Components
+### 34.4 Core Components (Shared — `ProcedureSetting\Conditions`)
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `ConditionEvaluator` (interface) | `Conditions/ConditionEvaluator.php` | Strategy contract: `condition()` + `evaluate()` |
-| `ConditionContext` (DTO) | `Conditions/ConditionContext.php` | Immutable data bag (userId, coordinates, duration, taskDate, etc.) |
-| `ConditionResult` (DTO) | `Conditions/ConditionResult.php` | Evaluation output (key, labelAr, passed, message, exception, context) |
-| `ConditionEvaluatorRegistry` | `Conditions/ConditionEvaluatorRegistry.php` | Maps `InternalProcessCondition` → evaluator; provides `get()` and `forFormGroup()` |
-| `ResolvesUserAttendance` (trait) | `Conditions/ResolvesUserAttendance.php` | Shared user loading + timezone resolution for attendance-based evaluators |
+| `ConditionEvaluator` (interface) | `ProcedureSetting/Conditions/ConditionEvaluator.php` | Strategy contract: `condition()` + `evaluate()` |
+| `ConditionContext` (DTO) | `ProcedureSetting/Conditions/ConditionContext.php` | Immutable data bag (userId, coordinates, duration, taskDate, etc.) |
+| `ConditionResult` (DTO) | `ProcedureSetting/Conditions/ConditionResult.php` | Evaluation output (key, labelAr, passed, message, exception, context) |
+| `ConditionEvaluatorRegistry` | `ProcedureSetting/Conditions/ConditionEvaluatorRegistry.php` | Maps `InternalProcessCondition` → evaluator; provides `get()` and `forFormGroup()` |
+| `ExceptionResolver` (interface) | `ProcedureSetting/Conditions/ExceptionResolver.php` | Module-specific exception mapping contract: `throwFromResult()` |
+| `ConditionEvaluationService` | `ProcedureSetting/Conditions/ConditionEvaluationService.php` | Central engine: `evaluateAndThrow()` + `evaluateForResults()` |
 
-### 34.5 Registered Evaluators
+### 34.5 Module-Specific Components (EmployeeTask)
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `EmployeeTaskExceptionResolver` | `EmployeeTask/Conditions/EmployeeTaskExceptionResolver.php` | Maps `ConditionResult::$exception` → `EmployeeTaskException` factories |
+| `ResolvesUserAttendance` (trait) | `EmployeeTask/Conditions/ResolvesUserAttendance.php` | Shared user loading + timezone resolution for attendance-based evaluators |
+| 6 evaluator classes | `EmployeeTask/Conditions/*Evaluator.php` | Implement `ConditionEvaluator` (import from `ProcedureSetting\Conditions`) |
+| Deprecated stubs | `EmployeeTask/Conditions/Condition{Evaluator,Context,Result,Registry}.php` | Extend shared classes for backward compat |
+
+### 34.6 Registered Evaluators
 
 | Evaluator | Condition | Form Group | Exception Key |
 |-----------|-----------|------------|---------------|
@@ -2937,41 +2959,60 @@ EmployeeTaskFormConditionService::checkCreateTaskConditions()
 | `MaxTaskDurationEvaluator` | `max_task_duration` | in_form | `taskDurationExceedsLimit` |
 | `MaxScheduledDateOffsetEvaluator` | `max_scheduled_date_offset` | in_form | `taskDateTooFarInFuture` / `taskDateExceedsContractEndDate` |
 
-### 34.6 Exception Mapping
+### 34.7 Exception Mapping
 
-`throwFromResult()` in `EmployeeTaskFormConditionService` maps `ConditionResult::$exception` to `EmployeeTaskException` factories. Evaluators that need parameters (e.g. `maxHours`, `maxDays`) pass them via `ConditionResult::$context`.
+`EmployeeTaskExceptionResolver::throwFromResult()` maps `ConditionResult::$exception` to `EmployeeTaskException` factories. The central `ConditionEvaluationService` delegates to this resolver — it never knows about `EmployeeTaskException` directly. Evaluators that need parameters (e.g. `maxHours`, `maxDays`) pass them via `ConditionResult::$context`.
 
-### 34.7 How to Add a New Condition (Open/Closed)
+### 34.8 Automatic In-Form Preview (toPreview)
 
-1. Add enum case to `InternalProcessCondition` (with `category()`, `labelAr()`, `settingsSchema()`).
+`getInFormConditionsPreview()` now uses `InternalProcessCondition::toPreview()` instead of a hard-coded `match` block. `toPreview()` auto-generates `{mode, constraints}` from `settingsSchema()` + stored settings, respecting `visible_when` filters. Adding a new in_form condition with a `settingsSchema()` automatically makes it appear in the preview API — zero changes to `getInFormConditionsPreview()`.
+
+### 34.9 How to Add a New Condition (Open/Closed)
+
+1. Add enum case to `InternalProcessCondition` (with `category()`, `labelAr()`, `formGroup()`, `settingsSchema()`).
 2. Register in `InternalProcessForm::conditions()`.
 3. Add exception factory to `EmployeeTaskException`.
-4. Create evaluator class implementing `ConditionEvaluator` in `modules/EmployeeTask/Conditions/`.
+4. Create evaluator class implementing `ConditionEvaluator` (import from `ProcedureSetting\Conditions`).
 5. Register evaluator in `EmployeeTaskServiceProvider` (add to registry constructor + singleton).
-6. Add exception case to `throwFromResult()`.
-7. **Zero changes** to `checkCreateTaskConditions()`, `evaluateAndThrow()`, `getPreConditionResults()`, or any existing evaluator.
+6. Add exception case to `EmployeeTaskExceptionResolver::throwFromResult()`.
+7. **Zero changes** to `checkCreateTaskConditions()`, `ConditionEvaluationService`, `getPreConditionResults()`, `getInFormConditionsPreview()`, or any existing evaluator.
 
-### 34.8 Backward Compatibility
+### 34.10 Reusing the Engine in Other Modules
+
+Any module (e.g. ClientRequest) can reuse the central engine with 5 steps:
+1. Create evaluators implementing `ProcedureSetting\Conditions\ConditionEvaluator`
+2. Create an `ExceptionResolver` implementation for the module's exceptions
+3. Register evaluators + resolver in the module's service provider
+4. Build a thin condition service injecting `ConditionEvaluationService` + registry + resolver
+5. Call `evaluateAndThrow()` from the module's controller/service
+
+**Zero changes to `ProcedureSetting` module needed.**
+
+### 34.11 Backward Compatibility
 
 - The dual-format `indexConditions()` normalizer is preserved — old flat associative conditions still work.
 - Unknown condition keys (no registered evaluator) are silently skipped, preventing breakage during partial deployments.
 - All existing exception types and HTTP 422 responses are preserved.
+- Deprecated stubs in `EmployeeTask\Conditions` extend shared classes so old imports don't break.
 
-### 34.9 Files Changed
+### 34.12 Files Changed (rev 2)
 
 | File | Change |
 |------|--------|
-| `modules/EmployeeTask/Conditions/ConditionEvaluator.php` | **New** — interface |
-| `modules/EmployeeTask/Conditions/ConditionContext.php` | **New** — DTO |
-| `modules/EmployeeTask/Conditions/ConditionResult.php` | **New** — DTO |
-| `modules/EmployeeTask/Conditions/ConditionEvaluatorRegistry.php` | **New** — registry |
-| `modules/EmployeeTask/Conditions/ResolvesUserAttendance.php` | **New** — shared trait |
-| `modules/EmployeeTask/Conditions/AllowDuringShiftEvaluator.php` | **New** — evaluator |
-| `modules/EmployeeTask/Conditions/AllowOnHolidaysEvaluator.php` | **New** — evaluator |
-| `modules/EmployeeTask/Conditions/AllowOutsideShiftEvaluator.php` | **New** — evaluator |
-| `modules/EmployeeTask/Conditions/InsideCustomLocationsEvaluator.php` | **New** — evaluator |
-| `modules/EmployeeTask/Conditions/MaxTaskDurationEvaluator.php` | **New** — evaluator |
-| `modules/EmployeeTask/Conditions/MaxScheduledDateOffsetEvaluator.php` | **New** — evaluator |
-| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | Replaced scattered `assert*()` calls with `evaluateAndThrow()` dispatch; `getPreConditionResults()` iterates registry; added `resolveConditionMap()`, `evaluateAndThrow()`, `throwFromResult()` |
-| `modules/EmployeeTask/Providers/EmployeeTaskServiceProvider.php` | Registers `ConditionEvaluatorRegistry` + all 6 evaluators as singletons |
-| `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md` | **New** — full implementation guide |
+| `modules/ProcedureSetting/Conditions/ConditionEvaluator.php` | **New** — shared interface |
+| `modules/ProcedureSetting/Conditions/ConditionContext.php` | **New** — shared DTO |
+| `modules/ProcedureSetting/Conditions/ConditionResult.php` | **New** — shared DTO |
+| `modules/ProcedureSetting/Conditions/ConditionEvaluatorRegistry.php` | **New** — shared registry |
+| `modules/ProcedureSetting/Conditions/ExceptionResolver.php` | **New** — exception resolver interface |
+| `modules/ProcedureSetting/Conditions/ConditionEvaluationService.php` | **New** — central engine |
+| `modules/EmployeeTask/Conditions/EmployeeTaskExceptionResolver.php` | **New** — maps to EmployeeTaskException |
+| `modules/EmployeeTask/Conditions/ConditionEvaluator.php` | **Deprecated stub** — extends shared interface |
+| `modules/EmployeeTask/Conditions/ConditionContext.php` | **Deprecated stub** — extends shared DTO |
+| `modules/EmployeeTask/Conditions/ConditionResult.php` | **Deprecated stub** — extends shared DTO |
+| `modules/EmployeeTask/Conditions/ConditionEvaluatorRegistry.php` | **Deprecated stub** — extends shared registry |
+| `modules/EmployeeTask/Conditions/*Evaluator.php` (6 files) | Updated imports to `ProcedureSetting\Conditions` |
+| `modules/EmployeeTask/Services/EmployeeTaskFormConditionService.php` | Delegates to `ConditionEvaluationService`; `getInFormConditionsPreview()` uses `toPreview()` |
+| `modules/EmployeeTask/Providers/EmployeeTaskServiceProvider.php` | Registers `EmployeeTaskExceptionResolver`; imports registry from `ProcedureSetting\Conditions` |
+| `modules/ProcedureSetting/Providers/ProcedureSettingServiceProvider.php` | Registers `ConditionEvaluationService` singleton |
+| `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | Added `toPreview()` method |
+| `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md` | Updated to rev 2 — full centralized architecture |

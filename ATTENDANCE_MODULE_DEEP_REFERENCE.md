@@ -2,7 +2,9 @@
 
 > **Purpose of this document:** A self-contained playbook for any developer or AI assistant working inside the Attendance module. Every class, interface, constant, relationship, business rule, and data-flow is documented here with the full implementation details needed to safely read, modify, or extend the module without needing to open every file individually.
 >
-> **Last updated:** 2026-06-18 — Added §24.11: Procedure & Condition Integration — documents how `EmployeeTaskFormConditionService` consumes `AttendanceConstraintService::getTodaysWorkRulesForUser()` to gate `createTask` on shift/holiday status, and how `EmployeeTaskLocationService::isWithinTaskRadius()` gates `endTask` on GPS location. Added INV-T11.
+> **Last updated:** 2026-06-25 — Updated §24 to reflect current EmployeeTask module state (7 tables, 7 models, 15+ services, 22+ endpoints). Added §24.12: Unregistered Form Keys (`extendTaskTime`, `sendForApproval`). Added §24.13: Auto-Rejection System (`AutoRejectStaleTaskJob`, auto-close now rejects, prevent concurrent active tasks, rejected tasks excluded from reports). Added cross-references to `EMPLOYEE_TASK_MODULE_GUIDE.md` and `docs/PROCEDURE_WORKFLOW_DEEP_GUIDE.md`.
+>
+> **Previous:** 2026-06-18 — Added §24.11: Procedure & Condition Integration — documents how `EmployeeTaskFormConditionService` consumes `AttendanceConstraintService::getTodaysWorkRulesForUser()` to gate `createTask` on shift/holiday status, and how `EmployeeTaskLocationService::isWithinTaskRadius()` gates `endTask` on GPS location. Added INV-T11.
 
 ---
 
@@ -53,6 +55,8 @@
     - [24.9 Key Invariants (INV-T1 through INV-T10)](#249-key-invariants-employeetask-specific)
     - [24.10 Permissions](#2410-permissions)
     - [24.11 Procedure & Condition Integration](#2411-procedure--condition-integration) ← **NEW 2026-06-18**
+    - [24.12 Unregistered Form Keys](#2412-unregistered-form-keys-extendtasktime--sendforapproval) ← **NEW 2026-06-25**
+    - [24.13 Auto-Rejection System](#2413-auto-rejection-system) ← **NEW 2026-06-25**
     - [INV-18](#inv-18-re-clock-in-lateness-anchor-must-filter-previous-attendances-by-scheduled-period): Re-clock-in lateness anchor must filter previous rows by scheduled period (`start_time` + `end_time`), not by date alone
     - [INV-19](#inv-19-lateness-grace-lookup-reads-per-day-rules-from-weekly_scheduledaylateness_rules): Lateness grace-period lookup must read per-day rules from `weekly_schedule.{day}.lateness_rules`, not `time_rules.lateness_rules`
     - [INV-20](#inv-20-additional_locations-in-user-constrainttoday--mirrors-the-location-validation-used-at-clock-in): `additional_locations` in `user-constraint/today` — mirrors the location validation used at clock-in
@@ -2329,27 +2333,33 @@ API: `POST /api/v1/attendance/constraints/users/{userId}/additional` with `{ "co
 
 An **Employee Work Task Request (طلب مهمة عمل)** system implemented as a completely separate module. It adds parallel task-hour tracking alongside the existing attendance system without touching any Attendance table, presenter, or core service.
 
-**Files created (30 total):**
+> **Full module guide:** `modules/EmployeeTask/EMPLOYEE_TASK_MODULE_GUIDE.md` — comprehensive reference for every class, service, model, and workflow in the EmployeeTask module.
+>
+> **Workflow architecture:** `docs/PROCEDURE_WORKFLOW_DEEP_GUIDE.md` §9 — documents how EmployeeTask integrates with the Procedure Workflow system, including form-based child settings and action-taker resolution.
+
+**Current file inventory (60+ files):**
 
 | Directory | Files |
 |---|---|
 | `Controllers/` | `EmployeeTaskController.php`, `AdminEmployeeTaskController.php` |
-| `Database/Migrations/` | `2026_05_20_000001_create_employee_task_requests_table.php`, `…_sessions_…`, `…_extension_requests_…` |
+| `Database/Migrations/` | 7 migrations: `employee_task_requests`, `employee_task_sessions`, `employee_task_extension_requests`, `employee_task_approval_requests`, `employee_task_end_requests`, `employee_task_types`, `employee_task_items` |
 | `DTO/` | `CreateEmployeeTaskRequestDTO`, `StartTaskDTO`, `EndTaskDTO`, `CreateExtensionRequestDTO` |
 | `Enums/` | `EmployeeTaskStatus.php`, `EmployeeTaskExtensionStatus.php` |
 | `Exceptions/` | `EmployeeTaskException.php` |
-| `Jobs/` | `AutoCloseTaskAtDurationExpiryJob.php`, `AutoCloseTaskIfOutOfLocationJob.php` |
-| `Models/` | `EmployeeTaskRequest.php`, `EmployeeTaskSession.php`, `EmployeeTaskExtensionRequest.php` |
-| `Presenters/` | `EmployeeTaskRequestPresenter.php`, `EmployeeTaskSessionPresenter.php`, `EmployeeTaskExtensionPresenter.php` |
+| `Jobs/` | `AutoCloseTaskAtDurationExpiryJob.php`, `AutoCloseTaskIfOutOfLocationJob.php`, `AutoRejectStaleTaskJob.php` |
+| `Models/` | `EmployeeTaskRequest.php`, `EmployeeTaskSession.php`, `EmployeeTaskExtensionRequest.php`, `EmployeeTaskApprovalRequest.php`, `EmployeeTaskEndRequest.php`, `EmployeeTaskType.php`, `EmployeeTaskItem.php` |
+| `Presenters/` | `EmployeeTaskRequestPresenter.php`, `InboxItemPresenter.php` |
 | `Providers/` | `EmployeeTaskServiceProvider.php`, `EmployeeTaskRouteServiceProvider.php` |
 | `Repositories/` | `EmployeeTaskRepository.php`, `EmployeeTaskSessionRepository.php` |
 | `Requests/` | 7 form request classes |
-| `Routes/` | `employee_tasks.php` (17 endpoints) |
-| `Services/` | `EmployeeTaskRequestService`, `EmployeeTaskLifecycleService`, `EmployeeTaskLocationService`, `EmployeeTaskAutoCloseService`, `EmployeeTaskExtensionService`, `EmployeeTaskReportService` |
-| `Support/` | `GeoDistance.php` (Haversine formula) |
+| `Routes/` | `employee_tasks.php` (22+ endpoints) |
+| `Services/` | `EmployeeTaskRequestService`, `EmployeeTaskLifecycleService`, `EmployeeTaskLocationService`, `EmployeeTaskAutoCloseService`, `EmployeeTaskExtensionService`, `EmployeeTaskExtensionWorkflowService`, `EmployeeTaskApprovalService`, `EmployeeTaskEndRequestService`, `EmployeeTaskReportService`, `EmployeeTaskAvailableActionsService`, `EmployeeTaskProceduresService`, `EmployeeTaskFormConditionService`, `EmployeeTaskWorkflowNotifier` |
+| `Conditions/` | `AllowDuringShiftEvaluator`, `AllowOutsideShiftEvaluator`, `AllowOnHolidaysEvaluator`, `InsideCustomLocationsEvaluator`, `MaxTaskDurationEvaluator`, `MaxScheduledDateOffsetEvaluator`, `EmployeeTaskExceptionResolver`, `ResolvesUserAttendance` trait |
+| `Support/` | `GeoDistance.php` (Haversine), `GeoPolygon.php` (point-in-polygon) |
+| `Events/` | `EmployeeTaskNotification.php`, `InboxCountsUpdated.php` |
 | `Config/` | `permissions.php` |
 
-**ProcedureSetting change:** Added `EmployeeTaskRequest = 'employee_task_request'` to `modules/ProcedureSetting/Enums/ProcedureSettingType.php`.
+**ProcedureSetting change:** Added `EmployeeTask = 'employee_task'` to `ProcedureSettingType` enum (was `EmployeeTaskRequest`).
 
 ---
 
@@ -2403,15 +2413,19 @@ This mirrors the Attendance module's own snapshot approach (`applied_attendance_
 
 ### 24.5 New Tables
 
-Three new tables (no changes to existing Attendance tables):
+Seven new tables (no changes to existing Attendance tables):
 
 | Table | Purpose |
 |---|---|
 | `employee_task_requests` | One row per task request. Stores lifecycle state, GPS, hours, approval data. |
 | `employee_task_sessions` | One row per continuous work period (start→pause, resume→end). Mirrors `attendance_breaks`. |
 | `employee_task_extension_requests` | One row per duration-extension request submitted by the employee. |
+| `employee_task_approval_requests` | One row per final completion approval request. Supports file attachments via Spatie Media Library. |
+| `employee_task_end_requests` | One row per end-task-with-procedure request. Stores GPS coordinates and notes. |
+| `employee_task_types` | Lookup table for task types (key, name). |
+| `employee_task_items` | Lookup table for task items (key, name, model_class). |
 
-All three use UUID primary keys (`char(36)`), include `company_id` for multi-tenancy, and store datetimes in **branch timezone** (same convention as `attendances` — NOT UTC).
+All use UUID primary keys (`char(36)`), include `company_id` for multi-tenancy, and store datetimes in **branch timezone** (same convention as `attendances` — NOT UTC).
 
 ---
 
@@ -2422,6 +2436,7 @@ Two queued jobs handle automatic task termination:
 **`AutoCloseTaskAtDurationExpiryJob`**
 - Dispatched at task `start()` with `delay = (duration_hours + max_over_time_hours) * 3600` seconds.
 - On fire: calls `EmployeeTaskAutoCloseService::closeIfExpired()` with `source = 'auto_duration'`.
+- **Sets status to Rejected** (not Completed) — tasks that exceed their duration without manual end are auto-rejected and excluded from reports.
 - Re-dispatched (with updated deadline) when an extension is approved.
 - Idempotent: `closeIfExpired()` acquires a row lock and checks task is still `in_progress` before acting.
 
@@ -2431,14 +2446,27 @@ Two queued jobs handle automatic task termination:
 - On fire: verifies employee is still out-of-radius, then calls `closeIfExpired()` with `source = 'auto_location'`.
 - Cancelled automatically (idempotency) if employee returns to radius before the delay expires.
 
-**Safety invariant (INV-T3):** Both jobs use `SELECT … FOR UPDATE` row lock + status re-check inside `closeIfExpired()` to prevent race conditions between concurrent jobs.
+**`AutoRejectStaleTaskJob`** (added 2026-06-25)
+- Dispatched at task creation time (`EmployeeTaskRequestService::create()`) with delay = midnight (end of `task_date`) in employee's branch timezone.
+- On fire: if task is still `pending`, `approved`, or `paused` → sets status to **Rejected** with appropriate reason.
+- If task is `in_progress` → **no-op** (handled by `AutoCloseTaskAtDurationExpiryJob`).
+- Uses `lockForUpdate()` + status re-check for race condition protection.
+- Ensures tasks that are never started or left paused don't stay open indefinitely.
+
+**Safety invariant (INV-T3):** All three jobs use `SELECT … FOR UPDATE` row lock + status re-check inside `closeIfExpired()` or the job's transaction to prevent race conditions between concurrent jobs.
 
 ---
 
 ### 24.7 Status State Machine
 
 **Task request statuses:** `pending → approved → in_progress → paused → completed`  
-with branches to `rejected` and `cancelled`.
+with branches to `rejected` (admin reject, auto-reject stale, auto-close duration/location) and `cancelled`.
+
+**Auto-rejection transitions (added 2026-06-25):**
+- `pending → rejected` — `AutoRejectStaleTaskJob` fires at midnight of `task_date` if task still pending
+- `approved → rejected` — `AutoRejectStaleTaskJob` fires if task approved but never started
+- `paused → rejected` — `AutoRejectStaleTaskJob` fires if task was paused and never resumed
+- `in_progress → rejected` — `AutoCloseTaskAtDurationExpiryJob` or `AutoCloseTaskIfOutOfLocationJob` (auto-close now rejects instead of completing)
 
 **Extension badge** (`last_extension_status` column on `employee_task_requests`):  
 `null | extension_pending | extension_approved | extension_rejected`  
@@ -2448,7 +2476,7 @@ Full transition table and Arabic labels are documented in `EMPLOYEE_TASK_SYSTEM_
 
 ---
 
-### 24.8 API Endpoints (17 total)
+### 24.8 API Endpoints (22+ total)
 
 **Employee-facing (`EmployeeTaskController`):**
 
@@ -2467,6 +2495,10 @@ Full transition table and Arabic labels are documented in `EMPLOYEE_TASK_SYSTEM_
 | `GET` | `/api/v1/employee-tasks/{id}/location-check` | Check if in radius |
 | `POST` | `/api/v1/employee-tasks/{id}/extension-requests` | Submit extension request |
 | `GET` | `/api/v1/employee-tasks/{id}/extension-requests` | List extension requests |
+| `POST` | `/api/v1/employee-tasks/{id}/approval-requests` | Send for final approval |
+| `GET` | `/api/v1/employee-tasks/{id}/available-actions` | List available procedure actions |
+| `GET` | `/api/v1/employee-tasks/pre-conditions` | Pre-condition check results |
+| `GET` | `/api/v1/employee-tasks/in-form-conditions` | In-form condition preview |
 | `GET` | `/api/v1/employee-tasks/intra-day-report` | Intra-day combined timeline |
 
 **Admin-facing (`AdminEmployeeTaskController`):**
@@ -2474,11 +2506,11 @@ Full transition table and Arabic labels are documented in `EMPLOYEE_TASK_SYSTEM_
 | Method | URI | Action |
 |---|---|---|
 | `GET` | `/api/v1/admin/employee-tasks` | List all company tasks |
-| `PATCH` | `/api/v1/admin/employee-tasks/{id}/approve` | Approve task |
-| `PATCH` | `/api/v1/admin/employee-tasks/{id}/reject` | Reject task |
+| `GET` | `/api/v1/admin/employee-tasks/inbox` | Unified admin inbox (tasks + extensions + approvals + end requests) |
+| `GET` | `/api/v1/admin/employee-tasks/inbox-counts` | Inbox badge counts |
+| `PATCH` | `/api/v1/admin/employee-tasks/{id}/approve` | Unified approve (auto-detects type) |
+| `PATCH` | `/api/v1/admin/employee-tasks/{id}/reject` | Unified reject (auto-detects type) |
 | `PATCH` | `/api/v1/admin/employee-tasks/{id}/cancel` | Force-cancel task |
-| `PATCH` | `/api/v1/admin/employee-tasks/{id}/extension-requests/{extId}/approve` | Approve extension |
-| `PATCH` | `/api/v1/admin/employee-tasks/{id}/extension-requests/{extId}/reject` | Reject extension |
 
 ---
 
@@ -2498,6 +2530,10 @@ These complement the existing INV-* series. Reference them when modifying `modul
 | **INV-T8** | `original_duration_hours` is set only on the first extension approval (preserves the original approved duration for audit). Subsequent extensions only update `duration_hours`. |
 | **INV-T9** | A new extension request can only be submitted if no other extension request is in `pending` status for that task. |
 | **INV-T10** | Extension approval re-dispatches `AutoCloseTaskAtDurationExpiryJob` with the updated deadline. Old job fires harmlessly — `closeIfExpired()` returns false if task is not `in_progress`. |
+| **INV-T12** | `AutoRejectStaleTaskJob` is dispatched at task creation with delay = midnight of `task_date` in the employee's branch timezone. If the task is `in_progress` when it fires, it must be a no-op (the `AutoCloseTaskAtDurationExpiryJob` handles that case). |
+| **INV-T13** | `EmployeeTaskAutoCloseService::closeIfExpired()` sets status to **Rejected** (not Completed) when duration expires or employee is out of location. This ensures tasks not manually ended are auto-rejected and excluded from reports. |
+| **INV-T14** | `EmployeeTaskLifecycleService::start()` must check `EmployeeTaskRepository::findActiveTaskForUser()` before starting a new task. If the user already has an `in_progress` or `paused` task, throw `EmployeeTaskException::hasOtherOpenTask()`. |
+| **INV-T15** | `EmployeeTaskReportService::getIntraDayReport()` must only include tasks with status `completed`, `in_progress`, or `paused`. Rejected tasks (auto-rejected or manually rejected) must never appear in reports. |
 
 ---
 
@@ -2600,6 +2636,33 @@ Admins can override these defaults via the internal procedure settings API.
 
 ---
 
+### 24.12 Unregistered Form Keys (`extendTaskTime` & `sendForApproval`)
+
+**Added:** 2026-06-25
+
+Two EmployeeTask form keys are used as **raw string literals** in service code but are **NOT registered** in the `InternalProcessForm` enum:
+
+| Form Key | Used By | In Enum? | Seeded? |
+|----------|---------|----------|---------|
+| `extendTaskTime` | `EmployeeTaskExtensionService` | ❌ No | ❌ Not auto-seeded |
+| `sendForApproval` | `EmployeeTaskApprovalService` | ❌ No | ❌ Not auto-seeded |
+
+The `InternalProcessForm` enum only defines three forms for `employee_task`: `CreateTask`, `StartTask`, `EndTask`. The extension and approval forms exist as raw `form` column values in the `procedure_settings` table but have no enum case, no label, no condition definitions, no sort order, and no `applicableTypes()` mapping.
+
+**Consequences:**
+1. `EmployeeTaskFormConditionService` does not evaluate any conditions for extension or approval requests (only `createTask`, `startTask`, and `endTask` have condition evaluation).
+2. Neither form appears in `InternalProcessForm::forType('employee_task')` listings.
+3. `InternalProcessCondition::validationRulesForForm()` returns `[]` for both keys.
+4. The `InternalProcedureSettingsSeeder` only seeds forms starting with `create` or `end` — admins must manually create child `ProcedureSetting` rows for these forms.
+
+**How they still work:** `ProcedureWorkflowService::resolveInternalProcedureSettingByForm()` queries by the raw `form` column value directly. The database doesn't validate against the enum, so any string can be stored and queried.
+
+> **Full details:** See `modules/EmployeeTask/EMPLOYEE_TASK_MODULE_GUIDE.md` → "Unregistered Form Keys" section for the complete form key map, workflow flow diagrams, and steps to fully register them.
+>
+> **Workflow architecture:** See `docs/PROCEDURE_WORKFLOW_DEEP_GUIDE.md` §3 and §9 for the enum definition and EmployeeTask integration details.
+
+---
+
 #### INV-T11 — Condition Check Must Fire Before Workflow Start
 
 `EmployeeTaskFormConditionService::check*Conditions()` **must always be called before** `WorkflowEngine::previewResponsibles()` or `ProcedureWorkflowService::resolveInternalProcedureSettingByForm()` initiates any workflow work. Violating this order would allow a condition-blocked action to create orphan workflow/process records.
@@ -2607,3 +2670,68 @@ Admins can override these defaults via the internal procedure settings API.
 Current call sites enforce this ordering:
 - `EmployeeTaskRequestService::create()` — condition check is the first statement after `$branchId` resolution.
 - `EmployeeTaskLifecycleService::end()` — condition check fires after status validation but before `resolveEndTaskProcedure()`.
+
+---
+
+### 24.13 Auto-Rejection System
+
+**Added:** 2026-06-25
+
+The EmployeeTask module implements automatic rejection of tasks that are not properly started or ended by their scheduled date. This system has three components:
+
+#### 24.13.1 AutoRejectStaleTaskJob (Queued Job)
+
+**File:** `modules/EmployeeTask/Jobs/AutoRejectStaleTaskJob.php`
+
+Dispatched at task creation time from `EmployeeTaskRequestService::create()` (both auto-approve and pending branches). The delay is calculated to fire at **midnight (end of `task_date`)** in the employee's branch timezone.
+
+**Timezone resolution chain:**
+1. `creator.userProfessionalData.branch.address.country.timezones[0].zoneName`
+2. `getTimeZoneBranchByRequest()`
+3. `config('app.timezone')`
+4. `'Asia/Riyadh'` (final fallback)
+
+**Status when job fires → action:**
+
+| Status | Action | Rejection Reason |
+|--------|--------|------------------|
+| `pending` | **Reject** | "Task auto-rejected: task date passed while still pending approval." |
+| `approved` | **Reject** | "Task auto-rejected: task date passed without the employee starting the task." |
+| `paused` | **Reject** | "Task auto-rejected: task was paused and never resumed before task date passed." |
+| `in_progress` | **Skip** | No-op — handled by `AutoCloseTaskAtDurationExpiryJob` |
+| `completed`/`rejected`/`cancelled` | **Skip** | Already terminal |
+
+**Race condition protection:** The job uses `lockForUpdate()` inside a DB transaction and re-reads the status after acquiring the lock. If the task transitioned to `in_progress` between the initial read and the lock (e.g., user started at 11:59 PM), the rejection is skipped.
+
+#### 24.13.2 Auto-Close Now Rejects (Not Completes)
+
+`EmployeeTaskAutoCloseService::closeIfExpired()` was modified to set status to **Rejected** (instead of Completed) when a task's duration expires or the employee is out of location. This ensures:
+- Tasks not manually ended are auto-rejected
+- `rejected_at` and `rejection_reason` are populated
+- The task won't appear in reports
+
+#### 24.13.3 Prevent Concurrent Active Tasks
+
+`EmployeeTaskLifecycleService::start()` now checks if the user already has an active task (`in_progress` or `paused`) via `EmployeeTaskRepository::findActiveTaskForUser()`. If found, throws `EmployeeTaskException::hasOtherOpenTask()`.
+
+#### 24.13.4 Rejected Tasks Excluded from Reports
+
+`EmployeeTaskReportService::getIntraDayReport()` queries only tasks with status `completed`, `in_progress`, or `paused`. Rejected tasks (whether auto-rejected via `AutoRejectStaleTaskJob`, auto-close, or manually rejected) never appear in reports.
+
+#### 24.13.5 Example Scenarios
+
+**Scenario 1: Task never started**
+- Task created for 25/6 at 2 PM → `AutoRejectStaleTaskJob` dispatched with delay = 10 hours
+- 25/6 passes, user never starts the task
+- 26/6 at 12 AM → job fires → status = `approved` → **auto-rejected**
+
+**Scenario 2: Task started late, crosses midnight**
+- Task created for 25/6, duration = 4 hours
+- 25/6 at 11 PM → user starts task → status = `in_progress`
+- 26/6 at 12 AM → `AutoRejectStaleTaskJob` fires → status = `in_progress` → **skips** (no-op)
+- 26/6 at 3 AM → `AutoCloseTaskAtDurationExpiryJob` fires → **auto-rejected** (duration expired)
+
+**Scenario 3: Task paused and forgotten**
+- Task created for 25/6, user starts and pauses at 5 PM
+- User never resumes → status stays `paused`
+- 26/6 at 12 AM → `AutoRejectStaleTaskJob` fires → status = `paused` → **auto-rejected**

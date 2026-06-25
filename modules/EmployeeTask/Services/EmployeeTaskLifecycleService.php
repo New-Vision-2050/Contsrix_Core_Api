@@ -42,6 +42,11 @@ final class EmployeeTaskLifecycleService
             throw EmployeeTaskException::notApproved();
         }
 
+        $activeTask = $this->taskRepo->findActiveTaskForUser((string) $user->id);
+        if ($activeTask && $activeTask->id !== $task->id) {
+            throw EmployeeTaskException::hasOtherOpenTask();
+        }
+
         $this->conditionService->checkStartTaskConditions($task, $user, $dto->latitude, $dto->longitude);
 
         $timezone      = $this->resolveTimezone($user);

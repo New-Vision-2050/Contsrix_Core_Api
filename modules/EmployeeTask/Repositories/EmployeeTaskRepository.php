@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
+use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\Process\Enums\ProcessStatus;
 
@@ -292,6 +293,14 @@ class EmployeeTaskRepository
         }
 
         return $query->get();
+    }
+
+    public function findActiveTaskForUser(string $userId): ?EmployeeTaskRequest
+    {
+        return EmployeeTaskRequest::query()
+            ->where('user_id', $userId)
+            ->whereIn('status', EmployeeTaskStatus::activeStatuses())
+            ->first();
     }
 
     public function update(EmployeeTaskRequest $task, array $data): EmployeeTaskRequest

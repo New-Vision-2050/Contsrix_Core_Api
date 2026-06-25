@@ -75,11 +75,13 @@ final class EmployeeTaskAutoCloseService
             $totalTaskHours      = round((int) $totalSessionMinutes / 60, 2);
 
             $fresh->update([
-                'status'             => EmployeeTaskStatus::Completed->value,
+                'status'             => EmployeeTaskStatus::Rejected->value,
                 'time_to'            => $closeAtInTz->format('Y-m-d H:i:s'),
                 'total_task_hours'   => $totalTaskHours,
                 'total_pause_minutes'=> $totalPauseMinutes,
                 'shift_end_method'   => $reason,
+                'rejected_at'        => $closeAtInTz->toDateTimeString(),
+                'rejection_reason'   => 'Task auto-rejected: duration expired without manual end.',
             ]);
 
             return true;
