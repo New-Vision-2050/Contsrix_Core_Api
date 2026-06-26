@@ -24,7 +24,7 @@ class CreateProjectNotificationRequest extends FormRequest
             'task_latitude'               => ['required', 'numeric', 'between:-90,90'],
             'task_longitude'              => ['required', 'numeric', 'between:-180,180'],
             'notification_type'           => ['nullable', 'string', 'max:255'],
-            'severity'                    => ['nullable', 'string', 'in:منخفض,متوسط,عالي'],
+            'severity'                    => ['nullable', 'string'],
             'work_type'                   => ['nullable', 'string', 'max:255'],
             'magdy_number'                => ['nullable', 'string', 'max:255'],
             'work_description'            => ['nullable', 'string'],
