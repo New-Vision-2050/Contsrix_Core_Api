@@ -234,7 +234,7 @@ class ProjectNotificationService
     private function taskHasActiveProcess(string $taskId): bool
     {
         return Process::query()
-            ->where('processable_type', ProcedureSettingType::EmployeeTask->value)
+            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
             ->where('processable_id', $taskId)
             ->where('status', ProcessStatus::InProgress)
             ->exists();
@@ -314,7 +314,7 @@ class ProjectNotificationService
         }
 
         event(new WorkflowProcedureTaken(
-            'employee_task',
+            $task->procedureSettingType()->value,
             $task->id,
             $procedureSettingId,
             $userId,

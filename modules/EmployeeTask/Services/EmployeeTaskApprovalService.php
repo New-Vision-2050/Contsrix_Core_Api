@@ -96,7 +96,7 @@ final class EmployeeTaskApprovalService
                 $this->handleFileUpload($approval, $file);
 
                 if ($internalProcedureSettingId) {
-                    event(new WorkflowProcedureTaken('employee_task', $task->id, $internalProcedureSettingId, $userId));
+                    event(new WorkflowProcedureTaken($task->procedureSettingType()->value, $task->id, $internalProcedureSettingId, $userId));
                 }
 
                 $task->update(['status' => EmployeeTaskStatus::Approved->value, 'approved_at' => now()]);
@@ -114,7 +114,7 @@ final class EmployeeTaskApprovalService
                 $this->handleFileUpload($approval, $file);
 
                 if ($internalProcedureSettingId) {
-                    event(new WorkflowProcedureTaken('employee_task', $task->id, $internalProcedureSettingId, $userId));
+                    event(new WorkflowProcedureTaken($task->procedureSettingType()->value, $task->id, $internalProcedureSettingId, $userId));
                 }
 
                 $task->update(['status' => EmployeeTaskStatus::Approved->value, 'approved_at' => now()]);
@@ -162,7 +162,7 @@ final class EmployeeTaskApprovalService
             $adminId,
             $task->user_id,
             $context,
-            processableType: 'employee_task',
+            processableType: $task->procedureSettingType()->value,
             processableId: $task->id,
         );
 
@@ -247,7 +247,7 @@ final class EmployeeTaskApprovalService
         $branchId = $task->user?->userProfessionalData?->branch_id;
 
         return $this->workflow->resolveInternalProcedureSettingByForm(
-            ProcedureSettingType::EmployeeTask->value,
+            $task->procedureSettingType()->value,
             'sendForApproval',
             $task->company_id,
             $branchId,
@@ -264,7 +264,7 @@ final class EmployeeTaskApprovalService
             ->where('id', $id)
             ->whereNotNull('form')
             ->whereHas('parent', function ($q) use ($task) {
-                $q->where('type', ProcedureSettingType::EmployeeTask->value)
+                $q->where('type', $task->procedureSettingType()->value)
                   ->where('company_id', $task->company_id);
             })
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')])

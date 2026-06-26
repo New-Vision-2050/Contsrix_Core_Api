@@ -31,7 +31,7 @@ final class EmployeeTaskProceduresService
 
         /** @var Collection<int, InternalProcedureTaken> $taken */
         $taken = InternalProcedureTaken::query()
-            ->where('processable_type', 'employee_task')
+            ->where('processable_type', $task->procedureSettingType()->value)
             ->where('processable_id', $taskId)
             ->with(['procedureSetting', 'takenByUser'])
             ->orderBy('taken_at')

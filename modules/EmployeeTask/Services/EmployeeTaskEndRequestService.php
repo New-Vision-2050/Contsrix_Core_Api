@@ -75,7 +75,7 @@ final class EmployeeTaskEndRequestService
         $branchId = $task->user?->userProfessionalData?->branch_id;
 
         return $this->workflow->resolveInternalProcedureSettingByForm(
-            ProcedureSettingType::EmployeeTask->value,
+            $task->procedureSettingType()->value,
             $formKey,
             $task->company_id,
             $branchId,
@@ -145,7 +145,7 @@ final class EmployeeTaskEndRequestService
             $adminId,
             $task->user_id,
             $context,
-            processableType: 'employee_task',
+            processableType: $task->procedureSettingType()->value,
             processableId: $task->id,
         );
 
@@ -269,7 +269,7 @@ final class EmployeeTaskEndRequestService
             ->where('id', $id)
             ->whereNotNull('form')
             ->whereHas('parent', function ($q) use ($task) {
-                $q->where('type', ProcedureSettingType::EmployeeTask->value)
+                $q->where('type', $task->procedureSettingType()->value)
                   ->where('company_id', $task->company_id);
             })
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')])

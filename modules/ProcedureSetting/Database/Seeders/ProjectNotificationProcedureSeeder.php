@@ -75,11 +75,12 @@ class ProjectNotificationProcedureSeeder extends Seeder
     private function createOrResolveParent(string $companyId): ProcedureSetting
     {
         $name = 'مهام الصيانة والطوارئ';
+        $type = ProcedureSettingType::ProjectNotificationTask->value;
 
         // Use raw query to bypass tenant global scope.
         $existingId = DB::table('procedure_settings')
             ->where('company_id', $companyId)
-            ->where('type', ProcedureSettingType::EmployeeTask->value)
+            ->where('type', $type)
             ->whereNull('parent_id')
             ->where('name', $name)
             ->value('id');
@@ -91,17 +92,24 @@ class ProjectNotificationProcedureSeeder extends Seeder
         $workFlow = WorkFlow::query()->create([
             'id'         => (string) Str::uuid(),
             'company_id' => $companyId,
-            'name'       => 'project_notification_task',
-            'type'       => ProcedureSettingType::EmployeeTask->value,
+            'name'       => 'default',
+            'type'       => $type,
         ]);
 
-        // Mirror branch associations from the company default employee_task workflow
-        // so the new parent is picked up for the same branches in available-actions.
+        // Mirror branch associations from the company default workflow so the new
+        // parent is picked up for the same branches in available-actions.
+        // Prefer the project_notification_task default, fall back to employee_task
+        // default for backwards compatibility on first migration.
         $defaultWorkFlow = WorkFlow::query()
             ->where('company_id', $companyId)
-            ->where('type', ProcedureSettingType::EmployeeTask->value)
+            ->where('type', $type)
             ->where('name', 'default')
-            ->first();
+            ->first()
+            ?? WorkFlow::query()
+                ->where('company_id', $companyId)
+                ->where('type', ProcedureSettingType::EmployeeTask->value)
+                ->where('name', 'default')
+                ->first();
 
         if ($defaultWorkFlow !== null) {
             $branchIds = $defaultWorkFlow->managementHierarchies()->pluck('management_hierarchies.id')->all();
@@ -116,7 +124,7 @@ class ProjectNotificationProcedureSeeder extends Seeder
             'company_id'   => $companyId,
             'work_flow_id' => $workFlow->id,
             'name'         => $name,
-            'type'         => ProcedureSettingType::EmployeeTask->value,
+            'type'         => $type,
             'execute_type' => 'sequence',
             'sort_order'   => 0,
             'percentage'   => 0,
@@ -169,10 +177,10 @@ class ProjectNotificationProcedureSeeder extends Seeder
             return;
         }
 
-        // 2. Exists under another employee_task parent? Re-parent it.
+        // 2. Exists under another parent? Re-parent it (type may be employee_task
+        // from a previous seed or project_notification_task after this change).
         $otherId = DB::table('procedure_settings')
             ->where('company_id', $companyId)
-            ->where('type', ProcedureSettingType::EmployeeTask->value)
             ->where('form', $formValue)
             ->whereNotNull('parent_id')
             ->where('parent_id', '!=', $parent->id)
@@ -183,6 +191,7 @@ class ProjectNotificationProcedureSeeder extends Seeder
                 ->where('id', $otherId)
                 ->update([
                     'parent_id' => $parent->id,
+                    'type'      => $parent->type,
                     'sort_order' => $sortOrder,
                     'is_active' => true,
                     'updated_at' => now(),
@@ -205,7 +214,7 @@ class ProjectNotificationProcedureSeeder extends Seeder
             'parent_id'    => $parent->id,
             'name'         => $form->labelAr(),
             'form'         => $formValue,
-            'type'         => ProcedureSettingType::EmployeeTask->value,
+            'type'         => $parent->type,
             'execute_type' => 'sequence',
             'sort_order'   => $sortOrder,
             'conditions'   => json_encode(InternalProcessCondition::defaultValuesForForm($form)),

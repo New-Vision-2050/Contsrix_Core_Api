@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\User\Models\User;
 use Modules\Process\Enums\ProcessStatus;
@@ -203,7 +204,19 @@ class EmployeeTaskRequest extends Model implements HasMedia
     public function employeeTaskProcess(): HasOne
     {
         return $this->hasOne(Process::class, 'processable_id')
-            ->where('processable_type', 'employee_task');
+            ->where('processable_type', $this->procedureSettingType()->value);
+    }
+
+    /**
+     * Return the procedure-setting category type for this task.
+     * Project-notification tasks use the dedicated project_notification_task type;
+     * regular employee tasks use employee_task.
+     */
+    public function procedureSettingType(): ProcedureSettingType
+    {
+        return $this->is_project_notification
+            ? ProcedureSettingType::ProjectNotificationTask
+            : ProcedureSettingType::EmployeeTask;
     }
 
     public function hasPendingApprovalRequest(): bool

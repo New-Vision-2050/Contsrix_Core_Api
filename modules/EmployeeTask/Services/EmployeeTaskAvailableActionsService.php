@@ -38,9 +38,9 @@ final class EmployeeTaskAvailableActionsService
             : null;
 
         return $this->actionsService->forProcessable(
-            'employee_task',
+            $task->procedureSettingType()->value,
             $task->id,
-            ProcedureSettingType::EmployeeTask->value,
+            $task->procedureSettingType()->value,
             $task->company_id,
             $branchId,
             $task->procedure_setting_id,

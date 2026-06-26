@@ -247,8 +247,10 @@ final class EmployeeTaskFormConditionService
         string  $companyId,
         ?string $branchId,
     ): ?array {
+        $procedureType = $this->procedureTypeForForm($formKey);
+
         $settings = $this->engine->resolveSettingsForEntry(
-            ProcedureSettingType::EmployeeTask->value,
+            $procedureType,
             $formKey,
             $companyId,
             $branchId,
@@ -296,6 +298,15 @@ final class EmployeeTaskFormConditionService
         }
 
         return $map;
+    }
+
+    private function procedureTypeForForm(string $formKey): string
+    {
+        try {
+            return InternalProcessForm::from($formKey)->procedureSettingType()->value;
+        } catch (\ValueError) {
+            return ProcedureSettingType::EmployeeTask->value;
+        }
     }
 
 }
