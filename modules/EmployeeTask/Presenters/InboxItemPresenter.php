@@ -26,6 +26,7 @@ use Modules\Shared\Media\Presenters\MediaPresenter;
  *   employee: { id, name },
  *   status,
  *   current_step: { id, name, step_order, is_approve, action_takers[] },
+ *   duration_hours,
  *   summary: { ... type-specific ... },
  *   created_at
  * }
@@ -54,8 +55,8 @@ final class InboxItemPresenter
             'employee'      => self::employee($task->relationLoaded('user') ? $task->user : null),
             'status'        => $task->status,
             'current_step'  => self::stepFromProcess($task),
+            'duration_hours' => HoursFormatter::fromDecimalString($task->duration_hours),
             'summary'       => [
-                'duration_hours' => HoursFormatter::fromDecimalString($task->duration_hours),
                 'task_date'      => $task->task_date?->format('Y-m-d'),
                 'task_location'  => [
                     'latitude'      => (float) $task->task_latitude,
