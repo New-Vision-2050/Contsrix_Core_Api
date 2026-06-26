@@ -119,6 +119,11 @@ class ProjectType extends Model
         return $this->hasOne(ProjectSharingSetting::class, 'project_type_id');
     }
 
+    public function maintenanceEmergencySetting()
+    {
+        return $this->hasOne(MaintenanceEmergencySetting::class, 'project_type_id');
+    }
+
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";

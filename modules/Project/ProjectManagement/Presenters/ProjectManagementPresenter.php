@@ -16,6 +16,7 @@ use Modules\Project\ProjectType\Presenters\AttachmentCycleSettingPresenter;
 use Modules\Project\ProjectType\Presenters\ArchiveLibrarySettingPresenter;
 use Modules\Project\ProjectType\Presenters\RolesAndPermissionsSettingPresenter;
 use Modules\Project\ProjectType\Presenters\ProjectSharingSettingPresenter;
+use Modules\Project\ProjectType\Presenters\MaintenanceEmergencySettingPresenter;
 
 class ProjectManagementPresenter extends AbstractPresenter
 {
@@ -160,6 +161,7 @@ class ProjectManagementPresenter extends AbstractPresenter
                 6 => 'department_contract_setting',
                 7 => 'attachment_cycle_setting',
                 8 => 'archive_library_setting',
+                12 => 'maintenance_emergency_setting',
             ];
 
             // Add contract settings from subSubProjectType wrapped in permissions array
@@ -236,6 +238,14 @@ class ProjectManagementPresenter extends AbstractPresenter
                     $this->projectManagement->subSubProjectType->relationLoaded('projectSharingSetting') &&
                     $this->projectManagement->subSubProjectType->projectSharingSetting) {
                     $permissions['project_sharing_setting'] = (new ProjectSharingSettingPresenter($this->projectManagement->subSubProjectType->projectSharingSetting))->getData();
+                }
+
+                // Schema 12: Maintenance and Emergency Setting
+                if ($this->shouldIncludeSchema(12, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('maintenanceEmergencySetting') &&
+                    $this->projectManagement->subSubProjectType->maintenanceEmergencySetting &&
+                    $this->projectManagement->subSubProjectType->maintenanceEmergencySetting->is_shown) {
+                    $permissions['maintenance_emergency_setting'] = (new MaintenanceEmergencySettingPresenter($this->projectManagement->subSubProjectType->maintenanceEmergencySetting))->getData();
                 }
             }
             $data['permissions'] = $permissions;
