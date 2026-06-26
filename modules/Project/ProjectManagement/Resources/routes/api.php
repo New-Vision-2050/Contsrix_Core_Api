@@ -122,8 +122,16 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         // Mobile routes (employee-facing)
         Route::get('/my-tasks', [ProjectNotificationController::class, 'myTasks'])
             ->permission(Permission::PROJECT_NOTIFICATION_LIST());
+        Route::get('/my-inbox', [ProjectNotificationController::class, 'myInbox'])
+            ->permission(Permission::PROJECT_NOTIFICATION_LIST());
+        Route::get('/my-inbox-counts', [ProjectNotificationController::class, 'myInboxCounts'])
+            ->permission(Permission::PROJECT_NOTIFICATION_LIST());
+        Route::get('/filters', [ProjectNotificationController::class, 'filters'])
+            ->permission(Permission::PROJECT_NOTIFICATION_LIST());
         Route::get('/{id}/available-actions', [ProjectNotificationController::class, 'availableActions'])
             ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
+        Route::post('/{id}/confirm-receive', [ProjectNotificationController::class, 'confirmReceive'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
         Route::post('/{id}/start', [ProjectNotificationController::class, 'start'])
             ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
         Route::post('/{id}/take-action', [ProjectNotificationController::class, 'takeAction'])

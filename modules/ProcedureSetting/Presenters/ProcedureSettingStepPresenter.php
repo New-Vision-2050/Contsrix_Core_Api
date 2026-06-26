@@ -116,6 +116,7 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'management_hierarchy' => 'Management Hierarchy',
             'specific_procedures'  => 'Specific Procedures',
             'himself'              => 'Himself',
+            'assigned_user'        => 'Assigned User',
             default                => 'Specific User',
         };
     }

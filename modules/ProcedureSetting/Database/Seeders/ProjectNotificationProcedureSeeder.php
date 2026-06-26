@@ -27,7 +27,6 @@ class ProjectNotificationProcedureSeeder extends Seeder
     /** Internal forms we want under the project-notification parent. */
     private const FORMS = [
         InternalProcessForm::CreateProjectNotificationTask,
-        InternalProcessForm::StartProjectNotificationTask,
         InternalProcessForm::ConfirmProjectNotificationPresence,
         InternalProcessForm::UpdateProjectNotificationTask,
         InternalProcessForm::EndProjectNotificationTask,

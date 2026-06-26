@@ -121,6 +121,116 @@ class ProjectNotificationService
         );
     }
 
+    /**
+     * Mobile endpoint: employee inbox of notifications waiting for confirm-receive.
+     * Only approved tasks (not yet started) are shown because the next action is
+     * POST /projects/notifications/{id}/confirm-receive.
+     */
+    public function myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator
+    {
+        $filters = $dto->toFilters();
+        $filters['assigned_user_id'] = $userId;
+        $filters['status'] = 'approved';
+
+        return $this->repository->paginated(
+            $filters,
+            $dto->perPage ?? 15,
+            $dto->sort,
+        );
+    }
+
+    /**
+     * Count assigned notifications grouped by status for the mobile inbox badge.
+     */
+    public function inboxCounts(string $userId, array $filters = []): array
+    {
+        $query = ProjectNotification::query()
+            ->where('assigned_user_id', $userId);
+
+        $this->applyDateFilters($query, $filters);
+
+        $rows = $query
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        return [
+            'pending'     => (int) ($rows['pending'] ?? 0),
+            'approved'    => (int) ($rows['approved'] ?? 0),
+            'in_progress' => (int) ($rows['in_progress'] ?? 0),
+            'completed'   => (int) ($rows['completed'] ?? 0),
+            'rejected'    => (int) ($rows['rejected'] ?? 0),
+            'cancelled'   => (int) ($rows['cancelled'] ?? 0),
+        ];
+    }
+
+    /**
+     * Filter metadata for the mobile filter UI:
+     *   - statuses: key, count
+     *   - projects: key (project_id), title, count
+     *   - duration: min_hours, max_hours
+     */
+    public function filterMetadata(string $userId, array $filters = []): array
+    {
+        $base = ProjectNotification::query()
+            ->where('assigned_user_id', $userId);
+
+        $this->applyDateFilters($base, $filters);
+
+        $statusQuery = clone $base;
+        $statusCounts = $statusQuery
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $projectQuery = clone $base;
+        $projectQuery = $projectQuery->whereNotNull('project_id');
+        $projectRows = $projectQuery
+            ->leftJoin('projects', 'project_notifications.project_id', '=', 'projects.id')
+            ->selectRaw('projects.id as project_id, projects.name as project_name, COUNT(*) as count')
+            ->groupBy('projects.id', 'projects.name')
+            ->get();
+
+        $projectCounts = [];
+        foreach ($projectRows as $row) {
+            $projectCounts[] = [
+                'id'    => $row->project_id,
+                'name'  => $row->project_name,
+                'count' => (int) $row->count,
+            ];
+        }
+
+        $durationQuery = clone $base;
+        $durationStats = $durationQuery
+            ->selectRaw('MIN(duration_hours) as min_hours, MAX(duration_hours) as max_hours')
+            ->first();
+
+        return [
+            'status_counts'  => $statusCounts,
+            'project_counts' => $projectCounts,
+            'duration'       => [
+                'min_hours' => $durationStats?->min_hours ? (float) $durationStats->min_hours : null,
+                'max_hours' => $durationStats?->max_hours ? (float) $durationStats->max_hours : null,
+            ],
+        ];
+    }
+
+    private function applyDateFilters($query, array $filters): void
+    {
+        if (!empty($filters['task_date'])) {
+            $query->whereDate('task_date', $filters['task_date']);
+            return;
+        }
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('task_date', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('task_date', '<=', $filters['date_to']);
+        }
+    }
+
     public function get(string $id): ProjectNotification
     {
         $notification = $this->repository->findById($id);
@@ -280,6 +390,18 @@ class ProjectNotificationService
         return $this->availableActionsService->forTask($task->id);
     }
 
+    /**
+     * Confirm-receive for project notifications: starts the linked task and moves it
+     * from the employee inbox (approved) to the assigned tasks list (in_progress).
+     * Internally equivalent to startTask, exposed under the confirm-receive semantics.
+     */
+    public function confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
+    {
+        $task = $this->linkedTask($notificationId);
+
+        return $this->lifecycleService->start($task->id, $dto, $user);
+    }
+
     public function startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
     {
         $task = $this->linkedTask($notificationId);
@@ -295,8 +417,10 @@ class ProjectNotificationService
     }
 
     /**
-     * Records a generic internal procedure action (e.g. تأكيد التواجد or تحديث)
-     * that is returned by availableActions(). Validates the procedure is currently
+     * Records a generic internal procedure action (e.g. تحديث) that is returned
+     * by availableActions(). Confirm-receive and end are handled by dedicated
+     * lifecycle methods; this method is for mid-lifecycle actions such as
+     * UpdateProjectNotificationTask. Validates the procedure is currently
      * available, then fires WorkflowProcedureTaken so downstream actions unlock.
      */
     public function takeAction(

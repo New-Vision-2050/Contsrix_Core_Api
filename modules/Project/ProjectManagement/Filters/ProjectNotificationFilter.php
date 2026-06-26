@@ -44,6 +44,11 @@ class ProjectNotificationFilter extends SearchModelFilter
         return $this->where('assigned_user_id', $userId);
     }
 
+    public function taskDate($date)
+    {
+        return $this->whereDate('task_date', $date);
+    }
+
     public function dateFrom($date)
     {
         return $this->whereDate('task_date', '>=', $date);

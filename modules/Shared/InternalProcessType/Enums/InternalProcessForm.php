@@ -21,7 +21,6 @@ enum InternalProcessForm: string
     case EndMeeting          = 'endMeeting';
     case AttachAttachments   = 'attachAttachments';
     case CreateProjectNotificationTask = 'createProjectNotificationTask';
-    case StartProjectNotificationTask    = 'startProjectNotificationTask';
     case ConfirmProjectNotificationPresence = 'confirmProjectNotificationPresence';
     case UpdateProjectNotificationTask      = 'updateProjectNotificationTask';
     case EndProjectNotificationTask         = 'endProjectNotificationTask';
@@ -42,8 +41,7 @@ enum InternalProcessForm: string
             self::EndMeeting          => 'انهاء اجتماع',
             self::AttachAttachments   => 'ارفاق مرفقات',
             self::CreateProjectNotificationTask => 'إنشاء إشعار مشروع',
-            self::StartProjectNotificationTask    => 'تأكيد استلام',
-            self::ConfirmProjectNotificationPresence => 'تأكيد التواجد',
+            self::ConfirmProjectNotificationPresence => 'تأكيد استلام',
             self::UpdateProjectNotificationTask      => 'تحديث',
             self::EndProjectNotificationTask         => 'إنهاء المهمة',
         };
@@ -68,14 +66,8 @@ enum InternalProcessForm: string
             ],
             self::EndTask   => [],
             self::CreateProjectNotificationTask => [
-                InternalProcessCondition::AllowDuringShift,
-                InternalProcessCondition::AllowOutsideShift,
-                InternalProcessCondition::AllowOnHolidays,
                 InternalProcessCondition::InsideCustomLocations,
-                InternalProcessCondition::MaxTaskDuration,
-                InternalProcessCondition::MaxScheduledDateOffset,
             ],
-            self::StartProjectNotificationTask,
             self::ConfirmProjectNotificationPresence,
             self::UpdateProjectNotificationTask,
             self::EndProjectNotificationTask => [
@@ -138,7 +130,6 @@ enum InternalProcessForm: string
             self::StartTask,
             self::EndTask => ['employee_task'],
             self::CreateProjectNotificationTask,
-            self::StartProjectNotificationTask,
             self::ConfirmProjectNotificationPresence,
             self::UpdateProjectNotificationTask,
             self::EndProjectNotificationTask => ['employee_task', 'project_notification_task'],
@@ -173,7 +164,6 @@ enum InternalProcessForm: string
     {
         return match ($this) {
             self::CreateProjectNotificationTask,
-            self::StartProjectNotificationTask,
             self::ConfirmProjectNotificationPresence,
             self::UpdateProjectNotificationTask,
             self::EndProjectNotificationTask => ProcedureSettingType::ProjectNotificationTask,

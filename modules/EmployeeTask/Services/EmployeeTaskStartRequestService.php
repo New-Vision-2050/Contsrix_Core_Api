@@ -56,10 +56,10 @@ final class EmployeeTaskStartRequestService
             return $this->loadInternalProcedureSetting($internalProcedureSettingId, $task);
         }
 
-        // Project-notification tasks use their own dedicated start form so the
-        // names/conditions shown in the UI match the image tabs.
+        // Project-notification tasks use a confirm-receipt form that behaves
+        // like startTask for the lifecycle (moves the task to in_progress).
         $formKey = $task->is_project_notification
-            ? InternalProcessForm::StartProjectNotificationTask->value
+            ? InternalProcessForm::ConfirmProjectNotificationPresence->value
             : InternalProcessForm::StartTask->value;
 
         // Prefer the task's snapshot parent procedure setting, then fall back to
