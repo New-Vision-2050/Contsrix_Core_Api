@@ -25,5 +25,13 @@ return [
         'TERM_SETTING_UPDATE' => 'client-relations.client-setting*term-setting.update',
         'TERM_SETTING_DELETE' => 'client-relations.client-setting*term-setting.delete',
         'TERM_SETTING_EXPORT' => 'client-relations.client-setting*term-setting.export',
+
+        // Project Notifications
+        'PROJECT_NOTIFICATION_LIST'   => 'work-panel.project-management*project-notification.list',
+        'PROJECT_NOTIFICATION_VIEW'   => 'work-panel.project-management*project-notification.view',
+        'PROJECT_NOTIFICATION_CREATE' => 'work-panel.project-management*project-notification.create',
+        'PROJECT_NOTIFICATION_UPDATE' => 'work-panel.project-management*project-notification.update',
+        'PROJECT_NOTIFICATION_DELETE' => 'work-panel.project-management*project-notification.delete',
+        'PROJECT_NOTIFICATION_EXPORT' => 'work-panel.project-management*project-notification.export',
     ],
 ];

@@ -40,8 +40,9 @@ class EmployeeTaskRequestService
         private readonly EmployeeTaskFormConditionService $conditionService,
     ) {}
 
-    public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
+    public function create(CreateEmployeeTaskRequestDTO $dto, ?string $formKey = null): EmployeeTaskRequest
     {
+        $formKey = $formKey ?? InternalProcessForm::CreateTask->value;
         $procedureType = ProcedureSettingType::EmployeeTask->value;
         $context = $dto->projectId ? ['project_id' => $dto->projectId] : [];
         $creator = User::query()
@@ -62,19 +63,32 @@ class EmployeeTaskRequestService
             $dto->taskLongitude,
             $dto->currentLatitude,
             $dto->currentLongitude,
+            $formKey,
         );
         $preview = $this->engine->previewResponsibles(
             $procedureType,
-            InternalProcessForm::CreateTask->value,
+            $formKey,
             $companyId,
             $branchId,
             $dto->userId,
             $context,
         );
 
+        // Resolve the parent procedure setting once so we can persist it on the
+        // task row. This lets later lifecycle actions (start/end) find the
+        // correct internal procedures under the same parent.
+        $parentSetting = $this->engine->resolveParentSetting(
+            $procedureType,
+            $companyId,
+            $branchId,
+        );
+
         $data = $dto->toArray();
         $data['serial_number'] = $this->repository->generateSerialNumber();
         $data['company_id'] = $companyId;
+        if ($parentSetting !== null) {
+            $data['procedure_setting_id'] = $parentSetting->id;
+        }
 
         if ($preview['auto_approve']) {
             $data['status'] = EmployeeTaskStatus::Approved->value;
@@ -91,7 +105,7 @@ class EmployeeTaskRequestService
                 );
             }
 
-            $this->markCreateTaskProceduresTaken($task, $dto->userId);
+            $this->markCreateTaskProceduresTaken($task, $dto->userId, $formKey, $parentSetting);
 
             $this->dispatchStaleRejectionJob($task, $creator);
 
@@ -116,7 +130,7 @@ class EmployeeTaskRequestService
         // only once the Process reaches Completed status (via ProcessWorkflowService
         // firing WorkflowProcedureTaken). This prevents startTask (or any procedure
         // that appears_after createTask) from appearing before the admin approves.
-        $this->createProcessesForTask($task);
+        $this->createProcessesForTask($task, $formKey, $parentSetting);
 
         $this->dispatchStaleRejectionJob($task, $creator);
 
@@ -129,15 +143,23 @@ class EmployeeTaskRequestService
      * When a real workflow exists, the taken status is recorded by
      * ProcessWorkflowService::fireProcedureTakenIfApplicable() when the process completes.
      */
-    private function markCreateTaskProceduresTaken(EmployeeTaskRequest $task, string $userId): void
-    {
-        $parentSetting = $this->engine->resolveParentSetting(
-            ProcedureSettingType::EmployeeTask->value,
-            $task->company_id,
-            $task->user?->userProfessionalData?->branch_id !== null
-                ? (string) $task->user->userProfessionalData->branch_id
-                : null,
-        );
+    private function markCreateTaskProceduresTaken(
+        EmployeeTaskRequest $task,
+        string $userId,
+        ?string $formKey = null,
+        ?ProcedureSetting $parentSetting = null,
+    ): void {
+        $formKey = $formKey ?? InternalProcessForm::CreateTask->value;
+
+        if ($parentSetting === null) {
+            $parentSetting = $this->engine->resolveParentSetting(
+                ProcedureSettingType::EmployeeTask->value,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+        }
 
         if ($parentSetting === null) {
             return;
@@ -145,7 +167,7 @@ class EmployeeTaskRequestService
 
         $createTaskSettings = ProcedureSetting::query()
             ->where('parent_id', $parentSetting->id)
-            ->where('form', InternalProcessForm::CreateTask->value)
+            ->where('form', $formKey)
             ->where('is_active', true)
             ->pluck('id');
 
@@ -193,19 +215,31 @@ class EmployeeTaskRequestService
         return getTimeZoneBranchByRequest() ?? config('app.timezone', 'Asia/Riyadh');
     }
 
-    private function createProcessesForTask(EmployeeTaskRequest $task): void
-    {
+    private function createProcessesForTask(
+        EmployeeTaskRequest $task,
+        ?string $formKey = null,
+        ?ProcedureSetting $parentSetting = null,
+    ): void {
+        $formKey = $formKey ?? InternalProcessForm::CreateTask->value;
         $task->load('user.userProfessionalData');
         $branchId = $task->user?->userProfessionalData?->branch_id !== null
             ? (string) $task->user->userProfessionalData->branch_id
             : null;
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
 
+        // Resolve the parent once so we can use it for both workflow start and
+        // post-auto-approve marking.
+        $parentSetting = $parentSetting ?? $this->engine->resolveParentSetting(
+            ProcedureSettingType::EmployeeTask->value,
+            $task->company_id,
+            $branchId,
+        );
+
         $result = $this->engine->startWorkflow(
             processableType: ProcedureSettingType::EmployeeTask->value,
             processableId: $task->id,
             type: ProcedureSettingType::EmployeeTask->value,
-            formKey: InternalProcessForm::CreateTask->value,
+            formKey: $formKey,
             companyId: $task->company_id,
             branchId: $branchId,
             createdByUserId: $task->user_id,
@@ -221,7 +255,7 @@ class EmployeeTaskRequestService
             // All workflow steps resolved to empty users at runtime (edge case).
             // Mark createTask procedures taken immediately so available-actions
             // correctly unlocks downstream procedures.
-            $this->markCreateTaskProceduresTaken($task, (string) $task->user_id);
+            $this->markCreateTaskProceduresTaken($task, (string) $task->user_id, $formKey, $parentSetting);
 
             return;
         }
@@ -347,6 +381,11 @@ class EmployeeTaskRequestService
     public function inboxAllEndRequests(string $adminId, array $filters = []): Collection
     {
         return $this->repository->allEndRequestInboxForAdmin($adminId, $filters);
+    }
+
+    public function inboxAllStartRequests(string $adminId, array $filters = []): Collection
+    {
+        return $this->repository->allStartRequestInboxForAdmin($adminId, $filters);
     }
 
     public function get(string $id): EmployeeTaskRequest

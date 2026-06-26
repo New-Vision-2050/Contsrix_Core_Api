@@ -55,9 +55,10 @@ final class EmployeeTaskFormConditionService
         float   $taskLongitude,
         ?float  $currentLatitude = null,
         ?float  $currentLongitude = null,
+        ?string $formKey = null,
     ): void {
         $map = $this->resolveConditionMap(
-            InternalProcessForm::CreateTask->value,
+            $formKey ?? InternalProcessForm::CreateTask->value,
             $companyId,
             $branchId,
         );
@@ -199,8 +200,12 @@ final class EmployeeTaskFormConditionService
             ? (string) $user->userProfessionalData->branch_id
             : null;
 
+        $formKey = $task->is_project_notification
+            ? InternalProcessForm::StartProjectNotificationTask->value
+            : InternalProcessForm::StartTask->value;
+
         $map = $this->resolveConditionMap(
-            InternalProcessForm::StartTask->value,
+            $formKey,
             $companyId,
             $branchId,
         );

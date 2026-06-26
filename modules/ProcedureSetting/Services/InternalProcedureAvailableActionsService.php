@@ -44,8 +44,9 @@ final class InternalProcedureAvailableActionsService
         string $procedureCategoryType,
         string $companyId,
         ?string $branchId,
+        ?string $parentSettingId = null,
     ): array {
-        $parentSettingId = $this->resolveParentSettingId($procedureCategoryType, $companyId, $branchId);
+        $parentSettingId = $parentSettingId ?? $this->resolveParentSettingId($procedureCategoryType, $companyId, $branchId);
 
         if ($parentSettingId === null) {
             return [];

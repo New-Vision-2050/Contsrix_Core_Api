@@ -144,6 +144,11 @@ final class EmployeeTaskException extends RuntimeException
         return new self(__('The selected internal procedure setting is invalid or does not belong to this task category.'), 422);
     }
 
+    public static function procedureNotAvailable(): self
+    {
+        return new self(__('The requested procedure is not currently available for this task.'), 422);
+    }
+
     public static function pendingEndRequestExists(): self
     {
         return new self(__('A pending end request already exists for this task.'), 422);
@@ -157,6 +162,21 @@ final class EmployeeTaskException extends RuntimeException
     public static function endRequestAlreadyResolved(): self
     {
         return new self(__('This end request has already been resolved.'), 422);
+    }
+
+    public static function pendingStartRequestExists(): self
+    {
+        return new self(__('A pending start request already exists for this task.'), 422);
+    }
+
+    public static function startRequestNotFound(): self
+    {
+        return new self(__('Task start request not found.'), 404);
+    }
+
+    public static function startRequestAlreadyResolved(): self
+    {
+        return new self(__('This start request has already been resolved.'), 422);
     }
 
     public static function notAllowedDuringShift(): self

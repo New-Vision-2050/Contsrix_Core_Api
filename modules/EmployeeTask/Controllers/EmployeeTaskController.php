@@ -245,18 +245,10 @@ class EmployeeTaskController extends Controller
                     latitude:  (float) $request->input('latitude'),
                     longitude: (float) $request->input('longitude'),
                     internalProcedureSettingId: $request->input('internal_procedure_setting_id'),
+                    notes:     $request->input('notes'),
                 ),
                 $user,
             );
-
-            if ($request->input('internal_procedure_setting_id')) {
-                event(new WorkflowProcedureTaken(
-                    'employee_task',
-                    $task->id,
-                    $request->input('internal_procedure_setting_id'),
-                    (string) Auth::id(),
-                ));
-            }
 
             return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task started successfully');
         } catch (EmployeeTaskException $e) {
@@ -564,6 +556,46 @@ class EmployeeTaskController extends Controller
         $actions = $this->availableActionsService->forTask($id);
 
         return Json::items($actions, message: 'Available actions retrieved successfully');
+    }
+
+    /**
+     * POST /employee-tasks/{id}/take-action
+     *
+     * Records a generic internal procedure action (e.g. تأكيد التواجد or تحديث)
+     * that is returned by GET /employee-tasks/{id}/available-actions. The action
+     * is validated to be currently available before the WorkflowProcedureTaken
+     * event is fired, unlocking downstream procedures.
+     */
+    public function takeAction(string $id): JsonResponse
+    {
+        try {
+            request()->validate([
+                'internal_procedure_setting_id' => ['required', 'uuid', 'exists:procedure_settings,id'],
+                'notes' => ['nullable', 'string', 'max:2000'],
+            ]);
+
+            $procedureSettingId = (string) request()->input('internal_procedure_setting_id');
+            $availableActions = $this->availableActionsService->forTask($id);
+            $availableIds = array_column($availableActions, 'id');
+
+            if (! in_array($procedureSettingId, $availableIds, true)) {
+                throw EmployeeTaskException::procedureNotAvailable();
+            }
+
+            event(new WorkflowProcedureTaken(
+                'employee_task',
+                $id,
+                $procedureSettingId,
+                (string) Auth::id(),
+            ));
+
+            return Json::item([
+                'procedure_setting_id' => $procedureSettingId,
+                'notes' => request()->input('notes'),
+            ], message: 'Procedure action recorded successfully');
+        } catch (EmployeeTaskException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
     }
 
     /**

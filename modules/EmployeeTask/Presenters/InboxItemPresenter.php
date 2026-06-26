@@ -9,6 +9,7 @@ use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\EmployeeTask\Models\EmployeeTaskStartRequest;
 use Modules\Shared\Media\Presenters\MediaPresenter;
 
 /**
@@ -98,6 +99,30 @@ final class InboxItemPresenter
                 'time_from' => $task?->time_from?->format('Y-m-d H:i:s'),
             ],
             'created_at' => $endRequest->created_at?->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    public static function fromStartRequest(EmployeeTaskStartRequest $startRequest): array
+    {
+        $locale = app()->getLocale();
+        $task   = $startRequest->relationLoaded('task') ? $startRequest->task : null;
+
+        return [
+            'id'         => $startRequest->id,
+            'type'       => 'start_request',
+            'type_label' => $locale === 'ar' ? 'طلب بدء مهمة' : 'Start Task Request',
+            'task'       => $task ? self::taskSummary($task) : null,
+            'employee'   => self::employee(
+                $startRequest->relationLoaded('requestedByUser') ? $startRequest->requestedByUser : null
+            ),
+            'status'     => $startRequest->status,
+            'current_step' => self::step($startRequest),
+            'summary'    => [
+                'notes'     => $startRequest->notes,
+                'latitude'  => (float) $startRequest->latitude,
+                'longitude' => (float) $startRequest->longitude,
+            ],
+            'created_at' => $startRequest->created_at?->format('Y-m-d H:i:s'),
         ];
     }
 

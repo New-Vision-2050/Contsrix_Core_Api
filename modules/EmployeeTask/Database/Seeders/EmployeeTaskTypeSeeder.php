@@ -15,5 +15,9 @@ class EmployeeTaskTypeSeeder extends Seeder
             ['id' => (string) Str::uuid(), 'name' => 'Employee Task']
         );
 
+        EmployeeTaskType::firstOrCreate(
+            ['key' => 'project_notification'],
+            ['id' => (string) Str::uuid(), 'name' => 'إشعار مشروع']
+        );
     }
 }

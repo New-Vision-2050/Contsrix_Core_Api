@@ -43,6 +43,7 @@ final class EmployeeTaskAvailableActionsService
             ProcedureSettingType::EmployeeTask->value,
             $task->company_id,
             $branchId,
+            $task->procedure_setting_id,
         );
     }
 }

@@ -7,6 +7,7 @@ use Modules\Project\ProjectManagement\Controllers\ProjectEmployeeController;
 use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
+use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -108,6 +109,33 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::delete('/{id}', [ProjectRoleController::class, 'delete']);
         Route::post('/{id}/assign-permissions', [ProjectRoleController::class, 'assignPermissions']);
         Route::post('/{id}/sync-permissions', [ProjectRoleController::class, 'syncPermissions']);
+    });
+
+    // Project Notifications Routes
+    Route::prefix('notifications')->group(function () {
+        // Static routes MUST come before /{id} to avoid route conflicts
+        Route::get('/employees-with-locations', [ProjectNotificationController::class, 'employeesWithLocations'])
+            ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
+        Route::post('/export', [ProjectNotificationController::class, 'export'])
+            ->permission(Permission::PROJECT_NOTIFICATION_EXPORT());
+
+        // CRUD routes
+        Route::get('/', [ProjectNotificationController::class, 'index'])
+            ->permission(Permission::PROJECT_NOTIFICATION_LIST());
+        Route::post('/', [ProjectNotificationController::class, 'store'])
+            ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
+        Route::get('/{id}', [ProjectNotificationController::class, 'show'])
+            ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
+        Route::put('/{id}', [ProjectNotificationController::class, 'update'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::delete('/{id}', [ProjectNotificationController::class, 'destroy'])
+            ->permission(Permission::PROJECT_NOTIFICATION_DELETE());
+
+        // Action routes
+        Route::post('/{id}/approve', [ProjectNotificationController::class, 'approve'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::post('/{id}/reject', [ProjectNotificationController::class, 'reject'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
     });
 
     Route::get('/{id}', [ProjectManagementController::class, 'show'])

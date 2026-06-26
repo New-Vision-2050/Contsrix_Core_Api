@@ -102,13 +102,19 @@ class InternalProcedureSettingsSeeder extends Seeder
                 ->update(['sort_order' => $form->sortOrder(), 'updated_at' => now()]);
         }
 
-        // Only auto-create children for create*/end* forms.
+        // Only auto-create children for create*/start*/end* forms.
+        // startTask is included so it can be configured with steps for the
+        // new start-task approval workflow (e.g. Project Notification tasks).
+        // Project-notification-specific forms are managed by
+        // ProjectNotificationProcedureSeeder under their own parent.
         $forms = array_values(
             array_filter(
                 $allForms,
                 static fn (InternalProcessForm $form): bool =>
-                    str_starts_with($form->value, 'create') ||
-                    str_starts_with($form->value, 'end'),
+                    (str_starts_with($form->value, 'create') ||
+                    $form->value === 'startTask' ||
+                    str_starts_with($form->value, 'end')) &&
+                    ! str_contains($form->value, 'ProjectNotification'),
             )
         );
 

@@ -16,6 +16,7 @@ use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
 use App\Traits\Shareable;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProjectManagement extends Model
 {
@@ -212,6 +213,11 @@ class ProjectManagement extends Model
     public function projectRoles()
     {
         return $this->hasMany(ProjectRole::class, 'project_id');
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(ProjectNotification::class, 'project_id')->withoutGlobalScopes();
     }
 
     protected static function newFactory(): ProjectManagementFactory

@@ -1,0 +1,1957 @@
+{
+  "info": {
+    "_postman_id": "project-notification-api-collection",
+    "name": "Project Notification API",
+    "description": "Complete API collection for the Project Notification feature.\n\nContains 4 folders:\n1. Project Notifications — CRUD, approve/reject, export, employees-with-locations\n2. Procedure Settings (Setup) — Parent procedure settings, workflow toggle, types\n3. Internal Procedures & Steps — Create internal procedures (form=createProjectNotificationTask), manage steps (action takers), conditions, available-forms, approval-responsibles\n4. Employee Task Lifecycle — Start task, end task, available actions, and admin approve/reject for start/end requests\n\nFlow to set up Project Notification procedures:\n1. GET /procedure-settings/types → see available types\n2. GET /procedure-settings?type=employee_task → find the parent EmployeeTask procedure setting\n3. POST /procedure-settings/internal-procedures → create internal procedure with form=createProjectNotificationTask\n4. GET /procedure-settings/{parentId}/available-forms → see all forms applicable to employee_task type\n5. POST /procedure-settings/{procedureSettingId}/steps → create approval steps with action takers\n6. GET /procedure-settings/approval-responsibles?type=employee_task&form=createProjectNotificationTask → preview who will approve\n7. GET /procedure-settings/forms-conditions?type=createProjectNotificationTask → see condition definitions\n8. PUT /procedure-settings/{parentId}/internal-procedures/{internalProcedureId} → update conditions (enable/disable, change settings)\n9. POST /projects/notifications → create a notification (triggers the workflow)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "url",
+      "value": "http://localhost/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-bearer-token-here",
+      "type": "string"
+    },
+    {
+      "key": "notification_id",
+      "value": "uuid-here",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "uuid-here",
+      "type": "string"
+    },
+    {
+      "key": "parent_procedure_setting_id",
+      "value": "uuid-of-employee-task-parent-procedure-setting",
+      "type": "string",
+      "description": "The parent ProcedureSetting ID for type=employee_task. Get it from GET /procedure-settings?type=employee_task"
+    },
+    {
+      "key": "internal_procedure_id",
+      "value": "uuid-of-createProjectNotificationTask-internal-procedure",
+      "type": "string",
+      "description": "The InternalProcedureSetting ID (child with form=createProjectNotificationTask). Get it from POST /procedure-settings/internal-procedures or GET /procedure-settings/{parentId}/internal-procedures/by-form/createProjectNotificationTask"
+    },
+    {
+      "key": "step_id",
+      "value": "1",
+      "type": "string",
+      "description": "Numeric step ID within a procedure setting"
+    },
+    {
+      "key": "branch_id",
+      "value": "1",
+      "type": "string",
+      "description": "Management hierarchy branch ID"
+    },
+    {
+      "key": "task_id",
+      "value": "uuid-of-linked-employee-task-request",
+      "type": "string",
+      "description": "Linked EmployeeTaskRequest ID (returned in employee_task.id after creating a notification)"
+    },
+    {
+      "key": "start_request_id",
+      "value": "uuid-of-pending-start-request",
+      "type": "string",
+      "description": "EmployeeTaskStartRequest ID (returned when start task triggers a workflow)"
+    },
+    {
+      "key": "end_request_id",
+      "value": "uuid-of-pending-end-request",
+      "type": "string",
+      "description": "EmployeeTaskEndRequest ID (returned when end task triggers a workflow)"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Project Notifications (CRUD)",
+      "description": "Core Project Notification endpoints — list, create, get, update, delete, approve, reject, export, employees-with-locations.\n\nBase path: {{url}}/projects/notifications",
+      "item": [
+        {
+          "name": "List Project Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications?page=1&per_page=15&status=pending&project_id={{project_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "Filter by status (pending, approved, rejected, in_progress, completed, cancelled)"
+                },
+                {
+                  "key": "project_id",
+                  "value": "{{project_id}}",
+                  "description": "Filter by project ID"
+                },
+                {
+                  "key": "notification_type",
+                  "value": "",
+                  "description": "Filter by notification type"
+                },
+                {
+                  "key": "work_type",
+                  "value": "",
+                  "description": "Filter by work type"
+                },
+                {
+                  "key": "contractor_name",
+                  "value": "",
+                  "description": "Filter by contractor name (partial match)"
+                },
+                {
+                  "key": "assigned_user_id",
+                  "value": "",
+                  "description": "Filter by assigned user ID"
+                },
+                {
+                  "key": "date_from",
+                  "value": "",
+                  "description": "Filter from date (Y-m-d)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "",
+                  "description": "Filter to date (Y-m-d)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search in notification_number, contractor_name, work_description, repair_point"
+                },
+                {
+                  "key": "sort",
+                  "value": "",
+                  "description": "Sort field (created_at, task_date, notification_number, status, severity). Append _desc or _asc"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"uuid-here\",\n      \"notification_number\": \"NTF-2026-00001\",\n      \"notification_type\": \"صيانة\",\n      \"work_type\": \"كهرباء\",\n      \"severity\": \"منخفض\",\n      \"contractor_name\": \"شركة المقاولات\",\n      \"magdy_number\": \"M-123\",\n      \"status\": \"pending\",\n      \"status_label\": \"بانتظار الرد\",\n      \"task_date\": \"2026-06-27\",\n      \"selected_distance_meters\": 150,\n      \"violations_count\": 0,\n      \"created_at\": \"2026-06-27 10:00:00\",\n      \"assigned_user\": {\n        \"id\": \"user-uuid\",\n        \"name\": \"أحمد محمد\"\n      }\n    }\n  ],\n  \"meta\": {\n    \"total\": 1,\n    \"per_page\": 15,\n    \"current_page\": 1,\n    \"last_page\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Project Notification (5-Step Wizard Submit)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "project_id",
+                  "value": "{{project_id}}",
+                  "type": "text",
+                  "description": "Required - UUID of the project (Step 1: Project selection)"
+                },
+                {
+                  "key": "assigned_user_id",
+                  "value": "user-uuid-here",
+                  "type": "text",
+                  "description": "Required - UUID of the assigned engineer (Step 2: Employee selection from employees-with-locations)"
+                },
+                {
+                  "key": "task_date",
+                  "value": "2026-06-27",
+                  "type": "text",
+                  "description": "Required - Task date Y-m-d (Step 3: Date & duration)"
+                },
+                {
+                  "key": "duration_hours",
+                  "value": "4.00",
+                  "type": "text",
+                  "description": "Required - Duration in hours (0.25 to 24) (Step 3: Date & duration)"
+                },
+                {
+                  "key": "task_latitude",
+                  "value": "24.7136",
+                  "type": "text",
+                  "description": "Required - Task location latitude (Step 4: Location)"
+                },
+                {
+                  "key": "task_longitude",
+                  "value": "46.6753",
+                  "type": "text",
+                  "description": "Required - Task location longitude (Step 4: Location)"
+                },
+                {
+                  "key": "notification_type",
+                  "value": "صيانة",
+                  "type": "text",
+                  "description": "Nullable - Notification type (Step 5: Details)"
+                },
+                {
+                  "key": "severity",
+                  "value": "منخفض",
+                  "type": "text",
+                  "description": "Nullable - Severity (منخفض, متوسط, عالي). Default: منخفض (Step 5: Details)"
+                },
+                {
+                  "key": "work_type",
+                  "value": "كهرباء",
+                  "type": "text",
+                  "description": "Nullable - Work type (Step 5: Details)"
+                },
+                {
+                  "key": "magdy_number",
+                  "value": "M-123",
+                  "type": "text",
+                  "description": "Nullable - Magdy number (Step 5: Details)"
+                },
+                {
+                  "key": "work_description",
+                  "value": "صيانة عامة للنظام الكهربائي",
+                  "type": "text",
+                  "description": "Nullable - Work description (Step 5: Details)"
+                },
+                {
+                  "key": "contractor_name",
+                  "value": "شركة المقاولات",
+                  "type": "text",
+                  "description": "Nullable - Contractor name (Step 5: Contractor info)"
+                },
+                {
+                  "key": "contractor_number",
+                  "value": "C-456",
+                  "type": "text",
+                  "description": "Nullable - Contractor number (Step 5: Contractor info)"
+                },
+                {
+                  "key": "contractor_technical_number",
+                  "value": "T-789",
+                  "type": "text",
+                  "description": "Nullable - Contractor technical number (Step 5: Contractor info)"
+                },
+                {
+                  "key": "contractor_category",
+                  "value": "كهرباء",
+                  "type": "text",
+                  "description": "Nullable - Contractor category (Step 5: Contractor info)"
+                },
+                {
+                  "key": "contractor_notes",
+                  "value": "ملاحظات إضافية",
+                  "type": "text",
+                  "description": "Nullable - Contractor notes (Step 5: Contractor info)"
+                },
+                {
+                  "key": "contractor_mobile",
+                  "value": "+966500000000",
+                  "type": "text",
+                  "description": "Nullable - Contractor mobile (Step 5: Contractor info)"
+                },
+                {
+                  "key": "location_radius",
+                  "value": "100",
+                  "type": "text",
+                  "description": "Nullable - Location radius in meters (Step 4: Location)"
+                },
+                {
+                  "key": "location_link",
+                  "value": "https://maps.google.com/?q=24.7136,46.6753",
+                  "type": "text",
+                  "description": "Nullable - Location link (Step 4: Location)"
+                },
+                {
+                  "key": "repair_point",
+                  "value": "نقطة الإصلاح الرئيسية",
+                  "type": "text",
+                  "description": "Nullable - Repair point (Step 5: Details)"
+                },
+                {
+                  "key": "selected_distance_meters",
+                  "value": "150",
+                  "type": "text",
+                  "description": "Nullable - Selected distance in meters (Step 4: Location — from employees-with-locations response)"
+                },
+                {
+                  "key": "notes",
+                  "value": "ملاحظات عامة",
+                  "type": "text",
+                  "description": "Nullable - Notes (Step 5: Details)"
+                },
+                {
+                  "key": "approval_responsible_id",
+                  "value": "",
+                  "type": "text",
+                  "description": "Nullable - UUID of approval responsible (auto-resolved from workflow if omitted)"
+                },
+                {
+                  "key": "assignment_responsible_id",
+                  "value": "",
+                  "type": "text",
+                  "description": "Nullable - UUID of assignment responsible"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "description": "Nullable - Attachment files (max 20MB each, multiple files allowed)",
+                  "src": []
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "description": "Nullable - Additional attachment file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/projects/notifications",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Created Response",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"project_id\": \"project-uuid\",\n    \"employee_task_request_id\": \"task-uuid\",\n    \"notification_type\": \"صيانة\",\n    \"severity\": \"منخفض\",\n    \"work_type\": \"كهرباء\",\n    \"magdy_number\": \"M-123\",\n    \"work_description\": \"صيانة عامة للنظام الكهربائي\",\n    \"contractor_name\": \"شركة المقاولات\",\n    \"contractor_number\": \"C-456\",\n    \"contractor_technical_number\": \"T-789\",\n    \"contractor_category\": \"كهرباء\",\n    \"contractor_notes\": \"ملاحظات إضافية\",\n    \"contractor_mobile\": \"+966500000000\",\n    \"task_latitude\": 24.7136,\n    \"task_longitude\": 46.6753,\n    \"location_radius\": 100,\n    \"location_link\": \"https://maps.google.com/?q=24.7136,46.6753\",\n    \"repair_point\": \"نقطة الإصلاح الرئيسية\",\n    \"assigned_user_id\": \"user-uuid\",\n    \"selected_distance_meters\": 150,\n    \"status\": \"pending\",\n    \"status_label\": \"بانتظار الرد\",\n    \"task_date\": \"2026-06-27\",\n    \"duration_hours\": 4.0,\n    \"notes\": \"ملاحظات عامة\",\n    \"approved_by\": null,\n    \"approved_at\": null,\n    \"rejected_by\": null,\n    \"rejected_at\": null,\n    \"rejection_reason\": null,\n    \"created_by_user_id\": \"creator-uuid\",\n    \"created_at\": \"2026-06-27 10:00:00\",\n    \"updated_at\": \"2026-06-27 10:00:00\",\n    \"violations_count\": 0,\n    \"assigned_user\": {\n      \"id\": \"user-uuid\",\n      \"name\": \"أحمد محمد\"\n    },\n    \"creator\": {\n      \"id\": \"creator-uuid\",\n      \"name\": \"مدير المشروع\"\n    },\n    \"project\": {\n      \"id\": \"project-uuid\",\n      \"name\": \"مشروع الرياض\"\n    },\n    \"employee_task\": {\n      \"id\": \"task-uuid\",\n      \"status\": \"pending\",\n      \"serial_number\": \"TSK-2026-00001\"\n    },\n    \"attachments\": []\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Project Notification by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"project_id\": \"project-uuid\",\n    \"employee_task_request_id\": \"task-uuid\",\n    \"notification_type\": \"صيانة\",\n    \"severity\": \"منخفض\",\n    \"work_type\": \"كهرباء\",\n    \"status\": \"pending\",\n    \"status_label\": \"بانتظار الرد\",\n    \"task_date\": \"2026-06-27\",\n    \"duration_hours\": 4.0,\n    \"assigned_user\": { \"id\": \"user-uuid\", \"name\": \"أحمد محمد\" },\n    \"creator\": { \"id\": \"creator-uuid\", \"name\": \"مدير المشروع\" },\n    \"project\": { \"id\": \"project-uuid\", \"name\": \"مشروع الرياض\" },\n    \"employee_task\": { \"id\": \"task-uuid\", \"status\": \"pending\", \"serial_number\": \"TSK-2026-00001\" },\n    \"attachments\": []\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Project Notification",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "notification_type",
+                  "value": "طارئ",
+                  "type": "text",
+                  "description": "Nullable - Notification type"
+                },
+                {
+                  "key": "severity",
+                  "value": "عالي",
+                  "type": "text",
+                  "description": "Nullable - Severity (منخفض, متوسط, عالي)"
+                },
+                {
+                  "key": "work_type",
+                  "value": "سباكة",
+                  "type": "text",
+                  "description": "Nullable - Work type"
+                },
+                {
+                  "key": "work_description",
+                  "value": "إصلاح طارئ في شبكة السباكة",
+                  "type": "text",
+                  "description": "Nullable - Work description"
+                },
+                {
+                  "key": "contractor_name",
+                  "value": "شركة السباكة الحديثة",
+                  "type": "text",
+                  "description": "Nullable - Contractor name"
+                },
+                {
+                  "key": "assigned_user_id",
+                  "value": "new-user-uuid",
+                  "type": "text",
+                  "description": "Nullable - Reassign to different engineer"
+                },
+                {
+                  "key": "notes",
+                  "value": "تم تحديث الإشعار",
+                  "type": "text",
+                  "description": "Nullable - Notes"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Project Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Project Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}/approve",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}",
+                "approve"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Approved Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Notification approved successfully\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"status\": \"approved\",\n    \"status_label\": \"معتمد\",\n    \"approved_by\": { \"id\": \"approver-uuid\", \"name\": \"مدير عام\" },\n    \"approved_at\": \"2026-06-27 11:00:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Project Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"الإشعار غير مكتمل البيانات، يرجى إرفاق المستندات المطلوبة\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}/reject",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}",
+                "reject"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Rejected Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Notification rejected\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"status\": \"rejected\",\n    \"status_label\": \"مرفوض\",\n    \"rejected_by\": { \"id\": \"rejecter-uuid\", \"name\": \"مدير عام\" },\n    \"rejected_at\": \"2026-06-27 11:00:00\",\n    \"rejection_reason\": \"الإشعار غير مكتمل البيانات، يرجى إرفاق المستندات المطلوبة\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Export Project Notifications",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "format",
+                  "value": "xlsx",
+                  "description": "Export format (xlsx, csv)"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "Filter by status"
+                },
+                {
+                  "key": "project_id",
+                  "value": "{{project_id}}",
+                  "description": "Filter by project ID"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/projects/notifications/export",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "export"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Employees With Locations (Step 2 of Wizard)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/employees-with-locations?project_id={{project_id}}&latitude=24.7136&longitude=46.6753&radius=5000",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "employees-with-locations"
+              ],
+              "query": [
+                {
+                  "key": "project_id",
+                  "value": "{{project_id}}",
+                  "description": "Required - UUID of the project"
+                },
+                {
+                  "key": "latitude",
+                  "value": "24.7136",
+                  "description": "Required - Notification location latitude"
+                },
+                {
+                  "key": "longitude",
+                  "value": "46.6753",
+                  "description": "Required - Notification location longitude"
+                },
+                {
+                  "key": "radius",
+                  "value": "5000",
+                  "description": "Nullable - Filter radius in meters (only show employees within this distance)"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"user_id\": \"user-uuid-1\",\n      \"name\": \"أحمد محمد\",\n      \"status\": \"available\",\n      \"status_label\": \"متاح\",\n      \"distance_meters\": 320,\n      \"distance_label\": \"320 م\",\n      \"last_update\": \"2026-06-27 09:45:00\",\n      \"location\": {\n        \"latitude\": 24.7140,\n        \"longitude\": 46.6755,\n        \"accuracy\": 5,\n        \"source\": \"GPS\"\n      },\n      \"attendance\": {\n        \"id\": \"attendance-uuid\",\n        \"status\": \"active\",\n        \"clock_in_time\": \"08:00:00\"\n      }\n    },\n    {\n      \"user_id\": \"user-uuid-2\",\n      \"name\": \"خالد علي\",\n      \"status\": \"busy\",\n      \"status_label\": \"مشغول\",\n      \"distance_meters\": 1500,\n      \"distance_label\": \"1.5 كم\",\n      \"last_update\": \"2026-06-27 09:30:00\",\n      \"location\": {\n        \"latitude\": 24.7200,\n        \"longitude\": 46.6800,\n        \"accuracy\": 10,\n        \"source\": \"GPS\"\n      },\n      \"attendance\": {\n        \"id\": \"attendance-uuid-2\",\n        \"status\": \"active\",\n        \"clock_in_time\": \"07:30:00\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Procedure Settings (Setup)",
+      "description": "Parent procedure settings for type=employee_task. These endpoints are used to:\n- List/find the parent procedure setting for employee_task type\n- Toggle branch workflows\n- Get available procedure setting types\n- Get approval responsibles preview for createProjectNotificationTask form\n\nIMPORTANT: The parent procedure setting for employee_task is auto-created by EmployeeTaskWorkflowSeeder or InternalProcedureSettingsSeeder. You only need these endpoints to find it and configure workflows.",
+      "item": [
+        {
+          "name": "Get Procedure Setting Types",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/types",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "types"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    { \"key\": \"employee_task\", \"label_ar\": \"مهمة العمل\" },\n    { \"key\": \"client_request\", \"label_ar\": \"طلب عميل\" },\n    { \"key\": \"price_offer\", \"label_ar\": \"عرض سعر\" },\n    { \"key\": \"contract\", \"label_ar\": \"عقد\" },\n    { \"key\": \"meeting\", \"label_ar\": \"اجتماع\" }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Procedure Settings (Find employee_task parent)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings?type=employee_task",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "employee_task",
+                  "description": "Required - Filter by procedure type. Use 'employee_task' for Project Notifications"
+                },
+                {
+                  "key": "branch_id",
+                  "value": "",
+                  "description": "Optional - Filter by branch ID (management hierarchy)"
+                },
+                {
+                  "key": "work_flow_id",
+                  "value": "",
+                  "description": "Optional - Filter by workflow ID"
+                },
+                {
+                  "key": "parent_id",
+                  "value": "",
+                  "description": "Optional - Filter by parent procedure setting ID"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": \"parent-procedure-setting-uuid\",\n    \"name\": \"Employee Task\",\n    \"type\": \"employee_task\",\n    \"branches\": [\n      { \"id\": 1, \"name\": \"الفرع الرئيسي\", \"type\": \"branch\", \"company_id\": \"company-uuid\" }\n    ],\n    \"procedure-settings\": [\n      {\n        \"id\": \"child-uuid-1\",\n        \"name\": \"إنشاء مهمة\",\n        \"form\": { \"key\": \"createTask\", \"label_ar\": \"انشاء مهمة\" },\n        \"is_active\": 1,\n        \"sort_order\": 100\n      },\n      {\n        \"id\": \"child-uuid-2\",\n        \"name\": \"إنشاء إشعار مشروع\",\n        \"form\": { \"key\": \"createProjectNotificationTask\", \"label_ar\": \"إنشاء إشعار مشروع\" },\n        \"is_active\": 1,\n        \"sort_order\": 100\n      },\n      {\n        \"id\": \"child-uuid-3\",\n        \"name\": \"بدء المهمة\",\n        \"form\": { \"key\": \"startTask\", \"label_ar\": \"بدء المهمة\" },\n        \"is_active\": 1,\n        \"sort_order\": 500\n      },\n      {\n        \"id\": \"child-uuid-4\",\n        \"name\": \"انهاء المهمة\",\n        \"form\": { \"key\": \"endTask\", \"label_ar\": \"انهاء المهمة\" },\n        \"is_active\": 1,\n        \"sort_order\": 900\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Procedure Setting by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{parent_procedure_setting_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{parent_procedure_setting_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Toggle Branch Workflow (Enable/disable for a branch)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_id\": {{branch_id}},\n  \"checked\": true,\n  \"type\": \"employee_task\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/work_flows",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "work_flows"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": \"workflow-uuid\",\n    \"name\": \"default\",\n    \"type\": \"employee_task\",\n    \"branches\": [\n      { \"id\": 1, \"name\": \"الفرع الرئيسي\", \"type\": \"branch\" }\n    ],\n    \"procedure-settings\": []\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Approval Responsibles (Preview for createProjectNotificationTask)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/approval-responsibles?type=employee_task&form=createProjectNotificationTask&branch_id={{branch_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "approval-responsibles"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "employee_task",
+                  "description": "Required - Procedure setting type"
+                },
+                {
+                  "key": "form",
+                  "value": "createProjectNotificationTask",
+                  "description": "Required - Internal process form key. Use 'createProjectNotificationTask' for Project Notifications"
+                },
+                {
+                  "key": "branch_id",
+                  "value": "{{branch_id}}",
+                  "description": "Optional - Branch ID for branch-specific workflow"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response (With workflow steps)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"auto_approve\": false,\n    \"responsibles\": [\n      {\n        \"step_id\": 1,\n        \"step_name\": \"موافقة المدير المباشر\",\n        \"step_order\": 1,\n        \"action_taker_type\": \"management_hierarchy\",\n        \"users\": [\n          { \"id\": \"manager-uuid\", \"name\": \"مدير الفرع\", \"email\": \"manager@example.com\" }\n        ]\n      },\n      {\n        \"step_id\": 2,\n        \"step_name\": \"موافقة المدير العام\",\n        \"step_order\": 2,\n        \"action_taker_type\": \"specific_user\",\n        \"users\": [\n          { \"id\": \"gm-uuid\", \"name\": \"المدير العام\", \"email\": \"gm@example.com\" }\n        ]\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Auto-Approve Response (No steps configured)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"auto_approve\": true,\n    \"responsibles\": []\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Internal Procedures & Steps",
+      "description": "Internal procedures are child procedure_settings with a `form` key. For Project Notifications, the form key is 'createProjectNotificationTask'.\n\nThe seeder (InternalProcedureSettingsSeeder) auto-creates this internal procedure for every company. You can also create it manually via POST /procedure-settings/internal-procedures.\n\nSteps are the approval workflow steps within an internal procedure — each step has action takers (specific users, management hierarchy, etc.).\n\nSetup flow:\n1. GET /procedure-settings/{parentId}/available-forms → see all forms for employee_task\n2. POST /procedure-settings/internal-procedures → create internal procedure (if not auto-seeded)\n3. GET /procedure-settings/{parentId}/internal-procedures/by-form/createProjectNotificationTask → get the internal procedure\n4. POST /procedure-settings/{procedureSettingId}/steps → create approval steps\n5. PUT /procedure-settings/{parentId}/internal-procedures/{internalId} → update conditions\n6. GET /procedure-settings/forms-conditions?type=createProjectNotificationTask → see condition definitions",
+      "item": [
+        {
+          "name": "Get Available Forms for employee_task parent",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{parent_procedure_setting_id}}/available-forms",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{parent_procedure_setting_id}}",
+                "available-forms"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    { \"key\": \"createTask\", \"label_ar\": \"انشاء مهمة\" },\n    { \"key\": \"createProjectNotificationTask\", \"label_ar\": \"إنشاء إشعار مشروع\" },\n    { \"key\": \"startTask\", \"label_ar\": \"بدء المهمة\" },\n    { \"key\": \"endTask\", \"label_ar\": \"انهاء المهمة\" }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "List All Internal Procedures (Optional type filter)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/internal-procedures?type=employee_task",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "internal-procedures"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "employee_task",
+                  "description": "Optional - Filter by procedure type"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"internal-proc-uuid-1\",\n      \"parent_id\": \"parent-procedure-setting-uuid\",\n      \"name\": \"إنشاء مهمة\",\n      \"type\": \"employee_task\",\n      \"form\": {\n        \"key\": \"createTask\",\n        \"label_ar\": \"انشاء مهمة\",\n        \"conditions\": [\n          { \"key\": \"allowDuringShift\", \"type\": \"bool\", \"label_ar\": \"السماح خلال الشيفت\" },\n          { \"key\": \"allowOutsideShift\", \"type\": \"bool\", \"label_ar\": \"السماح خارج الشيفت\" },\n          { \"key\": \"allowOnHolidays\", \"type\": \"bool\", \"label_ar\": \"السماح في الإجازات\" },\n          { \"key\": \"insideCustomLocations\", \"type\": \"bool\", \"label_ar\": \"داخل مواقع مخصصة\" },\n          { \"key\": \"maxTaskDuration\", \"type\": \"int\", \"label_ar\": \"أقصى مدة المهمة\" },\n          { \"key\": \"maxScheduledDateOffset\", \"type\": \"int\", \"label_ar\": \"أقصى تاريخ جدولة\" }\n        ]\n      },\n      \"conditions\": [\n        { \"key\": \"allowDuringShift\", \"is_active\": false, \"sort_order\": 1, \"settings\": { \"mode\": \"allow\" } },\n        { \"key\": \"allowOutsideShift\", \"is_active\": false, \"sort_order\": 2, \"settings\": { \"mode\": \"allow\" } },\n        { \"key\": \"allowOnHolidays\", \"is_active\": false, \"sort_order\": 3, \"settings\": { \"mode\": \"allow\" } },\n        { \"key\": \"insideCustomLocations\", \"is_active\": false, \"sort_order\": 4, \"settings\": [] },\n        { \"key\": \"maxTaskDuration\", \"is_active\": false, \"sort_order\": 5, \"settings\": { \"value\": 8 } },\n        { \"key\": \"maxScheduledDateOffset\", \"is_active\": false, \"sort_order\": 6, \"settings\": { \"value\": 7 } }\n      ],\n      \"appears_before_ids\": [],\n      \"appears_after_ids\": [],\n      \"sort_order\": 100,\n      \"execute_type\": \"sequence\",\n      \"is_active\": 1,\n      \"percentage\": 0,\n      \"deadline_days\": null,\n      \"deadline_hours\": null\n    },\n    {\n      \"id\": \"internal-proc-uuid-2\",\n      \"parent_id\": \"parent-procedure-setting-uuid\",\n      \"name\": \"إنشاء إشعار مشروع\",\n      \"type\": \"employee_task\",\n      \"form\": {\n        \"key\": \"createProjectNotificationTask\",\n        \"label_ar\": \"إنشاء إشعار مشروع\",\n        \"conditions\": [\n          { \"key\": \"allowDuringShift\", \"type\": \"bool\", \"label_ar\": \"السماح خلال الشيفت\" },\n          { \"key\": \"allowOutsideShift\", \"type\": \"bool\", \"label_ar\": \"السماح خارج الشيفت\" },\n          { \"key\": \"allowOnHolidays\", \"type\": \"bool\", \"label_ar\": \"السماح في الإجازات\" },\n          { \"key\": \"insideCustomLocations\", \"type\": \"bool\", \"label_ar\": \"داخل مواقع مخصصة\" },\n          { \"key\": \"maxTaskDuration\", \"type\": \"int\", \"label_ar\": \"أقصى مدة المهمة\" },\n          { \"key\": \"maxScheduledDateOffset\", \"type\": \"int\", \"label_ar\": \"أقصى تاريخ جدولة\" }\n        ]\n      },\n      \"conditions\": [\n        { \"key\": \"allowDuringShift\", \"is_active\": false, \"sort_order\": 1, \"settings\": { \"mode\": \"allow\" } },\n        { \"key\": \"allowOutsideShift\", \"is_active\": false, \"sort_order\": 2, \"settings\": { \"mode\": \"allow\" } },\n        { \"key\": \"allowOnHolidays\", \"is_active\": false, \"sort_order\": 3, \"settings\": { \"mode\": \"allow\" } },\n        { \"key\": \"insideCustomLocations\", \"is_active\": false, \"sort_order\": 4, \"settings\": [] },\n        { \"key\": \"maxTaskDuration\", \"is_active\": false, \"sort_order\": 5, \"settings\": { \"value\": 8 } },\n        { \"key\": \"maxScheduledDateOffset\", \"is_active\": false, \"sort_order\": 6, \"settings\": { \"value\": 7 } }\n      ],\n      \"sort_order\": 100,\n      \"is_active\": 1\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Internal Procedure (form=createProjectNotificationTask)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"employee_task\",\n  \"form\": \"createProjectNotificationTask\",\n  \"name\": \"إنشاء إشعار مشروع\",\n  \"is_active\": true,\n  \"execute_type\": \"sequence\",\n  \"sort_order\": 100,\n  \"conditions\": [\n    {\n      \"key\": \"allowDuringShift\",\n      \"is_active\": true,\n      \"sort_order\": 1,\n      \"settings\": { \"mode\": \"allow\" }\n    },\n    {\n      \"key\": \"allowOutsideShift\",\n      \"is_active\": false,\n      \"sort_order\": 2,\n      \"settings\": { \"mode\": \"deny\" }\n    },\n    {\n      \"key\": \"allowOnHolidays\",\n      \"is_active\": false,\n      \"sort_order\": 3,\n      \"settings\": { \"mode\": \"allow\" }\n    },\n    {\n      \"key\": \"insideCustomLocations\",\n      \"is_active\": false,\n      \"sort_order\": 4,\n      \"settings\": []\n    },\n    {\n      \"key\": \"maxTaskDuration\",\n      \"is_active\": true,\n      \"sort_order\": 5,\n      \"settings\": { \"value\": 8 }\n    },\n    {\n      \"key\": \"maxScheduledDateOffset\",\n      \"is_active\": true,\n      \"sort_order\": 6,\n      \"settings\": { \"value\": 7 }\n    }\n  ],\n  \"appears_before_id\": [],\n  \"appears_after_id\": [],\n  \"percentage\": 0,\n  \"deadline_days\": null,\n  \"deadline_hours\": null\n}"
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/internal-procedures",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "internal-procedures"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Created Response",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": \"new-internal-proc-uuid\",\n    \"parent_id\": \"parent-procedure-setting-uuid\",\n    \"name\": \"إنشاء إشعار مشروع\",\n    \"type\": \"employee_task\",\n    \"form\": {\n      \"key\": \"createProjectNotificationTask\",\n      \"label_ar\": \"إنشاء إشعار مشروع\",\n      \"conditions\": [\n        { \"key\": \"allowDuringShift\", \"type\": \"bool\", \"label_ar\": \"السماح خلال الشيفت\" },\n        { \"key\": \"allowOutsideShift\", \"type\": \"bool\", \"label_ar\": \"السماح خارج الشيفت\" },\n        { \"key\": \"allowOnHolidays\", \"type\": \"bool\", \"label_ar\": \"السماح في الإجازات\" },\n        { \"key\": \"insideCustomLocations\", \"type\": \"bool\", \"label_ar\": \"داخل مواقع مخصصة\" },\n        { \"key\": \"maxTaskDuration\", \"type\": \"int\", \"label_ar\": \"أقصى مدة المهمة\" },\n        { \"key\": \"maxScheduledDateOffset\", \"type\": \"int\", \"label_ar\": \"أقصى تاريخ جدولة\" }\n      ]\n    },\n    \"conditions\": [\n      { \"key\": \"allowDuringShift\", \"is_active\": true, \"sort_order\": 1, \"settings\": { \"mode\": \"allow\" } },\n      { \"key\": \"allowOutsideShift\", \"is_active\": false, \"sort_order\": 2, \"settings\": { \"mode\": \"deny\" } },\n      { \"key\": \"allowOnHolidays\", \"is_active\": false, \"sort_order\": 3, \"settings\": { \"mode\": \"allow\" } },\n      { \"key\": \"insideCustomLocations\", \"is_active\": false, \"sort_order\": 4, \"settings\": [] },\n      { \"key\": \"maxTaskDuration\", \"is_active\": true, \"sort_order\": 5, \"settings\": { \"value\": 8 } },\n      { \"key\": \"maxScheduledDateOffset\", \"is_active\": true, \"sort_order\": 6, \"settings\": { \"value\": 7 } }\n    ],\n    \"sort_order\": 100,\n    \"execute_type\": \"sequence\",\n    \"is_active\": 1,\n    \"percentage\": 0,\n    \"deadline_days\": null,\n    \"deadline_hours\": null\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Internal Procedure by Form Key",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{parent_procedure_setting_id}}/internal-procedures/by-form/createProjectNotificationTask",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{parent_procedure_setting_id}}",
+                "internal-procedures",
+                "by-form",
+                "createProjectNotificationTask"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": \"internal-proc-uuid\",\n    \"parent_id\": \"parent-procedure-setting-uuid\",\n    \"name\": \"إنشاء إشعار مشروع\",\n    \"type\": \"employee_task\",\n    \"form\": {\n      \"key\": \"createProjectNotificationTask\",\n      \"label_ar\": \"إنشاء إشعار مشروع\",\n      \"conditions\": [\n        { \"key\": \"allowDuringShift\", \"type\": \"bool\", \"label_ar\": \"السماح خلال الشيفت\" },\n        { \"key\": \"allowOutsideShift\", \"type\": \"bool\", \"label_ar\": \"السماح خارج الشيفت\" },\n        { \"key\": \"allowOnHolidays\", \"type\": \"bool\", \"label_ar\": \"السماح في الإجازات\" },\n        { \"key\": \"insideCustomLocations\", \"type\": \"bool\", \"label_ar\": \"داخل مواقع مخصصة\" },\n        { \"key\": \"maxTaskDuration\", \"type\": \"int\", \"label_ar\": \"أقصى مدة المهمة\" },\n        { \"key\": \"maxScheduledDateOffset\", \"type\": \"int\", \"label_ar\": \"أقصى تاريخ جدولة\" }\n      ]\n    },\n    \"conditions\": [\n      { \"key\": \"allowDuringShift\", \"is_active\": false, \"sort_order\": 1, \"settings\": { \"mode\": \"allow\" } },\n      { \"key\": \"allowOutsideShift\", \"is_active\": false, \"sort_order\": 2, \"settings\": { \"mode\": \"allow\" } },\n      { \"key\": \"allowOnHolidays\", \"is_active\": false, \"sort_order\": 3, \"settings\": { \"mode\": \"allow\" } },\n      { \"key\": \"insideCustomLocations\", \"is_active\": false, \"sort_order\": 4, \"settings\": [] },\n      { \"key\": \"maxTaskDuration\", \"is_active\": false, \"sort_order\": 5, \"settings\": { \"value\": 8 } },\n      { \"key\": \"maxScheduledDateOffset\", \"is_active\": false, \"sort_order\": 6, \"settings\": { \"value\": 7 } }\n    ],\n    \"sort_order\": 100,\n    \"is_active\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Internal Procedure (Conditions, name, active, etc.)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"إنشاء إشعار مشروع - محدث\",\n  \"is_active\": true,\n  \"conditions\": [\n    {\n      \"key\": \"allowDuringShift\",\n      \"is_active\": true,\n      \"sort_order\": 1,\n      \"settings\": { \"mode\": \"allow\" }\n    },\n    {\n      \"key\": \"allowOutsideShift\",\n      \"is_active\": true,\n      \"sort_order\": 2,\n      \"settings\": { \"mode\": \"allow\" }\n    },\n    {\n      \"key\": \"allowOnHolidays\",\n      \"is_active\": false,\n      \"sort_order\": 3,\n      \"settings\": { \"mode\": \"deny\" }\n    },\n    {\n      \"key\": \"insideCustomLocations\",\n      \"is_active\": false,\n      \"sort_order\": 4,\n      \"settings\": []\n    },\n    {\n      \"key\": \"maxTaskDuration\",\n      \"is_active\": true,\n      \"sort_order\": 5,\n      \"settings\": { \"value\": 12 }\n    },\n    {\n      \"key\": \"maxScheduledDateOffset\",\n      \"is_active\": true,\n      \"sort_order\": 6,\n      \"settings\": { \"value\": 14 }\n    }\n  ],\n  \"appears_before_id\": [],\n  \"appears_after_id\": [],\n  \"deadline_days\": 3,\n  \"deadline_hours\": 0\n}"
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{parent_procedure_setting_id}}/internal-procedures/{{internal_procedure_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{parent_procedure_setting_id}}",
+                "internal-procedures",
+                "{{internal_procedure_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Set Internal Procedure Status (Activate/Deactivate)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{parent_procedure_setting_id}}/internal-procedures/{{internal_procedure_id}}/set-status",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{parent_procedure_setting_id}}",
+                "internal-procedures",
+                "{{internal_procedure_id}}",
+                "set-status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Internal Procedure",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{parent_procedure_setting_id}}/internal-procedures/{{internal_procedure_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{parent_procedure_setting_id}}",
+                "internal-procedures",
+                "{{internal_procedure_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Form Conditions Definition (createProjectNotificationTask)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/forms-conditions?type=createProjectNotificationTask",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "forms-conditions"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "createProjectNotificationTask",
+                  "description": "Required - Form key to get condition definitions for"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"key\": \"allowDuringShift\",\n      \"type\": \"bool\",\n      \"label_ar\": \"السماح خلال الشيفت\",\n      \"category\": { \"key\": \"shift\", \"label_ar\": \"الشيفت\" },\n      \"settings_schema\": [\n        { \"key\": \"mode\", \"type\": \"select\", \"label_ar\": \"الوضع\", \"default\": \"allow\", \"options\": [\n          { \"value\": \"allow\", \"label_ar\": \"السماح\" },\n          { \"value\": \"deny\", \"label_ar\": \"منع\" },\n          { \"value\": \"warn\", \"label_ar\": \"تحذير\" }\n        ] }\n      ]\n    },\n    {\n      \"key\": \"allowOutsideShift\",\n      \"type\": \"bool\",\n      \"label_ar\": \"السماح خارج الشيفت\",\n      \"category\": { \"key\": \"shift\", \"label_ar\": \"الشيفت\" },\n      \"settings_schema\": [\n        { \"key\": \"mode\", \"type\": \"select\", \"label_ar\": \"الوضع\", \"default\": \"allow\", \"options\": [\n          { \"value\": \"allow\", \"label_ar\": \"السماح\" },\n          { \"value\": \"deny\", \"label_ar\": \"منع\" },\n          { \"value\": \"warn\", \"label_ar\": \"تحذير\" }\n        ] }\n      ]\n    },\n    {\n      \"key\": \"allowOnHolidays\",\n      \"type\": \"bool\",\n      \"label_ar\": \"السماح في الإجازات\",\n      \"category\": { \"key\": \"shift\", \"label_ar\": \"الشيفت\" },\n      \"settings_schema\": [\n        { \"key\": \"mode\", \"type\": \"select\", \"label_ar\": \"الوضع\", \"default\": \"allow\", \"options\": [\n          { \"value\": \"allow\", \"label_ar\": \"السماح\" },\n          { \"value\": \"deny\", \"label_ar\": \"منع\" },\n          { \"value\": \"warn\", \"label_ar\": \"تحذير\" }\n        ] }\n      ]\n    },\n    {\n      \"key\": \"insideCustomLocations\",\n      \"type\": \"bool\",\n      \"label_ar\": \"داخل مواقع مخصصة\",\n      \"category\": { \"key\": \"location\", \"label_ar\": \"الموقع\" },\n      \"settings_schema\": []\n    },\n    {\n      \"key\": \"maxTaskDuration\",\n      \"type\": \"int\",\n      \"label_ar\": \"أقصى مدة المهمة\",\n      \"category\": { \"key\": \"duration\", \"label_ar\": \"المدة\" },\n      \"settings_schema\": [\n        { \"key\": \"value\", \"type\": \"number\", \"label_ar\": \"القيمة (ساعات)\", \"default\": 8 }\n      ]\n    },\n    {\n      \"key\": \"maxScheduledDateOffset\",\n      \"type\": \"int\",\n      \"label_ar\": \"أقصى تاريخ جدولة\",\n      \"category\": { \"key\": \"calendar\", \"label_ar\": \"التقويم\" },\n      \"settings_schema\": [\n        { \"key\": \"value\", \"type\": \"number\", \"label_ar\": \"القيمة (أيام)\", \"default\": 7 }\n      ]\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Steps for Internal Procedure",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{internal_procedure_id}}/steps",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{internal_procedure_id}}",
+                "steps"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response (Empty - no steps yet)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": []\n}"
+            },
+            {
+              "name": "Success Response (With steps)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"procedure_setting_id\": \"internal-proc-uuid\",\n      \"name\": \"موافقة المدير المباشر\",\n      \"step_order\": 1,\n      \"is_approve\": true,\n      \"is_accept\": false,\n      \"forms\": \"approve\",\n      \"action_taker_type\": \"management_hierarchy\",\n      \"action_taker_management_hierarchies\": [\n        { \"action_taker_management_hierarchy_type\": \"branch_manager\", \"is_Deputy_Director\": false }\n      ],\n      \"action_takers\": [],\n      \"is_view_only\": false,\n      \"is_return_with_notes\": false,\n      \"requires_approval_within_period\": false,\n      \"approval_within_days\": null,\n      \"approval_within_hours\": null,\n      \"notify_by_email\": true,\n      \"notify_by_whatsapp\": false,\n      \"notify_by_sms\": false\n    },\n    {\n      \"id\": 2,\n      \"procedure_setting_id\": \"internal-proc-uuid\",\n      \"name\": \"موافقة المدير العام\",\n      \"step_order\": 2,\n      \"is_approve\": true,\n      \"is_accept\": false,\n      \"forms\": \"approve\",\n      \"action_taker_type\": \"specific_user\",\n      \"action_takers\": [\n        { \"user_id\": \"gm-uuid\", \"name\": \"المدير العام\", \"email\": \"gm@example.com\" }\n      ],\n      \"is_view_only\": false,\n      \"is_return_with_notes\": true,\n      \"requires_approval_within_period\": true,\n      \"approval_within_days\": 2,\n      \"approval_within_hours\": 0,\n      \"notify_by_email\": true,\n      \"notify_by_whatsapp\": true,\n      \"notify_by_sms\": false\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Step - Action Taker: specific_user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"موافقة المدير العام\",\n  \"step_order\": 1,\n  \"is_approve\": true,\n  \"is_accept\": false,\n  \"forms\": \"approve\",\n  \"action_taker_type\": \"specific_user\",\n  \"action_taker_user_ids\": [\n    \"user-uuid-1\",\n    \"user-uuid-2\"\n  ],\n  \"is_view_only\": false,\n  \"is_return_with_notes\": true,\n  \"requires_approval_within_period\": true,\n  \"approval_within_days\": 2,\n  \"approval_within_hours\": 0,\n  \"notify_by_email\": true,\n  \"notify_by_whatsapp\": true,\n  \"notify_by_sms\": false,\n  \"concerned_management_hierarchy_ids\": [1]\n}"
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{internal_procedure_id}}/steps",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{internal_procedure_id}}",
+                "steps"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Created Response",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"procedure_setting_id\": \"internal-proc-uuid\",\n    \"name\": \"موافقة المدير العام\",\n    \"step_order\": 1,\n    \"is_approve\": true,\n    \"forms\": \"approve\",\n    \"action_taker_type\": \"specific_user\",\n    \"action_takers\": [\n      { \"user_id\": \"user-uuid-1\", \"name\": \"أحمد محمد\", \"email\": \"ahmed@example.com\" },\n      { \"user_id\": \"user-uuid-2\", \"name\": \"خالد علي\", \"email\": \"khalid@example.com\" }\n    ],\n    \"is_return_with_notes\": true,\n    \"requires_approval_within_period\": true,\n    \"approval_within_days\": 2,\n    \"notify_by_email\": true,\n    \"notify_by_whatsapp\": true\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Step - Action Taker: management_hierarchy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"موافقة مدير الفرع\",\n  \"step_order\": 1,\n  \"is_approve\": true,\n  \"is_accept\": false,\n  \"forms\": \"approve\",\n  \"action_taker_type\": \"management_hierarchy\",\n  \"action_taker_management_hierarchies\": [\n    {\n      \"action_taker_management_hierarchy_type\": \"branch_manager\",\n      \"is_Deputy_Director\": false\n    }\n  ],\n  \"is_view_only\": false,\n  \"is_return_with_notes\": false,\n  \"requires_approval_within_period\": false,\n  \"notify_by_email\": true,\n  \"notify_by_whatsapp\": false,\n  \"notify_by_sms\": false,\n  \"concerned_management_hierarchy_ids\": [1]\n}"
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{internal_procedure_id}}/steps",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{internal_procedure_id}}",
+                "steps"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Step - Action Taker: specific_procedures",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"موافقة حسب الإجراء\",\n  \"step_order\": 2,\n  \"is_approve\": true,\n  \"forms\": \"approve\",\n  \"action_taker_type\": \"specific_procedures\",\n  \"action_taker_specific_procedure_type\": [\"branch\", \"job_title\"],\n  \"action_taker_specific_procedure_id\": [\"branch-uuid-1\", \"job-title-uuid-1\"],\n  \"is_view_only\": false,\n  \"notify_by_email\": true\n}"
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{internal_procedure_id}}/steps",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{internal_procedure_id}}",
+                "steps"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Step - Action Taker: himself (submitter self-approve)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"موافقة المنشئ\",\n  \"step_order\": 1,\n  \"is_approve\": true,\n  \"forms\": \"approve\",\n  \"action_taker_type\": \"himself\",\n  \"is_view_only\": false,\n  \"notify_by_email\": false\n}"
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{internal_procedure_id}}/steps",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{internal_procedure_id}}",
+                "steps"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Step by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{internal_procedure_id}}/steps/{{step_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{internal_procedure_id}}",
+                "steps",
+                "{{step_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Step",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"موافقة المدير العام - محدث\",\n  \"step_order\": 2,\n  \"is_approve\": true,\n  \"forms\": \"approve\",\n  \"action_taker_type\": \"specific_user\",\n  \"action_taker_user_ids\": [\n    \"new-user-uuid-1\",\n    \"new-user-uuid-2\",\n    \"new-user-uuid-3\"\n  ],\n  \"is_return_with_notes\": true,\n  \"requires_approval_within_period\": true,\n  \"approval_within_days\": 3,\n  \"approval_within_hours\": 12,\n  \"notify_by_email\": true,\n  \"notify_by_whatsapp\": true,\n  \"notify_by_sms\": true\n}"
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{internal_procedure_id}}/steps/{{step_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{internal_procedure_id}}",
+                "steps",
+                "{{step_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Step",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{internal_procedure_id}}/steps/{{step_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "procedure-settings",
+                "{{internal_procedure_id}}",
+                "steps",
+                "{{step_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Employee Task Lifecycle (Start/End)",
+      "description": "Endpoints for the assigned employee to start/end the linked task and for admins to approve/reject the resulting workflow requests.\n\nBase path: {{url}}/employee-tasks and {{url}}/admin/employee-tasks\n\nProject notifications use the dedicated StartProjectNotificationTask / EndProjectNotificationTask internal procedures under the 'مهام الصيانة والطوارئ' parent.",
+      "item": [
+        {
+          "name": "Get Available Actions for Task",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/employee-tasks/{{task_id}}/available-actions",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "employee-tasks",
+                "{{task_id}}",
+                "available-actions"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"start-proc-uuid\",\n      \"name\": \"تأكيد استلام\",\n      \"form\": {\n        \"key\": \"startProjectNotificationTask\",\n        \"label_ar\": \"تأكيد استلام\"\n      },\n      \"conditions\": [],\n      \"appears_before_ids\": [],\n      \"appears_after_ids\": [],\n      \"sort_order\": 500\n    },\n    {\n      \"id\": \"end-proc-uuid\",\n      \"name\": \"إنهاء المهمة\",\n      \"form\": {\n        \"key\": \"endProjectNotificationTask\",\n        \"label_ar\": \"إنهاء المهمة\"\n      },\n      \"conditions\": [],\n      \"appears_before_ids\": [],\n      \"appears_after_ids\": [],\n      \"sort_order\": 900\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Take Generic Procedure Action (Confirm Presence / Update)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"internal_procedure_setting_id\": \"confirm-presence-proc-uuid\",\n  \"notes\": \"تم تأكيد التواجد في موقع المهمة\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/employee-tasks/{{task_id}}/take-action",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "employee-tasks",
+                "{{task_id}}",
+                "take-action"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Procedure action recorded successfully\",\n  \"data\": {\n    \"procedure_setting_id\": \"confirm-presence-proc-uuid\",\n    \"notes\": \"تم تأكيد التواجد في موقع المهمة\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Start Task (Employee)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"internal_procedure_setting_id\": \"start-proc-uuid\",\n  \"notes\": \"تم استلام الإشعار والبدء في العمل\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/employee-tasks/{{task_id}}/start",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "employee-tasks",
+                "{{task_id}}",
+                "start"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Auto-Start Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Task started successfully\",\n  \"data\": {\n    \"id\": \"task-uuid\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"قيد التنفيذ\"\n  }\n}"
+            },
+            {
+              "name": "Workflow Pending Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Task started successfully\",\n  \"data\": {\n    \"id\": \"task-uuid\",\n    \"status\": \"approved\",\n    \"status_label\": \"معتمد\",\n    \"start_request\": {\n      \"id\": \"start-request-uuid\",\n      \"status\": \"pending\",\n      \"procedure_setting_id\": \"start-proc-uuid\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "End Task (Employee)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"internal_procedure_setting_id\": \"end-proc-uuid\",\n  \"notes\": \"تم إنهاء العمل\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/employee-tasks/{{task_id}}/end",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "employee-tasks",
+                "{{task_id}}",
+                "end"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Auto-End Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Task ended successfully\",\n  \"data\": {\n    \"id\": \"task-uuid\",\n    \"status\": \"completed\",\n    \"status_label\": \"مكتمل\"\n  }\n}"
+            },
+            {
+              "name": "Workflow Pending Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Task ended successfully\",\n  \"data\": {\n    \"id\": \"task-uuid\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"قيد التنفيذ\",\n    \"end_request\": {\n      \"id\": \"end-request-uuid\",\n      \"status\": \"pending\",\n      \"procedure_setting_id\": \"end-proc-uuid\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve Start Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/admin/employee-tasks/{{start_request_id}}/approve",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "admin",
+                "employee-tasks",
+                "{{start_request_id}}",
+                "approve"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Approved Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Start request approved\",\n  \"data\": {\n    \"id\": \"start-request-uuid\",\n    \"status\": \"approved\",\n    \"task_id\": \"task-uuid\",\n    \"task_status\": \"in_progress\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Start Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"الموقع غير صحيح، يرجى التأكد من التواجد في موقع المهمة\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/admin/employee-tasks/{{start_request_id}}/reject",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "admin",
+                "employee-tasks",
+                "{{start_request_id}}",
+                "reject"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Rejected Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Start request rejected\",\n  \"data\": {\n    \"id\": \"start-request-uuid\",\n    \"status\": \"rejected\",\n    \"review_notes\": \"الموقع غير صحيح، يرجى التأكد من التواجد في موقع المهمة\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve End Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/admin/employee-tasks/{{end_request_id}}/approve",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "admin",
+                "employee-tasks",
+                "{{end_request_id}}",
+                "approve"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Approved Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"End request approved\",\n  \"data\": {\n    \"id\": \"end-request-uuid\",\n    \"status\": \"approved\",\n    \"task_id\": \"task-uuid\",\n    \"task_status\": \"completed\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject End Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"لم يتم إنجاز العمل المطلوب\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/admin/employee-tasks/{{end_request_id}}/reject",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "admin",
+                "employee-tasks",
+                "{{end_request_id}}",
+                "reject"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Rejected Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"End request rejected\",\n  \"data\": {\n    \"id\": \"end-request-uuid\",\n    \"status\": \"rejected\",\n    \"review_notes\": \"لم يتم إنجاز العمل المطلوب\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

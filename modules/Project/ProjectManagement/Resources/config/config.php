@@ -69,5 +69,13 @@ return [
 //        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_CREATE' => 'project-management.project-management*archive-library-settings.create',
 //        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_UPDATE' => 'project-management.project-management*archive-library-settings.update',
 //        'PROJECT_ARCHIVE_LIBRARY_SETTINGS_DELETE' => 'project-management.project-management*archive-library-settings.delete',
+        // ============================================================
+        // Project Notifications Permissions
+        // ============================================================
+        'PROJECT_NOTIFICATION_VIEW'   => 'project-management.project-management*notifications.view',
+        'PROJECT_NOTIFICATION_LIST'   => 'project-management.project-management*notifications.list',
+        'PROJECT_NOTIFICATION_CREATE' => 'project-management.project-management*notifications.create',
+        'PROJECT_NOTIFICATION_UPDATE' => 'project-management.project-management*notifications.update',
+        'PROJECT_NOTIFICATION_DELETE' => 'project-management.project-management*notifications.delete',
     ]
 ];
