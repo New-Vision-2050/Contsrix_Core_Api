@@ -557,7 +557,12 @@ The conditions system validates whether an action is allowed before it's perform
 
 ### Form-Specific Condition Skips
 
-- **`CreateProjectNotificationTask` + `AllowOutsideShift`**: Dashboard-created project notifications are submitted by an admin on behalf of the employee, so the employee's current GPS is unavailable at creation time. `EmployeeTaskFormConditionService::checkCreateTaskConditions()` removes the `AllowOutsideShift` condition from the map only for this form when current GPS is missing, so the rule remains enforced for normal employee task creation.
+- **`CreateProjectNotificationTask` — real-time conditions**: Dashboard-created project notifications are submitted by an admin on behalf of the employee, so the employee's real-time context (current shift, current GPS, today's holiday status) is unavailable at creation time. `EmployeeTaskFormConditionService::checkCreateTaskConditions()` removes these conditions from the map only for this form:
+  - `AllowDuringShift` — checks `Carbon::now()` vs employee shift
+  - `AllowOutsideShift` — checks current GPS vs work-area radius (skipped only when GPS is missing)
+  - `AllowOnHolidays` — checks whether today is a holiday
+
+  Task-data validations remain enforced: `InsideCustomLocations`, `MaxTaskDuration`, `MaxScheduledDateOffset`. Normal employee task creation (`CreateTask` form) is unaffected — all conditions are evaluated.
 
 ### Supporting Classes
 
