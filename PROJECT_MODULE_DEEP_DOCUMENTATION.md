@@ -33,6 +33,7 @@
    - 3.5 [Observers](#35-observers)
    - 3.6 [Seeders](#36-seeders)
    - 3.7 [Presenters](#37-presenters)
+   - 3.8 [Maintenance & Emergency Settings (Schema 12)](#38-maintenance--emergency-settings-schema-12)
 4. [Sub-Module: TermServices](#4-sub-module-termservices)
 5. [Sub-Module: TermSetting](#5-sub-module-termsetting)
 5a. [Sub-Module: TermServiceSetting](#5a-sub-module-termservicesetting)
@@ -962,6 +963,7 @@ path, is_created, is_have_schema, is_active
 - `archiveLibrarySetting()` → `hasOne(ArchiveLibrarySetting, 'project_type_id')`
 - `rolesAndPermissionsSetting()` → `hasOne(RolesAndPermissionsSetting, 'project_type_id')`
 - `projectSharingSetting()` → `hasOne(ProjectSharingSetting, 'project_type_id')`
+- `maintenanceEmergencySetting()` → `hasOne(MaintenanceEmergencySetting, 'project_type_id')`
 
 **Scopes**:
 - `secondLevel()` — project types whose parent has no parent (i.e., second level in tree)
@@ -1003,6 +1005,7 @@ All setting models follow the same pattern: `hasOne` to `ProjectType`, with bool
 | `ArchiveLibrarySetting` | `archive_library_setting` | `is_all_data_visible` |
 | `RolesAndPermissionsSetting` | `roles_and_permissions_settings` | `is_all_data_visible` |
 | `ProjectSharingSetting` | `project_sharing_settings` | `is_all_data_visible` |
+| `MaintenanceEmergencySetting` | `maintenance_emergency_settings` | `is_shown` |
 
 #### OrderPermit Models
 
@@ -1067,6 +1070,7 @@ Each setting table follows the pattern:
 
 **Additional migrations**:
 - `2025_04_18_150000_add_is_all_data_visible_to_settings_tables.php` — adds `is_all_data_visible` column to settings tables
+- `2026_06_26_180000_create_maintenance_emergency_settings_table.php` — creates `maintenance_emergency_settings` table for schema 12 visibility
 
 #### Order Permit Tables
 
@@ -1102,7 +1106,7 @@ Each setting has its own service following the pattern:
 - `show(int $projectTypeId): ?Setting`
 - `update(int $projectTypeId, array $data): Setting` — uses `updateOrCreate`
 
-Services: `ProjectDataSettingService`, `AttachmentContractSettingService`, `AttachmentTermsContractSettingService`, `ContractorContractSettingService`, `EmployeeContractSettingService`, `DepartmentContractSettingService`, `AttachmentCycleSettingService`, `ArchiveLibrarySettingService`, `RolesAndPermissionsSettingService`, `ProjectSharingSettingService`
+Services: `ProjectDataSettingService`, `AttachmentContractSettingService`, `AttachmentTermsContractSettingService`, `ContractorContractSettingService`, `EmployeeContractSettingService`, `DepartmentContractSettingService`, `AttachmentCycleSettingService`, `ArchiveLibrarySettingService`, `RolesAndPermissionsSettingService`, `ProjectSharingSettingService`, `MaintenanceEmergencySettingService`
 
 ---
 
@@ -1148,6 +1152,7 @@ Available settings endpoints:
 - `/{projectTypeId}/archive-library-settings`
 - `/{projectTypeId}/roles-and-permissions-settings`
 - `/{projectTypeId}/project-sharing-settings`
+- `/{projectTypeId}/maintenance-emergency-settings`
 
 #### Order Permit Routes
 
@@ -1182,6 +1187,7 @@ Seeds schema definitions:
 - ID 9: "دورة الوثائق" (Document Cycle)
 - ID 10: "الصلاحيات و الادوار" (Roles & Permissions)
 - ID 11: "مشاركة المشروع" (Project Sharing)
+- ID 12: "الصيانة والطوارئ" (Maintenance & Emergency)
 
 Some schemas are commented out (1, 2, 4, 7, 8). After seeding, all schemas are attached to the "التصاميم" project type for the current tenant.
 
@@ -1196,6 +1202,70 @@ Presents project type with: id, name, icon, parent_id, path, is_created, is_have
 #### `SchemaPresenter`
 
 Presents schema with: id, name.
+
+---
+
+### 3.8 Maintenance & Emergency Settings (Schema 12)
+
+Schema 12 — "الصيانة والطوارئ" (Maintenance & Emergency) — uses a dedicated project-type-level setting to control whether the tab is exposed inside a project detail response.
+
+#### Files Created
+
+| File | Purpose |
+|---|---|
+| `Database/Migrations/2026_06_26_180000_create_maintenance_emergency_settings_table.php` | Creates `maintenance_emergency_settings` table |
+| `Models/MaintenanceEmergencySetting.php` | Eloquent model with `project_type_id` and `is_shown` |
+| `Repositories/MaintenanceEmergencySettingRepository.php` | Find/update by `project_type_id`, plus `getOrCreate` fallback |
+| `Services/MaintenanceEmergencySettingService.php` | `getOrCreateByProjectTypeId()`, `update()` |
+| `DTO/UpdateMaintenanceEmergencySettingDTO.php` | `is_shown` only DTO |
+| `Commands/UpdateMaintenanceEmergencySettingCommand.php` | Command wrapper |
+| `Handlers/UpdateMaintenanceEmergencySettingHandler.php` | Command handler |
+| `Requests/UpdateMaintenanceEmergencySettingRequest.php` | Validates `is_shown` boolean |
+| `Presenters/MaintenanceEmergencySettingPresenter.php` | Presents `id`, `project_type_id`, `is_shown`, timestamps |
+| `Controllers/MaintenanceEmergencySettingController.php` | `show($projectTypeId)` and `update($projectTypeId)` |
+
+#### Database
+
+**Table**: `maintenance_emergency_settings`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint | Auto-increment PK |
+| `project_type_id` | unsignedBigInteger FK | → `project_types.id`, unique, cascade delete |
+| `is_shown` | boolean | default `1` — controls schema visibility |
+| `created_at`, `updated_at` | timestamps | |
+
+#### API Endpoints
+
+Prefix `api/v1/project-types`:
+
+| Method | Endpoint | Permission | Description |
+|---|---|---|---|
+| GET | `/{projectTypeId}/maintenance-emergency-settings` | `PROJECT_TYPE_VIEW` | Get or auto-create the setting |
+| PUT | `/{projectTypeId}/maintenance-emergency-settings` | `PROJECT_TYPE_UPDATE` | Update `is_shown` |
+
+#### ProjectType Relationship
+
+```php
+public function maintenanceEmergencySetting()
+{
+    return $this->hasOne(MaintenanceEmergencySetting::class, 'project_type_id');
+}
+```
+
+#### ProjectManagementPresenter Integration
+
+The schema visibility is applied in `Modules\Project\ProjectManagement\Presenters\ProjectManagementPresenter`:
+
+1. `ProjectManagementRepository::getProjectManagement()` eager-loads `subSubProjectType.maintenanceEmergencySetting`.
+2. The presenter builds a `$schemaMapping` array including `12 => 'maintenance_emergency_setting'`.
+3. The schema is only added to the `permissions` payload when:
+   - `shouldIncludeSchema(12, $allowedSchemas)` passes (owner company or explicitly shared schema), **and**
+   - the relationship is loaded, **and**
+   - a setting exists, **and**
+   - `$setting->is_shown` is truthy.
+
+This means the maintenance & emergency tab can be hidden per project type even when schema 12 is technically assigned to that project type.
 
 ---
 
