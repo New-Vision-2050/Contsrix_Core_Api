@@ -550,10 +550,14 @@ The conditions system validates whether an action is allowed before it's perform
 |-----------|---------------|-------------|
 | `AllowDuringShiftEvaluator` | `AllowDuringShift` | Checks if action is allowed during the employee's work shift or a specific time window. Supports `shift` mode (actual work periods) and `specific_time` mode (fixed time range). |
 | `AllowOnHolidaysEvaluator` | `AllowOnHolidays` | Checks if the current day is a holiday. If `is_active` is false and it's a holiday, the action is blocked. |
-| `AllowOutsideShiftEvaluator` | `AllowOutsideShift` | Checks if the employee's current location is within the designated work area (radius check against branch locations). |
+| `AllowOutsideShiftEvaluator` | `AllowOutsideShift` | Controls whether an employee must be inside the designated work area. `is_active=true` allows tasks outside the work area. `is_active=false` requires the employee's current GPS (`current_latitude`/`current_longitude`) to be within branch location radius. If current GPS is missing, the check fails. |
 | `InsideCustomLocationsEvaluator` | `InsideCustomLocations` | Checks if a task location falls within configured custom polygonal areas using `GeoPolygon`. |
 | `MaxTaskDurationEvaluator` | `MaxTaskDuration` | Enforces a maximum task duration (default: 8 hours). |
 | `MaxScheduledDateOffsetEvaluator` | `MaxScheduledDateOffset` | Restricts task scheduling based on `max_task_date` (max days from today) or `end_contract` (employee's contract end date). |
+
+### Form-Specific Condition Skips
+
+- **`CreateProjectNotificationTask` + `AllowOutsideShift`**: Dashboard-created project notifications are submitted by an admin on behalf of the employee, so the employee's current GPS is unavailable at creation time. `EmployeeTaskFormConditionService::checkCreateTaskConditions()` removes the `AllowOutsideShift` condition from the map only for this form when current GPS is missing, so the rule remains enforced for normal employee task creation.
 
 ### Supporting Classes
 

@@ -67,6 +67,17 @@ final class EmployeeTaskFormConditionService
             return;
         }
 
+        // Dashboard-created project notifications do not have the assigned
+        // employee's current GPS at creation time, so skip the location check
+        // for this specific form. Regular employee task creation still enforces
+        // AllowOutsideShift via the unchanged evaluator.
+        $map = $this->skipLocationCheckForDashboardNotification(
+            $map,
+            $formKey ?? InternalProcessForm::CreateTask->value,
+            $currentLatitude,
+            $currentLongitude,
+        );
+
         $ctx = new ConditionContext(
             userId: $userId,
             companyId: $companyId,
@@ -235,6 +246,34 @@ final class EmployeeTaskFormConditionService
     ): void {}
 
     // ─── Private helpers ─────────────────────────────────────────────────────
+
+    /**
+     * Dashboard-created project notifications are submitted by an admin on
+     * behalf of the employee, so the employee's current GPS is unavailable.
+     * Skip the AllowOutsideShift check for this specific form only, so the
+     * condition remains enforced for normal employee task creation.
+     *
+     * @param array<string, array{key: string, is_active: bool, sort_order: int, settings: array}> $map
+     * @return array<string, array{key: string, is_active: bool, sort_order: int, settings: array}>
+     */
+    private function skipLocationCheckForDashboardNotification(
+        array $map,
+        string $formKey,
+        ?float $currentLatitude,
+        ?float $currentLongitude,
+    ): array {
+        if ($formKey !== InternalProcessForm::CreateProjectNotificationTask->value) {
+            return $map;
+        }
+
+        if ($currentLatitude !== null && $currentLongitude !== null) {
+            return $map;
+        }
+
+        unset($map[InternalProcessCondition::AllowOutsideShift->value]);
+
+        return $map;
+    }
 
     /**
      * Resolve + normalize stored conditions into a keyed map.
