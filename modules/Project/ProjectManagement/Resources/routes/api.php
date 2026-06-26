@@ -119,6 +119,18 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::post('/export', [ProjectNotificationController::class, 'export'])
             ->permission(Permission::PROJECT_NOTIFICATION_EXPORT());
 
+        // Mobile routes (employee-facing)
+        Route::get('/my-tasks', [ProjectNotificationController::class, 'myTasks'])
+            ->permission(Permission::PROJECT_NOTIFICATION_LIST());
+        Route::get('/{id}/available-actions', [ProjectNotificationController::class, 'availableActions'])
+            ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
+        Route::post('/{id}/start', [ProjectNotificationController::class, 'start'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::post('/{id}/take-action', [ProjectNotificationController::class, 'takeAction'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::post('/{id}/end', [ProjectNotificationController::class, 'end'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+
         // CRUD routes
         Route::get('/', [ProjectNotificationController::class, 'index'])
             ->permission(Permission::PROJECT_NOTIFICATION_LIST());

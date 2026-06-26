@@ -27,4 +27,14 @@ class ProjectNotificationException extends RuntimeException
     {
         return new self('Project notification EmployeeTaskType not found. Ensure the EmployeeTaskTypeSeeder has been run.');
     }
+
+    public static function linkedTaskNotFound(string $id): self
+    {
+        return new self("Project notification [{$id}] has no linked employee task.");
+    }
+
+    public static function procedureNotAvailable(): self
+    {
+        return new self('The requested procedure is not currently available for this notification.');
+    }
 }

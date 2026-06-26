@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "project-notification-api-collection",
     "name": "Project Notification API",
-    "description": "Complete API collection for the Project Notification feature.\n\nContains 4 folders:\n1. Project Notifications — CRUD, approve/reject, export, employees-with-locations\n2. Procedure Settings (Setup) — Parent procedure settings, workflow toggle, types\n3. Internal Procedures & Steps — Create internal procedures (form=createProjectNotificationTask), manage steps (action takers), conditions, available-forms, approval-responsibles\n4. Employee Task Lifecycle — Start task, end task, available actions, and admin approve/reject for start/end requests\n\nFlow to set up Project Notification procedures:\n1. GET /procedure-settings/types → see available types\n2. GET /procedure-settings?type=employee_task → find the parent EmployeeTask procedure setting\n3. POST /procedure-settings/internal-procedures → create internal procedure with form=createProjectNotificationTask\n4. GET /procedure-settings/{parentId}/available-forms → see all forms applicable to employee_task type\n5. POST /procedure-settings/{procedureSettingId}/steps → create approval steps with action takers\n6. GET /procedure-settings/approval-responsibles?type=employee_task&form=createProjectNotificationTask → preview who will approve\n7. GET /procedure-settings/forms-conditions?type=createProjectNotificationTask → see condition definitions\n8. PUT /procedure-settings/{parentId}/internal-procedures/{internalProcedureId} → update conditions (enable/disable, change settings)\n9. POST /projects/notifications → create a notification (triggers the workflow)",
+    "description": "Complete API collection for the Project Notification feature.\n\nContains 5 folders:\n1. Project Notifications — CRUD, approve/reject, export, employees-with-locations\n2. Procedure Settings (Setup) — Parent procedure settings, workflow toggle, types\n3. Internal Procedures & Steps — Create internal procedures (form=createProjectNotificationTask), manage steps (action takers), conditions, available-forms, approval-responsibles\n4. Employee Task Lifecycle — Start task, end task, available actions, and admin approve/reject for start/end requests\n5. Mobile (Employee) — My assigned notifications, available actions, start/take-action/end with internal_procedure_setting_id payloads\n\nFlow to set up Project Notification procedures:\n1. GET /procedure-settings/types → see available types\n2. GET /procedure-settings?type=employee_task → find the parent EmployeeTask procedure setting\n3. POST /procedure-settings/internal-procedures → create internal procedure with form=createProjectNotificationTask\n4. GET /procedure-settings/{parentId}/available-forms → see all forms applicable to employee_task type\n5. POST /procedure-settings/{procedureSettingId}/steps → create approval steps with action takers\n6. GET /procedure-settings/approval-responsibles?type=employee_task&form=createProjectNotificationTask → preview who will approve\n7. GET /procedure-settings/forms-conditions?type=createProjectNotificationTask → see condition definitions\n8. PUT /procedure-settings/{parentId}/internal-procedures/{internalProcedureId} → update conditions (enable/disable, change settings)\n9. POST /projects/notifications → create a notification (triggers the workflow)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -1948,6 +1948,265 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "body": "{\n  \"message\": \"End request rejected\",\n  \"data\": {\n    \"id\": \"end-request-uuid\",\n    \"status\": \"rejected\",\n    \"review_notes\": \"لم يتم إنجاز العمل المطلوب\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Mobile (Employee)",
+      "description": "Employee-facing mobile endpoints for assigned project notifications.\n\nBase path: {{url}}/projects/notifications\n\nThese endpoints delegate to the linked EmployeeTaskRequest so start/end/take-action behave exactly like employee tasks.",
+      "item": [
+        {
+          "name": "My Assigned Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/my-tasks?page=1&per_page=15&status=&date_from=&date_to=&search=",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "my-tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter by status (pending, approved, in_progress, completed, ...)"
+                },
+                {
+                  "key": "date_from",
+                  "value": "",
+                  "description": "Filter from task date (Y-m-d)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "",
+                  "description": "Filter to task date (Y-m-d)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search by notification number, contractor, or work description"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"notification-uuid\",\n      \"notification_number\": \"NTF-2026-00458\",\n      \"notification_type\": \"إسناد طواري وأعطال\",\n      \"work_description\": \"انقطاع التيار الكهربائي\",\n      \"contractor_name\": \"شركة الكهرباء الوطنية\",\n      \"task_date\": \"2026-06-25\",\n      \"status\": \"approved\",\n      \"status_label\": \"معتمد\",\n      \"assigned_user_id\": \"current-user-uuid\",\n      \"employee_task_request_id\": \"task-uuid\"\n    }\n  ],\n  \"pagination\": {\n    \"total\": 1,\n    \"per_page\": 15,\n    \"current_page\": 1,\n    \"last_page\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Available Actions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}/available-actions",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}",
+                "available-actions"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"start-proc-uuid\",\n      \"name\": \"تأكيد استلام\",\n      \"form\": {\n        \"key\": \"startProjectNotificationTask\",\n        \"label_ar\": \"تأكيد استلام\"\n      },\n      \"sort_order\": 500\n    },\n    {\n      \"id\": \"confirm-proc-uuid\",\n      \"name\": \"تأكيد التواجد\",\n      \"form\": {\n        \"key\": \"confirmProjectNotificationPresence\",\n        \"label_ar\": \"تأكيد التواجد\"\n      },\n      \"sort_order\": 600\n    },\n    {\n      \"id\": \"update-proc-uuid\",\n      \"name\": \"تحديث\",\n      \"form\": {\n        \"key\": \"updateProjectNotificationTask\",\n        \"label_ar\": \"تحديث\"\n      },\n      \"sort_order\": 700\n    },\n    {\n      \"id\": \"end-proc-uuid\",\n      \"name\": \"إنهاء المهمة\",\n      \"form\": {\n        \"key\": \"endProjectNotificationTask\",\n        \"label_ar\": \"إنهاء المهمة\"\n      },\n      \"sort_order\": 900\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Start Task (تأكيد استلام)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"internal_procedure_setting_id\": \"start-proc-uuid\",\n  \"notes\": \"تم استلام الإشعار والبدء في العمل\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}/start",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}",
+                "start"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Auto-Start Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Task started successfully\",\n  \"data\": {\n    \"id\": \"task-uuid\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"قيد التنفيذ\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Take Action (Confirm Presence / Update)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"internal_procedure_setting_id\": \"confirm-proc-uuid\",\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"notes\": \"تم تأكيد التواجد في موقع المهمة\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}/take-action",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}",
+                "take-action"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Procedure action recorded successfully\",\n  \"data\": {\n    \"procedure_setting_id\": \"confirm-proc-uuid\",\n    \"latitude\": 24.7136,\n    \"longitude\": 46.6753,\n    \"notes\": \"تم تأكيد التواجد في موقع المهمة\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "End Task (إنهاء المهمة)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"internal_procedure_setting_id\": \"end-proc-uuid\",\n  \"notes\": \"تم إنهاء العمل\"\n}"
+            },
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}/end",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}",
+                "end"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Auto-End Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Task ended successfully\",\n  \"data\": {\n    \"id\": \"task-uuid\",\n    \"status\": \"completed\",\n    \"status_label\": \"مكتمل\"\n  }\n}"
             }
           ]
         }
