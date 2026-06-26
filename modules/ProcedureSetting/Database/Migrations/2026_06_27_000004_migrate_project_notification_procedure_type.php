@@ -180,7 +180,6 @@ return new class extends Migration
                 })
                 ->update([
                     'processable_type' => $newType,
-                    'type'             => $newType,
                     'updated_at'       => now(),
                 ]);
         }
