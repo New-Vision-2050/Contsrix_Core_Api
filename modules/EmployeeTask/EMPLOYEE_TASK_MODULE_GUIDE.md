@@ -873,8 +873,9 @@ The EmployeeTask module deeply integrates with the `ProcedureSetting` and `Proce
 - `InternalProcedureAvailableActionsService` — Determines available actions
 - `WorkflowProcedureTaken` event — Fired when a procedure is marked as taken
 - `WorkflowStepActivated` event — Fired by `ProcessWorkflowService` when a step is activated, triggers `EmployeeTaskWorkflowNotifier`
-- `InternalProcessForm` enum — Form keys: `CreateTask`, `StartTask`, `EndTask`
-- `ProcedureSettingType::EmployeeTask` — The procedure type for this module
+- `InternalProcessForm` enum — Form keys: `CreateTask`, `StartTask`, `EndTask`, `CreateProjectNotificationTask`, `StartProjectNotificationTask`, `ConfirmProjectNotificationPresence`, `UpdateProjectNotificationTask`, `EndProjectNotificationTask`
+- `ProcedureSettingType::EmployeeTask` — The procedure type for regular employee tasks
+- `ProcedureSettingType::ProjectNotificationTask` — The procedure type for project notification tasks (used by all `*ProjectNotification*` forms)
 
 ---
 
@@ -1113,23 +1114,29 @@ return $this->workflow->resolveInternalProcedureSettingByForm(
 );
 ```
 
-The `InternalProcessForm` enum only defines three forms for `employee_task`:
+The `InternalProcessForm` enum defines the following forms applicable to `employee_task`:
 
 | Enum Case | Value | Label (AR) | Registered? |
 |-----------|-------|------------|-------------|
 | `CreateTask` | `'createTask'` | إنشاء مهمة | ✅ Yes |
 | `StartTask` | `'startTask'` | بدء المهمة | ✅ Yes |
 | `EndTask` | `'endTask'` | إنهاء المهمة | ✅ Yes |
+| `CreateProjectNotificationTask` | `'createProjectNotificationTask'` | إنشاء إشعار مشروع | ✅ Yes |
+| `StartProjectNotificationTask` | `'startProjectNotificationTask'` | تأكيد استلام | ✅ Yes |
+| `ConfirmProjectNotificationPresence` | `'confirmProjectNotificationPresence'` | تأكيد التواجد | ✅ Yes |
+| `UpdateProjectNotificationTask` | `'updateProjectNotificationTask'` | تحديث | ✅ Yes |
+| `EndProjectNotificationTask` | `'endProjectNotificationTask'` | إنهاء المهمة | ✅ Yes |
 | — | `'extendTaskTime'` | (no label) | ❌ No — raw string only |
 | — | `'sendForApproval'` | (no label) | ❌ No — raw string only |
 
 There is **no** `ExtendTaskTime = 'extendTaskTime'` case and **no** `SendForApproval = 'sendForApproval'` case.
 
-> **Note:** The `endTask` form IS registered in the enum and is used properly by `EmployeeTaskEndRequestService` via `InternalProcessForm::EndTask->value`. Only the extension and approval forms are unregistered.
+> **Note:** The `endTask` form IS registered in the enum and is used properly by `EmployeeTaskEndRequestService` via `InternalProcessForm::EndTask->value`. Only the extension and approval forms are unregistered. Project notification forms are registered and map to `ProcedureSettingType::ProjectNotificationTask` via `procedureSettingType()`.
 
 > **Cross-references:**
 > - **Attendance Module Deep Reference** §24 (`ATTENDANCE_MODULE_DEEP_REFERENCE.md`) — documents the Attendance→EmployeeTask integration boundary.
 > - **Procedure Workflow Deep Guide** §9 (`docs/PROCEDURE_WORKFLOW_DEEP_GUIDE.md`) — documents the full workflow architecture for all EmployeeTask forms including `extendTaskTime` and `sendForApproval`.
+> - **Project Module Deep Documentation** (`PROJECT_MODULE_DEEP_DOCUMENTATION.md`) — documents the `ProjectNotificationService` that creates `EmployeeTaskRequest` records via the `CreateProjectNotificationTask` form key, and the condition skip logic for dashboard-created notifications.
 
 ### What This Means
 
@@ -1137,7 +1144,7 @@ Because `extendTaskTime` and `sendForApproval` are not registered in the enum, b
 
 1. **No condition definitions** — `InternalProcessForm::conditions()` has no entry for either form. The `EmployeeTaskFormConditionService` does not evaluate any conditions before requesting an extension or sending for approval (beyond basic status checks: task must be InProgress or Paused for extensions; no pending approval already exists for approvals).
 
-2. **Not listed in `forType('employee_task')`** — `InternalProcessForm::forType()` returns only `CreateTask`, `StartTask`, `EndTask`. Neither form will appear in any form listing endpoint or admin UI that enumerates available forms.
+2. **Not listed in `forType('employee_task')`** — `InternalProcessForm::forType('employee_task')` now returns `CreateTask`, `StartTask`, `EndTask` plus all project notification forms (`CreateProjectNotificationTask`, `StartProjectNotificationTask`, `ConfirmProjectNotificationPresence`, `UpdateProjectNotificationTask`, `EndProjectNotificationTask`). Neither `extendTaskTime` nor `sendForApproval` will appear in any form listing endpoint or admin UI that enumerates available forms.
 
 3. **No label** — There is no `labelAr()` entry for either form.
 
@@ -1187,6 +1194,13 @@ To bring both forms to parity with the other forms:
 | `endTask` | `EmployeeTaskEndRequestService` | ✅ `InternalProcessForm::EndTask` | ✅ Auto-seeded | Task end approval workflow |
 | `extendTaskTime` | `EmployeeTaskExtensionService` | ❌ Raw string | ❌ Not seeded | Extension request approval workflow |
 | `sendForApproval` | `EmployeeTaskApprovalService` | ❌ Raw string | ❌ Not seeded | Final completion approval workflow |
+| `createProjectNotificationTask` | `ProjectNotificationService::create()` → `EmployeeTaskRequestService::create()` | ✅ `InternalProcessForm::CreateProjectNotificationTask` | ❌ Not seeded | Project notification task creation (dashboard). Real-time conditions skipped when GPS is missing. |
+| `startProjectNotificationTask` | `ProjectNotificationController::start()` | ✅ `InternalProcessForm::StartProjectNotificationTask` | ❌ Not seeded | Project notification task start (mobile) |
+| `confirmProjectNotificationPresence` | `ProjectNotificationController::takeAction()` | ✅ `InternalProcessForm::ConfirmProjectNotificationPresence` | ❌ Not seeded | Confirm employee presence at notification location |
+| `updateProjectNotificationTask` | `ProjectNotificationService::takeAction()` | ✅ `InternalProcessForm::UpdateProjectNotificationTask` | ❌ Not seeded | Update project notification task |
+| `endProjectNotificationTask` | `ProjectNotificationController::end()` | ✅ `InternalProcessForm::EndProjectNotificationTask` | ❌ Not seeded | Project notification task end (mobile) |
+
+> **Note:** Project notification forms map to `ProcedureSettingType::ProjectNotificationTask` (not `EmployeeTask`) via `InternalProcessForm::procedureSettingType()`. They share the `employee_task` applicable type alongside `project_notification_task`.
 
 ### Extension Workflow Flow (Current)
 

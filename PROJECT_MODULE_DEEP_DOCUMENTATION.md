@@ -268,6 +268,44 @@ description, user_id, metadata, created_at
 
 ---
 
+#### 2.1.8 `ProjectNotification` (table: `project_notifications`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotification`
+
+**Traits**: `UuidTrait`, `BaseFilterable`, `CustomBelongsToTenant`, `InteractsWithMedia` (Spatie), `SoftDeletes`
+
+**Implements**: `HasMedia`
+
+**Primary Key**: UUID (`string`)
+
+**Fillable Fields**:
+```
+company_id, project_id, employee_task_request_id, notification_number,
+notification_type, severity, work_type, magdy_number, work_description,
+contractor_name, contractor_number, contractor_technical_number,
+contractor_category, contractor_notes, contractor_mobile,
+task_latitude, task_longitude, location_radius, location_link, repair_point,
+assigned_user_id, selected_distance_meters, status, created_by_user_id,
+approved_by, approved_at, rejected_by, rejected_at, rejection_reason,
+task_date, duration_hours, notes
+```
+
+**Casts**: `task_latitude` → `decimal:7`, `task_longitude` → `decimal:7`, `location_radius` → `integer`, `selected_distance_meters` → `integer`, `duration_hours` → `decimal:2`, `approved_at`/`rejected_at` → `datetime`, `task_date` → `date:Y-m-d`
+
+**Relationships**:
+- `project()` → `belongsTo(ProjectManagement, 'project_id')->withoutGlobalScopes()`
+- `employeeTask()` → `belongsTo(EmployeeTaskRequest, 'employee_task_request_id')->withoutGlobalScopes()`
+- `assignedUser()` → `belongsTo(User, 'assigned_user_id')->withoutGlobalScopes()`
+- `creator()` → `belongsTo(User, 'created_by_user_id')->withoutGlobalScopes()`
+- `approver()` → `belongsTo(User, 'approved_by')->withoutGlobalScopes()`
+- `rejecter()` → `belongsTo(User, 'rejected_by')->withoutGlobalScopes()`
+
+**Media Collection**: `attachments` — stores uploaded files via Spatie Media Library.
+
+**Key Behaviour**: When a `ProjectNotification` is created via `ProjectNotificationService::create()`, a linked `EmployeeTaskRequest` is automatically created via the `EmployeeTask` module using the `CreateProjectNotificationTask` form key. The notification status is synced from the task status via `syncNotificationStatusFromTask()`.
+
+---
+
 ### 2.2 Database Schema & Migrations
 
 #### `projects` Table
@@ -479,6 +517,37 @@ Passed to `UpdateProjectManagementHandler` which delegates to `ProjectManagement
 
 Accepts a `UuidInterface` and calls `ProjectManagementRepository::deleteProjectManagement()`.
 
+#### `CreateProjectNotificationDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO`
+
+Constructor parameters:
+```
+projectId (string), createdByUserId (string), assignedUserId (string),
+taskDate (string), durationHours (float), taskLatitude (float), taskLongitude (float),
+notificationType (?string), severity (?string = 'منخفض'), workType (?string),
+magdyNumber (?string), workDescription (?string),
+contractorName (?string), contractorNumber (?string), contractorTechnicalNumber (?string),
+contractorCategory (?string), contractorNotes (?string), contractorMobile (?string),
+locationRadius (?int), locationLink (?string), repairPoint (?string),
+selectedDistanceMeters (?int), notes (?string), files (?array),
+approvalResponsibleId (?string), assignmentResponsibleId (?string)
+```
+
+`toArray()` returns all fields except `files`, `approvalResponsibleId`, `assignmentResponsibleId`.
+
+#### `UpdateProjectNotificationDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\UpdateProjectNotificationDTO`
+
+Used by `ProjectNotificationService::update()`.
+
+#### `FilterProjectNotificationDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO`
+
+Used by `index`, `myTasks`, and `export` endpoints. Provides `toFilters()` method for repository filtering.
+
 ---
 
 ### 2.4 Services
@@ -539,6 +608,58 @@ Returns four widgets with current count/value, previous period count/value, perc
 2. `total_value` — sum of `project_value`
 3. `active_projects` — projects with `status = 1`
 4. `inactive_projects` — projects with `status != 1`
+
+#### `ProjectNotificationService`
+
+**File**: `Modules\Project\ProjectManagement\Services\ProjectNotificationService`
+
+Manages project notifications — dashboard-created task assignments dispatched to employees. Each notification creates a linked `EmployeeTaskRequest` via the `EmployeeTask` module using the `CreateProjectNotificationTask` form key.
+
+Key methods:
+- `create(CreateProjectNotificationDTO $dto): ProjectNotification` — Creates the notification row, then delegates to `EmployeeTaskRequestService::create()` with `InternalProcessForm::CreateProjectNotificationTask->value` as the form key. The linked `EmployeeTaskRequest` gets `is_project_notification = true`, `task_source = 'dashboard'`, and `project_notification_id` set. The `currentLatitude`/`currentLongitude` are explicitly `null` because the admin creates this from the dashboard, not from the employee's current GPS context.
+- `list(FilterProjectNotificationDTO $dto): LengthAwarePaginator` — Paginated list with filters.
+- `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications assigned to the current employee.
+- `get(string $id): ProjectNotification`
+- `update(string $id, UpdateProjectNotificationDTO $dto): ProjectNotification`
+- `delete(string $id): bool`
+- `approve(string $id, string $userId): ProjectNotification` — Approves the notification; if the linked task has an active workflow process, it advances that too.
+- `reject(string $id, string $userId, string $reason): ProjectNotification`
+- `syncNotificationStatusFromTask(ProjectNotification $notification, $task): void` — Maps task status to notification status.
+- `startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile: employee starts the linked task.
+- `endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest` — Mobile: employee ends the linked task.
+- `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a procedure action (e.g., confirm presence).
+- `availableActions(string $notificationId): array` — Lists available workflow actions for the notification.
+
+**Cross-Module Relationship with EmployeeTask**:
+
+The `create()` method builds a `CreateEmployeeTaskRequestDTO` with:
+- `taskLatitude` / `taskLongitude` from the notification DTO (task location)
+- `currentLatitude` / `currentLongitude` set to `null` (no employee GPS at dashboard creation time)
+- `itemType = 'project_notification'`, `itemId = notification->id`
+- `employee_task_type_id` resolved from `EmployeeTaskType` where `key = 'project_notification'`
+
+It then calls `EmployeeTaskRequestService::create($taskDto, InternalProcessForm::CreateProjectNotificationTask->value)`.
+
+**Condition Evaluation for Project Notifications**:
+
+Because the admin creates the notification from the dashboard, the employee's real-time context (current shift, current GPS, today's holiday status) is unavailable. `EmployeeTaskFormConditionService::skipRealtimeConditionsForDashboardNotification()` removes these real-time-dependent conditions from the evaluation map for `CreateProjectNotificationTask` only:
+
+- `AllowDuringShift` — checks `Carbon::now()` vs employee shift
+- `AllowOutsideShift` — checks current GPS vs work-area radius (skipped only when GPS is missing)
+- `AllowOnHolidays` — checks whether today is a holiday
+
+Task-data validations remain enforced:
+- `InsideCustomLocations` — validates `taskLatitude`/`taskLongitude` against custom polygons
+- `MaxTaskDuration` — validates `durationHours`
+- `MaxScheduledDateOffset` — validates `taskDate`
+
+Normal employee task creation (`CreateTask` form) is unaffected — all conditions are evaluated.
+
+#### `ProjectNotificationLocationService`
+
+**File**: `Modules\Project\ProjectManagement\Services\ProjectNotificationLocationService`
+
+- `getProjectEmployeesWithLocations(?string $projectId, float $lat, float $lng, ?float $radius): array` — Returns project employees sorted by distance from the given coordinates, used for the "nearest employees" selection UI when creating a notification.
 
 ---
 
@@ -682,6 +803,34 @@ Sends email via `EmployeeAssignedMail`.
 
 Sends email via `AttachmentRequestMail`.
 
+#### `ProjectNotificationController`
+
+**File**: `Modules\Project\ProjectManagement\Controllers\ProjectNotificationController`
+
+| Method | Endpoint | Permission | Description |
+|---|---|---|---|
+| GET | `/notifications` | `PROJECT_NOTIFICATION_LIST` | List notifications (paginated, filterable) |
+| POST | `/notifications` | `PROJECT_NOTIFICATION_CREATE` | Create notification + linked EmployeeTask |
+| GET | `/notifications/{id}` | `PROJECT_NOTIFICATION_VIEW` | Notification details |
+| PUT | `/notifications/{id}` | `PROJECT_NOTIFICATION_UPDATE` | Update notification |
+| DELETE | `/notifications/{id}` | `PROJECT_NOTIFICATION_DELETE` | Delete notification |
+| POST | `/notifications/export` | `PROJECT_NOTIFICATION_EXPORT` | Export notifications (xlsx/csv) |
+| GET | `/notifications/employees-with-locations` | `PROJECT_NOTIFICATION_CREATE` | List project employees sorted by distance |
+| POST | `/notifications/{id}/approve` | `PROJECT_NOTIFICATION_UPDATE` | Approve notification |
+| POST | `/notifications/{id}/reject` | `PROJECT_NOTIFICATION_UPDATE` | Reject notification (requires `reason`) |
+| GET | `/notifications/my-tasks` | `PROJECT_NOTIFICATION_LIST` | Mobile: notifications assigned to current employee |
+| GET | `/notifications/{id}/available-actions` | `PROJECT_NOTIFICATION_VIEW` | Available workflow actions |
+| POST | `/notifications/{id}/start` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: start linked task |
+| POST | `/notifications/{id}/take-action` | `PROJECT_NOTIFICATION_UPDATE` | Record a procedure action (e.g., confirm presence) |
+| POST | `/notifications/{id}/end` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: end linked task |
+
+**Route prefix**: `/api/v1/projects/notifications`
+
+**Notes**:
+- `store` uses `CreateProjectNotificationRequest` for validation; creates via `ProjectNotificationService::create()` which delegates to `EmployeeTaskRequestService`.
+- `start`/`end` use `StartTaskRequest`/`EndTaskRequest` from the EmployeeTask module and return `EmployeeTaskRequestPresenter` responses.
+- `takeAction` validates `internal_procedure_setting_id` as required UUID existing in `procedure_settings`.
+
 ---
 
 ### 2.7 Observers
@@ -787,6 +936,21 @@ Presents employee with: id, project_id, user (id/name/email), project_role (id/n
 
 Presents request with: all scalar fields, `type` (outgoing/incoming based on sender), nested project/sender_company/receiver_company/created_by/responded_by, items (via `AttachmentRequestItemPresenter`), attachments_preview, statistics (total/approved/declined/pending/update_requested counts), and history log.
 
+#### `ProjectNotificationPresenter`
+
+**File**: `Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter`
+
+- `toArray(): array` — Transforms a `ProjectNotification` into: all scalar fields, nested `project` (id/name/serial_number), `assigned_user` (id/name), `created_by` (id/name), `employee_task` (id/serial_number/status/status_label), `status_label`, `attachments` (media URLs), and timestamps.
+- `static single(ProjectNotification $notification): array` — Single notification response.
+- `static detail(ProjectNotification $notification): array` — Alias for `single()`.
+- `static collection(array $notifications): array` — Maps a collection through `single()`.
+
+#### `ProjectNotificationEmployeeLocationPresenter`
+
+**File**: `Modules\Project\ProjectManagement\Presenters\ProjectNotificationEmployeeLocationPresenter`
+
+- `static collection(array $employees): array` — Transforms employee location data for the "nearest employees" selection UI: id, name, email, phone, branch_name, distance_meters, project_role.
+
 ---
 
 ### 2.10 Filters
@@ -824,6 +988,21 @@ Sent to receiver company owner when an attachment request is created. Contains:
 - Request name, serial number, project name
 - Sender company name
 - Action URL
+
+#### `ProjectNotificationException`
+
+**File**: `Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException`
+
+Extends `RuntimeException`. Static factory methods:
+
+| Method | Description |
+|---|---|
+| `notFound(string $id)` | Notification not found |
+| `cannotApprove(string $status)` | Cannot approve — status is not `pending` |
+| `cannotReject(string $status)` | Cannot reject — status is not `pending` |
+| `taskTypeNotFound()` | `EmployeeTaskType` with `key = 'project_notification'` missing — run seeder |
+| `linkedTaskNotFound(string $id)` | Notification has no linked `EmployeeTaskRequest` |
+| `procedureNotAvailable()` | Requested procedure setting is not available for this notification |
 
 ---
 
@@ -915,6 +1094,11 @@ return [
         'PROJECT_ROLE_VIEW' => 'project-management.project-management*role.view',
         'PROJECT_SHARE_VIEW' => 'project-management.project-management*project-share.view',
         'PROJECT_ARCHIVE_CYCLE_VIEW' => 'project-management.project-management*archive-cycle.view',
+        'PROJECT_NOTIFICATION_VIEW'   => 'project-management.project-management*notifications.view',
+        'PROJECT_NOTIFICATION_LIST'   => 'project-management.project-management*notifications.list',
+        'PROJECT_NOTIFICATION_CREATE' => 'project-management.project-management*notifications.create',
+        'PROJECT_NOTIFICATION_UPDATE' => 'project-management.project-management*notifications.update',
+        'PROJECT_NOTIFICATION_DELETE' => 'project-management.project-management*notifications.delete',
         // Some permissions are commented out (attachment-cycle-settings, archive-library-settings)
     ]
 ];
@@ -926,6 +1110,7 @@ return [
 3. **Role Management**: `PROJECT_ROLE_{VIEW,LIST,CREATE,UPDATE,DELETE}`
 4. **Project Sharing**: `PROJECT_SHARE_{VIEW,LIST,CREATE,UPDATE,DELETE}`
 5. **Archive Cycle**: `PROJECT_ARCHIVE_CYCLE_{VIEW,LIST,CREATE,UPDATE,DELETE}`
+6. **Project Notifications**: `PROJECT_NOTIFICATION_{VIEW,LIST,CREATE,UPDATE,DELETE}` + `PROJECT_NOTIFICATION_EXPORT`
 
 ---
 
@@ -1651,13 +1836,18 @@ return [
 
 ```
 Modules\Project
-├── ProjectManagement (projects, project_roles, project_permissions, project_employees, attachment_requests, ...)
+├── ProjectManagement (projects, project_roles, project_permissions, project_employees, attachment_requests, project_notifications, ...)
 │   ├── Uses Shareable trait → Shared\ResourceShare (resource_shares)
 │   ├── References ProjectType (project_types) via project_type_id, sub_project_type_id, sub_sub_project_type_id
 │   ├── References User (users) via manager_id, created_by_user_id
 │   ├── References Company (companies) via company_id
 │   ├── References Branch, Currency, ManagementHierarchy, Client
-│   └── References ArchiveLibrary\Folder, ArchiveLibrary\File (for attachment saving)
+│   ├── References ArchiveLibrary\Folder, ArchiveLibrary\File (for attachment saving)
+│   └── ProjectNotification → EmployeeTask (EmployeeTaskRequest) via employee_task_request_id
+│       ├── Uses InternalProcessForm::CreateProjectNotificationTask form key
+│       ├── Condition evaluation skips real-time conditions (AllowDuringShift, AllowOutsideShift, AllowOnHolidays) when current GPS is missing
+│       ├── Task-data conditions (InsideCustomLocations, MaxTaskDuration, MaxScheduledDateOffset) remain enforced
+│       └── Mobile lifecycle (start/end/take-action) delegates to EmployeeTask services
 ├── ProjectType (project_types, project_schemas, project_type_schemas, *_settings, order_permit_*)
 │   ├── Self-referencing tree (parent_id)
 │   ├── References Company via company_id
@@ -1980,6 +2170,12 @@ This section maps the Project module screens to the backend models, APIs, and pe
 | Project employees tab | `GET /api/v1/projects/{id}/employees` | `PROJECT_EMPLOYEE_LIST` |
 | Project shared companies tab | `GET /api/v1/projects/{id}/shared-companies` | `PROJECT_SHARE_LIST` |
 | Document cycle tab | `GET /api/v1/projects/attachment-requests` | `PROJECT_ARCHIVE_LIST` |
+| Project notifications list | `GET /api/v1/projects/notifications` | `PROJECT_NOTIFICATION_LIST` |
+| Create project notification | `POST /api/v1/projects/notifications` | `PROJECT_NOTIFICATION_CREATE` |
+| Nearest employees selector | `GET /api/v1/projects/notifications/employees-with-locations` | `PROJECT_NOTIFICATION_CREATE` |
+| Mobile: my notifications | `GET /api/v1/projects/notifications/my-tasks` | `PROJECT_NOTIFICATION_LIST` |
+| Mobile: start notification task | `POST /api/v1/projects/notifications/{id}/start` | `PROJECT_NOTIFICATION_UPDATE` |
+| Mobile: end notification task | `POST /api/v1/projects/notifications/{id}/end` | `PROJECT_NOTIFICATION_UPDATE` |
 
 ---
 
