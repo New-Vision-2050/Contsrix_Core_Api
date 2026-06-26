@@ -18,8 +18,11 @@ use Modules\Shared\Media\Presenters\MediaPresenter;
  *
  * Shape:
  * {
- *   id, type, type_label,
- *   task: { id, serial_number, title, task_date, status, status_label },
+ *   id, type, type_label, category, category_label,
+ *   task: {
+ *     id, serial_number, title, task_date, status, status_label,
+ *     is_project_notification, project, project_notification
+ *   },
  *   employee: { id, name },
  *   status,
  *   current_step: { id, name, step_order, is_approve, action_takers[] },
@@ -33,15 +36,25 @@ final class InboxItemPresenter
     {
         $locale = app()->getLocale();
 
+        $isProjectNotification = (bool) $task->is_project_notification
+            || ($task->relationLoaded('projectNotification') && $task->projectNotification);
+
+        $category = $isProjectNotification ? 'project_notification' : 'employee_task';
+        $categoryLabel = $locale === 'ar'
+            ? ($isProjectNotification ? 'إسناد طوارئ وأعمال' : 'مهمة')
+            : ($isProjectNotification ? 'Emergency & Work Assignment' : 'Task');
+
         return [
-            'id'         => $task->id,
-            'type'       => 'task_request',
-            'type_label' => $locale === 'ar' ? 'طلب مهمة' : 'Task Request',
-            'task'       => self::taskSummary($task),
-            'employee'   => self::employee($task->relationLoaded('user') ? $task->user : null),
-            'status'     => $task->status,
-            'current_step' => self::stepFromProcess($task),
-            'summary'    => [
+            'id'            => $task->id,
+            'type'          => 'task_request',
+            'type_label'    => $locale === 'ar' ? 'طلب مهمة' : 'Task Request',
+            'category'      => $category,
+            'category_label' => $categoryLabel,
+            'task'          => self::taskSummary($task),
+            'employee'      => self::employee($task->relationLoaded('user') ? $task->user : null),
+            'status'        => $task->status,
+            'current_step'  => self::stepFromProcess($task),
+            'summary'       => [
                 'duration_hours' => HoursFormatter::fromDecimalString($task->duration_hours),
                 'task_date'      => $task->task_date?->format('Y-m-d'),
                 'task_location'  => [
@@ -162,6 +175,9 @@ final class InboxItemPresenter
     {
         $locale = app()->getLocale();
 
+        $projectNotification = $task->relationLoaded('projectNotification') ? $task->projectNotification : null;
+        $project             = $task->relationLoaded('project') ? $task->project : null;
+
         return [
             'id'            => $task->id,
             'serial_number' => $task->serial_number,
@@ -169,6 +185,17 @@ final class InboxItemPresenter
             'task_date'     => $task->task_date?->format('Y-m-d'),
             'status'        => $task->status,
             'status_label'  => \Modules\EmployeeTask\Enums\EmployeeTaskStatus::from($task->status)->label($locale),
+            'is_project_notification' => (bool) $task->is_project_notification,
+            'project'       => $project ? ['id' => $project->id, 'name' => $project->name] : null,
+            'project_notification' => $projectNotification ? [
+                'id'                 => $projectNotification->id,
+                'notification_number'=> $projectNotification->notification_number,
+                'notification_type'  => $projectNotification->notification_type,
+                'work_type'          => $projectNotification->work_type,
+                'contractor_name'    => $projectNotification->contractor_name,
+                'repair_point'       => $projectNotification->repair_point,
+                'severity'           => $projectNotification->severity,
+            ] : null,
         ];
     }
 

@@ -388,6 +388,11 @@ class EmployeeTaskRequestService
         return $this->repository->allStartRequestInboxForAdmin($adminId, $filters);
     }
 
+    public function assignedInbox(string $userId, array $filters = []): Collection
+    {
+        return $this->repository->allAssignedForAdmin($userId, $filters);
+    }
+
     public function get(string $id): EmployeeTaskRequest
     {
         $task = $this->repository->findByIdWithRelations($id);

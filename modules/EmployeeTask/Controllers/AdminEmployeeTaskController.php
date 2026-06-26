@@ -73,7 +73,8 @@ class AdminEmployeeTaskController extends Controller
 
         $type = $filters['type'] ?? null;
 
-        $taskItems         = $this->requestService->inboxAll($adminId, $filters);
+        $taskItems         = $this->requestService->inboxAll($adminId, $filters)
+            ->reject(fn ($t) => $t->user_id === $adminId);
         $extItems          = $this->extensionService->listInboxAllForAdmin($adminId, $filters);
         $approvalItems     = $this->requestService->inboxAllApprovals($adminId, $filters);
         $endRequestItems   = $this->requestService->inboxAllEndRequests($adminId, $filters);
@@ -124,6 +125,58 @@ class AdminEmployeeTaskController extends Controller
                 'total'        => $total,
             ],
             message: 'Inbox retrieved successfully',
+        );
+    }
+
+    /**
+     * Inbox for tasks that are assigned to the current user (user_id = current user).
+     * Returned in the same unified shape as the admin inbox, with type = 'assigned_task'.
+     */
+    public function assignedInbox(): JsonResponse
+    {
+        $userId  = (string) Auth::id();
+        $filters = request()->only(['task_id', 'status', 'task_date', 'date_from', 'date_to', 'duration_from', 'duration_to']);
+        $perPage = (int) request()->input('per_page', 15);
+        $page    = (int) request()->input('page', 1);
+        $sort    = request()->input('sort', 'created_at_desc');
+
+        $items = $this->requestService->assignedInbox($userId, $filters)
+            ->sortByDesc('created_at')
+            ->values();
+
+        $direction = str_ends_with($sort, '_desc') ? 'desc' : 'asc';
+        $column    = str_replace(['_desc', '_asc'], '', $sort);
+
+        $items = $items->sortBy(function ($task) use ($column) {
+            return match ($column) {
+                'task_date'      => $task->task_date,
+                'duration_hours' => $task->duration_hours ?? 0,
+                'title'          => $task->title,
+                'status'         => $task->status,
+                default          => $task->created_at,
+            };
+        }, SORT_REGULAR, $direction === 'desc')->values();
+
+        $total = $items->count();
+        $slice = $items->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $payload = $slice->map(function ($task) {
+            $item = InboxItemPresenter::fromTaskRequest($task);
+            $item['type'] = 'assigned_task';
+            $item['type_label'] = app()->getLocale() === 'ar' ? 'مهمة مسندة' : 'Assigned Task';
+
+            return $item;
+        })->all();
+
+        return Json::items(
+            mainItems: $payload,
+            paginationSettings: [
+                'current_page' => $page,
+                'last_page'    => max(1, (int) ceil($total / $perPage)),
+                'per_page'     => $perPage,
+                'total'        => $total,
+            ],
+            message: 'Assigned inbox retrieved successfully',
         );
     }
 
