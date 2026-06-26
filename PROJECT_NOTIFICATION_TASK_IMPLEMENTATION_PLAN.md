@@ -87,8 +87,7 @@ The following decisions were made during the design session and are reflected in
 - Project notifications use a dedicated `ProcedureSetting` parent of type `employee_task` with name **مهام الصيانة والطوارئ**.
 - The parent is seeded per tenant by `ProjectNotificationProcedureSeeder` and has its own workflow that mirrors the branch associations of the default employee-task workflow.
 - Four internal procedure forms are created under this parent, matching the UI buttons in the image:
-  - **تأكيد استلام** → `StartProjectNotificationTask`
-  - **تأكيد التواجد** → `ConfirmProjectNotificationPresence`
+  - **تأكيد استلام** → `ConfirmProjectNotificationPresence` (confirm-receive; moves task from approved to in_progress)
   - **تحديث** → `UpdateProjectNotificationTask`
   - **إنهاء المهمة** → `EndProjectNotificationTask`
 - The create form (`CreateProjectNotificationTask`) is also under this parent.
@@ -96,16 +95,16 @@ The following decisions were made during the design session and are reflected in
 - If auto-approved, the linked `EmployeeTaskRequest` becomes `approved` and the employee receives an in-app notification + push.
 - If manual approval is required, the task stays `pending` until the responsible approver acts.
 
-### 3.5a Start Task Workflow (mirrors End Task)
-- When the assigned employee calls `POST /employee-tasks/{id}/start`, the linked task is a project notification (`is_project_notification = true`), so `EmployeeTaskStartRequestService` resolves the dedicated `StartProjectNotificationTask` internal procedure under the project-notification parent.
+### 3.5a Confirm-Receive Workflow (mirrors Start Task)
+- When the assigned employee calls `POST /projects/notifications/{id}/confirm-receive`, the linked task is a project notification (`is_project_notification = true`), so `EmployeeTaskStartRequestService` resolves the dedicated `ConfirmProjectNotificationPresence` internal procedure under the project-notification parent.
 - If the procedure has steps, a pending `EmployeeTaskStartRequest` is created and the task remains `approved`.
 - If no procedure / no steps are configured, the task starts immediately (`status = in_progress`).
-- The start request appears in the admin inbox (`GET /admin/employee-tasks/inbox`) with `type = start_request`.
+- The confirm-receive request appears in the admin inbox (`GET /admin/employee-tasks/inbox`) with `type = start_request`.
 - A single unified endpoint approves/rejects by ID:
   - `POST /admin/employee-tasks/{startRequestId}/approve`
   - `POST /admin/employee-tasks/{startRequestId}/reject`
 - On final approval, the task is marked `in_progress` and a session is created.
-- `InternalProcedureSettingsSeeder` continues to auto-create the generic `startTask` internal procedure under the default employee-task parent for regular tasks, while `ProjectNotificationProcedureSeeder` manages the project-notification-specific forms.
+- `InternalProcedureSettingsSeeder` continues to auto-create the generic `startTask` internal procedure under the default employee-task parent for regular tasks, while `ProjectNotificationProcedureSeeder` manages the project-notification-specific forms. The `StartProjectNotificationTask` form has been removed.
 
 ### 3.6 Notifications & Events
 - Real-time update via Reverb websocket (reusing existing `EmployeeTaskNotification` / `InboxCountsUpdated` events).
@@ -309,15 +308,14 @@ Create a new seeder in `ProcedureSetting` module:
 - Parent `ProcedureSetting` of type `employee_task` with `name = 'مهام الصيانة والطوارئ'`.
 - Child `ProcedureSetting` rows for forms:
   - `CreateProjectNotificationTask`
-  - `StartProjectNotificationTask` (label: تأكيد استلام)
-  - `ConfirmProjectNotificationPresence` (label: تأكيد التواجد)
+  - `ConfirmProjectNotificationPresence` (label: تأكيد استلام)
   - `UpdateProjectNotificationTask` (label: تحديث)
   - `EndProjectNotificationTask` (label: إنهاء المهمة)
 - Configure responsibles and approvers per branch/management/department.
 - The parent workflow mirrors the branch associations of the default employee-task workflow so the same branches see the project-notification procedure.
 - `InternalProcedureSettingsSeeder` is updated to skip forms whose value contains `ProjectNotification`; those are managed exclusively by `ProjectNotificationProcedureSeeder`.
 
-> **Decision**: A dedicated `CreateProjectNotificationTask` form already exists in `InternalProcessForm`. Four additional project-notification forms (`StartProjectNotificationTask`, `ConfirmProjectNotificationPresence`, `UpdateProjectNotificationTask`, `EndProjectNotificationTask`) are added with Arabic labels matching the image buttons. The dedicated parent is resolved by storing the task's `procedure_setting_id` at creation time, so all subsequent lifecycle actions (start/end) use the correct internal procedures.
+> **Decision**: A dedicated `CreateProjectNotificationTask` form already exists in `InternalProcessForm`. Three additional project-notification forms (`ConfirmProjectNotificationPresence`, `UpdateProjectNotificationTask`, `EndProjectNotificationTask`) are used with Arabic labels matching the image buttons. `StartProjectNotificationTask` has been removed; confirm-receive is handled by `ConfirmProjectNotificationPresence`. The dedicated parent is resolved by storing the task's `procedure_setting_id` at creation time, so all subsequent lifecycle actions (confirm-receive/end) use the correct internal procedures.
 
 ### 5.2 Phase 2 — Database Migrations
 

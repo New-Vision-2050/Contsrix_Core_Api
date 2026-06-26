@@ -97,14 +97,14 @@ class UpdateProcedureSettingStepRequest extends FormRequest
             'is_accept'    => 'sometimes|boolean',
             'is_approve'   => 'sometimes|boolean',
 
-            // When action_taker_type is "himself" only the "approve" form is permitted.
+            // When action_taker_type is "himself" or "assigned_user" only the "approve" form is permitted.
             'forms' => [
                 'sometimes',
                 'nullable',
                 'string',
                 'in:approve,accept,financial',
                 Rule::when(
-                    $this->input('action_taker_type') === 'himself',
+                    in_array($this->input('action_taker_type'), ['himself', 'assigned_user'], true),
                     ['in:approve'],
                 ),
             ],
@@ -127,7 +127,7 @@ class UpdateProcedureSettingStepRequest extends FormRequest
 
             'step_order' => 'sometimes|nullable|integer|min:0',
 
-            'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy,specific_procedures,himself',
+            'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy,specific_procedures,himself,assigned_user',
 
             // ── Deprecated (legacy) ──────────────────────────────────────────
             // Replaced by action_taker_management_hierarchies array of objects.

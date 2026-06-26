@@ -213,7 +213,7 @@ final class EmployeeTaskFormConditionService
             : null;
 
         $formKey = $task->is_project_notification
-            ? InternalProcessForm::StartProjectNotificationTask->value
+            ? InternalProcessForm::ConfirmProjectNotificationPresence->value
             : InternalProcessForm::StartTask->value;
 
         $map = $this->resolveConditionMap(
@@ -253,15 +253,10 @@ final class EmployeeTaskFormConditionService
      * shift window, current GPS location, today's holiday status) cannot be
      * evaluated when an admin creates a project notification from the dashboard.
      *
-     * Skipped conditions (CreateProjectNotificationTask only):
-     *   - AllowDuringShift    — checks Carbon::now() vs employee shift
-     *   - AllowOutsideShift   — checks current GPS vs work-area radius
-     *   - AllowOnHolidays     — checks whether today is a holiday
-     *
-     * Still-enforced conditions (validate task data, not real-time context):
-     *   - InsideCustomLocations — checks taskLatitude/taskLongitude
-     *   - MaxTaskDuration       — checks durationHours
-     *   - MaxScheduledDateOffset— checks taskDate
+     * For CreateProjectNotificationTask the system only enforces the
+     * InsideCustomLocations condition (task location must be inside configured
+     * custom polygons). All other conditions are omitted from the enum definition,
+     * so this helper only removes them if they somehow appear in the map.
      *
      * Normal employee task creation (CreateTask form) is unaffected.
      *

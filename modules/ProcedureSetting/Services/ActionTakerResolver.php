@@ -31,6 +31,9 @@ class ActionTakerResolver
             // The submitter themselves is the action taker.
             'himself' => $createdByUserId !== null ? [$createdByUserId] : [],
 
+            // The entity assigned to the task/request (e.g. EmployeeTaskRequest.user_id).
+            'assigned_user' => $createdByUserId !== null ? [$createdByUserId] : [],
+
             default => $this->resolveSpecificUserIds($step),
         };
     }

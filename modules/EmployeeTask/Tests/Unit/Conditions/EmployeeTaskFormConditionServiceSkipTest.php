@@ -63,18 +63,6 @@ final class EmployeeTaskFormConditionServiceSkipTest extends TestCase
                 'sort_order' => 4,
                 'settings'   => [],
             ],
-            InternalProcessCondition::MaxTaskDuration->value => [
-                'key'        => InternalProcessCondition::MaxTaskDuration->value,
-                'is_active'  => true,
-                'sort_order' => 5,
-                'settings'   => [],
-            ],
-            InternalProcessCondition::MaxScheduledDateOffset->value => [
-                'key'        => InternalProcessCondition::MaxScheduledDateOffset->value,
-                'is_active'  => true,
-                'sort_order' => 6,
-                'settings'   => [],
-            ],
         ];
 
         $result = $method->invoke(
@@ -90,10 +78,8 @@ final class EmployeeTaskFormConditionServiceSkipTest extends TestCase
         $this->assertArrayNotHasKey(InternalProcessCondition::AllowOutsideShift->value, $result);
         $this->assertArrayNotHasKey(InternalProcessCondition::AllowOnHolidays->value, $result);
 
-        // Task-data conditions kept
+        // Only InsideCustomLocations is enforced for project-notification creation
         $this->assertArrayHasKey(InternalProcessCondition::InsideCustomLocations->value, $result);
-        $this->assertArrayHasKey(InternalProcessCondition::MaxTaskDuration->value, $result);
-        $this->assertArrayHasKey(InternalProcessCondition::MaxScheduledDateOffset->value, $result);
     }
 
     public function test_keeps_all_conditions_for_regular_task_creation(): void

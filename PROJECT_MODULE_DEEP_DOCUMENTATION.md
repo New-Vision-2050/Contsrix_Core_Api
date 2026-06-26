@@ -613,22 +613,26 @@ Returns four widgets with current count/value, previous period count/value, perc
 
 **File**: `Modules\Project\ProjectManagement\Services\ProjectNotificationService`
 
-Manages project notifications — dashboard-created task assignments dispatched to employees. Each notification creates a linked `EmployeeTaskRequest` via the `EmployeeTask` module using the `CreateProjectNotificationTask` form key.
+Manages project notifications — dashboard-created task assignments dispatched to employees. Each notification creates a linked `EmployeeTaskRequest` via the `EmployeeTask` module using the `CreateProjectNotificationTask` form key. The mobile lifecycle uses `ConfirmProjectNotificationPresence` as the confirm-receive step, which moves the task from the employee inbox (`approved`) to the assigned tasks list (`in_progress`).
 
 Key methods:
 - `create(CreateProjectNotificationDTO $dto): ProjectNotification` — Creates the notification row, then delegates to `EmployeeTaskRequestService::create()` with `InternalProcessForm::CreateProjectNotificationTask->value` as the form key. The linked `EmployeeTaskRequest` gets `is_project_notification = true`, `task_source = 'dashboard'`, and `project_notification_id` set. The `currentLatitude`/`currentLongitude` are explicitly `null` because the admin creates this from the dashboard, not from the employee's current GPS context.
 - `list(FilterProjectNotificationDTO $dto): LengthAwarePaginator` — Paginated list with filters.
-- `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications assigned to the current employee.
+- `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications assigned to the current employee (all statuses after confirm-receive).
+- `myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: approved notifications waiting for the employee to confirm-receive.
+- `inboxCounts(string $userId, array $filters = []): array` — Status counts for the employee's assigned notifications (badges).
+- `filterMetadata(string $userId, array $filters = []): array` — Filter metadata for the mobile filter UI: status counts, project counts, min/max duration.
 - `get(string $id): ProjectNotification`
 - `update(string $id, UpdateProjectNotificationDTO $dto): ProjectNotification`
 - `delete(string $id): bool`
 - `approve(string $id, string $userId): ProjectNotification` — Approves the notification; if the linked task has an active workflow process, it advances that too.
 - `reject(string $id, string $userId, string $reason): ProjectNotification`
 - `syncNotificationStatusFromTask(ProjectNotification $notification, $task): void` — Maps task status to notification status.
-- `startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile: employee starts the linked task.
-- `endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest` — Mobile: employee ends the linked task.
-- `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a procedure action (e.g., confirm presence).
-- `availableActions(string $notificationId): array` — Lists available workflow actions for the notification.
+- `confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile confirm-receive. Starts the linked task and moves the notification from the inbox (`approved`) to the assigned tasks list (`in_progress`). Form key: `ConfirmProjectNotificationPresence`.
+- `startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile: backward-compatible alias that delegates to `confirmReceive()` internally.
+- `endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest` — Mobile: employee ends the linked task. Form key: `EndProjectNotificationTask`.
+- `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a generic internal procedure action (e.g., `UpdateProjectNotificationTask`).
+- `availableActions(string $notificationId): array` — Lists available workflow actions for the notification, same as `GET /employee-tasks/{id}/available-actions`.
 
 **Cross-Module Relationship with EmployeeTask**:
 
@@ -640,18 +644,11 @@ The `create()` method builds a `CreateEmployeeTaskRequestDTO` with:
 
 It then calls `EmployeeTaskRequestService::create($taskDto, InternalProcessForm::CreateProjectNotificationTask->value)`.
 
+When creating the workflow for `CreateProjectNotificationTask`, the frontend may choose `assigned_user` as the action taker type. In that case the action taker is resolved to the `EmployeeTaskRequest.user_id` (the employee the notification is assigned to), so the task is sent to that employee's inbox.
+
 **Condition Evaluation for Project Notifications**:
 
-Because the admin creates the notification from the dashboard, the employee's real-time context (current shift, current GPS, today's holiday status) is unavailable. `EmployeeTaskFormConditionService::skipRealtimeConditionsForDashboardNotification()` removes these real-time-dependent conditions from the evaluation map for `CreateProjectNotificationTask` only:
-
-- `AllowDuringShift` — checks `Carbon::now()` vs employee shift
-- `AllowOutsideShift` — checks current GPS vs work-area radius (skipped only when GPS is missing)
-- `AllowOnHolidays` — checks whether today is a holiday
-
-Task-data validations remain enforced:
-- `InsideCustomLocations` — validates `taskLatitude`/`taskLongitude` against custom polygons
-- `MaxTaskDuration` — validates `durationHours`
-- `MaxScheduledDateOffset` — validates `taskDate`
+Only `InsideCustomLocations` is evaluated for `CreateProjectNotificationTask`. The admin sets the task location from the dashboard, so the employee's real-time context (current shift, current GPS, today's holiday status) is not relevant at creation time. `EmployeeTaskFormConditionService::checkCreateTaskConditions()` resolves the condition map from `InternalProcessForm::CreateProjectNotificationTask->conditions()`, which now contains only `InsideCustomLocations`. If `InsideCustomLocations` is active and the task location falls outside the configured polygons, creation fails.
 
 Normal employee task creation (`CreateTask` form) is unaffected — all conditions are evaluated.
 
@@ -818,18 +815,25 @@ Sends email via `AttachmentRequestMail`.
 | GET | `/notifications/employees-with-locations` | `PROJECT_NOTIFICATION_CREATE` | List project employees sorted by distance |
 | POST | `/notifications/{id}/approve` | `PROJECT_NOTIFICATION_UPDATE` | Approve notification |
 | POST | `/notifications/{id}/reject` | `PROJECT_NOTIFICATION_UPDATE` | Reject notification (requires `reason`) |
-| GET | `/notifications/my-tasks` | `PROJECT_NOTIFICATION_LIST` | Mobile: notifications assigned to current employee |
+| GET | `/notifications/my-tasks` | `PROJECT_NOTIFICATION_LIST` | Mobile: all notifications assigned to current employee (after confirm-receive) |
+| GET | `/notifications/my-inbox` | `PROJECT_NOTIFICATION_LIST` | Mobile: approved notifications waiting for confirm-receive |
+| GET | `/notifications/my-inbox-counts` | `PROJECT_NOTIFICATION_LIST` | Mobile: status counts for the employee's notifications (badge) |
+| GET | `/notifications/filters` | `PROJECT_NOTIFICATION_LIST` | Mobile: filter metadata (same format as employee-tasks/filters: statuses with title_ar/title_en, projects with key/title, duration in minutes) |
 | GET | `/notifications/{id}/available-actions` | `PROJECT_NOTIFICATION_VIEW` | Available workflow actions |
-| POST | `/notifications/{id}/start` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: start linked task |
-| POST | `/notifications/{id}/take-action` | `PROJECT_NOTIFICATION_UPDATE` | Record a procedure action (e.g., confirm presence) |
+| POST | `/notifications/{id}/confirm-receive` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: confirm receive and start the linked task |
+| POST | `/notifications/{id}/start` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: backward-compatible alias for confirm-receive |
+| POST | `/notifications/{id}/take-action` | `PROJECT_NOTIFICATION_UPDATE` | Record a generic procedure action (e.g., `UpdateProjectNotificationTask`) |
 | POST | `/notifications/{id}/end` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: end linked task |
 
 **Route prefix**: `/api/v1/projects/notifications`
 
 **Notes**:
 - `store` uses `CreateProjectNotificationRequest` for validation; creates via `ProjectNotificationService::create()` which delegates to `EmployeeTaskRequestService`.
-- `start`/`end` use `StartTaskRequest`/`EndTaskRequest` from the EmployeeTask module and return `EmployeeTaskRequestPresenter` responses.
+- `confirm-receive`/`start`/`end` use `StartTaskRequest`/`EndTaskRequest` from the EmployeeTask module and return `EmployeeTaskRequestPresenter` responses.
 - `takeAction` validates `internal_procedure_setting_id` as required UUID existing in `procedure_settings`.
+- The mobile inbox (`/my-inbox`) only returns notifications with `status = approved`. After `POST /notifications/{id}/confirm-receive`, the task moves to `in_progress` and appears in `/my-tasks` instead.
+- `/filters` returns the same response shape as `GET /employee-tasks/filters`: `statuses` (key, title_ar, title_en, count), `projects` (key, title, count), `duration` (key, title_ar, title_en, min_minutes, max_minutes).
+- Notification status is auto-synced from the linked `EmployeeTaskRequest` by `EmployeeTaskStatusSyncObserver` whenever the task status changes (e.g., `in_progress` after confirm-receive, `completed` after end). The observer maps `paused` → `in_progress` for the notification.
 
 ---
 
@@ -864,6 +868,33 @@ Sends email via `AttachmentRequestMail`.
 **`deleting` event**:
 - Blocks deletion of roles where `is_default = true`
 - Throws an exception with a descriptive message
+
+#### `ProjectNotificationObserver`
+
+**Registered in**: `ProjectManagementServiceProvider::boot()`  
+**Listens to**: `ProjectNotification` model events
+
+**`creating` event**:
+- Generates a unique `notification_number` (`NOTIF-{YEAR}-{00001}` format, unique per company)
+
+#### `EmployeeTaskStatusSyncObserver`
+
+**Registered in**: `ProjectManagementServiceProvider::boot()`  
+**Listens to**: `EmployeeTaskRequest` model `updated` event
+
+When an `EmployeeTaskRequest` with `is_project_notification = true` has its `status` changed, this observer automatically syncs the linked `ProjectNotification` status. Status mapping:
+
+| Task Status | Notification Status |
+|---|---|
+| `pending` | `pending` |
+| `approved` | `approved` |
+| `rejected` | `rejected` |
+| `in_progress` | `in_progress` |
+| `paused` | `in_progress` |
+| `completed` | `completed` |
+| `cancelled` | `cancelled` |
+
+This ensures that after `confirm-receive` (task → `in_progress`) or `end` (task → `completed`), the notification status is updated without any manual sync calls.
 
 ---
 
@@ -1844,10 +1875,10 @@ Modules\Project
 │   ├── References Branch, Currency, ManagementHierarchy, Client
 │   ├── References ArchiveLibrary\Folder, ArchiveLibrary\File (for attachment saving)
 │   └── ProjectNotification → EmployeeTask (EmployeeTaskRequest) via employee_task_request_id
-│       ├── Uses InternalProcessForm::CreateProjectNotificationTask form key
-│       ├── Condition evaluation skips real-time conditions (AllowDuringShift, AllowOutsideShift, AllowOnHolidays) when current GPS is missing
-│       ├── Task-data conditions (InsideCustomLocations, MaxTaskDuration, MaxScheduledDateOffset) remain enforced
-│       └── Mobile lifecycle (start/end/take-action) delegates to EmployeeTask services
+│       ├── Uses InternalProcessForm::CreateProjectNotificationTask form key (conditions limited to InsideCustomLocations)
+│       ├── Mobile confirm-receive uses InternalProcessForm::ConfirmProjectNotificationPresence form key
+│       ├── Procedure steps may use ActionTakerType::AssignedUser to send the task to the assigned employee
+│       └── Mobile lifecycle (confirm-receive / start / end / take-action) delegates to EmployeeTask services
 ├── ProjectType (project_types, project_schemas, project_type_schemas, *_settings, order_permit_*)
 │   ├── Self-referencing tree (parent_id)
 │   ├── References Company via company_id
@@ -2174,7 +2205,13 @@ This section maps the Project module screens to the backend models, APIs, and pe
 | Create project notification | `POST /api/v1/projects/notifications` | `PROJECT_NOTIFICATION_CREATE` |
 | Nearest employees selector | `GET /api/v1/projects/notifications/employees-with-locations` | `PROJECT_NOTIFICATION_CREATE` |
 | Mobile: my notifications | `GET /api/v1/projects/notifications/my-tasks` | `PROJECT_NOTIFICATION_LIST` |
-| Mobile: start notification task | `POST /api/v1/projects/notifications/{id}/start` | `PROJECT_NOTIFICATION_UPDATE` |
+| Mobile: inbox (confirm-receive) | `GET /api/v1/projects/notifications/my-inbox` | `PROJECT_NOTIFICATION_LIST` |
+| Mobile: inbox counts | `GET /api/v1/projects/notifications/my-inbox-counts` | `PROJECT_NOTIFICATION_LIST` |
+| Mobile: filter metadata | `GET /api/v1/projects/notifications/filters` | `PROJECT_NOTIFICATION_LIST` |
+| Mobile: confirm-receive task | `POST /api/v1/projects/notifications/{id}/confirm-receive` | `PROJECT_NOTIFICATION_UPDATE` |
+| Mobile: start notification task (legacy) | `POST /api/v1/projects/notifications/{id}/start` | `PROJECT_NOTIFICATION_UPDATE` |
+| Mobile: available actions | `GET /api/v1/projects/notifications/{id}/available-actions` | `PROJECT_NOTIFICATION_VIEW` |
+| Mobile: take procedure action (update) | `POST /api/v1/projects/notifications/{id}/take-action` | `PROJECT_NOTIFICATION_UPDATE` |
 | Mobile: end notification task | `POST /api/v1/projects/notifications/{id}/end` | `PROJECT_NOTIFICATION_UPDATE` |
 
 ---

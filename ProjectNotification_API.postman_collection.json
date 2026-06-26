@@ -169,7 +169,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"uuid-here\",\n      \"notification_number\": \"NTF-2026-00001\",\n      \"notification_type\": \"صيانة\",\n      \"work_type\": \"كهرباء\",\n      \"severity\": \"منخفض\",\n      \"contractor_name\": \"شركة المقاولات\",\n      \"magdy_number\": \"M-123\",\n      \"status\": \"pending\",\n      \"status_label\": \"بانتظار الرد\",\n      \"task_date\": \"2026-06-27\",\n      \"selected_distance_meters\": 150,\n      \"violations_count\": 0,\n      \"created_at\": \"2026-06-27 10:00:00\",\n      \"assigned_user\": {\n        \"id\": \"user-uuid\",\n        \"name\": \"أحمد محمد\"\n      }\n    }\n  ],\n  \"meta\": {\n    \"total\": 1,\n    \"per_page\": 15,\n    \"current_page\": 1,\n    \"last_page\": 1\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Task requests retrieved successfully\",\n  \"pagination\": {\n    \"page\": 1,\n    \"next_page\": 1,\n    \"last_page\": 1,\n    \"result_count\": 1\n  },\n  \"payload\": [\n    {\n      \"id\": \"uuid-here\",\n      \"notification_number\": \"NTF-2026-00001\",\n      \"notification_type\": \"صيانة\",\n      \"work_type\": \"كهرباء\",\n      \"severity\": \"منخفض\",\n      \"contractor_name\": \"شركة المقاولات\",\n      \"magdy_number\": \"M-123\",\n      \"status\": \"pending\",\n      \"status_label\": \"بانتظار الرد\",\n      \"task_date\": \"2026-06-27\",\n      \"selected_distance_meters\": 150,\n      \"violations_count\": 0,\n      \"created_at\": \"2026-06-27 10:00:00\",\n      \"assigned_user\": {\n        \"id\": \"user-uuid\",\n        \"name\": \"أحمد محمد\"\n      }\n    }\n  ]\n}"
             }
           ]
         },
@@ -367,7 +367,7 @@
               "status": "Created",
               "code": 201,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"project_id\": \"project-uuid\",\n    \"employee_task_request_id\": \"task-uuid\",\n    \"notification_type\": \"صيانة\",\n    \"severity\": \"منخفض\",\n    \"work_type\": \"كهرباء\",\n    \"magdy_number\": \"M-123\",\n    \"work_description\": \"صيانة عامة للنظام الكهربائي\",\n    \"contractor_name\": \"شركة المقاولات\",\n    \"contractor_number\": \"C-456\",\n    \"contractor_technical_number\": \"T-789\",\n    \"contractor_category\": \"كهرباء\",\n    \"contractor_notes\": \"ملاحظات إضافية\",\n    \"contractor_mobile\": \"+966500000000\",\n    \"task_latitude\": 24.7136,\n    \"task_longitude\": 46.6753,\n    \"location_radius\": 100,\n    \"location_link\": \"https://maps.google.com/?q=24.7136,46.6753\",\n    \"repair_point\": \"نقطة الإصلاح الرئيسية\",\n    \"assigned_user_id\": \"user-uuid\",\n    \"selected_distance_meters\": 150,\n    \"status\": \"pending\",\n    \"status_label\": \"بانتظار الرد\",\n    \"task_date\": \"2026-06-27\",\n    \"duration_hours\": 4.0,\n    \"notes\": \"ملاحظات عامة\",\n    \"approved_by\": null,\n    \"approved_at\": null,\n    \"rejected_by\": null,\n    \"rejected_at\": null,\n    \"rejection_reason\": null,\n    \"created_by_user_id\": \"creator-uuid\",\n    \"created_at\": \"2026-06-27 10:00:00\",\n    \"updated_at\": \"2026-06-27 10:00:00\",\n    \"violations_count\": 0,\n    \"assigned_user\": {\n      \"id\": \"user-uuid\",\n      \"name\": \"أحمد محمد\"\n    },\n    \"creator\": {\n      \"id\": \"creator-uuid\",\n      \"name\": \"مدير المشروع\"\n    },\n    \"project\": {\n      \"id\": \"project-uuid\",\n      \"name\": \"مشروع الرياض\"\n    },\n    \"employee_task\": {\n      \"id\": \"task-uuid\",\n      \"status\": \"pending\",\n      \"serial_number\": \"TSK-2026-00001\"\n    },\n    \"attachments\": []\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Notification created successfully\",\n  \"payload\": {\n    \"id\": \"uuid-here\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"project_id\": \"project-uuid\",\n    \"employee_task_request_id\": \"task-uuid\",\n    \"notification_type\": \"صيانة\",\n    \"severity\": \"منخفض\",\n    \"work_type\": \"كهرباء\",\n    \"magdy_number\": \"M-123\",\n    \"work_description\": \"صيانة عامة للنظام الكهربائي\",\n    \"contractor_name\": \"شركة المقاولات\",\n    \"contractor_number\": \"C-456\",\n    \"contractor_technical_number\": \"T-789\",\n    \"contractor_category\": \"كهرباء\",\n    \"contractor_notes\": \"ملاحظات إضافية\",\n    \"contractor_mobile\": \"+966500000000\",\n    \"task_latitude\": 24.7136,\n    \"task_longitude\": 46.6753,\n    \"location_radius\": 100,\n    \"location_link\": \"https://maps.google.com/?q=24.7136,46.6753\",\n    \"repair_point\": \"نقطة الإصلاح الرئيسية\",\n    \"assigned_user_id\": \"user-uuid\",\n    \"selected_distance_meters\": 150,\n    \"status\": \"pending\",\n    \"status_label\": \"بانتظار الرد\",\n    \"task_date\": \"2026-06-27\",\n    \"duration_hours\": 4.0,\n    \"notes\": \"ملاحظات عامة\",\n    \"approved_by\": null,\n    \"approved_at\": null,\n    \"rejected_by\": null,\n    \"rejected_at\": null,\n    \"rejection_reason\": null,\n    \"created_by_user_id\": \"creator-uuid\",\n    \"created_at\": \"2026-06-27 10:00:00\",\n    \"updated_at\": \"2026-06-27 10:00:00\",\n    \"violations_count\": 0,\n    \"assigned_user\": {\n      \"id\": \"user-uuid\",\n      \"name\": \"أحمد محمد\"\n    },\n    \"creator\": {\n      \"id\": \"creator-uuid\",\n      \"name\": \"مدير المشروع\"\n    },\n    \"project\": {\n      \"id\": \"project-uuid\",\n      \"name\": \"مشروع الرياض\"\n    },\n    \"employee_task\": {\n      \"id\": \"task-uuid\",\n      \"status\": \"pending\",\n      \"serial_number\": \"TSK-2026-00001\"\n    },\n    \"attachments\": []\n  }\n}"
             }
           ]
         },
@@ -405,7 +405,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"project_id\": \"project-uuid\",\n    \"employee_task_request_id\": \"task-uuid\",\n    \"notification_type\": \"صيانة\",\n    \"severity\": \"منخفض\",\n    \"work_type\": \"كهرباء\",\n    \"status\": \"pending\",\n    \"status_label\": \"بانتظار الرد\",\n    \"task_date\": \"2026-06-27\",\n    \"duration_hours\": 4.0,\n    \"assigned_user\": { \"id\": \"user-uuid\", \"name\": \"أحمد محمد\" },\n    \"creator\": { \"id\": \"creator-uuid\", \"name\": \"مدير المشروع\" },\n    \"project\": { \"id\": \"project-uuid\", \"name\": \"مشروع الرياض\" },\n    \"employee_task\": { \"id\": \"task-uuid\", \"status\": \"pending\", \"serial_number\": \"TSK-2026-00001\" },\n    \"attachments\": []\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Notification retrieved successfully\",\n  \"payload\": {\n    \"id\": \"uuid-here\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"project_id\": \"project-uuid\",\n    \"employee_task_request_id\": \"task-uuid\",\n    \"notification_type\": \"صيانة\",\n    \"severity\": \"منخفض\",\n    \"work_type\": \"كهرباء\",\n    \"status\": \"pending\",\n    \"status_label\": \"بانتظار الرد\",\n    \"task_date\": \"2026-06-27\",\n    \"duration_hours\": 4.0,\n    \"assigned_user\": {\n      \"id\": \"user-uuid\",\n      \"name\": \"أحمد محمد\"\n    },\n    \"creator\": {\n      \"id\": \"creator-uuid\",\n      \"name\": \"مدير المشروع\"\n    },\n    \"project\": {\n      \"id\": \"project-uuid\",\n      \"name\": \"مشروع الرياض\"\n    },\n    \"employee_task\": {\n      \"id\": \"task-uuid\",\n      \"status\": \"pending\",\n      \"serial_number\": \"TSK-2026-00001\"\n    },\n    \"attachments\": []\n  }\n}"
             }
           ]
         },
@@ -549,7 +549,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"message\": \"Notification approved successfully\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"status\": \"approved\",\n    \"status_label\": \"معتمد\",\n    \"approved_by\": { \"id\": \"approver-uuid\", \"name\": \"مدير عام\" },\n    \"approved_at\": \"2026-06-27 11:00:00\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Notification approved successfully\",\n  \"payload\": {\n    \"id\": \"uuid-here\",\n    \"status\": \"approved\",\n    \"status_label\": \"مقبول\",\n    \"approved_by\": {\n      \"id\": \"approver-uuid\",\n      \"name\": \"مدير عام\"\n    },\n    \"approved_at\": \"2026-06-27 11:00:00\"\n  }\n}"
             }
           ]
         },
@@ -597,7 +597,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"message\": \"Notification rejected\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"status\": \"rejected\",\n    \"status_label\": \"مرفوض\",\n    \"rejected_by\": { \"id\": \"rejecter-uuid\", \"name\": \"مدير عام\" },\n    \"rejected_at\": \"2026-06-27 11:00:00\",\n    \"rejection_reason\": \"الإشعار غير مكتمل البيانات، يرجى إرفاق المستندات المطلوبة\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Notification rejected\",\n  \"payload\": {\n    \"id\": \"uuid-here\",\n    \"status\": \"rejected\",\n    \"status_label\": \"مرفوض\",\n    \"rejected_by\": {\n      \"id\": \"rejecter-uuid\",\n      \"name\": \"مدير عام\"\n    },\n    \"rejected_at\": \"2026-06-27 11:00:00\",\n    \"rejection_reason\": \"الإشعار غير مكتمل البيانات، يرجى إرفاق المستندات المطلوبة\"\n  }\n}"
             }
           ]
         },
@@ -706,7 +706,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"data\": [\n    {\n      \"user_id\": \"user-uuid-1\",\n      \"name\": \"أحمد محمد\",\n      \"status\": \"available\",\n      \"status_label\": \"متاح\",\n      \"distance_meters\": 320,\n      \"distance_label\": \"320 م\",\n      \"last_update\": \"2026-06-27 09:45:00\",\n      \"location\": {\n        \"latitude\": 24.7140,\n        \"longitude\": 46.6755,\n        \"accuracy\": 5,\n        \"source\": \"GPS\"\n      },\n      \"attendance\": {\n        \"id\": \"attendance-uuid\",\n        \"status\": \"active\",\n        \"clock_in_time\": \"08:00:00\"\n      }\n    },\n    {\n      \"user_id\": \"user-uuid-2\",\n      \"name\": \"خالد علي\",\n      \"status\": \"busy\",\n      \"status_label\": \"مشغول\",\n      \"distance_meters\": 1500,\n      \"distance_label\": \"1.5 كم\",\n      \"last_update\": \"2026-06-27 09:30:00\",\n      \"location\": {\n        \"latitude\": 24.7200,\n        \"longitude\": 46.6800,\n        \"accuracy\": 10,\n        \"source\": \"GPS\"\n      },\n      \"attendance\": {\n        \"id\": \"attendance-uuid-2\",\n        \"status\": \"active\",\n        \"clock_in_time\": \"07:30:00\"\n      }\n    }\n  ]\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": null,\n  \"payload\": [\n    {\n      \"user_id\": \"user-uuid-1\",\n      \"name\": \"أحمد محمد\",\n      \"status\": \"available\",\n      \"status_label\": \"متاح\",\n      \"distance_meters\": 320,\n      \"distance_label\": \"320 م\",\n      \"last_update\": \"2026-06-27 09:45:00\",\n      \"location\": {\n        \"latitude\": 24.714,\n        \"longitude\": 46.6755,\n        \"accuracy\": 5,\n        \"source\": \"GPS\"\n      },\n      \"attendance\": {\n        \"id\": \"attendance-uuid\",\n        \"status\": \"active\",\n        \"clock_in_time\": \"08:00:00\"\n      }\n    },\n    {\n      \"user_id\": \"user-uuid-2\",\n      \"name\": \"خالد علي\",\n      \"status\": \"busy\",\n      \"status_label\": \"مشغول\",\n      \"distance_meters\": 1500,\n      \"distance_label\": \"1.5 كم\",\n      \"last_update\": \"2026-06-27 09:30:00\",\n      \"location\": {\n        \"latitude\": 24.72,\n        \"longitude\": 46.68,\n        \"accuracy\": 10,\n        \"source\": \"GPS\"\n      },\n      \"attendance\": {\n        \"id\": \"attendance-uuid-2\",\n        \"status\": \"active\",\n        \"clock_in_time\": \"07:30:00\"\n      }\n    }\n  ]\n}"
             }
           ]
         }
@@ -1582,7 +1582,7 @@
     },
     {
       "name": "4. Employee Task Lifecycle (Start/End)",
-      "description": "Endpoints for the assigned employee to start/end the linked task and for admins to approve/reject the resulting workflow requests.\n\nBase path: {{url}}/employee-tasks and {{url}}/admin/employee-tasks\n\nProject notifications use the dedicated StartProjectNotificationTask / EndProjectNotificationTask internal procedures under the 'مهام الصيانة والطوارئ' parent.",
+      "description": "Endpoints for the assigned employee to confirm-receive/end the linked task and for admins to approve/reject the resulting workflow requests.\n\nBase path: {{url}}/employee-tasks and {{url}}/admin/employee-tasks\n\nProject notifications use the dedicated ConfirmProjectNotificationPresence (confirm-receive) / EndProjectNotificationTask (end) internal procedures under the 'مهام الصيانة والطوارئ' parent. The StartProjectNotificationTask form has been removed.",
       "item": [
         {
           "name": "Get Available Actions for Task",
@@ -1618,12 +1618,12 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"start-proc-uuid\",\n      \"name\": \"تأكيد استلام\",\n      \"form\": {\n        \"key\": \"startProjectNotificationTask\",\n        \"label_ar\": \"تأكيد استلام\"\n      },\n      \"conditions\": [],\n      \"appears_before_ids\": [],\n      \"appears_after_ids\": [],\n      \"sort_order\": 500\n    },\n    {\n      \"id\": \"end-proc-uuid\",\n      \"name\": \"إنهاء المهمة\",\n      \"form\": {\n        \"key\": \"endProjectNotificationTask\",\n        \"label_ar\": \"إنهاء المهمة\"\n      },\n      \"conditions\": [],\n      \"appears_before_ids\": [],\n      \"appears_after_ids\": [],\n      \"sort_order\": 900\n    }\n  ]\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Available actions retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"confirm-receive-proc-uuid\",\n      \"name\": \"تأكيد استلام\",\n      \"form\": {\n        \"key\": \"confirmProjectNotificationPresence\",\n        \"label_ar\": \"تأكيد استلام\"\n      },\n      \"conditions\": [],\n      \"appears_before_ids\": [],\n      \"appears_after_ids\": [],\n      \"sort_order\": 500\n    },\n    {\n      \"id\": \"end-proc-uuid\",\n      \"name\": \"إنهاء المهمة\",\n      \"form\": {\n        \"key\": \"endProjectNotificationTask\",\n        \"label_ar\": \"إنهاء المهمة\"\n      },\n      \"conditions\": [],\n      \"appears_before_ids\": [],\n      \"appears_after_ids\": [],\n      \"sort_order\": 900\n    }\n  ]\n}"
             }
           ]
         },
         {
-          "name": "Take Generic Procedure Action (Confirm Presence / Update)",
+          "name": "Take Generic Procedure Action (Update)",
           "request": {
             "method": "POST",
             "header": [
@@ -1665,7 +1665,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"message\": \"Procedure action recorded successfully\",\n  \"data\": {\n    \"procedure_setting_id\": \"confirm-presence-proc-uuid\",\n    \"notes\": \"تم تأكيد التواجد في موقع المهمة\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Procedure action recorded successfully\",\n  \"payload\": {\n    \"internal_procedure_setting_id\": \"update-proc-uuid\",\n    \"latitude\": 24.7136,\n    \"longitude\": 46.6753,\n    \"notes\": \"تم تحديث بيانات المهمة\"\n  }\n}"
             }
           ]
         },
@@ -1712,7 +1712,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"message\": \"Task started successfully\",\n  \"data\": {\n    \"id\": \"task-uuid\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"قيد التنفيذ\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task started successfully\",\n  \"payload\": {\n    \"id\": \"task-uuid\",\n    \"serial_number\": \"TSK-2026-00001\",\n    \"title\": \"NTF-2026-00458\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"قيد التنفيذ\",\n    \"task_location\": {\n      \"latitude\": 24.7136,\n      \"longitude\": 46.6753,\n      \"radius_meters\": 100\n    }\n  }\n}"
             },
             {
               "name": "Workflow Pending Response",
@@ -2052,7 +2052,7 @@
     },
     {
       "name": "5. Mobile (Employee)",
-      "description": "Employee-facing mobile endpoints for assigned project notifications.\n\nBase path: {{url}}/projects/notifications\n\nThese endpoints delegate to the linked EmployeeTaskRequest so start/end/take-action behave exactly like employee tasks.",
+      "description": "Employee-facing mobile endpoints for assigned project notifications.\n\nBase path: {{url}}/projects/notifications\n\nFlow:\n- GET /projects/notifications/my-inbox → approved notifications waiting for confirm-receive\n- POST /projects/notifications/{id}/confirm-receive → moves task to in_progress\n- GET /projects/notifications/my-tasks → notifications after confirm-receive (in_progress/completed)\n- POST /projects/notifications/{id}/take-action → record generic procedure actions (update/end)\n\nThese endpoints delegate to the linked EmployeeTaskRequest so confirm-receive/end/take-action behave like employee task lifecycle actions.",
       "item": [
         {
           "name": "My Assigned Notifications",
@@ -2071,7 +2071,7 @@
               }
             ],
             "url": {
-              "raw": "{{url}}/projects/notifications/my-tasks?page=1&per_page=15&status=&date_from=&date_to=&search=",
+              "raw": "{{url}}/projects/notifications/my-tasks?page=1&per_page=15&status=&date_from=&date_to=&task_date=&search=",
               "host": [
                 "{{url}}"
               ],
@@ -2110,6 +2110,11 @@
                   "key": "search",
                   "value": "",
                   "description": "Search by notification number, contractor, or work description"
+                },
+                {
+                  "key": "task_date",
+                  "value": "",
+                  "description": "Filter by exact task date (Y-m-d)"
                 }
               ]
             }
@@ -2120,7 +2125,182 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"notification-uuid\",\n      \"notification_number\": \"NTF-2026-00458\",\n      \"notification_type\": \"إسناد طواري وأعطال\",\n      \"work_description\": \"انقطاع التيار الكهربائي\",\n      \"contractor_name\": \"شركة الكهرباء الوطنية\",\n      \"task_date\": \"2026-06-25\",\n      \"status\": \"approved\",\n      \"status_label\": \"معتمد\",\n      \"assigned_user_id\": \"current-user-uuid\",\n      \"employee_task_request_id\": \"task-uuid\"\n    }\n  ],\n  \"pagination\": {\n    \"total\": 1,\n    \"per_page\": 15,\n    \"current_page\": 1,\n    \"last_page\": 1\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Task requests retrieved successfully\",\n  \"pagination\": {\n    \"page\": 1,\n    \"next_page\": 1,\n    \"last_page\": 1,\n    \"result_count\": 1\n  },\n  \"payload\": [\n    {\n      \"id\": \"notification-uuid\",\n      \"notification_number\": \"NTF-2026-00458\",\n      \"notification_type\": \"إسناد طواري وأعطال\",\n      \"work_type\": \"كهرباء\",\n      \"severity\": \"عالي\",\n      \"contractor_name\": \"شركة الكهرباء الوطنية\",\n      \"magdy_number\": \"M-458\",\n      \"status\": \"in_progress\",\n      \"status_label\": \"قيد التنفيذ\",\n      \"task_date\": \"2026-06-25\",\n      \"selected_distance_meters\": 320,\n      \"violations_count\": 0,\n      \"created_at\": \"2026-06-25 08:00:00\",\n      \"assigned_user\": {\n        \"id\": \"current-user-uuid\",\n        \"name\": \"المهندس أحمد\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "My Inbox (Pending Confirm-Receive)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/my-inbox?page=1&per_page=15&date_from=&date_to=&task_date=&search=",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "my-inbox"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Ignored for inbox (always approved)"
+                },
+                {
+                  "key": "date_from",
+                  "value": "",
+                  "description": "Filter from task date (Y-m-d)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "",
+                  "description": "Filter to task date (Y-m-d)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search by notification number, contractor, or work description"
+                },
+                {
+                  "key": "task_date",
+                  "value": "",
+                  "description": "Filter by exact task date (Y-m-d)"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Task requests retrieved successfully\",\n  \"pagination\": {\n    \"page\": 1,\n    \"next_page\": 1,\n    \"last_page\": 1,\n    \"result_count\": 1\n  },\n  \"payload\": [\n    {\n      \"id\": \"notification-uuid\",\n      \"notification_number\": \"NTF-2026-00458\",\n      \"notification_type\": \"إسناد طواري وأعطال\",\n      \"work_type\": \"كهرباء\",\n      \"severity\": \"عالي\",\n      \"contractor_name\": \"شركة الكهرباء الوطنية\",\n      \"magdy_number\": \"M-458\",\n      \"status\": \"approved\",\n      \"status_label\": \"مقبول\",\n      \"task_date\": \"2026-06-25\",\n      \"selected_distance_meters\": 320,\n      \"violations_count\": 0,\n      \"created_at\": \"2026-06-25 08:00:00\",\n      \"assigned_user\": {\n        \"id\": \"current-user-uuid\",\n        \"name\": \"المهندس أحمد\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "My Inbox Counts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/my-inbox-counts?date_from=&date_to=",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "my-inbox-counts"
+              ],
+              "query": [
+                {
+                  "key": "date_from",
+                  "value": "",
+                  "description": "Filter from task date (Y-m-d)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "",
+                  "description": "Filter to task date (Y-m-d)"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Inbox counts retrieved successfully\",\n  \"payload\": {\n    \"pending\": 0,\n    \"approved\": 3,\n    \"in_progress\": 2,\n    \"completed\": 5,\n    \"rejected\": 0,\n    \"cancelled\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Filter Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/filters?date_from=&date_to=",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "filters"
+              ],
+              "query": [
+                {
+                  "key": "date_from",
+                  "value": "",
+                  "description": "Filter from task date (Y-m-d)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "",
+                  "description": "Filter to task date (Y-m-d)"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Filter metadata retrieved successfully\",\n  \"payload\": {\n    \"statuses\": [\n      {\n        \"key\": \"approved\",\n        \"title_ar\": \"معتمد\",\n        \"title_en\": \"Approved\",\n        \"count\": 3\n      },\n      {\n        \"key\": \"in_progress\",\n        \"title_ar\": \"قيد التنفيذ\",\n        \"title_en\": \"In Progress\",\n        \"count\": 2\n      },\n      {\n        \"key\": \"completed\",\n        \"title_ar\": \"مكتمل\",\n        \"title_en\": \"Completed\",\n        \"count\": 5\n      }\n    ],\n    \"projects\": [\n      {\n        \"key\": \"project-uuid\",\n        \"title\": \"مشروع الرياض\",\n        \"count\": 4\n      }\n    ],\n    \"duration\": {\n      \"key\": \"duration_minutes\",\n      \"title_ar\": \"مدة المهمة\",\n      \"title_en\": \"Task Duration\",\n      \"min_minutes\": 60,\n      \"max_minutes\": 480\n    }\n  }\n}"
             }
           ]
         },
@@ -2159,12 +2339,12 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"start-proc-uuid\",\n      \"name\": \"تأكيد استلام\",\n      \"form\": {\n        \"key\": \"startProjectNotificationTask\",\n        \"label_ar\": \"تأكيد استلام\"\n      },\n      \"sort_order\": 500\n    },\n    {\n      \"id\": \"confirm-proc-uuid\",\n      \"name\": \"تأكيد التواجد\",\n      \"form\": {\n        \"key\": \"confirmProjectNotificationPresence\",\n        \"label_ar\": \"تأكيد التواجد\"\n      },\n      \"sort_order\": 600\n    },\n    {\n      \"id\": \"update-proc-uuid\",\n      \"name\": \"تحديث\",\n      \"form\": {\n        \"key\": \"updateProjectNotificationTask\",\n        \"label_ar\": \"تحديث\"\n      },\n      \"sort_order\": 700\n    },\n    {\n      \"id\": \"end-proc-uuid\",\n      \"name\": \"إنهاء المهمة\",\n      \"form\": {\n        \"key\": \"endProjectNotificationTask\",\n        \"label_ar\": \"إنهاء المهمة\"\n      },\n      \"sort_order\": 900\n    }\n  ]\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Available actions retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"confirm-receive-proc-uuid\",\n      \"name\": \"تأكيد استلام\",\n      \"form\": {\n        \"key\": \"confirmProjectNotificationPresence\",\n        \"label_ar\": \"تأكيد استلام\"\n      },\n      \"sort_order\": 500\n    },\n    {\n      \"id\": \"update-proc-uuid\",\n      \"name\": \"تحديث\",\n      \"form\": {\n        \"key\": \"updateProjectNotificationTask\",\n        \"label_ar\": \"تحديث\"\n      },\n      \"sort_order\": 700\n    },\n    {\n      \"id\": \"end-proc-uuid\",\n      \"name\": \"إنهاء المهمة\",\n      \"form\": {\n        \"key\": \"endProjectNotificationTask\",\n        \"label_ar\": \"إنهاء المهمة\"\n      },\n      \"sort_order\": 900\n    }\n  ]\n}"
             }
           ]
         },
         {
-          "name": "Start Task (تأكيد استلام)",
+          "name": "Confirm Receive (تأكيد استلام)",
           "request": {
             "method": "POST",
             "header": [
@@ -2186,10 +2366,10 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"internal_procedure_setting_id\": \"start-proc-uuid\",\n  \"notes\": \"تم استلام الإشعار والبدء في العمل\"\n}"
+              "raw": "{\"latitude\": 24.7136, \"longitude\": 46.6753, \"internal_procedure_setting_id\": \"confirm-receive-proc-uuid\", \"notes\": \"تم استلام الإشعار والبدء في العمل\"}"
             },
             "url": {
-              "raw": "{{url}}/projects/notifications/{{notification_id}}/start",
+              "raw": "{{url}}/projects/notifications/{{notification_id}}/confirm-receive",
               "host": [
                 "{{url}}"
               ],
@@ -2197,7 +2377,7 @@
                 "projects",
                 "notifications",
                 "{{notification_id}}",
-                "start"
+                "confirm-receive"
               ]
             }
           },
@@ -2207,12 +2387,12 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"message\": \"Task started successfully\",\n  \"data\": {\n    \"id\": \"task-uuid\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"قيد التنفيذ\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task confirmed successfully\",\n  \"payload\": {\n    \"id\": \"task-uuid\",\n    \"serial_number\": \"TSK-2026-00001\",\n    \"title\": \"NTF-2026-00458\",\n    \"description\": \"انقطاع التيار الكهربائي\",\n    \"project_id\": \"project-uuid\",\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": {\n      \"hours\": 4,\n      \"minutes\": 0,\n      \"label\": \"4h 0m\"\n    },\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-06-25\",\n    \"task_location\": {\n      \"latitude\": 24.7136,\n      \"longitude\": 46.6753,\n      \"radius_meters\": 100\n    },\n    \"status\": \"in_progress\",\n    \"status_label\": \"قيد التنفيذ\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": \"2026-06-25 09:00:00\",\n    \"time_to\": null,\n    \"total_task_hours\": {\n      \"hours\": 0,\n      \"minutes\": 0,\n      \"label\": \"0h 0m\"\n    },\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": null,\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": \"تم استلام الإشعار والبدء في العمل\",\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": \"2026-06-25 08:00:00\",\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-06-25 08:00:00\",\n    \"user\": {\n      \"id\": \"current-user-uuid\",\n      \"name\": \"المهندس أحمد\"\n    },\n    \"task_type\": {\n      \"id\": \"type-uuid\",\n      \"key\": \"project_notification\",\n      \"title\": \"Project Notification\"\n    },\n    \"current_step\": null,\n    \"attachments\": [],\n    \"sessions\": []\n  }\n}"
             }
           ]
         },
         {
-          "name": "Take Action (Confirm Presence / Update)",
+          "name": "Take Action (Update)",
           "request": {
             "method": "POST",
             "header": [
@@ -2234,7 +2414,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"internal_procedure_setting_id\": \"confirm-proc-uuid\",\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"notes\": \"تم تأكيد التواجد في موقع المهمة\"\n}"
+              "raw": "{\"internal_procedure_setting_id\": \"update-proc-uuid\", \"latitude\": 24.7136, \"longitude\": 46.6753, \"notes\": \"تم تحديث بيانات المهمة\"}"
             },
             "url": {
               "raw": "{{url}}/projects/notifications/{{notification_id}}/take-action",
@@ -2255,7 +2435,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"message\": \"Procedure action recorded successfully\",\n  \"data\": {\n    \"procedure_setting_id\": \"confirm-proc-uuid\",\n    \"latitude\": 24.7136,\n    \"longitude\": 46.6753,\n    \"notes\": \"تم تأكيد التواجد في موقع المهمة\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Procedure action recorded successfully\",\n  \"payload\": {\n    \"procedure_setting_id\": \"update-proc-uuid\",\n    \"latitude\": 24.7136,\n    \"longitude\": 46.6753,\n    \"notes\": \"تم تحديث بيانات المهمة\"\n  }\n}"
             }
           ]
         },
@@ -2303,7 +2483,7 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "body": "{\n  \"message\": \"Task ended successfully\",\n  \"data\": {\n    \"id\": \"task-uuid\",\n    \"status\": \"completed\",\n    \"status_label\": \"مكتمل\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task ended successfully\",\n  \"payload\": {\n    \"id\": \"task-uuid\",\n    \"serial_number\": \"TSK-2026-00001\",\n    \"title\": \"NTF-2026-00458\",\n    \"status\": \"completed\",\n    \"status_label\": \"مكتمل\",\n    \"time_from\": \"2026-06-25 09:00:00\",\n    \"time_to\": \"2026-06-25 13:00:00\",\n    \"task_location\": {\n      \"latitude\": 24.7136,\n      \"longitude\": 46.6753,\n      \"radius_meters\": 100\n    },\n    \"duration_hours\": {\n      \"hours\": 4,\n      \"minutes\": 0,\n      \"label\": \"4h 0m\"\n    },\n    \"total_task_hours\": {\n      \"hours\": 4,\n      \"minutes\": 0,\n      \"label\": \"4h 0m\"\n    },\n    \"total_pause_minutes\": 0,\n    \"user\": {\n      \"id\": \"current-user-uuid\",\n      \"name\": \"المهندس أحمد\"\n    },\n    \"task_type\": {\n      \"id\": \"type-uuid\",\n      \"key\": \"project_notification\",\n      \"title\": \"Project Notification\"\n    },\n    \"current_step\": null,\n    \"attachments\": [],\n    \"sessions\": []\n  }\n}"
             }
           ]
         }
