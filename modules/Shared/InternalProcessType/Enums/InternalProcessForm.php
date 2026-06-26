@@ -18,6 +18,11 @@ enum InternalProcessForm: string
     case EndContract         = 'endContract';
     case EndMeeting          = 'endMeeting';
     case AttachAttachments   = 'attachAttachments';
+    case CreateProjectNotificationTask = 'createProjectNotificationTask';
+    case StartProjectNotificationTask    = 'startProjectNotificationTask';
+    case ConfirmProjectNotificationPresence = 'confirmProjectNotificationPresence';
+    case UpdateProjectNotificationTask      = 'updateProjectNotificationTask';
+    case EndProjectNotificationTask         = 'endProjectNotificationTask';
 
     public function labelAr(): string
     {
@@ -34,6 +39,11 @@ enum InternalProcessForm: string
             self::EndContract         => 'انهاء عقد',
             self::EndMeeting          => 'انهاء اجتماع',
             self::AttachAttachments   => 'ارفاق مرفقات',
+            self::CreateProjectNotificationTask => 'إنشاء إشعار مشروع',
+            self::StartProjectNotificationTask    => 'تأكيد استلام',
+            self::ConfirmProjectNotificationPresence => 'تأكيد التواجد',
+            self::UpdateProjectNotificationTask      => 'تحديث',
+            self::EndProjectNotificationTask         => 'إنهاء المهمة',
         };
     }
 
@@ -55,6 +65,20 @@ enum InternalProcessForm: string
                 InternalProcessCondition::AllowOnHolidays,
             ],
             self::EndTask   => [],
+            self::CreateProjectNotificationTask => [
+                InternalProcessCondition::AllowDuringShift,
+                InternalProcessCondition::AllowOutsideShift,
+                InternalProcessCondition::AllowOnHolidays,
+                InternalProcessCondition::InsideCustomLocations,
+                InternalProcessCondition::MaxTaskDuration,
+                InternalProcessCondition::MaxScheduledDateOffset,
+            ],
+            self::StartProjectNotificationTask,
+            self::ConfirmProjectNotificationPresence,
+            self::UpdateProjectNotificationTask,
+            self::EndProjectNotificationTask => [
+                InternalProcessCondition::AllowOnHolidays,
+            ],
             self::AttachAttachments => [
                 InternalProcessCondition::MaxAttachments,
             ],
@@ -110,7 +134,12 @@ enum InternalProcessForm: string
             self::EndMeeting          => ['meeting'],
             self::CreateTask,
             self::StartTask,
-            self::EndTask             => ['employee_task'],
+            self::EndTask,
+            self::CreateProjectNotificationTask,
+            self::StartProjectNotificationTask,
+            self::ConfirmProjectNotificationPresence,
+            self::UpdateProjectNotificationTask,
+            self::EndProjectNotificationTask => ['employee_task'],
             self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
         };
     }

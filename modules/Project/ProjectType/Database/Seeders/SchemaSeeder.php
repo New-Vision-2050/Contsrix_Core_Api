@@ -28,7 +28,8 @@ class SchemaSeeder extends Seeder
 //                8 => 'اداره العقد',
                 9=>'دورة الوثائق',
                 10 => 'الصلاحيات و الادوار',
-                11 => 'مشاركة المشروع'
+                11 => 'مشاركة المشروع',
+                12 => 'الصيانة والطوارئ',
             ];
 
             $createdCount = 0;
@@ -66,6 +67,21 @@ class SchemaSeeder extends Seeder
                     $designProjectType->update(['is_have_schema' => true]);
 
                     $this->command->info("Attached " . count($schemaIds) . " schemas to 'التصاميم' project type.");
+                }
+
+                // The Maintenance & Emergencies tab (schema 12) is also needed on the
+                // supervision project types. Attach it WITHOUT detaching their existing
+                // schemas so their current tabs are preserved.
+                $maintenanceSchemaId = 12;
+                $maintenanceProjectTypes = ProjectType::where('company_id', $companyId)
+                    ->whereIn('name', ['الإشراف', 'الصيانة والطوارئ'])
+                    ->get();
+
+                foreach ($maintenanceProjectTypes as $projectType) {
+                    $projectType->schemas()->syncWithoutDetaching([$maintenanceSchemaId]);
+                    $projectType->update(['is_have_schema' => true]);
+
+                    $this->command->info("Attached 'الصيانة والطوارئ' schema to '{$projectType->name}' project type.");
                 }
             }
 

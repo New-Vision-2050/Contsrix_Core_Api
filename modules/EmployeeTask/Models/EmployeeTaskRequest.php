@@ -42,6 +42,10 @@ class EmployeeTaskRequest extends Model implements HasMedia
         'title',
         'description',
         'project_id',
+        'project_notification_id',
+        'is_project_notification',
+        'sender_user_id',
+        'task_source',
         'item_type',
         'item_id',
         'employee_task_type_id',
@@ -93,6 +97,7 @@ class EmployeeTaskRequest extends Model implements HasMedia
         'rejected_at'             => 'datetime',
         'cancelled_at'            => 'datetime',
         'location_confirmed_at'            => 'datetime',
+        'is_project_notification'          => 'boolean',
     ];
 
     public function registerMediaCollections(): void
@@ -109,6 +114,17 @@ class EmployeeTaskRequest extends Model implements HasMedia
     {
         return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
+
+    public function projectNotification(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Project\ProjectManagement\Models\ProjectNotification::class, 'project_notification_id')->withoutGlobalScopes();
+    }
+
+    public function sender(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sender_user_id')->withoutGlobalScopes();
+    }
+
     public function employeeTaskType(): BelongsTo
     {
         return $this->belongsTo(EmployeeTaskType::class, 'employee_task_type_id')->withoutGlobalScopes();
@@ -157,6 +173,11 @@ class EmployeeTaskRequest extends Model implements HasMedia
         return $this->hasMany(EmployeeTaskEndRequest::class, 'employee_task_request_id');
     }
 
+    public function startRequests(): HasMany
+    {
+        return $this->hasMany(EmployeeTaskStartRequest::class, 'employee_task_request_id');
+    }
+
     public function isInStatus(EmployeeTaskStatus ...$statuses): bool
     {
         return in_array($this->status, array_map(fn (EmployeeTaskStatus $s) => $s->value, $statuses), true);
@@ -195,6 +216,13 @@ class EmployeeTaskRequest extends Model implements HasMedia
     public function hasPendingEndRequest(): bool
     {
         return $this->endRequests()
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    public function hasPendingStartRequest(): bool
+    {
+        return $this->startRequests()
             ->where('status', 'pending')
             ->exists();
     }

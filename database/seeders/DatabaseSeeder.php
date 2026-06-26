@@ -7,6 +7,7 @@ use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
 use Modules\DocumentType\Database\Seeders\DocumentTypeSeederTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
 use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
+use Modules\ProcedureSetting\Database\Seeders\ProjectNotificationProcedureSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectPermissionsSeeder;
 use Modules\Project\TermServices\Database\Seeders\TermServicesSeeder;
 use Modules\ClientRequest\Database\Seeders\ClientRequestSeeder;
@@ -166,6 +167,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProjectShareTypeSeeder::class);
         $this->call(InternalProcedureSettingsSeeder::class);
         $this->call(StakeholderSeeder::class);
+        $this->call(ProjectNotificationProcedureSeeder::class);
 
     }
 }

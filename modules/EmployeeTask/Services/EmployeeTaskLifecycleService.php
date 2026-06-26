@@ -27,6 +27,7 @@ final class EmployeeTaskLifecycleService
         private readonly EmployeeTaskLocationService      $locationService,
         private readonly EmployeeTaskApprovalService      $approvalService,
         private readonly EmployeeTaskEndRequestService    $endRequestService,
+        private readonly EmployeeTaskStartRequestService   $startRequestService,
         private readonly EmployeeTaskFormConditionService $conditionService,
     ) {}
 
@@ -42,6 +43,10 @@ final class EmployeeTaskLifecycleService
             throw EmployeeTaskException::notApproved();
         }
 
+        if ($task->hasPendingStartRequest()) {
+            throw EmployeeTaskException::pendingStartRequestExists();
+        }
+
         $activeTask = $this->taskRepo->findActiveTaskForUser((string) $user->id);
         if ($activeTask && $activeTask->id !== $task->id) {
             throw EmployeeTaskException::hasOtherOpenTask();
@@ -49,6 +54,25 @@ final class EmployeeTaskLifecycleService
 
         $this->conditionService->checkStartTaskConditions($task, $user, $dto->latitude, $dto->longitude);
 
+        $procedureSetting = $this->startRequestService->resolveStartTaskProcedure(
+            $task,
+            $dto->internalProcedureSettingId,
+        );
+
+        if ($procedureSetting !== null) {
+            $this->startRequestService->create($task, $dto, $procedureSetting);
+            return $task->fresh()->load(['sessions']);
+        }
+
+        return $this->performStart($task, $dto, $user);
+    }
+
+    /**
+     * Execute the start-task business logic immediately (no procedure involved).
+     * Also called internally when a start request is auto-approved.
+     */
+    public function performStart(EmployeeTaskRequest $task, StartTaskDTO $dto, User $user): EmployeeTaskRequest
+    {
         $timezone      = $this->resolveTimezone($user);
         $radiusMeters  = $this->locationService->snapshotRadiusFromConstraint($user);
         $now           = CarbonImmutable::now($timezone);

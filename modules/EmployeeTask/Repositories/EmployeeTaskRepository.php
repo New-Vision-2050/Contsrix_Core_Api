@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
+use Modules\EmployeeTask\Models\EmployeeTaskStartRequest;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\Process\Enums\ProcessStatus;
@@ -163,6 +164,8 @@ class EmployeeTaskRepository
             })
             ->with([
                 'user',
+                'projectNotification',
+                'project',
                 'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with(['steps.procedureSettingStep', 'steps.assignedUser'])
             ]);
 
@@ -172,6 +175,53 @@ class EmployeeTaskRepository
                 if (!empty($filters['duration_to'])) {
                     $query->where('duration_hours', '<=', (float) $filters['duration_to']);
                 }
+
+        return $query->get();
+    }
+
+    /**
+     * Returns tasks where the current user is the assigned employee (user_id = current user).
+     * Used by the admin assigned-inbox view.
+     */
+    public function allAssignedForAdmin(string $userId, array $filters): Collection
+    {
+        $query = EmployeeTaskRequest::query()
+            ->where('user_id', $userId)
+            ->with([
+                'user',
+                'projectNotification',
+                'project',
+                'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)->with(['steps.procedureSettingStep', 'steps.assignedUser'])
+            ])
+            ->orderByDesc('created_at');
+
+        if (!empty($filters['task_id'])) {
+            $query->where('id', $filters['task_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['task_date'])) {
+            $query->whereDate('task_date', $filters['task_date']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('task_date', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('task_date', '<=', $filters['date_to']);
+        }
+
+        if (!empty($filters['duration_from'])) {
+            $query->where('duration_hours', '>=', (float) $filters['duration_from']);
+        }
+
+        if (!empty($filters['duration_to'])) {
+            $query->where('duration_hours', '<=', (float) $filters['duration_to']);
+        }
 
         return $query->get();
     }
@@ -274,6 +324,33 @@ class EmployeeTaskRepository
     public function allEndRequestInboxForAdmin(string $adminId, array $filters): Collection
     {
         $query = EmployeeTaskEndRequest::query()
+            ->where('status', 'pending')
+            ->whereNotNull('current_procedure_step_id')
+            ->where(function ($q) use ($adminId) {
+                $q->whereDoesntHave('currentProcedureStep.actionTakers')
+                  ->orWhereHas('currentProcedureStep.actionTakers', fn ($at) => $at->where('user_id', $adminId));
+            })
+            ->with(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user']);
+
+        if (!empty($filters['task_id'])) {
+            $query->where('employee_task_request_id', $filters['task_id']);
+        }
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Non-paginated start requests inbox for combined admin inbox.
+     */
+    public function allStartRequestInboxForAdmin(string $adminId, array $filters): Collection
+    {
+        $query = EmployeeTaskStartRequest::query()
             ->where('status', 'pending')
             ->whereNotNull('current_procedure_step_id')
             ->where(function ($q) use ($adminId) {

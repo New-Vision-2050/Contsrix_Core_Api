@@ -39,6 +39,7 @@ Route::prefix('employee-tasks')->group(function () {
     Route::get('/{id}/extension-requests',  [EmployeeTaskController::class, 'listExtensions']);
 
     Route::get('/{id}/available-actions',   [EmployeeTaskController::class, 'availableActions']);
+    Route::post('/{id}/take-action',          [EmployeeTaskController::class, 'takeAction']);
     Route::get('/{id}/procedures',          [EmployeeTaskController::class, 'procedures']);
 
 
@@ -53,6 +54,7 @@ Route::prefix('admin/employee-tasks')->group(function () {
     Route::get('/',       [AdminEmployeeTaskController::class, 'index']);
     Route::get('/inbox',  [AdminEmployeeTaskController::class, 'inbox']);
     Route::get('/inbox-counts',  [AdminEmployeeTaskController::class, 'inboxCounts']);
+    Route::get('/assigned-inbox', [AdminEmployeeTaskController::class, 'assignedInbox']);
 
     // Unified approve/reject — works for task_request, extension_request, and task_approval
     Route::patch('/{id}/approve', [AdminEmployeeTaskController::class, 'approve']);

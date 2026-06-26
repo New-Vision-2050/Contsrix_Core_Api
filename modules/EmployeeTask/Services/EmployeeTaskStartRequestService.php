@@ -6,15 +6,16 @@ namespace Modules\EmployeeTask\Services;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
-use Modules\EmployeeTask\DTO\EndTaskDTO;
+use Modules\EmployeeTask\DTO\StartTaskDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Events\EmployeeTaskNotification;
-use Modules\EmployeeTask\Events\InboxCountsUpdated;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
-use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
+use Modules\EmployeeTask\Jobs\AutoCloseTaskAtDurationExpiryJob;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\EmployeeTask\Models\EmployeeTaskStartRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\EmployeeTask\Repositories\EmployeeTaskSessionRepository;
+use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
@@ -25,28 +26,29 @@ use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
 /**
- * Handles the "end task with procedure" (انهاء المهمة) flow.
+ * Handles the "start task with procedure" (بدء المهمة) flow.
  *
- * When an endTask procedure is configured, the employee's end request goes
- * through workflow approval. On final approval, the task session is closed
- * and the task is marked as completed.
+ * When a startTask procedure is configured, the employee's start request goes
+ * through workflow approval. On final approval, the task is marked as in_progress
+ * and a session is created.
  *
- * When no procedure is configured, EmployeeTaskLifecycleService ends the task directly.
+ * When no procedure is configured, EmployeeTaskLifecycleService starts the task directly.
  */
-final class EmployeeTaskEndRequestService
+final class EmployeeTaskStartRequestService
 {
     public function __construct(
         private readonly EmployeeTaskRepository        $taskRepo,
         private readonly EmployeeTaskSessionRepository $sessionRepo,
         private readonly ProcedureWorkflowService      $workflow,
         private readonly EmployeeTaskRequestService    $requestService,
+        private readonly EmployeeTaskLocationService   $locationService,
     ) {}
 
     /**
-     * Resolve the endTask procedure setting for a task.
-     * Returns null if no procedure is configured (auto-approve/direct end).
+     * Resolve the startTask procedure setting for a task.
+     * Returns null if no procedure is configured (auto-approve/direct start).
      */
-    public function resolveEndTaskProcedure(
+    public function resolveStartTaskProcedure(
         EmployeeTaskRequest $task,
         ?string $internalProcedureSettingId = null,
     ): ?ProcedureSetting {
@@ -54,10 +56,14 @@ final class EmployeeTaskEndRequestService
             return $this->loadInternalProcedureSetting($internalProcedureSettingId, $task);
         }
 
+        // Project-notification tasks use their own dedicated start form so the
+        // names/conditions shown in the UI match the image tabs.
         $formKey = $task->is_project_notification
-            ? InternalProcessForm::EndProjectNotificationTask->value
-            : InternalProcessForm::EndTask->value;
+            ? InternalProcessForm::StartProjectNotificationTask->value
+            : InternalProcessForm::StartTask->value;
 
+        // Prefer the task's snapshot parent procedure setting, then fall back to
+        // company/branch resolution.
         if ($task->procedure_setting_id !== null) {
             $setting = ProcedureSetting::query()
                 ->where('parent_id', $task->procedure_setting_id)
@@ -69,6 +75,8 @@ final class EmployeeTaskEndRequestService
             if ($setting !== null && $setting->steps->isNotEmpty()) {
                 return $setting;
             }
+
+            // If the snapshot parent doesn't have the requested form, fall back.
         }
 
         $task->loadMissing('user.userProfessionalData');
@@ -83,22 +91,22 @@ final class EmployeeTaskEndRequestService
     }
 
     /**
-     * Create a pending end request and notify action takers.
+     * Create a pending start request and notify action takers.
      * Called when a procedure setting has been resolved for the task.
      */
     public function create(
         EmployeeTaskRequest $task,
-        EndTaskDTO $dto,
+        StartTaskDTO $dto,
         ProcedureSetting $procedureSetting,
-    ): EmployeeTaskEndRequest {
-        return DB::transaction(function () use ($task, $dto, $procedureSetting): EmployeeTaskEndRequest {
+    ): EmployeeTaskStartRequest {
+        return DB::transaction(function () use ($task, $dto, $procedureSetting): EmployeeTaskStartRequest {
             $firstStep = $this->workflow->resolveFirstStepBySettingId($procedureSetting->id);
 
             if ($firstStep === null) {
                 throw ProcedureWorkflowException::noStepsConfigured();
             }
 
-            $endRequest = EmployeeTaskEndRequest::query()->create([
+            $startRequest = EmployeeTaskStartRequest::query()->create([
                 'employee_task_request_id' => $task->id,
                 'company_id'               => $task->company_id,
                 'procedure_setting_id'     => $procedureSetting->id,
@@ -117,31 +125,31 @@ final class EmployeeTaskEndRequestService
             $this->requestService->broadcastInboxCounts($userIds);
             $this->dispatchStepNotifications($firstStep, $userIds);
 
-            return $endRequest;
+            return $startRequest;
         });
     }
 
     /**
-     * Admin approves an end request through the workflow.
-     * On final step, closes the active session and marks the task as completed.
+     * Admin approves a start request through the workflow.
+     * On final step, marks the task as in_progress and creates a session.
      */
-    public function approve(string $endRequestId, string $adminId, ?string $approvalNotes = null): EmployeeTaskEndRequest
+    public function approve(string $startRequestId, string $adminId, ?string $approvalNotes = null): EmployeeTaskStartRequest
     {
-        $endRequest = $this->findOrFail($endRequestId);
-        $task       = $this->taskRepo->findById($endRequest->employee_task_request_id);
+        $startRequest = $this->findOrFail($startRequestId);
+        $task       = $this->taskRepo->findById($startRequest->employee_task_request_id);
 
         if (! $task) {
             throw EmployeeTaskException::notFound();
         }
 
-        if ($endRequest->status !== 'pending') {
-            throw EmployeeTaskException::endRequestAlreadyResolved();
+        if ($startRequest->status !== 'pending') {
+            throw EmployeeTaskException::startRequestAlreadyResolved();
         }
 
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
         $result  = $this->workflow->advance(
-            $endRequest->current_procedure_step_id,
-            $endRequest->procedure_setting_id,
+            $startRequest->current_procedure_step_id,
+            $startRequest->procedure_setting_id,
             $adminId,
             $task->user_id,
             $context,
@@ -149,13 +157,13 @@ final class EmployeeTaskEndRequestService
             processableId: $task->id,
         );
 
-        return DB::transaction(function () use ($endRequest, $task, $result, $adminId, $approvalNotes): EmployeeTaskEndRequest {
+        return DB::transaction(function () use ($startRequest, $task, $result, $adminId, $approvalNotes): EmployeeTaskStartRequest {
             if (! $result->isFinal) {
-                $endRequest->update(['current_procedure_step_id' => $result->nextStep->id]);
-                return $endRequest->fresh();
+                $startRequest->update(['current_procedure_step_id' => $result->nextStep->id]);
+                return $startRequest->fresh();
             }
 
-            $endRequest->update([
+            $startRequest->update([
                 'status'                    => 'approved',
                 'reviewed_by'               => $adminId,
                 'reviewed_at'               => now(),
@@ -163,39 +171,39 @@ final class EmployeeTaskEndRequestService
                 'current_procedure_step_id' => null,
             ]);
 
-            $this->executeEndTask($task, $endRequest);
+            $this->executeStartTask($task, $startRequest);
 
-            return $endRequest->fresh();
+            return $startRequest->fresh();
         });
     }
 
     /**
-     * Admin rejects an end request.
-     * The task remains in its current status and the employee can re-submit.
+     * Admin rejects a start request.
+     * The task remains in its approved status and the employee can re-submit.
      */
-    public function reject(string $endRequestId, string $adminId, string $rejectionReason): EmployeeTaskEndRequest
+    public function reject(string $startRequestId, string $adminId, string $rejectionReason): EmployeeTaskStartRequest
     {
-        $endRequest = $this->findOrFail($endRequestId);
-        $task       = $this->taskRepo->findById($endRequest->employee_task_request_id);
+        $startRequest = $this->findOrFail($startRequestId);
+        $task       = $this->taskRepo->findById($startRequest->employee_task_request_id);
 
         if (! $task) {
             throw EmployeeTaskException::notFound();
         }
 
-        if ($endRequest->status !== 'pending') {
-            throw EmployeeTaskException::endRequestAlreadyResolved();
+        if ($startRequest->status !== 'pending') {
+            throw EmployeeTaskException::startRequestAlreadyResolved();
         }
 
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
         $this->workflow->assertCanReject(
-            $endRequest->current_procedure_step_id,
+            $startRequest->current_procedure_step_id,
             $adminId,
             $task->user_id,
             $context,
         );
 
-        return DB::transaction(function () use ($endRequest, $adminId, $rejectionReason): EmployeeTaskEndRequest {
-            $endRequest->update([
+        return DB::transaction(function () use ($startRequest, $adminId, $rejectionReason): EmployeeTaskStartRequest {
+            $startRequest->update([
                 'status'                    => 'rejected',
                 'reviewed_by'               => $adminId,
                 'reviewed_at'               => now(),
@@ -203,64 +211,67 @@ final class EmployeeTaskEndRequestService
                 'current_procedure_step_id' => null,
             ]);
 
-            return $endRequest->fresh();
+            return $startRequest->fresh();
         });
     }
 
-    public function findOrFail(string $id): EmployeeTaskEndRequest
+    public function findOrFail(string $id): EmployeeTaskStartRequest
     {
-        $endRequest = EmployeeTaskEndRequest::query()
+        $startRequest = EmployeeTaskStartRequest::query()
             ->with(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user'])
             ->find($id);
 
-        if (! $endRequest) {
-            throw EmployeeTaskException::endRequestNotFound();
+        if (! $startRequest) {
+            throw EmployeeTaskException::startRequestNotFound();
         }
 
-        return $endRequest;
+        return $startRequest;
     }
 
     // ─── private ─────────────────────────────────────────────────────────────
 
     /**
-     * Execute the actual end-task business logic once the workflow is approved.
-     * Mirrors the logic in EmployeeTaskLifecycleService::end().
+     * Execute the actual start-task business logic once the workflow is approved.
+     * Mirrors the logic in EmployeeTaskLifecycleService::start().
      */
-    private function executeEndTask(EmployeeTaskRequest $task, EmployeeTaskEndRequest $endRequest): void
+    private function executeStartTask(EmployeeTaskRequest $task, EmployeeTaskStartRequest $startRequest): void
     {
-        $timezone = $task->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
-        $now      = CarbonImmutable::now($timezone);
-
-        $activeSession = $this->sessionRepo->findActiveByTask($task->id);
-
-        if ($activeSession) {
-            $sessionStart    = CarbonImmutable::parse($activeSession->start_time, $timezone);
-            $durationMinutes = max(0, (int) $sessionStart->diffInMinutes($now));
-
-            $this->sessionRepo->closeSession($activeSession, [
-                'end_time'         => $now->format('Y-m-d H:i:s'),
-                'duration_minutes' => $durationMinutes,
-                'end_latitude'     => (float) $endRequest->latitude,
-                'end_longitude'    => (float) $endRequest->longitude,
-                'source'           => 'manual',
-            ]);
-        }
-
-        $totalSessionMinutes = $this->sessionRepo->sumCompletedMinutes($task->id);
-        $timeFrom            = CarbonImmutable::parse($task->time_from, $timezone);
-        $totalElapsedMinutes = max(0, (int) $timeFrom->diffInMinutes($now));
-        $totalPauseMinutes   = max(0, $totalElapsedMinutes - $totalSessionMinutes);
-        $totalTaskHours      = round($totalSessionMinutes / 60, 2);
+        $task->load('user.userProfessionalData');
+        $timezone     = $this->resolveTimezone($task);
+        $radiusMeters = $this->locationService->snapshotRadiusFromConstraint($task->user);
+        $now          = CarbonImmutable::now($timezone);
 
         $this->taskRepo->update($task, [
-            'status'              => EmployeeTaskStatus::Completed->value,
-            'time_to'             => $now->format('Y-m-d H:i:s'),
-            'total_task_hours'    => $totalTaskHours,
-            'total_pause_minutes' => $totalPauseMinutes,
-            'shift_end_method'    => 'manual',
-            'end_location'        => ['latitude' => (float) $endRequest->latitude, 'longitude' => (float) $endRequest->longitude],
-            'notes'               => $endRequest->notes ?? $task->notes,
+            'status'         => EmployeeTaskStatus::InProgress->value,
+            'time_from'      => $now->format('Y-m-d H:i:s'),
+            'radius_meters'  => $radiusMeters,
+            'timezone'       => $timezone,
+            'start_location' => ['latitude' => (float) $startRequest->latitude, 'longitude' => (float) $startRequest->longitude],
         ]);
+
+        $this->sessionRepo->create([
+            'employee_task_request_id' => $task->id,
+            'company_id'               => $task->company_id,
+            'start_time'               => $now->format('Y-m-d H:i:s'),
+            'start_latitude'           => (float) $startRequest->latitude,
+            'start_longitude'          => (float) $startRequest->longitude,
+            'source'                   => 'manual',
+        ]);
+
+        $task->refresh();
+
+        $maxOverTimeHours = $this->resolveMaxOverTimeHours($task);
+        $deadline = $now
+            ->addHours((float) $task->duration_hours)
+            ->addHours($maxOverTimeHours);
+
+        $closeAtIso = $now->addHours((float) $task->duration_hours)->toIso8601String();
+
+        AutoCloseTaskAtDurationExpiryJob::dispatch(
+            taskId:     $task->id,
+            companyId:  $task->company_id,
+            closeAtIso: $closeAtIso,
+        )->delay($deadline);
     }
 
     private function loadInternalProcedureSetting(string $id, EmployeeTaskRequest $task): ?ProcedureSetting
@@ -287,6 +298,22 @@ final class EmployeeTaskEndRequestService
         return $setting;
     }
 
+    private function resolveTimezone(EmployeeTaskRequest $task): string
+    {
+        $timezones = $task->user?->userProfessionalData?->branch?->address?->country?->timezones;
+        if (is_array($timezones) && isset($timezones[0]['zoneName'])) {
+            return $timezones[0]['zoneName'];
+        }
+        return getTimeZoneBranchByRequest() ?? config('app.timezone') ?? 'Asia/Riyadh';
+    }
+
+    private function resolveMaxOverTimeHours(EmployeeTaskRequest $task): float
+    {
+        $constraint = $task->user?->userProfessionalData?->attendanceConstraint;
+
+        return (float) ($constraint?->max_over_time ?? 0.0);
+    }
+
     private function broadcastTaskNotification(EmployeeTaskRequest $task, ProcedureSettingStep $currentStep, array $userIds = []): void
     {
         $task->load(['user']);
@@ -295,7 +322,7 @@ final class EmployeeTaskEndRequestService
             $currentStep->load(['actionTakers.user']);
         }
 
-        \Log::info('Broadcasting EmployeeTaskNotification (end request)', [
+        \Log::info('Broadcasting EmployeeTaskNotification (start request)', [
             'task_id'  => $task->id,
             'step_id'  => $currentStep->id,
             'user_ids' => $userIds,
@@ -325,7 +352,7 @@ final class EmployeeTaskEndRequestService
             try {
                 $user->notify($notification);
             } catch (\Throwable $e) {
-                \Log::error('WorkflowActionRequired notification failed (end request)', [
+                \Log::error('WorkflowActionRequired notification failed (start request)', [
                     'user_id' => $user->id,
                     'step_id' => $step->id,
                     'error'   => $e->getMessage(),

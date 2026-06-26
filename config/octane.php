@@ -133,7 +133,7 @@ return [
         \Modules\CompanyUser\Repositories\CompanyUserRepository::class,
         \Modules\Company\CompanyCore\Repositories\CompanyRepository::class,
 
-        
+
         // Flush Attendance constraint services to prevent state leakage
         \Modules\Attendance\Services\TimeConstraintService::class,
         \Modules\Attendance\Services\LocationConstraintService::class,
@@ -148,6 +148,10 @@ return [
         \Modules\Attendance\Services\ClockOutService::class,
         \Modules\Attendance\Services\UserAttendanceService::class,
         \Modules\Attendance\Services\UserAttendanceHistoryService::class,
+
+        // Flush Project Notification services to prevent state leakage
+        \Modules\Project\ProjectManagement\Services\ProjectNotificationService::class,
+        \Modules\Project\ProjectManagement\Services\ProjectNotificationLocationService::class,
     ],
 
     /*

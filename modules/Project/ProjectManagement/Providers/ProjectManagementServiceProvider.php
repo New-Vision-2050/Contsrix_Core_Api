@@ -8,8 +8,12 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectRole;
+use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Observers\ProjectManagementObserver;
 use Modules\Project\ProjectManagement\Observers\ProjectRoleObserver;
+use Modules\Project\ProjectManagement\Observers\ProjectNotificationObserver;
+use Modules\Project\ProjectManagement\Observers\EmployeeTaskStatusSyncObserver;
+use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\Project\ProjectManagement\Middleware\CheckProjectPermission;
 use Modules\Project\ProjectManagement\Commands\TestProjectShareEmailCommand;
 
@@ -26,10 +30,12 @@ class ProjectManagementServiceProvider extends ModuleServiceProvider
         $this->registerMigrations();
         $this->registerViews();
         $this->registerCommands();
-        
+
         // Register observers
         ProjectManagement::observe(ProjectManagementObserver::class);
         ProjectRole::observe(ProjectRoleObserver::class);
+        ProjectNotification::observe(ProjectNotificationObserver::class);
+        EmployeeTaskRequest::observe(EmployeeTaskStatusSyncObserver::class);
 
         // Register middleware
         $this->app['router']->aliasMiddleware('project.permission', CheckProjectPermission::class);

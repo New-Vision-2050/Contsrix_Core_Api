@@ -77,7 +77,7 @@ class ProjectPermissionsSeeder extends Seeder
 
         Log::info('Project permissions seeded successfully', ['count' => $createdCount, 'new_permissions' => count($newPermissionIds)]);
         $this->command->info("✓ Project permissions seeded: {$createdCount}");
-        
+
         if (!empty($newPermissionIds)) {
             $this->command->info("✓ Assigned " . count($newPermissionIds) . " new permissions to all Project Admin roles");
         }
@@ -163,6 +163,7 @@ class ProjectPermissionsSeeder extends Seeder
             'archive-library-settings' => ['ar' => 'إعدادات المكتبة الأرشيفية', 'en' => 'Archive Library Settings'],
             'role' => ['ar' => 'الدور', 'en' => 'Role'],
             'project-share' => ['ar' => 'مشاركة المشروع', 'en' => 'Project Share'],
+            'notifications' => ['ar' => 'الإشعارات', 'en' => 'Notifications'],
             'roles-and-permissions-settings' => ['ar' => 'إعدادات الأدوار والصلاحيات', 'en' => 'Roles and Permissions Settings'],
             'project-sharing-settings' => ['ar' => 'إعدادات مشاركة المشاريع', 'en' => 'Project Sharing Settings'],
             'settings' => ['ar' => 'الإعدادات', 'en' => 'Settings'],

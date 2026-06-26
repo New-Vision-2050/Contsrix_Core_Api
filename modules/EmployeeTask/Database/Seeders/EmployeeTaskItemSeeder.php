@@ -18,5 +18,14 @@ class EmployeeTaskItemSeeder extends Seeder
                 'model_class' => \Modules\Project\ProjectManagement\Models\ProjectManagement::class,
             ]
         );
+
+        EmployeeTaskItem::firstOrCreate(
+            ['key' => 'project_notification'],
+            [
+                'id'          => (string) Str::uuid(),
+                'name'        => 'إشعار مشروع',
+                'model_class' => \Modules\Project\ProjectManagement\Models\ProjectNotification::class,
+            ]
+        );
     }
 }

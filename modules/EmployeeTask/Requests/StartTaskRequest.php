@@ -18,6 +18,7 @@ class StartTaskRequest extends FormRequest
         return [
             'latitude'  => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'notes'     => ['nullable', 'string', 'max:2000'],
             'internal_procedure_setting_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
         ];
     }
