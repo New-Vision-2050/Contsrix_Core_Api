@@ -31,24 +31,48 @@ final class EmployeeTaskFormConditionServiceSkipTest extends TestCase
         );
     }
 
-    public function test_skips_allow_outside_shift_for_project_notification_when_gps_missing(): void
+    public function test_skips_realtime_conditions_for_project_notification_when_gps_missing(): void
     {
         $service    = $this->buildService();
         $reflection = new ReflectionClass($service);
-        $method     = $reflection->getMethod('skipLocationCheckForDashboardNotification');
+        $method     = $reflection->getMethod('skipRealtimeConditionsForDashboardNotification');
         $method->setAccessible(true);
 
         $map = [
+            InternalProcessCondition::AllowDuringShift->value => [
+                'key'        => InternalProcessCondition::AllowDuringShift->value,
+                'is_active'  => true,
+                'sort_order' => 1,
+                'settings'   => [],
+            ],
             InternalProcessCondition::AllowOutsideShift->value => [
                 'key'        => InternalProcessCondition::AllowOutsideShift->value,
                 'is_active'  => false,
-                'sort_order' => 1,
+                'sort_order' => 2,
                 'settings'   => [],
             ],
             InternalProcessCondition::AllowOnHolidays->value => [
                 'key'        => InternalProcessCondition::AllowOnHolidays->value,
                 'is_active'  => false,
-                'sort_order' => 2,
+                'sort_order' => 3,
+                'settings'   => [],
+            ],
+            InternalProcessCondition::InsideCustomLocations->value => [
+                'key'        => InternalProcessCondition::InsideCustomLocations->value,
+                'is_active'  => true,
+                'sort_order' => 4,
+                'settings'   => [],
+            ],
+            InternalProcessCondition::MaxTaskDuration->value => [
+                'key'        => InternalProcessCondition::MaxTaskDuration->value,
+                'is_active'  => true,
+                'sort_order' => 5,
+                'settings'   => [],
+            ],
+            InternalProcessCondition::MaxScheduledDateOffset->value => [
+                'key'        => InternalProcessCondition::MaxScheduledDateOffset->value,
+                'is_active'  => true,
+                'sort_order' => 6,
                 'settings'   => [],
             ],
         ];
@@ -61,22 +85,41 @@ final class EmployeeTaskFormConditionServiceSkipTest extends TestCase
             null,
         );
 
+        // Real-time conditions removed
+        $this->assertArrayNotHasKey(InternalProcessCondition::AllowDuringShift->value, $result);
         $this->assertArrayNotHasKey(InternalProcessCondition::AllowOutsideShift->value, $result);
-        $this->assertArrayHasKey(InternalProcessCondition::AllowOnHolidays->value, $result);
+        $this->assertArrayNotHasKey(InternalProcessCondition::AllowOnHolidays->value, $result);
+
+        // Task-data conditions kept
+        $this->assertArrayHasKey(InternalProcessCondition::InsideCustomLocations->value, $result);
+        $this->assertArrayHasKey(InternalProcessCondition::MaxTaskDuration->value, $result);
+        $this->assertArrayHasKey(InternalProcessCondition::MaxScheduledDateOffset->value, $result);
     }
 
-    public function test_keeps_allow_outside_shift_for_regular_task_creation(): void
+    public function test_keeps_all_conditions_for_regular_task_creation(): void
     {
         $service    = $this->buildService();
         $reflection = new ReflectionClass($service);
-        $method     = $reflection->getMethod('skipLocationCheckForDashboardNotification');
+        $method     = $reflection->getMethod('skipRealtimeConditionsForDashboardNotification');
         $method->setAccessible(true);
 
         $map = [
+            InternalProcessCondition::AllowDuringShift->value => [
+                'key'        => InternalProcessCondition::AllowDuringShift->value,
+                'is_active'  => true,
+                'sort_order' => 1,
+                'settings'   => [],
+            ],
             InternalProcessCondition::AllowOutsideShift->value => [
                 'key'        => InternalProcessCondition::AllowOutsideShift->value,
                 'is_active'  => false,
-                'sort_order' => 1,
+                'sort_order' => 2,
+                'settings'   => [],
+            ],
+            InternalProcessCondition::AllowOnHolidays->value => [
+                'key'        => InternalProcessCondition::AllowOnHolidays->value,
+                'is_active'  => false,
+                'sort_order' => 3,
                 'settings'   => [],
             ],
         ];
@@ -89,21 +132,36 @@ final class EmployeeTaskFormConditionServiceSkipTest extends TestCase
             null,
         );
 
+        // Nothing skipped for regular employee task creation
+        $this->assertArrayHasKey(InternalProcessCondition::AllowDuringShift->value, $result);
         $this->assertArrayHasKey(InternalProcessCondition::AllowOutsideShift->value, $result);
+        $this->assertArrayHasKey(InternalProcessCondition::AllowOnHolidays->value, $result);
     }
 
     public function test_keeps_allow_outside_shift_when_gps_is_present(): void
     {
         $service    = $this->buildService();
         $reflection = new ReflectionClass($service);
-        $method     = $reflection->getMethod('skipLocationCheckForDashboardNotification');
+        $method     = $reflection->getMethod('skipRealtimeConditionsForDashboardNotification');
         $method->setAccessible(true);
 
         $map = [
+            InternalProcessCondition::AllowDuringShift->value => [
+                'key'        => InternalProcessCondition::AllowDuringShift->value,
+                'is_active'  => true,
+                'sort_order' => 1,
+                'settings'   => [],
+            ],
             InternalProcessCondition::AllowOutsideShift->value => [
                 'key'        => InternalProcessCondition::AllowOutsideShift->value,
                 'is_active'  => false,
-                'sort_order' => 1,
+                'sort_order' => 2,
+                'settings'   => [],
+            ],
+            InternalProcessCondition::AllowOnHolidays->value => [
+                'key'        => InternalProcessCondition::AllowOnHolidays->value,
+                'is_active'  => false,
+                'sort_order' => 3,
                 'settings'   => [],
             ],
         ];
@@ -116,6 +174,10 @@ final class EmployeeTaskFormConditionServiceSkipTest extends TestCase
             46.682668,
         );
 
+        // AllowOutsideShift kept when GPS is present, but AllowDuringShift
+        // and AllowOnHolidays still skipped (they depend on current time/holiday)
         $this->assertArrayHasKey(InternalProcessCondition::AllowOutsideShift->value, $result);
+        $this->assertArrayNotHasKey(InternalProcessCondition::AllowDuringShift->value, $result);
+        $this->assertArrayNotHasKey(InternalProcessCondition::AllowOnHolidays->value, $result);
     }
 }

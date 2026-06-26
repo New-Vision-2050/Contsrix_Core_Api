@@ -67,11 +67,12 @@ final class EmployeeTaskFormConditionService
             return;
         }
 
-        // Dashboard-created project notifications do not have the assigned
-        // employee's current GPS at creation time, so skip the location check
-        // for this specific form. Regular employee task creation still enforces
-        // AllowOutsideShift via the unchanged evaluator.
-        $map = $this->skipLocationCheckForDashboardNotification(
+        // Dashboard-created project notifications are submitted by an admin
+        // on behalf of the employee, so the employee's real-time context
+        // (current shift, current GPS, today's holiday status) is unavailable.
+        // Skip the conditions that depend on it; task-data validations
+        // (duration, date offset, custom locations) remain enforced.
+        $map = $this->skipRealtimeConditionsForDashboardNotification(
             $map,
             $formKey ?? InternalProcessForm::CreateTask->value,
             $currentLatitude,
@@ -248,15 +249,26 @@ final class EmployeeTaskFormConditionService
     // ─── Private helpers ─────────────────────────────────────────────────────
 
     /**
-     * Dashboard-created project notifications are submitted by an admin on
-     * behalf of the employee, so the employee's current GPS is unavailable.
-     * Skip the AllowOutsideShift check for this specific form only, so the
-     * condition remains enforced for normal employee task creation.
+     * Conditions that depend on the employee's real-time context (current
+     * shift window, current GPS location, today's holiday status) cannot be
+     * evaluated when an admin creates a project notification from the dashboard.
+     *
+     * Skipped conditions (CreateProjectNotificationTask only):
+     *   - AllowDuringShift    — checks Carbon::now() vs employee shift
+     *   - AllowOutsideShift   — checks current GPS vs work-area radius
+     *   - AllowOnHolidays     — checks whether today is a holiday
+     *
+     * Still-enforced conditions (validate task data, not real-time context):
+     *   - InsideCustomLocations — checks taskLatitude/taskLongitude
+     *   - MaxTaskDuration       — checks durationHours
+     *   - MaxScheduledDateOffset— checks taskDate
+     *
+     * Normal employee task creation (CreateTask form) is unaffected.
      *
      * @param array<string, array{key: string, is_active: bool, sort_order: int, settings: array}> $map
      * @return array<string, array{key: string, is_active: bool, sort_order: int, settings: array}>
      */
-    private function skipLocationCheckForDashboardNotification(
+    private function skipRealtimeConditionsForDashboardNotification(
         array $map,
         string $formKey,
         ?float $currentLatitude,
@@ -266,11 +278,22 @@ final class EmployeeTaskFormConditionService
             return $map;
         }
 
-        if ($currentLatitude !== null && $currentLongitude !== null) {
-            return $map;
+        // If current GPS is provided, keep AllowOutsideShift so the evaluator
+        // can still verify the work-area radius.
+        $hasGps = $currentLatitude !== null && $currentLongitude !== null;
+
+        $realtimeConditions = [
+            InternalProcessCondition::AllowDuringShift,
+            InternalProcessCondition::AllowOnHolidays,
+        ];
+
+        if (! $hasGps) {
+            $realtimeConditions[] = InternalProcessCondition::AllowOutsideShift;
         }
 
-        unset($map[InternalProcessCondition::AllowOutsideShift->value]);
+        foreach ($realtimeConditions as $condition) {
+            unset($map[$condition->value]);
+        }
 
         return $map;
     }
