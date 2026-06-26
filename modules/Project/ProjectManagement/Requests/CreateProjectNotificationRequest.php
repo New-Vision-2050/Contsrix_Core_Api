@@ -50,7 +50,7 @@ class CreateProjectNotificationRequest extends FormRequest
     {
         return new CreateProjectNotificationDTO(
             projectId: $this->input('project_id'),
-            createdByUserId: $this->user()->id,
+            createdByUserId: (string) $this->user()->id,
             assignedUserId: $this->input('assigned_user_id'),
             taskDate: $this->input('task_date'),
             durationHours: (float) $this->input('duration_hours'),
