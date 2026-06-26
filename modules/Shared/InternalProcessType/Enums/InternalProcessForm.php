@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Shared\InternalProcessType\Enums;
 
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+
 enum InternalProcessForm: string
 {
     case CreateClientRequest = 'createClientRequest';
@@ -134,12 +136,12 @@ enum InternalProcessForm: string
             self::EndMeeting          => ['meeting'],
             self::CreateTask,
             self::StartTask,
-            self::EndTask,
+            self::EndTask => ['employee_task'],
             self::CreateProjectNotificationTask,
             self::StartProjectNotificationTask,
             self::ConfirmProjectNotificationPresence,
             self::UpdateProjectNotificationTask,
-            self::EndProjectNotificationTask => ['employee_task'],
+            self::EndProjectNotificationTask => ['employee_task', 'project_notification_task'],
             self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
         };
     }
@@ -160,6 +162,23 @@ enum InternalProcessForm: string
         usort($forms, static fn (self $a, self $b) => $a->sortOrder() <=> $b->sortOrder());
 
         return $forms;
+    }
+
+    /**
+     * Return the procedure-setting category type for this form.
+     * Project-notification forms map to the dedicated project_notification_task
+     * type; all other employee-task forms map to employee_task.
+     */
+    public function procedureSettingType(): ProcedureSettingType
+    {
+        return match ($this) {
+            self::CreateProjectNotificationTask,
+            self::StartProjectNotificationTask,
+            self::ConfirmProjectNotificationPresence,
+            self::UpdateProjectNotificationTask,
+            self::EndProjectNotificationTask => ProcedureSettingType::ProjectNotificationTask,
+            default => ProcedureSettingType::EmployeeTask,
+        };
     }
 
     /** @return list<string> */

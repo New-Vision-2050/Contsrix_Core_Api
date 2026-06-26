@@ -207,7 +207,7 @@ final class EmployeeTaskLifecycleService
 
         if ($dto->internalProcedureSettingId) {
             Event::dispatch(new WorkflowProcedureTaken(
-                'employee_task',
+                $task->procedureSettingType()->value,
                 $task->id,
                 $dto->internalProcedureSettingId,
             ));

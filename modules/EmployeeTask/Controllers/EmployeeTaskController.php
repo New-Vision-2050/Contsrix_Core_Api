@@ -14,6 +14,7 @@ use Modules\EmployeeTask\DTO\StartTaskDTO;
 use Modules\EmployeeTask\DTO\CreateExtensionRequestDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
+use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Presenters\EmployeeTaskApprovalPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskExtensionPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
@@ -372,7 +373,7 @@ class EmployeeTaskController extends Controller
                 $procedureSettingId = $request->input('internal_procedure_setting_id');
                 if ($procedureSettingId) {
                     event(new WorkflowProcedureTaken(
-                        'employee_task',
+                        $task->procedureSettingType()->value,
                         $task->id,
                         $procedureSettingId,
                         (string) Auth::id(),
@@ -575,6 +576,12 @@ class EmployeeTaskController extends Controller
             ]);
 
             $procedureSettingId = (string) request()->input('internal_procedure_setting_id');
+            $task = EmployeeTaskRequest::find($id);
+
+            if (! $task) {
+                throw EmployeeTaskException::notFound();
+            }
+
             $availableActions = $this->availableActionsService->forTask($id);
             $availableIds = array_column($availableActions, 'id');
 
@@ -583,7 +590,7 @@ class EmployeeTaskController extends Controller
             }
 
             event(new WorkflowProcedureTaken(
-                'employee_task',
+                $task->procedureSettingType()->value,
                 $id,
                 $procedureSettingId,
                 (string) Auth::id(),

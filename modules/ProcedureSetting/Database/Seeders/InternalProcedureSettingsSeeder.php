@@ -42,6 +42,12 @@ class InternalProcedureSettingsSeeder extends Seeder
 
         foreach ($companies as $companyId) {
             foreach (ProcedureSettingType::cases() as $type) {
+                // Project-notification tasks have a dedicated seeder that creates
+                // their own parent and internal procedures.
+                if ($type === ProcedureSettingType::ProjectNotificationTask) {
+                    continue;
+                }
+
                 $parent = $this->resolveParent((string) $companyId, $type);
                 $this->seedForParent($parent);
             }

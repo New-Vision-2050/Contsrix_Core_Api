@@ -61,7 +61,7 @@ final class EmployeeTaskExtensionWorkflowService
             $adminId,
             $task->user_id,
             $context,
-            processableType: 'employee_task',
+            processableType: $task->procedureSettingType()->value,
             processableId: $task->id,
         );
 

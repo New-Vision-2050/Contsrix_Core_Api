@@ -83,7 +83,7 @@ final class EmployeeTaskExtensionService
 
             if ($procedureSetting === null && $dto->internalProcedureSettingId) {
                 event(new WorkflowProcedureTaken(
-                    'employee_task',
+                    $task->procedureSettingType()->value,
                     $task->id,
                     $dto->internalProcedureSettingId,
                     $dto->userId,
@@ -210,7 +210,7 @@ final class EmployeeTaskExtensionService
         $branchId = $task->user?->userProfessionalData?->branch_id;
 
         return $this->workflow->resolveInternalProcedureSettingByForm(
-            ProcedureSettingType::EmployeeTask->value,
+            $task->procedureSettingType()->value,
             'extendTaskTime',
             $task->company_id,
             $branchId,
@@ -227,7 +227,7 @@ final class EmployeeTaskExtensionService
             ->where('id', $id)
             ->whereNotNull('form')
             ->whereHas('parent', function ($q) use ($task) {
-                $q->where('type', ProcedureSettingType::EmployeeTask->value)
+                $q->where('type', $task->procedureSettingType()->value)
                   ->where('company_id', $task->company_id);
             })
             ->with(['steps' => fn ($q) => $q->orderBy('step_order')])

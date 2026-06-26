@@ -43,7 +43,7 @@ class EmployeeTaskRequestService
     public function create(CreateEmployeeTaskRequestDTO $dto, ?string $formKey = null): EmployeeTaskRequest
     {
         $formKey = $formKey ?? InternalProcessForm::CreateTask->value;
-        $procedureType = ProcedureSettingType::EmployeeTask->value;
+        $procedureType = $this->procedureTypeForForm($formKey);
         $context = $dto->projectId ? ['project_id' => $dto->projectId] : [];
         $creator = User::query()
             ->with(['userProfessionalData.branch.address.country'])
@@ -150,10 +150,11 @@ class EmployeeTaskRequestService
         ?ProcedureSetting $parentSetting = null,
     ): void {
         $formKey = $formKey ?? InternalProcessForm::CreateTask->value;
+        $procedureType = $this->procedureTypeForForm($formKey);
 
         if ($parentSetting === null) {
             $parentSetting = $this->engine->resolveParentSetting(
-                ProcedureSettingType::EmployeeTask->value,
+                $procedureType,
                 $task->company_id,
                 $task->user?->userProfessionalData?->branch_id !== null
                     ? (string) $task->user->userProfessionalData->branch_id
@@ -173,7 +174,7 @@ class EmployeeTaskRequestService
 
         foreach ($createTaskSettings as $settingId) {
             event(new WorkflowProcedureTaken(
-                'employee_task',
+                $this->procedureTypeForForm($formKey),
                 $task->id,
                 $settingId,
                 $userId,
@@ -221,6 +222,7 @@ class EmployeeTaskRequestService
         ?ProcedureSetting $parentSetting = null,
     ): void {
         $formKey = $formKey ?? InternalProcessForm::CreateTask->value;
+        $procedureType = $this->procedureTypeForForm($formKey);
         $task->load('user.userProfessionalData');
         $branchId = $task->user?->userProfessionalData?->branch_id !== null
             ? (string) $task->user->userProfessionalData->branch_id
@@ -230,15 +232,15 @@ class EmployeeTaskRequestService
         // Resolve the parent once so we can use it for both workflow start and
         // post-auto-approve marking.
         $parentSetting = $parentSetting ?? $this->engine->resolveParentSetting(
-            ProcedureSettingType::EmployeeTask->value,
+            $procedureType,
             $task->company_id,
             $branchId,
         );
 
         $result = $this->engine->startWorkflow(
-            processableType: ProcedureSettingType::EmployeeTask->value,
+            processableType: $procedureType,
             processableId: $task->id,
-            type: ProcedureSettingType::EmployeeTask->value,
+            type: $procedureType,
             formKey: $formKey,
             companyId: $task->company_id,
             branchId: $branchId,
@@ -288,7 +290,7 @@ class EmployeeTaskRequestService
 
         return DB::transaction(function () use ($adminId, $task): EmployeeTaskRequest {
             $process = Process::query()
-                ->where('processable_type', ProcedureSettingType::EmployeeTask->value)
+                ->where('processable_type', $task->procedureSettingType()->value)
                 ->where('processable_id', $task->id)
                 ->where('status', ProcessStatus::InProgress)
                 ->firstOrFail();
@@ -317,7 +319,7 @@ class EmployeeTaskRequestService
 
         return DB::transaction(function () use ($adminId, $task): EmployeeTaskRequest {
             $process = Process::query()
-                ->where('processable_type', ProcedureSettingType::EmployeeTask->value)
+                ->where('processable_type', $task->procedureSettingType()->value)
                 ->where('processable_id', $task->id)
                 ->where('status', ProcessStatus::InProgress)
                 ->firstOrFail();
@@ -504,6 +506,17 @@ class EmployeeTaskRequestService
                 pendingApprovals: $counts['pending_approvals'],
                 total: $counts['total'],
             ));
+        }
+    }
+
+    private function procedureTypeForForm(string $formKey): string
+    {
+        try {
+            $form = InternalProcessForm::from($formKey);
+
+            return $form->procedureSettingType()->value;
+        } catch (\ValueError) {
+            return ProcedureSettingType::EmployeeTask->value;
         }
     }
 }

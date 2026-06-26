@@ -72,7 +72,7 @@ class EmployeeTaskNotification implements ShouldBroadcast
                     'step_order' => $this->currentStep->step_order,
                 ],
                 'created_at' => $this->task->created_at?->toISOString(),
-                'notification_type' => 'employee_task',
+                'notification_type' => $this->task->procedureSettingType()->value,
             ];
         } catch (\Exception $e) {
             \Log::error('EmployeeTaskNotification broadcast error: ' . $e->getMessage());
@@ -83,7 +83,7 @@ class EmployeeTaskNotification implements ShouldBroadcast
                 'serial_number' => $this->task->serial_number,
                 'title' => $this->task->title,
                 'status' => $this->task->status,
-                'notification_type' => 'employee_task',
+                'notification_type' => $this->task->procedureSettingType()->value,
                 'created_at' => now()->toISOString(),
             ];
         }

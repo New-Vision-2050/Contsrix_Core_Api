@@ -42,10 +42,10 @@ class EmployeeTaskServiceProvider extends ServiceProvider
         if (! $this->app->bound(WorkflowNotifierRegistry::class)) {
             $this->app->singleton(WorkflowNotifierRegistry::class);
         }
-        $this->app->make(WorkflowNotifierRegistry::class)->register(
-            ProcedureSettingType::EmployeeTask->value,
-            $this->app->make(EmployeeTaskWorkflowNotifier::class),
-        );
+        $registry = $this->app->make(WorkflowNotifierRegistry::class);
+        $notifier = $this->app->make(EmployeeTaskWorkflowNotifier::class);
+        $registry->register(ProcedureSettingType::EmployeeTask->value, $notifier);
+        $registry->register(ProcedureSettingType::ProjectNotificationTask->value, $notifier);
     }
 
     public function register(): void
