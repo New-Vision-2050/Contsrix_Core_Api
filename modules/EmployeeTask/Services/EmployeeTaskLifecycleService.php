@@ -52,7 +52,13 @@ final class EmployeeTaskLifecycleService
             throw EmployeeTaskException::hasOtherOpenTask();
         }
 
-        $this->conditionService->checkStartTaskConditions($task, $user, $dto->latitude, $dto->longitude);
+        // Project-notification tasks are created from the dashboard and their
+        // creation-time conditions (e.g. InsideCustomLocations) have already been
+        // enforced. On confirm-receive/start they should move straight to in_progress
+        // without re-evaluating employee-task start conditions such as AllowOnHolidays.
+        if (! $task->is_project_notification) {
+            $this->conditionService->checkStartTaskConditions($task, $user, $dto->latitude, $dto->longitude);
+        }
 
         $procedureSetting = $this->startRequestService->resolveStartTaskProcedure(
             $task,
