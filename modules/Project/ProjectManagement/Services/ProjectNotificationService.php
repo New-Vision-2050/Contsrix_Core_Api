@@ -17,6 +17,7 @@ use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
 use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO;
@@ -112,7 +113,10 @@ class ProjectNotificationService
     public function myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator
     {
         $filters = $dto->toFilters();
-        $filters['task_user_id'] = $userId;
+        $filters['assigned_user_id'] = $userId;
+        // Mobile "My Tasks" tab shows notifications that are approved, started,
+        // finished, or rejected.
+        $filters['status'] = 'approved,in_progress,completed,rejected';
 
         return $this->repository->paginated(
             $filters,
@@ -122,15 +126,17 @@ class ProjectNotificationService
     }
 
     /**
-     * Mobile endpoint: employee inbox of notifications waiting for confirm-receive.
-     * Only approved tasks (not yet started) are shown because the next action is
-     * POST /projects/notifications/{id}/confirm-receive.
+     * Mobile endpoint: inbox of pending notifications that still need workflow
+     * action. Items are selected from the process table where the linked
+     * project_notification_task has an in-progress process with a pending step
+     * assigned to the current user.
      */
     public function myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator
     {
         $filters = $dto->toFilters();
-        $filters['task_user_id'] = $userId;
-        $filters['status'] = 'approved';
+        $filters['workflow_inbox_for_user'] = $userId;
+        // Inbox holds pending notifications that still need workflow approval.
+        $filters['status'] = 'pending';
 
         return $this->repository->paginated(
             $filters,
@@ -145,9 +151,8 @@ class ProjectNotificationService
     public function inboxCounts(string $userId, array $filters = []): array
     {
         $query = ProjectNotification::query()
-            ->whereHas('employeeTask', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            });
+            ->whereIn('status', ['pending']);
+        $this->applyWorkflowInboxFilter($query, $userId);
 
         $this->applyDateFilters($query, $filters);
 
@@ -158,12 +163,7 @@ class ProjectNotificationService
             ->toArray();
 
         return [
-            'pending'     => (int) ($rows['pending'] ?? 0),
-            'approved'    => (int) ($rows['approved'] ?? 0),
-            'in_progress' => (int) ($rows['in_progress'] ?? 0),
-            'completed'   => (int) ($rows['completed'] ?? 0),
-            'rejected'    => (int) ($rows['rejected'] ?? 0),
-            'cancelled'   => (int) ($rows['cancelled'] ?? 0),
+            'pending'  => (int) ($rows['pending'] ?? 0),
         ];
     }
 
@@ -176,9 +176,8 @@ class ProjectNotificationService
     public function filterMetadata(string $userId, array $filters = []): array
     {
         $base = ProjectNotification::query()
-            ->whereHas('employeeTask', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            });
+            ->whereIn('status', ['pending']);
+        $this->applyWorkflowInboxFilter($base, $userId);
 
         $this->applyDateFilters($base, $filters);
 
@@ -233,6 +232,21 @@ class ProjectNotificationService
         if (!empty($filters['date_to'])) {
             $query->whereDate('task_date', '<=', $filters['date_to']);
         }
+    }
+
+    private function applyWorkflowInboxFilter($query, string $userId): void
+    {
+        $query->whereHas('employeeTask.processes', function ($q) use ($userId) {
+            $q->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+                ->where('status', ProcessStatus::InProgress)
+                ->whereHas('steps', function ($q) use ($userId) {
+                    $q->where('status', ProcessStepStatus::Pending)
+                        ->where(function ($q) use ($userId) {
+                            $q->where('assigned_user_id', $userId)
+                                ->orWhereJsonContains('authorized_user_ids', $userId);
+                        });
+                });
+        });
     }
 
     public function get(string $id): ProjectNotification

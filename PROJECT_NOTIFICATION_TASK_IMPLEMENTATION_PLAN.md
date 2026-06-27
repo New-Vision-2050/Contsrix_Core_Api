@@ -643,7 +643,9 @@ Extends `SearchModelFilter` with filter methods:
 - `notificationType($value)` — filter by notification type
 - `workType($value)` — filter by work type
 - `contractorName($value)` — search contractor name (LIKE)
-- `assignedUserId($value)` — filter by assigned user
+- `assignedUserId($value)` — filter by notification's dashboard-assigned user
+- `taskUserId($value)` — filter by linked `EmployeeTaskRequest.user_id`
+- `workflowInboxForUser($value)` — filter by linked `project_notification_task` process that has an `in_progress` process with a `pending` step assigned to the user
 - `dateRange($from, $to)` — filter by `task_date` range
 - `projectId($value)` — filter by project
 

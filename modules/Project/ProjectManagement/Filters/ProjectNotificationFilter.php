@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
 
 class ProjectNotificationFilter extends SearchModelFilter
 {
@@ -48,6 +50,21 @@ class ProjectNotificationFilter extends SearchModelFilter
     {
         return $this->whereHas('employeeTask', function ($query) use ($userId) {
             $query->where('user_id', $userId);
+        });
+    }
+
+    public function workflowInboxForUser($userId)
+    {
+        return $this->whereHas('employeeTask.processes', function ($query) use ($userId) {
+            $query->where('processable_type', 'project_notification_task')
+                ->where('status', ProcessStatus::InProgress)
+                ->whereHas('steps', function ($query) use ($userId) {
+                    $query->where('status', ProcessStepStatus::Pending)
+                        ->where(function ($query) use ($userId) {
+                            $query->where('assigned_user_id', $userId)
+                                ->orWhereJsonContains('authorized_user_ids', $userId);
+                        });
+                });
         });
     }
 
