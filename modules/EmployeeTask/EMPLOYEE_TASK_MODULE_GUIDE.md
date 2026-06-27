@@ -526,6 +526,8 @@ Thin wrapper around `InternalProcedureAvailableActionsService`. Determines which
 
 Retrieves all "taken" procedures for a task. Returns items + summary (total count, last action, start date, average progress %).
 
+For project-notification tasks (`is_project_notification = true`), the query uses `processable_type = project_notification_task`, so the same procedure timeline works for regular employee tasks and project-notification tasks. The `ProjectNotification` module exposes a convenience wrapper at `GET /projects/notifications/{id}/procedures` which resolves the linked task and returns the same shape.
+
 ### `EmployeeTaskReportService`
 
 Generates intra-day reports combining attendance and task data for a specific user and date. Returns attendance sessions, task sessions, active tasks, and summary statistics.

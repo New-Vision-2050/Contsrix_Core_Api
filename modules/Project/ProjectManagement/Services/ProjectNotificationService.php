@@ -13,6 +13,7 @@ use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskType;
 use Modules\EmployeeTask\Services\EmployeeTaskAvailableActionsService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
+use Modules\EmployeeTask\Services\EmployeeTaskProceduresService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
@@ -35,6 +36,7 @@ class ProjectNotificationService
         private readonly EmployeeTaskRequestService $employeeTaskRequestService,
         private readonly EmployeeTaskLifecycleService $lifecycleService,
         private readonly EmployeeTaskAvailableActionsService $availableActionsService,
+        private readonly EmployeeTaskProceduresService $proceduresService,
     ) {}
 
     public function create(CreateProjectNotificationDTO $dto): ProjectNotification
@@ -471,6 +473,18 @@ class ProjectNotificationService
         ));
 
         return ['procedure_setting_id' => $procedureSettingId];
+    }
+
+    /**
+     * Return the timeline of taken internal procedures for the linked EmployeeTask.
+     *
+     * @return array{items: \Illuminate\Database\Eloquent\Collection, summary: array}
+     */
+    public function procedures(string $notificationId): array
+    {
+        $task = $this->linkedTask($notificationId);
+
+        return $this->proceduresService->forTask($task->id);
     }
 
     private function linkedTask(string $notificationId): EmployeeTaskRequest

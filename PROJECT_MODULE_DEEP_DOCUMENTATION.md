@@ -823,6 +823,7 @@ Sends email via `AttachmentRequestMail`.
 | POST | `/notifications/{id}/confirm-receive` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: confirm receive and start the linked task |
 | POST | `/notifications/{id}/start` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: backward-compatible alias for confirm-receive |
 | POST | `/notifications/{id}/take-action` | `PROJECT_NOTIFICATION_UPDATE` | Record a generic procedure action (e.g., `UpdateProjectNotificationTask`) |
+| GET | `/notifications/{id}/procedures` | `PROJECT_NOTIFICATION_VIEW` | Linked EmployeeTask procedures timeline + summary |
 | POST | `/notifications/{id}/end` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: end linked task |
 
 **Route prefix**: `/api/v1/projects/notifications`
@@ -834,6 +835,8 @@ Sends email via `AttachmentRequestMail`.
 - The mobile inbox (`/my-inbox`) only returns notifications with `status = approved`. After `POST /notifications/{id}/confirm-receive`, the task moves to `in_progress` and appears in `/my-tasks` instead.
 - `/filters` returns the same response shape as `GET /employee-tasks/filters`: `statuses` (key, title_ar, title_en, count), `projects` (key, title, count), `duration` (key, title_ar, title_en, min_minutes, max_minutes).
 - Notification status is auto-synced from the linked `EmployeeTaskRequest` by `EmployeeTaskStatusSyncObserver` whenever the task status changes (e.g., `in_progress` after confirm-receive, `completed` after end). The observer maps `paused` → `in_progress` for the notification.
+- The linked `EmployeeTaskRequest` exposes its taken internal procedures via `GET /employee-tasks/{employee_task_id}/procedures`. The mobile app can use the linked task ID to display the procedures (الإجراءات) timeline for the assigned task. Response includes `items` (ordered by step with `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`) and `summary` (`total`, `last_action`, `start_date`, `progress`).
+- `GET /notifications/{id}/procedures` is a convenience wrapper over the employee-task endpoint: it resolves the linked `EmployeeTaskRequest` from the notification id and returns the same `items` + `summary` shape.
 
 ---
 

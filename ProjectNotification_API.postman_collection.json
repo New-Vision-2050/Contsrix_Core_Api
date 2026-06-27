@@ -2440,6 +2440,49 @@
           ]
         },
         {
+          "name": "Get Notification Procedures",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().payload;",
+                  "pm.test('Payload is object', () => pm.expect(p).to.be.an('object'));",
+                  "pm.test('Has items array', () => pm.expect(p.items).to.be.an('array'));",
+                  "pm.test('Has summary object', () => pm.expect(p.summary).to.be.an('object'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/{{notification_id}}/procedures",
+              "host": ["{{url}}"],
+              "path": ["projects", "notifications", "{{notification_id}}", "procedures"]
+            },
+            "description": "Returns the timeline of all taken (completed) internal procedures for the linked EmployeeTask, ordered by taken_at ascending.\n\nUse this after confirm-receive / take-action / end to display the procedures (الإجراءات) tab.\n\nResponse includes:\n- `items`: ordered list with `step_number`, `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`.\n- `summary`: `total`, `last_action`, `start_date`, `progress`."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/projects/notifications/{{notification_id}}/procedures", "host": ["{{url}}"], "path": ["projects", "notifications", "{{notification_id}}", "procedures"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Procedures retrieved successfully\",\n  \"payload\": {\n    \"items\": [\n      {\n        \"id\": \"taken-uuid-1\",\n        \"step_number\": 1,\n        \"name\": \"تأكيد استلام\",\n        \"icon\": \"check-circle\",\n        \"percentage\": 25,\n        \"form\": { \"key\": \"confirmProjectNotificationPresence\", \"label_ar\": \"تأكيد استلام\" },\n        \"taken_by\": { \"id\": \"user-uuid\", \"name\": \"المهندس أحمد\" },\n        \"taken_at\": \"2026-06-25 09:00:00\"\n      },\n      {\n        \"id\": \"taken-uuid-2\",\n        \"step_number\": 2,\n        \"name\": \"تحديث\",\n        \"icon\": \"refresh\",\n        \"percentage\": 50,\n        \"form\": { \"key\": \"updateProjectNotificationTask\", \"label_ar\": \"تحديث\" },\n        \"taken_by\": { \"id\": \"user-uuid\", \"name\": \"المهندس أحمد\" },\n        \"taken_at\": \"2026-06-25 11:30:00\"\n      }\n    ],\n    \"summary\": {\n      \"total\": 2,\n      \"last_action\": \"تحديث\",\n      \"start_date\": \"2026-06-25\",\n      \"progress\": 38\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "End Task (إنهاء المهمة)",
           "request": {
             "method": "POST",

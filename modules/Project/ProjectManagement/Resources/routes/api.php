@@ -136,6 +136,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
         Route::post('/{id}/take-action', [ProjectNotificationController::class, 'takeAction'])
             ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::get('/{id}/procedures', [ProjectNotificationController::class, 'procedures'])
+            ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
         Route::post('/{id}/end', [ProjectNotificationController::class, 'end'])
             ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
 
