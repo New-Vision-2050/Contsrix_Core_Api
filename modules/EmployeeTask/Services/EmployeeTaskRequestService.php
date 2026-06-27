@@ -335,6 +335,68 @@ class EmployeeTaskRequestService
         });
     }
 
+    /**
+     * Approve the current pending workflow step for a task regardless of its
+     * status. Used for project notifications where subsequent steps (confirm-receive,
+     * end, etc.) may be approved after the task is already in_progress.
+     */
+    public function approveWorkflowStep(string $id, string $adminId): EmployeeTaskRequest
+    {
+        $task = $this->repository->findById($id);
+
+        if (! $task) {
+            throw EmployeeTaskException::notFound();
+        }
+
+        return DB::transaction(function () use ($adminId, $task): EmployeeTaskRequest {
+            $process = Process::query()
+                ->where('processable_type', $task->procedureSettingType()->value)
+                ->where('processable_id', $task->id)
+                ->where('status', ProcessStatus::InProgress)
+                ->firstOrFail();
+
+            $step = $this->findPendingStepForActor($process, $adminId);
+            if (! $step) {
+                throw EmployeeTaskException::notFound();
+            }
+
+            $this->processService->approveStep($step->id);
+
+            return $task->fresh();
+        });
+    }
+
+    /**
+     * Reject the current pending workflow step for a task regardless of its
+     * status. Used for project notifications where subsequent steps may be rejected
+     * after the task is already in_progress.
+     */
+    public function rejectWorkflowStep(string $id, string $adminId, string $reason): EmployeeTaskRequest
+    {
+        $task = $this->repository->findById($id);
+
+        if (! $task) {
+            throw EmployeeTaskException::notFound();
+        }
+
+        return DB::transaction(function () use ($adminId, $reason, $task): EmployeeTaskRequest {
+            $process = Process::query()
+                ->where('processable_type', $task->procedureSettingType()->value)
+                ->where('processable_id', $task->id)
+                ->where('status', ProcessStatus::InProgress)
+                ->firstOrFail();
+
+            $step = $this->findPendingStepForActor($process, $adminId);
+            if (! $step) {
+                throw EmployeeTaskException::notFound();
+            }
+
+            $this->processService->rejectStep($step->id);
+
+            return $task->fresh();
+        });
+    }
+
     private function findPendingStepForActor(Process $process, string $actorId): ?ProcessStep
     {
         $snapshot = $process->template_snapshot ?? [];
