@@ -44,6 +44,13 @@ class ProjectNotificationFilter extends SearchModelFilter
         return $this->where('assigned_user_id', $userId);
     }
 
+    public function taskUserId($userId)
+    {
+        return $this->whereHas('employeeTask', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        });
+    }
+
     public function taskDate($date)
     {
         return $this->whereDate('task_date', $date);
