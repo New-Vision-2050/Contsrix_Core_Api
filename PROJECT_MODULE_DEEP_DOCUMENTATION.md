@@ -618,10 +618,10 @@ Manages project notifications — dashboard-created task assignments dispatched 
 Key methods:
 - `create(CreateProjectNotificationDTO $dto): ProjectNotification` — Creates the notification row, then delegates to `EmployeeTaskRequestService::create()` with `InternalProcessForm::CreateProjectNotificationTask->value` as the form key. The linked `EmployeeTaskRequest` gets `is_project_notification = true`, `task_source = 'dashboard'`, and `project_notification_id` set. The `currentLatitude`/`currentLongitude` are explicitly `null` because the admin creates this from the dashboard, not from the employee's current GPS context.
 - `list(FilterProjectNotificationDTO $dto): LengthAwarePaginator` — Paginated list with filters.
-- `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications whose linked `EmployeeTaskRequest.user_id` matches the current employee (all statuses after confirm-receive).
-- `myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: approved notifications whose linked task's `user_id` matches the current employee; these are waiting for confirm-receive. Filters by the task's action taker, not the notification's dashboard `assigned_user_id`.
-- `inboxCounts(string $userId, array $filters = []): array` — Status counts for the employee's task-inbox (badges), scoped by linked task `user_id`.
-- `filterMetadata(string $userId, array $filters = []): array` — Filter metadata for the mobile filter UI: status counts, project counts, min/max duration; scoped by linked task `user_id`.
+- `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications whose linked `EmployeeTaskRequest.user_id` matches the current employee and status is `in_progress`, `completed`, or `rejected` (already started, finished, or rejected tasks).
+- `myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: project notifications currently in the employee's workflow inbox. Selected from the `processes` table where the linked `project_notification_task` has an `in_progress` process with a `pending` step assigned to the current user (`assigned_user_id` or `authorized_user_ids`), and the notification status is `pending` or `approved`. This matches the procedure/action-taker check, not the notification's dashboard `assigned_user_id`.
+- `inboxCounts(string $userId, array $filters = []): array` — Pending/approved counts for the employee's workflow inbox (badges), scoped by the same process-based workflow inbox filter.
+- `filterMetadata(string $userId, array $filters = []): array` — Filter metadata for the mobile filter UI: status counts, project counts, min/max duration; scoped by the same process-based workflow inbox filter.
 - `get(string $id): ProjectNotification`
 - `update(string $id, UpdateProjectNotificationDTO $dto): ProjectNotification`
 - `delete(string $id): bool`
@@ -971,10 +971,10 @@ Presents request with: all scalar fields, `type` (outgoing/incoming based on sen
 
 **File**: `Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter`
 
-- `toArray(): array` — Transforms a `ProjectNotification` into: all scalar fields, nested `project` (id/name/serial_number), `assigned_user` (id/name), `created_by` (id/name), `employee_task` (id/serial_number/status/status_label), `status_label`, `internal_procedure_setting_id` (confirm-receive procedure setting ID for the linked employee task, used by `POST /projects/notifications/{id}/confirm-receive`), `attachments` (media URLs), and timestamps.
+- `toArray(): array` — Transforms a `ProjectNotification` into: all scalar fields, nested `project` (id/name/serial_number), `assigned_user` (id/name) — dashboard-selected user, `created_by` (id/name), `employee_task` (id/serial_number/status/status_label/user), `status_label`, `internal_procedure_setting_id` (confirm-receive procedure setting ID for the linked employee task, used by `POST /projects/notifications/{id}/confirm-receive`), `attachments` (media URLs), and timestamps.
 - `static single(ProjectNotification $notification): array` — Single notification response.
 - `static detail(ProjectNotification $notification): array` — Alias for `single()`.
-- `static collection(array $notifications): array` — Maps a collection through `toListArray()`; includes the same `internal_procedure_setting_id` field so mobile list/inbox views can call confirm-receive.
+- `static collection(array $notifications): array` — Maps a collection through `toListArray()`; includes the same `internal_procedure_setting_id` and `employee_task` fields so mobile list/inbox views can call confirm-receive and verify the actual task assignee.
 
 #### `ProjectNotificationEmployeeLocationPresenter`
 

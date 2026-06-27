@@ -61,7 +61,14 @@ class ProjectNotificationPresenter
                 ? ['id' => $n->project->id, 'name' => $n->project->name]
                 : null,
             'employee_task'               => $n->relationLoaded('employeeTask') && $n->employeeTask
-                ? ['id' => $n->employeeTask->id, 'status' => $n->employeeTask->status, 'serial_number' => $n->employeeTask->serial_number]
+                ? [
+                    'id'            => $n->employeeTask->id,
+                    'status'        => $n->employeeTask->status,
+                    'serial_number' => $n->employeeTask->serial_number,
+                    'user'          => $n->employeeTask->relationLoaded('user') && $n->employeeTask->user
+                        ? ['id' => $n->employeeTask->user->id, 'name' => $n->employeeTask->user->name]
+                        : null,
+                ]
                 : null,
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'attachments'                 => $n->relationLoaded('media')
