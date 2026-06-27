@@ -154,7 +154,7 @@ class ProjectNotificationService
     public function inboxCounts(string $userId, array $filters = []): array
     {
         $query = ProjectNotification::query()
-            ->whereIn('status', ['pending']);
+            ->whereIn('project_notifications.status', ['pending']);
         $this->applyWorkflowInboxFilter($query, $userId);
 
         $this->applyDateFilters($query, $filters);
@@ -179,16 +179,16 @@ class ProjectNotificationService
     public function filterMetadata(string $userId, array $filters = []): array
     {
         $base = ProjectNotification::query()
-            ->whereIn('status', ['pending']);
+            ->whereIn('project_notifications.status', ['pending']);
         $this->applyWorkflowInboxFilter($base, $userId);
 
         $this->applyDateFilters($base, $filters);
 
         $statusQuery = clone $base;
         $statusCounts = $statusQuery
-            ->selectRaw('status, COUNT(*) as count')
-            ->groupBy('status')
-            ->pluck('count', 'status')
+            ->selectRaw('project_notifications.status, COUNT(*) as count')
+            ->groupBy('project_notifications.status')
+            ->pluck('count', 'project_notifications.status')
             ->toArray();
 
         $projectQuery = clone $base;

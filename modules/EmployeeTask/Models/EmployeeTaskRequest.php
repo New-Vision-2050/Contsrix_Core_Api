@@ -139,13 +139,13 @@ class EmployeeTaskRequest extends Model implements HasMedia
     }
 
     /**
-     * The internal procedure setting used for the project-notification confirm-receive action.
+     * The internal procedure setting used for the project-notification creation workflow.
      * Resolved from the snapshot parent procedure setting when the task is a project notification.
      */
-    public function confirmReceiveProcedureSetting(): HasOne
+    public function createProjectNotificationTaskProcedureSetting(): HasOne
     {
         return $this->hasOne(ProcedureSetting::class, 'parent_id', 'procedure_setting_id')
-            ->where('form', InternalProcessForm::ConfirmProjectNotificationPresence->value)
+            ->where('form', InternalProcessForm::CreateProjectNotificationTask->value)
             ->where('is_active', true);
     }
 
