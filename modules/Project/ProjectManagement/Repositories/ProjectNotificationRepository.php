@@ -34,6 +34,23 @@ class ProjectNotificationRepository
         return $query->paginate($perPage);
     }
 
+    /**
+     * Mobile "my-tasks" query. The assigned_user_id filter is applied directly
+     * because the EloquentFilter relation handling can drop it when the
+     * assignedUser relation is whitelisted in $relations.
+     */
+    public function paginatedForMyTasks(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
+    {
+        $query = ProjectNotification::query()
+            ->where('assigned_user_id', $userId)
+            ->filter($filters)
+            ->with(['assignedUser', 'project', 'employeeTask.user', 'employeeTask.confirmReceiveProcedureSetting']);
+
+        $this->applySorting($query, $sort);
+
+        return $query->paginate($perPage);
+    }
+
     public function update(string $id, array $data): bool
     {
         return ProjectNotification::query()->where('id', $id)->update($data);

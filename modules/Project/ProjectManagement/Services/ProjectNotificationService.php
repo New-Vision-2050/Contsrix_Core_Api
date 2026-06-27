@@ -113,13 +113,13 @@ class ProjectNotificationService
     public function myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator
     {
         $filters = $dto->toFilters();
-        $filters['assigned_user_id'] = $userId;
         // Mobile "My Tasks" tab shows notifications that are approved, started,
         // finished, or rejected.
         $filters['status'] = 'approved,in_progress,completed,rejected';
 
-        return $this->repository->paginated(
+        return $this->repository->paginatedForMyTasks(
             $filters,
+            $userId,
             $dto->perPage ?? 15,
             $dto->sort,
         );
