@@ -281,19 +281,16 @@ class ProjectNotificationService
     public function approve(string $id, string $userId): ProjectNotification
     {
         $notification = $this->get($id);
-
-        if (!in_array($notification->status, ['pending'], true)) {
-            throw ProjectNotificationException::cannotApprove($notification->status);
-        }
-
         $task = $notification->employee_task_request_id ? $notification->employeeTask : null;
 
         // When the linked task is driven by a real approval workflow, advance the
-        // workflow step instead of force-setting the status. The
-        // EmployeeTaskStatusSyncObserver mirrors the resulting task status onto
-        // the notification once the workflow resolves.
+        // workflow step regardless of the notification status. This allows the
+        // dashboard to approve subsequent steps (confirm-receive, end, etc.) after
+        // the task is already in_progress. The EmployeeTaskStatusSyncObserver
+        // mirrors the resulting task status onto the notification once the
+        // workflow resolves.
         if ($task && $this->taskHasActiveProcess($task->id)) {
-            $this->employeeTaskRequestService->approve($task->id, $userId);
+            $this->employeeTaskRequestService->approveWorkflowStep($task->id, $userId);
 
             $notification->forceFill([
                 'approved_by' => $userId,
@@ -301,6 +298,10 @@ class ProjectNotificationService
             ])->save();
 
             return $notification->fresh();
+        }
+
+        if (!in_array($notification->status, ['pending'], true)) {
+            throw ProjectNotificationException::cannotApprove($notification->status);
         }
 
         $notification->update([
@@ -323,15 +324,10 @@ class ProjectNotificationService
     public function reject(string $id, string $userId, string $reason): ProjectNotification
     {
         $notification = $this->get($id);
-
-        if (!in_array($notification->status, ['pending'], true)) {
-            throw ProjectNotificationException::cannotReject($notification->status);
-        }
-
         $task = $notification->employee_task_request_id ? $notification->employeeTask : null;
 
         if ($task && $this->taskHasActiveProcess($task->id)) {
-            $this->employeeTaskRequestService->reject($task->id, $userId, $reason);
+            $this->employeeTaskRequestService->rejectWorkflowStep($task->id, $userId, $reason);
 
             $notification->forceFill([
                 'rejected_by' => $userId,
@@ -340,6 +336,10 @@ class ProjectNotificationService
             ])->save();
 
             return $notification->fresh();
+        }
+
+        if (!in_array($notification->status, ['pending'], true)) {
+            throw ProjectNotificationException::cannotReject($notification->status);
         }
 
         $notification->update([
@@ -429,7 +429,16 @@ class ProjectNotificationService
             ]);
         }
 
-        return $this->lifecycleService->start($task->id, $dto, $user);
+        $task = $this->lifecycleService->start($task->id, $dto, $user);
+
+        // Auto-approve the confirm-receive workflow step so the procedure is
+        // written to internal_procedure_takens immediately without requiring a
+        // separate dashboard approval.
+        if ($this->taskHasActiveProcess($task->id)) {
+            $this->employeeTaskRequestService->approveWorkflowStep($task->id, (string) $user->id);
+        }
+
+        return $task->fresh();
     }
 
     public function startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
