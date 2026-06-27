@@ -62,10 +62,11 @@ class ProjectNotificationPresenter
                 : null,
             'employee_task'               => $n->relationLoaded('employeeTask') && $n->employeeTask
                 ? [
-                    'id'            => $n->employeeTask->id,
-                    'status'        => $n->employeeTask->status,
-                    'serial_number' => $n->employeeTask->serial_number,
-                    'user'          => $n->employeeTask->relationLoaded('user') && $n->employeeTask->user
+                    'id'             => $n->employeeTask->id,
+                    'status'         => $n->employeeTask->status,
+                    'serial_number'  => $n->employeeTask->serial_number,
+                    'duration_hours' => $n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null,
+                    'user'           => $n->employeeTask->relationLoaded('user') && $n->employeeTask->user
                         ? ['id' => $n->employeeTask->user->id, 'name' => $n->employeeTask->user->name]
                         : null,
                 ]
@@ -95,12 +96,26 @@ class ProjectNotificationPresenter
             'status'                      => $n->status,
             'status_label'                => $this->statusLabel($n->status),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
+            'duration_hours'              => $n->relationLoaded('employeeTask') && $n->employeeTask
+                ? ($n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null)
+                : null,
             'selected_distance_meters'    => $n->selected_distance_meters,
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'violations_count'            => 0,
             'created_at'                  => $n->created_at?->format('Y-m-d H:i:s'),
             'assigned_user'               => $n->relationLoaded('assignedUser') && $n->assignedUser
                 ? ['id' => $n->assignedUser->id, 'name' => $n->assignedUser->name]
+                : null,
+            'employee_task'               => $n->relationLoaded('employeeTask') && $n->employeeTask
+                ? [
+                    'id'             => $n->employeeTask->id,
+                    'status'         => $n->employeeTask->status,
+                    'serial_number'  => $n->employeeTask->serial_number,
+                    'duration_hours' => $n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null,
+                    'user'           => $n->employeeTask->relationLoaded('user') && $n->employeeTask->user
+                        ? ['id' => $n->employeeTask->user->id, 'name' => $n->employeeTask->user->name]
+                        : null,
+                ]
                 : null,
         ];
     }

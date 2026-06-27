@@ -142,6 +142,12 @@ class ProjectNotificationController extends Controller
             (string) Auth::id(),
         );
 
+        $paginator->getCollection()->loadMissing([
+            'assignedUser',
+            'employeeTask.user',
+            'employeeTask.confirmReceiveProcedureSetting',
+        ]);
+
         return Json::items(
             ProjectNotificationPresenter::collection($paginator->items()),
             paginationSettings: [
@@ -164,6 +170,12 @@ class ProjectNotificationController extends Controller
             $request->toDTO(),
             (string) Auth::id(),
         );
+
+        $paginator->getCollection()->loadMissing([
+            'assignedUser',
+            'employeeTask.user',
+            'employeeTask.confirmReceiveProcedureSetting',
+        ]);
 
         return Json::items(
             ProjectNotificationPresenter::collection($paginator->items()),
