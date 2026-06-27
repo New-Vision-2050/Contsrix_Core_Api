@@ -63,6 +63,7 @@ class ProjectNotificationPresenter
             'employee_task'               => $n->relationLoaded('employeeTask') && $n->employeeTask
                 ? ['id' => $n->employeeTask->id, 'status' => $n->employeeTask->status, 'serial_number' => $n->employeeTask->serial_number]
                 : null,
+            'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'attachments'                 => $n->relationLoaded('media')
                 ? $n->media->map(fn($media) => [
                     'id'  => $media->id,
@@ -88,6 +89,7 @@ class ProjectNotificationPresenter
             'status_label'                => $this->statusLabel($n->status),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
             'selected_distance_meters'    => $n->selected_distance_meters,
+            'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'violations_count'            => 0,
             'created_at'                  => $n->created_at?->format('Y-m-d H:i:s'),
             'assigned_user'               => $n->relationLoaded('assignedUser') && $n->assignedUser
@@ -113,6 +115,19 @@ class ProjectNotificationPresenter
     public static function detail(ProjectNotification $notification): array
     {
         return (new self($notification))->toArray();
+    }
+
+    private function resolveInternalProcedureSettingId(ProjectNotification $notification): ?string
+    {
+        $task = $notification->relationLoaded('employeeTask') ? $notification->employeeTask : null;
+
+        if (! $task) {
+            return null;
+        }
+
+        $setting = $task->relationLoaded('confirmReceiveProcedureSetting') ? $task->confirmReceiveProcedureSetting : null;
+
+        return $setting?->id;
     }
 
     private function statusLabel(string $status): string

@@ -15,7 +15,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Models\Process;
@@ -134,6 +136,17 @@ class EmployeeTaskRequest extends Model implements HasMedia
     public function currentProcedureStep(): BelongsTo
     {
         return $this->belongsTo(ProcedureSettingStep::class, 'current_procedure_step_id');
+    }
+
+    /**
+     * The internal procedure setting used for the project-notification confirm-receive action.
+     * Resolved from the snapshot parent procedure setting when the task is a project notification.
+     */
+    public function confirmReceiveProcedureSetting(): HasOne
+    {
+        return $this->hasOne(ProcedureSetting::class, 'parent_id', 'procedure_setting_id')
+            ->where('form', InternalProcessForm::ConfirmProjectNotificationPresence->value)
+            ->where('is_active', true);
     }
 
     public function approvedByUser(): BelongsTo

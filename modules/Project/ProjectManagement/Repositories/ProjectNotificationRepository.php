@@ -20,14 +20,14 @@ class ProjectNotificationRepository
     public function findById(string $id): ?ProjectNotification
     {
         return ProjectNotification::query()
-            ->with(['project', 'assignedUser', 'creator', 'employeeTask', 'media'])
+            ->with(['project', 'assignedUser', 'creator', 'employeeTask.confirmReceiveProcedureSetting', 'media'])
             ->find($id);
     }
 
     public function paginated(array $filters, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
         $query = ProjectNotification::filter($filters)
-            ->with(['assignedUser', 'project']);
+            ->with(['assignedUser', 'project', 'employeeTask.confirmReceiveProcedureSetting']);
 
         $this->applySorting($query, $sort);
 

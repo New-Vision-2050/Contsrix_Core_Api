@@ -971,10 +971,10 @@ Presents request with: all scalar fields, `type` (outgoing/incoming based on sen
 
 **File**: `Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter`
 
-- `toArray(): array` — Transforms a `ProjectNotification` into: all scalar fields, nested `project` (id/name/serial_number), `assigned_user` (id/name), `created_by` (id/name), `employee_task` (id/serial_number/status/status_label), `status_label`, `attachments` (media URLs), and timestamps.
+- `toArray(): array` — Transforms a `ProjectNotification` into: all scalar fields, nested `project` (id/name/serial_number), `assigned_user` (id/name), `created_by` (id/name), `employee_task` (id/serial_number/status/status_label), `status_label`, `internal_procedure_setting_id` (confirm-receive procedure setting ID for the linked employee task, used by `POST /projects/notifications/{id}/confirm-receive`), `attachments` (media URLs), and timestamps.
 - `static single(ProjectNotification $notification): array` — Single notification response.
 - `static detail(ProjectNotification $notification): array` — Alias for `single()`.
-- `static collection(array $notifications): array` — Maps a collection through `single()`.
+- `static collection(array $notifications): array` — Maps a collection through `toListArray()`; includes the same `internal_procedure_setting_id` field so mobile list/inbox views can call confirm-receive.
 
 #### `ProjectNotificationEmployeeLocationPresenter`
 
