@@ -15,10 +15,10 @@ class ProjectNotificationFilter extends SearchModelFilter
     public function status($status)
     {
         if (is_string($status) && str_contains($status, ',')) {
-            return $this->whereIn('status', explode(',', $status));
+            return $this->whereIn('project_notifications.status', explode(',', $status));
         }
 
-        return $this->where('status', $status);
+        return $this->where('project_notifications.status', $status);
     }
 
     public function projectId($projectId)

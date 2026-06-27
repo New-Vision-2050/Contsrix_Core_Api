@@ -147,7 +147,7 @@ class ProjectNotificationPresenter
             return null;
         }
 
-        $setting = $task->relationLoaded('confirmReceiveProcedureSetting') ? $task->confirmReceiveProcedureSetting : null;
+        $setting = $task->relationLoaded('createProjectNotificationTaskProcedureSetting') ? $task->createProjectNotificationTaskProcedureSetting : null;
 
         return $setting?->id;
     }

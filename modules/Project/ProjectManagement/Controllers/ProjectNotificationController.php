@@ -148,7 +148,7 @@ class ProjectNotificationController extends Controller
         $paginator->getCollection()->loadMissing([
             'assignedUser',
             'employeeTask.user',
-            'employeeTask.confirmReceiveProcedureSetting',
+            'employeeTask.createProjectNotificationTaskProcedureSetting',
         ]);
 
         return Json::items(
@@ -177,7 +177,7 @@ class ProjectNotificationController extends Controller
         $paginator->getCollection()->loadMissing([
             'assignedUser',
             'employeeTask.user',
-            'employeeTask.confirmReceiveProcedureSetting',
+            'employeeTask.createProjectNotificationTaskProcedureSetting',
         ]);
 
         return Json::items(
