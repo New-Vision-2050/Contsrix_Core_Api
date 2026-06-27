@@ -212,9 +212,7 @@ final class EmployeeTaskFormConditionService
             ? (string) $user->userProfessionalData->branch_id
             : null;
 
-        $formKey = $task->is_project_notification
-            ? InternalProcessForm::ConfirmProjectNotificationPresence->value
-            : InternalProcessForm::StartTask->value;
+        $formKey = InternalProcessForm::StartTask->value;
 
         $map = $this->resolveConditionMap(
             $formKey,
