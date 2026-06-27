@@ -349,12 +349,19 @@ class ProjectNotificationController extends Controller
     public function procedures(Request $request): JsonResponse
     {
         try {
-            $result = $this->notificationService->procedures($request->route('id'));
+            $debug = $request->boolean('debug');
+            $result = $this->notificationService->procedures($request->route('id'), $debug);
 
-            return Json::item([
+            $payload = [
                 'items'   => TaskProcedurePresenter::collection($result['items']),
                 'summary' => $result['summary'],
-            ], message: 'Procedures retrieved successfully');
+            ];
+
+            if ($debug && isset($result['debug'])) {
+                $payload['debug'] = $result['debug'];
+            }
+
+            return Json::item($payload, message: 'Procedures retrieved successfully');
         } catch (ProjectNotificationException | EmployeeTaskException $e) {
             return Json::error($e->getMessage(), $e->getCode() ?: 422);
         }
