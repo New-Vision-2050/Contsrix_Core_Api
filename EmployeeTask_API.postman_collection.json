@@ -738,6 +738,46 @@
               "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Available actions retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"child-uuid-1\",\n      \"name\": \"تمديد وقت المهمة\",\n      \"form\": { \"key\": \"extend_task_time\", \"label_ar\": \"تمديد وقت المهمة\" },\n      \"conditions\": [{ \"key\": \"AllowDuringShift\", \"type\": \"boolean\", \"label_ar\": \"السماح أثناء الدوام\" }],\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"sort_order\": 1\n    },\n    {\n      \"id\": \"child-uuid-2\",\n      \"name\": \"تأكيد دخول الموقع\",\n      \"form\": { \"key\": \"confirm_location\", \"label_ar\": \"تأكيد الموقع\" },\n      \"conditions\": [{ \"key\": \"ApplyToAllBranches\", \"type\": \"boolean\", \"label_ar\": \"يطبق على جميع الفروع\" }],\n      \"appears_before_id\": \"child-uuid-3\",\n      \"appears_after_id\": null,\n      \"sort_order\": 2\n    },\n    {\n      \"id\": \"child-uuid-3\",\n      \"name\": \"تأكيد خروج الموقع\",\n      \"form\": { \"key\": \"confirm_location\", \"label_ar\": \"تأكيد الموقع\" },\n      \"conditions\": [{ \"key\": \"ApplyToAllBranches\", \"type\": \"boolean\", \"label_ar\": \"يطبق على جميع الفروع\" }],\n      \"appears_before_id\": null,\n      \"appears_after_id\": \"child-uuid-2\",\n      \"sort_order\": 3\n    },\n    {\n      \"id\": \"child-uuid-4\",\n      \"name\": \"ارسال للاعتماد\",\n      \"form\": { \"key\": \"send_for_approval\", \"label_ar\": \"ارسال للاعتماد\" },\n      \"conditions\": [{ \"key\": \"AllowDuringShift\", \"type\": \"boolean\", \"label_ar\": \"السماح أثناء الدوام\" }],\n      \"appears_before_id\": null,\n      \"appears_after_id\": null,\n      \"sort_order\": 4\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Get Task Procedures",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().payload;",
+                  "pm.test('Payload is object', () => pm.expect(p).to.be.an('object'));",
+                  "pm.test('Has items array', () => pm.expect(p.items).to.be.an('array'));",
+                  "pm.test('Has summary object', () => pm.expect(p.summary).to.be.an('object'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/procedures",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "procedures"]
+            },
+            "description": "Returns the timeline of all taken (completed) internal procedures for the task.\n\nUse the linked `employee_task_request_id` from a project notification to get the procedures for the assigned task.\n\nResponse includes:\n- `items`: ordered list of taken procedures with `step_number`, `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`.\n- `summary`: `total`, `last_action`, `start_date`, `progress`."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/procedures", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "procedures"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Procedures retrieved successfully\",\n  \"payload\": {\n    \"items\": [\n      {\n        \"id\": \"taken-uuid-1\",\n        \"step_number\": 1,\n        \"name\": \"تأكيد دخول الموقع\",\n        \"icon\": \"map-pin\",\n        \"percentage\": 25,\n        \"form\": { \"key\": \"confirm_location\", \"label_ar\": \"تأكيد الموقع\" },\n        \"taken_by\": { \"id\": \"user-uuid\", \"name\": \"احمد طه\" },\n        \"taken_at\": \"2026-11-24 09:00:00\"\n      },\n      {\n        \"id\": \"taken-uuid-2\",\n        \"step_number\": 2,\n        \"name\": \"تحديث حالة المهمة\",\n        \"icon\": \"refresh\",\n        \"percentage\": 50,\n        \"form\": { \"key\": \"update_task\", \"label_ar\": \"تحديث\" },\n        \"taken_by\": { \"id\": \"user-uuid\", \"name\": \"احمد طه\" },\n        \"taken_at\": \"2026-11-24 11:30:00\"\n      }\n    ],\n    \"summary\": {\n      \"total\": 2,\n      \"last_action\": \"تحديث حالة المهمة\",\n      \"start_date\": \"2026-11-24\",\n      \"progress\": 38\n    }\n  }\n}"
+            }
+          ]
         }
       ]
     },

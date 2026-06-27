@@ -13,9 +13,12 @@ use Maatwebsite\Excel\Facades\Excel;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
+use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
+use Modules\EmployeeTask\Presenters\TaskProcedurePresenter;
 use Modules\EmployeeTask\Requests\EndTaskRequest;
 use Modules\EmployeeTask\Requests\StartTaskRequest;
+use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
 use Modules\Project\ProjectManagement\Exports\ProjectNotificationExport;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationEmployeeLocationPresenter;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter;
@@ -333,6 +336,28 @@ class ProjectNotificationController extends Controller
             'longitude' => $request->input('longitude'),
             'notes' => $request->input('notes'),
         ], message: 'Procedure action recorded successfully');
+    }
+
+    /**
+     * GET /projects/notifications/{id}/procedures
+     *
+     * Returns the timeline of all taken (completed) internal procedures for the
+     * linked EmployeeTask, ordered by taken_at ascending, plus a summary block.
+     * This is a convenience wrapper around GET /employee-tasks/{task_id}/procedures
+     * so the mobile app does not need to keep the linked task_id.
+     */
+    public function procedures(Request $request): JsonResponse
+    {
+        try {
+            $result = $this->notificationService->procedures($request->route('id'));
+
+            return Json::item([
+                'items'   => TaskProcedurePresenter::collection($result['items']),
+                'summary' => $result['summary'],
+            ], message: 'Procedures retrieved successfully');
+        } catch (ProjectNotificationException | EmployeeTaskException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
     }
 
     public function end(EndTaskRequest $request): JsonResponse
