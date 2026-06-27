@@ -58,8 +58,8 @@ final class EmployeeTaskRequestPresenter
             'user'                       => $task->relationLoaded('user') && $task->user
                 ? ['id' => $task->user->id, 'name' => $task->user->name]
                 : null,
-            'task_type'                       => $task->relationLoaded('taskType') && $task->taskType
-                ? ['id' => $task->taskType->id, 'key' => $task->taskType->key, 'title' => $task->taskType->title]
+            'task_type'                       => $task->relationLoaded('employeeTaskType') && $task->employeeTaskType
+                ? ['id' => $task->employeeTaskType->id, 'key' => $task->employeeTaskType->key, 'title' => $task->employeeTaskType->title]
                 : null,
             'current_step'               => $this->presentCurrentStep($task),
             'attachments' => $task->relationLoaded('media')

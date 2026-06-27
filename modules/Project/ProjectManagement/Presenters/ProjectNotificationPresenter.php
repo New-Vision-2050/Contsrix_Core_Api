@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Presenters;
 
+use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 
 class ProjectNotificationPresenter
@@ -61,15 +62,7 @@ class ProjectNotificationPresenter
                 ? ['id' => $n->project->id, 'name' => $n->project->name]
                 : null,
             'employee_task'               => $n->relationLoaded('employeeTask') && $n->employeeTask
-                ? [
-                    'id'             => $n->employeeTask->id,
-                    'status'         => $n->employeeTask->status,
-                    'serial_number'  => $n->employeeTask->serial_number,
-                    'duration_hours' => $n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null,
-                    'user'           => $n->employeeTask->relationLoaded('user') && $n->employeeTask->user
-                        ? ['id' => $n->employeeTask->user->id, 'name' => $n->employeeTask->user->name]
-                        : null,
-                ]
+                ? EmployeeTaskRequestPresenter::single($n->employeeTask)
                 : null,
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'attachments'                 => $n->relationLoaded('media')
