@@ -31,7 +31,14 @@ class EmployeeTaskRepository
     public function findByIdWithRelations(string $id): ?EmployeeTaskRequest
     {
         return EmployeeTaskRequest::query()
-            ->with(['user', 'sessions', 'extensionRequests' , 'media'])
+            ->with([
+                'user',
+                'sessions',
+                'extensionRequests',
+                'media',
+                'employeeTaskType',
+                'currentProcedureStep.actionTakers.user',
+            ])
             ->find($id);
     }
 

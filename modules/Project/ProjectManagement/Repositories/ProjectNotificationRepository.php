@@ -20,7 +20,19 @@ class ProjectNotificationRepository
     public function findById(string $id): ?ProjectNotification
     {
         return ProjectNotification::query()
-            ->with(['project', 'assignedUser', 'creator', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting', 'media'])
+            ->with([
+                'project',
+                'assignedUser',
+                'creator',
+                'media',
+                'employeeTask.user',
+                'employeeTask.employeeTaskType',
+                'employeeTask.media',
+                'employeeTask.sessions',
+                'employeeTask.extensionRequests',
+                'employeeTask.currentProcedureStep.actionTakers.user',
+                'employeeTask.createProjectNotificationTaskProcedureSetting',
+            ])
             ->find($id);
     }
 
