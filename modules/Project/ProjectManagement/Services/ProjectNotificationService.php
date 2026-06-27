@@ -477,12 +477,22 @@ class ProjectNotificationService
 
     /**
      * Return the timeline of taken internal procedures for the linked EmployeeTask.
+     * Uses whereHas('projectNotification') to find the EmployeeTaskRequest by the
+     * notification id, then queries internal_procedure_takens by the task id.
      *
      * @return array{items: \Illuminate\Database\Eloquent\Collection, summary: array}
      */
     public function procedures(string $notificationId): array
     {
-        $task = $this->linkedTask($notificationId);
+        $task = EmployeeTaskRequest::query()
+            ->whereHas('projectNotification', function ($query) use ($notificationId) {
+                $query->where('id', $notificationId);
+            })
+            ->first();
+
+        if (! $task) {
+            throw ProjectNotificationException::linkedTaskNotFound($notificationId);
+        }
 
         return $this->proceduresService->forTask($task->id);
     }
