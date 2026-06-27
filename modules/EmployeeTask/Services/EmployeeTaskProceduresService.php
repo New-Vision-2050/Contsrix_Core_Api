@@ -37,6 +37,15 @@ final class EmployeeTaskProceduresService
             ->orderBy('taken_at')
             ->get();
 
+        return $this->buildResult($taken);
+    }
+
+    /**
+     * @param Collection<int, InternalProcedureTaken> $taken
+     * @return array{items: Collection<int, InternalProcedureTaken>, summary: array}
+     */
+    private function buildResult(Collection $taken): array
+    {
         $total      = $taken->count();
         $last       = $taken->last();
         $first      = $taken->first();
@@ -48,7 +57,7 @@ final class EmployeeTaskProceduresService
             : 0;
 
         $summary = [
-            'total'      => $total,
+            'total'       => $total,
             'last_action' => $last?->procedureSetting?->name,
             'start_date'  => $first?->taken_at?->format('Y-m-d'),
             'progress'    => $avgProgress,
