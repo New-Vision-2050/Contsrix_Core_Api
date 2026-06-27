@@ -9,6 +9,7 @@ use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
+use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskType;
 use Modules\EmployeeTask\Services\EmployeeTaskAvailableActionsService;
@@ -422,20 +423,41 @@ class ProjectNotificationService
     {
         $task = $this->linkedTask($notificationId);
 
-        if ($task->status === EmployeeTaskStatus::Pending->value) {
+        // If the creation workflow (createProjectNotificationTask) still has pending
+        // steps, the employee confirms/approves the current step. On the final step
+        // the EmployeeTaskStatusSyncObserver will move the task to approved.
+        if ($this->taskHasActiveProcess($task->id)) {
+            $this->employeeTaskRequestService->approveWorkflowStep($task->id, (string) $user->id);
+            $task = $task->fresh();
+        }
+
+        // Legacy fallback: only when the task was created without a workflow and still
+        // has no active process, mark it approved directly.
+        if (! $this->taskHasActiveProcess($task->id) && $task->status === EmployeeTaskStatus::Pending->value) {
             $task->update([
                 'status' => EmployeeTaskStatus::Approved->value,
                 'approved_at' => now(),
             ]);
         }
 
-        $task = $this->lifecycleService->start($task->id, $dto, $user);
+        // Once the creation workflow is complete and the task is approved, start it
+        // directly. The create workflow already contained all required steps, so we
+        // do not start a separate start-task procedure here.
+        if (! $this->taskHasActiveProcess($task->id) && $task->status === EmployeeTaskStatus::Approved->value) {
+            if ($task->hasPendingStartRequest()) {
+                throw EmployeeTaskException::pendingStartRequestExists();
+            }
 
-        // Auto-approve the confirm-receive workflow step so the procedure is
-        // written to internal_procedure_takens immediately without requiring a
-        // separate dashboard approval.
-        if ($this->taskHasActiveProcess($task->id)) {
-            $this->employeeTaskRequestService->approveWorkflowStep($task->id, (string) $user->id);
+            $activeTask = EmployeeTaskRequest::query()
+                ->where('user_id', $user->id)
+                ->whereIn('status', EmployeeTaskStatus::activeStatuses())
+                ->first();
+
+            if ($activeTask && $activeTask->id !== $task->id) {
+                throw EmployeeTaskException::hasOtherOpenTask();
+            }
+
+            $task = $this->lifecycleService->performStart($task, $dto, $user);
         }
 
         return $task->fresh();
