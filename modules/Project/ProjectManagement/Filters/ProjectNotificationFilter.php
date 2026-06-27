@@ -41,6 +41,11 @@ class ProjectNotificationFilter extends SearchModelFilter
         return $this->where('contractor_name', 'like', '%' . $name . '%');
     }
 
+    public function contractorId($contractorId)
+    {
+        return $this->where('contractor_id', $contractorId);
+    }
+
     public function assignedUserId($userId)
     {
         return $this->where('assigned_user_id', $userId);

@@ -14,6 +14,7 @@ use Modules\Process\Models\ProcessStep;
  *
  * The listener SendWorkflowStepNotification handles:
  * - Real-time broadcast (WebSocket)
+ * - Push notification (FCM) (if notify_by_push)
  * - Email notification (if notify_by_email)
  * - SMS notification (if notify_by_sms)
  */

@@ -8,6 +8,7 @@ use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
+use Modules\Project\ProjectManagement\Controllers\ContractorController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -114,6 +115,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // Project Notifications Routes
     Route::prefix('notifications')->group(function () {
         // Static routes MUST come before /{id} to avoid route conflicts
+        Route::get('/contractors', [ContractorController::class, 'index'])
+            ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
         Route::get('/employees-with-locations', [ProjectNotificationController::class, 'employeesWithLocations'])
             ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
         Route::post('/export', [ProjectNotificationController::class, 'export'])

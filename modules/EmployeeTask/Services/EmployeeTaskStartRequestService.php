@@ -22,6 +22,7 @@ use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
+use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
@@ -329,6 +330,8 @@ final class EmployeeTaskStartRequestService
 
     private function dispatchStepNotifications(ProcedureSettingStep $step, array $userIds): void
     {
+        WorkflowPushNotificationService::sendForStep($step, $userIds);
+
         $channels = [];
         if ($step->notify_by_email) {
             $channels[] = 'mail';

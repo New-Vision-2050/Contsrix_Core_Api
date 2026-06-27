@@ -281,9 +281,9 @@ description, user_id, metadata, created_at
 **Fillable Fields**:
 ```
 company_id, project_id, employee_task_request_id, notification_number,
-notification_type, severity, work_type, magdy_number, work_description,
-contractor_name, contractor_number, contractor_technical_number,
-contractor_category, contractor_notes, contractor_mobile,
+notification_type, severity, work_type, feeder_number, work_description,
+contractor_id, contractor_name, contractor_number, contractor_technical_number,
+contractor_technical_name, contractor_category, contractor_notes, contractor_mobile,
 task_latitude, task_longitude, location_radius, location_link, repair_point,
 assigned_user_id, selected_distance_meters, status, created_by_user_id,
 approved_by, approved_at, rejected_by, rejected_at, rejection_reason,
@@ -294,6 +294,7 @@ task_date, duration_hours, notes
 
 **Relationships**:
 - `project()` → `belongsTo(ProjectManagement, 'project_id')->withoutGlobalScopes()`
+- `contractor()` → `belongsTo(Contractor, 'contractor_id')->withoutGlobalScopes()`
 - `employeeTask()` → `belongsTo(EmployeeTaskRequest, 'employee_task_request_id')->withoutGlobalScopes()`
 - `assignedUser()` → `belongsTo(User, 'assigned_user_id')->withoutGlobalScopes()`
 - `creator()` → `belongsTo(User, 'created_by_user_id')->withoutGlobalScopes()`
@@ -303,6 +304,26 @@ task_date, duration_hours, notes
 **Media Collection**: `attachments` — stores uploaded files via Spatie Media Library.
 
 **Key Behaviour**: When a `ProjectNotification` is created via `ProjectNotificationService::create()`, a linked `EmployeeTaskRequest` is automatically created via the `EmployeeTask` module using the `CreateProjectNotificationTask` form key. The notification status is synced from the task status via `syncNotificationStatusFromTask()`.
+
+---
+
+#### 2.1.9 `Contractor` (table: `contractors`)
+
+**File**: `Modules\Project\ProjectManagement\Models\Contractor`
+
+**Traits**: `UuidTrait`, `BelongsToTenant`
+
+**Primary Key**: UUID (`string`)
+
+**Fillable Fields**:
+```
+company_id, name, number, mobile, notes, is_active
+```
+
+**Relationships**:
+- `projectNotifications()` → `hasMany(ProjectNotification, 'contractor_id')`
+
+**Seeding**: The `ContractorSeeder` creates the standard contractor list for every tenant. Contractor numbers are auto-generated (`CNT-001`, `CNT-002`, ...).
 
 ---
 
@@ -526,8 +547,9 @@ Constructor parameters:
 projectId (string), createdByUserId (string), assignedUserId (string),
 taskDate (string), durationHours (float), taskLatitude (float), taskLongitude (float),
 notificationType (?string), severity (?string = 'منخفض'), workType (?string),
-magdyNumber (?string), workDescription (?string),
-contractorName (?string), contractorNumber (?string), contractorTechnicalNumber (?string),
+feederNumber (?string), workDescription (?string),
+contractorId (?string), contractorName (?string), contractorNumber (?string),
+contractorTechnicalNumber (?string), contractorTechnicalName (?string),
 contractorCategory (?string), contractorNotes (?string), contractorMobile (?string),
 locationRadius (?int), locationLink (?string), repairPoint (?string),
 selectedDistanceMeters (?int), notes (?string), files (?array),
@@ -546,7 +568,7 @@ Used by `ProjectNotificationService::update()`.
 
 **File**: `Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO`
 
-Used by `index`, `myTasks`, and `export` endpoints. Provides `toFilters()` method for repository filtering.
+Used by `index`, `myTasks`, and `export` endpoints. Provides `toFilters()` method for repository filtering. Supports `contractor_id` in addition to `contractor_name`.
 
 ---
 
@@ -808,6 +830,7 @@ Sends email via `AttachmentRequestMail`.
 |---|---|---|---|
 | GET | `/notifications` | `PROJECT_NOTIFICATION_LIST` | List notifications (paginated, filterable) |
 | POST | `/notifications` | `PROJECT_NOTIFICATION_CREATE` | Create notification + linked EmployeeTask |
+| GET | `/notifications/contractors` | `PROJECT_NOTIFICATION_CREATE` | List active contractors for the dropdown |
 | GET | `/notifications/{id}` | `PROJECT_NOTIFICATION_VIEW` | Notification details |
 | PUT | `/notifications/{id}` | `PROJECT_NOTIFICATION_UPDATE` | Update notification |
 | DELETE | `/notifications/{id}` | `PROJECT_NOTIFICATION_DELETE` | Delete notification |
@@ -830,6 +853,8 @@ Sends email via `AttachmentRequestMail`.
 
 **Notes**:
 - `store` uses `CreateProjectNotificationRequest` for validation; creates via `ProjectNotificationService::create()` which delegates to `EmployeeTaskRequestService`.
+- `GET /notifications/contractors` returns the tenant's active contractor list (`id`, `name`, `number`, `mobile`, `notes`). The create/update forms should send the selected `contractor_id`; `contractor_name` and `contractor_number` are auto-filled from the contractor record if omitted.
+- `GET /notifications/employees-with-locations` returns each project employee with `status` (`available`, `busy`, `offline`, `no_location`) and `status_label`, plus distance from the task location. Status is derived from today's attendance, active task assignment, and GPS freshness.
 - `confirm-receive`/`start`/`end` use `StartTaskRequest`/`EndTaskRequest` from the EmployeeTask module and return `EmployeeTaskRequestPresenter` responses.
 - `takeAction` validates `internal_procedure_setting_id` as required UUID existing in `procedure_settings`.
 - The mobile inbox (`/my-inbox`) only returns notifications with `status = approved`. After `POST /notifications/{id}/confirm-receive`, the task moves to `in_progress` and appears in `/my-tasks` instead.
@@ -1106,6 +1131,21 @@ Registered in `ProjectManagementServiceProvider`. Used for testing project share
 5. Assigns newly created permissions to all existing "Project Admin" roles (`is_default = true`)
 
 **Translation Generation**: Maps known actions (`view`, `list`, `create`, `update`, `delete`, `assign`, `export`, `activate`) and submodules to Arabic/English titles. Falls back to `ucfirst()` for unknown values.
+
+---
+
+#### `ContractorSeeder`
+
+**File**: `Modules\Project\ProjectManagement\Database\Seeders\ContractorSeeder`
+
+**Scope**: Per tenant (reads `tenant('id')` for `company_id`).
+
+**Process**:
+1. Seeds the predefined list of 23 contractors for the current tenant.
+2. Auto-generates contractor numbers (`CNT-001`, `CNT-002`, ...).
+3. Uses `firstOrCreate` keyed by `company_id` + `name` to remain idempotent.
+
+**Registered in**: `TenantDatabaseSeeder`.
 
 ---
 

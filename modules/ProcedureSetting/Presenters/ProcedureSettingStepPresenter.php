@@ -34,6 +34,7 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'notify_by_email'      => (bool) $this->step->notify_by_email,
             'notify_by_whatsapp'   => (bool) $this->step->notify_by_whatsapp,
             'notify_by_sms'        => (bool) $this->step->notify_by_sms,
+            'notify_by_push'       => (bool) $this->step->notify_by_push,
             'skipping_period'      => $this->step->skipping_period,
             'escalation_management_hierarchy_id' => $this->step->escalation_management_hierarchy_id,
             'escalation_management_hierarchy'    => $this->escalationManagementHierarchyPayload(),

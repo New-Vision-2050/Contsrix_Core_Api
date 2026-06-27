@@ -9,6 +9,7 @@ use Database\Seeders\ArchiveLibraryFolderLimitSeeder;
 use Modules\ArchiveLibrary\Folder\Database\Seeders\OfficialDocumentsFolderSeeder;
 use Modules\DocumentType\Database\Seeders\DocumentTypeSeederTableSeeder;
 use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
+use Modules\Project\ProjectManagement\Database\Seeders\ContractorSeeder;
 use Modules\Project\ProjectType\Database\Seeders\ProjectTypeSeeder;
 use Modules\Project\ProjectType\Database\Seeders\SchemaSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
@@ -85,6 +86,7 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(WebsiteOurServiceSeeder::class);
         $this->call(ProjectTypeSeeder::class);
         $this->call(SchemaSeeder::class);
+        $this->call(ContractorSeeder::class);
 
         $this->call(WorkFlowForBranchesSeeder::class);
         $this->call(InternalProcedureSettingsSeeder::class);

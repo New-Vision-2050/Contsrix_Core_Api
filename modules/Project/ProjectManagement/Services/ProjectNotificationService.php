@@ -25,6 +25,7 @@ use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\UpdateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
+use Modules\Project\ProjectManagement\Models\Contractor;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Repositories\ProjectNotificationRepository;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
@@ -48,9 +49,11 @@ class ProjectNotificationService
             ? (string) $creator->userProfessionalData->branch_id
             : null;
 
+        $data = $this->enrichContractorData($dto->toArray());
+
         // 1. Create the ProjectNotification row (observer auto-generates notification_number).
         $notification = $this->repository->create([
-            ...$dto->toArray(),
+            ...$data,
             'company_id' => $companyId,
             'status' => 'pending',
         ]);
@@ -267,7 +270,9 @@ class ProjectNotificationService
     {
         $notification = $this->get($id);
 
-        $this->repository->update($id, $dto->toArray());
+        $data = $this->enrichContractorData($dto->toArray());
+
+        $this->repository->update($id, $data);
 
         return $notification->fresh();
     }
@@ -550,5 +555,33 @@ class ProjectNotificationService
         }
 
         return $task;
+    }
+
+    /**
+     * When a contractor_id is provided, auto-fill contractor_name and
+     * contractor_number from the contractor record if they are not already
+     * supplied by the frontend.
+     */
+    private function enrichContractorData(array $data): array
+    {
+        if (empty($data['contractor_id'])) {
+            return $data;
+        }
+
+        $contractor = Contractor::query()->find($data['contractor_id']);
+
+        if (! $contractor) {
+            return $data;
+        }
+
+        if (empty($data['contractor_name'])) {
+            $data['contractor_name'] = $contractor->name;
+        }
+
+        if (empty($data['contractor_number'])) {
+            $data['contractor_number'] = $contractor->number;
+        }
+
+        return $data;
     }
 }

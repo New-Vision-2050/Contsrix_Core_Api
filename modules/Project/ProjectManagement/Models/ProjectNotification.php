@@ -37,11 +37,13 @@ class ProjectNotification extends Model implements HasMedia
         'notification_type',
         'severity',
         'work_type',
-        'magdy_number',
+        'feeder_number',
         'work_description',
+        'contractor_id',
         'contractor_name',
         'contractor_number',
         'contractor_technical_number',
+        'contractor_technical_name',
         'contractor_category',
         'contractor_notes',
         'contractor_mobile',
@@ -89,6 +91,11 @@ class ProjectNotification extends Model implements HasMedia
     public function project(): BelongsTo
     {
         return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
+    }
+
+    public function contractor(): BelongsTo
+    {
+        return $this->belongsTo(Contractor::class, 'contractor_id')->withoutGlobalScopes();
     }
 
     public function employeeTask(): BelongsTo

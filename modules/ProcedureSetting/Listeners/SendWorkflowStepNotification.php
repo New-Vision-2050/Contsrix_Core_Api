@@ -8,12 +8,14 @@ use Illuminate\Support\Facades\Log;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
 use Modules\ProcedureSetting\Events\WorkflowStepActivated;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
+use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
 use Modules\Process\Services\WorkflowNotifierRegistry;
 use Modules\User\Models\User;
 
 /**
  * Central listener that handles all notification channels when a workflow step becomes active:
  * - Real-time broadcast (WebSocket) via EmployeeTaskNotification + InboxCountsUpdated
+ * - Push notification (FCM) (if templateStep->notify_by_push)
  * - Email notification (if templateStep->notify_by_email)
  * - SMS notification (if templateStep->notify_by_sms)
  */
@@ -33,10 +35,13 @@ class SendWorkflowStepNotification
             return;
         }
 
-        // 1. Real-time broadcast (always sent regardless of email/SMS flags)
+        // 1. Real-time broadcast (always sent regardless of email/SMS/push flags)
         $this->broadcastRealTime($event);
 
-        // 2. Resolve notification channels from template flags
+        // 2. Push notification (FCM) when the step is configured for it
+        WorkflowPushNotificationService::sendForStep($templateStep, $userIds);
+
+        // 3. Resolve notification channels from template flags
         $channels = [];
         if ($templateStep->notify_by_email) {
             $channels[] = 'mail';
@@ -123,4 +128,5 @@ class SendWorkflowStepNotification
             ));
         }
     }
+
 }
