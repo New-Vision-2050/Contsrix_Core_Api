@@ -114,8 +114,8 @@ class ProjectNotificationService
     {
         $filters = $dto->toFilters();
         $filters['assigned_user_id'] = $userId;
-        // Mobile "My Tasks" tab shows notifications that are already started,
-        // finished, or rejected: in_progress, completed, rejected.
+        // Mobile "My Tasks" tab shows notifications that are approved, started,
+        // finished, or rejected.
         $filters['status'] = 'approved,in_progress,completed,rejected';
 
         return $this->repository->paginated(
@@ -126,8 +126,8 @@ class ProjectNotificationService
     }
 
     /**
-     * Mobile endpoint: employee inbox of notifications waiting for the employee's
-     * workflow action. Items are selected from the process table where the linked
+     * Mobile endpoint: inbox of pending notifications that still need workflow
+     * action. Items are selected from the process table where the linked
      * project_notification_task has an in-progress process with a pending step
      * assigned to the current user.
      */
@@ -135,7 +135,7 @@ class ProjectNotificationService
     {
         $filters = $dto->toFilters();
         $filters['workflow_inbox_for_user'] = $userId;
-        // Inbox holds notifications that still need workflow action: pending or approved.
+        // Inbox holds pending notifications that still need workflow approval.
         $filters['status'] = 'pending';
 
         return $this->repository->paginated(
