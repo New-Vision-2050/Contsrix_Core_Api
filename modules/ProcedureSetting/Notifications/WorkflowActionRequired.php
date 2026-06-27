@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Notifications;
 
 use App\Notifications\Drivers\SMS\MoraSms;
+use App\Notifications\Drivers\WhatsApp\TwilioWhatsApp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -57,6 +58,16 @@ class WorkflowActionRequired extends Notification
             ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]));
     }
 
+    public function toWhatsapp(object $notifiable): TwilioWhatsApp
+    {
+        $driver = $this->resolveWhatsAppDriver($notifiable);
+        $stepName = $this->templateStep->name ?? 'Workflow Step';
+
+        return $driver
+            ->to($notifiable->phone)
+            ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]));
+    }
+
     private function resolveSmsDriver(object $notifiable): MoraSms
     {
         if (! property_exists($notifiable, 'phone_code') || ! $notifiable->phone_code) {
@@ -72,5 +83,10 @@ class WorkflowActionRequired extends Notification
         }
 
         return new MoraSms;
+    }
+
+    private function resolveWhatsAppDriver(object $notifiable): TwilioWhatsApp
+    {
+        return new TwilioWhatsApp;
     }
 }

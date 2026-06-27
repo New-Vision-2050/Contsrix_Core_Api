@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Services;
 
-use Illuminate\Database\Eloquent\Collection;
 use Modules\Attendance\Models\Attendance;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Support\GeoDistance;
@@ -24,7 +23,7 @@ class ProjectNotificationLocationService
         // 1. Get user IDs assigned to the project.
         $userIds = ProjectEmployee::withoutGlobalScopes()
             ->where('project_id', $projectId)
-            ->when($companyId, fn($q) => $q->where('company_id', $companyId))
+            ->when($companyId, fn ($q) => $q->where('company_id', $companyId))
             ->pluck('user_id')
             ->filter()
             ->unique()
@@ -34,14 +33,20 @@ class ProjectNotificationLocationService
             return [];
         }
 
-        // 2. Batch-query today's attendances for ALL project employees at once.
-        $attendances = Attendance::whereIn('user_id', $userIds)
+        // 2. Batch-query the latest attendance per user for today only.
+        $latestAttendanceSubquery = Attendance::whereIn('user_id', $userIds)
             ->whereBetween('clock_in_time', [now()->startOfDay(), now()->endOfDay()])
             ->where('is_absent', false)
             ->where('is_holiday', false)
-            ->orderByDesc('clock_in_time')
-            ->get()
+            ->select('user_id', \DB::raw('MAX(clock_in_time) as latest_clock_in'))
             ->groupBy('user_id');
+
+        $attendances = Attendance::joinSub($latestAttendanceSubquery, 'latest_attendance', function ($join) {
+            $join->on('attendances.user_id', '=', 'latest_attendance.user_id')
+                ->on('attendances.clock_in_time', '=', 'latest_attendance.latest_clock_in');
+        })
+            ->get()
+            ->keyBy('user_id');
 
         // 3. Get users with names.
         $users = User::whereIn('id', $userIds)->get()->keyBy('id');
@@ -58,25 +63,23 @@ class ProjectNotificationLocationService
         $results = [];
         foreach ($userIds as $userId) {
             $user = $users->get($userId);
-            if (!$user) {
+            if (! $user) {
                 continue;
             }
 
-            $userAttendances = $attendances->get($userId);
-            $attendance = $userAttendances?->first();
+            $attendance = $attendances->get($userId);
 
+            // Get the latest tracking point (location_tracking is sorted ascending by timestamp).
             $latestPoint = null;
-            if ($attendance && !empty($attendance->location_tracking)) {
-                $tracking = collect($attendance->location_tracking)
-                    ->sortByDesc(fn($p) => strtotime($p['timestamp'] ?? 'now'))
-                    ->first();
-                if ($tracking) {
+            if ($attendance && ! empty($attendance->location_tracking)) {
+                $tracking = end($attendance->location_tracking);
+                if (is_array($tracking)) {
                     $latestPoint = $tracking;
                 }
             }
 
             // Fallback to clock-in location.
-            if (!$latestPoint && $attendance && !empty($attendance->clock_in_location)) {
+            if (! $latestPoint && $attendance && ! empty($attendance->clock_in_location)) {
                 $latestPoint = array_merge($attendance->clock_in_location, [
                     'timestamp' => $attendance->clock_in_time?->format('Y-m-d H:i:s'),
                     'type' => 'clock_in',
@@ -96,7 +99,7 @@ class ProjectNotificationLocationService
             }
 
             $status = $this->deriveEmployeeStatus(
-                $attendance !== null,
+                $attendance,
                 $latestPoint !== null,
                 in_array($userId, $busyUserIds, true),
                 $latestPoint['timestamp'] ?? null,
@@ -126,14 +129,19 @@ class ProjectNotificationLocationService
 
         // 6. Sort by distance (nulls last).
         usort($results, function ($a, $b) {
-            if ($a['distance_meters'] === null) return 1;
-            if ($b['distance_meters'] === null) return -1;
+            if ($a['distance_meters'] === null) {
+                return 1;
+            }
+            if ($b['distance_meters'] === null) {
+                return -1;
+            }
+
             return $a['distance_meters'] <=> $b['distance_meters'];
         });
 
         // 7. Filter by radius if provided.
         if ($radiusMeters !== null) {
-            $results = array_filter($results, fn($r) => $r['distance_meters'] === null || $r['distance_meters'] <= $radiusMeters);
+            $results = array_filter($results, fn ($r) => $r['distance_meters'] === null || $r['distance_meters'] <= $radiusMeters);
             $results = array_values($results);
         }
 
@@ -146,28 +154,33 @@ class ProjectNotificationLocationService
     }
 
     private function deriveEmployeeStatus(
-        bool $hasAttendance,
+        ?Attendance $attendance,
         bool $hasLocation,
         bool $isBusy,
         ?string $lastUpdateTimestamp,
     ): string {
-        if (!$hasAttendance) {
+        if (! $attendance) {
             return 'offline';
+        }
+
+        // Clocked out / completed for today.
+        if ($attendance->clock_out_time !== null || $attendance->status === Attendance::STATUS_COMPLETED) {
+            return 'out';
         }
 
         if ($isBusy) {
             return 'busy';
         }
 
-        if (!$hasLocation) {
+        if (! $hasLocation) {
             return 'no_location';
         }
 
-        // Check freshness: < 15 min = available.
+        // Check freshness: < 15 min = available, otherwise not connected.
         if ($lastUpdateTimestamp) {
             $minutesAgo = now()->parse($lastUpdateTimestamp)->diffInMinutes(now());
             if ($minutesAgo > 15) {
-                return 'no_location';
+                return 'not_connected';
             }
         }
 
@@ -184,6 +197,8 @@ class ProjectNotificationLocationService
             'offline' => ['ar' => 'غير متصل', 'en' => 'Offline'],
             'no_location' => ['ar' => 'لا يوجد موقع', 'en' => 'No Location'],
             'available_far' => ['ar' => 'متاح بعيد', 'en' => 'Available Far'],
+            'not_connected' => ['ar' => 'لا يوجد تحديث', 'en' => 'Not Connected'],
+            'out' => ['ar' => 'خارج', 'en' => 'Out'],
         ];
 
         return $labels[$status][$locale] ?? $status;
@@ -199,6 +214,7 @@ class ProjectNotificationLocationService
 
         if ($meters >= 1000) {
             $km = round($meters / 1000, 1);
+
             return $locale === 'ar' ? "{$km} كم" : "{$km} km";
         }
 

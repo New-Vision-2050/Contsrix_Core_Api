@@ -7,6 +7,7 @@ namespace Modules\Setting\Requests\driver;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Setting\Commands\Drivers\UpdateMailCommand;
 use Modules\Setting\Commands\Drivers\UpdateMoraSMSCommand;
+use Modules\Setting\Commands\Drivers\UpdateTwilioWhatsAppCommand;
 use Modules\Setting\Commands\UpdateLoginWayCommand;
 use Modules\Setting\DTO\CreateLoginWayDTO;
 use Modules\Setting\DTO\CreateSettingDTO;
@@ -50,6 +51,14 @@ class UpdateDriverRequest extends FormRequest
                     smsMoraKey: $config["SMS_MORA_KEY"],
                     smsMoraUser: $config["SMS_MORA_USER"],
                     smsMoraSender: $config["SMS_MORA_SENDER"],
+                );
+            }elseif ($driver->driver_type == "whatsapp" && $driver->name == "twilio")
+            {
+                return new UpdateTwilioWhatsAppCommand(
+                    id: Uuid::fromString($this->route('id')),
+                    twilioSid: $config["TWILIO_SID"],
+                    twilioAuthToken: $config["TWILIO_AUTH_TOKEN"],
+                    twilioWhatsAppFrom: $config["TWILIO_WHATSAPP_FROM"],
                 );
             }
 

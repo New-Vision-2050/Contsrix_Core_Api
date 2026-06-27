@@ -18,6 +18,7 @@ use Modules\User\Models\User;
  * - Push notification (FCM) (if templateStep->notify_by_push)
  * - Email notification (if templateStep->notify_by_email)
  * - SMS notification (if templateStep->notify_by_sms)
+ * - WhatsApp notification (if templateStep->notify_by_whatsapp)
  */
 class SendWorkflowStepNotification
 {
@@ -49,12 +50,15 @@ class SendWorkflowStepNotification
         if ($templateStep->notify_by_sms) {
             $channels[] = 'sms';
         }
+        if ($templateStep->notify_by_whatsapp) {
+            $channels[] = 'whatsapp';
+        }
 
         if ($channels === []) {
             return;
         }
 
-        // 3. Send Laravel Notifications (email + SMS) to each user
+        // 4. Send Laravel Notifications (email + SMS + WhatsApp) to each user
         $users = User::query()->whereIn('id', $userIds)->get();
 
         foreach ($users as $user) {
@@ -98,6 +102,14 @@ class SendWorkflowStepNotification
                 'process_step_id' => $event->processStep->id,
             ]);
             $available = array_values(array_diff($available, ['sms']));
+        }
+
+        if (in_array('whatsapp', $available, true) && trim((string) $user->phone) === '') {
+            Log::warning('WorkflowActionRequired whatsapp skipped: user has no phone', [
+                'user_id' => $user->id,
+                'process_step_id' => $event->processStep->id,
+            ]);
+            $available = array_values(array_diff($available, ['whatsapp']));
         }
 
         return $available;
