@@ -84,7 +84,7 @@ class ProjectNotificationPresenter
         ];
     }
 
-    public function toListArray(): array
+    public function toListArray(bool $fullEmployeeTask = false): array
     {
         $n = $this->notification;
 
@@ -111,15 +111,17 @@ class ProjectNotificationPresenter
                 ? ['id' => $n->assignedUser->id, 'name' => $n->assignedUser->name]
                 : null,
             'employee_task'               => $n->relationLoaded('employeeTask') && $n->employeeTask
-                ? [
-                    'id'             => $n->employeeTask->id,
-                    'status'         => $n->employeeTask->status,
-                    'serial_number'  => $n->employeeTask->serial_number,
-                    'duration_hours' => $n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null,
-                    'user'           => $n->employeeTask->relationLoaded('user') && $n->employeeTask->user
-                        ? ['id' => $n->employeeTask->user->id, 'name' => $n->employeeTask->user->name]
-                        : null,
-                ]
+                ? ($fullEmployeeTask
+                    ? EmployeeTaskRequestPresenter::single($n->employeeTask)
+                    : [
+                        'id'             => $n->employeeTask->id,
+                        'status'         => $n->employeeTask->status,
+                        'serial_number'  => $n->employeeTask->serial_number,
+                        'duration_hours' => $n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null,
+                        'user'           => $n->employeeTask->relationLoaded('user') && $n->employeeTask->user
+                            ? ['id' => $n->employeeTask->user->id, 'name' => $n->employeeTask->user->name]
+                            : null,
+                    ])
                 : null,
         ];
     }
@@ -129,11 +131,11 @@ class ProjectNotificationPresenter
         return (new self($notification))->toArray();
     }
 
-    public static function collection(iterable $notifications): array
+    public static function collection(iterable $notifications, bool $fullEmployeeTask = false): array
     {
         $result = [];
         foreach ($notifications as $notification) {
-            $result[] = (new self($notification))->toListArray();
+            $result[] = (new self($notification))->toListArray($fullEmployeeTask);
         }
         return $result;
     }
