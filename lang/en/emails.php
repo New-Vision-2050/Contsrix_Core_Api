@@ -34,6 +34,8 @@ return [
     'workflow-action-required-badge' => 'Pending Review',
     'workflow-action-required-message' => 'You have a new workflow approval step waiting for your review. Please open the system and take the required action.',
     'workflow-action-required-sms' => 'Action required in Constrix: :step',
+    'workflow-push-action-required-title' => 'Action Required',
+    'workflow-push-action-required-body' => 'You have a new workflow approval step waiting for your review.',
     'workflow-step-name' => 'Step Name',
     'workflow-step-order' => 'Step Order',
     'workflow-automated-message' => 'This is an automated message from Constrix. Please do not reply to this email.',

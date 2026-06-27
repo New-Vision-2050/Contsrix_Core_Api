@@ -22,6 +22,7 @@ class ProjectNotificationRepository
         return ProjectNotification::query()
             ->with([
                 'project',
+                'contractor',
                 'assignedUser',
                 'creator',
                 'media',
@@ -39,7 +40,7 @@ class ProjectNotificationRepository
     public function paginated(array $filters, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
         $query = ProjectNotification::filter($filters)
-            ->with(['assignedUser', 'project', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting']);
+            ->with(['assignedUser', 'project', 'contractor', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting']);
 
         $this->applySorting($query, $sort);
 
@@ -56,7 +57,7 @@ class ProjectNotificationRepository
         $query = ProjectNotification::query()
             ->where('assigned_user_id', $userId)
             ->filter($filters)
-            ->with(['assignedUser', 'project', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting']);
+            ->with(['assignedUser', 'project', 'contractor', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting']);
 
         $this->applySorting($query, $sort);
 

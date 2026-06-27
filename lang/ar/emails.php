@@ -34,6 +34,8 @@ return [
     'workflow-action-required-badge' => 'مهمة بانتظار المراجعة',
     'workflow-action-required-message' => 'لديك مرحلة اعتماد جديدة تحتاج إلى المراجعة واتخاذ الإجراء المناسب من خلال النظام.',
     'workflow-action-required-sms' => 'إجراء مطلوب في Constrix: :step',
+    'workflow-push-action-required-title' => 'إجراء مطلوب',
+    'workflow-push-action-required-body' => 'لديك مرحلة اعتماد جديدة بانتظار مراجعتك.',
     'workflow-step-name' => 'اسم المرحلة',
     'workflow-step-order' => 'ترتيب المرحلة',
     'workflow-automated-message' => 'هذه رسالة آلية من نظام Constrix، برجاء عدم الرد على هذا البريد.',

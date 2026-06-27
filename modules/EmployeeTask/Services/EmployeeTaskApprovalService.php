@@ -15,6 +15,7 @@ use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
@@ -320,6 +321,8 @@ final class EmployeeTaskApprovalService
 
     private function dispatchStepNotifications(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $userIds): void
     {
+        WorkflowPushNotificationService::sendForStep($step, $userIds);
+
         $channels = [];
         if ($step->notify_by_email) {
             $channels[] = 'mail';

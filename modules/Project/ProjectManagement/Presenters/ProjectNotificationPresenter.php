@@ -23,11 +23,13 @@ class ProjectNotificationPresenter
             'notification_type'           => $n->notification_type,
             'severity'                    => $n->severity,
             'work_type'                   => $n->work_type,
-            'magdy_number'                => $n->magdy_number,
+            'feeder_number'               => $n->feeder_number,
             'work_description'            => $n->work_description,
+            'contractor_id'               => $n->contractor_id,
             'contractor_name'             => $n->contractor_name,
             'contractor_number'           => $n->contractor_number,
             'contractor_technical_number' => $n->contractor_technical_number,
+            'contractor_technical_name'   => $n->contractor_technical_name,
             'contractor_category'         => $n->contractor_category,
             'contractor_notes'            => $n->contractor_notes,
             'contractor_mobile'           => $n->contractor_mobile,
@@ -61,6 +63,14 @@ class ProjectNotificationPresenter
             'project'                     => $n->relationLoaded('project') && $n->project
                 ? ['id' => $n->project->id, 'name' => $n->project->name]
                 : null,
+            'contractor'                  => $n->relationLoaded('contractor') && $n->contractor
+                ? [
+                    'id'     => $n->contractor->id,
+                    'name'   => $n->contractor->name,
+                    'number' => $n->contractor->number,
+                    'mobile' => $n->contractor->mobile,
+                ]
+                : null,
             'employee_task'               => $n->relationLoaded('employeeTask') && $n->employeeTask
                 ? EmployeeTaskRequestPresenter::single($n->employeeTask)
                 : null,
@@ -84,8 +94,9 @@ class ProjectNotificationPresenter
             'notification_type'           => $n->notification_type,
             'work_type'                   => $n->work_type,
             'severity'                    => $n->severity,
+            'contractor_id'               => $n->contractor_id,
             'contractor_name'             => $n->contractor_name,
-            'magdy_number'                => $n->magdy_number,
+            'feeder_number'               => $n->feeder_number,
             'status'                      => $n->status,
             'status_label'                => $this->statusLabel($n->status),
             'task_date'                   => $n->task_date?->format('Y-m-d'),

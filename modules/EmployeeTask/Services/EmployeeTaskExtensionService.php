@@ -19,6 +19,7 @@ use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
+use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
 use Modules\User\Models\User;
 final class EmployeeTaskExtensionService
 {
@@ -247,6 +248,8 @@ final class EmployeeTaskExtensionService
 
     private function dispatchStepNotifications(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $userIds): void
     {
+        WorkflowPushNotificationService::sendForStep($step, $userIds);
+
         $channels = [];
         if ($step->notify_by_email) {
             $channels[] = 'mail';
