@@ -148,11 +148,15 @@ class ProjectNotificationController extends Controller
         $paginator->getCollection()->loadMissing([
             'assignedUser',
             'employeeTask.user',
+            'employeeTask.sessions',
+            'employeeTask.employeeTaskType',
+            'employeeTask.currentProcedureStep.actionTakers.user',
+            'employeeTask.media',
             'employeeTask.createProjectNotificationTaskProcedureSetting',
         ]);
 
         return Json::items(
-            ProjectNotificationPresenter::collection($paginator->items()),
+            ProjectNotificationPresenter::collection($paginator->items(), true),
             paginationSettings: [
                 'total' => $paginator->total(),
                 'per_page' => $paginator->perPage(),
@@ -177,11 +181,15 @@ class ProjectNotificationController extends Controller
         $paginator->getCollection()->loadMissing([
             'assignedUser',
             'employeeTask.user',
+            'employeeTask.sessions',
+            'employeeTask.employeeTaskType',
+            'employeeTask.currentProcedureStep.actionTakers.user',
+            'employeeTask.media',
             'employeeTask.createProjectNotificationTaskProcedureSetting',
         ]);
 
         return Json::items(
-            ProjectNotificationPresenter::collection($paginator->items()),
+            ProjectNotificationPresenter::collection($paginator->items(), true),
             paginationSettings: [
                 'total' => $paginator->total(),
                 'per_page' => $paginator->perPage(),
