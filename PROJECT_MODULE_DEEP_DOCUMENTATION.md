@@ -628,7 +628,7 @@ Key methods:
 - `approve(string $id, string $userId): ProjectNotification` — Approves the notification; if the linked task has an active workflow process, it advances that too.
 - `reject(string $id, string $userId, string $reason): ProjectNotification`
 - `syncNotificationStatusFromTask(ProjectNotification $notification, $task): void` — Maps task status to notification status.
-- `confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile confirm-receive. Starts the linked task and moves the notification from the inbox (`approved`) to the assigned tasks list (`in_progress`). Form key: `ConfirmProjectNotificationPresence`.
+- `confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile confirm-receive. If the linked task is still `pending`, it is auto-approved first, then the task is started. This moves the notification from the inbox (`approved`) to the assigned tasks list (`in_progress`). Form key: `ConfirmProjectNotificationPresence`.
 - `startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile: backward-compatible alias that delegates to `confirmReceive()` internally.
 - `endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest` — Mobile: employee ends the linked task. Form key: `EndProjectNotificationTask`.
 - `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a generic internal procedure action (e.g., `UpdateProjectNotificationTask`).
@@ -971,10 +971,11 @@ Presents request with: all scalar fields, `type` (outgoing/incoming based on sen
 
 **File**: `Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter`
 
-- `toArray(): array` — Transforms a `ProjectNotification` into: all scalar fields, nested `project` (id/name/serial_number), `assigned_user` (id/name) — dashboard-selected user, `created_by` (id/name), `employee_task` (id/serial_number/status/status_label/user), `status_label`, `internal_procedure_setting_id` (confirm-receive procedure setting ID for the linked employee task, used by `POST /projects/notifications/{id}/confirm-receive`), `attachments` (media URLs), and timestamps.
+- `toArray(): array` — Transforms a `ProjectNotification` into: all scalar fields, nested `project` (id/name/serial_number), `assigned_user` (id/name) — dashboard-selected user, `created_by` (id/name), `employee_task` (id/serial_number/status/status_label/duration_hours/user), `status_label`, `internal_procedure_setting_id` (confirm-receive procedure setting ID for the linked employee task, used by `POST /projects/notifications/{id}/confirm-receive`), `attachments` (media URLs), and timestamps.
 - `static single(ProjectNotification $notification): array` — Single notification response.
 - `static detail(ProjectNotification $notification): array` — Alias for `single()`.
-- `static collection(array $notifications): array` — Maps a collection through `toListArray()`; includes the same `internal_procedure_setting_id` and `employee_task` fields so mobile list/inbox views can call confirm-receive and verify the actual task assignee.
+- `toListArray(): array` — Mobile list/inbox/my-tasks shape: `id`, `notification_number`, `notification_type`, `work_type`, `severity`, `contractor_name`, `magdy_number`, `status`, `status_label`, `task_date`, `duration_hours`, `selected_distance_meters`, `internal_procedure_setting_id`, `violations_count`, `created_at`, `assigned_user`, and `employee_task` (`id`, `status`, `serial_number`, `duration_hours`, `user`).
+- `static collection(array $notifications): array` — Maps a collection through `toListArray()`; includes `internal_procedure_setting_id`, `employee_task`, and `duration_hours` so mobile list/inbox views can call confirm-receive and verify the actual task assignee and duration.
 
 #### `ProjectNotificationEmployeeLocationPresenter`
 

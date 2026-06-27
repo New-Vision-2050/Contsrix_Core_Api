@@ -113,13 +113,13 @@ class ProjectNotificationService
     public function myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator
     {
         $filters = $dto->toFilters();
-        $filters['assigned_user_id'] = $userId;
         // Mobile "My Tasks" tab shows notifications that are approved, started,
         // finished, or rejected.
         $filters['status'] = 'approved,in_progress,completed,rejected';
 
-        return $this->repository->paginated(
+        return $this->repository->paginatedForMyTasks(
             $filters,
+            $userId,
             $dto->perPage ?? 15,
             $dto->sort,
         );
@@ -412,19 +412,27 @@ class ProjectNotificationService
      * Confirm-receive for project notifications: starts the linked task and moves it
      * from the employee inbox (approved) to the assigned tasks list (in_progress).
      * Internally equivalent to startTask, exposed under the confirm-receive semantics.
+     *
+     * If the linked task is still pending, it is auto-approved first so the employee
+     * can start immediately without a separate dashboard approval step.
      */
     public function confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
     {
         $task = $this->linkedTask($notificationId);
+
+        if ($task->status === EmployeeTaskStatus::Pending->value) {
+            $task->update([
+                'status' => EmployeeTaskStatus::Approved->value,
+                'approved_at' => now(),
+            ]);
+        }
 
         return $this->lifecycleService->start($task->id, $dto, $user);
     }
 
     public function startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
     {
-        $task = $this->linkedTask($notificationId);
-
-        return $this->lifecycleService->start($task->id, $dto, $user);
+        return $this->confirmReceive($notificationId, $dto, $user);
     }
 
     public function endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest
