@@ -480,9 +480,9 @@ class ProjectNotificationService
      * Uses whereHas('projectNotification') to find the EmployeeTaskRequest by the
      * notification id, then queries internal_procedure_takens by the task id.
      *
-     * @return array{items: \Illuminate\Database\Eloquent\Collection, summary: array}
+     * @return array{items: \Illuminate\Database\Eloquent\Collection, summary: array, debug?: array}
      */
-    public function procedures(string $notificationId): array
+    public function procedures(string $notificationId, bool $debug = false): array
     {
         $task = EmployeeTaskRequest::query()
             ->whereHas('projectNotification', function ($query) use ($notificationId) {
@@ -494,7 +494,19 @@ class ProjectNotificationService
             throw ProjectNotificationException::linkedTaskNotFound($notificationId);
         }
 
-        return $this->proceduresService->forTask($task->id);
+        $result = $this->proceduresService->forTask($task->id);
+
+        if ($debug) {
+            $result['debug'] = [
+                'notification_id'         => $notificationId,
+                'task_id'                 => $task->id,
+                'is_project_notification' => $task->is_project_notification,
+                'processable_type'        => $task->procedureSettingType()->value,
+                'processable_id'          => $task->id,
+            ];
+        }
+
+        return $result;
     }
 
     private function linkedTask(string $notificationId): EmployeeTaskRequest
