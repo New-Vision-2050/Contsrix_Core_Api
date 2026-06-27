@@ -618,10 +618,10 @@ Manages project notifications — dashboard-created task assignments dispatched 
 Key methods:
 - `create(CreateProjectNotificationDTO $dto): ProjectNotification` — Creates the notification row, then delegates to `EmployeeTaskRequestService::create()` with `InternalProcessForm::CreateProjectNotificationTask->value` as the form key. The linked `EmployeeTaskRequest` gets `is_project_notification = true`, `task_source = 'dashboard'`, and `project_notification_id` set. The `currentLatitude`/`currentLongitude` are explicitly `null` because the admin creates this from the dashboard, not from the employee's current GPS context.
 - `list(FilterProjectNotificationDTO $dto): LengthAwarePaginator` — Paginated list with filters.
-- `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications assigned to the current employee (all statuses after confirm-receive).
-- `myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: approved notifications waiting for the employee to confirm-receive.
-- `inboxCounts(string $userId, array $filters = []): array` — Status counts for the employee's assigned notifications (badges).
-- `filterMetadata(string $userId, array $filters = []): array` — Filter metadata for the mobile filter UI: status counts, project counts, min/max duration.
+- `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications whose linked `EmployeeTaskRequest.user_id` matches the current employee (all statuses after confirm-receive).
+- `myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: approved notifications whose linked task's `user_id` matches the current employee; these are waiting for confirm-receive. Filters by the task's action taker, not the notification's dashboard `assigned_user_id`.
+- `inboxCounts(string $userId, array $filters = []): array` — Status counts for the employee's task-inbox (badges), scoped by linked task `user_id`.
+- `filterMetadata(string $userId, array $filters = []): array` — Filter metadata for the mobile filter UI: status counts, project counts, min/max duration; scoped by linked task `user_id`.
 - `get(string $id): ProjectNotification`
 - `update(string $id, UpdateProjectNotificationDTO $dto): ProjectNotification`
 - `delete(string $id): bool`

@@ -112,7 +112,7 @@ class ProjectNotificationService
     public function myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator
     {
         $filters = $dto->toFilters();
-        $filters['assigned_user_id'] = $userId;
+        $filters['task_user_id'] = $userId;
 
         return $this->repository->paginated(
             $filters,
@@ -129,7 +129,7 @@ class ProjectNotificationService
     public function myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator
     {
         $filters = $dto->toFilters();
-        $filters['assigned_user_id'] = $userId;
+        $filters['task_user_id'] = $userId;
         $filters['status'] = 'approved';
 
         return $this->repository->paginated(
@@ -145,7 +145,9 @@ class ProjectNotificationService
     public function inboxCounts(string $userId, array $filters = []): array
     {
         $query = ProjectNotification::query()
-            ->where('assigned_user_id', $userId);
+            ->whereHas('employeeTask', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
 
         $this->applyDateFilters($query, $filters);
 
@@ -174,7 +176,9 @@ class ProjectNotificationService
     public function filterMetadata(string $userId, array $filters = []): array
     {
         $base = ProjectNotification::query()
-            ->where('assigned_user_id', $userId);
+            ->whereHas('employeeTask', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
 
         $this->applyDateFilters($base, $filters);
 
