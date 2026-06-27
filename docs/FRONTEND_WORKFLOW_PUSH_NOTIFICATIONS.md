@@ -1,74 +1,38 @@
 # Frontend Changes Required – Procedure Step Card
 
-> Backend change: added `notify_by_push` flag to procedure setting steps.
+> Backend change: added `notify_by_push` and Twilio WhatsApp delivery to procedure setting steps.
 > Date: 2026-06-27
 
 ---
 
 ## 1. Summary
 
-The procedure step card / form now needs a new toggle to control **push notifications** (FCM) for action takers.
+The procedure step card / form needs two new notification toggles:
 
-When enabled, the backend sends an FCM push notification to every resolved action-taker user who has a valid `fcm_token`.
+- **Push Notification** (`notify_by_push`) – FCM to the mobile app.
+- **WhatsApp** (`notify_by_whatsapp`) – Twilio WhatsApp message to the user's phone.
+
+Both are sent only when the step is configured for them and the user has a valid device token or phone number.
 
 ---
 
-## 2. New field: `notify_by_push`
+## 2. Step card UI changes
 
-### UI change
+Add two new toggles/checkboxes in the procedure step card, grouped with the existing notification toggles:
 
-Add a new toggle/checkbox in the procedure step card, alongside the existing notification toggles:
-
-- **Email** (`notify_by_email`)
-- **WhatsApp** (`notify_by_whatsapp`)
-- **SMS** (`notify_by_sms`)
-- **Push Notification** (`notify_by_push`) ⭐ **NEW**
+| Existing | New |
+|---|---|
+| Email (`notify_by_email`) | |
+| WhatsApp (`notify_by_whatsapp`) | ✅ already present, now actually delivered |
+| SMS (`notify_by_sms`) | |
+| | **Push Notification** (`notify_by_push`) ⭐ |
 
 Suggested labels:
 
-- EN: `Push Notification`
-- AR: `إشعار التطبيق`
+- `Push Notification` / `إشعار التطبيق`
+- `WhatsApp` / `واتساب` (already exists)
 
-### API contract – send (create/update)
-
-Include the new boolean in the step payload:
-
-```json
-{
-  "notify_by_email": true,
-  "notify_by_whatsapp": false,
-  "notify_by_sms": false,
-  "notify_by_push": true
-}
-```
-
-Validation rules:
-
-- **Create**: `notify_by_push` is `nullable|boolean` (defaults to `false` when omitted).
-- **Update**: `notify_by_push` is `sometimes|boolean`.
-
-### API contract – receive (step response)
-
-The presenter now returns the flag:
-
-```json
-{
-  "notify_by_email": true,
-  "notify_by_whatsapp": false,
-  "notify_by_sms": false,
-  "notify_by_push": true
-}
-```
-
-Use this value to set the initial state of the toggle when editing a step.
-
----
-
-## 3. Step card placement
-
-Place the new toggle immediately after the SMS toggle, before the `skipping_period` / escalation fields.
-
-Example order:
+### Recommended field order
 
 1. Notify by Email
 2. Notify by WhatsApp
@@ -76,6 +40,41 @@ Example order:
 4. **Notify by Push** ⭐
 5. Skipping Period
 6. Escalation Management Hierarchy
+
+---
+
+## 3. API request / response contract
+
+### Create / update payload
+
+```json
+{
+  "notify_by_email": true,
+  "notify_by_whatsapp": true,
+  "notify_by_sms": false,
+  "notify_by_push": true
+}
+```
+
+Validation rules:
+
+- `notify_by_push`: create `nullable|boolean`, update `sometimes|boolean`.
+- `notify_by_whatsapp`: create `nullable|boolean`, update `sometimes|boolean`.
+
+Both default to `false` when omitted.
+
+### Step response (presenter)
+
+```json
+{
+  "notify_by_email": true,
+  "notify_by_whatsapp": true,
+  "notify_by_sms": false,
+  "notify_by_push": true
+}
+```
+
+Use these values to set the initial toggle states when editing a step.
 
 ---
 
@@ -91,7 +90,7 @@ Example order:
   "action_taker_type": "management_hierarchy",
   "action_taker_management_hierarchy_type": "branch_manager",
   "notify_by_email": true,
-  "notify_by_whatsapp": false,
+  "notify_by_whatsapp": true,
   "notify_by_sms": false,
   "notify_by_push": true,
   "skipping_period": 0
@@ -103,31 +102,49 @@ Example order:
 ```json
 {
   "name": "Manager Approval",
+  "notify_by_whatsapp": true,
   "notify_by_push": true
 }
 ```
 
 ---
 
-## 5. No other frontend changes required
+## 5. No new endpoints from the step card
 
-- No new endpoint needs to be called from the step card.
-- No new UI flow is needed.
-- The existing create/update step endpoints handle the new flag.
-
----
-
-## 6. Mobile / FCM notes (for reference)
-
-The backend will handle the actual push delivery. Mobile requirements stay the same as before:
-
-- Mobile app must register/update FCM tokens via `POST /api/v1/user/fcm-token`.
-- A migration was added to flush all existing FCM tokens; users will need to re-register after deployment.
+- The existing create/update step endpoints handle both new flags.
+- No new UI flow is needed beyond the two toggles.
 
 ---
 
-## 7. Migration
+## 6. Admin / DevOps configuration (for reference)
 
-- `2026_06_27_145500_add_notify_by_push_to_procedure_setting_steps.php` adds the column.
+The backend will deliver the actual messages, but the platform needs the following credentials. These are configured in **Settings > Drivers** via the existing driver API.
+
+### WhatsApp driver fields
+
+`PUT /api/v1/settings/driver/{id}`
+
+```json
+{
+  "config": {
+    "TWILIO_SID": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "TWILIO_AUTH_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "TWILIO_WHATSAPP_FROM": "whatsapp:+14155238886"
+  }
+}
+```
+
+`TWILIO_WHATSAPP_FROM` must include the `whatsapp:` prefix (e.g. `whatsapp:+14155238886`).
+
+### Push notification requirements
+
+- Mobile app registers FCM tokens via `POST /api/v1/user/fcm-token`.
+- A migration flushed all existing FCM tokens; users must re-register after deployment.
+
+---
+
+## 7. Migrations
+
+- `2026_06_27_145500_add_notify_by_push_to_procedure_setting_steps.php` adds `notify_by_push`.
 
 Run this migration before testing.

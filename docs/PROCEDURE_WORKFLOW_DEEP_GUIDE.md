@@ -70,11 +70,11 @@ Process-based notifications are now handled centrally. Each module registers a `
 - `SendWorkflowStepNotification` listener handles real-time dispatch through `WorkflowNotifierRegistry` plus email + SMS.
 - `EmployeeTaskWorkflowNotifier` broadcasts `EmployeeTaskNotification` and real inbox counts.
 - `ClientRequestWorkflowNotifier` is registered for `client_request`; it is currently a no-op for real-time step activation and returns zero counts until ClientRequest has an inbox counter.
-- `WorkflowActionRequired` notification sends mail (via `toMail()`) and SMS (via `toSms()`).
+- `WorkflowActionRequired` notification sends mail (via `toMail()`), SMS (via `toSms()`), and WhatsApp (via `toWhatsapp()`).
 
 **For Process-based workflows** (EmployeeTaskRequest, ClientRequest):
 - `ProcessWorkflowService::createProcessStep()` automatically fires `WorkflowStepActivated`.
-- The listener reads `notify_by_email` and `notify_by_sms` flags from `ProcedureSettingStep`.
+- The listener reads `notify_by_email`, `notify_by_sms`, `notify_by_whatsapp`, and `notify_by_push` flags from `ProcedureSettingStep`.
 - Real-time behavior is module-specific through the registered `WorkflowNotifier`.
 - Do not manually broadcast in the create path or notifications will be duplicated.
 
@@ -86,9 +86,10 @@ Process-based notifications are now handled centrally. Each module registers a `
 1. Edit `resources/views/emails/workflowActionRequired.blade.php`.
 2. The notification passes `stepName` and `stepOrder` variables.
 
-### To Customize SMS Content
-1. Edit `Modules\ProcedureSetting\Notifications\WorkflowActionRequired::toSms()`.
-2. Uses `MoraSms` driver by default. Country-specific driver resolution is supported.
+### To Customize SMS / WhatsApp Content
+1. Edit `Modules\ProcedureSetting\Notifications\WorkflowActionRequired::toSms()` or `toWhatsapp()`.
+2. SMS uses `MoraSms` driver by default. WhatsApp uses `TwilioWhatsApp` driver.
+3. Country-specific driver resolution is supported for SMS.
 
 ### To Add a New Action Taker Type
 1. Follow the 10-step guide in **§19.1**.

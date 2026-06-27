@@ -257,6 +257,9 @@ final class EmployeeTaskExtensionService
         if ($step->notify_by_sms) {
             $channels[] = 'sms';
         }
+        if ($step->notify_by_whatsapp) {
+            $channels[] = 'whatsapp';
+        }
 
         if ($channels === []) {
             return;

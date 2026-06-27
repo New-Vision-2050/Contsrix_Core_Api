@@ -40,6 +40,11 @@ return [
         "sender" => env("SMS_MORA_SENDER",""),
         "base_url"=>env("SMS_MORA_BASE_URL","https://mora-sa.com/api/v1/sendsms")
     ],
+    'twilio' => [
+        'sid' => env('TWILIO_SID', ''),
+        'auth_token' => env('TWILIO_AUTH_TOKEN', ''),
+        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM', ''), // e.g. whatsapp:+14155238886
+    ],
     'google' => [
         'maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
     ],
@@ -48,7 +53,7 @@ return [
         'api_key' => env('CALENDARIFIC_API_KEY', 'G2XGP0u6w8FihkwuRxUDzOjjT321JeJ5'),
         'base_url' => env('CALENDARIFIC_BASE_URL', 'https://calendarific.com/api/v2'),
     ],
-    
+
     'firebase' => [
         'credentials' => env('FIREBASE_CREDENTIALS', public_path('firebase_credentials.json')),
     ],
