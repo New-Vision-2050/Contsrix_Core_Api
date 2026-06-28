@@ -6,8 +6,8 @@ namespace Modules\Project\ProjectManagement\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\Project\ProjectManagement\Models\Contractor;
 
 class ContractorSeeder extends Seeder
 {
@@ -16,10 +16,15 @@ class ContractorSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get all companies when no tenant is initialized, otherwise fall back to current tenant.
-        $companyIds = Company::query()->pluck('id');
+        // When running inside a tenant context, only seed the current tenant.
+        // Otherwise, seed every company that exists in the central database.
+        if (tenancy()->initialized) {
+            $companyIds = [tenant()->getTenantKey()];
+        } else {
+            $companyIds = Company::query()->pluck('id')->all();
+        }
 
-        if ($companyIds->isEmpty()) {
+        if (empty($companyIds)) {
             $this->command->warn('No companies found. Contractors not seeded.');
             return;
         }
@@ -50,25 +55,27 @@ class ContractorSeeder extends Seeder
             'شركة التقنية والتشغيل للمقاول',
         ];
 
-        DB::transaction(function () use ($companyIds, $contractors) {
-            foreach ($companyIds as $companyId) {
-                foreach ($contractors as $index => $name) {
-                    $sequence = $index + 1;
+        $now = now();
+        $rows = [];
 
-                    Contractor::firstOrCreate(
-                        [
-                            'company_id' => $companyId,
-                            'name' => $name,
-                        ],
-                        [
-                            'number' => 'CNT-' . str_pad((string) $sequence, 3, '0', STR_PAD_LEFT),
-                            'is_active' => true,
-                        ]
-                    );
-                }
+        foreach ($companyIds as $companyId) {
+            foreach ($contractors as $index => $name) {
+                $rows[] = [
+                    'id'         => (string) Str::uuid(),
+                    'company_id' => $companyId,
+                    'name'       => $name,
+                    'number'     => 'CNT-' . str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT),
+                    'is_active'  => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
             }
-        });
+        }
 
-        $this->command->info('Contractors seeded successfully: ' . count($contractors) . ' contractors x ' . $companyIds->count() . ' companies.');
+        // Use insertOrIgnore so re-running the seeder never triggers the
+        // contractors_company_name_unique duplicate-key error.
+        DB::table('contractors')->insertOrIgnore($rows);
+
+        $this->command->info('Contractors seeded successfully: ' . count($contractors) . ' contractors x ' . count($companyIds) . ' companies.');
     }
 }
