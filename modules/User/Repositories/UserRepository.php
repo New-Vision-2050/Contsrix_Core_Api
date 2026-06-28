@@ -683,14 +683,36 @@ class UserRepository extends BaseRepository
     public function createClientCompany($userId, $companyId)
     {
         $existingUser = $this->findOneBy(["id" => $userId]);
-        $user = $existingUser->replicate();
-        $user->password = null;
-        $user->company_id = $companyId;
-        $user->is_owner = 1;
-        $user->management_hierarchy_id = null;
-        $user->save();
+        $user = $this->model->withoutTenancy()
+            ->withTrashed()
+            ->where('global_company_user_id', $existingUser->global_company_user_id)
+            ->where('company_id', $companyId)
+            ->first();
+
+        if ($user) {
+            if ($user->trashed()) {
+                $user->restore();
+            }
+
+            $user->update([
+                'name' => $existingUser->name,
+                'email' => $existingUser->email,
+                'phone' => $existingUser->phone,
+                'phone_code' => $existingUser->phone_code,
+                'is_owner' => 1,
+                'management_hierarchy_id' => null,
+            ]);
+        } else {
+            $user = $existingUser->replicate();
+            $user->password = null;
+            $user->company_id = $companyId;
+            $user->is_owner = 1;
+            $user->management_hierarchy_id = null;
+            $user->save();
+        }
+
         $this->handleOwnerPermissions($user, $companyId);
-        return $user;
+        return $user->fresh();
 
     }
 }
