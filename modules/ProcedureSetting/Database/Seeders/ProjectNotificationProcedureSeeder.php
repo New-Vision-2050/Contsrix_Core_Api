@@ -39,9 +39,15 @@ class ProjectNotificationProcedureSeeder extends Seeder
             return;
         }
 
-        $companies = Company::query()->pluck('id');
+        // When running inside a tenant context, only seed the current tenant.
+        // Otherwise, seed every company that exists in the central database.
+        if (tenancy()->initialized) {
+            $companies = [tenant()->getTenantKey()];
+        } else {
+            $companies = Company::query()->pluck('id')->all();
+        }
 
-        if ($companies->isEmpty()) {
+        if (empty($companies)) {
             $this->command?->info('No companies found. Nothing to seed.');
 
             return;
@@ -87,23 +93,18 @@ class ProjectNotificationProcedureSeeder extends Seeder
             return ProcedureSetting::withoutGlobalScopes()->findOrFail($existingId);
         }
 
-        $workFlow = WorkFlow::query()->create([
-            'id'         => (string) Str::uuid(),
-            'company_id' => $companyId,
-            'name'       => 'default',
-            'type'       => $type,
-        ]);
+        $workFlow = WorkFlow::defaultForCompany($companyId, $type);
 
         // Mirror branch associations from the company default workflow so the new
         // parent is picked up for the same branches in available-actions.
         // Prefer the project_notification_task default, fall back to employee_task
         // default for backwards compatibility on first migration.
-        $defaultWorkFlow = WorkFlow::query()
+        $defaultWorkFlow = WorkFlow::withoutGlobalScopes()
             ->where('company_id', $companyId)
             ->where('type', $type)
             ->where('name', 'default')
             ->first()
-            ?? WorkFlow::query()
+            ?? WorkFlow::withoutGlobalScopes()
                 ->where('company_id', $companyId)
                 ->where('type', ProcedureSettingType::EmployeeTask->value)
                 ->where('name', 'default')

@@ -32,9 +32,15 @@ class InternalProcedureSettingsSeeder extends Seeder
             return;
         }
 
-        $companies = Company::query()->pluck('id');
+        // When running inside a tenant context, only seed the current tenant.
+        // Otherwise, seed every company that exists in the central database.
+        if (tenancy()->initialized) {
+            $companies = [tenant()->getTenantKey()];
+        } else {
+            $companies = Company::query()->pluck('id')->all();
+        }
 
-        if ($companies->isEmpty()) {
+        if (empty($companies)) {
             $this->command?->info('No companies found. Nothing to seed.');
 
             return;
