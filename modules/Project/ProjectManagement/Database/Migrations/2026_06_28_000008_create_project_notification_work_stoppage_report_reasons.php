@@ -4,10 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateProjectNotificationWorkStoppageReportReasons extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('project_notification_work_stoppage_report_reasons')) {
+            return;
+        }
+
         Schema::create('project_notification_work_stoppage_report_reasons', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('project_notification_work_stoppage_report_id');
@@ -22,11 +26,11 @@ return new class extends Migration
             $table->index('work_stoppage_reason_id', 'pnwsrr_reason_idx');
             $table->index('sort_order', 'pnwsrr_sort_idx');
 
-            $table->foreign('project_notification_work_stoppage_report_id')
+            $table->foreign('project_notification_work_stoppage_report_id', 'pnwsrr_report_fk')
                 ->references('id')
                 ->on('project_notification_work_stoppage_reports')
                 ->cascadeOnDelete();
-            $table->foreign('work_stoppage_reason_id')
+            $table->foreign('work_stoppage_reason_id', 'pnwsrr_reason_fk')
                 ->references('id')
                 ->on('project_notification_work_stoppage_reasons')
                 ->nullOnDelete();
@@ -37,4 +41,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('project_notification_work_stoppage_report_reasons');
     }
-};
+}

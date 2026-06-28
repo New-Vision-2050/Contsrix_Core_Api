@@ -4,10 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateProjectNotificationTaskPostponements extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('project_notification_task_postponements')) {
+            return;
+        }
+
         Schema::create('project_notification_task_postponements', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('company_id');
@@ -32,8 +36,8 @@ return new class extends Migration
             $table->index('process_id', 'pntp_process_idx');
             $table->index('status', 'pntp_status_idx');
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
-            $table->foreign('project_notification_id')->references('id')->on('project_notifications')->cascadeOnDelete();
+            $table->foreign('company_id', 'pntp_company_fk')->references('id')->on('companies')->cascadeOnDelete();
+            $table->foreign('project_notification_id', 'pntp_project_notification_fk')->references('id')->on('project_notifications')->cascadeOnDelete();
         });
     }
 
@@ -41,4 +45,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('project_notification_task_postponements');
     }
-};
+}
