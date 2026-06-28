@@ -85,6 +85,7 @@ class ProjectNotificationService
             itemId: $notification->id,
             durationHours: $dto->durationHours,
             taskDate: $dto->taskDate,
+            taskTime: $dto->taskTime,
             taskLatitude: $dto->taskLatitude,
             taskLongitude: $dto->taskLongitude,
             currentLatitude: null,
@@ -565,6 +566,114 @@ class ProjectNotificationService
         return $notification->fresh();
     }
 
+    /**
+     * Request a workflow-based work resumption for a project notification.
+     * Creates a Process snapshot with the resumption data; the actual record is
+     * created only when the process completes (all steps approved).
+     */
+    public function requestWorkResumption(
+        string $id,
+        RequestProjectNotificationWorkResumptionDTO $dto,
+        string $userId,
+    ): ProjectNotification {
+        $notification = $this->get($id);
+        $task = $this->linkedTask($id);
+
+        $procedureSetting = $dto->internalProcedureSettingId !== null
+            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
+            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
+                $task->procedureSettingType()->value,
+                InternalProcessForm::ProjectNotificationWorkResumption->value,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+
+        if ($procedureSetting === null) {
+            $this->createWorkResumptionRecord($notification, $task, $dto, $userId);
+
+            return $notification->fresh();
+        }
+
+        $metadata = [
+            'form' => InternalProcessForm::ProjectNotificationWorkResumption->value,
+            'update' => [
+                'reasons_resolved' => $dto->reasonsResolved,
+                'safety_notes_reviewed' => $dto->safetyNotesReviewed,
+                'site_ready' => $dto->siteReady,
+                'contractor_notified' => $dto->contractorNotified,
+                'notes' => $dto->notes,
+            ],
+            'files' => $this->stageWorkResumptionFiles($notification, $dto->files),
+            'user_id' => $userId,
+        ];
+
+        $this->employeeTaskRequestService->createLifecycleProcess(
+            $task,
+            InternalProcessForm::ProjectNotificationWorkResumption->value,
+            $metadata,
+            $procedureSetting,
+        );
+
+        return $notification->fresh();
+    }
+
+    /**
+     * Request a workflow-based task postponement for a project notification.
+     * On approval, the linked task's date and time are updated to the new values.
+     */
+    public function requestTaskPostponement(
+        string $id,
+        RequestProjectNotificationTaskPostponementDTO $dto,
+        string $userId,
+    ): ProjectNotification {
+        $notification = $this->get($id);
+        $task = $this->linkedTask($id);
+
+        $procedureSetting = $dto->internalProcedureSettingId !== null
+            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
+            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
+                $task->procedureSettingType()->value,
+                InternalProcessForm::ProjectNotificationTaskPostponement->value,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+
+        if ($procedureSetting === null) {
+            $this->applyTaskPostponement(
+                $notification,
+                $task,
+                $dto->newTaskDate,
+                $dto->newTaskTime,
+                $userId,
+            );
+
+            return $notification->fresh();
+        }
+
+        $metadata = [
+            'form' => InternalProcessForm::ProjectNotificationTaskPostponement->value,
+            'update' => [
+                'new_task_date' => $dto->newTaskDate,
+                'new_task_time' => $dto->newTaskTime,
+                'reason' => $dto->reason,
+            ],
+            'user_id' => $userId,
+        ];
+
+        $this->employeeTaskRequestService->createLifecycleProcess(
+            $task,
+            InternalProcessForm::ProjectNotificationTaskPostponement->value,
+            $metadata,
+            $procedureSetting,
+        );
+
+        return $notification->fresh();
+    }
+
     public function delete(string $id): bool
     {
         $notification = $this->get($id);
@@ -715,6 +824,48 @@ class ProjectNotificationService
         }
 
         return $query->exists();
+    }
+
+    /**
+     * Apply a task postponement by updating both the notification and the linked
+     * employee task with the new date and time. Also stores a historical record.
+     */
+    public function applyTaskPostponement(
+        ProjectNotification $notification,
+        EmployeeTaskRequest $task,
+        string $newTaskDate,
+        string $newTaskTime,
+        string $userId,
+        ?string $processId = null,
+        ?string $procedureSettingId = null,
+        ?string $reason = null,
+    ): ProjectNotificationTaskPostponement {
+        $postponement = ProjectNotificationTaskPostponement::query()->create([
+            'company_id' => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'employee_task_request_id' => $task->id,
+            'process_id' => $processId,
+            'procedure_setting_id' => $procedureSettingId,
+            'previous_task_date' => $notification->task_date,
+            'previous_task_time' => $notification->task_time,
+            'new_task_date' => $newTaskDate,
+            'new_task_time' => $newTaskTime,
+            'reason' => $reason,
+            'status' => 'approved',
+            'requested_by' => $userId,
+        ]);
+
+        $notification->update([
+            'task_date' => $newTaskDate,
+            'task_time' => $newTaskTime,
+        ]);
+
+        $task->update([
+            'task_date' => $newTaskDate,
+            'task_time' => $newTaskTime,
+        ]);
+
+        return $postponement;
     }
 
     public function syncNotificationStatusFromTask(ProjectNotification $notification, $task): void
@@ -964,6 +1115,65 @@ class ProjectNotificationService
 
         foreach ($files as $file) {
             $report->addMedia($file)
+                ->toMediaCollection('attachments');
+        }
+    }
+
+    private function createWorkResumptionRecord(
+        ProjectNotification $notification,
+        EmployeeTaskRequest $task,
+        RequestProjectNotificationWorkResumptionDTO $dto,
+        string $userId,
+    ): ProjectNotificationWorkResumption {
+        $resumption = ProjectNotificationWorkResumption::query()->create([
+            'company_id' => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'employee_task_request_id' => $task->id,
+            'requested_by' => $userId,
+            'status' => 'approved',
+            'reasons_resolved' => $dto->reasonsResolved,
+            'safety_notes_reviewed' => $dto->safetyNotesReviewed,
+            'site_ready' => $dto->siteReady,
+            'contractor_notified' => $dto->contractorNotified,
+            'notes' => $dto->notes,
+        ]);
+
+        $this->attachWorkResumptionFiles($resumption, $dto->files);
+
+        return $resumption;
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     * @return list<int>
+     */
+    private function stageWorkResumptionFiles(ProjectNotification $notification, ?array $files): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($files as $file) {
+            $media = $notification->addMedia($file)
+                ->toMediaCollection('work_resumption_attachments');
+            $ids[] = $media->id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     */
+    private function attachWorkResumptionFiles(ProjectNotificationWorkResumption $resumption, ?array $files): void
+    {
+        if (empty($files)) {
+            return;
+        }
+
+        foreach ($files as $file) {
+            $resumption->addMedia($file)
                 ->toMediaCollection('attachments');
         }
     }

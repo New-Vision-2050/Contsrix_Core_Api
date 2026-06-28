@@ -17,6 +17,8 @@ use Modules\Project\ProjectManagement\Models\ProjectNotificationFine;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationTaskPostponement;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkResumption;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReason;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason;
@@ -100,6 +102,16 @@ final class ExecuteLifecycleActionOnProcessCompleted
                 $metadata,
             ),
             InternalProcessForm::ProjectNotificationWorkStoppageReport => $this->applyProjectNotificationWorkStoppageReport(
+                $task,
+                $process,
+                $metadata,
+            ),
+            InternalProcessForm::ProjectNotificationWorkResumption => $this->applyProjectNotificationWorkResumption(
+                $task,
+                $process,
+                $metadata,
+            ),
+            InternalProcessForm::ProjectNotificationTaskPostponement => $this->applyProjectNotificationTaskPostponement(
                 $task,
                 $process,
                 $metadata,
@@ -339,6 +351,99 @@ final class ExecuteLifecycleActionOnProcessCompleted
         }
     }
 
+    private function applyProjectNotificationWorkResumption(
+        EmployeeTaskRequest $task,
+        Process $process,
+        array $metadata,
+    ): void {
+        $notification = $task->projectNotification;
+        if ($notification === null) {
+            return;
+        }
+
+        $update = $metadata['update'] ?? [];
+        if ($update === []) {
+            return;
+        }
+
+        $resumption = ProjectNotificationWorkResumption::query()->create([
+            'company_id' => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'employee_task_request_id' => $task->id,
+            'process_id' => $process->id,
+            'procedure_setting_id' => $process->procedure_setting_id,
+            'requested_by' => $metadata['user_id'] ?? null,
+            'status' => 'approved',
+            'reasons_resolved' => $update['reasons_resolved'] ?? false,
+            'safety_notes_reviewed' => $update['safety_notes_reviewed'] ?? false,
+            'site_ready' => $update['site_ready'] ?? false,
+            'contractor_notified' => $update['contractor_notified'] ?? false,
+            'notes' => $update['notes'] ?? null,
+        ]);
+
+        $this->moveStagedWorkResumptionFilesToAttachments($notification, $resumption, $metadata['files'] ?? []);
+    }
+
+    private function applyProjectNotificationTaskPostponement(
+        EmployeeTaskRequest $task,
+        Process $process,
+        array $metadata,
+    ): void {
+        $notification = $task->projectNotification;
+        if ($notification === null) {
+            return;
+        }
+
+        $update = $metadata['update'] ?? [];
+        if ($update === []) {
+            return;
+        }
+
+        ProjectNotificationTaskPostponement::query()->create([
+            'company_id' => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'employee_task_request_id' => $task->id,
+            'process_id' => $process->id,
+            'procedure_setting_id' => $process->procedure_setting_id,
+            'previous_task_date' => $notification->task_date,
+            'previous_task_time' => $notification->task_time,
+            'new_task_date' => $update['new_task_date'] ?? null,
+            'new_task_time' => $update['new_task_time'] ?? null,
+            'reason' => $update['reason'] ?? null,
+            'requested_by' => $metadata['user_id'] ?? null,
+            'status' => 'approved',
+        ]);
+
+        $notification->update([
+            'task_date' => $update['new_task_date'] ?? $notification->task_date,
+            'task_time' => $update['new_task_time'] ?? $notification->task_time,
+        ]);
+
+        $task->update([
+            'task_date' => $update['new_task_date'] ?? $task->task_date,
+            'task_time' => $update['new_task_time'] ?? $task->task_time,
+        ]);
+    }
+
+    /**
+     * @param list<int> $fileIds
+     */
+    private function moveStagedWorkResumptionFilesToAttachments(
+        ProjectNotification $notification,
+        ProjectNotificationWorkResumption $resumption,
+        array $fileIds,
+    ): void {
+        if ($fileIds === []) {
+            return;
+        }
+
+        foreach ($notification->getMedia('work_resumption_attachments') as $media) {
+            if (in_array($media->id, $fileIds, true)) {
+                $media->move($resumption, 'attachments');
+            }
+        }
+    }
+
     /**
      * @param list<int> $fileIds
      */
@@ -396,6 +501,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
             InternalProcessForm::UpdateProjectNotificationSiteStatus->value => 'site_status_update_attachments',
             InternalProcessForm::ProjectNotificationFine->value => 'fine_attachments',
             InternalProcessForm::ProjectNotificationWorkStoppageReport->value => 'work_stoppage_report_attachments',
+            InternalProcessForm::ProjectNotificationWorkResumption->value => 'work_resumption_attachments',
             default => 'update_attachments',
         };
 

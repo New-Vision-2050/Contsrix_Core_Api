@@ -26,6 +26,7 @@ class CreateEmployeeTaskRequest extends FormRequest
             'assignment_responsible_id' => ['nullable', 'uuid'],
             'duration_hours'            => ['required', 'numeric', 'min:0.25', 'max:24'],
             'task_date'                 => ['required', 'date_format:Y-m-d'],
+            'task_time'                 => ['nullable', 'date_format:H:i'],
             'task_latitude'             => ['required', 'numeric', 'between:-90,90'],
             'task_longitude'            => ['required', 'numeric', 'between:-180,180'],
             'current_latitude'            => ['nullable', 'numeric', 'between:-90,90'],
