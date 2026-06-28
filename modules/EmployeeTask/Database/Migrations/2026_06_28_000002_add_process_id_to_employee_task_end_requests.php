@@ -11,14 +11,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employee_task_end_requests', function (Blueprint $table): void {
-            $table->uuid('process_id')->nullable()->after('procedure_setting_id')->index();
+            if (!Schema::hasColumn('employee_task_end_requests', 'process_id')) {
+                $table->uuid('process_id')->nullable()->after('procedure_setting_id')->index();
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('employee_task_end_requests', function (Blueprint $table): void {
-            $table->dropColumn('process_id');
+            if (Schema::hasColumn('employee_task_end_requests', 'process_id')) {
+                $table->dropColumn('process_id');
+            }
         });
     }
 };
