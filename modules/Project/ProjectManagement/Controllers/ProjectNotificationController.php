@@ -25,6 +25,11 @@ use Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter;
 use Modules\Project\ProjectManagement\Requests\CreateProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Requests\FilterProjectNotificationsRequest;
 use Modules\Project\ProjectManagement\Requests\GetProjectNotificationEmployeesRequest;
+use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationFineRequest;
+use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationLocationConfirmationRequest;
+use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationSiteStatusUpdateRequest;
+use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationUpdateRequest;
+use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationWorkStoppageReportRequest;
 use Modules\Project\ProjectManagement\Requests\UpdateProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationLocationService;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationService;
@@ -48,6 +53,46 @@ class ProjectNotificationController extends Controller
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
             ],
+        );
+    }
+
+    /**
+     * GET /projects/notifications/site-statuses
+     *
+     * Returns the active site statuses dropdown for the periodic site status update form.
+     */
+    public function siteStatuses(Request $request): JsonResponse
+    {
+        $statuses = $this->notificationService->listSiteStatuses();
+
+        return Json::items(
+            $statuses->map(static fn ($status) => [
+                'id' => $status->id,
+                'name_ar' => $status->name_ar,
+                'name_en' => $status->name_en,
+                'sort_order' => $status->sort_order,
+            ])->toArray(),
+            message: 'Site statuses retrieved successfully',
+        );
+    }
+
+    /**
+     * GET /projects/notifications/work-stoppage-reasons
+     *
+     * Returns the active work stoppage reasons dropdown for the work stoppage report form.
+     */
+    public function workStoppageReasons(Request $request): JsonResponse
+    {
+        $reasons = $this->notificationService->listWorkStoppageReasons();
+
+        return Json::items(
+            $reasons->map(static fn ($reason) => [
+                'id' => $reason->id,
+                'name_ar' => $reason->name_ar,
+                'name_en' => $reason->name_en,
+                'sort_order' => $reason->sort_order,
+            ])->toArray(),
+            message: 'Work stoppage reasons retrieved successfully',
         );
     }
 
@@ -75,6 +120,111 @@ class ProjectNotificationController extends Controller
         );
 
         return Json::item(ProjectNotificationPresenter::detail($notification));
+    }
+
+    /**
+     * POST /projects/notifications/{id}/request-update
+     *
+     * Submit a workflow-based update request. The new data is stored in the
+     * Process metadata; the actual ProjectNotification row is updated only after
+     * all workflow steps are approved.
+     */
+    public function requestUpdate(RequestProjectNotificationUpdateRequest $request): JsonResponse
+    {
+        $notification = $this->notificationService->requestUpdate(
+            $request->route('id'),
+            $request->toDTO(),
+            (string) $request->user()->id,
+        );
+
+        return Json::item(
+            ProjectNotificationPresenter::detail($notification),
+            message: 'Update request submitted successfully',
+        );
+    }
+
+    /**
+     * POST /projects/notifications/{id}/request-site-status-update
+     *
+     * Submit a workflow-based periodic site status update. The new data is stored
+     * in the Process metadata; the actual site status update record is created only
+     * after all workflow steps are approved.
+     */
+    public function requestSiteStatusUpdate(RequestProjectNotificationSiteStatusUpdateRequest $request): JsonResponse
+    {
+        $notification = $this->notificationService->requestSiteStatusUpdate(
+            $request->route('id'),
+            $request->toDTO(),
+            (string) $request->user()->id,
+        );
+
+        return Json::item(
+            ProjectNotificationPresenter::detail($notification),
+            message: 'Site status update request submitted successfully',
+        );
+    }
+
+    /**
+     * POST /projects/notifications/{id}/request-fine
+     *
+     * Submit a workflow-based fine request. The fine data is stored in the Process
+     * metadata; the actual fine record is created only after all workflow steps
+     * are approved.
+     */
+    public function requestFine(RequestProjectNotificationFineRequest $request): JsonResponse
+    {
+        $notification = $this->notificationService->requestFine(
+            $request->route('id'),
+            $request->toDTO(),
+            (string) $request->user()->id,
+        );
+
+        return Json::item(
+            ProjectNotificationPresenter::detail($notification),
+            message: 'Fine request submitted successfully',
+        );
+    }
+
+    /**
+     * POST /projects/notifications/{id}/confirm-location
+     *
+     * Submit a workflow-based location confirmation. The location data is stored in
+     * the Process metadata; the actual confirmation record is created only after all
+     * workflow steps are approved.
+     */
+    public function confirmLocation(RequestProjectNotificationLocationConfirmationRequest $request): JsonResponse
+    {
+        $notification = $this->notificationService->requestLocationConfirmation(
+            $request->route('id'),
+            $request->toDTO(),
+            (string) $request->user()->id,
+        );
+
+        return Json::item(
+            ProjectNotificationPresenter::detail($notification),
+            message: 'Location confirmation request submitted successfully',
+        );
+    }
+
+    /**
+     * POST /projects/notifications/{id}/request-work-stoppage-report
+     *
+     * Submit a workflow-based work stoppage report. The report data is stored in
+     * the Process metadata; the actual report record is created only after all
+     * workflow steps are approved.
+     */
+    public function requestWorkStoppageReport(RequestProjectNotificationWorkStoppageReportRequest $request): JsonResponse
+    {
+        $notification = $this->notificationService->requestWorkStoppageReport(
+            $request->route('id'),
+            $request->toDTO(),
+            (string) $request->user()->id,
+        );
+
+        return Json::item(
+            ProjectNotificationPresenter::detail($notification),
+            message: 'Work stoppage report request submitted successfully',
+        );
     }
 
     public function destroy(Request $request): JsonResponse
@@ -114,6 +264,7 @@ class ProjectNotificationController extends Controller
         $notification = $this->notificationService->approve(
             $request->route('id'),
             $request->user()->id,
+            $request->input('procedure_setting_id'),
         );
 
         return Json::item(ProjectNotificationPresenter::detail($notification));
@@ -123,12 +274,14 @@ class ProjectNotificationController extends Controller
     {
         $request->validate([
             'reason' => ['required', 'string', 'max:1000'],
+            'procedure_setting_id' => ['nullable', 'string'],
         ]);
 
         $notification = $this->notificationService->reject(
             $request->route('id'),
             $request->user()->id,
             $request->input('reason'),
+            $request->input('procedure_setting_id'),
         );
 
         return Json::item(ProjectNotificationPresenter::detail($notification));
@@ -186,7 +339,16 @@ class ProjectNotificationController extends Controller
             'employeeTask.currentProcedureStep.actionTakers.user',
             'employeeTask.media',
             'employeeTask.createProjectNotificationTaskProcedureSetting',
+            'employeeTask.processes.steps',
         ]);
+
+        $userId = (string) Auth::id();
+        foreach ($paginator->items() as $notification) {
+            $notification->setAttribute(
+                'pending_processes',
+                $this->notificationService->resolvePendingProcessesForInbox($notification, $userId),
+            );
+        }
 
         return Json::items(
             ProjectNotificationPresenter::collection($paginator->items(), true),

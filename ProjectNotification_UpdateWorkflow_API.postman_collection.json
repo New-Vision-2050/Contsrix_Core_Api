@@ -1,0 +1,705 @@
+{
+  "info": {
+    "_postman_id": "project-notification-update-workflow-collection",
+    "name": "Project Notification Update Workflow API",
+    "description": "Workflow-based update for project notifications.\n\nFlow:\n1. POST /projects/notifications/{id}/request-update → submit new data + files (creates a Process).\n2. Approver sees the pending Process step in their inbox.\n3. POST /projects/notifications/{id}/approve → approves the current step.\n4. On final approval the ProjectNotification row is updated with the submitted data and files are moved to the attachments collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "url",
+      "value": "http://localhost/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-bearer-token-here",
+      "type": "string"
+    },
+    {
+      "key": "notification_id",
+      "value": "uuid-here",
+      "type": "string"
+    },
+    {
+      "key": "internal_procedure_setting_id",
+      "value": "uuid-of-updateProjectNotificationTask-internal-procedure",
+      "type": "string",
+      "description": "Optional: specific UpdateProjectNotificationTask internal procedure setting ID."
+    },
+    {
+      "key": "site_status_id",
+      "value": "uuid-of-site-status",
+      "type": "string",
+      "description": "Site status ID from GET /projects/notifications/site-statuses"
+    },
+    {
+      "key": "current_site_status_id",
+      "value": "uuid-of-current-site-status",
+      "type": "string",
+      "description": "Current site status ID from GET /projects/notifications/site-statuses"
+    },
+    {
+      "key": "work_stoppage_reason_id",
+      "value": "uuid-of-work-stoppage-reason",
+      "type": "string",
+      "description": "Work stoppage reason ID from GET /projects/notifications/work-stoppage-reasons"
+    },
+    {
+      "key": "procedure_setting_id",
+      "value": "uuid-of-internal-procedure-setting",
+      "type": "string",
+      "description": "Internal procedure setting ID for the active workflow step"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Submit Update Request (updateProjectNotificationTask)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "notification_type",
+              "value": "اعتماد",
+              "type": "text",
+              "description": "نوع الإشعار"
+            },
+            {
+              "key": "feeder_number",
+              "value": "CNT-2026-00015",
+              "type": "text",
+              "description": "رقم العقدي"
+            },
+            {
+              "key": "work_description",
+              "value": "وصف العمل بعد التعديل",
+              "type": "text",
+              "description": "وصف العمل"
+            },
+            {
+              "key": "contractor_name",
+              "value": "مقاول المشروع",
+              "type": "text",
+              "description": "اسم المقاول"
+            },
+            {
+              "key": "contractor_technical_name",
+              "value": "منسق المقاول",
+              "type": "text",
+              "description": "مني المقاول"
+            },
+            {
+              "key": "contractor_mobile",
+              "value": "0500000000",
+              "type": "text",
+              "description": "رقم الجوال"
+            },
+            {
+              "key": "task_latitude",
+              "value": "24.7136",
+              "type": "text",
+              "description": "خط العرض"
+            },
+            {
+              "key": "task_longitude",
+              "value": "46.6753",
+              "type": "text",
+              "description": "خط الطول"
+            },
+            {
+              "key": "notes",
+              "value": "سبب التعديل",
+              "type": "text",
+              "description": "سبب التعديل"
+            },
+            {
+              "key": "internal_procedure_setting_id",
+              "value": "{{internal_procedure_setting_id}}",
+              "type": "text",
+              "description": "Optional specific internal procedure setting ID"
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "description": "صور الإشعار (jpeg, png, webp, max 10MB)",
+              "src": []
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "description": "صور الإشعار (jpeg, png, webp, max 10MB)",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/request-update",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "request-update"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Update Request Submitted",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"notification_type\": \"اعتماد\",\n    \"work_description\": \"وصف العمل قبل التعديل\",\n    \"contractor_name\": \"مقاول المشروع\",\n    \"contractor_technical_name\": \"منسق المقاول\",\n    \"contractor_mobile\": \"0500000000\",\n    \"task_latitude\": \"24.7136\",\n    \"task_longitude\": \"46.6753\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Update request submitted successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "2. Approve Current Step (advances active process step)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "procedure_setting_id",
+              "value": "{{procedure_setting_id}}",
+              "type": "text",
+              "description": "معرف الإجراء الداخلي (اختياري إذا كان إجراء واحد)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/approve",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "approve"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Step Approved",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"notification_type\": \"اعتماد\",\n    \"work_description\": \"وصف العمل قبل التعديل\",\n    \"contractor_name\": \"مقاول المشروع\",\n    \"contractor_technical_name\": \"منسق المقاول\",\n    \"contractor_mobile\": \"0500000000\",\n    \"task_latitude\": \"24.7136\",\n    \"task_longitude\": \"46.6753\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Notification approved successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "3. Reject Current Step (rejects active process step)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "reason",
+              "value": "البيانات غير صحيحة",
+              "type": "text",
+              "description": "سبب الرفض"
+            },
+            {
+              "key": "procedure_setting_id",
+              "value": "{{procedure_setting_id}}",
+              "type": "text",
+              "description": "معرف الإجراء الداخلي (اختياري إذا كان إجراء واحد)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/reject",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "reject"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Step Rejected",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"notification_type\": \"اعتماد\",\n    \"work_description\": \"وصف العمل قبل التعديل\",\n    \"contractor_name\": \"مقاول المشروع\",\n    \"contractor_technical_name\": \"منسق المقاول\",\n    \"contractor_mobile\": \"0500000000\",\n    \"task_latitude\": \"24.7136\",\n    \"task_longitude\": \"46.6753\",\n    \"status\": \"rejected\"\n  },\n  \"message\": \"Notification rejected successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "4. List Site Statuses",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/site-statuses",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "site-statuses"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Site Statuses",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    { \"id\": \"uuid-1\", \"name_ar\": \"بانتظار وصول الفرقة\", \"name_en\": \"Waiting for team arrival\", \"sort_order\": 1 },\n    { \"id\": \"uuid-2\", \"name_ar\": \"بانتظار المقاول\", \"name_en\": \"Waiting for contractor\", \"sort_order\": 2 }\n  ],\n  \"message\": \"Site statuses retrieved successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "5. Submit Site Status Update Request (updateProjectNotificationSiteStatus)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "update_date",
+              "value": "2026-06-28",
+              "type": "text",
+              "description": "تاريخ التحديث"
+            },
+            {
+              "key": "update_time",
+              "value": "14:30",
+              "type": "text",
+              "description": "وقت التحديث"
+            },
+            {
+              "key": "site_status_id",
+              "value": "{{site_status_id}}",
+              "type": "text",
+              "description": "حالة الموقع الحالية"
+            },
+            {
+              "key": "current_site_status_id",
+              "value": "{{current_site_status_id}}",
+              "type": "text",
+              "description": "حالة الموقع"
+            },
+            {
+              "key": "work_stages_completed",
+              "value": "تمديد / تركيب",
+              "type": "text",
+              "description": "مراحل العمل المنجزة حاليا"
+            },
+            {
+              "key": "current_status_description",
+              "value": "وصف الحالة الحالية",
+              "type": "text",
+              "description": "وصف الحالة الحالية"
+            },
+            {
+              "key": "completion_percentage",
+              "value": "40",
+              "type": "text",
+              "description": "نسبة الإنجاز الحالية"
+            },
+            {
+              "key": "updates_obstacles",
+              "value": "تأخر في وصول المواد",
+              "type": "text",
+              "description": "التحديثات / المعوقات"
+            },
+            {
+              "key": "additional_notes",
+              "value": "ملاحظات إضافية",
+              "type": "text",
+              "description": "ملاحظات إضافية"
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "description": "صور إضافية من الموقع (jpeg, png, webp, max 10MB)",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/request-site-status-update",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "request-site-status-update"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Site Status Update Request Submitted",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Site status update request submitted successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "6. Submit Fine Request (projectNotificationFine)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "reason",
+              "value": "تعذر توفير الفريق بسبب نقص المعدات والموظفين",
+              "type": "text",
+              "description": "إعادة التناسب"
+            },
+            {
+              "key": "items[0][name_ar]",
+              "value": "غرامة الاعتذار عن تنفيذ العمل",
+              "type": "text",
+              "description": "بند الغرامة"
+            },
+            {
+              "key": "items[0][quantity]",
+              "value": "1",
+              "type": "text",
+              "description": "الكمية"
+            },
+            {
+              "key": "items[0][unit_amount]",
+              "value": "5000",
+              "type": "text",
+              "description": "قيمة الغرامة"
+            },
+            {
+              "key": "items[0][total_amount]",
+              "value": "5000",
+              "type": "text",
+              "description": "الإجمالي"
+            },
+            {
+              "key": "items[1][name_ar]",
+              "value": "غرامة لعدم تنفيذ بتعليمات سحب الأسلاك الهوائية وتمديد الكابلات",
+              "type": "text",
+              "description": "بند الغرامة"
+            },
+            {
+              "key": "items[1][quantity]",
+              "value": "1",
+              "type": "text",
+              "description": "الكمية"
+            },
+            {
+              "key": "items[1][unit_amount]",
+              "value": "500",
+              "type": "text",
+              "description": "قيمة الغرامة"
+            },
+            {
+              "key": "items[1][total_amount]",
+              "value": "500",
+              "type": "text",
+              "description": "الإجمالي"
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "description": "مرفقات المخالفة (PDF, JPG, PNG, max 10MB)",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/request-fine",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "request-fine"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Fine Request Submitted",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Fine request submitted successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "7. Confirm Location (confirmProjectNotificationLocation)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "latitude",
+              "value": "24.7136",
+              "type": "text",
+              "description": "خط العرض"
+            },
+            {
+              "key": "longitude",
+              "value": "46.6753",
+              "type": "text",
+              "description": "خط الطول"
+            },
+            {
+              "key": "distance_meters",
+              "value": "50",
+              "type": "text",
+              "description": "المسافة من موقع المهمة (متر)"
+            },
+            {
+              "key": "is_inside_location",
+              "value": "1",
+              "type": "text",
+              "description": "داخل نطاق الموقع (1 = true, 0 = false)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/confirm-location",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "confirm-location"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Location Confirmation Submitted",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Location confirmation request submitted successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "8. List Work Stoppage Reasons",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/work-stoppage-reasons",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "work-stoppage-reasons"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Work Stoppage Reasons",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    { \"id\": \"uuid-1\", \"name_ar\": \"عدم وجود/ خلل في إجراءات تصاريح العمل\", \"name_en\": \"Missing or incorrect work permit procedures\", \"sort_order\": 1 },\n    { \"id\": \"uuid-2\", \"name_ar\": \"نقص مهمات الوقاية الشخصية\", \"name_en\": \"Lack of personal protective equipment\", \"sort_order\": 3 }\n  ],\n  \"message\": \"Work stoppage reasons retrieved successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "9. Submit Work Stoppage Report (projectNotificationWorkStoppageReport)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "reasons[0][reason_id]",
+              "value": "{{work_stoppage_reason_id}}",
+              "type": "text",
+              "description": "سبب إيقاف العمل"
+            },
+            {
+              "key": "reasons[0][notes]",
+              "value": "ملاحظات على السبب",
+              "type": "text",
+              "description": "ملاحظات للسبب"
+            },
+            {
+              "key": "reasons[1][reason_id]",
+              "value": "{{work_stoppage_reason_id}}",
+              "type": "text",
+              "description": "سبب إيقاف العمل"
+            },
+            {
+              "key": "other_notes",
+              "value": "يرجى معالجة الملاحظات أعلاه قبل استئناف العمل",
+              "type": "text",
+              "description": "ملاحظات أخرى"
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "description": "مرفقات المحضر (PDF, JPG, PNG, max 10MB)",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/request-work-stoppage-report",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "request-work-stoppage-report"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Work Stoppage Report Submitted",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Work stoppage report request submitted successfully\"\n}"
+        }
+      ]
+    }
+  ]
+}

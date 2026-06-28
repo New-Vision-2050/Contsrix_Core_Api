@@ -17,16 +17,31 @@ use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskProceduresService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
 use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO;
+use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationFineDTO;
+use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationLocationConfirmationDTO;
+use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationSiteStatusUpdateDTO;
+use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationUpdateDTO;
+use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationWorkStoppageReportDTO;
 use Modules\Project\ProjectManagement\DTO\UpdateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
 use Modules\Project\ProjectManagement\Models\Contractor;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationFine;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatus;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReason;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason;
 use Modules\Project\ProjectManagement\Repositories\ProjectNotificationRepository;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
@@ -39,6 +54,7 @@ class ProjectNotificationService
         private readonly EmployeeTaskLifecycleService $lifecycleService,
         private readonly EmployeeTaskAvailableActionsService $availableActionsService,
         private readonly EmployeeTaskProceduresService $proceduresService,
+        private readonly ProcedureWorkflowService $procedureWorkflow,
     ) {}
 
     public function create(CreateProjectNotificationDTO $dto): ProjectNotification
@@ -110,6 +126,32 @@ class ProjectNotificationService
             $dto->perPage ?? 15,
             $dto->sort,
         );
+    }
+
+    /**
+     * List active site statuses for the dropdown in the periodic site status update form.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, ProjectNotificationSiteStatus>
+     */
+    public function listSiteStatuses(): \Illuminate\Database\Eloquent\Collection
+    {
+        return ProjectNotificationSiteStatus::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+    }
+
+    /**
+     * List active work stoppage reasons for the dropdown in the work stoppage report form.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, ProjectNotificationWorkStoppageReason>
+     */
+    public function listWorkStoppageReasons(): \Illuminate\Database\Eloquent\Collection
+    {
+        return ProjectNotificationWorkStoppageReason::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
     }
 
     /**
@@ -277,6 +319,252 @@ class ProjectNotificationService
         return $notification->fresh();
     }
 
+    /**
+     * Request a workflow-based update of project notification data.
+     * Creates a Process snapshot with the new data; the actual DB update is
+     * applied only when the process completes (all steps approved).
+     */
+    public function requestUpdate(
+        string $id,
+        RequestProjectNotificationUpdateDTO $dto,
+        string $userId,
+    ): ProjectNotification {
+        $notification = $this->get($id);
+        $task = $this->linkedTask($id);
+
+        $procedureSetting = $dto->internalProcedureSettingId !== null
+            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
+            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
+                $task->procedureSettingType()->value,
+                InternalProcessForm::UpdateProjectNotificationTask->value,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+
+        if ($procedureSetting === null) {
+            // No procedure configured → apply immediately.
+            $this->repository->update($id, $this->enrichContractorData($dto->toArray()));
+            $this->attachUpdateFiles($notification, $dto->files);
+
+            return $notification->fresh();
+        }
+
+        $metadata = [
+            'form'   => InternalProcessForm::UpdateProjectNotificationTask->value,
+            'update' => $dto->toArray(),
+            'files'  => $this->stageUpdateFiles($notification, $dto->files),
+        ];
+
+        $this->employeeTaskRequestService->createLifecycleProcess(
+            $task,
+            InternalProcessForm::UpdateProjectNotificationTask->value,
+            $metadata,
+            $procedureSetting,
+        );
+
+        return $notification->fresh();
+    }
+
+    /**
+     * Request a workflow-based periodic site status update.
+     * Creates a Process snapshot with the new data; the actual site status update
+     * record is created only when the process completes (all steps approved).
+     */
+    public function requestSiteStatusUpdate(
+        string $id,
+        RequestProjectNotificationSiteStatusUpdateDTO $dto,
+        string $userId,
+    ): ProjectNotification {
+        $notification = $this->get($id);
+        $task = $this->linkedTask($id);
+
+        $procedureSetting = $dto->internalProcedureSettingId !== null
+            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
+            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
+                $task->procedureSettingType()->value,
+                InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+
+        if ($procedureSetting === null) {
+            // No procedure configured → create immediately.
+            $this->createSiteStatusUpdateRecord($notification, $task, $dto, $userId);
+
+            return $notification->fresh();
+        }
+
+        $metadata = [
+            'form' => InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
+            'update' => $dto->toArray(),
+            'files' => $this->stageSiteStatusUpdateFiles($notification, $dto->files),
+            'user_id' => $userId,
+        ];
+
+        $this->employeeTaskRequestService->createLifecycleProcess(
+            $task,
+            InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
+            $metadata,
+            $procedureSetting,
+        );
+
+        return $notification->fresh();
+    }
+
+    /**
+     * Request a workflow-based fine (penalty) record for a project notification.
+     * Creates a Process snapshot with the fine data; the actual fine record is
+     * created only when the process completes (all steps approved).
+     */
+    public function requestFine(
+        string $id,
+        RequestProjectNotificationFineDTO $dto,
+        string $userId,
+    ): ProjectNotification {
+        $notification = $this->get($id);
+        $task = $this->linkedTask($id);
+
+        $procedureSetting = $dto->internalProcedureSettingId !== null
+            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
+            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
+                $task->procedureSettingType()->value,
+                InternalProcessForm::ProjectNotificationFine->value,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+
+        if ($procedureSetting === null) {
+            // No procedure configured → create immediately.
+            $this->createFineRecord($notification, $task, $dto, $userId);
+
+            return $notification->fresh();
+        }
+
+        $metadata = [
+            'form' => InternalProcessForm::ProjectNotificationFine->value,
+            'update' => [
+                'reason' => $dto->reason,
+                'items' => $dto->items,
+                'total_amount' => $dto->totalAmount(),
+            ],
+            'files' => $this->stageFineFiles($notification, $dto->files),
+            'user_id' => $userId,
+        ];
+
+        $this->employeeTaskRequestService->createLifecycleProcess(
+            $task,
+            InternalProcessForm::ProjectNotificationFine->value,
+            $metadata,
+            $procedureSetting,
+        );
+
+        return $notification->fresh();
+    }
+
+    /**
+     * Request a workflow-based location confirmation for a project notification.
+     * Creates a Process snapshot with the location data; the actual location
+     * confirmation record is created only when the process completes.
+     */
+    public function requestLocationConfirmation(
+        string $id,
+        RequestProjectNotificationLocationConfirmationDTO $dto,
+        string $userId,
+    ): ProjectNotification {
+        $notification = $this->get($id);
+        $task = $this->linkedTask($id);
+
+        $procedureSetting = $dto->internalProcedureSettingId !== null
+            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
+            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
+                $task->procedureSettingType()->value,
+                InternalProcessForm::ConfirmProjectNotificationLocation->value,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+
+        if ($procedureSetting === null) {
+            // No procedure configured → create immediately.
+            $this->createLocationConfirmationRecord($notification, $task, $dto, $userId);
+
+            return $notification->fresh();
+        }
+
+        $metadata = [
+            'form' => InternalProcessForm::ConfirmProjectNotificationLocation->value,
+            'update' => $dto->toArray(),
+            'user_id' => $userId,
+        ];
+
+        $this->employeeTaskRequestService->createLifecycleProcess(
+            $task,
+            InternalProcessForm::ConfirmProjectNotificationLocation->value,
+            $metadata,
+            $procedureSetting,
+        );
+
+        return $notification->fresh();
+    }
+
+    /**
+     * Request a workflow-based work stoppage report for a project notification.
+     * Creates a Process snapshot with the report data; the actual report record is
+     * created only when the process completes (all steps approved).
+     */
+    public function requestWorkStoppageReport(
+        string $id,
+        RequestProjectNotificationWorkStoppageReportDTO $dto,
+        string $userId,
+    ): ProjectNotification {
+        $notification = $this->get($id);
+        $task = $this->linkedTask($id);
+
+        $procedureSetting = $dto->internalProcedureSettingId !== null
+            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
+            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
+                $task->procedureSettingType()->value,
+                InternalProcessForm::ProjectNotificationWorkStoppageReport->value,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+
+        if ($procedureSetting === null) {
+            // No procedure configured → create immediately.
+            $this->createWorkStoppageReportRecord($notification, $task, $dto, $userId);
+
+            return $notification->fresh();
+        }
+
+        $metadata = [
+            'form' => InternalProcessForm::ProjectNotificationWorkStoppageReport->value,
+            'update' => [
+                'other_notes' => $dto->otherNotes,
+                'reasons' => $dto->reasons,
+            ],
+            'files' => $this->stageWorkStoppageReportFiles($notification, $dto->files),
+            'user_id' => $userId,
+        ];
+
+        $this->employeeTaskRequestService->createLifecycleProcess(
+            $task,
+            InternalProcessForm::ProjectNotificationWorkStoppageReport->value,
+            $metadata,
+            $procedureSetting,
+        );
+
+        return $notification->fresh();
+    }
+
     public function delete(string $id): bool
     {
         $notification = $this->get($id);
@@ -284,7 +572,7 @@ class ProjectNotificationService
         return $this->repository->delete($id);
     }
 
-    public function approve(string $id, string $userId): ProjectNotification
+    public function approve(string $id, string $userId, ?string $procedureSettingId = null): ProjectNotification
     {
         $notification = $this->get($id);
         $task = $notification->employee_task_request_id ? $notification->employeeTask : null;
@@ -295,8 +583,8 @@ class ProjectNotificationService
         // the task is already in_progress. The EmployeeTaskStatusSyncObserver
         // mirrors the resulting task status onto the notification once the
         // workflow resolves.
-        if ($task && $this->taskHasActiveProcess($task->id)) {
-            $this->employeeTaskRequestService->approveWorkflowStep($task->id, $userId);
+        if ($task && $this->taskHasActiveProcess($task->id, $procedureSettingId)) {
+            $this->employeeTaskRequestService->approveWorkflowStep($task->id, $userId, $procedureSettingId);
 
             $notification->forceFill([
                 'approved_by' => $userId,
@@ -327,13 +615,13 @@ class ProjectNotificationService
         return $notification->fresh();
     }
 
-    public function reject(string $id, string $userId, string $reason): ProjectNotification
+    public function reject(string $id, string $userId, string $reason, ?string $procedureSettingId = null): ProjectNotification
     {
         $notification = $this->get($id);
         $task = $notification->employee_task_request_id ? $notification->employeeTask : null;
 
-        if ($task && $this->taskHasActiveProcess($task->id)) {
-            $this->employeeTaskRequestService->rejectWorkflowStep($task->id, $userId, $reason);
+        if ($task && $this->taskHasActiveProcess($task->id, $procedureSettingId)) {
+            $this->employeeTaskRequestService->rejectWorkflowStep($task->id, $userId, $reason, $procedureSettingId);
 
             $notification->forceFill([
                 'rejected_by' => $userId,
@@ -367,13 +655,66 @@ class ProjectNotificationService
         return $notification->fresh();
     }
 
-    private function taskHasActiveProcess(string $taskId): bool
+    /**
+     * Resolve the in-progress processes that have a pending step assigned to the
+     * given user. Used by the mobile inbox to show which workflow(s) need action.
+     *
+     * @return list<array{process_id: string, procedure_setting_id: string, form: string, pending_step_id: string, pending_step_order: int}>
+     */
+    public function resolvePendingProcessesForInbox(ProjectNotification $notification, string $userId): array
     {
-        return Process::query()
+        $task = $notification->employeeTask;
+
+        if ($task === null || ! $task->relationLoaded('processes')) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($task->processes as $process) {
+            if ($process->status !== ProcessStatus::InProgress) {
+                continue;
+            }
+
+            $pendingStep = $process->steps->first(function ($step) use ($userId) {
+                if ($step->status !== ProcessStepStatus::Pending) {
+                    return false;
+                }
+
+                if ($step->assigned_user_id === $userId) {
+                    return true;
+                }
+
+                $authorized = $step->authorized_user_ids ?? [];
+
+                return in_array($userId, $authorized, true);
+            });
+
+            if ($pendingStep) {
+                $result[] = [
+                    'process_id' => $process->id,
+                    'procedure_setting_id' => $process->procedure_setting_id,
+                    'form' => $process->metadata['form'] ?? null,
+                    'pending_step_id' => $pendingStep->id,
+                    'pending_step_order' => $pendingStep->template_step_order,
+                ];
+            }
+        }
+
+        return $result;
+    }
+
+    private function taskHasActiveProcess(string $taskId, ?string $procedureSettingId = null): bool
+    {
+        $query = Process::query()
             ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
             ->where('processable_id', $taskId)
-            ->where('status', ProcessStatus::InProgress)
-            ->exists();
+            ->where('status', ProcessStatus::InProgress);
+
+        if ($procedureSettingId !== null) {
+            $query->where('procedure_setting_id', $procedureSettingId);
+        }
+
+        return $query->exists();
     }
 
     public function syncNotificationStatusFromTask(ProjectNotification $notification, $task): void
@@ -555,6 +896,250 @@ class ProjectNotificationService
         }
 
         return $task;
+    }
+
+    private function createWorkStoppageReportRecord(
+        ProjectNotification $notification,
+        EmployeeTaskRequest $task,
+        RequestProjectNotificationWorkStoppageReportDTO $dto,
+        string $userId,
+    ): ProjectNotificationWorkStoppageReport {
+        $report = ProjectNotificationWorkStoppageReport::query()->create([
+            'company_id' => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'employee_task_request_id' => $task->id,
+            'requested_by' => $userId,
+            'status' => 'approved',
+            'other_notes' => $dto->otherNotes,
+        ]);
+
+        foreach ($dto->reasons as $index => $reason) {
+            $reasonModel = ! empty($reason['reason_id'])
+                ? ProjectNotificationWorkStoppageReason::query()->find($reason['reason_id'])
+                : null;
+
+            ProjectNotificationWorkStoppageReportReason::query()->create([
+                'project_notification_work_stoppage_report_id' => $report->id,
+                'work_stoppage_reason_id' => $reasonModel?->id,
+                'reason_name_ar' => $reasonModel?->name_ar ?? null,
+                'reason_name_en' => $reasonModel?->name_en ?? null,
+                'notes' => $reason['notes'] ?? null,
+                'sort_order' => $reason['sort_order'] ?? ($index + 1),
+            ]);
+        }
+
+        $this->attachWorkStoppageReportFiles($report, $dto->files);
+
+        return $report;
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     * @return list<int>
+     */
+    private function stageWorkStoppageReportFiles(ProjectNotification $notification, ?array $files): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($files as $file) {
+            $media = $notification->addMedia($file)
+                ->toMediaCollection('work_stoppage_report_attachments');
+            $ids[] = $media->id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     */
+    private function attachWorkStoppageReportFiles(ProjectNotificationWorkStoppageReport $report, ?array $files): void
+    {
+        if (empty($files)) {
+            return;
+        }
+
+        foreach ($files as $file) {
+            $report->addMedia($file)
+                ->toMediaCollection('attachments');
+        }
+    }
+
+    private function createLocationConfirmationRecord(
+        ProjectNotification $notification,
+        EmployeeTaskRequest $task,
+        RequestProjectNotificationLocationConfirmationDTO $dto,
+        string $userId,
+    ): ProjectNotificationLocationConfirmation {
+        return ProjectNotificationLocationConfirmation::query()->create([
+            'company_id' => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'employee_task_request_id' => $task->id,
+            'requested_by' => $userId,
+            'status' => 'approved',
+            ...$dto->toArray(),
+        ]);
+    }
+
+    private function createFineRecord(
+        ProjectNotification $notification,
+        EmployeeTaskRequest $task,
+        RequestProjectNotificationFineDTO $dto,
+        string $userId,
+    ): ProjectNotificationFine {
+        $fine = ProjectNotificationFine::query()->create([
+            'company_id' => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'employee_task_request_id' => $task->id,
+            'requested_by' => $userId,
+            'status' => 'approved',
+            'reason' => $dto->reason,
+            'total_amount' => $dto->totalAmount(),
+        ]);
+
+        foreach ($dto->items as $index => $item) {
+            ProjectNotificationFineItem::query()->create([
+                'project_notification_fine_id' => $fine->id,
+                'name_ar' => $item['name_ar'],
+                'name_en' => $item['name_en'] ?? null,
+                'quantity' => $item['quantity'],
+                'unit_amount' => $item['unit_amount'],
+                'total_amount' => $item['total_amount'],
+                'sort_order' => $item['sort_order'] ?? ($index + 1),
+            ]);
+        }
+
+        $this->attachFineFiles($fine, $dto->files);
+
+        return $fine;
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     * @return list<int>
+     */
+    private function stageFineFiles(ProjectNotification $notification, ?array $files): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($files as $file) {
+            $media = $notification->addMedia($file)
+                ->toMediaCollection('fine_attachments');
+            $ids[] = $media->id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     */
+    private function attachFineFiles(ProjectNotificationFine $fine, ?array $files): void
+    {
+        if (empty($files)) {
+            return;
+        }
+
+        foreach ($files as $file) {
+            $fine->addMedia($file)
+                ->toMediaCollection('attachments');
+        }
+    }
+
+    private function createSiteStatusUpdateRecord(
+        ProjectNotification $notification,
+        EmployeeTaskRequest $task,
+        RequestProjectNotificationSiteStatusUpdateDTO $dto,
+        string $userId,
+    ): ProjectNotificationSiteStatusUpdate {
+        $update = ProjectNotificationSiteStatusUpdate::query()->create([
+            'company_id' => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'employee_task_request_id' => $task->id,
+            'requested_by' => $userId,
+            'status' => 'approved',
+            ...$dto->toArray(),
+        ]);
+
+        $this->attachSiteStatusUpdateFiles($update, $dto->files);
+
+        return $update;
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     * @return list<int>
+     */
+    private function stageSiteStatusUpdateFiles(ProjectNotification $notification, ?array $files): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($files as $file) {
+            $media = $notification->addMedia($file)
+                ->toMediaCollection('site_status_update_attachments');
+            $ids[] = $media->id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     */
+    private function attachSiteStatusUpdateFiles(ProjectNotificationSiteStatusUpdate $update, ?array $files): void
+    {
+        if (empty($files)) {
+            return;
+        }
+
+        foreach ($files as $file) {
+            $update->addMedia($file)
+                ->toMediaCollection('attachments');
+        }
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     * @return list<int>
+     */
+    private function stageUpdateFiles(ProjectNotification $notification, ?array $files): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($files as $file) {
+            $media = $notification->addMedia($file)
+                ->toMediaCollection('update_attachments');
+            $ids[] = $media->id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     */
+    private function attachUpdateFiles(ProjectNotification $notification, ?array $files): void
+    {
+        if (empty($files)) {
+            return;
+        }
+
+        foreach ($files as $file) {
+            $notification->addMedia($file)
+                ->toMediaCollection('attachments');
+        }
     }
 
     /**

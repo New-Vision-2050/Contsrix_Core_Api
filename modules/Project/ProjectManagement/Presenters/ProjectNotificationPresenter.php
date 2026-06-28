@@ -75,6 +75,7 @@ class ProjectNotificationPresenter
                 ? EmployeeTaskRequestPresenter::single($n->employeeTask)
                 : null,
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
+            'pending_processes'           => $this->resolvePendingProcesses($n),
             'attachments'                 => $n->relationLoaded('media')
                 ? $n->media->map(fn($media) => [
                     'id'  => $media->id,
@@ -105,6 +106,7 @@ class ProjectNotificationPresenter
                 : null,
             'selected_distance_meters'    => $n->selected_distance_meters,
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
+            'pending_processes'           => $this->resolvePendingProcesses($n),
             'violations_count'            => 0,
             'created_at'                  => $n->created_at?->format('Y-m-d H:i:s'),
             'assigned_user'               => $n->relationLoaded('assignedUser') && $n->assignedUser
@@ -143,6 +145,11 @@ class ProjectNotificationPresenter
     public static function detail(ProjectNotification $notification): array
     {
         return (new self($notification))->toArray();
+    }
+
+    private function resolvePendingProcesses(ProjectNotification $notification): array
+    {
+        return $notification->getAttribute('pending_processes') ?? [];
     }
 
     private function resolveInternalProcedureSettingId(ProjectNotification $notification): ?string

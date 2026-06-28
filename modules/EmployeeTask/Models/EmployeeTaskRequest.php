@@ -304,6 +304,11 @@ class EmployeeTaskRequest extends Model implements HasMedia
             InternalProcessForm::EndTask->value,
             InternalProcessForm::ConfirmProjectNotificationPresence->value,
             InternalProcessForm::EndProjectNotificationTask->value,
+            InternalProcessForm::UpdateProjectNotificationTask->value,
+            InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
+            InternalProcessForm::ProjectNotificationFine->value,
+            InternalProcessForm::ConfirmProjectNotificationLocation->value,
+            InternalProcessForm::ProjectNotificationWorkStoppageReport->value,
         ], true);
     }
 }

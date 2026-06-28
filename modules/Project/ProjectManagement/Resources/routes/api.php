@@ -119,6 +119,10 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
         Route::get('/employees-with-locations', [ProjectNotificationController::class, 'employeesWithLocations'])
             ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
+        Route::get('/site-statuses', [ProjectNotificationController::class, 'siteStatuses'])
+            ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
+        Route::get('/work-stoppage-reasons', [ProjectNotificationController::class, 'workStoppageReasons'])
+            ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
         Route::post('/export', [ProjectNotificationController::class, 'export'])
             ->permission(Permission::PROJECT_NOTIFICATION_EXPORT());
 
@@ -138,6 +142,16 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::post('/{id}/start', [ProjectNotificationController::class, 'start'])
             ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
         Route::post('/{id}/take-action', [ProjectNotificationController::class, 'takeAction'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::post('/{id}/request-update', [ProjectNotificationController::class, 'requestUpdate'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::post('/{id}/request-site-status-update', [ProjectNotificationController::class, 'requestSiteStatusUpdate'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::post('/{id}/request-fine', [ProjectNotificationController::class, 'requestFine'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::post('/{id}/confirm-location', [ProjectNotificationController::class, 'confirmLocation'])
+            ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+        Route::post('/{id}/request-work-stoppage-report', [ProjectNotificationController::class, 'requestWorkStoppageReport'])
             ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
         Route::get('/{id}/procedures', [ProjectNotificationController::class, 'procedures'])
             ->permission(Permission::PROJECT_NOTIFICATION_VIEW());

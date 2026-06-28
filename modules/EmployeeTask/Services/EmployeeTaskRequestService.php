@@ -340,20 +340,28 @@ class EmployeeTaskRequestService
      * status. Used for project notifications where subsequent steps (confirm-receive,
      * end, etc.) may be approved after the task is already in_progress.
      */
-    public function approveWorkflowStep(string $id, string $adminId): EmployeeTaskRequest
-    {
+    public function approveWorkflowStep(
+        string $id,
+        string $adminId,
+        ?string $procedureSettingId = null,
+    ): EmployeeTaskRequest {
         $task = $this->repository->findById($id);
 
         if (! $task) {
             throw EmployeeTaskException::notFound();
         }
 
-        return DB::transaction(function () use ($adminId, $task): EmployeeTaskRequest {
-            $process = Process::query()
+        return DB::transaction(function () use ($adminId, $task, $procedureSettingId): EmployeeTaskRequest {
+            $query = Process::query()
                 ->where('processable_type', $task->procedureSettingType()->value)
                 ->where('processable_id', $task->id)
-                ->where('status', ProcessStatus::InProgress)
-                ->firstOrFail();
+                ->where('status', ProcessStatus::InProgress);
+
+            if ($procedureSettingId !== null) {
+                $query->where('procedure_setting_id', $procedureSettingId);
+            }
+
+            $process = $query->firstOrFail();
 
             $step = $this->findPendingStepForActor($process, $adminId);
             if (! $step) {
@@ -371,20 +379,29 @@ class EmployeeTaskRequestService
      * status. Used for project notifications where subsequent steps may be rejected
      * after the task is already in_progress.
      */
-    public function rejectWorkflowStep(string $id, string $adminId, string $reason): EmployeeTaskRequest
-    {
+    public function rejectWorkflowStep(
+        string $id,
+        string $adminId,
+        string $reason,
+        ?string $procedureSettingId = null,
+    ): EmployeeTaskRequest {
         $task = $this->repository->findById($id);
 
         if (! $task) {
             throw EmployeeTaskException::notFound();
         }
 
-        return DB::transaction(function () use ($adminId, $reason, $task): EmployeeTaskRequest {
-            $process = Process::query()
+        return DB::transaction(function () use ($adminId, $reason, $task, $procedureSettingId): EmployeeTaskRequest {
+            $query = Process::query()
                 ->where('processable_type', $task->procedureSettingType()->value)
                 ->where('processable_id', $task->id)
-                ->where('status', ProcessStatus::InProgress)
-                ->firstOrFail();
+                ->where('status', ProcessStatus::InProgress);
+
+            if ($procedureSettingId !== null) {
+                $query->where('procedure_setting_id', $procedureSettingId);
+            }
+
+            $process = $query->firstOrFail();
 
             $step = $this->findPendingStepForActor($process, $adminId);
             if (! $step) {
@@ -582,6 +599,7 @@ class EmployeeTaskRequestService
         EmployeeTaskRequest $task,
         string $formKey,
         array $metadata,
+        ?ProcedureSetting $resolvedSetting = null,
     ): ?Process {
         $procedureType = $this->procedureTypeForForm($formKey);
         $task->load('user.userProfessionalData');
@@ -600,6 +618,7 @@ class EmployeeTaskRequestService
             createdByUserId: $task->user_id,
             context: $context,
             metadata: $metadata,
+            resolvedSetting: $resolvedSetting,
         );
 
         return $result->autoApprove ? null : $result->activeProcess;

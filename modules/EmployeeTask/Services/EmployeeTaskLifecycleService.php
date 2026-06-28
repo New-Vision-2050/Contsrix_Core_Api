@@ -81,6 +81,7 @@ final class EmployeeTaskLifecycleService
                         'longitude' => $dto->longitude,
                         'notes'     => $dto->notes,
                     ],
+                    $procedureSetting,
                 );
 
                 if ($process === null) {
@@ -253,6 +254,7 @@ final class EmployeeTaskLifecycleService
                         'longitude' => $dto->longitude,
                         'notes'     => $dto->notes,
                     ],
+                    $procedureSetting,
                 );
 
                 if ($process === null) {
