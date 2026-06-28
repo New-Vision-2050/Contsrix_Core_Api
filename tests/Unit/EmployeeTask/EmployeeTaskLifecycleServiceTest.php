@@ -16,8 +16,10 @@ use Modules\EmployeeTask\Services\EmployeeTaskEndRequestService;
 use Modules\EmployeeTask\Services\EmployeeTaskFormConditionService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
+use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\EmployeeTask\Services\EmployeeTaskStartRequestService;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\Process\Models\Process;
 use Modules\User\Models\User;
 use Tests\TestCase;
 
@@ -41,14 +43,20 @@ class EmployeeTaskLifecycleServiceTest extends TestCase
         $startRequestService->shouldReceive('resolveStartTaskProcedure')
             ->once()
             ->andReturn(Mockery::mock(ProcedureSetting::class));
-        $startRequestService->shouldReceive('create')
+        $startRequestService->shouldReceive('createFromProcess')
             ->once()
             ->andReturn(Mockery::mock(EmployeeTaskStartRequest::class));
+
+        $requestService = Mockery::mock(EmployeeTaskRequestService::class);
+        $requestService->shouldReceive('createLifecycleProcess')
+            ->once()
+            ->andReturn(Mockery::mock(Process::class));
 
         $service = $this->createService(
             taskRepo: $this->taskRepoReturning($task),
             startRequestService: $startRequestService,
             conditionService: $conditionService,
+            requestService: $requestService,
         );
 
         $dto = new StartTaskDTO(
@@ -75,14 +83,20 @@ class EmployeeTaskLifecycleServiceTest extends TestCase
         $startRequestService->shouldReceive('resolveStartTaskProcedure')
             ->once()
             ->andReturn(Mockery::mock(ProcedureSetting::class));
-        $startRequestService->shouldReceive('create')
+        $startRequestService->shouldReceive('createFromProcess')
             ->once()
             ->andReturn(Mockery::mock(EmployeeTaskStartRequest::class));
+
+        $requestService = Mockery::mock(EmployeeTaskRequestService::class);
+        $requestService->shouldReceive('createLifecycleProcess')
+            ->once()
+            ->andReturn(Mockery::mock(Process::class));
 
         $service = $this->createService(
             taskRepo: $this->taskRepoReturning($task),
             startRequestService: $startRequestService,
             conditionService: $conditionService,
+            requestService: $requestService,
         );
 
         $dto = new StartTaskDTO(
@@ -126,7 +140,7 @@ class EmployeeTaskLifecycleServiceTest extends TestCase
     private function makeUser(): User
     {
         $user = new User();
-        $user->id = 'user-id';
+        $user->id = '550e8400-e29b-41d4-a716-446655440000';
 
         return $user;
     }
@@ -135,7 +149,7 @@ class EmployeeTaskLifecycleServiceTest extends TestCase
     {
         $repo = Mockery::mock(EmployeeTaskRepository::class);
         $repo->shouldReceive('findById')->with('task-id')->andReturn($task);
-        $repo->shouldReceive('findActiveTaskForUser')->with('user-id')->andReturnNull();
+        $repo->shouldReceive('findActiveTaskForUser')->with('550e8400-e29b-41d4-a716-446655440000')->andReturnNull();
 
         return $repo;
     }
@@ -144,6 +158,7 @@ class EmployeeTaskLifecycleServiceTest extends TestCase
         EmployeeTaskRepository $taskRepo,
         EmployeeTaskStartRequestService $startRequestService,
         EmployeeTaskFormConditionService $conditionService,
+        EmployeeTaskRequestService $requestService,
     ): EmployeeTaskLifecycleService {
         return new EmployeeTaskLifecycleService(
             $taskRepo,
@@ -153,6 +168,7 @@ class EmployeeTaskLifecycleServiceTest extends TestCase
             Mockery::mock(EmployeeTaskEndRequestService::class),
             $startRequestService,
             $conditionService,
+            $requestService,
         );
     }
 }

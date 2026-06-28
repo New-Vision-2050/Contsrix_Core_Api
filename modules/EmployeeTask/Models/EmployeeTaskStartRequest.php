@@ -8,6 +8,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\Process\Models\Process;
 use Modules\User\Models\User;
 
 class EmployeeTaskStartRequest extends Model
@@ -24,6 +25,7 @@ class EmployeeTaskStartRequest extends Model
         'employee_task_request_id',
         'company_id',
         'procedure_setting_id',
+        'process_id',
         'requested_by',
         'latitude',
         'longitude',
@@ -45,6 +47,11 @@ class EmployeeTaskStartRequest extends Model
     public function task(): BelongsTo
     {
         return $this->belongsTo(EmployeeTaskRequest::class, 'employee_task_request_id');
+    }
+
+    public function process(): BelongsTo
+    {
+        return $this->belongsTo(Process::class, 'process_id');
     }
 
     public function requestedByUser(): BelongsTo

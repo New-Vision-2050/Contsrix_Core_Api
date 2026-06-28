@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\EmployeeTask\Services;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
@@ -16,7 +16,8 @@ use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\EmployeeTask\Repositories\EmployeeTaskSessionRepository;
 use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
 use Modules\EmployeeTask\Services\EmployeeTaskEndRequestService;
-use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
 final class EmployeeTaskLifecycleService
@@ -29,6 +30,7 @@ final class EmployeeTaskLifecycleService
         private readonly EmployeeTaskEndRequestService    $endRequestService,
         private readonly EmployeeTaskStartRequestService   $startRequestService,
         private readonly EmployeeTaskFormConditionService $conditionService,
+        private readonly EmployeeTaskRequestService       $requestService,
     ) {}
 
     public function start(string $taskId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
@@ -66,8 +68,37 @@ final class EmployeeTaskLifecycleService
         );
 
         if ($procedureSetting !== null) {
-            $this->startRequestService->create($task, $dto, $procedureSetting);
-            return $task->fresh()->load(['sessions']);
+            $parentSetting = $procedureSetting->parent_id !== null
+                ? $this->resolveParentFromProcedureSetting($procedureSetting)
+                : null;
+
+            return DB::transaction(function () use ($task, $dto, $user, $procedureSetting, $parentSetting): EmployeeTaskRequest {
+                $process = $this->requestService->createLifecycleProcess(
+                    $task,
+                    InternalProcessForm::StartTask->value,
+                    [
+                        'latitude'  => $dto->latitude,
+                        'longitude' => $dto->longitude,
+                        'notes'     => $dto->notes,
+                    ],
+                );
+
+                if ($process === null) {
+                    // Workflow auto-approved: mark the procedure as taken and execute immediately.
+                    $this->requestService->markProceduresTakenForForm(
+                        $task,
+                        (string) $task->user_id,
+                        InternalProcessForm::StartTask->value,
+                        $parentSetting,
+                    );
+
+                    return $this->performStart($task, $dto, $user);
+                }
+
+                $this->startRequestService->createFromProcess($task, $dto, $procedureSetting, $process);
+
+                return $task->fresh()->load(['sessions']);
+            });
         }
 
         return $this->performStart($task, $dto, $user);
@@ -205,21 +236,43 @@ final class EmployeeTaskLifecycleService
         );
 
         if ($procedureSetting !== null) {
-            $this->endRequestService->create($task, $dto, $procedureSetting);
-            return $task->fresh()->load(['sessions']);
+            $formKey = $task->is_project_notification
+                ? InternalProcessForm::EndProjectNotificationTask->value
+                : InternalProcessForm::EndTask->value;
+
+            $parentSetting = $procedureSetting->parent_id !== null
+                ? $this->resolveParentFromProcedureSetting($procedureSetting)
+                : null;
+
+            return DB::transaction(function () use ($task, $dto, $formKey, $procedureSetting, $parentSetting): EmployeeTaskRequest {
+                $process = $this->requestService->createLifecycleProcess(
+                    $task,
+                    $formKey,
+                    [
+                        'latitude'  => $dto->latitude,
+                        'longitude' => $dto->longitude,
+                        'notes'     => $dto->notes,
+                    ],
+                );
+
+                if ($process === null) {
+                    $this->requestService->markProceduresTakenForForm(
+                        $task,
+                        (string) $task->user_id,
+                        $formKey,
+                        $parentSetting,
+                    );
+
+                    return $this->performEnd($task, $dto);
+                }
+
+                $this->endRequestService->createFromProcess($task, $dto, $procedureSetting, $process);
+
+                return $task->fresh()->load(['sessions']);
+            });
         }
 
-        $task = $this->performEnd($task, $dto);
-
-        if ($dto->internalProcedureSettingId) {
-            Event::dispatch(new WorkflowProcedureTaken(
-                $task->procedureSettingType()->value,
-                $task->id,
-                $dto->internalProcedureSettingId,
-            ));
-        }
-
-        return $task;
+        return $this->performEnd($task, $dto);
     }
 
     /**
@@ -264,6 +317,15 @@ final class EmployeeTaskLifecycleService
 
         $task->refresh()->load(['sessions']);
         return $task;
+    }
+
+    private function resolveParentFromProcedureSetting(ProcedureSetting $setting): ?ProcedureSetting
+    {
+        if ($setting->parent_id === null) {
+            return $setting;
+        }
+
+        return ProcedureSetting::query()->find($setting->parent_id);
     }
 
     private function resolveTimezone(User $user): string

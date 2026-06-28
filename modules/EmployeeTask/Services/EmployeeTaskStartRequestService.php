@@ -23,6 +23,8 @@ use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
+use Modules\Process\Models\Process;
+use Modules\Process\Services\ProcessWorkflowService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
@@ -43,6 +45,7 @@ final class EmployeeTaskStartRequestService
         private readonly ProcedureWorkflowService      $workflow,
         private readonly EmployeeTaskRequestService    $requestService,
         private readonly EmployeeTaskLocationService   $locationService,
+        private readonly ProcessWorkflowService        $processService,
     ) {}
 
     /**
@@ -85,6 +88,34 @@ final class EmployeeTaskStartRequestService
             $task->company_id,
             $branchId,
         );
+    }
+
+    /**
+     * Create a pending start request linked to an existing Process snapshot.
+     * The workflow itself is driven by the Process; this record only serves
+     * as the inbox/API-facing request entity.
+     */
+    public function createFromProcess(
+        EmployeeTaskRequest $task,
+        StartTaskDTO $dto,
+        ProcedureSetting $procedureSetting,
+        Process $process,
+    ): EmployeeTaskStartRequest {
+        $snapshot = $process->template_snapshot ?? [];
+        $firstStepId = $snapshot[0]['step_id'] ?? null;
+
+        return EmployeeTaskStartRequest::query()->create([
+            'employee_task_request_id' => $task->id,
+            'company_id'               => $task->company_id,
+            'procedure_setting_id'     => $procedureSetting->id,
+            'process_id'               => $process->id,
+            'requested_by'             => $task->user_id,
+            'latitude'                 => $dto->latitude,
+            'longitude'                => $dto->longitude,
+            'notes'                    => $dto->notes,
+            'status'                   => 'pending',
+            'current_procedure_step_id' => $firstStepId,
+        ]);
     }
 
     /**
@@ -143,35 +174,19 @@ final class EmployeeTaskStartRequestService
             throw EmployeeTaskException::startRequestAlreadyResolved();
         }
 
-        $context = $task->project_id ? ['project_id' => $task->project_id] : [];
-        $result  = $this->workflow->advance(
-            $startRequest->current_procedure_step_id,
-            $startRequest->procedure_setting_id,
-            $adminId,
-            $task->user_id,
-            $context,
-            processableType: $task->procedureSettingType()->value,
-            processableId: $task->id,
-        );
+        $process = $startRequest->process;
+        if ($process === null) {
+            throw EmployeeTaskException::startRequestNotFound();
+        }
 
-        return DB::transaction(function () use ($startRequest, $task, $result, $adminId, $approvalNotes): EmployeeTaskStartRequest {
-            if (! $result->isFinal) {
-                $startRequest->update(['current_procedure_step_id' => $result->nextStep->id]);
-                return $startRequest->fresh();
-            }
+        $currentStep = $this->processService->getCurrentStep($process);
+        if (! $currentStep) {
+            throw EmployeeTaskException::startRequestNotFound();
+        }
 
-            $startRequest->update([
-                'status'                    => 'approved',
-                'reviewed_by'               => $adminId,
-                'reviewed_at'               => now(),
-                'review_notes'              => $approvalNotes,
-                'current_procedure_step_id' => null,
-            ]);
+        $this->processService->approveStep($currentStep->id);
 
-            $this->executeStartTask($task, $startRequest);
-
-            return $startRequest->fresh();
-        });
+        return $startRequest->fresh();
     }
 
     /**
@@ -191,25 +206,19 @@ final class EmployeeTaskStartRequestService
             throw EmployeeTaskException::startRequestAlreadyResolved();
         }
 
-        $context = $task->project_id ? ['project_id' => $task->project_id] : [];
-        $this->workflow->assertCanReject(
-            $startRequest->current_procedure_step_id,
-            $adminId,
-            $task->user_id,
-            $context,
-        );
+        $process = $startRequest->process;
+        if ($process === null) {
+            throw EmployeeTaskException::startRequestNotFound();
+        }
 
-        return DB::transaction(function () use ($startRequest, $adminId, $rejectionReason): EmployeeTaskStartRequest {
-            $startRequest->update([
-                'status'                    => 'rejected',
-                'reviewed_by'               => $adminId,
-                'reviewed_at'               => now(),
-                'review_notes'              => $rejectionReason,
-                'current_procedure_step_id' => null,
-            ]);
+        $currentStep = $this->processService->getCurrentStep($process);
+        if (! $currentStep) {
+            throw EmployeeTaskException::startRequestNotFound();
+        }
 
-            return $startRequest->fresh();
-        });
+        $this->processService->rejectStep($currentStep->id);
+
+        return $startRequest->fresh();
     }
 
     public function findOrFail(string $id): EmployeeTaskStartRequest

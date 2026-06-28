@@ -6,9 +6,11 @@ namespace Modules\Process\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\Process\Enums\ProcessStatus;
 
 class Process extends Model
@@ -30,6 +32,7 @@ class Process extends Model
         'sort_order',
         'template_snapshot',
         'procedure_setting_id',
+        'metadata',
     ];
 
     protected $casts = [
@@ -38,6 +41,7 @@ class Process extends Model
         'procedure_setting_id' => 'string',
         'status'               => ProcessStatus::class,
         'template_snapshot'    => 'array',
+        'metadata'             => 'array',
     ];
 
     protected static function boot(): void
@@ -62,5 +66,10 @@ class Process extends Model
     public function steps(): HasMany
     {
         return $this->hasMany(ProcessStep::class, 'process_id');
+    }
+
+    public function procedureSetting(): BelongsTo
+    {
+        return $this->belongsTo(ProcedureSetting::class, 'procedure_setting_id');
     }
 }

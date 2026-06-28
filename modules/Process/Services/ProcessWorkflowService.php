@@ -31,6 +31,7 @@ class ProcessWorkflowService
         Collection $settings,
         ?string $createdByUserId = null,
         array $context = [],
+        ?array $metadata = null,
     ): ?Process {
         $firstProcess = null;
 
@@ -83,6 +84,7 @@ class ProcessWorkflowService
                 // a form key set. When this process completes, WorkflowProcedureTaken
                 // is fired so the available-actions API unlocks downstream procedures.
                 'procedure_setting_id'  => $setting->form !== null ? $setting->id : null,
+                'metadata'              => $metadata,
             ]);
 
             if ($index === 0) {

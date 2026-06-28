@@ -22,6 +22,8 @@ use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
+use Modules\Process\Models\Process;
+use Modules\Process\Services\ProcessWorkflowService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
@@ -41,6 +43,7 @@ final class EmployeeTaskEndRequestService
         private readonly EmployeeTaskSessionRepository $sessionRepo,
         private readonly ProcedureWorkflowService      $workflow,
         private readonly EmployeeTaskRequestService    $requestService,
+        private readonly ProcessWorkflowService        $processService,
     ) {}
 
     /**
@@ -81,6 +84,32 @@ final class EmployeeTaskEndRequestService
             $task->company_id,
             $branchId,
         );
+    }
+
+    /**
+     * Create a pending end request linked to an existing Process snapshot.
+     */
+    public function createFromProcess(
+        EmployeeTaskRequest $task,
+        EndTaskDTO $dto,
+        ProcedureSetting $procedureSetting,
+        Process $process,
+    ): EmployeeTaskEndRequest {
+        $snapshot = $process->template_snapshot ?? [];
+        $firstStepId = $snapshot[0]['step_id'] ?? null;
+
+        return EmployeeTaskEndRequest::query()->create([
+            'employee_task_request_id' => $task->id,
+            'company_id'               => $task->company_id,
+            'procedure_setting_id'     => $procedureSetting->id,
+            'process_id'               => $process->id,
+            'requested_by'             => $task->user_id,
+            'latitude'                 => $dto->latitude,
+            'longitude'                => $dto->longitude,
+            'notes'                    => $dto->notes,
+            'status'                   => 'pending',
+            'current_procedure_step_id' => $firstStepId,
+        ]);
     }
 
     /**
@@ -139,35 +168,19 @@ final class EmployeeTaskEndRequestService
             throw EmployeeTaskException::endRequestAlreadyResolved();
         }
 
-        $context = $task->project_id ? ['project_id' => $task->project_id] : [];
-        $result  = $this->workflow->advance(
-            $endRequest->current_procedure_step_id,
-            $endRequest->procedure_setting_id,
-            $adminId,
-            $task->user_id,
-            $context,
-            processableType: $task->procedureSettingType()->value,
-            processableId: $task->id,
-        );
+        $process = $endRequest->process;
+        if ($process === null) {
+            throw EmployeeTaskException::endRequestNotFound();
+        }
 
-        return DB::transaction(function () use ($endRequest, $task, $result, $adminId, $approvalNotes): EmployeeTaskEndRequest {
-            if (! $result->isFinal) {
-                $endRequest->update(['current_procedure_step_id' => $result->nextStep->id]);
-                return $endRequest->fresh();
-            }
+        $currentStep = $this->processService->getCurrentStep($process);
+        if (! $currentStep) {
+            throw EmployeeTaskException::endRequestNotFound();
+        }
 
-            $endRequest->update([
-                'status'                    => 'approved',
-                'reviewed_by'               => $adminId,
-                'reviewed_at'               => now(),
-                'review_notes'              => $approvalNotes,
-                'current_procedure_step_id' => null,
-            ]);
+        $this->processService->approveStep($currentStep->id);
 
-            $this->executeEndTask($task, $endRequest);
-
-            return $endRequest->fresh();
-        });
+        return $endRequest->fresh();
     }
 
     /**
@@ -187,25 +200,19 @@ final class EmployeeTaskEndRequestService
             throw EmployeeTaskException::endRequestAlreadyResolved();
         }
 
-        $context = $task->project_id ? ['project_id' => $task->project_id] : [];
-        $this->workflow->assertCanReject(
-            $endRequest->current_procedure_step_id,
-            $adminId,
-            $task->user_id,
-            $context,
-        );
+        $process = $endRequest->process;
+        if ($process === null) {
+            throw EmployeeTaskException::endRequestNotFound();
+        }
 
-        return DB::transaction(function () use ($endRequest, $adminId, $rejectionReason): EmployeeTaskEndRequest {
-            $endRequest->update([
-                'status'                    => 'rejected',
-                'reviewed_by'               => $adminId,
-                'reviewed_at'               => now(),
-                'review_notes'              => $rejectionReason,
-                'current_procedure_step_id' => null,
-            ]);
+        $currentStep = $this->processService->getCurrentStep($process);
+        if (! $currentStep) {
+            throw EmployeeTaskException::endRequestNotFound();
+        }
 
-            return $endRequest->fresh();
-        });
+        $this->processService->rejectStep($currentStep->id);
+
+        return $endRequest->fresh();
     }
 
     public function findOrFail(string $id): EmployeeTaskEndRequest

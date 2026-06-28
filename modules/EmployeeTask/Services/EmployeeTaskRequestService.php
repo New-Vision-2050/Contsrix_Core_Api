@@ -105,7 +105,7 @@ class EmployeeTaskRequestService
                 );
             }
 
-            $this->markCreateTaskProceduresTaken($task, $dto->userId, $formKey, $parentSetting);
+            $this->markProceduresTakenForForm($task, $dto->userId, $formKey, $parentSetting);
 
             $this->dispatchStaleRejectionJob($task, $creator);
 
@@ -138,12 +138,12 @@ class EmployeeTaskRequestService
     }
 
     /**
-     * Mark all createTask-form internal procedures as "taken" for this task.
-     * Only called when there is no pending approval workflow (auto-approve paths).
-     * When a real workflow exists, the taken status is recorded by
+     * Mark all internal procedures matching a given form as "taken" for this task.
+     * Called for auto-approve paths (create, start, end) where no pending workflow
+     * process exists. When a real workflow exists, the taken status is recorded by
      * ProcessWorkflowService::fireProcedureTakenIfApplicable() when the process completes.
      */
-    private function markCreateTaskProceduresTaken(
+    public function markProceduresTakenForForm(
         EmployeeTaskRequest $task,
         string $userId,
         ?string $formKey = null,
@@ -257,7 +257,7 @@ class EmployeeTaskRequestService
             // All workflow steps resolved to empty users at runtime (edge case).
             // Mark createTask procedures taken immediately so available-actions
             // correctly unlocks downstream procedures.
-            $this->markCreateTaskProceduresTaken($task, (string) $task->user_id, $formKey, $parentSetting);
+            $this->markProceduresTakenForForm($task, (string) $task->user_id, $formKey, $parentSetting);
 
             return;
         }
@@ -569,6 +569,40 @@ class EmployeeTaskRequestService
                 total: $counts['total'],
             ));
         }
+    }
+
+    /**
+     * Create a Process snapshot for a lifecycle action (start/end) on an existing
+     * task. The process is created with the supplied metadata so the concrete
+     * business logic can be executed later when the process completes.
+     *
+     * Returns the created Process, or null when the workflow auto-approves.
+     */
+    public function createLifecycleProcess(
+        EmployeeTaskRequest $task,
+        string $formKey,
+        array $metadata,
+    ): ?Process {
+        $procedureType = $this->procedureTypeForForm($formKey);
+        $task->load('user.userProfessionalData');
+        $branchId = $task->user?->userProfessionalData?->branch_id !== null
+            ? (string) $task->user->userProfessionalData->branch_id
+            : null;
+        $context = $task->project_id ? ['project_id' => $task->project_id] : [];
+
+        $result = $this->engine->startWorkflow(
+            processableType: $task->procedureSettingType()->value,
+            processableId: $task->id,
+            type: $procedureType,
+            formKey: $formKey,
+            companyId: $task->company_id,
+            branchId: $branchId,
+            createdByUserId: $task->user_id,
+            context: $context,
+            metadata: $metadata,
+        );
+
+        return $result->autoApprove ? null : $result->activeProcess;
     }
 
     private function procedureTypeForForm(string $formKey): string

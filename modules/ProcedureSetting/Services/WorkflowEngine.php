@@ -119,6 +119,7 @@ final class WorkflowEngine
         ?string $branchId,
         ?string $createdByUserId = null,
         array $context = [],
+        ?array $metadata = null,
     ): WorkflowStartResult {
         $settings = $this->resolveSettingsForEntry($type, $formKey, $companyId, $branchId);
         if ($settings->isEmpty()) {
@@ -131,6 +132,7 @@ final class WorkflowEngine
             $settings,
             $createdByUserId,
             $context,
+            $metadata,
         );
 
         return $process === null
