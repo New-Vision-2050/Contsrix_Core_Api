@@ -50,7 +50,7 @@ class CompanyCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
-            ['is_central_company' => 0],//TODO i think it will be like that ["id" ,"<>", tenant("id")] it will not present current company put will present other central company
+            ['is_central_company' => 0, 'is_draft' => 0],//TODO i think it will be like that ["id" ,"<>", tenant("id")] it will not present current company put will present other central company
             page: $page,
             perPage: $perPage,
         );
@@ -216,5 +216,26 @@ class CompanyCRUDService
         $this->repository->markAsClient($id);
 
         return $this->repository->getCompany($id);
+    }
+
+    public function updateDraftStepOne(UuidInterface $id, array $data): Company
+    {
+        return DB::transaction(function () use ($id, $data) {
+            $companyFields = $data['company_field_id'] ?? null;
+            unset($data['company_field_id']);
+
+            if (isset($data['name'])) {
+                $data['name'] = ['ar' => $data['name'], 'en' => $data['name']];
+            }
+
+            $this->repository->updateCompany($id, $data);
+            $company = $this->repository->getCompany($id);
+
+            if ($companyFields !== null) {
+                $company->companyFields()->sync($companyFields);
+            }
+
+            return $company->fresh();
+        });
     }
 }

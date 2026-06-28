@@ -191,6 +191,7 @@ class CompanyRepository extends BaseRepository
             SUM(CASE WHEN complete_data IS NOT NULL THEN 1 ELSE 0 END) as complete_data,
             SUM(CASE WHEN date_activate IS NOT NULL THEN 1 ELSE 0 END) as data_activate
         ")
+            ->where('is_draft', 0)
             ->when($date, fn($query) => $query->whereDate('created_at', '<=', $date))
             ->first();
     }
@@ -224,7 +225,7 @@ class CompanyRepository extends BaseRepository
 
     public function getAllWithRelations(array $relations = []): Collection
     {
-        $query = $this->model->with($relations)->where(['is_central_company' => 0]);
+        $query = $this->model->with($relations)->where(['is_central_company' => 0, 'is_draft' => 0]);
         if (method_exists($this->model, 'scopeFilter')) {
             $query->filter(request()->all());
         }
@@ -233,7 +234,7 @@ class CompanyRepository extends BaseRepository
 
     public function getCompaniesByIdsWithRelations(array $ids, array $relations = []): Collection
     {
-        $query =  $this->model->whereIn('id', $ids)->where(['is_central_company' => 0])->with($relations);
+        $query =  $this->model->whereIn('id', $ids)->where(['is_central_company' => 0, 'is_draft' => 0])->with($relations);
 
         if (method_exists($this->model, 'scopeFilter')) {
             $query->filter(request()->all());
@@ -277,6 +278,7 @@ class CompanyRepository extends BaseRepository
     public function getClientCompanies(?int $page, ?int $perPage = 10): array
     {
         $query = $this->model->where('is_client', 1)
+            ->where('is_draft', 0)
             ->with($this->relations);
 
         $total = $query->count();
@@ -306,6 +308,7 @@ class CompanyRepository extends BaseRepository
     public function getBrokerCompanies(?int $page, ?int $perPage = 10): array
     {
         $query = $this->model->where('is_broker', 1)
+            ->where('is_draft', 0)
             ->with($this->relations);
 
         $total = $query->count();
@@ -342,5 +345,10 @@ class CompanyRepository extends BaseRepository
     public function markAsClient(UuidInterface $id): bool
     {
         return (bool) $this->model->where('id', $id->toString())->update(['is_client' => 1]);
+    }
+
+    public function publishDraft(UuidInterface $id): bool
+    {
+        return (bool) $this->model->where('id', $id->toString())->update(['is_draft' => 0]);
     }
 }

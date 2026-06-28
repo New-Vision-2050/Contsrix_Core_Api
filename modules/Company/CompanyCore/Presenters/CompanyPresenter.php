@@ -77,6 +77,7 @@ class CompanyPresenter extends AbstractPresenter
             "logo" => $this->company->getFirstMedia("logo")?->getFullUrl(),
             'is_active' => $this->company->is_active,
             'complete_data' => $this->company->complete_data,
+            'is_draft' => (bool) $this->company->is_draft,
             'date_activate' => $this->company->date_activate,
             "is_central_company" => $this->company->is_central_company,
             "branch" => request("branch_id") ? $this->company->branches->where("id", request("branch_id"))->first()?->name : $this->company->mainBranch?->name,

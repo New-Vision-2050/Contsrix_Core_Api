@@ -5,13 +5,32 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Ramsey\Uuid\Uuid;
 use Modules\Company\CompanyCore\Commands\UpdateCompanyCommand;
 use App\Rules\Company\CompanyCore\Rules\RegistrationNoRule;
+use Modules\Company\CompanyCore\Models\Company;
+
 class UpdateCompanyRequest extends FormRequest
 {
     public function rules(): array
     {
+        if ($this->isDraftClientCompany()) {
+            return [
+                'name' => ['required', 'regex:/^[\p{Arabic}\s]+$/u'],
+                'user_name' => [
+                    'required',
+                    Rule::unique('companies', 'user_name')->ignore($this->route('id')),
+                    'regex:/^[a-zA-Z0-9_]+$/'
+                ],
+                'country_id' => ['required', 'exists:countries,id'],
+                'company_field_id' => ['required', 'array'],
+                'company_field_id.*' => ['required', 'uuid', 'exists:company_fields,id'],
+                'general_manager_id' => ['required', 'uuid', 'exists:users,id'],
+                'is_client' => ['sometimes', 'nullable', 'in:0,1'],
+            ];
+        }
+
         return [
             'name' => 'required|regex:/^[\p{Arabic}\s]+$/u',
             'user_name' => [
@@ -36,6 +55,27 @@ class UpdateCompanyRequest extends FormRequest
         ];
     }
 
+    public function isDraftClientCompany(): bool
+    {
+        return Company::query()
+            ->where('id', $this->route('id'))
+            ->where('is_client', 1)
+            ->where('is_draft', 1)
+            ->exists();
+    }
+
+    public function stepOneData(): array
+    {
+        return $this->safe()->only([
+            'name',
+            'user_name',
+            'country_id',
+            'company_field_id',
+            'general_manager_id',
+            'is_client',
+        ]);
+    }
+
     public function createUpdateCompanyCommand(): UpdateCompanyCommand
     {
         return new UpdateCompanyCommand(
@@ -54,4 +94,3 @@ class UpdateCompanyRequest extends FormRequest
         );
     }
 }
-

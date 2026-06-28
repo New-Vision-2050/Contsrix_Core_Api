@@ -110,6 +110,16 @@ class CompanyController extends Controller
 
     public function update(UpdateCompanyRequest $request): JsonResponse
     {
+        if ($request->isDraftClientCompany()) {
+            $item = $this->companyService->updateDraftStepOne(
+                Uuid::fromString($request->route('id')),
+                $request->stepOneData()
+            );
+
+            $this->companyWidgetService->clearWidgetCache();
+
+            return Json::item((new CompanyPresenter($item))->getData());
+        }
 
         $command = $request->createUpdateCompanyCommand();
         $this->updateCompanyHandler->handle($command);

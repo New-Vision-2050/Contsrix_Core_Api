@@ -20,7 +20,8 @@ class CreateCompanyDTO
         public string $generalManagerId,
         public $isBroker = 0,
 
-        public $isClient = 0
+        public $isClient = 0,
+        public bool $isDraft = false
     ) {
     }
 
@@ -33,6 +34,7 @@ class CreateCompanyDTO
             // 'company_field_id' => $this->companyFieldId,//TODO Fix this
             'general_manager_id' => $this->generalManagerId,
             "is_client" => $this->isClient,
+            "is_draft" => $this->isDraft,
             "is_broker" => $this->isBroker,
         ];
     }
