@@ -86,7 +86,7 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(WebsiteOurServiceSeeder::class);
         $this->call(ProjectTypeSeeder::class);
         $this->call(SchemaSeeder::class);
-        $this->call(ContractorSeeder::class);
+//        $this->call(ContractorSeeder::class);
 
         $this->call(WorkFlowForBranchesSeeder::class);
         $this->call(InternalProcedureSettingsSeeder::class);
