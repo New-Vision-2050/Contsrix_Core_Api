@@ -119,8 +119,15 @@ final class WorkflowEngine
         ?string $branchId,
         ?string $createdByUserId = null,
         array $context = [],
+        ?array $metadata = null,
+        ?ProcedureSetting $resolvedSetting = null,
     ): WorkflowStartResult {
-        $settings = $this->resolveSettingsForEntry($type, $formKey, $companyId, $branchId);
+        if ($resolvedSetting !== null) {
+            $settings = collect([$resolvedSetting->load(['steps' => fn ($query) => $query->orderBy('step_order')])]);
+        } else {
+            $settings = $this->resolveSettingsForEntry($type, $formKey, $companyId, $branchId);
+        }
+
         if ($settings->isEmpty()) {
             return new WorkflowStartResult(autoApprove: true, activeProcess: null);
         }
@@ -131,6 +138,7 @@ final class WorkflowEngine
             $settings,
             $createdByUserId,
             $context,
+            $metadata,
         );
 
         return $process === null

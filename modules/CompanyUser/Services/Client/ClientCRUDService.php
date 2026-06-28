@@ -25,6 +25,7 @@ use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Modules\User\Repositories\UserRepository;
 use RabbitMQ\Jobs\BroadcastMessage;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 class ClientCRUDService
@@ -34,7 +35,8 @@ class ClientCRUDService
     public function __construct(
         private CompanyUserRepository $repository,
         private UserRepository        $userRepository,
-        private CompanyUserCRUDService $companyUserCRUDService
+        private CompanyUserCRUDService $companyUserCRUDService,
+        private CompanyRepository $companyRepository
     )
     {
     }
@@ -142,11 +144,39 @@ class ClientCRUDService
 
     public function createClientCompany(CreateClientCompanyDTO $createClientCompanyDTO)
     {
+        return DB::transaction(function () use ($createClientCompanyDTO) {
+            $user = $this->userRepository->createClientCompany(
+                $createClientCompanyDTO->userId->toString(),
+                $createClientCompanyDTO->companyId->toString()
+            );
+            $this->companyRepository->publishDraft($createClientCompanyDTO->companyId);
 
-
-        return $this->userRepository->createClientCompany($createClientCompanyDTO->userId, $createClientCompanyDTO->companyId);
+            return $user;
+        });
     }
 
+    public function createRepresentativeClientCompany(CreateClientDTO $createClientDTO, SetUserAddressDTO $userAddressDTO, UuidInterface $companyId)
+    {
+        return DB::transaction(function () use ($createClientDTO, $userAddressDTO, $companyId) {
+            $companyUser = $this->create(
+                $createClientDTO,
+                new CreateCompanyUserCompanyRoleDTO(
+                    company_id: Uuid::fromString((string) tenant('id')),
+                    role: (string) CompanyUserRole::CLIENT->value
+                ),
+                $userAddressDTO
+            );
 
+            $sourceUser = $this->userRepository->getModel()
+                ->withoutTenancy()
+                ->where('company_id', tenant('id'))
+                ->where('global_company_user_id', $companyUser->global_id)
+                ->firstOrFail();
 
+            $user = $this->userRepository->createClientCompany($sourceUser->id, $companyId->toString());
+            $this->companyRepository->publishDraft($companyId);
+
+            return $user;
+        });
+    }
 }

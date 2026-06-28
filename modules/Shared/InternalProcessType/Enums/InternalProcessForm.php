@@ -23,6 +23,10 @@ enum InternalProcessForm: string
     case CreateProjectNotificationTask = 'createProjectNotificationTask';
     case ConfirmProjectNotificationPresence = 'confirmProjectNotificationPresence';
     case UpdateProjectNotificationTask      = 'updateProjectNotificationTask';
+    case UpdateProjectNotificationSiteStatus = 'updateProjectNotificationSiteStatus';
+    case ProjectNotificationFine            = 'projectNotificationFine';
+    case ConfirmProjectNotificationLocation = 'confirmProjectNotificationLocation';
+    case ProjectNotificationWorkStoppageReport = 'projectNotificationWorkStoppageReport';
     case EndProjectNotificationTask         = 'endProjectNotificationTask';
 
     public function labelAr(): string
@@ -42,7 +46,11 @@ enum InternalProcessForm: string
             self::AttachAttachments   => 'ارفاق مرفقات',
             self::CreateProjectNotificationTask => 'إنشاء إشعار مشروع',
             self::ConfirmProjectNotificationPresence => 'تأكيد استلام',
-            self::UpdateProjectNotificationTask      => 'تحديث',
+            self::UpdateProjectNotificationTask      => 'تحديث بيانات الإشعار',
+            self::UpdateProjectNotificationSiteStatus => 'التحديث الدوري لحالة الموقع',
+            self::ProjectNotificationFine            => 'بنود الغرامة',
+            self::ConfirmProjectNotificationLocation => 'تأكيد التواجد في الموقع',
+            self::ProjectNotificationWorkStoppageReport => 'محضر إيقاف أعمال',
             self::EndProjectNotificationTask         => 'إنهاء المهمة',
         };
     }
@@ -70,6 +78,10 @@ enum InternalProcessForm: string
             ],
             self::ConfirmProjectNotificationPresence,
             self::UpdateProjectNotificationTask,
+            self::UpdateProjectNotificationSiteStatus,
+            self::ProjectNotificationFine,
+            self::ConfirmProjectNotificationLocation,
+            self::ProjectNotificationWorkStoppageReport,
             self::EndProjectNotificationTask => [
                 InternalProcessCondition::AllowOnHolidays,
             ],
@@ -132,6 +144,10 @@ enum InternalProcessForm: string
             self::CreateProjectNotificationTask,
             self::ConfirmProjectNotificationPresence,
             self::UpdateProjectNotificationTask,
+            self::UpdateProjectNotificationSiteStatus,
+            self::ProjectNotificationFine,
+            self::ConfirmProjectNotificationLocation,
+            self::ProjectNotificationWorkStoppageReport,
             self::EndProjectNotificationTask => ['employee_task', 'project_notification_task'],
             self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
         };
@@ -166,6 +182,10 @@ enum InternalProcessForm: string
             self::CreateProjectNotificationTask,
             self::ConfirmProjectNotificationPresence,
             self::UpdateProjectNotificationTask,
+            self::UpdateProjectNotificationSiteStatus,
+            self::ProjectNotificationFine,
+            self::ConfirmProjectNotificationLocation,
+            self::ProjectNotificationWorkStoppageReport,
             self::EndProjectNotificationTask => ProcedureSettingType::ProjectNotificationTask,
             default => ProcedureSettingType::EmployeeTask,
         };

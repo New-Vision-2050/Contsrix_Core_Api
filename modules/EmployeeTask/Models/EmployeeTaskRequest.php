@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
+use Modules\EmployeeTask\Events\EmployeeTaskLifecycleProcessCompleted;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
@@ -258,10 +259,20 @@ class EmployeeTaskRequest extends Model implements HasMedia
      */
     public function onAllProcessesCompleted(Process $process): void
     {
-        // If the task is still pending, mark it as approved.
-        // This handles cases where the workflow completes without explicit approval.
+        // If the task is still pending, this is the create-task workflow: mark it approved.
         if ($this->status === EmployeeTaskStatus::Pending->value) {
             $this->update(['status' => EmployeeTaskStatus::Approved->value, 'approved_at' => now()]);
+            return;
+        }
+
+        // Lifecycle processes (start/end) carry their form in the linked procedure setting.
+        $form = $process->procedureSetting?->form;
+        if ($form !== null && $this->isLifecycleForm($form)) {
+            event(new EmployeeTaskLifecycleProcessCompleted(
+                task: $this,
+                process: $process,
+                approved: true,
+            ));
         }
     }
 
@@ -270,6 +281,34 @@ class EmployeeTaskRequest extends Model implements HasMedia
      */
     public function onProcessFailed(Process $process): void
     {
-        $this->update(['status' => EmployeeTaskStatus::Rejected->value, 'rejected_at' => now()]);
+        // Only reject the task itself for the create-task workflow.
+        if ($this->status === EmployeeTaskStatus::Pending->value) {
+            $this->update(['status' => EmployeeTaskStatus::Rejected->value, 'rejected_at' => now()]);
+            return;
+        }
+
+        $form = $process->procedureSetting?->form;
+        if ($form !== null && $this->isLifecycleForm($form)) {
+            event(new EmployeeTaskLifecycleProcessCompleted(
+                task: $this,
+                process: $process,
+                approved: false,
+            ));
+        }
+    }
+
+    private function isLifecycleForm(string $form): bool
+    {
+        return in_array($form, [
+            InternalProcessForm::StartTask->value,
+            InternalProcessForm::EndTask->value,
+            InternalProcessForm::ConfirmProjectNotificationPresence->value,
+            InternalProcessForm::EndProjectNotificationTask->value,
+            InternalProcessForm::UpdateProjectNotificationTask->value,
+            InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
+            InternalProcessForm::ProjectNotificationFine->value,
+            InternalProcessForm::ConfirmProjectNotificationLocation->value,
+            InternalProcessForm::ProjectNotificationWorkStoppageReport->value,
+        ], true);
     }
 }

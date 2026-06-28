@@ -67,6 +67,8 @@ class CreateCompanyRequest extends FormRequest
 
     public function createCreateCompanyDTO(): CreateCompanyDTO
     {
+        $isClient = (int) $this->get('is_client', 0);
+
         return new CreateCompanyDTO(
             name: $this->get('name'),
             userName: $this->get('user_name'),
@@ -78,7 +80,8 @@ class CreateCompanyRequest extends FormRequest
             companyFieldId: $this->get('company_field_id'),
             generalManagerId: $this->get('general_manager_id'),
             isBroker: $this->get('is_broker') ?? 0,
-            isClient: $this->get('is_client') ?? 0,
+            isClient: $isClient,
+            isDraft: $isClient === 1,
             // registrationTypeId:  $this->get('registration_type_id'),
             // registrationNo:  $this->get('registration_no') ?? '',
         );

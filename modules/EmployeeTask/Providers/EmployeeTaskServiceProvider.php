@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\EmployeeTask\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Modules\EmployeeTask\Conditions\AllowDuringShiftEvaluator;
+use Modules\EmployeeTask\Events\EmployeeTaskLifecycleProcessCompleted;
+use Modules\EmployeeTask\Listeners\ExecuteLifecycleActionOnProcessCompleted;
 use Modules\EmployeeTask\Conditions\AllowOnHolidaysEvaluator;
 use Modules\EmployeeTask\Conditions\AllowOutsideShiftEvaluator;
 use Modules\EmployeeTask\Conditions\EmployeeTaskExceptionResolver;
@@ -39,6 +42,12 @@ class EmployeeTaskServiceProvider extends ServiceProvider
         $this->registerTranslations();
         $this->registerConfig();
         $this->loadMigrationsFrom(module_path($this->moduleName, 'Database/Migrations'));
+
+        Event::listen(
+            EmployeeTaskLifecycleProcessCompleted::class,
+            ExecuteLifecycleActionOnProcessCompleted::class,
+        );
+
         if (! $this->app->bound(WorkflowNotifierRegistry::class)) {
             $this->app->singleton(WorkflowNotifierRegistry::class);
         }

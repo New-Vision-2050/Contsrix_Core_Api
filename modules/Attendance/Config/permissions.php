@@ -8,7 +8,8 @@ return
         'EMPLOYEE_ATTENDANCE_UPDATE' => 'human-resources.attendance*attendance-list.update',
         'EMPLOYEE_ATTENDANCE_DELETE' => 'human-resources.attendance*attendance-list.delete',
         'EMPLOYEE_ATTENDANCE_EXPORT' => 'human-resources.attendance*attendance-list.export',
-        'EMPLOYEE_ATTENDANCE_MAP'    => 'human-resources.attendance*attendance-map.view',
+        'EMPLOYEE_ATTENDANCE_MAP'       => 'human-resources.attendance*attendance-map.view',
+        'EMPLOYEE_ATTENDANCE_SELF_VIEW' => 'human-resources.attendance*attendance-self-service.view',
 
         'EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW' => 'human-resources.attendance*attendance-constraints.view',
         'EMPLOYEE_ATTENDANCE_CONSTRAINTS_CREATE' => 'human-resources.attendance*attendance-constraints.create',
@@ -18,4 +19,3 @@ return
         'ATTENDANCE_REPORTS_VIEW' => 'human-resources.attendance*attendance-reports.view',
     ],
 ];
- 

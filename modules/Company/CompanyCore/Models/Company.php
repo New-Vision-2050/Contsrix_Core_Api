@@ -53,6 +53,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string $general_manager_id ID of the general manager of the company.
  * @property bool $is_active Indicates if the company is active.
  * @property bool $complete_data Indicates if all required data for the company is complete.
+ * @property bool $is_draft Indicates if the client company wizard is not finished.
  * @property string $date_activate Date when the company was activated.
  * @property string $serial_no Serial number associated with the company.
  * @property string $image_path Path to the company's image.
@@ -105,11 +106,13 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia, Audita
         'serial_no',
         'image_path',
         "is_client",
+        "is_draft",
         "is_broker"
     ];
     protected $casts = [
         'id' => 'string',
-        'date_activate' => 'date'
+        'date_activate' => 'date',
+        'is_draft' => 'boolean',
     ];
 
     public static function getCustomColumns(): array
@@ -134,6 +137,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia, Audita
             "check_activity",
             "registration_type_id",
             "is_client",
+            "is_draft",
             "is_broker"
         ];
     }

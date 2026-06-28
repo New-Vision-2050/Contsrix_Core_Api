@@ -72,6 +72,7 @@ Route::post('test', [AttendanceController::class, 'test'])
     Route::prefix('user-constraint')->group(function () {
         // Get current user's constraint for today
         Route::get('today', [UserAttendanceController::class, 'getMyConstraintForToday'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_SELF_VIEW())
             ->name('attendance.user-constraint.today');
     });
 
@@ -84,6 +85,7 @@ Route::post('test', [AttendanceController::class, 'test'])
             ->name('attendance.user-attendance.get-history');
         // Get current user's attendance calendar
         Route::get('calendar', [UserAttendanceController::class, 'getAttendanceCalendar'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_SELF_VIEW())
             ->name('attendance.user-attendance.calendar');
     });
 
