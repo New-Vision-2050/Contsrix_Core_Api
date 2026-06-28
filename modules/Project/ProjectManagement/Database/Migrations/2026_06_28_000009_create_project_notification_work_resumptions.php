@@ -36,8 +36,8 @@ class CreateProjectNotificationWorkResumptions extends Migration
             $table->index('process_id', 'pnwr_process_idx');
             $table->index('status', 'pnwr_status_idx');
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
-            $table->foreign('project_notification_id')->references('id')->on('project_notifications')->cascadeOnDelete();
+            $table->foreign('company_id', 'pnwr_company_fk')->references('id')->on('companies')->cascadeOnDelete();
+            $table->foreign('project_notification_id', 'pnwr_project_notification_fk')->references('id')->on('project_notifications')->cascadeOnDelete();
         });
     }
 

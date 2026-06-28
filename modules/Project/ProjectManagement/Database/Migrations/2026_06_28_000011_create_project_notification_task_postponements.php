@@ -36,8 +36,8 @@ class CreateProjectNotificationTaskPostponements extends Migration
             $table->index('process_id', 'pntp_process_idx');
             $table->index('status', 'pntp_status_idx');
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
-            $table->foreign('project_notification_id')->references('id')->on('project_notifications')->cascadeOnDelete();
+            $table->foreign('company_id', 'pntp_company_fk')->references('id')->on('companies')->cascadeOnDelete();
+            $table->foreign('project_notification_id', 'pntp_project_notification_fk')->references('id')->on('project_notifications')->cascadeOnDelete();
         });
     }
 

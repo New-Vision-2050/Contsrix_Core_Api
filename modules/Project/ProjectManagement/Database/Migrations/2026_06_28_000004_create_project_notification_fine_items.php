@@ -26,7 +26,7 @@ class CreateProjectNotificationFineItems extends Migration
             $table->index('project_notification_fine_id', 'pnfi_fine_idx');
             $table->index('sort_order', 'pnfi_sort_idx');
 
-            $table->foreign('project_notification_fine_id')
+            $table->foreign('project_notification_fine_id', 'pnfi_fine_fk')
                 ->references('id')
                 ->on('project_notification_fines')
                 ->cascadeOnDelete();

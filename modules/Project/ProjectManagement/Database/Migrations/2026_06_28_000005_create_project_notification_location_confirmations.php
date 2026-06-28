@@ -36,8 +36,8 @@ class CreateProjectNotificationLocationConfirmations extends Migration
             $table->index('process_id', 'pnlc_process_idx');
             $table->index('status', 'pnlc_status_idx');
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
-            $table->foreign('project_notification_id')->references('id')->on('project_notifications')->cascadeOnDelete();
+            $table->foreign('company_id', 'pnlc_company_fk')->references('id')->on('companies')->cascadeOnDelete();
+            $table->foreign('project_notification_id', 'pnlc_project_notification_fk')->references('id')->on('project_notifications')->cascadeOnDelete();
         });
     }
 

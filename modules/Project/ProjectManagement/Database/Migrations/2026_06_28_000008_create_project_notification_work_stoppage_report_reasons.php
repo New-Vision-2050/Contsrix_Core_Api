@@ -26,11 +26,11 @@ class CreateProjectNotificationWorkStoppageReportReasons extends Migration
             $table->index('work_stoppage_reason_id', 'pnwsrr_reason_idx');
             $table->index('sort_order', 'pnwsrr_sort_idx');
 
-            $table->foreign('project_notification_work_stoppage_report_id')
+            $table->foreign('project_notification_work_stoppage_report_id', 'pnwsrr_report_fk')
                 ->references('id')
                 ->on('project_notification_work_stoppage_reports')
                 ->cascadeOnDelete();
-            $table->foreign('work_stoppage_reason_id')
+            $table->foreign('work_stoppage_reason_id', 'pnwsrr_reason_fk')
                 ->references('id')
                 ->on('project_notification_work_stoppage_reasons')
                 ->nullOnDelete();

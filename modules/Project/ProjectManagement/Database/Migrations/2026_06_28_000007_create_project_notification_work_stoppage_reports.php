@@ -33,8 +33,8 @@ class CreateProjectNotificationWorkStoppageReports extends Migration
             $table->index('process_id', 'pnwsr_process_idx');
             $table->index('status', 'pnwsr_status_idx');
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
-            $table->foreign('project_notification_id')->references('id')->on('project_notifications')->cascadeOnDelete();
+            $table->foreign('company_id', 'pnwsr_company_fk')->references('id')->on('companies')->cascadeOnDelete();
+            $table->foreign('project_notification_id', 'pnwsr_project_notification_fk')->references('id')->on('project_notifications')->cascadeOnDelete();
         });
     }
 
