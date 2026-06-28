@@ -58,6 +58,7 @@ class EmployeeTaskRequest extends Model implements HasMedia
         'duration_hours',
         'original_duration_hours',
         'task_date',
+        'task_time',
         'task_latitude',
         'task_longitude',
         'radius_meters',
@@ -95,6 +96,7 @@ class EmployeeTaskRequest extends Model implements HasMedia
         'start_location'          => 'array',
         'end_location'            => 'array',
         'task_date'               => 'date:Y-m-d',
+        'task_time'               => 'datetime:H:i',
         'time_from'               => 'datetime',
         'time_to'                 => 'datetime',
         'approved_at'             => 'datetime',
@@ -309,6 +311,8 @@ class EmployeeTaskRequest extends Model implements HasMedia
             InternalProcessForm::ProjectNotificationFine->value,
             InternalProcessForm::ConfirmProjectNotificationLocation->value,
             InternalProcessForm::ProjectNotificationWorkStoppageReport->value,
+            InternalProcessForm::ProjectNotificationWorkResumption->value,
+            InternalProcessForm::ProjectNotificationTaskPostponement->value,
         ], true);
     }
 }

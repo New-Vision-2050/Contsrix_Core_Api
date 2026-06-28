@@ -27,6 +27,8 @@ enum InternalProcessForm: string
     case ProjectNotificationFine            = 'projectNotificationFine';
     case ConfirmProjectNotificationLocation = 'confirmProjectNotificationLocation';
     case ProjectNotificationWorkStoppageReport = 'projectNotificationWorkStoppageReport';
+    case ProjectNotificationWorkResumption     = 'projectNotificationWorkResumption';
+    case ProjectNotificationTaskPostponement   = 'projectNotificationTaskPostponement';
     case EndProjectNotificationTask         = 'endProjectNotificationTask';
 
     public function labelAr(): string
@@ -51,6 +53,8 @@ enum InternalProcessForm: string
             self::ProjectNotificationFine            => 'بنود الغرامة',
             self::ConfirmProjectNotificationLocation => 'تأكيد التواجد في الموقع',
             self::ProjectNotificationWorkStoppageReport => 'محضر إيقاف أعمال',
+            self::ProjectNotificationWorkResumption     => 'استئناف الأعمال',
+            self::ProjectNotificationTaskPostponement   => 'تأجيل المهمة',
             self::EndProjectNotificationTask         => 'إنهاء المهمة',
         };
     }
@@ -82,6 +86,8 @@ enum InternalProcessForm: string
             self::ProjectNotificationFine,
             self::ConfirmProjectNotificationLocation,
             self::ProjectNotificationWorkStoppageReport,
+            self::ProjectNotificationWorkResumption,
+            self::ProjectNotificationTaskPostponement,
             self::EndProjectNotificationTask => [
                 InternalProcessCondition::AllowOnHolidays,
             ],
@@ -148,6 +154,8 @@ enum InternalProcessForm: string
             self::ProjectNotificationFine,
             self::ConfirmProjectNotificationLocation,
             self::ProjectNotificationWorkStoppageReport,
+            self::ProjectNotificationWorkResumption,
+            self::ProjectNotificationTaskPostponement,
             self::EndProjectNotificationTask => ['employee_task', 'project_notification_task'],
             self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
         };
@@ -186,6 +194,8 @@ enum InternalProcessForm: string
             self::ProjectNotificationFine,
             self::ConfirmProjectNotificationLocation,
             self::ProjectNotificationWorkStoppageReport,
+            self::ProjectNotificationWorkResumption,
+            self::ProjectNotificationTaskPostponement,
             self::EndProjectNotificationTask => ProcedureSettingType::ProjectNotificationTask,
             default => ProcedureSettingType::EmployeeTask,
         };

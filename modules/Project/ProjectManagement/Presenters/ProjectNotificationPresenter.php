@@ -43,6 +43,7 @@ class ProjectNotificationPresenter
             'status'                      => $n->status,
             'status_label'                => $this->statusLabel($n->status),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
+            'task_time'                   => $n->task_time?->format('H:i'),
             'duration_hours'              => $n->duration_hours ? (float) $n->duration_hours : null,
             'notes'                       => $n->notes,
             'approved_by'                 => $n->approved_by,
@@ -101,6 +102,7 @@ class ProjectNotificationPresenter
             'status'                      => $n->status,
             'status_label'                => $this->statusLabel($n->status),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
+            'task_time'                   => $n->task_time?->format('H:i'),
             'duration_hours'              => $n->relationLoaded('employeeTask') && $n->employeeTask
                 ? ($n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null)
                 : null,

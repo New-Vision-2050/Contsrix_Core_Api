@@ -700,6 +700,154 @@
           "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Work stoppage report request submitted successfully\"\n}"
         }
       ]
+    },
+    {
+      "name": "10. Submit Work Resumption (projectNotificationWorkResumption)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "reasons_resolved",
+              "value": "1",
+              "type": "text",
+              "description": "تم معالجة أسباب الإيقاف"
+            },
+            {
+              "key": "safety_notes_reviewed",
+              "value": "1",
+              "type": "text",
+              "description": "تمت مراجعة ملاحظات السلامة"
+            },
+            {
+              "key": "site_ready",
+              "value": "1",
+              "type": "text",
+              "description": "الموقع جاهز لاستئناف التنفيذ"
+            },
+            {
+              "key": "contractor_notified",
+              "value": "1",
+              "type": "text",
+              "description": "تم إشعار المقاول"
+            },
+            {
+              "key": "notes",
+              "value": "تم معالجة جميع الملاحظات الواردة في تقرير الإيقاف وتم التأكد من جاهزية الموقع لاستئناف الأعمال وفقاً لمتطلبات السلامة والجودة.",
+              "type": "text",
+              "description": "ملاحظات"
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "description": "مرفقات (PDF, JPG, PNG, max 20MB)",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/request-work-resumption",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "request-work-resumption"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Work Resumption Submitted",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"notification_type\": \"اعتماد\",\n    \"work_description\": \"وصف العمل قبل التعديل\",\n    \"contractor_name\": \"مقاول المشروع\",\n    \"contractor_technical_name\": \"منسق المقاول\",\n    \"contractor_mobile\": \"0500000000\",\n    \"task_latitude\": \"24.7136\",\n    \"task_longitude\": \"46.6753\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Work resumption request submitted successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "11. Submit Task Postponement (projectNotificationTaskPostponement)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "new_task_date",
+              "value": "2026-05-30",
+              "type": "text",
+              "description": "تاريخ التأجيل الجديد"
+            },
+            {
+              "key": "new_task_time",
+              "value": "08:00",
+              "type": "text",
+              "description": "وقت التأجيل الجديد"
+            },
+            {
+              "key": "reason",
+              "value": "ظروف جوية تمنع بدء العمل في الموعد المحدد",
+              "type": "text",
+              "description": "سبب التأجيل"
+            },
+            {
+              "key": "internal_procedure_setting_id",
+              "value": "{{procedure_setting_id}}",
+              "type": "text",
+              "description": "معرف الإجراء الداخلي (اختياري)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/request-task-postponement",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "request-task-postponement"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Task Postponement Submitted",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"notification_type\": \"اعتماد\",\n    \"work_description\": \"وصف العمل قبل التعديل\",\n    \"contractor_name\": \"مقاول المشروع\",\n    \"contractor_technical_name\": \"منسق المقاول\",\n    \"contractor_mobile\": \"0500000000\",\n    \"task_latitude\": \"24.7136\",\n    \"task_longitude\": \"46.6753\",\n    \"task_date\": \"2026-05-25\",\n    \"task_time\": \"16:32\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Task postponement request submitted successfully\"\n}"
+        }
+      ]
     }
   ]
 }

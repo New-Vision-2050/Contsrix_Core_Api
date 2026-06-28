@@ -28,7 +28,9 @@ use Modules\Project\ProjectManagement\Requests\GetProjectNotificationEmployeesRe
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationFineRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationLocationConfirmationRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationSiteStatusUpdateRequest;
+use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationTaskPostponementRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationUpdateRequest;
+use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationWorkResumptionRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationWorkStoppageReportRequest;
 use Modules\Project\ProjectManagement\Requests\UpdateProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationLocationService;
@@ -224,6 +226,47 @@ class ProjectNotificationController extends Controller
         return Json::item(
             ProjectNotificationPresenter::detail($notification),
             message: 'Work stoppage report request submitted successfully',
+        );
+    }
+
+    /**
+     * POST /projects/notifications/{id}/request-work-resumption
+     *
+     * Submit a workflow-based work resumption. The resumption data is stored in
+     * the Process metadata; the actual record is created only after all workflow
+     * steps are approved.
+     */
+    public function requestWorkResumption(RequestProjectNotificationWorkResumptionRequest $request): JsonResponse
+    {
+        $notification = $this->notificationService->requestWorkResumption(
+            $request->route('id'),
+            $request->toDTO(),
+            (string) $request->user()->id,
+        );
+
+        return Json::item(
+            ProjectNotificationPresenter::detail($notification),
+            message: 'Work resumption request submitted successfully',
+        );
+    }
+
+    /**
+     * POST /projects/notifications/{id}/request-task-postponement
+     *
+     * Submit a workflow-based task postponement. On approval, the linked task's
+     * date and time are updated to the requested values.
+     */
+    public function requestTaskPostponement(RequestProjectNotificationTaskPostponementRequest $request): JsonResponse
+    {
+        $notification = $this->notificationService->requestTaskPostponement(
+            $request->route('id'),
+            $request->toDTO(),
+            (string) $request->user()->id,
+        );
+
+        return Json::item(
+            ProjectNotificationPresenter::detail($notification),
+            message: 'Task postponement request submitted successfully',
         );
     }
 
