@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\Project\ProjectManagement\DTO\UpdateProjectNotificationDTO;
 
 class UpdateProjectNotificationRequest extends FormRequest
@@ -17,6 +18,7 @@ class UpdateProjectNotificationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'notification_number'         => ['nullable', 'string', 'max:50', Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'))->ignore($this->route('id'))],
             'notification_type'           => ['nullable', 'string', 'max:255'],
             'severity'                    => ['nullable', 'string', 'in:منخفض,متوسط,عالي'],
             'work_type'                   => ['nullable', 'string', 'max:255'],
@@ -46,6 +48,7 @@ class UpdateProjectNotificationRequest extends FormRequest
     public function toDTO(): UpdateProjectNotificationDTO
     {
         return new UpdateProjectNotificationDTO(
+            notificationNumber: $this->input('notification_number'),
             notificationType: $this->input('notification_type'),
             severity: $this->input('severity'),
             workType: $this->input('work_type'),

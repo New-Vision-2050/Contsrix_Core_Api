@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\DTO;
 final class UpdateProjectNotificationDTO
 {
     public function __construct(
+        public readonly ?string $notificationNumber        = null,
         public readonly ?string $notificationType          = null,
         public readonly ?string $severity                  = null,
         public readonly ?string $workType                  = null,
@@ -35,6 +36,7 @@ final class UpdateProjectNotificationDTO
     public function toArray(): array
     {
         return array_filter([
+            'notification_number'         => $this->notificationNumber,
             'notification_type'           => $this->notificationType,
             'severity'                    => $this->severity,
             'work_type'                   => $this->workType,

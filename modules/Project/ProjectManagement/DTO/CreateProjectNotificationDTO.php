@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\DTO;
 final class CreateProjectNotificationDTO
 {
     public function __construct(
+        public readonly ?string $notificationNumber    = null,
         public readonly string  $projectId,
         public readonly string  $createdByUserId,
         public readonly string  $assignedUserId,
@@ -41,6 +42,7 @@ final class CreateProjectNotificationDTO
     public function toArray(): array
     {
         return [
+            'notification_number'         => $this->notificationNumber,
             'project_id'                  => $this->projectId,
             'created_by_user_id'          => $this->createdByUserId,
             'assigned_user_id'            => $this->assignedUserId,
