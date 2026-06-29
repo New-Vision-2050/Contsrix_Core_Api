@@ -829,6 +829,8 @@ class ProjectNotificationService
             return [];
         }
 
+        $task->loadMissing('processes.procedureSetting');
+
         $result = [];
         foreach ($task->processes as $process) {
             if ($process->status !== ProcessStatus::InProgress) {
@@ -850,7 +852,7 @@ class ProjectNotificationService
             });
 
             if ($pendingStep) {
-                $formKey = $process->metadata['form'] ?? null;
+                $formKey = $process->metadata['form'] ?? $process->procedureSetting?->form;
                 $form = $formKey !== null ? InternalProcessForm::tryFrom($formKey) : null;
 
                 $result[] = [
