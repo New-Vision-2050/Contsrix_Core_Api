@@ -9,12 +9,14 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
-use Modules\Process\Enums\ProcessStatus;
-use Modules\Process\Enums\ProcessStepStatus;
+use Modules\ProcedureSetting\Services\WorkflowEngine;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 
 class ProjectNotificationRepository
 {
+    public function __construct(
+        private readonly WorkflowEngine $engine,
+    ) {}
     public function create(array $data): ProjectNotification
     {
         return ProjectNotification::query()->create($data);
@@ -113,17 +115,13 @@ class ProjectNotificationRepository
 
         // Core inbox filter: must have an in-progress process with a pending
         // step assigned to (or authorized for) the current user.
-        $query->whereHas('employeeTask.processes', function ($q) use ($userId) {
-            $q->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
-                ->where('status', ProcessStatus::InProgress)
-                ->whereHas('steps', function ($q) use ($userId) {
-                    $q->where('status', ProcessStepStatus::Pending)
-                        ->where(function ($q) use ($userId) {
-                            $q->where('assigned_user_id', $userId)
-                                ->orWhereJsonContains('authorized_user_ids', $userId);
-                        });
-                });
-        });
+        $query->whereHas(
+            'employeeTask.processes',
+            $this->engine->pendingProcessScopeForUser(
+                ProcedureSettingType::ProjectNotificationTask->value,
+                $userId,
+            ),
+        );
 
         $query->with([
             'assignedUser',

@@ -5,10 +5,16 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Services;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Modules\ProcedureSetting\DTO\WorkflowStartResult;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\WorkFlow;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
+use Modules\Process\Models\Process;
 use Modules\Process\Services\ProcessWorkflowService;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
 final class WorkflowEngine
@@ -216,6 +222,191 @@ final class WorkflowEngine
             ],
             'action_takers' => $actionTakers,
         ];
+    }
+
+    /**
+     * Return a closure suitable for whereHas('employeeTask.processes', ...)
+     * that filters for in-progress processes of the given type with at least
+     * one pending step assigned to (or authorized for) the given user.
+     *
+     * Usage:
+     *   $query->whereHas('employeeTask.processes',
+     *       $engine->pendingProcessScopeForUser(
+     *           ProcedureSettingType::ProjectNotificationTask->value,
+     *           $userId,
+     *       ));
+     */
+    public function pendingProcessScopeForUser(string $processableType, string $userId): \Closure
+    {
+        return function ($q) use ($processableType, $userId) {
+            $q->where('processable_type', $processableType)
+                ->where('status', ProcessStatus::InProgress)
+                ->whereHas('steps', function ($q) use ($userId) {
+                    $q->where('status', ProcessStepStatus::Pending)
+                        ->where(function ($q) use ($userId) {
+                            $q->where('assigned_user_id', $userId)
+                                ->orWhereJsonContains('authorized_user_ids', $userId);
+                        });
+                });
+        };
+    }
+
+    /**
+     * Given a task model whose `processes` relation is already loaded,
+     * return an array of pending-process descriptors for the given user.
+     *
+     * Each descriptor contains:
+     *   - process_id, procedure_setting_id, form, mobile_inbox_action_key,
+     *     pending_step_id, pending_step_order
+     *
+     * This centralises the logic previously duplicated in
+     * ProjectNotificationService::resolvePendingProcessesForInbox.
+     */
+    public function resolvePendingProcessesForUser(Model $task, string $userId): array
+    {
+        if (! $task->relationLoaded('processes')) {
+            return [];
+        }
+
+        $task->loadMissing('processes.procedureSetting');
+
+        $result = [];
+        foreach ($task->processes as $process) {
+            if ($process->status !== ProcessStatus::InProgress) {
+                continue;
+            }
+
+            $pendingStep = $process->steps->first(function ($step) use ($userId) {
+                if ($step->status !== ProcessStepStatus::Pending) {
+                    return false;
+                }
+                if ($step->assigned_user_id === $userId) {
+                    return true;
+                }
+                $authorized = $step->authorized_user_ids ?? [];
+                return in_array($userId, $authorized, true);
+            });
+
+            if ($pendingStep) {
+                $formKey = $process->metadata['form'] ?? $process->procedureSetting?->form;
+                $form = $formKey !== null ? InternalProcessForm::tryFrom($formKey) : null;
+
+                $result[] = [
+                    'process_id' => $process->id,
+                    'procedure_setting_id' => $process->procedure_setting_id,
+                    'form' => $formKey,
+                    'mobile_inbox_action_key' => $form?->mobileInboxActionKey() ?? 'accept_reject',
+                    'pending_step_id' => $pendingStep->id,
+                    'pending_step_order' => $pendingStep->template_step_order,
+                ];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Check whether a processable entity has an active (in-progress) process
+     * of the given type, optionally scoped to a specific procedure setting.
+     */
+    public function hasActiveProcess(string $processableType, string $processableId, ?string $procedureSettingId = null): bool
+    {
+        $query = Process::query()
+            ->where('processable_type', $processableType)
+            ->where('processable_id', $processableId)
+            ->where('status', ProcessStatus::InProgress);
+
+        if ($procedureSettingId !== null) {
+            $query->where('procedure_setting_id', $procedureSettingId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * Start a lifecycle workflow (update, site-status, fine, postponement, etc.)
+     * for a processable entity.
+     *
+     * This centralises the pattern used by ProjectNotificationService::requestUpdate
+     * and similar methods: resolve the procedure setting by form key (or use an
+     * explicit one), build metadata, and call startWorkflow.
+     *
+     * @param  string  $processableType  e.g. ProcedureSettingType::ProjectNotificationTask->value
+     * @param  string  $processableId    UUID of the EmployeeTaskRequest / entity
+     * @param  string  $procedureType    Same as processableType for most cases
+     * @param  string  $formKey          InternalProcessForm value
+     * @param  string  $companyId
+     * @param  ?string $branchId
+     * @param  ?string $createdByUserId  The task creator / submitter
+     * @param  array   $metadata         Process metadata (must include 'form')
+     * @param  array   $context          Extra context (e.g. project_id)
+     * @param  ?ProcedureSetting $resolvedSetting  Pre-resolved setting (skips lookup)
+     * @return WorkflowStartResult
+     */
+    public function startLifecycleWorkflow(
+        string $processableType,
+        string $processableId,
+        string $procedureType,
+        string $formKey,
+        string $companyId,
+        ?string $branchId,
+        ?string $createdByUserId,
+        array $metadata,
+        array $context = [],
+        ?ProcedureSetting $resolvedSetting = null,
+    ): WorkflowStartResult {
+        if ($resolvedSetting === null) {
+            $resolvedSetting = $this->resolveSettingsForEntry($procedureType, $formKey, $companyId, $branchId)->first();
+        }
+
+        if ($resolvedSetting === null) {
+            return new WorkflowStartResult(autoApprove: true, activeProcess: null);
+        }
+
+        return $this->startWorkflow(
+            processableType: $processableType,
+            processableId: $processableId,
+            type: $procedureType,
+            formKey: $formKey,
+            companyId: $companyId,
+            branchId: $branchId,
+            createdByUserId: $createdByUserId,
+            context: $context,
+            metadata: $metadata,
+            resolvedSetting: $resolvedSetting,
+        );
+    }
+
+    /**
+     * Resolve a procedure setting for a lifecycle form, either from an explicit
+     * ID (provided by the DTO) or by looking up the form key for the task's
+     * company + branch.
+     *
+     * This centralises the pattern repeated across ProjectNotificationService
+     * request* methods:
+     *   $setting = $dto->internalProcedureSettingId !== null
+     *       ? ProcedureSetting::find($dto->internalProcedureSettingId)
+     *       : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(...);
+     *
+     * @param  ?string $explicitSettingId  DTO-provided setting ID (takes priority)
+     * @param  string  $procedureType      e.g. ProcedureSettingType::ProjectNotificationTask->value
+     * @param  string  $formKey            InternalProcessForm value
+     * @param  string  $companyId
+     * @param  ?string $branchId
+     * @return ?ProcedureSetting
+     */
+    public function resolveLifecycleSetting(
+        ?string $explicitSettingId,
+        string $procedureType,
+        string $formKey,
+        string $companyId,
+        ?string $branchId,
+    ): ?ProcedureSetting {
+        if ($explicitSettingId !== null) {
+            return ProcedureSetting::query()->find($explicitSettingId);
+        }
+
+        return $this->resolveSettingsForEntry($procedureType, $formKey, $companyId, $branchId)->first();
     }
 
     private function findFirstDescendantWithSteps(string $parentId): ?ProcedureSetting
