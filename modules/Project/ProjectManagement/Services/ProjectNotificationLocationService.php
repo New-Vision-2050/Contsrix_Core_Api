@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Services;
 
+use Carbon\Carbon;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Models\UserLocation;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Support\GeoDistance;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
@@ -51,6 +53,13 @@ class ProjectNotificationLocationService
         // 3. Get users with names.
         $users = User::whereIn('id', $userIds)->get()->keyBy('id');
 
+        // 3b. Get latest user_locations record per user (location sent via track-location API without attendance).
+        $latestUserLocations = UserLocation::whereIn('user_id', $userIds)
+            ->where('recorded_at', '>=', now()->startOfDay())
+            ->orderBy('recorded_at', 'desc')
+            ->get()
+            ->keyBy('user_id');
+
         // 4. Get busy users (tasks in_progress or approved today).
         $busyUserIds = EmployeeTaskRequest::whereIn('user_id', $userIds)
             ->whereIn('status', ['in_progress', 'approved'])
@@ -81,10 +90,24 @@ class ProjectNotificationLocationService
             // Fallback to clock-in location.
             if (! $latestPoint && $attendance && ! empty($attendance->clock_in_location)) {
                 $latestPoint = array_merge($attendance->clock_in_location, [
-                    'timestamp' => $attendance->clock_in_time?->format('Y-m-d H:i:s'),
+                    'timestamp' => $attendance->clock_in_time ? Carbon::parse($attendance->clock_in_time)->format('Y-m-d H:i:s') : null,
                     'type' => 'clock_in',
                     'location_source' => 'clock_in',
                 ]);
+            }
+
+            // Fallback to user_locations table (location sent via track-location API without attendance).
+            if (! $latestPoint) {
+                $userLoc = $latestUserLocations->get($userId);
+                if ($userLoc) {
+                    $latestPoint = [
+                        'latitude' => $userLoc->latitude,
+                        'longitude' => $userLoc->longitude,
+                        'accuracy' => $userLoc->accuracy,
+                        'timestamp' => $userLoc->recorded_at?->format('Y-m-d H:i:s'),
+                        'location_source' => $userLoc->location_source ?? 'GPS',
+                    ];
+                }
             }
 
             $employeeLat = $latestPoint['latitude'] ?? null;
@@ -122,7 +145,7 @@ class ProjectNotificationLocationService
                 'attendance' => $attendance ? [
                     'id' => $attendance->id,
                     'status' => $attendance->status,
-                    'clock_in_time' => $attendance->clock_in_time?->format('H:i:s'),
+                    'clock_in_time' => $attendance->clock_in_time ? Carbon::parse($attendance->clock_in_time)->format('H:i:s') : null,
                 ] : null,
             ];
         }
@@ -160,7 +183,11 @@ class ProjectNotificationLocationService
         ?string $lastUpdateTimestamp,
     ): string {
         if (! $attendance) {
-            return 'offline';
+            if ($isBusy) {
+                return 'busy';
+            }
+
+            return $hasLocation ? 'available' : 'offline';
         }
 
         // Clocked out / completed for today.
@@ -174,14 +201,6 @@ class ProjectNotificationLocationService
 
         if (! $hasLocation) {
             return 'no_location';
-        }
-
-        // Check freshness: < 15 min = available, otherwise not connected.
-        if ($lastUpdateTimestamp) {
-            $minutesAgo = now()->parse($lastUpdateTimestamp)->diffInMinutes(now());
-            if ($minutesAgo > 15) {
-                return 'not_connected';
-            }
         }
 
         return 'available';
