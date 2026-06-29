@@ -123,7 +123,7 @@ final class WorkflowEngine
         ?ProcedureSetting $resolvedSetting = null,
     ): WorkflowStartResult {
         if ($resolvedSetting !== null) {
-            $settings = collect([$resolvedSetting->load(['steps' => fn ($query) => $query->orderBy('step_order')])]);
+            $settings = new Collection([$resolvedSetting->load(['steps' => fn ($query) => $query->orderBy('step_order')])]);
         } else {
             $settings = $this->resolveSettingsForEntry($type, $formKey, $companyId, $branchId);
         }
