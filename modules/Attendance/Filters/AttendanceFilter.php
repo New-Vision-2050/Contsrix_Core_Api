@@ -36,7 +36,15 @@ class AttendanceFilter extends SearchModelFilter
         }
 
         if ($v === 'absent') {
-            return $this->where('is_absent', true);
+            return $this->where('is_absent', true)
+                ->whereNotExists(function ($query) {
+                    $query->from('attendances as a2')
+                        ->whereColumn('a2.user_id', 'attendances.user_id')
+                        ->whereColumn('a2.business_date', 'attendances.business_date')
+                        ->whereNotNull('a2.clock_in_time')
+                        ->where('a2.is_absent', false)
+                        ->whereNull('a2.deleted_at');
+                });
         }
 
         if ($v === 'late') {
