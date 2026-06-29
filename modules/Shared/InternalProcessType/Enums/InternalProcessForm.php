@@ -95,6 +95,7 @@ enum InternalProcessForm: string
 
             self::EndProjectNotificationTask => [
                 InternalProcessCondition::InsideTaskLocation,
+
             ],
             self::AttachAttachments => [
                 InternalProcessCondition::MaxAttachments,
@@ -152,16 +153,16 @@ enum InternalProcessForm: string
             self::CreateTask,
             self::StartTask,
             self::EndTask => ['employee_task'],
-            self::CreateProjectNotificationTask,
-            self::ConfirmProjectNotificationPresence,
-            self::UpdateProjectNotificationTask,
-            self::UpdateProjectNotificationSiteStatus,
-            self::ProjectNotificationFine,
-            self::ConfirmProjectNotificationLocation,
-            self::ProjectNotificationWorkStoppageReport,
-            self::ProjectNotificationWorkResumption,
-            self::ProjectNotificationTaskPostponement,
-            self::EndProjectNotificationTask => ['employee_task', 'project_notification_task'],
+            self::CreateProjectNotificationTask => ['project_notification_task'],
+            self::ConfirmProjectNotificationPresence => ['project_notification_task'],
+            self::UpdateProjectNotificationTask => ['project_notification_task'],
+            self::UpdateProjectNotificationSiteStatus => ['project_notification_task'],
+            self::ProjectNotificationFine => ['project_notification_task'],
+            self::ConfirmProjectNotificationLocation => ['project_notification_task'],
+            self::ProjectNotificationWorkStoppageReport => ['project_notification_task'],
+            self::ProjectNotificationWorkResumption => ['project_notification_task'],
+            self::ProjectNotificationTaskPostponement => ['project_notification_task'],
+            self::EndProjectNotificationTask => ['project_notification_task'],
             self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
         };
     }
