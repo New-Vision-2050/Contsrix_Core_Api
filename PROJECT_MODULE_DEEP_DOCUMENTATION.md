@@ -1232,7 +1232,16 @@ When creating the workflow for `CreateProjectNotificationTask`, the frontend may
 
 **Condition Evaluation for Project Notifications**:
 
-Only `InsideCustomLocations` is evaluated for `CreateProjectNotificationTask`. The admin sets the task location from the dashboard, so the employee's real-time context (current shift, current GPS, today's holiday status) is not relevant at creation time. `EmployeeTaskFormConditionService::checkCreateTaskConditions()` resolves the condition map from `InternalProcessForm::CreateProjectNotificationTask->conditions()`, which now contains only `InsideCustomLocations`. If `InsideCustomLocations` is active and the task location falls outside the configured polygons, creation fails.
+Only `InsideCustomLocations` is evaluated for `CreateProjectNotificationTask`. The admin sets the task location from the dashboard, so the employee's real-time context (current shift, current GPS, today's holiday status) is not relevant at creation time. `EmployeeTaskFormConditionService::checkCreateTaskConditions()` resolves the condition map from `InternalProcessForm::CreateProjectNotificationTask->conditions()`, which contains only `InsideCustomLocations`. If `InsideCustomLocations` is active and the task location falls outside the configured polygons, creation fails.
+
+The following mobile/workflow forms also expose the `InsideTaskLocation` condition (employee must be within the configured radius of the task location):
+
+- `ConfirmProjectNotificationLocation` — location confirmation
+- `UpdateProjectNotificationSiteStatus` — periodic site status update
+- `ProjectNotificationFine` — fine/penalty request
+- `EndProjectNotificationTask` — close/end the notification
+
+For these forms, `InsideTaskLocation` is a precondition. The evaluator (`InsideTaskLocationEvaluator`) checks the user's current GPS against the task's `task_latitude`/`task_longitude` using the `radius_meters` setting (default 100 m). The action is rejected if the employee is outside the radius. If the request omits `current_latitude`/`current_longitude`, the location check is skipped so legacy clients are not broken; for `ConfirmProjectNotificationLocation` and `EndProjectNotificationTask` the existing `latitude`/`longitude` fields are used as the current location. Enforcement is invoked by `ProjectNotificationService::checkWorkflowFormConditions()` (for the first three forms) and by `EmployeeTaskLifecycleService::end()` via `EmployeeTaskFormConditionService::checkEndTaskConditions()` (for the end form) before the record or workflow process is created.
 
 Normal employee task creation (`CreateTask` form) is unaffected — all conditions are evaluated.
 
@@ -1448,14 +1457,15 @@ Sends email via `AttachmentRequestMail`.
 - Notification status is auto-synced from the linked `EmployeeTaskRequest` by `EmployeeTaskStatusSyncObserver` whenever the task status changes (e.g., `in_progress` after confirm-receive, `completed` after end). The observer maps `paused` → `in_progress` for the notification.
 - The linked `EmployeeTaskRequest` exposes its taken internal procedures via `GET /employee-tasks/{employee_task_id}/procedures`. The mobile app can use the linked task ID to display the procedures (الإجراءات) timeline for the assigned task. Response includes `items` (ordered by step with `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`) and `summary` (`total`, `last_action`, `start_date`, `progress`).
 - `GET /notifications/{id}/procedures` is a convenience wrapper over the employee-task endpoint: it resolves the linked `EmployeeTaskRequest` from the notification id and returns the same `items` + `summary` shape. Supports `?debug=true` for additional debug info.
-- **Workflow-based request endpoints** (`request-update`, `request-site-status-update`, `request-fine`, `confirm-location`, `request-work-stoppage-report`, `request-work-resumption`, `request-task-postponement`): Each creates a Process snapshot with the submitted data. The actual DB record is created only after all workflow steps are approved. If `internal_procedure_setting_id` is null or no procedure setting is configured, the change is applied immediately (no workflow). All accept an optional `internal_procedure_setting_id` UUID parameter.
+- **Workflow-based request endpoints** (`request-update`, `request-site-status-update`, `request-fine`, `confirm-location`, `request-work-stoppage-report`, `request-work-resumption`, `request-task-postponement`, `end`): Each creates a Process snapshot with the submitted data (except `end`, which uses the EmployeeTask lifecycle end flow). The actual DB record is created only after all workflow steps are approved. If `internal_procedure_setting_id` is null or no procedure setting is configured, the change is applied immediately (no workflow). All accept an optional `internal_procedure_setting_id` UUID parameter.
 - `request-update` accepts: `notification_type`, `feeder_number`, `work_description`, `contractor_name`, `contractor_technical_name`, `contractor_mobile`, `task_latitude`, `task_longitude`, `notes`, `internal_procedure_setting_id`, `files[]` (jpg/jpeg/png/webp, max 10MB).
-- `request-site-status-update` accepts: `update_date` (Y-m-d), `update_time` (H:i), `site_status_id` (UUID), `current_site_status_id` (UUID), `work_stages_completed`, `current_status_description`, `completion_percentage` (0-100), `updates_obstacles`, `additional_notes`, `internal_procedure_setting_id`, `files[]`.
-- `request-fine` accepts: `reason`, `items[]` (required, min 1: `name_ar`, `name_en?`, `quantity` (int ≥1), `unit_amount` (numeric ≥0), `total_amount` (numeric ≥0), `sort_order?`), `internal_procedure_setting_id`, `files[]` (pdf/jpg/jpeg/png/webp, max 10MB).
+- `request-site-status-update` accepts: `update_date` (Y-m-d), `update_time` (H:i), `site_status_id` (UUID), `current_site_status_id` (UUID), `work_stages_completed`, `current_status_description`, `completion_percentage` (0-100), `updates_obstacles`, `additional_notes`, `internal_procedure_setting_id`, `files[]`, optional `current_latitude`/`current_longitude` (used by the `InsideTaskLocation` condition).
+- `request-fine` accepts: `reason`, `items[]` (required, min 1: `name_ar`, `name_en?`, `quantity` (int ≥1), `unit_amount` (numeric ≥0), `total_amount` (numeric ≥0), `sort_order?`), `internal_procedure_setting_id`, `files[]` (pdf/jpg/jpeg/png/webp, max 10MB), optional `current_latitude`/`current_longitude` (used by the `InsideTaskLocation` condition).
 - `confirm-location` accepts: `latitude` (required), `longitude` (required), `distance_meters`, `is_inside_location` (required, boolean), `internal_procedure_setting_id`.
 - `request-work-stoppage-report` accepts: `other_notes`, `reasons[]` (required, min 1: `reason_id?` (UUID, active), `notes?`, `sort_order?`), `internal_procedure_setting_id`, `files[]` (pdf/jpg/jpeg/png/webp, max 10MB).
 - `request-work-resumption` accepts: `reasons_resolved` (required, boolean), `safety_notes_reviewed` (required, boolean), `site_ready` (required, boolean), `contractor_notified` (required, boolean), `notes`, `files[]` (pdf/jpg/jpeg/png/doc/docx, max 20MB, max 10 files), `internal_procedure_setting_id`.
 - `request-task-postponement` accepts: `new_task_date` (required, Y-m-d), `new_task_time` (required, H:i), `reason` (required, max 500), `internal_procedure_setting_id`.
+- `end` (POST `/projects/notifications/{id}/end`) accepts: `latitude` (required, -90 to 90), `longitude` (required, -180 to 180), `notes`, optional `internal_procedure_setting_id`, optional `files[]` (jpg/jpeg/png/webp, max 5MB per file, up to 10 files). Uploaded images are stored on the linked `EmployeeTaskRequest` in the `end_attachments` media collection. If `InsideTaskLocation` is active on `EndProjectNotificationTask`, the employee must be within the configured radius of the task location.
 
 ---
 
@@ -2514,6 +2524,7 @@ Modules\Project
 │   ├── References ArchiveLibrary\Folder, ArchiveLibrary\File (for attachment saving)
 │   └── ProjectNotification → EmployeeTask (EmployeeTaskRequest) via employee_task_request_id
 │       ├── Uses InternalProcessForm::CreateProjectNotificationTask form key (conditions limited to InsideCustomLocations)
+│       ├── ConfirmProjectNotificationLocation, UpdateProjectNotificationSiteStatus, ProjectNotificationFine, and EndProjectNotificationTask forms expose InsideTaskLocation (precondition: employee within task location radius)
 │       ├── Mobile confirm-receive uses InternalProcessForm::ConfirmProjectNotificationPresence form key
 │       ├── Procedure steps may use ActionTakerType::AssignedUser to send the task to the assigned employee
 │       └── Mobile lifecycle (confirm-receive / start / end / take-action) delegates to EmployeeTask services

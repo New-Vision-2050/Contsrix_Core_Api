@@ -236,13 +236,69 @@ final class EmployeeTaskFormConditionService
     }
 
     /**
-     * No conditions are configured for endTask.
+     * Check end-task conditions for the given form (EndTask or EndProjectNotificationTask).
+     *
+     * @throws EmployeeTaskException
      */
     public function checkEndTaskConditions(
         EmployeeTaskRequest $task,
         float               $latitude,
         float               $longitude,
-    ): void {}
+        ?string             $formKey = null,
+    ): void {
+        $formKey = $formKey ?? InternalProcessForm::EndTask->value;
+
+        $task->loadMissing('user.userProfessionalData');
+        $branchId = $task->user?->userProfessionalData?->branch_id !== null
+            ? (string) $task->user->userProfessionalData->branch_id
+            : null;
+
+        $map = $this->resolveConditionMap(
+            $formKey,
+            (string) $task->company_id,
+            $branchId,
+        );
+
+        if ($map === null) {
+            return;
+        }
+
+        $ctx = new ConditionContext(
+            userId: (string) $task->user_id,
+            companyId: (string) $task->company_id,
+            branchId: $branchId,
+            currentLatitude: $latitude,
+            currentLongitude: $longitude,
+            taskLatitude: $task->task_latitude !== null ? (float) $task->task_latitude : null,
+            taskLongitude: $task->task_longitude !== null ? (float) $task->task_longitude : null,
+        );
+
+        $this->evaluationService->evaluateAndThrow($this->registry, $map, $ctx, $this->resolver);
+    }
+
+    /**
+     * Evaluate any form's conditions against a fully-built context.
+     * Used by workflow actions that already know the employee's current GPS
+     * and the task location (e.g. project-notification forms).
+     *
+     * @throws EmployeeTaskException
+     */
+    public function checkFormConditions(
+        string $formKey,
+        ConditionContext $ctx,
+    ): void {
+        $map = $this->resolveConditionMap(
+            $formKey,
+            $ctx->companyId,
+            $ctx->branchId,
+        );
+
+        if ($map === null) {
+            return;
+        }
+
+        $this->evaluationService->evaluateAndThrow($this->registry, $map, $ctx, $this->resolver);
+    }
 
     // ─── Private helpers ─────────────────────────────────────────────────────
 

@@ -604,6 +604,7 @@ class ProjectNotificationController extends Controller
                 longitude: (float) $request->input('longitude'),
                 notes: $request->input('notes'),
                 internalProcedureSettingId: $request->input('internal_procedure_setting_id'),
+                files: $request->hasFile('files') ? $request->file('files') : null,
             ),
         );
 

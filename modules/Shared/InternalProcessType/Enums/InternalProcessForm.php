@@ -80,16 +80,21 @@ enum InternalProcessForm: string
             self::CreateProjectNotificationTask => [
                 InternalProcessCondition::InsideCustomLocations,
             ],
-            self::ConfirmProjectNotificationPresence,
-            self::UpdateProjectNotificationTask,
-            self::UpdateProjectNotificationSiteStatus,
-            self::ProjectNotificationFine,
-            self::ConfirmProjectNotificationLocation,
-            self::ProjectNotificationWorkStoppageReport,
-            self::ProjectNotificationWorkResumption,
-            self::ProjectNotificationTaskPostponement,
+            self::UpdateProjectNotificationTask=> [
+                InternalProcessCondition::InsideCustomLocations,
+            ],
+            self::ConfirmProjectNotificationLocation => [
+                InternalProcessCondition::InsideTaskLocation,
+            ],
+            self::UpdateProjectNotificationSiteStatus => [
+                InternalProcessCondition::InsideTaskLocation,
+            ],
+            self::ProjectNotificationFine => [
+                InternalProcessCondition::InsideTaskLocation,
+            ],
+
             self::EndProjectNotificationTask => [
-                InternalProcessCondition::AllowOnHolidays,
+                InternalProcessCondition::InsideTaskLocation,
             ],
             self::AttachAttachments => [
                 InternalProcessCondition::MaxAttachments,
