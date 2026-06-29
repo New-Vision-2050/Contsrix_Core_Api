@@ -1191,9 +1191,9 @@ Key methods:
 - `create(CreateProjectNotificationDTO $dto): ProjectNotification` — Creates the notification row, then delegates to `EmployeeTaskRequestService::create()` with `InternalProcessForm::CreateProjectNotificationTask->value` as the form key. The linked `EmployeeTaskRequest` gets `is_project_notification = true`, `task_source = 'dashboard'`, and `project_notification_id` set. The `currentLatitude`/`currentLongitude` are explicitly `null` because the admin creates this from the dashboard, not from the employee's current GPS context.
 - `list(FilterProjectNotificationDTO $dto): LengthAwarePaginator` — Paginated list with filters.
 - `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications whose `assigned_user_id` matches the current user and status is `approved`, `in_progress`, `completed`, or `rejected` (tasks assigned to the user that are already approved, started, finished, or rejected).
-- `myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: pending notifications that need workflow action. Selected from the `processes` table where the linked `project_notification_task` has an `in_progress` process with a `pending` step assigned to the current user (`assigned_user_id` or `authorized_user_ids`), and the notification status is `pending`. This matches the procedure/action-taker check.
-- `inboxCounts(string $userId, array $filters = []): array` — Pending count for the workflow inbox badge, scoped by the same process-based workflow inbox filter.
-- `filterMetadata(string $userId, array $filters = []): array` — Filter metadata for the mobile filter UI: status counts, project counts, min/max duration; scoped by the same process-based workflow inbox filter.
+- `myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications that need workflow action. Delegates to `ProjectNotificationRepository::paginatedForInbox()` which bypasses the EloquentFilter status filter and uses `WorkflowEngine::pendingProcessScopeForUser()` directly. **No top-level status filter** — any notification (pending, approved, in_progress, completed) with an in-progress process that has a pending step assigned to the current user (`assigned_user_id` or `authorized_user_ids`) will appear. This ensures update/site-status/fine/postponement workflows on already-approved notifications show up in the inbox.
+- `inboxCounts(string $userId, array $filters = []): array` — Count of notifications with a pending workflow process assigned to the user, regardless of top-level notification status. Uses `WorkflowEngine::pendingProcessScopeForUser()` via `applyWorkflowInboxFilter()`.
+- `filterMetadata(string $userId, array $filters = []): array` — Filter metadata for the mobile filter UI: status counts, project counts, min/max duration; scoped by the same process-based workflow inbox filter (no top-level status restriction).
 - `get(string $id): ProjectNotification`
 - `update(string $id, UpdateProjectNotificationDTO $dto): ProjectNotification`
 - `delete(string $id): bool`
@@ -1210,13 +1210,23 @@ Key methods:
 - `requestWorkResumption(string $id, RequestProjectNotificationWorkResumptionDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the resumption data; the actual `ProjectNotificationWorkResumption` record is created only after all workflow steps are approved. Form key: `ProjectNotificationWorkResumption`.
 - `requestTaskPostponement(string $id, RequestProjectNotificationTaskPostponementDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the new date/time; on approval, `applyTaskPostponement()` updates both the notification and the linked `EmployeeTaskRequest` with the new date/time. Form key: `ProjectNotificationTaskPostponement`.
 - `applyTaskPostponement(ProjectNotification $notification, EmployeeTaskRequest $task, string $newTaskDate, string $newTaskTime, string $reason): ProjectNotificationTaskPostponement` — Applies the postponement by updating both the notification and the linked task, and stores a `ProjectNotificationTaskPostponement` historical record.
-- `resolvePendingProcessesForInbox(ProjectNotification $notification, string $userId): array` — Resolves pending workflow processes for the inbox display, returning an array of `{process_id, procedure_setting_id, form, pending_step_id, pending_step_order}`.
+- `resolvePendingProcessesForInbox(ProjectNotification $notification, string $userId): array` — Delegates to `WorkflowEngine::resolvePendingProcessesForUser()`. Resolves pending workflow processes for the inbox display, returning an array of `{process_id, procedure_setting_id, form, mobile_inbox_action_key, pending_step_id, pending_step_order}`. The `form` key falls back to `$process->procedureSetting?->form` if not in `$process->metadata['form']`.
 - `confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile confirm-receive. If the linked task is still `pending`, it is auto-approved first, then the task is started. This moves the notification from the inbox (`approved`) to the assigned tasks list (`in_progress`). Form key: `ConfirmProjectNotificationPresence`.
 - `startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile: backward-compatible alias that delegates to `confirmReceive()` internally.
 - `endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest` — Mobile: employee ends the linked task. Form key: `EndProjectNotificationTask`.
 - `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a generic internal procedure action (e.g., `UpdateProjectNotificationTask`).
 - `availableActions(string $notificationId): array` — Lists available workflow actions for the notification, same as `GET /employee-tasks/{id}/available-actions`.
 - `procedures(string $notificationId, bool $debug = false): array` — Returns the timeline of all taken (completed) internal procedures for the linked `EmployeeTask`, ordered by `taken_at` ascending, plus a summary block. Returns `{items, summary}` (and optionally `debug`).
+
+**WorkflowEngine Integration**:
+
+`ProjectNotificationService` injects `WorkflowEngine` and delegates the following to it instead of duplicating process-query logic:
+- `applyWorkflowInboxFilter()` → `WorkflowEngine::pendingProcessScopeForUser()`
+- `resolvePendingProcessesForInbox()` → `WorkflowEngine::resolvePendingProcessesForUser()`
+- `taskHasActiveProcess()` → `WorkflowEngine::hasActiveProcess()`
+- All `request*` methods' procedure-setting resolution → `WorkflowEngine::resolveLifecycleSetting()`
+
+The `ProcedureWorkflowService` dependency was removed from the service constructor since all setting resolution now goes through `WorkflowEngine`.
 
 **Cross-Module Relationship with EmployeeTask**:
 
@@ -1279,6 +1289,21 @@ Normal employee task creation (`CreateTask` form) is unaffected — all conditio
 - `getTotalProjectsValue(string $companyId, $endDate): float`
 - `getActiveProjectsCount(string $companyId, $endDate): int`
 - `getInactiveProjectsCount(string $companyId, $endDate): int`
+
+#### `ProjectNotificationRepository`
+
+**File**: `Modules\Project\ProjectManagement\Repositories\ProjectNotificationRepository`
+
+Injects `WorkflowEngine` for inbox query logic.
+
+- `create(array $data): ProjectNotification`
+- `findById(string $id): ?ProjectNotification` — Eager-loads project, contractor, assignedUser, creator, media, employeeTask.user, employeeTask.employeeTaskType, employeeTask.media, employeeTask.sessions, employeeTask.extensionRequests, employeeTask.currentProcedureStep.actionTakers.user, employeeTask.createProjectNotificationTaskProcedureSetting.
+- `paginated(array $filters, int $perPage = 15, ?string $sort = null): LengthAwarePaginator` — Uses `ProjectNotification::filter($filters)` (EloquentFilter). Eager-loads assignedUser, project, contractor, employeeTask.user, employeeTask.createProjectNotificationTaskProcedureSetting. **Not used for inbox** — use `paginatedForInbox` instead.
+- `paginatedForMyTasks(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator` — Filters by `assigned_user_id = $userId` then applies EloquentFilter.
+- `paginatedForInbox(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator` — **Dedicated inbox query** that bypasses `ProjectNotification::filter()` entirely to avoid the EloquentFilter `status` filter. Applies non-status filters manually (project_id, notification_type, work_type, contractor_name, contractor_id, task_date, date_from, date_to, search). Uses `WorkflowEngine::pendingProcessScopeForUser()` for the core workflow inbox filter. Eager-loads `employeeTask.processes.procedureSetting` and `employeeTask.processes.steps` so `resolvePendingProcessesForInbox` works without extra queries.
+- `update(string $id, array $data): bool`
+- `delete(string $id): bool`
+- `generateNotificationNumber(string $companyId): string` — Transactional counter-based number generation (`NTF-YYYY-NNNNN`).
 
 #### `ProjectEmployeeRepository`
 
@@ -1425,7 +1450,7 @@ Sends email via `AttachmentRequestMail`.
 | POST | `/notifications/{id}/approve` | `PROJECT_NOTIFICATION_UPDATE` | Approve notification (optional `procedure_setting_id`) |
 | POST | `/notifications/{id}/reject` | `PROJECT_NOTIFICATION_UPDATE` | Reject notification (requires `reason`, optional `procedure_setting_id`) |
 | GET | `/notifications/my-tasks` | `PROJECT_NOTIFICATION_LIST` | Mobile: all notifications assigned to current employee (after confirm-receive) |
-| GET | `/notifications/my-inbox` | `PROJECT_NOTIFICATION_LIST` | Mobile: approved notifications waiting for confirm-receive |
+| GET | `/notifications/my-inbox` | `PROJECT_NOTIFICATION_LIST` | Mobile: notifications with a pending workflow step assigned to the user (any top-level status) |
 | GET | `/notifications/my-inbox-counts` | `PROJECT_NOTIFICATION_LIST` | Mobile: status counts for the employee's notifications (badge) |
 | GET | `/notifications/filters` | `PROJECT_NOTIFICATION_LIST` | Mobile: filter metadata (same format as employee-tasks/filters: statuses with title_ar/title_en, projects with key/title, duration in minutes) |
 | GET | `/notifications/{id}/available-actions` | `PROJECT_NOTIFICATION_VIEW` | Available workflow actions |
