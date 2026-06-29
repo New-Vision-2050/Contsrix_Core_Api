@@ -32,6 +32,7 @@ final class InternalProcedureAvailableActionsService
      *     id: string,
      *     name: string,
      *     form: array{key: string, label_ar: string}|null,
+     *     mobile_inbox_action_key: string,
      *     conditions: array,
      *     appears_before_ids: list<string>,
      *     appears_after_ids: list<string>,
@@ -85,16 +86,17 @@ final class InternalProcedureAvailableActionsService
             ->map(function (ProcedureSetting $setting): array {
                 $form = $setting->form ? InternalProcessForm::tryFrom($setting->form) : null;
                 return [
-                    'id'                 => $setting->id,
-                    'name'               => $setting->name,
-                    'form'               => $form !== null ? [
+                    'id'                       => $setting->id,
+                    'name'                     => $setting->name,
+                    'form'                     => $form !== null ? [
                         'key'      => $form->value,
                         'label_ar' => $form->labelAr(),
                     ] : null,
-                    'conditions'         => $setting->conditions ?? [],
-                    'appears_before_ids' => $setting->appears_before_id ?? [],
-                    'appears_after_ids'  => $setting->appears_after_id  ?? [],
-                    'sort_order'         => $setting->sort_order,
+                    'mobile_inbox_action_key'  => $form?->mobileInboxActionKey() ?? 'accept_reject',
+                    'conditions'               => $setting->conditions ?? [],
+                    'appears_before_ids'       => $setting->appears_before_id ?? [],
+                    'appears_after_ids'        => $setting->appears_after_id  ?? [],
+                    'sort_order'               => $setting->sort_order,
                 ];
             })
             ->values()

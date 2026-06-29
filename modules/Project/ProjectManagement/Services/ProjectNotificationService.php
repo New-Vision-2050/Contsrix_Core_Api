@@ -848,10 +848,14 @@ class ProjectNotificationService
             });
 
             if ($pendingStep) {
+                $formKey = $process->metadata['form'] ?? null;
+                $form = $formKey !== null ? InternalProcessForm::tryFrom($formKey) : null;
+
                 $result[] = [
                     'process_id' => $process->id,
                     'procedure_setting_id' => $process->procedure_setting_id,
-                    'form' => $process->metadata['form'] ?? null,
+                    'form' => $formKey,
+                    'mobile_inbox_action_key' => $form?->mobileInboxActionKey() ?? 'accept_reject',
                     'pending_step_id' => $pendingStep->id,
                     'pending_step_order' => $pendingStep->template_step_order,
                 ];

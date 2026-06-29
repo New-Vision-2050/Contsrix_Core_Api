@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "project-notification-update-workflow-collection",
     "name": "Project Notification Update Workflow API",
-    "description": "Workflow-based update and lifecycle actions for project notifications.\n\nFlow:\n1. POST /projects/notifications/{id}/request-update → submit new data + files (creates a Process).\n2. Approver sees the pending Process step in their inbox.\n3. POST /projects/notifications/{id}/approve → approves the current step.\n4. On final approval the ProjectNotification row is updated with the submitted data and files are moved to the attachments collection.\n5. POST /projects/notifications/{id}/end → close the notification (endProjectNotificationTask). Requires latitude/longitude; accepts up to 10 closing screenshot files (files[], jpg/jpeg/png/webp, max 5MB each). If InsideTaskLocation is active on the form's procedure setting, the employee must be within the configured radius of the task location.\n\nForms with optional InsideTaskLocation precondition:\n- request-site-status-update (uses current_latitude/current_longitude when supplied)\n- request-fine (uses current_latitude/current_longitude when supplied)\n- confirm-location (uses latitude/longitude)\n- end (uses latitude/longitude)",
+    "description": "Workflow-based update and lifecycle actions for project notifications.\n\nFlow:\n1. POST /projects/notifications/{id}/request-update → submit new data + files (creates a Process).\n2. Approver sees the pending Process step in their inbox.\n3. POST /projects/notifications/{id}/approve → approves the current step.\n4. On final approval the ProjectNotification row is updated with the submitted data and files are moved to the attachments collection.\n5. POST /projects/notifications/{id}/end → close the notification (endProjectNotificationTask). Requires latitude/longitude; accepts up to 10 closing screenshot files (files[], jpg/jpeg/png/webp, max 5MB each). If InsideTaskLocation is active on the form's procedure setting, the employee must be within the configured radius of the task location.\n\nMobile inbox logic:\n- GET /projects/notifications/my-inbox returns pending_processes with a stable mobile_inbox_action_key.\n- confirm_receive → open the confirm-receive screen (POST /projects/notifications/{id}/confirm-receive).\n- accept_reject → open the accept/reject screen (POST /projects/notifications/{id}/approve or /reject).\n- GET /projects/notifications/{id}/available-actions also returns mobile_inbox_action_key for each action.\n\nForms with optional InsideTaskLocation precondition:\n- request-site-status-update (uses current_latitude/current_longitude when supplied)\n- request-fine (uses current_latitude/current_longitude when supplied)\n- confirm-location (uses latitude/longitude)\n- end (uses latitude/longitude)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -1032,6 +1032,83 @@
           "code": 200,
           "_postman_previewlanguage": "json",
           "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"status\": \"completed\"\n  },\n  \"message\": \"Task ended successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "13. Mobile Inbox (my-inbox)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/my-inbox",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "my-inbox"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Mobile Inbox",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    {\n      \"id\": \"{{notification_id}}\",\n      \"notification_number\": \"NTF-2026-00014\",\n      \"notification_type\": \"اعتماد\",\n      \"status\": \"pending\",\n      \"pending_processes\": [\n        {\n          \"process_id\": \"process-uuid\",\n          \"procedure_setting_id\": \"procedure-uuid\",\n          \"form\": \"createProjectNotificationTask\",\n          \"mobile_inbox_action_key\": \"confirm_receive\",\n          \"pending_step_id\": \"step-uuid\",\n          \"pending_step_order\": 1\n        }\n      ]\n    },\n    {\n      \"id\": \"notification-uuid-2\",\n      \"notification_number\": \"NTF-2026-00015\",\n      \"status\": \"pending\",\n      \"pending_processes\": [\n        {\n          \"process_id\": \"process-uuid-2\",\n          \"procedure_setting_id\": \"procedure-uuid-2\",\n          \"form\": \"updateProjectNotificationTask\",\n          \"mobile_inbox_action_key\": \"accept_reject\",\n          \"pending_step_id\": \"step-uuid-2\",\n          \"pending_step_order\": 1\n        }\n      ]\n    }\n  ],\n  \"message\": \"Data retrieved successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "14. Available Actions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/available-actions",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "available-actions"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Available Actions",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    {\n      \"id\": \"procedure-uuid\",\n      \"name\": \"تحديث بيانات الإشعار\",\n      \"form\": {\n        \"key\": \"updateProjectNotificationTask\",\n        \"label_ar\": \"تحديث بيانات الإشعار\"\n      },\n      \"mobile_inbox_action_key\": \"accept_reject\",\n      \"conditions\": [],\n      \"appears_before_ids\": [],\n      \"appears_after_ids\": [],\n      \"sort_order\": 1\n    }\n  ],\n  \"message\": \"Available actions retrieved successfully\"\n}"
         }
       ]
     }

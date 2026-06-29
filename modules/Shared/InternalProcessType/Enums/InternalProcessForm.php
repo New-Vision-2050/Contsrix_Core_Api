@@ -31,6 +31,27 @@ enum InternalProcessForm: string
     case ProjectNotificationTaskPostponement   = 'projectNotificationTaskPostponement';
     case EndProjectNotificationTask         = 'endProjectNotificationTask';
 
+    /**
+     * Stable key used by the mobile inbox to decide which UI flow to open.
+     * - confirm_receive: first step after creating the notification.
+     * - accept_reject: any subsequent workflow step that requires approval.
+     */
+    public function mobileInboxActionKey(): string
+    {
+        return match ($this) {
+            self::CreateProjectNotificationTask => 'confirm_receive',
+            self::UpdateProjectNotificationTask,
+            self::UpdateProjectNotificationSiteStatus,
+            self::ProjectNotificationFine,
+            self::ConfirmProjectNotificationLocation,
+            self::ProjectNotificationWorkStoppageReport,
+            self::ProjectNotificationWorkResumption,
+            self::ProjectNotificationTaskPostponement,
+            self::EndProjectNotificationTask => 'accept_reject',
+            default => 'accept_reject',
+        };
+    }
+
     public function labelAr(): string
     {
         return match ($this) {
