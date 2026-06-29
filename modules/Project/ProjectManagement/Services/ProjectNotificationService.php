@@ -32,6 +32,7 @@ use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationFineDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationLocationConfirmationDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationSiteStatusUpdateDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationUpdateDTO;
+use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationWorkResumptionDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationWorkStoppageReportDTO;
 use Modules\Project\ProjectManagement\DTO\UpdateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
