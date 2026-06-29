@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 
 class CreateProjectNotificationRequest extends FormRequest
@@ -17,6 +18,7 @@ class CreateProjectNotificationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'notification_number'         => ['nullable', 'string', 'max:50', Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'))],
             'project_id'                  => ['required', 'uuid', 'exists:projects,id'],
             'assigned_user_id'            => ['required', 'uuid', 'exists:users,id'],
             'task_date'                   => ['required', 'date_format:Y-m-d'],
@@ -52,6 +54,7 @@ class CreateProjectNotificationRequest extends FormRequest
     public function toDTO(): CreateProjectNotificationDTO
     {
         return new CreateProjectNotificationDTO(
+            notificationNumber: $this->input('notification_number'),
             projectId: $this->input('project_id'),
             createdByUserId: (string) $this->user()->id,
             assignedUserId: $this->input('assigned_user_id'),

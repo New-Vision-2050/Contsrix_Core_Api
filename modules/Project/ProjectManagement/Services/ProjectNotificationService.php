@@ -67,7 +67,8 @@ class ProjectNotificationService
 
         $data = $this->enrichContractorData($dto->toArray());
 
-        // 1. Create the ProjectNotification row (observer auto-generates notification_number).
+        // 1. Create the ProjectNotification row. notification_number is manual if
+        // provided; otherwise the observer auto-generates it.
         $notification = $this->repository->create([
             ...$data,
             'company_id' => $companyId,
