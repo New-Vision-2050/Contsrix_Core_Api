@@ -94,6 +94,7 @@ enum InternalProcessForm: string
             ],
 
             self::EndProjectNotificationTask => [
+                InternalProcessCondition::AllowOnHolidays,
                 InternalProcessCondition::InsideTaskLocation,
             ],
             self::AttachAttachments => [
