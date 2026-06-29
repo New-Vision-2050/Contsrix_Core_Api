@@ -202,32 +202,29 @@ class ProjectNotificationService
     }
 
     /**
-     * Mobile endpoint: inbox of pending notifications that still need workflow
-     * action. Items are selected from the process table where the linked
+     * Mobile endpoint: inbox of notifications that still need workflow action.
+     * Items are selected from the process table where the linked
      * project_notification_task has an in-progress process with a pending step
-     * assigned to the current user.
+     * assigned to the current user. No status filter is applied so updates on
+     * approved/in-progress tasks also appear.
      */
     public function myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator
     {
-        $filters = $dto->toFilters();
-        $filters['workflow_inbox_for_user'] = $userId;
-        // Inbox holds pending notifications that still need workflow approval.
-        $filters['status'] = 'pending';
-
-        return $this->repository->paginated(
-            $filters,
+        return $this->repository->paginatedForInbox(
+            $dto->toFilters(),
+            $userId,
             $dto->perPage ?? 15,
             $dto->sort,
         );
     }
 
     /**
-     * Count assigned notifications grouped by status for the mobile inbox badge.
+     * Count notifications that have a pending workflow process assigned to the
+     * user, regardless of the top-level notification status.
      */
     public function inboxCounts(string $userId, array $filters = []): array
     {
-        $query = ProjectNotification::query()
-            ->whereIn('project_notifications.status', ['pending']);
+        $query = ProjectNotification::query();
         $this->applyWorkflowInboxFilter($query, $userId);
 
         $this->applyDateFilters($query, $filters);
@@ -239,7 +236,7 @@ class ProjectNotificationService
             ->toArray();
 
         return [
-            'pending'  => (int) ($rows['pending'] ?? 0),
+            'pending' => (int) array_sum($rows),
         ];
     }
 
@@ -251,8 +248,7 @@ class ProjectNotificationService
      */
     public function filterMetadata(string $userId, array $filters = []): array
     {
-        $base = ProjectNotification::query()
-            ->whereIn('project_notifications.status', ['pending']);
+        $base = ProjectNotification::query();
         $this->applyWorkflowInboxFilter($base, $userId);
 
         $this->applyDateFilters($base, $filters);

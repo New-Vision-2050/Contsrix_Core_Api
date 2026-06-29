@@ -8,6 +8,9 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 
 class ProjectNotificationRepository
@@ -58,6 +61,79 @@ class ProjectNotificationRepository
             ->where('assigned_user_id', $userId)
             ->filter($filters)
             ->with(['assignedUser', 'project', 'contractor', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting']);
+
+        $this->applySorting($query, $sort);
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Mobile inbox query. Bypasses the EloquentFilter status filter so
+     * notifications with any top-level status appear as long as they have
+     * a pending workflow process assigned to the user.
+     */
+    public function paginatedForInbox(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
+    {
+        $query = ProjectNotification::query();
+
+        // Apply non-status filters manually (project, search, dates, etc.).
+        if (! empty($filters['project_id'])) {
+            $query->where('project_id', $filters['project_id']);
+        }
+        if (! empty($filters['notification_type'])) {
+            $query->where('notification_type', $filters['notification_type']);
+        }
+        if (! empty($filters['work_type'])) {
+            $query->where('work_type', $filters['work_type']);
+        }
+        if (! empty($filters['contractor_name'])) {
+            $query->where('contractor_name', 'like', '%' . $filters['contractor_name'] . '%');
+        }
+        if (! empty($filters['contractor_id'])) {
+            $query->where('contractor_id', $filters['contractor_id']);
+        }
+        if (! empty($filters['task_date'])) {
+            $query->whereDate('task_date', $filters['task_date']);
+        }
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('task_date', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('task_date', '<=', $filters['date_to']);
+        }
+        if (! empty($filters['search'])) {
+            $term = $filters['search'];
+            $query->where(function ($q) use ($term) {
+                $q->where('notification_number', 'like', '%' . $term . '%')
+                  ->orWhere('contractor_name', 'like', '%' . $term . '%')
+                  ->orWhere('work_description', 'like', '%' . $term . '%')
+                  ->orWhere('repair_point', 'like', '%' . $term . '%');
+            });
+        }
+
+        // Core inbox filter: must have an in-progress process with a pending
+        // step assigned to (or authorized for) the current user.
+        $query->whereHas('employeeTask.processes', function ($q) use ($userId) {
+            $q->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+                ->where('status', ProcessStatus::InProgress)
+                ->whereHas('steps', function ($q) use ($userId) {
+                    $q->where('status', ProcessStepStatus::Pending)
+                        ->where(function ($q) use ($userId) {
+                            $q->where('assigned_user_id', $userId)
+                                ->orWhereJsonContains('authorized_user_ids', $userId);
+                        });
+                });
+        });
+
+        $query->with([
+            'assignedUser',
+            'project',
+            'contractor',
+            'employeeTask.user',
+            'employeeTask.createProjectNotificationTaskProcedureSetting',
+            'employeeTask.processes.procedureSetting',
+            'employeeTask.processes.steps',
+        ]);
 
         $this->applySorting($query, $sort);
 
