@@ -43,6 +43,21 @@ class ProjectNotificationController extends Controller
         private readonly ProjectNotificationLocationService $locationService,
     ) {}
 
+    /**
+     * GET /projects/notifications/notification-types
+     *
+     * Returns distinct notification types from existing records for dropdown/filter.
+     */
+    public function notificationTypes(Request $request): JsonResponse
+    {
+        $types = $this->notificationService->listNotificationTypes();
+
+        return Json::items(
+            $types,
+            message: 'Notification types retrieved successfully',
+        );
+    }
+
     public function index(FilterProjectNotificationsRequest $request): JsonResponse
     {
         $paginator = $this->notificationService->list($request->toDTO());

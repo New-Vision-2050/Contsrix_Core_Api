@@ -157,6 +157,25 @@ class ProjectNotificationService
     }
 
     /**
+     * List distinct notification types from existing project notifications.
+     * Used to populate the notification type dropdown/filter.
+     *
+     * @return list<array{value: string}>
+     */
+    public function listNotificationTypes(): array
+    {
+        return ProjectNotification::query()
+            ->whereNotNull('notification_type')
+            ->where('notification_type', '!=', '')
+            ->distinct()
+            ->orderBy('notification_type')
+            ->pluck('notification_type')
+            ->map(fn ($type) => ['value' => $type])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Mobile endpoint: list project notifications assigned to the current employee,
      * with the same filters as the dashboard list.
      */

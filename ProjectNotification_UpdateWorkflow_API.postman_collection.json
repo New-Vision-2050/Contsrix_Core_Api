@@ -54,6 +54,82 @@
   ],
   "item": [
     {
+      "name": "0a. List Contractors (dropdown)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/contractors",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "contractors"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Contractors List",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    { \"id\": \"uuid-1\", \"name\": \"مقاول المشروع\", \"number\": \"CNT-001\", \"mobile\": \"0500000000\", \"notes\": \"ملاحظات\" },\n    { \"id\": \"uuid-2\", \"name\": \"مقاول آخر\", \"number\": \"CNT-002\", \"mobile\": \"0555555555\", \"notes\": null }\n  ],\n  \"message\": \"Data retrieved successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "0b. List Notification Types (dropdown/filter)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/notification-types",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "notification-types"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Notification Types",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    { \"value\": \"اعتماد\" },\n    { \"value\": \"إشعار عاجل\" },\n    { \"value\": \"متابعة\" }\n  ],\n  \"message\": \"Notification types retrieved successfully\"\n}"
+        }
+      ]
+    },
+    {
       "name": "1. Submit Update Request (updateProjectNotificationTask)",
       "request": {
         "method": "POST",
@@ -623,7 +699,7 @@
           "status": "OK",
           "code": 200,
           "_postman_previewlanguage": "json",
-          "body": "{\n  \"data\": [\n    { \"id\": \"uuid-1\", \"name_ar\": \"عدم وجود/ خلل في إجراءات تصاريح العمل\", \"name_en\": \"Missing or incorrect work permit procedures\", \"sort_order\": 1 },\n    { \"id\": \"uuid-2\", \"name_ar\": \"نقص مهمات الوقاية الشخصية\", \"name_en\": \"Lack of personal protective equipment\", \"sort_order\": 3 }\n  ],\n  \"message\": \"Work stoppage reasons retrieved successfully\"\n}"
+          "body": "{\n  \"data\": [\n    { \"id\": \"uuid-1\", \"name_ar\": \"عدم وجود/ خلل في إجراءات تصاريح العمل\", \"name_en\": \"Missing or incorrect work permit procedures\", \"sort_order\": 1 },\n    { \"id\": \"uuid-2\", \"name_ar\": \"عدم حمل البطاقات التعريفية في موقع العمل\", \"name_en\": \"ID cards not carried at work site\", \"sort_order\": 2 },\n    { \"id\": \"uuid-3\", \"name_ar\": \"نقص مهمات الوقاية الشخصية\", \"name_en\": \"Lack of personal protective equipment\", \"sort_order\": 3 },\n    { \"id\": \"uuid-4\", \"name_ar\": \"عدم اكتمال تقييم المخاطر\", \"name_en\": \"Incomplete risk assessment\", \"sort_order\": 4 },\n    { \"id\": \"uuid-5\", \"name_ar\": \"خلل في تطبيق نظام العزل والبطاقات التحذيرية\", \"name_en\": \"Failure in isolation and warning tag system\", \"sort_order\": 5 },\n    { \"id\": \"uuid-6\", \"name_ar\": \"عدم وجود إجراءات العمل الآمن في الموقع\", \"name_en\": \"No safe work procedures at site\", \"sort_order\": 6 },\n    { \"id\": \"uuid-7\", \"name_ar\": \"وجود معدات رفع غير مطابقة\", \"name_en\": \"Non-compliant lifting equipment\", \"sort_order\": 7 },\n    { \"id\": \"uuid-8\", \"name_ar\": \"عدم مطابقة السلالم أو السقالات لمعايير السلامة\", \"name_en\": \"Ladders or scaffolding not meeting safety standards\", \"sort_order\": 8 },\n    { \"id\": \"uuid-9\", \"name_ar\": \"عدم ارتداء بدلة القوس الكهربائي المناسبة\", \"name_en\": \"Not wearing appropriate arc flash suit\", \"sort_order\": 9 },\n    { \"id\": \"uuid-10\", \"name_ar\": \"ملاحظات أخرى\", \"name_en\": \"Other notes\", \"sort_order\": 10 }\n  ],\n  \"message\": \"Work stoppage reasons retrieved successfully\"\n}"
         }
       ]
     },
