@@ -123,6 +123,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
         Route::get('/work-stoppage-reasons', [ProjectNotificationController::class, 'workStoppageReasons'])
             ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
+        Route::get('/notification-types', [ProjectNotificationController::class, 'notificationTypes'])
+            ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
         Route::post('/export', [ProjectNotificationController::class, 'export'])
             ->permission(Permission::PROJECT_NOTIFICATION_EXPORT());
 

@@ -229,7 +229,16 @@ final class EmployeeTaskLifecycleService
             throw EmployeeTaskException::pendingEndRequestExists();
         }
 
-        $this->conditionService->checkEndTaskConditions($task, $dto->latitude, $dto->longitude);
+        $endFormKey = $task->is_project_notification
+            ? InternalProcessForm::EndProjectNotificationTask->value
+            : InternalProcessForm::EndTask->value;
+
+        $this->conditionService->checkEndTaskConditions(
+            $task,
+            $dto->latitude,
+            $dto->longitude,
+            $endFormKey,
+        );
 
         $procedureSetting = $this->endRequestService->resolveEndTaskProcedure(
             $task,

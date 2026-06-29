@@ -8,14 +8,17 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
+use Modules\Shared\Media\Services\FileUploadService;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskType;
 use Modules\EmployeeTask\Services\EmployeeTaskAvailableActionsService;
+use Modules\EmployeeTask\Services\EmployeeTaskFormConditionService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskProceduresService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
+use Modules\ProcedureSetting\Conditions\ConditionContext;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
@@ -55,6 +58,8 @@ class ProjectNotificationService
         private readonly EmployeeTaskAvailableActionsService $availableActionsService,
         private readonly EmployeeTaskProceduresService $proceduresService,
         private readonly ProcedureWorkflowService $procedureWorkflow,
+        private readonly EmployeeTaskFormConditionService $conditionService,
+        private readonly FileUploadService $fileUploadService,
     ) {}
 
     public function create(CreateProjectNotificationDTO $dto): ProjectNotification
@@ -154,6 +159,25 @@ class ProjectNotificationService
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
+    }
+
+    /**
+     * List distinct notification types from existing project notifications.
+     * Used to populate the notification type dropdown/filter.
+     *
+     * @return list<array{value: string}>
+     */
+    public function listNotificationTypes(): array
+    {
+        return ProjectNotification::query()
+            ->whereNotNull('notification_type')
+            ->where('notification_type', '!=', '')
+            ->distinct()
+            ->orderBy('notification_type')
+            ->pluck('notification_type')
+            ->map(fn ($type) => ['value' => $type])
+            ->values()
+            ->all();
     }
 
     /**
@@ -382,6 +406,14 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
 
+        $this->checkWorkflowFormConditions(
+            InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
+            $task,
+            $notification,
+            $dto->currentLatitude,
+            $dto->currentLongitude,
+        );
+
         $procedureSetting = $dto->internalProcedureSettingId !== null
             ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
             : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
@@ -429,6 +461,14 @@ class ProjectNotificationService
     ): ProjectNotification {
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
+
+        $this->checkWorkflowFormConditions(
+            InternalProcessForm::ProjectNotificationFine->value,
+            $task,
+            $notification,
+            $dto->currentLatitude,
+            $dto->currentLongitude,
+        );
 
         $procedureSetting = $dto->internalProcedureSettingId !== null
             ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
@@ -481,6 +521,14 @@ class ProjectNotificationService
     ): ProjectNotification {
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
+
+        $this->checkWorkflowFormConditions(
+            InternalProcessForm::ConfirmProjectNotificationLocation->value,
+            $task,
+            $notification,
+            $dto->latitude,
+            $dto->longitude,
+        );
 
         $procedureSetting = $dto->internalProcedureSettingId !== null
             ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
@@ -970,7 +1018,19 @@ class ProjectNotificationService
     {
         $task = $this->linkedTask($notificationId);
 
-        return $this->lifecycleService->end($task->id, $dto);
+        $task = $this->lifecycleService->end($task->id, $dto);
+
+        if (! empty($dto->files)) {
+            $this->fileUploadService->uploadFile(
+                model: $task,
+                file: $dto->files,
+                filePath: 'employee-tasks/end-attachments',
+                collectionName: 'end_attachments',
+                visibility: 'public',
+            );
+        }
+
+        return $task->fresh()->load('media');
     }
 
     /**
@@ -1048,6 +1108,42 @@ class ProjectNotificationService
         }
 
         return $task;
+    }
+
+    /**
+     * Evaluate precondition-type conditions for a project-notification workflow form.
+     * Currently enforces InsideTaskLocation when it is active on the form's procedure
+     * setting and the request supplies current GPS coordinates.
+     *
+     * @throws EmployeeTaskException
+     */
+    private function checkWorkflowFormConditions(
+        string $formKey,
+        EmployeeTaskRequest $task,
+        ProjectNotification $notification,
+        ?float $currentLatitude,
+        ?float $currentLongitude,
+    ): void {
+        if ($currentLatitude === null || $currentLongitude === null) {
+            return;
+        }
+
+        $task->loadMissing('user.userProfessionalData');
+        $branchId = $task->user?->userProfessionalData?->branch_id !== null
+            ? (string) $task->user->userProfessionalData->branch_id
+            : null;
+
+        $ctx = new ConditionContext(
+            userId: (string) $task->user_id,
+            companyId: (string) $task->company_id,
+            branchId: $branchId,
+            currentLatitude: $currentLatitude,
+            currentLongitude: $currentLongitude,
+            taskLatitude: $notification->task_latitude !== null ? (float) $notification->task_latitude : null,
+            taskLongitude: $notification->task_longitude !== null ? (float) $notification->task_longitude : null,
+        );
+
+        $this->conditionService->checkFormConditions($formKey, $ctx);
     }
 
     private function createWorkStoppageReportRecord(

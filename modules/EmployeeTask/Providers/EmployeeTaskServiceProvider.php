@@ -14,6 +14,7 @@ use Modules\EmployeeTask\Conditions\AllowOutsideShiftEvaluator;
 use Modules\EmployeeTask\Conditions\EmployeeTaskExceptionResolver;
 use Modules\ProcedureSetting\Conditions\ConditionEvaluatorRegistry;
 use Modules\EmployeeTask\Conditions\InsideCustomLocationsEvaluator;
+use Modules\EmployeeTask\Conditions\InsideTaskLocationEvaluator;
 use Modules\EmployeeTask\Conditions\MaxScheduledDateOffsetEvaluator;
 use Modules\EmployeeTask\Conditions\MaxTaskDurationEvaluator;
 use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
@@ -81,6 +82,7 @@ class EmployeeTaskServiceProvider extends ServiceProvider
                 $app->make(AllowOnHolidaysEvaluator::class),
                 $app->make(AllowOutsideShiftEvaluator::class),
                 $app->make(InsideCustomLocationsEvaluator::class),
+                $app->make(InsideTaskLocationEvaluator::class),
                 $app->make(MaxTaskDurationEvaluator::class),
                 $app->make(MaxScheduledDateOffsetEvaluator::class),
             ]);
@@ -90,6 +92,7 @@ class EmployeeTaskServiceProvider extends ServiceProvider
         $this->app->singleton(AllowOnHolidaysEvaluator::class);
         $this->app->singleton(AllowOutsideShiftEvaluator::class);
         $this->app->singleton(InsideCustomLocationsEvaluator::class);
+        $this->app->singleton(InsideTaskLocationEvaluator::class);
         $this->app->singleton(MaxTaskDurationEvaluator::class);
         $this->app->singleton(MaxScheduledDateOffsetEvaluator::class);
         $this->app->singleton(EmployeeTaskExceptionResolver::class);

@@ -29,6 +29,8 @@ class RequestProjectNotificationSiteStatusUpdateRequest extends FormRequest
             'internal_procedure_setting_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
             'files' => ['nullable', 'array'],
             'files.*' => ['file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'current_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'current_longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ];
     }
 
@@ -46,6 +48,8 @@ class RequestProjectNotificationSiteStatusUpdateRequest extends FormRequest
             additionalNotes: $this->input('additional_notes'),
             internalProcedureSettingId: $this->input('internal_procedure_setting_id'),
             files: $this->hasFile('files') ? $this->file('files') : null,
+            currentLatitude: $this->filled('current_latitude') ? (float) $this->input('current_latitude') : null,
+            currentLongitude: $this->filled('current_longitude') ? (float) $this->input('current_longitude') : null,
         );
     }
 }

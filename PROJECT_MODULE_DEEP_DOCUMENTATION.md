@@ -327,6 +327,243 @@ company_id, name, number, mobile, notes, is_active
 
 ---
 
+#### 2.1.10 `ProjectNotificationSiteStatus` (table: `project_notification_site_statuses`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatus`
+
+**Traits**: `UuidTrait`
+
+**Fillable Fields**:
+```
+name_ar, name_en, sort_order, is_active
+```
+
+**Casts**: `sort_order` → `integer`, `is_active` → `boolean`
+
+**Purpose**: Lookup table for site statuses used in periodic site status update forms.
+
+---
+
+#### 2.1.11 `ProjectNotificationSiteStatusUpdate` (table: `project_notification_site_status_updates`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate`
+
+**Traits**: `UuidTrait`, `CustomBelongsToTenant`
+
+**Fillable Fields**:
+```
+company_id, project_notification_id, employee_task_request_id, process_id,
+procedure_setting_id, update_date, update_time, site_status_id,
+current_site_status_id, work_stages_completed, current_status_description,
+completion_percentage, updates_obstacles, additional_notes, status,
+requested_by, reviewed_by, reviewed_at, review_notes
+```
+
+**Casts**: `update_date` → `date:Y-m-d`, `completion_percentage` → `decimal:2`, `reviewed_at` → `datetime`
+
+**Relationships**:
+- `projectNotification()` → `belongsTo(ProjectNotification)`
+- `employeeTask()` → `belongsTo(EmployeeTaskRequest)`
+- `process()` → `belongsTo(Process)`
+- `siteStatus()` → `belongsTo(ProjectNotificationSiteStatus, 'site_status_id')`
+- `currentSiteStatus()` → `belongsTo(ProjectNotificationSiteStatus, 'current_site_status_id')`
+- `requester()` → `belongsTo(User, 'requested_by')`
+- `reviewer()` → `belongsTo(User, 'reviewed_by')`
+
+**Purpose**: Stores periodic site status update records, created after workflow approval. Form key: `UpdateProjectNotificationSiteStatus`.
+
+---
+
+#### 2.1.12 `ProjectNotificationFine` (table: `project_notification_fines`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationFine`
+
+**Traits**: `UuidTrait`, `CustomBelongsToTenant`
+
+**Fillable Fields**:
+```
+company_id, project_notification_id, employee_task_request_id, process_id,
+procedure_setting_id, reason, total_amount, status, requested_by,
+reviewed_by, reviewed_at, review_notes
+```
+
+**Casts**: `total_amount` → `decimal:2`, `reviewed_at` → `datetime`
+
+**Relationships**:
+- `projectNotification()` → `belongsTo(ProjectNotification)`
+- `employeeTask()` → `belongsTo(EmployeeTaskRequest)`
+- `process()` → `belongsTo(Process)`
+- `items()` → `hasMany(ProjectNotificationFineItem)`
+- `requester()` → `belongsTo(User, 'requested_by')`
+- `reviewer()` → `belongsTo(User, 'reviewed_by')`
+
+**Purpose**: Stores fine records with total amount and line items, created after workflow approval. Form key: `ProjectNotificationFine`.
+
+---
+
+#### 2.1.13 `ProjectNotificationFineItem` (table: `project_notification_fine_items`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem`
+
+**Traits**: `UuidTrait`
+
+**Fillable Fields**:
+```
+project_notification_fine_id, name_ar, name_en, quantity, unit_amount,
+total_amount, sort_order
+```
+
+**Casts**: `quantity` → `integer`, `unit_amount` → `decimal:2`, `total_amount` → `decimal:2`, `sort_order` → `integer`
+
+**Relationships**:
+- `fine()` → `belongsTo(ProjectNotificationFine)`
+
+---
+
+#### 2.1.14 `ProjectNotificationLocationConfirmation` (table: `project_notification_location_confirmations`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation`
+
+**Traits**: `UuidTrait`, `CustomBelongsToTenant`
+
+**Fillable Fields**:
+```
+company_id, project_notification_id, employee_task_request_id, process_id,
+procedure_setting_id, latitude, longitude, distance_meters, is_inside_location,
+status, requested_by, reviewed_by, reviewed_at, review_notes
+```
+
+**Casts**: `latitude` → `decimal:8`, `longitude` → `decimal:8`, `distance_meters` → `decimal:2`, `is_inside_location` → `boolean`, `reviewed_at` → `datetime`
+
+**Relationships**:
+- `projectNotification()` → `belongsTo(ProjectNotification)`
+- `employeeTask()` → `belongsTo(EmployeeTaskRequest)`
+- `process()` → `belongsTo(Process)`
+- `requester()` → `belongsTo(User, 'requested_by')`
+- `reviewer()` → `belongsTo(User, 'reviewed_by')`
+
+**Purpose**: Stores location confirmation records, created after workflow approval. Form key: `ConfirmProjectNotificationLocation`.
+
+---
+
+#### 2.1.15 `ProjectNotificationWorkStoppageReason` (table: `project_notification_work_stoppage_reasons`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReason`
+
+**Traits**: `UuidTrait`
+
+**Fillable Fields**:
+```
+name_ar, name_en, sort_order, is_active
+```
+
+**Casts**: `sort_order` → `integer`, `is_active` → `boolean`
+
+**Purpose**: Lookup table for work stoppage reasons used in work stoppage report forms.
+
+---
+
+#### 2.1.16 `ProjectNotificationWorkStoppageReport` (table: `project_notification_work_stoppage_reports`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport`
+
+**Traits**: `UuidTrait`, `CustomBelongsToTenant`
+
+**Fillable Fields**:
+```
+company_id, project_notification_id, employee_task_request_id, process_id,
+procedure_setting_id, other_notes, status, requested_by, reviewed_by,
+reviewed_at, review_notes
+```
+
+**Casts**: `reviewed_at` → `datetime`
+
+**Relationships**:
+- `projectNotification()` → `belongsTo(ProjectNotification)`
+- `employeeTask()` → `belongsTo(EmployeeTaskRequest)`
+- `process()` → `belongsTo(Process)`
+- `reasons()` → `hasMany(ProjectNotificationWorkStoppageReportReason)`
+- `requester()` → `belongsTo(User, 'requested_by')`
+- `reviewer()` → `belongsTo(User, 'reviewed_by')`
+
+**Purpose**: Stores work stoppage report records, created after workflow approval. Form key: `ProjectNotificationWorkStoppageReport`.
+
+---
+
+#### 2.1.17 `ProjectNotificationWorkStoppageReportReason` (table: `project_notification_work_stoppage_report_reasons`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason`
+
+**Traits**: `UuidTrait`
+
+**Fillable Fields**:
+```
+project_notification_work_stoppage_report_id, work_stoppage_reason_id,
+reason_name_ar, reason_name_en, notes, sort_order
+```
+
+**Casts**: `sort_order` → `integer`
+
+**Relationships**:
+- `report()` → `belongsTo(ProjectNotificationWorkStoppageReport)`
+- `reason()` → `belongsTo(ProjectNotificationWorkStoppageReason, 'work_stoppage_reason_id')`
+
+---
+
+#### 2.1.18 `ProjectNotificationWorkResumption` (table: `project_notification_work_resumptions`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationWorkResumption`
+
+**Traits**: `HasUuids`, `InteractsWithMedia` (Spatie), `SoftDeletes`
+
+**Implements**: `HasMedia`
+
+**Fillable Fields**:
+```
+company_id, project_notification_id, employee_task_request_id, process_id,
+procedure_setting_id, reasons_resolved, safety_notes_reviewed, site_ready,
+contractor_notified, notes, status, requested_by, reviewed_by, reviewed_at
+```
+
+**Casts**: `reasons_resolved` → `boolean`, `safety_notes_reviewed` → `boolean`, `site_ready` → `boolean`, `contractor_notified` → `boolean`, `reviewed_at` → `datetime`
+
+**Relationships**:
+- `company()` → `belongsTo(Company)`
+- `projectNotification()` → `belongsTo(ProjectNotification)`
+- `employeeTask()` → `belongsTo(EmployeeTaskRequest)`
+- `process()` → `belongsTo(Process)`
+
+**Media Collection**: Supports file attachments via Spatie Media Library.
+
+**Purpose**: Stores work resumption records with safety checklist, created after workflow approval. Form key: `ProjectNotificationWorkResumption`.
+
+---
+
+#### 2.1.19 `ProjectNotificationTaskPostponement` (table: `project_notification_task_postponements`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationTaskPostponement`
+
+**Traits**: `HasUuids`, `SoftDeletes`
+
+**Fillable Fields**:
+```
+company_id, project_notification_id, employee_task_request_id, process_id,
+procedure_setting_id, previous_task_date, previous_task_time, new_task_date,
+new_task_time, reason, status, requested_by, reviewed_by, reviewed_at
+```
+
+**Casts**: `previous_task_date` → `date:Y-m-d`, `previous_task_time` → `datetime:H:i`, `new_task_date` → `date:Y-m-d`, `new_task_time` → `datetime:H:i`, `reviewed_at` → `datetime`
+
+**Relationships**:
+- `company()` → `belongsTo(Company)`
+- `projectNotification()` → `belongsTo(ProjectNotification)`
+- `employeeTask()` → `belongsTo(EmployeeTaskRequest)`
+- `process()` → `belongsTo(Process)`
+
+**Purpose**: Stores task postponement records. On workflow approval, `applyTaskPostponement()` updates both the notification and the linked `EmployeeTaskRequest` with the new date/time. Form key: `ProjectNotificationTaskPostponement`.
+
+---
+
 ### 2.2 Database Schema & Migrations
 
 #### `projects` Table
@@ -511,6 +748,227 @@ Adds indexes to:
 - `project_employees`: `project_id`, `user_id`, `project_role_id`, `['project_id', 'user_id']`
 - `project_roles`: `project_id`, `slug`, `is_active`, `is_default`
 
+#### `project_notification_site_statuses` Table
+
+**Created**: `2026_06_28_000001_create_project_notification_site_statuses.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `name_ar` | string | Arabic name |
+| `name_en` | string | English name |
+| `sort_order` | integer | default 0 |
+| `is_active` | boolean | default true |
+| `created_at`, `updated_at` | timestamps | |
+
+**Indexes**: `sort_order`, `is_active`
+
+#### `project_notification_site_status_updates` Table
+
+**Created**: `2026_06_28_000002_create_project_notification_site_status_updates.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `company_id` | UUID FK | → `companies.id`, cascade delete |
+| `project_notification_id` | UUID FK | → `project_notifications.id`, cascade delete |
+| `employee_task_request_id` | UUID | nullable |
+| `process_id` | UUID | nullable — linked workflow process |
+| `procedure_setting_id` | UUID | nullable |
+| `update_date` | date | nullable |
+| `update_time` | time | nullable |
+| `site_status_id` | UUID FK | → `project_notification_site_statuses.id`, null on delete |
+| `current_site_status_id` | UUID FK | → `project_notification_site_statuses.id`, null on delete |
+| `work_stages_completed` | string | nullable |
+| `current_status_description` | text | nullable |
+| `completion_percentage` | decimal(5,2) | nullable |
+| `updates_obstacles` | text | nullable |
+| `additional_notes` | text | nullable |
+| `status` | string(30) | default `pending` |
+| `requested_by` | UUID | nullable |
+| `reviewed_by` | UUID | nullable |
+| `reviewed_at` | dateTime | nullable |
+| `review_notes` | text | nullable |
+| `created_at`, `updated_at` | timestamps | |
+| `deleted_at` | timestamp | soft deletes |
+
+**Indexes**: `[company_id, project_notification_id]`, `employee_task_request_id`, `process_id`, `site_status_id`, `current_site_status_id`, `status`
+
+#### `project_notification_fines` Table
+
+**Created**: `2026_06_28_000003_create_project_notification_fines.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `company_id` | UUID FK | → `companies.id`, cascade delete |
+| `project_notification_id` | UUID FK | → `project_notifications.id`, cascade delete |
+| `employee_task_request_id` | UUID | nullable |
+| `process_id` | UUID | nullable |
+| `procedure_setting_id` | UUID | nullable |
+| `reason` | text | nullable |
+| `total_amount` | decimal(12,2) | default 0 |
+| `status` | string(30) | default `pending` |
+| `requested_by` | UUID | nullable |
+| `reviewed_by` | UUID | nullable |
+| `reviewed_at` | dateTime | nullable |
+| `review_notes` | text | nullable |
+| `created_at`, `updated_at` | timestamps | |
+| `deleted_at` | timestamp | soft deletes |
+
+**Indexes**: `[company_id, project_notification_id]`, `employee_task_request_id`, `process_id`, `status`
+
+#### `project_notification_fine_items` Table
+
+**Created**: `2026_06_28_000004_create_project_notification_fine_items.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `project_notification_fine_id` | UUID FK | → `project_notification_fines.id`, cascade delete |
+| `name_ar` | string | |
+| `name_en` | string | nullable |
+| `quantity` | integer | default 1 |
+| `unit_amount` | decimal(12,2) | default 0 |
+| `total_amount` | decimal(12,2) | default 0 |
+| `sort_order` | integer | default 0 |
+| `created_at`, `updated_at` | timestamps | |
+
+**Indexes**: `project_notification_fine_id`, `sort_order`
+
+#### `project_notification_location_confirmations` Table
+
+**Created**: `2026_06_28_000005_create_project_notification_location_confirmations.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `company_id` | UUID FK | → `companies.id`, cascade delete |
+| `project_notification_id` | UUID FK | → `project_notifications.id`, cascade delete |
+| `employee_task_request_id` | UUID | nullable |
+| `process_id` | UUID | nullable |
+| `procedure_setting_id` | UUID | nullable |
+| `latitude` | decimal(10,8) | nullable |
+| `longitude` | decimal(11,8) | nullable |
+| `distance_meters` | decimal(10,2) | nullable |
+| `is_inside_location` | boolean | default false |
+| `status` | string(30) | default `pending` |
+| `requested_by` | UUID | nullable |
+| `reviewed_by` | UUID | nullable |
+| `reviewed_at` | dateTime | nullable |
+| `review_notes` | text | nullable |
+| `created_at`, `updated_at` | timestamps | |
+| `deleted_at` | timestamp | soft deletes |
+
+**Indexes**: `[company_id, project_notification_id]`, `employee_task_request_id`, `process_id`, `status`
+
+#### `project_notification_work_stoppage_reasons` Table
+
+**Created**: `2026_06_28_000006_create_project_notification_work_stoppage_reasons.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `name_ar` | string | |
+| `name_en` | string | |
+| `sort_order` | integer | default 0 |
+| `is_active` | boolean | default true |
+| `created_at`, `updated_at` | timestamps | |
+
+**Indexes**: `sort_order`, `is_active`
+
+#### `project_notification_work_stoppage_reports` Table
+
+**Created**: `2026_06_28_000007_create_project_notification_work_stoppage_reports.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `company_id` | UUID FK | → `companies.id`, cascade delete |
+| `project_notification_id` | UUID FK | → `project_notifications.id`, cascade delete |
+| `employee_task_request_id` | UUID | nullable |
+| `process_id` | UUID | nullable |
+| `procedure_setting_id` | UUID | nullable |
+| `other_notes` | text | nullable |
+| `status` | string(30) | default `pending` |
+| `requested_by` | UUID | nullable |
+| `reviewed_by` | UUID | nullable |
+| `reviewed_at` | dateTime | nullable |
+| `review_notes` | text | nullable |
+| `created_at`, `updated_at` | timestamps | |
+| `deleted_at` | timestamp | soft deletes |
+
+**Indexes**: `[company_id, project_notification_id]`, `employee_task_request_id`, `process_id`, `status`
+
+#### `project_notification_work_stoppage_report_reasons` Table
+
+**Created**: `2026_06_28_000008_create_project_notification_work_stoppage_report_reasons.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `project_notification_work_stoppage_report_id` | UUID FK | → `project_notification_work_stoppage_reports.id`, cascade delete |
+| `work_stoppage_reason_id` | UUID FK | → `project_notification_work_stoppage_reasons.id`, null on delete |
+| `reason_name_ar` | string | nullable |
+| `reason_name_en` | string | nullable |
+| `notes` | text | nullable |
+| `sort_order` | integer | default 0 |
+| `created_at`, `updated_at` | timestamps | |
+
+**Indexes**: `project_notification_work_stoppage_report_id`, `work_stoppage_reason_id`, `sort_order`
+
+#### `project_notification_work_resumptions` Table
+
+**Created**: `2026_06_28_000009_create_project_notification_work_resumptions.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `company_id` | UUID FK | → `companies.id`, cascade delete |
+| `project_notification_id` | UUID FK | → `project_notifications.id`, cascade delete |
+| `employee_task_request_id` | UUID | nullable |
+| `process_id` | UUID | nullable |
+| `procedure_setting_id` | UUID | nullable |
+| `reasons_resolved` | boolean | default false |
+| `safety_notes_reviewed` | boolean | default false |
+| `site_ready` | boolean | default false |
+| `contractor_notified` | boolean | default false |
+| `notes` | text | nullable |
+| `status` | string(30) | default `pending` |
+| `requested_by` | UUID | nullable |
+| `reviewed_by` | UUID | nullable |
+| `reviewed_at` | dateTime | nullable |
+| `created_at`, `updated_at` | timestamps | |
+| `deleted_at` | timestamp | soft deletes |
+
+**Indexes**: `[company_id, project_notification_id]`, `employee_task_request_id`, `process_id`, `status`
+
+#### `project_notification_task_postponements` Table
+
+**Created**: `2026_06_28_000011_create_project_notification_task_postponements.php`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `company_id` | UUID FK | → `companies.id`, cascade delete |
+| `project_notification_id` | UUID FK | → `project_notifications.id`, cascade delete |
+| `employee_task_request_id` | UUID | nullable |
+| `process_id` | UUID | nullable |
+| `procedure_setting_id` | UUID | nullable |
+| `previous_task_date` | date | nullable |
+| `previous_task_time` | time | nullable |
+| `new_task_date` | date | nullable |
+| `new_task_time` | time | nullable |
+| `reason` | text | nullable |
+| `status` | string(30) | default `pending` |
+| `requested_by` | UUID | nullable |
+| `reviewed_by` | UUID | nullable |
+| `reviewed_at` | dateTime | nullable |
+| `created_at`, `updated_at` | timestamps | |
+| `deleted_at` | timestamp | soft deletes |
+
+**Indexes**: `[company_id, project_notification_id]`, `employee_task_request_id`, `process_id`, `status`
+
 ---
 
 ### 2.3 DTOs, Handlers & Commands
@@ -569,6 +1027,98 @@ Used by `ProjectNotificationService::update()`.
 **File**: `Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO`
 
 Used by `index`, `myTasks`, and `export` endpoints. Provides `toFilters()` method for repository filtering. Supports `contractor_id` in addition to `contractor_name`.
+
+#### `RequestProjectNotificationUpdateDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\RequestProjectNotificationUpdateDTO`
+
+Constructor parameters:
+```
+notificationType (?string), feederNumber (?string), workDescription (?string),
+contractorName (?string), contractorTechnicalName (?string), contractorMobile (?string),
+taskLatitude (?float), taskLongitude (?float), notes (?string),
+internalProcedureSettingId (?string), files (?array<UploadedFile>)
+```
+
+`toArray()` returns non-null fields as snake_case keys. Used by `ProjectNotificationService::requestUpdate()`.
+
+#### `RequestProjectNotificationSiteStatusUpdateDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\RequestProjectNotificationSiteStatusUpdateDTO`
+
+Constructor parameters:
+```
+updateDate (?string), updateTime (?string), siteStatusId (?string),
+currentSiteStatusId (?string), workStagesCompleted (?string),
+currentStatusDescription (?string), completionPercentage (?float),
+updatesObstacles (?string), additionalNotes (?string),
+internalProcedureSettingId (?string), files (?array<UploadedFile>)
+```
+
+`toArray()` returns non-null fields as snake_case keys. Used by `ProjectNotificationService::requestSiteStatusUpdate()`.
+
+#### `RequestProjectNotificationFineDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\RequestProjectNotificationFineDTO`
+
+Constructor parameters:
+```
+reason (?string), items (array<{name_ar: string, name_en?: string, quantity: int,
+unit_amount: float, total_amount: float, sort_order?: int}>),
+internalProcedureSettingId (?string), files (?array<UploadedFile>)
+```
+
+`totalAmount()` method computes the sum of all item `total_amount` values. Used by `ProjectNotificationService::requestFine()`.
+
+#### `RequestProjectNotificationLocationConfirmationDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\RequestProjectNotificationLocationConfirmationDTO`
+
+Constructor parameters:
+```
+latitude (?float), longitude (?float), distanceMeters (?float),
+isInsideLocation (?bool), internalProcedureSettingId (?string)
+```
+
+`toArray()` returns non-null fields as snake_case keys. Used by `ProjectNotificationService::requestLocationConfirmation()`.
+
+#### `RequestProjectNotificationWorkStoppageReportDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\RequestProjectNotificationWorkStoppageReportDTO`
+
+Constructor parameters:
+```
+otherNotes (?string), reasons (array<{reason_id?: string, notes?: string,
+sort_order?: int}>), internalProcedureSettingId (?string),
+files (?array<UploadedFile>)
+```
+
+Used by `ProjectNotificationService::requestWorkStoppageReport()`.
+
+#### `RequestProjectNotificationWorkResumptionDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\RequestProjectNotificationWorkResumptionDTO`
+
+Constructor parameters:
+```
+reasonsResolved (bool), safetyNotesReviewed (bool), siteReady (bool),
+contractorNotified (bool), notes (?string), files (?array<UploadedFile>),
+internalProcedureSettingId (?string)
+```
+
+Used by `ProjectNotificationService::requestWorkResumption()`.
+
+#### `RequestProjectNotificationTaskPostponementDTO`
+
+**File**: `Modules\Project\ProjectManagement\DTO\RequestProjectNotificationTaskPostponementDTO`
+
+Constructor parameters:
+```
+newTaskDate (string), newTaskTime (string), reason (string),
+internalProcedureSettingId (?string)
+```
+
+Used by `ProjectNotificationService::requestTaskPostponement()`.
 
 ---
 
@@ -647,14 +1197,26 @@ Key methods:
 - `get(string $id): ProjectNotification`
 - `update(string $id, UpdateProjectNotificationDTO $dto): ProjectNotification`
 - `delete(string $id): bool`
-- `approve(string $id, string $userId): ProjectNotification` — Approves the notification; if the linked task has an active workflow process, it advances that too.
-- `reject(string $id, string $userId, string $reason): ProjectNotification`
+- `approve(string $id, string $userId, ?string $procedureSettingId = null): ProjectNotification` — Approves the notification; if the linked task has an active workflow process, it advances that too.
+- `reject(string $id, string $userId, string $reason, ?string $procedureSettingId = null): ProjectNotification`
 - `syncNotificationStatusFromTask(ProjectNotification $notification, $task): void` — Maps task status to notification status.
+- `listSiteStatuses(): Collection` — Returns active `ProjectNotificationSiteStatus` records ordered by `sort_order`.
+- `listWorkStoppageReasons(): Collection` — Returns active `ProjectNotificationWorkStoppageReason` records ordered by `sort_order`.
+- `requestUpdate(string $id, RequestProjectNotificationUpdateDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the new data; the actual DB update is applied only when the process completes (all steps approved). If no procedure setting is configured, applies immediately. Form key: `UpdateProjectNotificationTask`.
+- `requestSiteStatusUpdate(string $id, RequestProjectNotificationSiteStatusUpdateDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the site status data; the actual `ProjectNotificationSiteStatusUpdate` record is created only after all workflow steps are approved. Form key: `UpdateProjectNotificationSiteStatus`.
+- `requestFine(string $id, RequestProjectNotificationFineDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the fine data; the actual `ProjectNotificationFine` record (with `ProjectNotificationFineItem` line items) is created only after all workflow steps are approved. Form key: `ProjectNotificationFine`.
+- `requestLocationConfirmation(string $id, RequestProjectNotificationLocationConfirmationDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the location data; the actual `ProjectNotificationLocationConfirmation` record is created only after all workflow steps are approved. Form key: `ConfirmProjectNotificationLocation`.
+- `requestWorkStoppageReport(string $id, RequestProjectNotificationWorkStoppageReportDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the report data; the actual `ProjectNotificationWorkStoppageReport` record (with `ProjectNotificationWorkStoppageReportReason` entries) is created only after all workflow steps are approved. Form key: `ProjectNotificationWorkStoppageReport`.
+- `requestWorkResumption(string $id, RequestProjectNotificationWorkResumptionDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the resumption data; the actual `ProjectNotificationWorkResumption` record is created only after all workflow steps are approved. Form key: `ProjectNotificationWorkResumption`.
+- `requestTaskPostponement(string $id, RequestProjectNotificationTaskPostponementDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the new date/time; on approval, `applyTaskPostponement()` updates both the notification and the linked `EmployeeTaskRequest` with the new date/time. Form key: `ProjectNotificationTaskPostponement`.
+- `applyTaskPostponement(ProjectNotification $notification, EmployeeTaskRequest $task, string $newTaskDate, string $newTaskTime, string $reason): ProjectNotificationTaskPostponement` — Applies the postponement by updating both the notification and the linked task, and stores a `ProjectNotificationTaskPostponement` historical record.
+- `resolvePendingProcessesForInbox(ProjectNotification $notification, string $userId): array` — Resolves pending workflow processes for the inbox display, returning an array of `{process_id, procedure_setting_id, form, pending_step_id, pending_step_order}`.
 - `confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile confirm-receive. If the linked task is still `pending`, it is auto-approved first, then the task is started. This moves the notification from the inbox (`approved`) to the assigned tasks list (`in_progress`). Form key: `ConfirmProjectNotificationPresence`.
 - `startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile: backward-compatible alias that delegates to `confirmReceive()` internally.
 - `endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest` — Mobile: employee ends the linked task. Form key: `EndProjectNotificationTask`.
 - `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a generic internal procedure action (e.g., `UpdateProjectNotificationTask`).
 - `availableActions(string $notificationId): array` — Lists available workflow actions for the notification, same as `GET /employee-tasks/{id}/available-actions`.
+- `procedures(string $notificationId, bool $debug = false): array` — Returns the timeline of all taken (completed) internal procedures for the linked `EmployeeTask`, ordered by `taken_at` ascending, plus a summary block. Returns `{items, summary}` (and optionally `debug`).
 
 **Cross-Module Relationship with EmployeeTask**:
 
@@ -670,7 +1232,16 @@ When creating the workflow for `CreateProjectNotificationTask`, the frontend may
 
 **Condition Evaluation for Project Notifications**:
 
-Only `InsideCustomLocations` is evaluated for `CreateProjectNotificationTask`. The admin sets the task location from the dashboard, so the employee's real-time context (current shift, current GPS, today's holiday status) is not relevant at creation time. `EmployeeTaskFormConditionService::checkCreateTaskConditions()` resolves the condition map from `InternalProcessForm::CreateProjectNotificationTask->conditions()`, which now contains only `InsideCustomLocations`. If `InsideCustomLocations` is active and the task location falls outside the configured polygons, creation fails.
+Only `InsideCustomLocations` is evaluated for `CreateProjectNotificationTask`. The admin sets the task location from the dashboard, so the employee's real-time context (current shift, current GPS, today's holiday status) is not relevant at creation time. `EmployeeTaskFormConditionService::checkCreateTaskConditions()` resolves the condition map from `InternalProcessForm::CreateProjectNotificationTask->conditions()`, which contains only `InsideCustomLocations`. If `InsideCustomLocations` is active and the task location falls outside the configured polygons, creation fails.
+
+The following mobile/workflow forms also expose the `InsideTaskLocation` condition (employee must be within the configured radius of the task location):
+
+- `ConfirmProjectNotificationLocation` — location confirmation
+- `UpdateProjectNotificationSiteStatus` — periodic site status update
+- `ProjectNotificationFine` — fine/penalty request
+- `EndProjectNotificationTask` — close/end the notification
+
+For these forms, `InsideTaskLocation` is a precondition. The evaluator (`InsideTaskLocationEvaluator`) checks the user's current GPS against the task's `task_latitude`/`task_longitude` using the `radius_meters` setting (default 100 m). The action is rejected if the employee is outside the radius. If the request omits `current_latitude`/`current_longitude`, the location check is skipped so legacy clients are not broken; for `ConfirmProjectNotificationLocation` and `EndProjectNotificationTask` the existing `latitude`/`longitude` fields are used as the current location. Enforcement is invoked by `ProjectNotificationService::checkWorkflowFormConditions()` (for the first three forms) and by `EmployeeTaskLifecycleService::end()` via `EmployeeTaskFormConditionService::checkEndTaskConditions()` (for the end form) before the record or workflow process is created.
 
 Normal employee task creation (`CreateTask` form) is unaffected — all conditions are evaluated.
 
@@ -679,6 +1250,19 @@ Normal employee task creation (`CreateTask` form) is unaffected — all conditio
 **File**: `Modules\Project\ProjectManagement\Services\ProjectNotificationLocationService`
 
 - `getProjectEmployeesWithLocations(?string $projectId, float $lat, float $lng, ?float $radius): array` — Returns project employees sorted by distance from the given coordinates, used for the "nearest employees" selection UI when creating a notification.
+
+**Location Source Priority**:
+1. **Attendance tracking** — Latest point from `attendance.location_tracking` (array of GPS points sorted ascending by timestamp).
+2. **Clock-in location** — `attendance.clock_in_location` (fallback if no tracking points).
+3. **`user_locations` table** — Fallback for employees who have sent location data via the `track-location` API but have no active attendance.
+
+**Employee Status Derivation**:
+- `available` — Employee has attendance and location data (from any source).
+- `busy` — Employee has an in-progress or approved task today.
+- `not_connected` — Employee has attendance but no location data.
+- `no_location` — Employee has no attendance and no location data.
+
+**Cross-Module**: Uses `UserLocation` model from the Attendance module for the `user_locations` fallback.
 
 ---
 
@@ -835,9 +1419,11 @@ Sends email via `AttachmentRequestMail`.
 | PUT | `/notifications/{id}` | `PROJECT_NOTIFICATION_UPDATE` | Update notification |
 | DELETE | `/notifications/{id}` | `PROJECT_NOTIFICATION_DELETE` | Delete notification |
 | POST | `/notifications/export` | `PROJECT_NOTIFICATION_EXPORT` | Export notifications (xlsx/csv) |
-| GET | `/notifications/employees-with-locations` | `PROJECT_NOTIFICATION_CREATE` | List project employees sorted by distance |
-| POST | `/notifications/{id}/approve` | `PROJECT_NOTIFICATION_UPDATE` | Approve notification |
-| POST | `/notifications/{id}/reject` | `PROJECT_NOTIFICATION_UPDATE` | Reject notification (requires `reason`) |
+| GET | `/notifications/employees-with-locations` | `PROJECT_NOTIFICATION_CREATE` | List project employees sorted by distance with location and status |
+| GET | `/notifications/site-statuses` | `PROJECT_NOTIFICATION_VIEW` | List active site statuses for dropdown |
+| GET | `/notifications/work-stoppage-reasons` | `PROJECT_NOTIFICATION_VIEW` | List active work stoppage reasons for dropdown |
+| POST | `/notifications/{id}/approve` | `PROJECT_NOTIFICATION_UPDATE` | Approve notification (optional `procedure_setting_id`) |
+| POST | `/notifications/{id}/reject` | `PROJECT_NOTIFICATION_UPDATE` | Reject notification (requires `reason`, optional `procedure_setting_id`) |
 | GET | `/notifications/my-tasks` | `PROJECT_NOTIFICATION_LIST` | Mobile: all notifications assigned to current employee (after confirm-receive) |
 | GET | `/notifications/my-inbox` | `PROJECT_NOTIFICATION_LIST` | Mobile: approved notifications waiting for confirm-receive |
 | GET | `/notifications/my-inbox-counts` | `PROJECT_NOTIFICATION_LIST` | Mobile: status counts for the employee's notifications (badge) |
@@ -846,6 +1432,13 @@ Sends email via `AttachmentRequestMail`.
 | POST | `/notifications/{id}/confirm-receive` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: confirm receive and start the linked task |
 | POST | `/notifications/{id}/start` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: backward-compatible alias for confirm-receive |
 | POST | `/notifications/{id}/take-action` | `PROJECT_NOTIFICATION_UPDATE` | Record a generic procedure action (e.g., `UpdateProjectNotificationTask`) |
+| POST | `/notifications/{id}/request-update` | `PROJECT_NOTIFICATION_UPDATE` | Workflow-based update request (`UpdateProjectNotificationTask` form) |
+| POST | `/notifications/{id}/request-site-status-update` | `PROJECT_NOTIFICATION_UPDATE` | Workflow-based site status update (`UpdateProjectNotificationSiteStatus` form) |
+| POST | `/notifications/{id}/request-fine` | `PROJECT_NOTIFICATION_UPDATE` | Workflow-based fine request (`ProjectNotificationFine` form) |
+| POST | `/notifications/{id}/confirm-location` | `PROJECT_NOTIFICATION_UPDATE` | Workflow-based location confirmation (`ConfirmProjectNotificationLocation` form) |
+| POST | `/notifications/{id}/request-work-stoppage-report` | `PROJECT_NOTIFICATION_UPDATE` | Workflow-based work stoppage report (`ProjectNotificationWorkStoppageReport` form) |
+| POST | `/notifications/{id}/request-work-resumption` | `PROJECT_NOTIFICATION_UPDATE` | Workflow-based work resumption (`ProjectNotificationWorkResumption` form) |
+| POST | `/notifications/{id}/request-task-postponement` | `PROJECT_NOTIFICATION_UPDATE` | Workflow-based task postponement (`ProjectNotificationTaskPostponement` form) |
 | GET | `/notifications/{id}/procedures` | `PROJECT_NOTIFICATION_VIEW` | Linked EmployeeTask procedures timeline + summary |
 | POST | `/notifications/{id}/end` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: end linked task |
 
@@ -854,14 +1447,25 @@ Sends email via `AttachmentRequestMail`.
 **Notes**:
 - `store` uses `CreateProjectNotificationRequest` for validation; creates via `ProjectNotificationService::create()` which delegates to `EmployeeTaskRequestService`.
 - `GET /notifications/contractors` returns the tenant's active contractor list (`id`, `name`, `number`, `mobile`, `notes`). The create/update forms should send the selected `contractor_id`; `contractor_name` and `contractor_number` are auto-filled from the contractor record if omitted.
-- `GET /notifications/employees-with-locations` returns each project employee with `status` (`available`, `busy`, `offline`, `no_location`) and `status_label`, plus distance from the task location. Status is derived from today's attendance, active task assignment, and GPS freshness.
+- `GET /notifications/employees-with-locations` returns each project employee with `status` (`available`, `busy`, `not_connected`, `no_location`) and `status_label`, plus distance from the task location. Status is derived from today's attendance, active task assignment, and GPS freshness. Location data is sourced from: (1) attendance `location_tracking`, (2) attendance `clock_in_location`, (3) `user_locations` table fallback.
+- `GET /notifications/site-statuses` returns active `ProjectNotificationSiteStatus` records (`id`, `name_ar`, `name_en`, `sort_order`) for the periodic site status update form dropdown.
+- `GET /notifications/work-stoppage-reasons` returns active `ProjectNotificationWorkStoppageReason` records (`id`, `name_ar`, `name_en`, `sort_order`) for the work stoppage report form dropdown.
 - `confirm-receive`/`start`/`end` use `StartTaskRequest`/`EndTaskRequest` from the EmployeeTask module and return `EmployeeTaskRequestPresenter` responses.
 - `takeAction` validates `internal_procedure_setting_id` as required UUID existing in `procedure_settings`.
 - The mobile inbox (`/my-inbox`) only returns notifications with `status = approved`. After `POST /notifications/{id}/confirm-receive`, the task moves to `in_progress` and appears in `/my-tasks` instead.
 - `/filters` returns the same response shape as `GET /employee-tasks/filters`: `statuses` (key, title_ar, title_en, count), `projects` (key, title, count), `duration` (key, title_ar, title_en, min_minutes, max_minutes).
 - Notification status is auto-synced from the linked `EmployeeTaskRequest` by `EmployeeTaskStatusSyncObserver` whenever the task status changes (e.g., `in_progress` after confirm-receive, `completed` after end). The observer maps `paused` → `in_progress` for the notification.
 - The linked `EmployeeTaskRequest` exposes its taken internal procedures via `GET /employee-tasks/{employee_task_id}/procedures`. The mobile app can use the linked task ID to display the procedures (الإجراءات) timeline for the assigned task. Response includes `items` (ordered by step with `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`) and `summary` (`total`, `last_action`, `start_date`, `progress`).
-- `GET /notifications/{id}/procedures` is a convenience wrapper over the employee-task endpoint: it resolves the linked `EmployeeTaskRequest` from the notification id and returns the same `items` + `summary` shape.
+- `GET /notifications/{id}/procedures` is a convenience wrapper over the employee-task endpoint: it resolves the linked `EmployeeTaskRequest` from the notification id and returns the same `items` + `summary` shape. Supports `?debug=true` for additional debug info.
+- **Workflow-based request endpoints** (`request-update`, `request-site-status-update`, `request-fine`, `confirm-location`, `request-work-stoppage-report`, `request-work-resumption`, `request-task-postponement`, `end`): Each creates a Process snapshot with the submitted data (except `end`, which uses the EmployeeTask lifecycle end flow). The actual DB record is created only after all workflow steps are approved. If `internal_procedure_setting_id` is null or no procedure setting is configured, the change is applied immediately (no workflow). All accept an optional `internal_procedure_setting_id` UUID parameter.
+- `request-update` accepts: `notification_type`, `feeder_number`, `work_description`, `contractor_name`, `contractor_technical_name`, `contractor_mobile`, `task_latitude`, `task_longitude`, `notes`, `internal_procedure_setting_id`, `files[]` (jpg/jpeg/png/webp, max 10MB).
+- `request-site-status-update` accepts: `update_date` (Y-m-d), `update_time` (H:i), `site_status_id` (UUID), `current_site_status_id` (UUID), `work_stages_completed`, `current_status_description`, `completion_percentage` (0-100), `updates_obstacles`, `additional_notes`, `internal_procedure_setting_id`, `files[]`, optional `current_latitude`/`current_longitude` (used by the `InsideTaskLocation` condition).
+- `request-fine` accepts: `reason`, `items[]` (required, min 1: `name_ar`, `name_en?`, `quantity` (int ≥1), `unit_amount` (numeric ≥0), `total_amount` (numeric ≥0), `sort_order?`), `internal_procedure_setting_id`, `files[]` (pdf/jpg/jpeg/png/webp, max 10MB), optional `current_latitude`/`current_longitude` (used by the `InsideTaskLocation` condition).
+- `confirm-location` accepts: `latitude` (required), `longitude` (required), `distance_meters`, `is_inside_location` (required, boolean), `internal_procedure_setting_id`.
+- `request-work-stoppage-report` accepts: `other_notes`, `reasons[]` (required, min 1: `reason_id?` (UUID, active), `notes?`, `sort_order?`), `internal_procedure_setting_id`, `files[]` (pdf/jpg/jpeg/png/webp, max 10MB).
+- `request-work-resumption` accepts: `reasons_resolved` (required, boolean), `safety_notes_reviewed` (required, boolean), `site_ready` (required, boolean), `contractor_notified` (required, boolean), `notes`, `files[]` (pdf/jpg/jpeg/png/doc/docx, max 20MB, max 10 files), `internal_procedure_setting_id`.
+- `request-task-postponement` accepts: `new_task_date` (required, Y-m-d), `new_task_time` (required, H:i), `reason` (required, max 500), `internal_procedure_setting_id`.
+- `end` (POST `/projects/notifications/{id}/end`) accepts: `latitude` (required, -90 to 90), `longitude` (required, -180 to 180), `notes`, optional `internal_procedure_setting_id`, optional `files[]` (jpg/jpeg/png/webp, max 5MB per file, up to 10 files). Uploaded images are stored on the linked `EmployeeTaskRequest` in the `end_attachments` media collection. If `InsideTaskLocation` is active on `EndProjectNotificationTask`, the employee must be within the configured radius of the task location.
 
 ---
 
@@ -1920,6 +2524,7 @@ Modules\Project
 │   ├── References ArchiveLibrary\Folder, ArchiveLibrary\File (for attachment saving)
 │   └── ProjectNotification → EmployeeTask (EmployeeTaskRequest) via employee_task_request_id
 │       ├── Uses InternalProcessForm::CreateProjectNotificationTask form key (conditions limited to InsideCustomLocations)
+│       ├── ConfirmProjectNotificationLocation, UpdateProjectNotificationSiteStatus, ProjectNotificationFine, and EndProjectNotificationTask forms expose InsideTaskLocation (precondition: employee within task location radius)
 │       ├── Mobile confirm-receive uses InternalProcessForm::ConfirmProjectNotificationPresence form key
 │       ├── Procedure steps may use ActionTakerType::AssignedUser to send the task to the assigned employee
 │       └── Mobile lifecycle (confirm-receive / start / end / take-action) delegates to EmployeeTask services
