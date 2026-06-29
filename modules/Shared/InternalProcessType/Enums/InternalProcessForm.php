@@ -128,17 +128,18 @@ enum InternalProcessForm: string
     /**
      * Natural sort weight for this form within a procedure type.
      * create* forms are always first, end* forms are always last.
-     * Gaps (100 → 500 → 900) leave room for middle forms added via API.
+     * Gaps (0 → 100 → 500 → 900) leave room for middle forms added via API.
      */
     public function sortOrder(): int
     {
-        if (str_starts_with($this->value, 'create')) {
-            return 100;
-        }
-        if (str_starts_with($this->value, 'end')) {
-            return 900;
-        }
-        return 500;
+        return match ($this) {
+            self::CreateProjectNotificationTask => 0,
+            default => match (true) {
+                str_starts_with($this->value, 'create') => 100,
+                str_starts_with($this->value, 'end') => 900,
+                default => 500,
+            },
+        };
     }
 
     /** @return array{key: string, label_ar: string, conditions: list<array{key: string, type: string, label_ar: string}>} */
