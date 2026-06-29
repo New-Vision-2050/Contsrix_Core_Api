@@ -81,7 +81,8 @@ class ProjectNotificationLocationService
             // Get the latest tracking point (location_tracking is sorted ascending by timestamp).
             $latestPoint = null;
             if ($attendance && ! empty($attendance->location_tracking)) {
-                $tracking = end($attendance->location_tracking);
+                $trackingData = $attendance->location_tracking;
+                $tracking = end($trackingData);
                 if (is_array($tracking)) {
                     $latestPoint = $tracking;
                 }
