@@ -154,7 +154,6 @@ enum InternalProcessForm: string
             self::StartTask,
             self::EndTask => ['employee_task'],
             self::CreateProjectNotificationTask => ['project_notification_task'],
-            self::ConfirmProjectNotificationPresence => ['project_notification_task'],
             self::UpdateProjectNotificationTask => ['project_notification_task'],
             self::UpdateProjectNotificationSiteStatus => ['project_notification_task'],
             self::ProjectNotificationFine => ['project_notification_task'],
