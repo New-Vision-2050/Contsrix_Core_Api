@@ -100,8 +100,8 @@ class AutoAttendanceService
         $existingByUserDate = [];
         foreach ($realAttendanceRecords as $record) {
             $uid     = (string) $record->user_id;
-            $dateKey = Carbon::parse($record->start_time)->timezone($timezone)->format('Y-m-d');
-            $timeKey = Carbon::parse($record->start_time)->timezone($timezone)->format('H:i:s');
+            $dateKey = Carbon::parse($record->start_time, $timezone)->format('Y-m-d');
+            $timeKey = Carbon::parse($record->start_time, $timezone)->format('H:i:s');
 
             $existingByUserDate[$uid][$dateKey][$timeKey] = true;
 
