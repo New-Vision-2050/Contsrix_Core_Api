@@ -10,6 +10,8 @@ use Modules\Process\Enums\ProcessStepStatus;
 
 class ProjectNotificationFilter extends SearchModelFilter
 {
+    protected $drop_id = false;
+
     public $relations = ['project', 'assignedUser', 'creator'];
 
     public function status($status)
