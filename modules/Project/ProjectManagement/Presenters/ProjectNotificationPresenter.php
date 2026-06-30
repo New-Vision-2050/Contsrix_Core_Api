@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectManagement\Presenters;
 
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
 class ProjectNotificationPresenter
 {
@@ -83,6 +84,7 @@ class ProjectNotificationPresenter
                     'url' => $media->getFullUrl(),
                 ])->values()->all()
                 : [],
+            'procedure_attachments'      => $this->presentProcedureAttachments($n),
         ];
     }
 
@@ -127,6 +129,7 @@ class ProjectNotificationPresenter
                             : null,
                     ])
                 : null,
+            'procedure_attachments'      => $this->presentProcedureAttachments($n),
         ];
     }
 
@@ -181,5 +184,86 @@ class ProjectNotificationPresenter
         ];
 
         return $labels[$status][$locale] ?? $status;
+    }
+
+    /**
+     * Collect all attachments uploaded across every procedure form related to the project notification,
+     * grouped by form/procedure title.
+     *
+     * Sources checked (only when the relationship is loaded, to avoid N+1):
+     *   1. ProjectNotification media → createProjectNotificationTask
+     *   2. EmployeeTaskRequest media → createProjectNotificationTask (task-level uploads)
+     *   3. EmployeeTaskApprovalRequest media → sendForApproval
+     *   4. ProjectNotificationWorkResumption media → projectNotificationWorkResumption
+     *
+     * @return list<array{title: string, attachments: list<array{url: string, name: string}>}>
+     */
+    private function presentProcedureAttachments(ProjectNotification $n): array
+    {
+        $groups   = [];
+        $locale   = app()->getLocale();
+        $formTitle = InternalProcessForm::CreateProjectNotificationTask->labelAr();
+
+        // 1. ProjectNotification's own media
+        if ($n->relationLoaded('media') && $n->media->isNotEmpty()) {
+            $groups[] = [
+                'title'       => $formTitle,
+                'attachments' => $this->formatMediaItems($n->media),
+            ];
+        }
+
+        $task = $n->relationLoaded('employeeTask') ? $n->employeeTask : null;
+        if (! $task) {
+            return $groups;
+        }
+
+        // 2. Task's own media (createProjectNotificationTask uploads)
+        if ($task->relationLoaded('media') && $task->media->isNotEmpty()) {
+            $groups[] = [
+                'title'       => $formTitle,
+                'attachments' => $this->formatMediaItems($task->media),
+            ];
+        }
+
+        // 3. Approval requests' media (sendForApproval)
+        if ($task->relationLoaded('approvalRequests')) {
+            foreach ($task->approvalRequests as $approval) {
+                if ($approval->relationLoaded('media') && $approval->media->isNotEmpty()) {
+                    $groups[] = [
+                        'title'       => $locale === 'ar' ? 'إرسال للاعتماد' : 'Send for Approval',
+                        'attachments' => $this->formatMediaItems($approval->media),
+                    ];
+                }
+            }
+        }
+
+        // 4. Work resumption media (projectNotificationWorkResumption)
+        if ($task->relationLoaded('workResumptions')) {
+            foreach ($task->workResumptions as $resumption) {
+                if ($resumption->relationLoaded('media') && $resumption->media->isNotEmpty()) {
+                    $groups[] = [
+                        'title'       => InternalProcessForm::ProjectNotificationWorkResumption->labelAr(),
+                        'attachments' => $this->formatMediaItems($resumption->media),
+                    ];
+                }
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @param  iterable $mediaItems
+     * @return list<array{url: string, name: string}>
+     */
+    private function formatMediaItems($mediaItems): array
+    {
+        return collect($mediaItems)
+            ->map(fn ($media) => [
+                'url'  => $media->getFullUrl(),
+                'name' => $media->name ?? $media->file_name,
+            ])
+            ->values()
+            ->all();
     }
 }
