@@ -33,7 +33,7 @@ class MakeOtpHandler
 
         }
 
-        $this->sendOtpEmail->resetPassword($command->getIdentifier());
+        $this->sendOtpEmail->resetPassword($command->getIdentifier(), 0, ["sms"]);
 
     }
 }
