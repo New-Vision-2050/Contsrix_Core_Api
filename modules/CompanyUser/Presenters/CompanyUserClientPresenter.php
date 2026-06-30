@@ -110,6 +110,7 @@ class CompanyUserClientPresenter extends AbstractPresenter
             "residence" => $this->companyUser->residence,
             "passport" => $this->companyUser->passport,
             "identity" => $this->companyUser->identity,
+            "identity_residence" => $this->companyUser->identity . '/' . $this->companyUser->residence,
             "border_number" => $this->companyUser->border_number,
             "phone" => $this->companyUser->users()->first()->phone,
             'job_title_id'=>$this->companyUser?->userProfessionalData?->job_title_id,
