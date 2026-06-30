@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Modules\Attendance\Support\HoursFormatter;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
 final class EmployeeTaskRequestPresenter
 {
@@ -71,6 +72,7 @@ final class EmployeeTaskRequestPresenter
             'sessions'                   => $task->relationLoaded('sessions')
                 ? EmployeeTaskSessionPresenter::collection($task->sessions)
                 : [],
+            'procedure_attachments'      => $this->presentProcedureAttachments($task),
         ];
     }
 
@@ -206,5 +208,86 @@ final class EmployeeTaskRequestPresenter
         $m = intdiv($seconds % 3600, 60);
         $s = $seconds % 60;
         return sprintf('%02d:%02d:%02d', $h, $m, $s);
+    }
+
+    /**
+     * Collect all attachments uploaded across every procedure form related to the task,
+     * grouped by form/procedure title.
+     *
+     * Sources checked (only when the relationship is loaded, to avoid N+1 in lists):
+     *   1. The task itself  → createTask / createProjectNotificationTask
+     *   2. EmployeeTaskApprovalRequest → sendForApproval
+     *   3. ProjectNotification → the notification record itself
+     *   4. ProjectNotificationWorkResumption → projectNotificationWorkResumption
+     *
+     * @return list<array{title: string, attachments: list<array{url: string, name: string}>}>
+     */
+    private function presentProcedureAttachments(EmployeeTaskRequest $task): array
+    {
+        $groups = [];
+
+        // 1. Task's own media (createTask / createProjectNotificationTask)
+        if ($task->relationLoaded('media') && $task->media->isNotEmpty()) {
+            $form = $task->is_project_notification
+                ? InternalProcessForm::CreateProjectNotificationTask
+                : InternalProcessForm::CreateTask;
+
+            $groups[] = [
+                'title'       => $form->labelAr(),
+                'attachments' => $this->formatMediaItems($task->media),
+            ];
+        }
+
+        // 2. Approval requests' media (sendForApproval)
+        if ($task->relationLoaded('approvalRequests')) {
+            foreach ($task->approvalRequests as $approval) {
+                if ($approval->relationLoaded('media') && $approval->media->isNotEmpty()) {
+                    $groups[] = [
+                        'title'       => app()->getLocale() === 'ar' ? 'إرسال للاعتماد' : 'Send for Approval',
+                        'attachments' => $this->formatMediaItems($approval->media),
+                    ];
+                }
+            }
+        }
+
+        // 3. Project notification media (the notification record itself)
+        if ($task->relationLoaded('projectNotification') && $task->projectNotification) {
+            $pn = $task->projectNotification;
+            if ($pn->relationLoaded('media') && $pn->media->isNotEmpty()) {
+                $groups[] = [
+                    'title'       => app()->getLocale() === 'ar' ? 'إشعار المشروع' : 'Project Notification',
+                    'attachments' => $this->formatMediaItems($pn->media),
+                ];
+            }
+        }
+
+        // 4. Work resumption media (projectNotificationWorkResumption)
+        if ($task->relationLoaded('workResumptions')) {
+            foreach ($task->workResumptions as $resumption) {
+                if ($resumption->relationLoaded('media') && $resumption->media->isNotEmpty()) {
+                    $groups[] = [
+                        'title'       => InternalProcessForm::ProjectNotificationWorkResumption->labelAr(),
+                        'attachments' => $this->formatMediaItems($resumption->media),
+                    ];
+                }
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @param  iterable $mediaItems
+     * @return list<array{url: string, name: string}>
+     */
+    private function formatMediaItems($mediaItems): array
+    {
+        return collect($mediaItems)
+            ->map(fn ($media) => [
+                'url'  => $media->getFullUrl(),
+                'name' => $media->name ?? $media->file_name,
+            ])
+            ->values()
+            ->all();
     }
 }

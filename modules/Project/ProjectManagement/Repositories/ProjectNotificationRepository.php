@@ -38,6 +38,9 @@ class ProjectNotificationRepository
                 'employeeTask.extensionRequests',
                 'employeeTask.currentProcedureStep.actionTakers.user',
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
+                'employeeTask.approvalRequests.media',
+                'employeeTask.projectNotification.media',
+                'employeeTask.workResumptions.media',
             ])
             ->find($id);
     }
