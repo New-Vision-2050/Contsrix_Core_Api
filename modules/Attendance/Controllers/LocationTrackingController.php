@@ -6,6 +6,7 @@ namespace Modules\Attendance\Controllers;
 
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Modules\Attendance\Models\UserLocation;
 use Modules\Attendance\Requests\TrackLocationRequest;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Presenters\LiveTrackingPresenter;
@@ -45,8 +46,10 @@ class LocationTrackingController
         $trackingPoints = $request->getTrackingPoints();
 
         $attendance = $this->attendanceService->getCurrentAttendance($request->user()->id);
+
+        // If no active attendance, save location to user_locations table instead.
         if (!$attendance) {
-            return Json::error('No active attendance found for the user.');
+            return $this->storeUserLocation($request);
         }
 
         $processedData = [];
@@ -54,7 +57,7 @@ class LocationTrackingController
 
         // Prepare all tracking points for batch save
         $allTrackingPoints = [];
-        
+
         // Process each tracking point
         foreach ($trackingPoints as $trackingData) {
             $trackingPoint = $trackingData['point'];
@@ -79,7 +82,7 @@ class LocationTrackingController
             if (isset($trackingData['accuracy'])) {
                 $enhancedTrackingPoint['accuracy'] = (float) $trackingData['accuracy'];
             }
-            
+
             // Add type-specific data
             if ($type === 'track') {
                 $enhancedTrackingPoint['gps_status'] = $trackingData['gps_status'];
@@ -91,9 +94,20 @@ class LocationTrackingController
                 $enhancedTrackingPoint['geofence_action'] = $trackingData['action'];
                 $enhancedTrackingPoint['event'] = 'geofence';
             }
-            
+
             $enhancedTrackingPoint['processed_at'] = now()->toISOString();
             $allTrackingPoints[] = $enhancedTrackingPoint;
+
+            // Also save to user_locations table for use in project notifications.
+            UserLocation::create([
+                'user_id' => $request->user()->id,
+                'company_id' => (string) tenant('id'),
+                'latitude' => $trackingPoint->latitude,
+                'longitude' => $trackingPoint->longitude,
+                'accuracy' => $trackingData['accuracy'] ?? null,
+                'location_source' => $type === 'track' ? 'GPS' : 'Network',
+                'recorded_at' => $trackingPoint->timestamp ?? now(),
+            ]);
 
             $processedData[] = [
                 'type' => $type,
@@ -101,7 +115,7 @@ class LocationTrackingController
                 'processed_at' => now()->toISOString()
             ];
         }
-        
+
         // Save all tracking points to location_tracking field
         if (!empty($allTrackingPoints)) {
             $this->trackingService->addTrackingPoints($attendance, $allTrackingPoints);
@@ -116,6 +130,49 @@ class LocationTrackingController
 
         return Json::success('Location data stored successfully.', [
             'payload' => method_exists($request, 'getOriginalPayload') ? $request->getOriginalPayload() : $request->all(),
+            'processed_count' => count($processedData),
+            'processed_data' => $processedData,
+        ]);
+    }
+
+    private function storeUserLocation(TrackLocationRequest $request): JsonResponse
+    {
+        $trackingPoints = $request->getTrackingPoints();
+        $user = $request->user();
+        $companyId = (string) tenant('id');
+
+        $hasMockLocation = false;
+        $processedData = [];
+
+        foreach ($trackingPoints as $trackingData) {
+            if ($trackingData['is_mock']) {
+                $hasMockLocation = true;
+            }
+
+            $point = $trackingData['point'];
+
+            UserLocation::create([
+                'user_id' => $user->id,
+                'company_id' => $companyId,
+                'latitude' => $point->latitude,
+                'longitude' => $point->longitude,
+                'accuracy' => $trackingData['accuracy'] ?? null,
+                'location_source' => $trackingData['type'] === 'track' ? 'GPS' : 'Network',
+                'recorded_at' => $point->timestamp ?? now(),
+            ]);
+
+            $processedData[] = [
+                'type' => $trackingData['type'],
+                'is_mock' => $trackingData['is_mock'],
+                'processed_at' => now()->toISOString(),
+            ];
+        }
+
+        if ($hasMockLocation) {
+            return Json::error('Mock location detected. Please enable real GPS location.', 422);
+        }
+
+        return Json::success('User location stored successfully.', [
             'processed_count' => count($processedData),
             'processed_data' => $processedData,
         ]);

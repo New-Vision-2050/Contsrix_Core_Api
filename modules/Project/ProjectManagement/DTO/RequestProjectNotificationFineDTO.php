@@ -17,6 +17,8 @@ final class RequestProjectNotificationFineDTO
         public readonly array $items = [],
         public readonly ?string $internalProcedureSettingId = null,
         public readonly ?array $files = null,
+        public readonly ?float $currentLatitude = null,
+        public readonly ?float $currentLongitude = null,
     ) {}
 
     public function totalAmount(): float

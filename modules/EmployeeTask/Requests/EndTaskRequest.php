@@ -20,6 +20,8 @@ class EndTaskRequest extends FormRequest
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'notes'     => ['nullable', 'string'],
             'internal_procedure_setting_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
+            'files'     => ['nullable', 'array', 'max:10'],
+            'files.*'   => ['file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }

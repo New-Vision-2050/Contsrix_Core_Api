@@ -56,7 +56,6 @@ enum InternalProcessCondition: string
         return match ($this) {
             self::MaxTaskDuration,
             self::MaxScheduledDateOffset,
-            self::InsideCustomLocations,
             self::HasTaskDuration,
             self::MaxDurationHours,
             self::MaxAttachments          => 'in_form',

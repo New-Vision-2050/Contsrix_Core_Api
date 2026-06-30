@@ -23,6 +23,8 @@ final class RequestProjectNotificationSiteStatusUpdateDTO
         public readonly ?string $additionalNotes = null,
         public readonly ?string $internalProcedureSettingId = null,
         public readonly ?array $files = null,
+        public readonly ?float $currentLatitude = null,
+        public readonly ?float $currentLongitude = null,
     ) {}
 
     public function toArray(): array
@@ -37,6 +39,8 @@ final class RequestProjectNotificationSiteStatusUpdateDTO
             'completion_percentage' => $this->completionPercentage,
             'updates_obstacles' => $this->updatesObstacles,
             'additional_notes' => $this->additionalNotes,
+            'current_latitude' => $this->currentLatitude,
+            'current_longitude' => $this->currentLongitude,
         ], static fn ($value) => $value !== null);
     }
 }

@@ -8,27 +8,28 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
+use Modules\Shared\Media\Services\FileUploadService;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskType;
 use Modules\EmployeeTask\Services\EmployeeTaskAvailableActionsService;
+use Modules\EmployeeTask\Services\EmployeeTaskFormConditionService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskProceduresService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
+use Modules\ProcedureSetting\Conditions\ConditionContext;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
-use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
-use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
-use Modules\Process\Enums\ProcessStatus;
-use Modules\Process\Enums\ProcessStepStatus;
-use Modules\Process\Models\Process;
+use Modules\ProcedureSetting\Services\WorkflowEngine;
 use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationFineDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationLocationConfirmationDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationSiteStatusUpdateDTO;
+use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationTaskPostponementDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationUpdateDTO;
+use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationWorkResumptionDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationWorkStoppageReportDTO;
 use Modules\Project\ProjectManagement\DTO\UpdateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
@@ -54,7 +55,9 @@ class ProjectNotificationService
         private readonly EmployeeTaskLifecycleService $lifecycleService,
         private readonly EmployeeTaskAvailableActionsService $availableActionsService,
         private readonly EmployeeTaskProceduresService $proceduresService,
-        private readonly ProcedureWorkflowService $procedureWorkflow,
+        private readonly EmployeeTaskFormConditionService $conditionService,
+        private readonly FileUploadService $fileUploadService,
+        private readonly WorkflowEngine $engine,
     ) {}
 
     public function create(CreateProjectNotificationDTO $dto): ProjectNotification
@@ -157,6 +160,25 @@ class ProjectNotificationService
     }
 
     /**
+     * List distinct notification types from existing project notifications.
+     * Used to populate the notification type dropdown/filter.
+     *
+     * @return list<array{value: string}>
+     */
+    public function listNotificationTypes(): array
+    {
+        return ProjectNotification::query()
+            ->whereNotNull('notification_type')
+            ->where('notification_type', '!=', '')
+            ->distinct()
+            ->orderBy('notification_type')
+            ->pluck('notification_type')
+            ->map(fn ($type) => ['value' => $type])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Mobile endpoint: list project notifications assigned to the current employee,
      * with the same filters as the dashboard list.
      */
@@ -176,32 +198,29 @@ class ProjectNotificationService
     }
 
     /**
-     * Mobile endpoint: inbox of pending notifications that still need workflow
-     * action. Items are selected from the process table where the linked
+     * Mobile endpoint: inbox of notifications that still need workflow action.
+     * Items are selected from the process table where the linked
      * project_notification_task has an in-progress process with a pending step
-     * assigned to the current user.
+     * assigned to the current user. No status filter is applied so updates on
+     * approved/in-progress tasks also appear.
      */
     public function myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator
     {
-        $filters = $dto->toFilters();
-        $filters['workflow_inbox_for_user'] = $userId;
-        // Inbox holds pending notifications that still need workflow approval.
-        $filters['status'] = 'pending';
-
-        return $this->repository->paginated(
-            $filters,
+        return $this->repository->paginatedForInbox(
+            $dto->toFilters(),
+            $userId,
             $dto->perPage ?? 15,
             $dto->sort,
         );
     }
 
     /**
-     * Count assigned notifications grouped by status for the mobile inbox badge.
+     * Count notifications that have a pending workflow process assigned to the
+     * user, regardless of the top-level notification status.
      */
     public function inboxCounts(string $userId, array $filters = []): array
     {
-        $query = ProjectNotification::query()
-            ->whereIn('project_notifications.status', ['pending']);
+        $query = ProjectNotification::query();
         $this->applyWorkflowInboxFilter($query, $userId);
 
         $this->applyDateFilters($query, $filters);
@@ -213,7 +232,7 @@ class ProjectNotificationService
             ->toArray();
 
         return [
-            'pending'  => (int) ($rows['pending'] ?? 0),
+            'pending' => (int) array_sum($rows),
         ];
     }
 
@@ -225,8 +244,7 @@ class ProjectNotificationService
      */
     public function filterMetadata(string $userId, array $filters = []): array
     {
-        $base = ProjectNotification::query()
-            ->whereIn('project_notifications.status', ['pending']);
+        $base = ProjectNotification::query();
         $this->applyWorkflowInboxFilter($base, $userId);
 
         $this->applyDateFilters($base, $filters);
@@ -286,17 +304,13 @@ class ProjectNotificationService
 
     private function applyWorkflowInboxFilter($query, string $userId): void
     {
-        $query->whereHas('employeeTask.processes', function ($q) use ($userId) {
-            $q->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
-                ->where('status', ProcessStatus::InProgress)
-                ->whereHas('steps', function ($q) use ($userId) {
-                    $q->where('status', ProcessStepStatus::Pending)
-                        ->where(function ($q) use ($userId) {
-                            $q->where('assigned_user_id', $userId)
-                                ->orWhereJsonContains('authorized_user_ids', $userId);
-                        });
-                });
-        });
+        $query->whereHas(
+            'employeeTask.processes',
+            $this->engine->pendingProcessScopeForUser(
+                ProcedureSettingType::ProjectNotificationTask->value,
+                $userId,
+            ),
+        );
     }
 
     public function get(string $id): ProjectNotification
@@ -334,16 +348,15 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
 
-        $procedureSetting = $dto->internalProcedureSettingId !== null
-            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
-            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
-                $task->procedureSettingType()->value,
-                InternalProcessForm::UpdateProjectNotificationTask->value,
-                $task->company_id,
-                $task->user?->userProfessionalData?->branch_id !== null
-                    ? (string) $task->user->userProfessionalData->branch_id
-                    : null,
-            );
+        $procedureSetting = $this->engine->resolveLifecycleSetting(
+            $dto->internalProcedureSettingId,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::UpdateProjectNotificationTask->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
 
         if ($procedureSetting === null) {
             // No procedure configured → apply immediately.
@@ -382,16 +395,23 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
 
-        $procedureSetting = $dto->internalProcedureSettingId !== null
-            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
-            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
-                $task->procedureSettingType()->value,
-                InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
-                $task->company_id,
-                $task->user?->userProfessionalData?->branch_id !== null
-                    ? (string) $task->user->userProfessionalData->branch_id
-                    : null,
-            );
+        $this->checkWorkflowFormConditions(
+            InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
+            $task,
+            $notification,
+            $dto->currentLatitude,
+            $dto->currentLongitude,
+        );
+
+        $procedureSetting = $this->engine->resolveLifecycleSetting(
+            $dto->internalProcedureSettingId,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
 
         if ($procedureSetting === null) {
             // No procedure configured → create immediately.
@@ -430,16 +450,23 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
 
-        $procedureSetting = $dto->internalProcedureSettingId !== null
-            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
-            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
-                $task->procedureSettingType()->value,
-                InternalProcessForm::ProjectNotificationFine->value,
-                $task->company_id,
-                $task->user?->userProfessionalData?->branch_id !== null
-                    ? (string) $task->user->userProfessionalData->branch_id
-                    : null,
-            );
+        $this->checkWorkflowFormConditions(
+            InternalProcessForm::ProjectNotificationFine->value,
+            $task,
+            $notification,
+            $dto->currentLatitude,
+            $dto->currentLongitude,
+        );
+
+        $procedureSetting = $this->engine->resolveLifecycleSetting(
+            $dto->internalProcedureSettingId,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::ProjectNotificationFine->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
 
         if ($procedureSetting === null) {
             // No procedure configured → create immediately.
@@ -482,16 +509,23 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
 
-        $procedureSetting = $dto->internalProcedureSettingId !== null
-            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
-            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
-                $task->procedureSettingType()->value,
-                InternalProcessForm::ConfirmProjectNotificationLocation->value,
-                $task->company_id,
-                $task->user?->userProfessionalData?->branch_id !== null
-                    ? (string) $task->user->userProfessionalData->branch_id
-                    : null,
-            );
+        $this->checkWorkflowFormConditions(
+            InternalProcessForm::ConfirmProjectNotificationLocation->value,
+            $task,
+            $notification,
+            $dto->latitude,
+            $dto->longitude,
+        );
+
+        $procedureSetting = $this->engine->resolveLifecycleSetting(
+            $dto->internalProcedureSettingId,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::ConfirmProjectNotificationLocation->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
 
         if ($procedureSetting === null) {
             // No procedure configured → create immediately.
@@ -529,16 +563,15 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
 
-        $procedureSetting = $dto->internalProcedureSettingId !== null
-            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
-            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
-                $task->procedureSettingType()->value,
-                InternalProcessForm::ProjectNotificationWorkStoppageReport->value,
-                $task->company_id,
-                $task->user?->userProfessionalData?->branch_id !== null
-                    ? (string) $task->user->userProfessionalData->branch_id
-                    : null,
-            );
+        $procedureSetting = $this->engine->resolveLifecycleSetting(
+            $dto->internalProcedureSettingId,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::ProjectNotificationWorkStoppageReport->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
 
         if ($procedureSetting === null) {
             // No procedure configured → create immediately.
@@ -580,16 +613,15 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
 
-        $procedureSetting = $dto->internalProcedureSettingId !== null
-            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
-            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
-                $task->procedureSettingType()->value,
-                InternalProcessForm::ProjectNotificationWorkResumption->value,
-                $task->company_id,
-                $task->user?->userProfessionalData?->branch_id !== null
-                    ? (string) $task->user->userProfessionalData->branch_id
-                    : null,
-            );
+        $procedureSetting = $this->engine->resolveLifecycleSetting(
+            $dto->internalProcedureSettingId,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::ProjectNotificationWorkResumption->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
 
         if ($procedureSetting === null) {
             $this->createWorkResumptionRecord($notification, $task, $dto, $userId);
@@ -632,16 +664,15 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $this->linkedTask($id);
 
-        $procedureSetting = $dto->internalProcedureSettingId !== null
-            ? ProcedureSetting::query()->find($dto->internalProcedureSettingId)
-            : $this->procedureWorkflow->resolveInternalProcedureSettingByForm(
-                $task->procedureSettingType()->value,
-                InternalProcessForm::ProjectNotificationTaskPostponement->value,
-                $task->company_id,
-                $task->user?->userProfessionalData?->branch_id !== null
-                    ? (string) $task->user->userProfessionalData->branch_id
-                    : null,
-            );
+        $procedureSetting = $this->engine->resolveLifecycleSetting(
+            $dto->internalProcedureSettingId,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::ProjectNotificationTaskPostponement->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
 
         if ($procedureSetting === null) {
             $this->applyTaskPostponement(
@@ -775,56 +806,20 @@ class ProjectNotificationService
     {
         $task = $notification->employeeTask;
 
-        if ($task === null || ! $task->relationLoaded('processes')) {
+        if ($task === null) {
             return [];
         }
 
-        $result = [];
-        foreach ($task->processes as $process) {
-            if ($process->status !== ProcessStatus::InProgress) {
-                continue;
-            }
-
-            $pendingStep = $process->steps->first(function ($step) use ($userId) {
-                if ($step->status !== ProcessStepStatus::Pending) {
-                    return false;
-                }
-
-                if ($step->assigned_user_id === $userId) {
-                    return true;
-                }
-
-                $authorized = $step->authorized_user_ids ?? [];
-
-                return in_array($userId, $authorized, true);
-            });
-
-            if ($pendingStep) {
-                $result[] = [
-                    'process_id' => $process->id,
-                    'procedure_setting_id' => $process->procedure_setting_id,
-                    'form' => $process->metadata['form'] ?? null,
-                    'pending_step_id' => $pendingStep->id,
-                    'pending_step_order' => $pendingStep->template_step_order,
-                ];
-            }
-        }
-
-        return $result;
+        return $this->engine->resolvePendingProcessesForUser($task, $userId);
     }
 
     private function taskHasActiveProcess(string $taskId, ?string $procedureSettingId = null): bool
     {
-        $query = Process::query()
-            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
-            ->where('processable_id', $taskId)
-            ->where('status', ProcessStatus::InProgress);
-
-        if ($procedureSettingId !== null) {
-            $query->where('procedure_setting_id', $procedureSettingId);
-        }
-
-        return $query->exists();
+        return $this->engine->hasActiveProcess(
+            ProcedureSettingType::ProjectNotificationTask->value,
+            $taskId,
+            $procedureSettingId,
+        );
     }
 
     /**
@@ -970,7 +965,19 @@ class ProjectNotificationService
     {
         $task = $this->linkedTask($notificationId);
 
-        return $this->lifecycleService->end($task->id, $dto);
+        $task = $this->lifecycleService->end($task->id, $dto);
+
+        if (! empty($dto->files)) {
+            $this->fileUploadService->uploadFile(
+                model: $task,
+                file: $dto->files,
+                filePath: 'employee-tasks/end-attachments',
+                collectionName: 'end_attachments',
+                visibility: 'public',
+            );
+        }
+
+        return $task->fresh()->load('media');
     }
 
     /**
@@ -1048,6 +1055,42 @@ class ProjectNotificationService
         }
 
         return $task;
+    }
+
+    /**
+     * Evaluate precondition-type conditions for a project-notification workflow form.
+     * Currently enforces InsideTaskLocation when it is active on the form's procedure
+     * setting and the request supplies current GPS coordinates.
+     *
+     * @throws EmployeeTaskException
+     */
+    private function checkWorkflowFormConditions(
+        string $formKey,
+        EmployeeTaskRequest $task,
+        ProjectNotification $notification,
+        ?float $currentLatitude,
+        ?float $currentLongitude,
+    ): void {
+        if ($currentLatitude === null || $currentLongitude === null) {
+            return;
+        }
+
+        $task->loadMissing('user.userProfessionalData');
+        $branchId = $task->user?->userProfessionalData?->branch_id !== null
+            ? (string) $task->user->userProfessionalData->branch_id
+            : null;
+
+        $ctx = new ConditionContext(
+            userId: (string) $task->user_id,
+            companyId: (string) $task->company_id,
+            branchId: $branchId,
+            currentLatitude: $currentLatitude,
+            currentLongitude: $currentLongitude,
+            taskLatitude: $notification->task_latitude !== null ? (float) $notification->task_latitude : null,
+            taskLongitude: $notification->task_longitude !== null ? (float) $notification->task_longitude : null,
+        );
+
+        $this->conditionService->checkFormConditions($formKey, $ctx);
     }
 
     private function createWorkStoppageReportRecord(

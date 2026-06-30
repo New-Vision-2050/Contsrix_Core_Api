@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "project-notification-update-workflow-collection",
     "name": "Project Notification Update Workflow API",
-    "description": "Workflow-based update for project notifications.\n\nFlow:\n1. POST /projects/notifications/{id}/request-update → submit new data + files (creates a Process).\n2. Approver sees the pending Process step in their inbox.\n3. POST /projects/notifications/{id}/approve → approves the current step.\n4. On final approval the ProjectNotification row is updated with the submitted data and files are moved to the attachments collection.",
+    "description": "Workflow-based update and lifecycle actions for project notifications.\n\nFlow:\n1. POST /projects/notifications/{id}/request-update → submit new data + files (creates a Process).\n2. Approver sees the pending Process step in their inbox.\n3. POST /projects/notifications/{id}/approve → approves the current step.\n4. On final approval the ProjectNotification row is updated with the submitted data and files are moved to the attachments collection.\n5. POST /projects/notifications/{id}/end → close the notification (endProjectNotificationTask). Requires latitude/longitude; accepts up to 10 closing screenshot files (files[], jpg/jpeg/png/webp, max 5MB each). If InsideTaskLocation is active on the form's procedure setting, the employee must be within the configured radius of the task location.\n\nMobile inbox logic:\n- GET /projects/notifications/my-inbox returns pending_processes with a stable mobile_inbox_action_key.\n- confirm_receive → open the confirm-receive screen (POST /projects/notifications/{id}/confirm-receive).\n- accept_reject → open the accept/reject screen (POST /projects/notifications/{id}/approve or /reject).\n- GET /projects/notifications/{id}/available-actions also returns mobile_inbox_action_key for each action.\n\nForms with optional InsideTaskLocation precondition:\n- request-site-status-update (uses current_latitude/current_longitude when supplied)\n- request-fine (uses current_latitude/current_longitude when supplied)\n- confirm-location (uses latitude/longitude)\n- end (uses latitude/longitude)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -53,6 +53,82 @@
     }
   ],
   "item": [
+    {
+      "name": "0a. List Contractors (dropdown)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/contractors",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "contractors"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Contractors List",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    { \"id\": \"uuid-1\", \"name\": \"مقاول المشروع\", \"number\": \"CNT-001\", \"mobile\": \"0500000000\", \"notes\": \"ملاحظات\" },\n    { \"id\": \"uuid-2\", \"name\": \"مقاول آخر\", \"number\": \"CNT-002\", \"mobile\": \"0555555555\", \"notes\": null }\n  ],\n  \"message\": \"Data retrieved successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "0b. List Notification Types (dropdown/filter)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/notification-types",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "notification-types"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Notification Types",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    { \"value\": \"اعتماد\" },\n    { \"value\": \"إشعار عاجل\" },\n    { \"value\": \"متابعة\" }\n  ],\n  \"message\": \"Notification types retrieved successfully\"\n}"
+        }
+      ]
+    },
     {
       "name": "1. Submit Update Request (updateProjectNotificationTask)",
       "request": {
@@ -391,6 +467,18 @@
               "type": "file",
               "description": "صور إضافية من الموقع (jpeg, png, webp, max 10MB)",
               "src": []
+            },
+            {
+              "key": "current_latitude",
+              "value": "24.7136",
+              "type": "text",
+              "description": "خط العرض الحالي (اختياري - لفحص InsideTaskLocation)"
+            },
+            {
+              "key": "current_longitude",
+              "value": "46.6753",
+              "type": "text",
+              "description": "خط الطول الحالي (اختياري - لفحص InsideTaskLocation)"
             }
           ]
         },
@@ -495,6 +583,18 @@
               "type": "file",
               "description": "مرفقات المخالفة (PDF, JPG, PNG, max 10MB)",
               "src": []
+            },
+            {
+              "key": "current_latitude",
+              "value": "24.7136",
+              "type": "text",
+              "description": "خط العرض الحالي (اختياري - لفحص InsideTaskLocation)"
+            },
+            {
+              "key": "current_longitude",
+              "value": "46.6753",
+              "type": "text",
+              "description": "خط الطول الحالي (اختياري - لفحص InsideTaskLocation)"
             }
           ]
         },
@@ -623,7 +723,7 @@
           "status": "OK",
           "code": 200,
           "_postman_previewlanguage": "json",
-          "body": "{\n  \"data\": [\n    { \"id\": \"uuid-1\", \"name_ar\": \"عدم وجود/ خلل في إجراءات تصاريح العمل\", \"name_en\": \"Missing or incorrect work permit procedures\", \"sort_order\": 1 },\n    { \"id\": \"uuid-2\", \"name_ar\": \"نقص مهمات الوقاية الشخصية\", \"name_en\": \"Lack of personal protective equipment\", \"sort_order\": 3 }\n  ],\n  \"message\": \"Work stoppage reasons retrieved successfully\"\n}"
+          "body": "{\n  \"data\": [\n    { \"id\": \"uuid-1\", \"name_ar\": \"عدم وجود/ خلل في إجراءات تصاريح العمل\", \"name_en\": \"Missing or incorrect work permit procedures\", \"sort_order\": 1 },\n    { \"id\": \"uuid-2\", \"name_ar\": \"عدم حمل البطاقات التعريفية في موقع العمل\", \"name_en\": \"ID cards not carried at work site\", \"sort_order\": 2 },\n    { \"id\": \"uuid-3\", \"name_ar\": \"نقص مهمات الوقاية الشخصية\", \"name_en\": \"Lack of personal protective equipment\", \"sort_order\": 3 },\n    { \"id\": \"uuid-4\", \"name_ar\": \"عدم اكتمال تقييم المخاطر\", \"name_en\": \"Incomplete risk assessment\", \"sort_order\": 4 },\n    { \"id\": \"uuid-5\", \"name_ar\": \"خلل في تطبيق نظام العزل والبطاقات التحذيرية\", \"name_en\": \"Failure in isolation and warning tag system\", \"sort_order\": 5 },\n    { \"id\": \"uuid-6\", \"name_ar\": \"عدم وجود إجراءات العمل الآمن في الموقع\", \"name_en\": \"No safe work procedures at site\", \"sort_order\": 6 },\n    { \"id\": \"uuid-7\", \"name_ar\": \"وجود معدات رفع غير مطابقة\", \"name_en\": \"Non-compliant lifting equipment\", \"sort_order\": 7 },\n    { \"id\": \"uuid-8\", \"name_ar\": \"عدم مطابقة السلالم أو السقالات لمعايير السلامة\", \"name_en\": \"Ladders or scaffolding not meeting safety standards\", \"sort_order\": 8 },\n    { \"id\": \"uuid-9\", \"name_ar\": \"عدم ارتداء بدلة القوس الكهربائي المناسبة\", \"name_en\": \"Not wearing appropriate arc flash suit\", \"sort_order\": 9 },\n    { \"id\": \"uuid-10\", \"name_ar\": \"ملاحظات أخرى\", \"name_en\": \"Other notes\", \"sort_order\": 10 }\n  ],\n  \"message\": \"Work stoppage reasons retrieved successfully\"\n}"
         }
       ]
     },
@@ -846,6 +946,169 @@
           "code": 200,
           "_postman_previewlanguage": "json",
           "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"notification_type\": \"اعتماد\",\n    \"work_description\": \"وصف العمل قبل التعديل\",\n    \"contractor_name\": \"مقاول المشروع\",\n    \"contractor_technical_name\": \"منسق المقاول\",\n    \"contractor_mobile\": \"0500000000\",\n    \"task_latitude\": \"24.7136\",\n    \"task_longitude\": \"46.6753\",\n    \"task_date\": \"2026-05-25\",\n    \"task_time\": \"16:32\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Task postponement request submitted successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "12. End Task (endProjectNotificationTask)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "latitude",
+              "value": "24.7136",
+              "type": "text",
+              "description": "خط عرض موقع إغلاق المهمة (مطلوب)"
+            },
+            {
+              "key": "longitude",
+              "value": "46.6753",
+              "type": "text",
+              "description": "خط طول موقع إغلاق المهمة (مطلوب)"
+            },
+            {
+              "key": "notes",
+              "value": "تم إغلاق الإشعار وإرفاق ملاحظات نهائية",
+              "type": "text",
+              "description": "ملاحظات الإغلاق"
+            },
+            {
+              "key": "internal_procedure_setting_id",
+              "value": "{{procedure_setting_id}}",
+              "type": "text",
+              "description": "معرف الإجراء الداخلي (اختياري)"
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "description": "لقطة شاشة 1 - PNG, JPG حتى 5MB",
+              "src": []
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "description": "لقطة شاشة 2 - PNG, JPG حتى 5MB",
+              "src": []
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "description": "لقطة شاشة 3 - PNG, JPG حتى 5MB",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/end",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "end"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Task Ended",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"status\": \"completed\"\n  },\n  \"message\": \"Task ended successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "13. Mobile Inbox (my-inbox)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/my-inbox",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "my-inbox"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Mobile Inbox",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    {\n      \"id\": \"{{notification_id}}\",\n      \"notification_number\": \"NTF-2026-00014\",\n      \"notification_type\": \"اعتماد\",\n      \"status\": \"pending\",\n      \"pending_processes\": [\n        {\n          \"process_id\": \"process-uuid\",\n          \"procedure_setting_id\": \"procedure-uuid\",\n          \"form\": \"createProjectNotificationTask\",\n          \"mobile_inbox_action_key\": \"confirm_receive\",\n          \"pending_step_id\": \"step-uuid\",\n          \"pending_step_order\": 1\n        }\n      ]\n    },\n    {\n      \"id\": \"notification-uuid-2\",\n      \"notification_number\": \"NTF-2026-00015\",\n      \"status\": \"pending\",\n      \"pending_processes\": [\n        {\n          \"process_id\": \"process-uuid-2\",\n          \"procedure_setting_id\": \"procedure-uuid-2\",\n          \"form\": \"updateProjectNotificationTask\",\n          \"mobile_inbox_action_key\": \"accept_reject\",\n          \"pending_step_id\": \"step-uuid-2\",\n          \"pending_step_order\": 1\n        }\n      ]\n    }\n  ],\n  \"message\": \"Data retrieved successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "14. Available Actions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/available-actions",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "available-actions"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Available Actions",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": [\n    {\n      \"id\": \"procedure-uuid\",\n      \"name\": \"تحديث بيانات الإشعار\",\n      \"form\": {\n        \"key\": \"updateProjectNotificationTask\",\n        \"label_ar\": \"تحديث بيانات الإشعار\"\n      },\n      \"mobile_inbox_action_key\": \"accept_reject\",\n      \"conditions\": [],\n      \"appears_before_ids\": [],\n      \"appears_after_ids\": [],\n      \"sort_order\": 1\n    }\n  ],\n  \"message\": \"Available actions retrieved successfully\"\n}"
         }
       ]
     }

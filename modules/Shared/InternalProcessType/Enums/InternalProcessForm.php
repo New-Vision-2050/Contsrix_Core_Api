@@ -31,6 +31,27 @@ enum InternalProcessForm: string
     case ProjectNotificationTaskPostponement   = 'projectNotificationTaskPostponement';
     case EndProjectNotificationTask         = 'endProjectNotificationTask';
 
+    /**
+     * Stable key used by the mobile inbox to decide which UI flow to open.
+     * - confirm_receive: first step after creating the notification.
+     * - accept_reject: any subsequent workflow step that requires approval.
+     */
+    public function mobileInboxActionKey(): string
+    {
+        return match ($this) {
+            self::CreateProjectNotificationTask => 'confirm_receive',
+            self::UpdateProjectNotificationTask,
+            self::UpdateProjectNotificationSiteStatus,
+            self::ProjectNotificationFine,
+            self::ConfirmProjectNotificationLocation,
+            self::ProjectNotificationWorkStoppageReport,
+            self::ProjectNotificationWorkResumption,
+            self::ProjectNotificationTaskPostponement,
+            self::EndProjectNotificationTask => 'accept_reject',
+            default => 'accept_reject',
+        };
+    }
+
     public function labelAr(): string
     {
         return match ($this) {
@@ -80,16 +101,22 @@ enum InternalProcessForm: string
             self::CreateProjectNotificationTask => [
                 InternalProcessCondition::InsideCustomLocations,
             ],
-            self::ConfirmProjectNotificationPresence,
-            self::UpdateProjectNotificationTask,
-            self::UpdateProjectNotificationSiteStatus,
-            self::ProjectNotificationFine,
-            self::ConfirmProjectNotificationLocation,
-            self::ProjectNotificationWorkStoppageReport,
-            self::ProjectNotificationWorkResumption,
-            self::ProjectNotificationTaskPostponement,
+            self::UpdateProjectNotificationTask=> [
+                InternalProcessCondition::InsideCustomLocations,
+            ],
+            self::ConfirmProjectNotificationLocation => [
+                InternalProcessCondition::InsideTaskLocation,
+            ],
+            self::UpdateProjectNotificationSiteStatus => [
+                InternalProcessCondition::InsideTaskLocation,
+            ],
+            self::ProjectNotificationFine => [
+                InternalProcessCondition::InsideTaskLocation,
+            ],
+
             self::EndProjectNotificationTask => [
-                InternalProcessCondition::AllowOnHolidays,
+                InternalProcessCondition::InsideTaskLocation,
+
             ],
             self::AttachAttachments => [
                 InternalProcessCondition::MaxAttachments,
@@ -101,17 +128,18 @@ enum InternalProcessForm: string
     /**
      * Natural sort weight for this form within a procedure type.
      * create* forms are always first, end* forms are always last.
-     * Gaps (100 → 500 → 900) leave room for middle forms added via API.
+     * Gaps (0 → 100 → 500 → 900) leave room for middle forms added via API.
      */
     public function sortOrder(): int
     {
-        if (str_starts_with($this->value, 'create')) {
-            return 100;
-        }
-        if (str_starts_with($this->value, 'end')) {
-            return 900;
-        }
-        return 500;
+        return match ($this) {
+            self::CreateProjectNotificationTask => 0,
+            default => match (true) {
+                str_starts_with($this->value, 'create') => 100,
+                str_starts_with($this->value, 'end') => 900,
+                default => 500,
+            },
+        };
     }
 
     /** @return array{key: string, label_ar: string, conditions: list<array{key: string, type: string, label_ar: string}>} */
@@ -147,16 +175,16 @@ enum InternalProcessForm: string
             self::CreateTask,
             self::StartTask,
             self::EndTask => ['employee_task'],
-            self::CreateProjectNotificationTask,
-            self::ConfirmProjectNotificationPresence,
-            self::UpdateProjectNotificationTask,
-            self::UpdateProjectNotificationSiteStatus,
-            self::ProjectNotificationFine,
-            self::ConfirmProjectNotificationLocation,
-            self::ProjectNotificationWorkStoppageReport,
-            self::ProjectNotificationWorkResumption,
-            self::ProjectNotificationTaskPostponement,
-            self::EndProjectNotificationTask => ['employee_task', 'project_notification_task'],
+            self::CreateProjectNotificationTask => ['project_notification_task'],
+            self::ConfirmProjectNotificationPresence => [],
+            self::UpdateProjectNotificationTask => ['project_notification_task'],
+            self::UpdateProjectNotificationSiteStatus => ['project_notification_task'],
+            self::ProjectNotificationFine => ['project_notification_task'],
+            self::ConfirmProjectNotificationLocation => ['project_notification_task'],
+            self::ProjectNotificationWorkStoppageReport => ['project_notification_task'],
+            self::ProjectNotificationWorkResumption => ['project_notification_task'],
+            self::ProjectNotificationTaskPostponement => ['project_notification_task'],
+            self::EndProjectNotificationTask => ['project_notification_task'],
             self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
         };
     }

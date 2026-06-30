@@ -2,7 +2,9 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-06-25 (rev 2) — Condition evaluation core centralized to `modules/ProcedureSetting/Conditions/` for cross-module reuse. `ConditionEvaluationService` (central engine) + `ExceptionResolver` interface added. `getInFormConditionsPreview()` now auto-generates via `InternalProcessCondition::toPreview()`. See §34. Full guide: `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md`.
+> **Last updated:** 2026-06-30 — Added §40 (Module → Type → Forms → Conditions Lookup Table — the one table a weak AI needs to know which type, forms, and pre/in-form conditions apply to any module). Also added §35 (Complete Module Dependency Map), §36 (Step-by-Step Cookbook for any new module), §37 (Debug Guide with decision trees), §38 (Documentation Maintenance Protocol — MANDATORY), §39 (Quick Reference Card). Also: `WorkflowEngine` gained inbox & lifecycle helpers: `pendingProcessScopeForUser()`, `resolvePendingProcessesForUser()`, `hasActiveProcess()`, `startLifecycleWorkflow()`, `resolveLifecycleSetting()`. Project notification inbox no longer filters by top-level `status=pending`; any notification with a pending workflow step assigned to the user appears. `ProjectNotificationService` and `ProjectNotificationRepository` now delegate to `WorkflowEngine` instead of duplicating process-query logic. See §WorkflowEngine API table, §Inbox Queries, §35-§40.
+>
+> **Previous:** 2026-06-25 (rev 2) — Condition evaluation core centralized to `modules/ProcedureSetting/Conditions/` for cross-module reuse. `ConditionEvaluationService` (central engine) + `ExceptionResolver` interface added. `getInFormConditionsPreview()` now auto-generates via `InternalProcessCondition::toPreview()`. See §34. Full guide: `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md`.
 >
 > **Previous:** 2026-06-25 (rev 1) — Condition evaluation refactored to registry-driven dispatch (Open/Closed Principle). Each condition now has a dedicated `ConditionEvaluator` class; new conditions are added without modifying `EmployeeTaskFormConditionService`.
 >
@@ -150,7 +152,12 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 | `resolveParentSetting($type, $companyId, $branchId)` | `?ProcedureSetting` | `string`, `string`, `?string` | Shared company/branch/default workflow lookup |
 | `resolveSettingsForEntry($type, $formKey, $companyId, $branchId)` | `Collection<ProcedureSetting>` | `string`, `?string`, `string`, `?string` | Preview and workflow start |
 | `previewResponsibles($type, $formKey, $companyId, $branchId, $createdByUserId, $context = [])` | `array{auto_approve: bool, step: ?array, action_takers: array}` | `string`, `?string`, `string`, `?string`, `?string`, `array` | ProcedureSettingController, EmployeeTask creation |
-| `startWorkflow($processableType, $processableId, $type, $formKey, $companyId, $branchId, $createdByUserId = null, $context = [])` | `WorkflowStartResult` | `string`, `string`, `string`, `?string`, `string`, `?string`, `?string`, `array` | EmployeeTaskRequestService, ClientRequestWorkflowService |
+| `startWorkflow($processableType, $processableId, $type, $formKey, $companyId, $branchId, $createdByUserId = null, $context = [], $metadata = null, $resolvedSetting = null)` | `WorkflowStartResult` | `string`, `string`, `string`, `?string`, `string`, `?string`, `?string`, `array`, `?array`, `?ProcedureSetting` | EmployeeTaskRequestService, ClientRequestWorkflowService |
+| `pendingProcessScopeForUser($processableType, $userId)` | `\Closure` | `string`, `string` | ProjectNotificationService::applyWorkflowInboxFilter, ProjectNotificationRepository::paginatedForInbox — returns a closure for `whereHas('employeeTask.processes', ...)` filtering in-progress processes with a pending step assigned to/authorized for the user |
+| `resolvePendingProcessesForUser($task, $userId)` | `list<array{process_id, procedure_setting_id, form, mobile_inbox_action_key, pending_step_id, pending_step_order}>` | `Model`, `string` | ProjectNotificationService::resolvePendingProcessesForInbox — requires `$task->processes` relation loaded; calls `loadMissing('processes.procedureSetting')` internally |
+| `hasActiveProcess($processableType, $processableId, $procedureSettingId = null)` | `bool` | `string`, `string`, `?string` | ProjectNotificationService::taskHasActiveProcess, confirmReceive |
+| `startLifecycleWorkflow($processableType, $processableId, $procedureType, $formKey, $companyId, $branchId, $createdByUserId, $metadata, $context = [], $resolvedSetting = null)` | `WorkflowStartResult` | `string`, `string`, `string`, `string`, `string`, `?string`, `?string`, `array`, `array`, `?ProcedureSetting` | Centralised lifecycle start (update, site-status, fine, etc.); resolves setting by form key if not provided, then delegates to `startWorkflow()` |
+| `resolveLifecycleSetting($explicitSettingId, $procedureType, $formKey, $companyId, $branchId)` | `?ProcedureSetting` | `?string`, `string`, `string`, `string`, `?string` | ProjectNotificationService request* methods — if `$explicitSettingId` is non-null, looks it up directly; otherwise delegates to `resolveSettingsForEntry()->first()` |
 
 ### ProcessWorkflowService
 
@@ -859,6 +866,31 @@ Before: Only `assigned_user_id` stored. For `job_title`/`job_role`, many users a
 ```
 
 ### Inbox Queries
+
+**Process-level inbox filter** (centralised in `WorkflowEngine::pendingProcessScopeForUser`):
+```php
+// Returns a \Closure for whereHas('employeeTask.processes', ...)
+$scope = $engine->pendingProcessScopeForUser(
+    ProcedureSettingType::ProjectNotificationTask->value,
+    $userId,
+);
+$query->whereHas('employeeTask.processes', $scope);
+```
+The closure filters for:
+- `processable_type` = the given type
+- `status` = `ProcessStatus::InProgress`
+- Has at least one `ProcessStep` with `status = Pending` AND (`assigned_user_id = $userId` OR `authorized_user_ids` JSON-contains `$userId`)
+
+**No top-level status filter**: The inbox query does **not** filter by the notification's `status` column. Any notification (pending, approved, in_progress, completed) that has a pending workflow step assigned to the user will appear. This ensures update/site-status/fine/postponement workflows on already-approved notifications show up.
+
+**Resolving pending process descriptors** (centralised in `WorkflowEngine::resolvePendingProcessesForUser`):
+```php
+$descriptors = $engine->resolvePendingProcessesForUser($task, $userId);
+// Each: {process_id, procedure_setting_id, form, mobile_inbox_action_key, pending_step_id, pending_step_order}
+```
+Requires `$task->processes` relation to be loaded. Calls `loadMissing('processes.procedureSetting')` internally. The `form` key falls back to `$process->procedureSetting?->form` if not in `$process->metadata['form']`.
+
+**Step-level check** (used by `ProcessWorkflowService::approveStep`):
 ```php
 $q->where('assigned_user_id', $adminId)
   ->orWhereJsonContains('authorized_user_ids', $adminId);
@@ -3017,3 +3049,992 @@ Any module (e.g. ClientRequest) can reuse the central engine with 5 steps:
 | `modules/ProcedureSetting/Providers/ProcedureSettingServiceProvider.php` | Registers `ConditionEvaluationService` singleton |
 | `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` | Added `toPreview()` method |
 | `docs/CONDITION_EVALUATOR_IMPLEMENTATION_GUIDE.md` | Updated to rev 2 — full centralized architecture |
+
+---
+
+## 35. Complete Module Dependency Map (2026-06-30)
+
+> **Read this first if you are a new AI session.** This section tells you which modules currently use the procedure workflow system, what `ProcedureSettingType` they register, what forms they use, and what services they inject. If you change any workflow service, check this map to see what else might break.
+
+### 35.1 Modules That Depend on the Procedure Workflow System
+
+| Module | `ProcedureSettingType` | `processable_type` string | Forms Used | Key Services Injected | Inbox? |
+|--------|----------------------|--------------------------|------------|----------------------|--------|
+| **EmployeeTask** | `employee_task` | `employee_task` | `createTask`, `startTask`, `endTask`, `extendTaskTime`, `sendForApproval`, `confirmLocation` | `WorkflowEngine`, `ProcessWorkflowService`, `ProcedureWorkflowService`, `EmployeeTaskFormConditionService` | Yes — `EmployeeTaskRepository::paginateInboxForAdmin()` |
+| **EmployeeTask** (project notifications) | `project_notification_task` | `project_notification_task` | `createProjectNotificationTask`, `endProjectNotificationTask`, `updateProjectNotificationTask`, `updateProjectNotificationSiteStatus`, `projectNotificationFine`, `confirmProjectNotificationLocation`, `projectNotificationWorkStoppageReport`, `projectNotificationWorkResumption`, `projectNotificationTaskPostponement` | `WorkflowEngine`, `ProcessWorkflowService`, `ProcedureWorkflowService` (via `EmployeeTaskRequestService`) | Yes — `ProjectNotificationRepository::paginatedForInbox()` via `WorkflowEngine::pendingProcessScopeForUser()` |
+| **ClientRequest** | `client_request` | `client_request` | `createClientRequest`, `endClientRequest`, `attachAttachments` | `WorkflowEngine` | No (placeholder notifier returns zero counts) |
+| **PriceOffer** | `price_offer` | _(not yet implemented)_ | `createPriceOffer`, `endPriceOffer` | _(enum registered, no service yet)_ | No |
+| **Contract** | `contract` | _(not yet implemented)_ | `createContract`, `endContract` | _(enum registered, no service yet)_ | No |
+| **Meeting** | `meeting` | _(not yet implemented)_ | `createMeeting`, `endMeeting` | _(enum registered, no service yet)_ | No |
+
+### 35.2 Service Injection Map (who injects what)
+
+```
+WorkflowEngine
+  ├─ injected by: EmployeeTaskRequestService
+  ├─ injected by: ClientRequestCRUDService
+  ├─ injected by: ClientRequestWorkflowService
+  ├─ injected by: ProjectNotificationService
+  ├─ injected by: ProjectNotificationRepository
+  └─ injected by: EmployeeTaskRequestService (via createLifecycleProcess)
+
+ProcessWorkflowService
+  ├─ injected by: WorkflowEngine
+  ├─ injected by: EmployeeTaskRequestService
+  ├─ injected by: EmployeeTaskStartRequestService
+  ├─ injected by: EmployeeTaskEndRequestService
+  └─ injected by: ClientRequestWorkflowService (legacy — has own initializeProcessSteps)
+
+ProcedureWorkflowService
+  ├─ injected by: EmployeeTaskExtensionService
+  ├─ injected by: EmployeeTaskExtensionWorkflowService
+  ├─ injected by: EmployeeTaskApprovalService
+  ├─ injected by: EmployeeTaskStartRequestService
+  ├─ injected by: EmployeeTaskEndRequestService
+  └─ injected by: EmployeeTaskRequestService (via createLifecycleProcess)
+
+ActionTakerResolver
+  ├─ injected by: WorkflowEngine
+  ├─ injected by: ProcessWorkflowService
+  └─ injected by: ProcedureWorkflowService
+
+EmployeeTaskFormConditionService
+  ├─ injected by: EmployeeTaskRequestService
+  └─ injected by: EmployeeTaskLifecycleService (for endTask conditions)
+
+ConditionEvaluationService (shared central engine)
+  ├─ injected by: EmployeeTaskFormConditionService
+  └─ available for any module via service container
+
+WorkflowNotifierRegistry
+  ├─ registers: EmployeeTaskWorkflowNotifier → 'employee_task'
+  ├─ registers: ClientRequestWorkflowNotifier → 'client_request'
+  └─ registers: ProjectNotificationWorkflowNotifier → 'project_notification_task' (if exists)
+```
+
+### 35.3 Event Flow Map (who fires what)
+
+```
+WorkflowStepActivated (fired by ProcessWorkflowService::createProcessStep)
+  └─ listened by: SendWorkflowStepNotification
+       ├─ looks up WorkflowNotifierRegistry by process.processable_type
+       ├─ EmployeeTaskWorkflowNotifier → broadcasts EmployeeTaskNotification + InboxCountsUpdated
+       ├─ ClientRequestWorkflowNotifier → no-op (placeholder)
+       └─ sends WorkflowActionRequired (mail + SMS) if flags set
+
+WorkflowProcedureTaken (fired when a procedure is completed/taken)
+  ├─ fired by: ProcessWorkflowService::fireProcedureTakenIfApplicable (on Process Completed)
+  ├─ fired by: EmployeeTaskController::start() (manual)
+  ├─ fired by: EmployeeTaskController::locationPing() (manual)
+  ├─ fired by: EmployeeTaskLifecycleService::end() (manual)
+  ├─ fired by: ClientRequestCRUDService::markCreateProceduresTaken() (manual)
+  ├─ fired by: ClientRequestWorkflowService::markEndProceduresTaken() (manual)
+  ├─ fired by: EmployeeTaskRequestService::markCreateTaskProceduresTaken() (manual)
+  ├─ fired by: ProjectNotificationService::takeAction() (manual)
+  └─ listened by: RecordInternalProcedureTaken → writes to internal_procedure_takens table
+
+EmployeeTaskLifecycleProcessCompleted (fired by EmployeeTaskRequest::onAllProcessesCompleted)
+  └─ listened by: applies lifecycle business logic (e.g., update notification, sync status)
+```
+
+### 35.4 Database Table Dependency Map
+
+```
+procedure_settings (self-referencing: parent_id, type, form, conditions, appears_*_ids)
+  ├─ procedure_setting_steps (FK: procedure_setting_id, stores action_taker config)
+  │    └─ action_taker_users (pivot: step_id, user_id — only for specific_user type)
+  ├─ work_flows (FK: company_id, type, name — branch/default workflow scoping)
+  │    └─ management_hierarchies (branch/management nodes with manager_id)
+  └─ internal_procedure_takens (morph: processable_type, processable_id, procedure_setting_id)
+
+processes (morph: processable_type, processable_id, template_snapshot, procedure_setting_id, metadata)
+  └─ process_steps (FK: process_id, step_id → procedure_setting_steps.id, assigned_user_id, authorized_user_ids)
+
+employee_task_requests (FK: procedure_setting_id, current_procedure_step_id, is_project_notification)
+  └─ hasMany processes (polymorphic via processable_id)
+
+project_notifications (FK: employee_task_request_id)
+  └─ inherits workflow via employeeTask.processes
+```
+
+---
+
+## 36. Step-by-Step Cookbook: Add Procedure Workflow to Any New Module
+
+> **Goal**: You have a new module (e.g., `Invoice`, `WorkOrder`, `MaintenanceRequest`) and you want it to go through an approval workflow. Follow these steps **in order**. Each step has a checklist you can verify.
+
+### Step 1: Register the Procedure Setting Type
+
+**File**: `modules/ProcedureSetting/Enums/ProcedureSettingType.php`
+
+```php
+enum ProcedureSettingType: string
+{
+    // ... existing cases ...
+    case Invoice = 'invoice';  // ← ADD THIS
+}
+```
+
+Add `labelAr()`:
+```php
+self::Invoice => 'فاتورة',
+```
+
+**Checklist**:
+- [ ] Enum case added with correct string value (use snake_case)
+- [ ] `labelAr()` returns Arabic label
+- [ ] `toDefinition()` works automatically (uses `labelAr()`)
+- [ ] `values()` includes the new value automatically
+
+### Step 2: Register Internal Process Forms (if needed)
+
+**File**: `modules/Shared/InternalProcessType/Enums/InternalProcessForm.php`
+
+```php
+case CreateInvoice = 'createInvoice';  // ← ADD (auto-seeded by seeder)
+case EndInvoice    = 'endInvoice';     // ← ADD (auto-seeded by seeder)
+```
+
+Update `applicableTypes()`:
+```php
+self::CreateInvoice,
+self::EndInvoice => ['invoice'],
+```
+
+**Checklist**:
+- [ ] Form names start with `create` or `end` for auto-seeding
+- [ ] `applicableTypes()` maps the form to `['invoice']`
+- [ ] `conditions()` returns `[]` for forms without conditions (default)
+- [ ] `labelAr()` returns Arabic label
+- [ ] `forType('invoice')` returns the forms
+
+### Step 3: Create the Entity Model
+
+**File**: `modules/Invoice/Models/Invoice.php`
+
+The model must have:
+- `company_id` (UUID, tenant-scoped)
+- `created_by_user_id` (UUID, who created it)
+- `branch_id` (nullable UUID, for branch-scoped workflow resolution)
+- `status` (string, your module's status field)
+
+Register the morph map in the model's `boot()` method:
+```php
+protected static function boot(): void
+{
+    parent::boot();
+    Process::resolveRelationUsing('invoice', fn () => static::class);
+}
+```
+
+Or in `Process::boot()`:
+```php
+Relation::morphMap([
+    'invoice' => Invoice::class,
+]);
+```
+
+**Checklist**:
+- [ ] Model has `company_id`, `created_by_user_id`, `branch_id` fields
+- [ ] Morph map registered for `processable_type = 'invoice'`
+- [ ] Model uses `BelongsToTenant` trait (multi-tenancy)
+
+### Step 4: Create the Workflow Service
+
+**File**: `modules/Invoice/Services/InvoiceWorkflowService.php`
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Invoice\Services;
+
+use Modules\Invoice\Models\Invoice;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Services\WorkflowEngine;
+use Modules\Process\Models\Process;
+
+class InvoiceWorkflowService
+{
+    private const TYPE = 'invoice';
+
+    public function __construct(
+        private readonly WorkflowEngine $engine,
+    ) {}
+
+    public function startForInvoice(Invoice $invoice): ?Process
+    {
+        $result = $this->engine->startWorkflow(
+            processableType: self::TYPE,
+            processableId: $invoice->id,
+            type: ProcedureSettingType::Invoice->value,
+            formKey: null,  // or InternalProcessForm::CreateInvoice->value
+            companyId: $invoice->company_id,
+            branchId: $invoice->branch_id !== null ? (string) $invoice->branch_id : null,
+            createdByUserId: $invoice->created_by_user_id,
+        );
+
+        return $result->autoApprove ? null : $result->activeProcess;
+    }
+
+    public function approve(string $processStepId): void
+    {
+        // Delegate to ProcessWorkflowService::approveStep()
+        // Or implement custom approval logic
+    }
+
+    public function reject(string $processStepId): void
+    {
+        // Delegate to ProcessWorkflowService::rejectStep()
+    }
+}
+```
+
+**Checklist**:
+- [ ] Injects `WorkflowEngine`
+- [ ] Uses correct `processable_type` string (`'invoice'`)
+- [ ] Uses correct `ProcedureSettingType` enum value
+- [ ] Passes `companyId`, `branchId`, `createdByUserId`
+- [ ] Handles `autoApprove = true` (no process created → entity is auto-approved)
+
+### Step 5: Create the Workflow Notifier (for real-time notifications)
+
+**File**: `modules/Invoice/Services/InvoiceWorkflowNotifier.php`
+
+```php
+<?php
+
+namespace Modules\Invoice\Services;
+
+use Modules\Process\Contracts\WorkflowNotifier;
+use Modules\Process\Models\ProcessStep;
+
+class InvoiceWorkflowNotifier implements WorkflowNotifier
+{
+    public function notifyStepActivated(ProcessStep $step, array $userIds, array $context = []): void
+    {
+        // Broadcast your module's real-time event to $userIds
+        // Example: event(new InvoiceNotification($step, $userIds));
+    }
+
+    public function inboxCountsForUser(string $userId): array
+    {
+        return [
+            'pending_invoices' => 0,  // implement your count query
+            'total' => 0,
+        ];
+    }
+}
+```
+
+Register in the module service provider:
+```php
+app(WorkflowNotifierRegistry::class)->register('invoice', app(InvoiceWorkflowNotifier::class));
+```
+
+**Checklist**:
+- [ ] Implements `WorkflowNotifier` interface
+- [ ] Registered in module service provider
+- [ ] `notifyStepActivated` broadcasts to all `$userIds`
+- [ ] `inboxCountsForUser` returns correct counts (or zeros as placeholder)
+
+### Step 6: Mark Procedures as Taken
+
+In your entity creation service, fire `WorkflowProcedureTaken` for each `createX`-form child:
+
+```php
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
+use Modules\ProcedureSetting\Services\WorkflowEngine;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
+
+private function markCreateProceduresTaken(Invoice $invoice): void
+{
+    $parentSetting = $this->engine->resolveParentSetting(
+        ProcedureSettingType::Invoice->value,
+        $invoice->company_id,
+        $invoice->branch_id !== null ? (string) $invoice->branch_id : null,
+    );
+
+    if ($parentSetting === null) {
+        return;
+    }
+
+    $createSettings = ProcedureSetting::query()
+        ->where('parent_id', $parentSetting->id)
+        ->where('form', InternalProcessForm::CreateInvoice->value)
+        ->where('is_active', true)
+        ->pluck('id');
+
+    foreach ($createSettings as $settingId) {
+        event(new WorkflowProcedureTaken('invoice', $invoice->id, $settingId, $invoice->created_by_user_id));
+    }
+}
+```
+
+**Checklist**:
+- [ ] Calls `WorkflowEngine::resolveParentSetting()` to find the parent
+- [ ] Queries active children with the `createX` form key
+- [ ] Fires `WorkflowProcedureTaken` event for each (listener auto-records in morph table)
+
+### Step 7: Create the Available Actions Service (if module has lifecycle actions)
+
+**File**: `modules/Invoice/Services/InvoiceAvailableActionsService.php`
+
+```php
+<?php
+
+namespace Modules\Invoice\Services;
+
+use Modules\ProcedureSetting\Services\InternalProcedureAvailableActionsService;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+
+final class InvoiceAvailableActionsService
+{
+    public function __construct(
+        private readonly InternalProcedureAvailableActionsService $actionsService,
+    ) {}
+
+    public function forInvoice(string $invoiceId): array
+    {
+        $invoice = Invoice::query()->findOrFail($invoiceId);
+        return $this->actionsService->forProcessable(
+            'invoice',
+            $invoice->id,
+            ProcedureSettingType::Invoice->value,
+            $invoice->company_id,
+            $invoice->branch_id !== null ? (string) $invoice->branch_id : null,
+        );
+    }
+}
+```
+
+**Checklist**:
+- [ ] Thin wrapper around `InternalProcedureAvailableActionsService::forProcessable()`
+- [ ] Resolves entity context (company_id, branch_id)
+- [ ] Returns array of available actions with ordering constraints applied
+
+### Step 8: Add the API Endpoint
+
+In your module's routes file:
+
+```php
+Route::get('/{id}/available-actions', [InvoiceController::class, 'availableActions']);
+```
+
+In the controller:
+```php
+public function availableActions(string $id, InvoiceAvailableActionsService $service): JsonResponse
+{
+    return response()->json($service->forInvoice($id));
+}
+```
+
+**Checklist**:
+- [ ] Route registered with correct permission
+- [ ] Controller method delegates to available-actions service
+- [ ] Returns same JSON structure as EmployeeTask available-actions
+
+### Step 9: Add Inbox Support (if module has an inbox)
+
+Use `WorkflowEngine::pendingProcessScopeForUser()` for the inbox query:
+
+```php
+// In your repository:
+public function paginatedForInbox(array $filters, string $userId, int $perPage = 15): LengthAwarePaginator
+{
+    $query = Invoice::query()
+        ->where('company_id', tenant('id'));
+
+    // Apply non-status filters manually (do NOT use EloquentFilter if it filters by status)
+    // ...
+
+    // Core workflow inbox filter
+    $query->whereHas(
+        'processes',
+        $this->engine->pendingProcessScopeForUser('invoice', $userId),
+    );
+
+    return $query->paginate($perPage);
+}
+```
+
+For resolving pending process descriptors:
+```php
+$descriptors = $this->engine->resolvePendingProcessesForUser($invoice, $userId);
+// Each: {process_id, procedure_setting_id, form, mobile_inbox_action_key, pending_step_id, pending_step_order}
+```
+
+**Checklist**:
+- [ ] Injects `WorkflowEngine` into repository
+- [ ] Uses `pendingProcessScopeForUser()` for the core filter
+- [ ] Does NOT filter by top-level `status` column (any status with a pending step shows up)
+- [ ] Eager-loads `processes.procedureSetting` and `processes.steps` for descriptor resolution
+
+### Step 10: Run the Seeder and Test
+
+```bash
+php artisan tenant:seed --class=InternalProcedureSettingsSeeder
+```
+
+This creates default child rows for all `create*` and `end*` forms under each parent category.
+
+**Test checklist**:
+- [ ] Create an invoice → process created → first step pending
+- [ ] Approve step → workflow advances or completes
+- [ ] Reject step → process fails (or advances if job_role)
+- [ ] Available-actions API returns correct list
+- [ ] Inbox query shows items with pending steps for the user
+- [ ] Notifications fire to authorized users
+
+---
+
+## 37. Debug Guide: Troubleshooting Every Part of the Workflow
+
+> **When something goes wrong, follow these decision trees to find the root cause.** Each section starts with the symptom, then walks through the diagnostic steps.
+
+### 37.1 "No workflow is created when I create an entity"
+
+```
+Symptom: Entity created, but no Process record exists in DB.
+  │
+  ├── Did WorkflowEngine::startWorkflow() return autoApprove = true?
+  │    │
+  │    ├── YES → No procedure setting was found for this company/branch/type/form.
+  │    │         Check:
+  │    │         1. Does a parent ProcedureSetting exist for this type + company?
+  │    │            Query: SELECT * FROM procedure_settings WHERE type='employee_task' AND company_id='...' AND parent_id IS NULL
+  │    │         2. Does a WorkFlow exist for this company + type?
+  │    │            Query: SELECT * FROM work_flows WHERE company_id='...' AND type='employee_task'
+  │    │         3. If formKey is set, does a child exist with that form?
+  │    │            Query: SELECT * FROM procedure_settings WHERE parent_id='...' AND form='createTask'
+  │    │         4. Is the child's work_flow_id matching the resolved workflow?
+  │    │
+  │    └── NO → Process was created. Check if ProcessStep was created.
+  │              Query: SELECT * FROM process_steps WHERE process_id='...'
+  │              If empty → template_snapshot was empty (all steps resolved to 0 users).
+  │              Check ActionTakerResolver::resolveUsersForStep() for each step.
+  │
+  └── Was startWorkflow() called at all?
+       Check the entity creation service — does it inject WorkflowEngine and call startWorkflow()?
+```
+
+### 37.2 "Step resolves to zero users (skipped)"
+
+```
+Symptom: Process created but has fewer steps than the template.
+  │
+  ├── action_taker_type = 'specific_user'
+  │    └── Check: Does the step have action_taker_users pivot records?
+  │         Query: SELECT * FROM action_taker_users WHERE procedure_setting_step_id = '...'
+  │         If empty → no users were assigned in the admin UI.
+  │
+  ├── action_taker_type = 'management_hierarchy'
+  │    ├── Check: Does the creator have professionalData?
+  │    │         Query: SELECT * FROM user_professional_data WHERE user_id = 'creator_id'
+  │    │         If null → creator has no branch/management → cannot resolve manager.
+  │    ├── Check: Does the branch/management have a manager_id?
+  │    │         Query: SELECT * FROM management_hierarchies WHERE id = 'branch_id'
+  │    │         If manager_id is null → no manager assigned to this hierarchy node.
+  │    ├── Check: For project_manager → does context['project_id'] exist?
+  │    │         If not → project_manager row is silently skipped.
+  │    └── Check: action_taker_management_hierarchies JSON column — is it populated?
+  │
+  ├── action_taker_type = 'specific_procedures'
+  │    ├── Check: Are action_taker_specific_procedure_type and _id arrays populated?
+  │    ├── Check: For 'branch' type → does ManagementHierarchy.find(id) exist?
+  │    ├── Check: For 'job_title' type → do any users have this job_title_id?
+  │    │         Query: SELECT * FROM user_professional_data WHERE job_title_id = '...'
+  │    └── Check: For 'job_role' type → id=1 needs management managers, id=2 needs branch managers
+  │
+  ├── action_taker_type = 'himself'
+  │    └── Check: Is createdByUserId null? If so, resolver returns [].
+  │
+  └── action_taker_type = 'assigned_user'
+       └── Check: Does the entity have a user_id? (e.g., EmployeeTaskRequest.user_id)
+```
+
+### 37.3 "User can't see items in their inbox"
+
+```
+Symptom: User should have pending items but inbox query returns empty.
+  │
+  ├── Is there a Process with status = 'in_progress' for this entity?
+  │    Query: SELECT * FROM processes WHERE processable_id='...' AND processable_type='...' AND status='in_progress'
+  │
+  ├── Is there a ProcessStep with status = 'pending'?
+  │    Query: SELECT * FROM process_steps WHERE process_id='...' AND status='pending'
+  │
+  ├── Is the user in authorized_user_ids?
+  │    Query: SELECT * FROM process_steps WHERE process_id='...' AND status='pending'
+  │           AND (assigned_user_id = 'user_id' OR JSON_CONTAINS(authorized_user_ids, '"user_id"'))
+  │    NOTE: whereJsonContains requires quoted strings for UUIDs.
+  │
+  ├── Is the inbox query using WorkflowEngine::pendingProcessScopeForUser()?
+  │    If not → the query may be filtering by the wrong columns.
+  │
+  ├── Is the inbox query filtering by top-level status?
+  │    If yes → remove the status filter. The inbox should show ANY entity with a pending step,
+  │    regardless of the entity's own status field.
+  │
+  └── Is the processable_type string correct?
+       'employee_task' (NOT 'employee_task_request' — deprecated)
+       'project_notification_task' (NOT 'project_notification')
+       'client_request'
+```
+
+### 37.4 "Condition check fails unexpectedly"
+
+```
+Symptom: EmployeeTaskException thrown at 422 when creating/starting/ending a task.
+  │
+  ├── Which form is being checked?
+  │    ├── createTask → EmployeeTaskFormConditionService::checkCreateTaskConditions()
+  │    ├── startTask → EmployeeTaskFormConditionService::checkStartTaskConditions()
+  │    └── endTask → EmployeeTaskFormConditionService::checkEndTaskConditions()
+  │
+  ├── Which condition is failing?
+  │    Check the exception message:
+  │    ├── "not_allowed_during_shift" → user is inside shift but allow_during_shift = false
+  │    ├── "not_allowed_outside_shift" → user is outside shift but allow_outside_shift = false
+  │    ├── "not_allowed_on_holidays" → today is a holiday but allow_on_holidays = false
+  │    ├── "cannot_end_task_outside_location" → outside geofence and can_exit_outside_location = false
+  │    ├── "outside_shift_time_window" → current time outside configured window
+  │    ├── "employee_has_no_attendance" → no active clock-in record
+  │    ├── "task_not_approved" → task.status != 'approved'
+  │    ├── "has_other_open_task" → another in_progress task exists for user
+  │    ├── "cannot_start_task_outside_location" → outside inside_task_location radius
+  │    ├── "outside_custom_locations" → task location outside configured polygons
+  │    ├── "task_duration_exceeds_limit" → duration > max_task_duration
+  │    └── "task_date_too_far_in_future" → scheduled date > max_scheduled_date_offset
+  │
+  ├── Is the condition stored in the DB?
+  │    Query: SELECT conditions FROM procedure_settings WHERE form='createTask' AND parent_id='...'
+  │    Check: Is the condition key present and is_active = true?
+  │
+  ├── Is the condition evaluator registered?
+  │    Check: EmployeeTaskServiceProvider → ConditionEvaluatorRegistry constructor
+  │    The evaluator class must be registered for the condition enum value.
+  │
+  └── Is attendance data available?
+       ConditionEvaluationService uses AttendanceConstraintService::getTodaysWorkRulesForUser()
+       If no attendance constraint is assigned → current_work_period = null, is_holiday = false
+```
+
+### 37.5 "Notifications not received"
+
+```
+Symptom: Step is pending but no one gets a notification.
+  │
+  ├── Is WorkflowStepActivated event fired?
+  │    Check: ProcessWorkflowService::createProcessStep() calls event(new WorkflowStepActivated(...))
+  │    This should fire automatically when a ProcessStep is created.
+  │
+  ├── Is SendWorkflowStepNotification listener registered?
+  │    Check: ProcedureSettingServiceProvider::registerEventListeners()
+  │    Should have: Event::listen(WorkflowStepActivated::class, SendWorkflowStepNotification::class)
+  │
+  ├── Is a WorkflowNotifier registered for this processable_type?
+  │    Check: WorkflowNotifierRegistry::get('employee_task') should return EmployeeTaskWorkflowNotifier
+  │    If null → no real-time broadcast happens.
+  │
+  ├── Are authorized_user_ids populated?
+  │    If empty → no one to notify. Check ActionTakerResolver resolution.
+  │
+  ├── Is notify_by_email / notify_by_sms set on the step?
+  │    If false → no email/SMS sent (real-time still fires).
+  │
+  └── For non-Process flows (extensions/approvals):
+       Are they calling dispatchStepNotifications() manually?
+       They don't create ProcessStep records, so WorkflowStepActivated is NOT fired.
+```
+
+### 37.6 "Available actions API returns empty"
+
+```
+Symptom: GET /{id}/available-actions returns [].
+  │
+  ├── Are there any active child procedure settings?
+  │    Query: SELECT * FROM procedure_settings WHERE parent_id='...' AND is_active=true AND form IS NOT NULL
+  │    If empty → no children configured. Run the seeder or create via API.
+  │
+  ├── Are all procedures hidden by appears_after_ids?
+  │    Check: If a procedure has appears_after_ids = ['A'], 'A' must be in internal_procedure_takens.
+  │    Query: SELECT * FROM internal_procedure_takens WHERE processable_type='...' AND processable_id='...'
+  │
+  ├── Are all procedures hidden by appears_before_ids?
+  │    Check: If a procedure has appears_before_ids = ['B'], and 'B' is taken → hidden.
+  │
+  └── Is the correct parent being resolved?
+       InternalProcedureAvailableActionsService::forProcessable() calls WorkflowEngine::resolveParentSetting()
+       If parent is null → no children found → returns [].
+```
+
+### 37.7 "Process completes but procedure not marked as taken"
+
+```
+Symptom: Process.status = 'completed' but internal_procedure_takens has no row.
+  │
+  ├── Does the Process have procedure_setting_id set?
+  │    Query: SELECT procedure_setting_id FROM processes WHERE id='...'
+  │    If null → the setting had no form (parent-level process). No event fires.
+  │    Only child settings (form != null) get procedure_setting_id populated.
+  │
+  ├── Is WorkflowProcedureTaken event fired?
+  │    ProcessWorkflowService::fireProcedureTakenIfApplicable() fires it when:
+  │    - process.procedure_setting_id is not empty
+  │    - process.status is set to Completed
+  │
+  ├── Is RecordInternalProcedureTaken listener registered?
+  │    Check: ProcedureSettingServiceProvider::registerEventListeners()
+  │
+  └── Is the morph type correct?
+       The event uses process.processable_type and process.processable_id.
+       These must match what the available-actions service queries.
+```
+
+### 37.8 "Rejection should advance but process fails instead"
+
+```
+Symptom: Step rejected, process.status = 'failed' but expected it to advance.
+  │
+  ├── Check: Is the step's specific_procedure_types array containing 'job_role'?
+  │    Query: SELECT template_snapshot FROM processes WHERE id='...'
+  │    Look at the snapshot row for this step: specific_procedure_types
+  │    If it does NOT contain 'job_role' → rejection fails the process (correct behavior).
+  │    If it DOES contain 'job_role' → rejection should advance. Check ProcessWorkflowService::rejectStep().
+  │
+  ├── Old snapshot format?
+  │    If snapshot has 'specific_procedure_type' (singular string) instead of 'specific_procedure_types' (array),
+  │    backward compat reads it. Check if the value is 'job_role'.
+  │
+  └── Multiple targets?
+       If types = ['branch', 'job_role'] → has job_role → advances.
+       If types = ['branch', 'management'] → no job_role → fails.
+```
+
+---
+
+## 38. Documentation Maintenance Protocol (MANDATORY)
+
+> **CRITICAL**: This section defines the rules that ANY AI session or developer MUST follow when modifying the procedure workflow system. If you change ANY file listed in this document, you MUST update this document in the same session.
+
+### 38.1 What Triggers a Documentation Update
+
+You MUST update this document when you do ANY of the following:
+
+| Change | Which Section to Update |
+|--------|------------------------|
+| Add/remove a `ProcedureSettingType` enum case | §3 (Enums), §35 (Module Dependency Map) |
+| Add/remove an `InternalProcessForm` enum case | §3 (Enums), §35 (Module Dependency Map) |
+| Add/remove an `InternalProcessCondition` enum case | §3 (Enums), §28 (Condition Enforcement), §34 (Condition Evaluation) |
+| Add/remove a method on `WorkflowEngine` | Quick Start, Complete Public API Reference (WorkflowEngine table) |
+| Add/remove a method on `ProcessWorkflowService` | Complete Public API Reference (ProcessWorkflowService table) |
+| Add/remove a method on `ProcedureWorkflowService` | Complete Public API Reference (ProcedureWorkflowService table) |
+| Add/remove a method on `ActionTakerResolver` | Complete Public API Reference (ActionTakerResolver table), §5 |
+| Add a new module that uses workflows | §35 (Module Dependency Map), §36 (Cookbook — verify steps still work) |
+| Add a new `WorkflowNotifier` | §17.4 (Where to Add Module Real-Time Notifications), §35 (Event Flow Map) |
+| Change the inbox query logic | §11 (Multi-User Authorization → Inbox Queries) |
+| Add a new condition evaluator | §34 (Centralized Condition Evaluation), §28 (Form Condition Enforcement) |
+| Change `action_taker_type` values or resolution | §4 (Action Taker Types), §5 (ActionTakerResolver), §16 (Decision Flowcharts) |
+| Add/modify a migration | §14 (Migrations) or the relevant feature section |
+| Change the process creation flow | §6 (Process Creation Flow), §24 (Data Flow Diagrams) |
+| Change notification broadcasting | §12 (Notification Broadcasting), §17 (Complete Notification Architecture) |
+| Refactor a service's dependencies | §18 (Complete Service Dependency Map), §35 (Service Injection Map) |
+| Fix a bug in the workflow engine | Add a note to the changelog at the top of this document |
+
+### 38.2 How to Update the Changelog
+
+At the top of this document, add a new entry in reverse-chronological order:
+
+```markdown
+> **Last updated:** YYYY-MM-DD — Brief description of what changed. See §XX.
+>
+> **Previous:** YYYY-MM-DD — Previous change description.
+```
+
+### 38.3 Verification Checklist Before Finishing Any Session
+
+Before you finish a session that modified the procedure workflow system, verify:
+
+- [ ] The changelog at the top of this document has a new entry with today's date
+- [ ] Every new/changed method is documented in the API Reference table
+- [ ] Every new module dependency is added to §35 (Module Dependency Map)
+- [ ] Every new file is added to §20 (File Reference Index)
+- [ ] Every new trap/gotcha is documented in §15 (Traps & Rules) or §21 (Additional AI Traps)
+- [ ] If you added a new condition, §28 and §34 are updated
+- [ ] If you changed the inbox logic, §11 (Inbox Queries) is updated
+- [ ] If you added a new form, §3 (InternalProcessForm enum) and §27 (Internal Procedure Settings) are updated
+- [ ] `php -l` passes on all modified PHP files
+- [ ] No existing documentation contradicts your changes (if it does, update it)
+
+### 38.4 Anti-Patterns to Avoid
+
+- **DO NOT** create a new service that duplicates `WorkflowEngine` logic. Always inject and delegate.
+- **DO NOT** write inline process queries in repositories. Use `WorkflowEngine::pendingProcessScopeForUser()`.
+- **DO NOT** manually fire `WorkflowStepActivated` — it's fired automatically by `ProcessWorkflowService::createProcessStep()`.
+- **DO NOT** manually call `markProcedureTaken()` for Process-based flows — `ProcessWorkflowService::fireProcedureTakenIfApplicable()` handles it on process completion.
+- **DO NOT** filter the inbox by the entity's top-level `status` column. The inbox shows any entity with a pending workflow step.
+- **DO NOT** confuse `ProcedureWorkflowService` (template-step, non-Process) with `ProcessWorkflowService` (runtime, Process-based). See §21.8.
+- **DO NOT** forget to pass `context = ['project_id' => ...]` when the workflow uses `project_manager` action taker type. See §15.5.
+- **DO NOT** update code without updating this document in the same session.
+
+---
+
+## 39. Quick Reference Card (One-Page Cheat Sheet)
+
+> **Print this section.** It contains the absolute minimum knowledge needed to work with the procedure workflow system.
+
+### 39.1 The 5 Services You Need to Know
+
+| Service | When to Use | Key Method |
+|---------|------------|------------|
+| `WorkflowEngine` | Starting workflows, previewing responsibles, inbox queries, lifecycle workflows | `startWorkflow()`, `previewResponsibles()`, `pendingProcessScopeForUser()`, `resolveLifecycleSetting()` |
+| `ProcessWorkflowService` | Approving/rejecting Process steps (runtime) | `approveStep($id)`, `rejectStep($id)` |
+| `ProcedureWorkflowService` | Non-Process workflows (extensions, approvals), marking procedures taken | `advance()`, `markProcedureTaken()`, `resolveInternalProcedureSettingByForm()` |
+| `ActionTakerResolver` | Resolving WHO can act on a step (internal — rarely called directly) | `resolveUsersForStep($step, $createdByUserId, $context)` |
+| `ConditionEvaluationService` | Evaluating form conditions before workflow starts | `evaluateAndThrow($conditions, $context, $resolver)` |
+
+### 39.2 The 4-Step Workflow Lifecycle
+
+```
+1. PREVIEW  →  WorkflowEngine::previewResponsibles(type, form, company, branch, creator, context)
+2. START    →  WorkflowEngine::startWorkflow(processableType, processableId, type, form, company, branch, creator, context)
+3. ACT      →  ProcessWorkflowService::approveStep(stepId)  OR  rejectStep(stepId)
+4. COMPLETE →  Process.status = Completed  →  WorkflowProcedureTaken event  →  available-actions unlocks next
+```
+
+### 39.3 The 3 Action Taker Types
+
+| Type | How Users Are Resolved | Multi-User? |
+|------|----------------------|-------------|
+| `specific_user` | From `action_taker_users` pivot table | Yes (any can act) |
+| `management_hierarchy` | From creator's org chart (branch/management/project manager) | Yes (with deputy_manager) |
+| `specific_procedures` | By branch/management/job_title/job_role | Yes (all merged) |
+| `himself` | The submitter (`createdByUserId`) | No (single) |
+
+### 39.4 The 3 Key Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `procedure_settings` | Templates (parent = category, child = form-specific procedure with steps + conditions) |
+| `processes` | Runtime instances (has `template_snapshot` JSON, `status`, `procedure_setting_id`) |
+| `process_steps` | Runtime steps (has `assigned_user_id`, `authorized_user_ids` JSON, `status`) |
+
+### 39.5 The 3 Critical Traps
+
+1. **Context**: Always pass `['project_id' => $id]` if the workflow uses `project_manager`. Without it, resolution fails silently.
+2. **Inbox**: Never filter by the entity's `status` column. Use `WorkflowEngine::pendingProcessScopeForUser()`.
+3. **Notifications**: `actionTakers` pivot is EMPTY for non-`specific_user` types. Always use `authorized_user_ids`.
+
+### 39.6 The 3 Files to Edit for Common Tasks
+
+| Task | File to Edit |
+|------|-------------|
+| Add a new action taker type | `modules/ProcedureSetting/Services/ActionTakerResolver.php` |
+| Add a new form condition | `modules/Shared/InternalProcessType/Enums/InternalProcessCondition.php` + create evaluator in `modules/EmployeeTask/Conditions/` |
+| Add a new module to workflows | Follow §36 (10-step cookbook) |
+
+### 39.7 Debug Quick Lookup
+
+| Symptom | First Place to Check |
+|---------|---------------------|
+| No process created | `procedure_settings` table — does a parent + child exist for this company/type/form? |
+| Step has 0 users | `ActionTakerResolver::resolveUsersForStep()` — check creator's professionalData, branch, management |
+| Inbox empty | `process_steps` table — is there a pending step with the user in `authorized_user_ids`? |
+| Condition fails | `procedure_settings.conditions` JSON — is the condition key present and `is_active: true`? |
+| No notifications | `WorkflowNotifierRegistry` — is a notifier registered for the `processable_type`? |
+| Available actions empty | `internal_procedure_takens` table — are prerequisite procedures marked as taken? |
+
+---
+
+## 40. Module → Type → Forms → Conditions Lookup Table
+
+> **The one table you need.** If a weak AI reads nothing else, read this. It maps every module to its `ProcedureSettingType`, every form that module uses, and every condition on each form — marked as **pre** (precondition, checked before the form is accepted) or **in** (in-form, validates individual input fields).
+
+### 40.1 How to Read This Table
+
+```
+Module: The module you are working in (e.g., EmployeeTask, ProjectNotification)
+Type: The ProcedureSettingType enum value → string stored in procedure_settings.type
+       and used as processable_type in processes table
+Forms: [formKey1, formKey2, ...] — all InternalProcessForm cases for this type
+Conditions per form:
+  ①  condition_key          pre  ← precondition (gatekeeping: shift, location, attendance)
+  ②  condition_key          in   ← in-form (validates input fields: duration, date, attachments)
+  (empty) = no conditions defined for this form
+```
+
+### 40.2 EmployeeTask Module
+
+**Type**: `employee_task`
+**Morph string**: `'employee_task'`
+**Controller**: `EmployeeTaskController`
+**Service**: `EmployeeTaskRequestService`, `EmployeeTaskLifecycleService`, `EmployeeTaskStartRequestService`, `EmployeeTaskEndRequestService`
+
+| # | Form Key | Label AR | Conditions |
+|---|----------|----------|------------|
+| 1 | `createTask` | انشاء مهمة | ① `allow_during_shift` **pre** · ② `allow_outside_shift` **pre** · ③ `allow_on_holidays` **pre** · ④ `inside_custom_locations` **pre** · ⑤ `max_task_duration` **in** · ⑥ `max_scheduled_date_offset` **in** |
+| 2 | `startTask` | بدء المهمة | ① `allow_on_holidays` **pre** |
+| 3 | `endTask` | انهاء المهمة | _(none)_ |
+
+**Unregistered forms** (used as raw strings, NOT in enum):
+| - | `extendTaskTime` | تمديد وقت المهمة | _(none)_ |
+| - | `sendForApproval` | ارسال للاعتماد | _(none)_ |
+
+### 40.3 ProjectNotification Module (inside Project\ProjectManagement)
+
+**Type**: `project_notification_task`
+**Morph string**: `'project_notification_task'`
+**Controller**: `ProjectNotificationController`
+**Service**: `ProjectNotificationService` (delegates to `EmployeeTaskRequestService` for task creation)
+
+| # | Form Key | Label AR | Conditions |
+|---|----------|----------|------------|
+| 1 | `createProjectNotificationTask` | إنشاء إشعار مشروع | ① `inside_custom_locations` **pre** |
+| 2 | `confirmProjectNotificationPresence` | تأكيد استلام | _(none)_ |
+| 3 | `updateProjectNotificationTask` | تحديث بيانات الإشعار | ① `inside_custom_locations` **pre** |
+| 4 | `updateProjectNotificationSiteStatus` | التحديث الدوري لحالة الموقع | ① `inside_task_location` **pre** |
+| 5 | `projectNotificationFine` | بنود الغرامة | ① `inside_task_location` **pre** |
+| 6 | `confirmProjectNotificationLocation` | تأكيد التواجد في الموقع | ① `inside_task_location` **pre** |
+| 7 | `projectNotificationWorkStoppageReport` | محضر إيقاف أعمال | _(none)_ |
+| 8 | `projectNotificationWorkResumption` | استئناف الأعمال | _(none)_ |
+| 9 | `projectNotificationTaskPostponement` | تأجيل المهمة | _(none)_ |
+| 10 | `endProjectNotificationTask` | إنهاء المهمة | ① `inside_task_location` **pre** |
+
+### 40.4 ClientRequest Module
+
+**Type**: `client_request`
+**Morph string**: `'client_request'`
+**Controller**: `ClientRequestController`
+**Service**: `ClientRequestCRUDService`, `ClientRequestWorkflowService`
+
+| # | Form Key | Label AR | Conditions |
+|---|----------|----------|------------|
+| 1 | `createClientRequest` | إنشاء طلب عميل | _(none)_ |
+| 2 | `endClientRequest` | انهاء طلب عميل | _(none)_ |
+| 3 | `attachAttachments` | ارفاق مرفقات | ① `max_attachments` **in** |
+
+### 40.5 PriceOffer Module (enum registered, not yet implemented)
+
+**Type**: `price_offer`
+**Morph string**: `'price_offer'` _(when implemented)_
+
+| # | Form Key | Label AR | Conditions |
+|---|----------|----------|------------|
+| 1 | `createPriceOffer` | إنشاء عرض سعر | _(none)_ |
+| 2 | `endPriceOffer` | انهاء عرض سعر | _(none)_ |
+
+### 40.6 Contract Module (enum registered, not yet implemented)
+
+**Type**: `contract`
+**Morph string**: `'contract'` _(when implemented)_
+
+| # | Form Key | Label AR | Conditions |
+|---|----------|----------|------------|
+| 1 | `createContract` | إنشاء عقد | _(none)_ |
+| 2 | `endContract` | انهاء عقد | _(none)_ |
+
+### 40.7 Meeting Module (enum registered, not yet implemented)
+
+**Type**: `meeting`
+**Morph string**: `'meeting'` _(when implemented)_
+
+| # | Form Key | Label AR | Conditions |
+|---|----------|----------|------------|
+| 1 | `createMeeting` | إنشاء اجتماع | _(none)_ |
+| 2 | `endMeeting` | انهاء اجتماع | _(none)_ |
+
+### 40.8 All Conditions Reference (what each condition does)
+
+| Condition Key | Group | Category | Label AR | What It Checks | Settings |
+|---|---|---|---|---|---|
+| `allow_during_shift` | **pre** | shift | موظف داخل الدوام | User must be inside scheduled shift period | `mode` (shift/specific_time), `start_time`, `end_time` |
+| `allow_outside_shift` | **pre** | location | موظف خارج موقع الدوام | User must be outside shift (at task location) | _(none)_ |
+| `allow_on_holidays` | **pre** | shift | مسموح في العطلات | Action allowed on holidays when active | _(none)_ |
+| `inside_custom_locations` | **pre** | location | موقع المهمة داخل المناطق المخصصة | Task GPS must be inside configured polygons | `polygons` (map areas) |
+| `inside_task_location` | **pre** | location | داخل موقع المهمة | User's current GPS within `radius_meters` of task location | `radius_meters` (default 100) |
+| `inside_shift_time` | **pre** | time | داخل وقت الدوام | Current server time within `[start_time − tolerance, end_time − tolerance]` | `start_time`, `end_time`, `allow_before_start_minutes`, `allow_before_end_minutes` |
+| `employee_has_attendance` | **pre** | attendance | الموظف مسجل حضور | User must have active clock-in (clock_out IS NULL) | _(none)_ |
+| `task_is_approved` | **pre** | task_status | المهمة معتمدة | `task.status` must equal `approved` | _(none)_ |
+| `no_open_task` | **pre** | open_task | لا يوجد مهمة مفتوحة | No other task for user with `status = in_progress` | _(none)_ |
+| `can_exit_outside_location` | **pre** | location | يستطيع الخروج خارج الموقع | If false, employee must be within task geofence to end | _(none)_ |
+| `must_be_in_location` | **pre** | location | يجب أن يكون داخل الموقع عند البدء | User must be at task location to start | _(none)_ |
+| `max_task_duration` | **in** | duration | الحد الأقصى لمدة المهمة | Task duration ≤ `max_hours` | `max_hours` (default 8) |
+| `max_scheduled_date_offset` | **in** | calendar | الحد الأقصى لتاريخ المهمة | Task date ≤ today + `max_days` (or ≤ contract end date) | `mode` (max_task_date/end_contract), `max_days` (default 30) |
+| `has_task_duration` | **in** | duration | مدة المهمة | Task must have a duration set | _(none)_ |
+| `max_duration_hours` | **in** | duration | أقصى مدة بالساعات | Duration ≤ configured max hours | integer value |
+| `max_attachments` | **in** | attachment | أقصى عدد مرفقات | Attachment count ≤ configured max | integer value |
+
+### 40.9 "I want to apply procedure to my module" — Quick Decision
+
+```
+Q: What module am I working in?
+  │
+  ├── EmployeeTask (regular tasks)
+  │    → type = 'employee_task'
+  │    → forms = [createTask, startTask, endTask, extendTaskTime, sendForApproval]
+  │    → controller = EmployeeTaskController
+  │    → service = EmployeeTaskRequestService
+  │    → condition service = EmployeeTaskFormConditionService
+  │
+  ├── ProjectNotification (maintenance/emergency tasks)
+  │    → type = 'project_notification_task'
+  │    → forms = [createProjectNotificationTask, confirmProjectNotificationPresence,
+  │               updateProjectNotificationTask, updateProjectNotificationSiteStatus,
+  │               projectNotificationFine, confirmProjectNotificationLocation,
+  │               projectNotificationWorkStoppageReport, projectNotificationWorkResumption,
+  │               projectNotificationTaskPostponement, endProjectNotificationTask]
+  │    → controller = ProjectNotificationController
+  │    → service = ProjectNotificationService (injects WorkflowEngine)
+  │    → condition service = EmployeeTaskFormConditionService (shared)
+  │
+  ├── ClientRequest
+  │    → type = 'client_request'
+  │    → forms = [createClientRequest, endClientRequest, attachAttachments]
+  │    → controller = ClientRequestController
+  │    → service = ClientRequestCRUDService + ClientRequestWorkflowService
+  │
+  ├── PriceOffer / Contract / Meeting
+  │    → type = 'price_offer' / 'contract' / 'meeting'
+  │    → forms = [create*, end*] (enum registered, services NOT yet implemented)
+  │    → Follow §36 cookbook to implement
+  │
+  └── New module (not yet registered)
+       → Follow §36 (10-step cookbook) from scratch
+```
+
+### 40.10 "I want to add a condition to a form" — Quick Decision
+
+```
+Q: Is the condition a GATEKEEPER (checked before the form is accepted)?
+  │
+  ├── YES → formGroup = 'precondition'
+  │    Examples: shift checks, location checks, attendance checks, task status checks
+  │    The condition runs BEFORE WorkflowEngine::startWorkflow()
+  │    If it fails → HTTP 422, no Process is created
+  │
+  └── NO → formGroup = 'in_form'
+       Examples: max duration, max date offset, max attachments
+       The condition validates individual form INPUT FIELDS
+       Backend enforcement varies (some are backend-enforced, some are client-enforced)
+
+Q: Which form am I adding the condition to?
+  │
+  ├── createTask → add to InternalProcessForm::CreateTask::conditions()
+  ├── startTask → add to InternalProcessForm::StartTask::conditions()
+  ├── endTask → add to InternalProcessForm::EndTask::conditions()
+  ├── any project_notification form → add to that form's conditions() entry
+  └── any other form → add to that form's conditions() entry
+
+Q: What do I need to do? (7 steps — see §28.6 / §34.9 for full details)
+  1. Add enum case to InternalProcessCondition (with category(), labelAr(), formGroup(), settingsSchema())
+  2. Register in InternalProcessForm::conditions() for the target form
+  3. Add exception factory to EmployeeTaskException
+  4. Create evaluator class implementing ConditionEvaluator
+  5. Register evaluator in EmployeeTaskServiceProvider
+  6. Add exception case to EmployeeTaskExceptionResolver::throwFromResult()
+  7. Update §40.8 (this table) with the new condition
+```
