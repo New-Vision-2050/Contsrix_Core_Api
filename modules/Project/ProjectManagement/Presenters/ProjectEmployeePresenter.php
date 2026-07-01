@@ -22,6 +22,8 @@ class ProjectEmployeePresenter extends AbstractPresenter
                 'id' => $this->projectEmployee->user->id,
                 'name' => $this->projectEmployee->user->name,
                 'email' => $this->projectEmployee->user->email,
+                'phone' => $this->projectEmployee->user->phone,
+                'phone_code' => $this->projectEmployee->user->phone_code,
             ] : null,
             'project_role' => $this->projectEmployee->projectRole ? [
                 'id' => $this->projectEmployee->projectRole->id,

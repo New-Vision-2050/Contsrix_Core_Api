@@ -17,6 +17,8 @@ class ProjectEmployeeRepository extends BaseRepository
 
     public function getByProject(string $projectId, ?string $companyId = null): Collection
     {
+        $search = request()->input('search');
+
         $query = $this->model
             ->where('project_id', $projectId)
             ->with([
@@ -28,6 +30,22 @@ class ProjectEmployeeRepository extends BaseRepository
 
         if ($companyId) {
             $query->where('company_id', $companyId);
+        }
+
+        if ($search !== null && $search !== '') {
+            $normalizedPhoneSearch = preg_replace('/[\s+]/', '', (string) $search);
+
+            $query->whereHas('user', function ($userQuery) use ($search, $normalizedPhoneSearch) {
+                $userQuery
+                    ->where('name', 'LIKE', "%{$search}%")
+                    ->orWhere('email', 'LIKE', "%{$search}%")
+                    ->orWhere('phone', 'LIKE', "%{$search}%")
+                    ->orWhere('phone_code', 'LIKE', "%{$search}%")
+                    ->orWhereRaw(
+                        "REPLACE(REPLACE(CONCAT(COALESCE(phone_code, ''), COALESCE(phone, '')), ' ', ''), '+', '') LIKE ?",
+                        ["%{$normalizedPhoneSearch}%"]
+                    );
+            });
         }
 
         return $query->get();
