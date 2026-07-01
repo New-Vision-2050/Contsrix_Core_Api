@@ -115,12 +115,49 @@ class ProjectEmployeeAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.0.project_id', (string) $project->id)
             ->assertJsonPath('payload.0.user.id', (string) $user->id)
             ->assertJsonPath('payload.0.user.name', 'Shape Employee')
+            ->assertJsonPath('payload.0.user.phone', $user->phone)
+            ->assertJsonPath('payload.0.user.phone_code', $user->phone_code)
             ->assertJsonPath('payload.0.company.id', (string) $this->company->id)
             ->assertJsonPath('payload.0.attendance.id', null)
             ->assertJsonPath('payload.0.attendance.status', Attendance::STATUS_ABSENT)
             ->assertJsonPath('payload.0.attendance.day_status', 'غائب')
             ->assertJsonMissingPath('payload.0.status')
             ->assertJsonMissingPath('payload.0.day_status');
+    }
+
+    public function test_project_employees_can_be_searched_by_phone_code_and_phone(): void
+    {
+        $project = $this->createProject();
+        $matchingUser = $this->createProjectUser('Phone Match Employee');
+        $otherUser = $this->createProjectUser('Other Phone Employee');
+
+        $matchingUser->update([
+            'phone' => '1001112222',
+            'phone_code' => '20',
+        ]);
+        $otherUser->update([
+            'phone' => '555666777',
+            'phone_code' => '966',
+        ]);
+
+        $this->assignToProject($project, $matchingUser);
+        $this->assignToProject($project, $otherUser);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/employees/project/'.$project->id.'?'.http_build_query([
+                'company_id' => $this->company->id,
+                'search' => '+20 1001112222',
+            ]));
+
+        $response->assertOk();
+
+        $payload = collect($response->json('payload'));
+
+        $this->assertCount(1, $payload);
+        $this->assertSame((string) $matchingUser->id, $payload->first()['user']['id']);
+        $this->assertSame('1001112222', $payload->first()['user']['phone']);
+        $this->assertSame('20', $payload->first()['user']['phone_code']);
     }
 
     public function test_project_employee_attendance_constraints_are_eager_loaded(): void
