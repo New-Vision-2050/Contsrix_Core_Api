@@ -643,6 +643,9 @@ class AttendanceConstraintController extends Controller
         $page    = max(1, (int) $request->input('page', 1));
         $perPage = max(1, (int) $request->input('per_page', 10));
 
+        $filters = $request->only(['name']);
+        $name    = $filters['name'] ?? null;
+
         $startDate = $request->input('start_date');
         $endDate   = $request->input('end_date');
         $date      = $startDate ?? $endDate ?? now()->format('Y-m-d');
@@ -662,7 +665,16 @@ class AttendanceConstraintController extends Controller
             ->toArray();
 
         $allUniqueIds = collect($mainUserIds)->merge($pivotUserIds)->unique()->values();
+        if ($name) {
+            $matchingUserIds = User::withoutTenancy()
+                ->whereIn('id', $allUniqueIds->toArray())
+                ->where('name', 'like', "%{$name}%")
+                ->pluck('id')
+                ->map(fn($id) => (string) $id)
+                ->toArray();
 
+            $allUniqueIds = collect($matchingUserIds);
+        }
         $total    = $allUniqueIds->count();
         $lastPage = max(1, (int) ceil($total / $perPage));
         $pagedIds = $allUniqueIds->forPage($page, $perPage)->values()->toArray();
