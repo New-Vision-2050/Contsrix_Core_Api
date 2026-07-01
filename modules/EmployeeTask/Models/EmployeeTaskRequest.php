@@ -185,6 +185,14 @@ class EmployeeTaskRequest extends Model implements HasMedia
         return $this->hasMany(EmployeeTaskApprovalRequest::class, 'employee_task_request_id');
     }
 
+    public function workResumptions(): HasMany
+    {
+        return $this->hasMany(
+            \Modules\Project\ProjectManagement\Models\ProjectNotificationWorkResumption::class,
+            'employee_task_request_id'
+        );
+    }
+
     public function endRequests(): HasMany
     {
         return $this->hasMany(EmployeeTaskEndRequest::class, 'employee_task_request_id');

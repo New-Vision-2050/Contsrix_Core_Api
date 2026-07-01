@@ -364,6 +364,9 @@ class ProjectNotificationController extends Controller
             'employeeTask.currentProcedureStep.actionTakers.user',
             'employeeTask.media',
             'employeeTask.createProjectNotificationTaskProcedureSetting',
+            'employeeTask.approvalRequests.media',
+            'employeeTask.projectNotification.media',
+            'employeeTask.workResumptions.media',
         ]);
 
         return Json::items(

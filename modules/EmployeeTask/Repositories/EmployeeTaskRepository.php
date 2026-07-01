@@ -38,6 +38,9 @@ class EmployeeTaskRepository
                 'media',
                 'employeeTaskType',
                 'currentProcedureStep.actionTakers.user',
+                'approvalRequests.media',
+                'projectNotification.media',
+                'workResumptions.media',
             ])
             ->find($id);
     }
