@@ -19,13 +19,10 @@ use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
-use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
-use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
 use Modules\Process\Models\Process;
 use Modules\Process\Services\ProcessWorkflowService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
-use Modules\User\Models\User;
 
 /**
  * Handles the "end task with procedure" (انهاء المهمة) flow.
@@ -145,7 +142,6 @@ final class EmployeeTaskEndRequestService
 
             $this->broadcastTaskNotification($task, $firstStep, $userIds);
             $this->requestService->broadcastInboxCounts($userIds);
-            $this->dispatchStepNotifications($firstStep, $userIds);
 
             return $endRequest;
         });
@@ -312,38 +308,4 @@ final class EmployeeTaskEndRequestService
         event(new EmployeeTaskNotification($task, $currentStep, $userIds));
     }
 
-    private function dispatchStepNotifications(ProcedureSettingStep $step, array $userIds): void
-    {
-        WorkflowPushNotificationService::sendForStep($step, $userIds);
-
-        $channels = [];
-        if ($step->notify_by_email) {
-            $channels[] = 'mail';
-        }
-        if ($step->notify_by_sms) {
-            $channels[] = 'sms';
-        }
-        if ($step->notify_by_whatsapp) {
-            $channels[] = 'whatsapp';
-        }
-
-        if ($channels === []) {
-            return;
-        }
-
-        $users        = User::query()->whereIn('id', $userIds)->get();
-        $notification = new WorkflowActionRequired(null, $step, $channels);
-
-        foreach ($users as $user) {
-            try {
-                $user->notify($notification);
-            } catch (\Throwable $e) {
-                \Log::error('WorkflowActionRequired notification failed (end request)', [
-                    'user_id' => $user->id,
-                    'step_id' => $step->id,
-                    'error'   => $e->getMessage(),
-                ]);
-            }
-        }
-    }
 }

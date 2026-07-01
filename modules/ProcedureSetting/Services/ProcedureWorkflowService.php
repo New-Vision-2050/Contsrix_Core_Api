@@ -208,11 +208,20 @@ final class ProcedureWorkflowService
 
     /**
      * Resolve the user IDs authorized to act on a given step.
-     * Useful for broadcasting notifications to the correct recipients.
+     *
+     * Automatically dispatches email/SMS/WhatsApp/Push notifications
+     * via WorkflowEngine::dispatchNotifications() — callers do NOT
+     * need to call any separate notification method.
+     *
+     * @return array<string> Resolved user IDs (also used by caller for real-time broadcast)
      */
     public function resolveActionTakerUserIdsForStep(ProcedureSettingStep $step, ?string $createdByUserId = null, array $context = []): array
     {
-        return $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
+        $userIds = $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
+
+        $this->engine->dispatchNotifications($step, $userIds);
+
+        return $userIds;
     }
 
     /**

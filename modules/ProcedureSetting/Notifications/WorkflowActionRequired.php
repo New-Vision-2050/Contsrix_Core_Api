@@ -7,14 +7,13 @@ namespace Modules\ProcedureSetting\Notifications;
 use App\Notifications\Drivers\SMS\MoraSms;
 use App\Notifications\Drivers\WhatsApp\TwilioWhatsApp;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Modules\Country\Models\Country;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\Process\Models\ProcessStep;
 
-class WorkflowActionRequired extends Notification implements ShouldQueue
+class WorkflowActionRequired extends Notification
 {
     use Queueable;
 

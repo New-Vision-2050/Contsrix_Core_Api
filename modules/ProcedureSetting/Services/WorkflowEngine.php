@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Modules\ProcedureSetting\DTO\WorkflowStartResult;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Jobs\SendWorkflowNotificationsJob;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Models\WorkFlow;
+use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
@@ -150,6 +153,57 @@ final class WorkflowEngine
         return $process === null
             ? new WorkflowStartResult(autoApprove: true, activeProcess: null)
             : new WorkflowStartResult(autoApprove: false, activeProcess: $process);
+    }
+
+    /**
+     * Central dispatch for email/SMS/WhatsApp notifications on a workflow step.
+     *
+     * Called by:
+     * - SendWorkflowStepNotification listener (Process-based workflows)
+     * - EmployeeTaskExtensionService / ApprovalService / StartRequestService / EndRequestService
+     *   (non-Process workflows)
+     *
+     * Resolves channels from the template step flags and dispatches
+     * SendWorkflowNotificationsJob with primitive IDs only (no model serialization).
+     *
+     * @param  ProcedureSettingStep  $templateStep  The step template with notify_by_* flags
+     * @param  array<int, string>  $userIds  Resolved action taker user IDs
+     * @param  ?string  $processStepId  ProcessStep UUID (null for non-Process workflows)
+     */
+    public function dispatchNotifications(
+        ProcedureSettingStep $templateStep,
+        array $userIds,
+        ?string $processStepId = null,
+    ): void {
+        if ($userIds === []) {
+            return;
+        }
+
+        // Push notification (FCM) — sent synchronously, not queued
+        WorkflowPushNotificationService::sendForStep($templateStep, $userIds);
+
+        // Resolve channels from template flags
+        $channels = [];
+        if ($templateStep->notify_by_email) {
+            $channels[] = 'mail';
+        }
+        if ($templateStep->notify_by_sms) {
+            $channels[] = 'sms';
+        }
+        if ($templateStep->notify_by_whatsapp) {
+            $channels[] = 'whatsapp';
+        }
+
+        if ($channels === []) {
+            return;
+        }
+
+        SendWorkflowNotificationsJob::dispatch(
+            $userIds,
+            $channels,
+            $processStepId,
+            $templateStep->id,
+        );
     }
 
     private function computeApprovalResponsiblesForSetting(ProcedureSetting $setting, ?string $createdByUserId, array $context): array

@@ -18,9 +18,6 @@ use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
-use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
-use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
-use Modules\User\Models\User;
 final class EmployeeTaskExtensionService
 {
     public function __construct(
@@ -97,7 +94,6 @@ final class EmployeeTaskExtensionService
                 $userIds   = $this->workflow->resolveActionTakerUserIdsForStep($firstStep, $task->user_id, $context);
                 $this->broadcastTaskNotification($task, $firstStep, $userIds);
                 $this->requestService->broadcastInboxCounts($userIds);
-                $this->dispatchStepNotifications($firstStep, $userIds);
             }
 
             return $extension;
@@ -246,38 +242,4 @@ final class EmployeeTaskExtensionService
         return $setting;
     }
 
-    private function dispatchStepNotifications(\Modules\ProcedureSetting\Models\ProcedureSettingStep $step, array $userIds): void
-    {
-        WorkflowPushNotificationService::sendForStep($step, $userIds);
-
-        $channels = [];
-        if ($step->notify_by_email) {
-            $channels[] = 'mail';
-        }
-        if ($step->notify_by_sms) {
-            $channels[] = 'sms';
-        }
-        if ($step->notify_by_whatsapp) {
-            $channels[] = 'whatsapp';
-        }
-
-        if ($channels === []) {
-            return;
-        }
-
-        $users = User::query()->whereIn('id', $userIds)->get();
-        $notification = new WorkflowActionRequired(null, $step, $channels);
-
-        foreach ($users as $user) {
-            try {
-                $user->notify($notification);
-            } catch (\Throwable $e) {
-                \Log::error('WorkflowActionRequired notification failed', [
-                    'user_id' => $user->id,
-                    'step_id' => $step->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-    }
 }

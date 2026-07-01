@@ -110,19 +110,19 @@ class UserCRUDService
         return new \Modules\User\Exports\UsersExport($users);
     }
 
-    public function getInfoAlerts(?string $userId = null, ?string $type = null, ?string $branchId = null, int $daysThreshold = 30): array
+    public function getInfoAlerts(?string $userId = null, ?string $type = null, ?string $branchId = null, ?string $search = null, int $daysThreshold = 30 ): array
     {
-        return $this->repository->getExpiringInfoAlerts($userId, $type, $branchId, $daysThreshold);
+        return $this->repository->getExpiringInfoAlerts($userId, $type, $branchId, $search, $daysThreshold);
     }
 
     public function getCompaniesByEmail(GetUserCompaniesByEmailDTO $dto)
     {
         $companyUser = $this->companyUserRepository->getCompaniesByEmail($dto->email);
-        
+
         if (!$companyUser) {
             throw new \Exception(__("validation.user-not-found"), 404);
         }
-        
+
         return $companyUser;
     }
 }

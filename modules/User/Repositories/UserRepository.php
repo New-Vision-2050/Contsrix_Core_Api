@@ -560,7 +560,7 @@ class UserRepository extends BaseRepository
 
     }
 
-    public function getExpiringInfoAlerts(?string $userId = null, ?string $type = null, ?string $branchId = null, int $daysThreshold = 30): array
+    public function getExpiringInfoAlerts(?string $userId = null, ?string $type = null, ?string $branchId = null, ?string $search = null , int $daysThreshold = 30): array
     {
         $alerts = [];
         $now = now();
@@ -579,7 +579,11 @@ class UserRepository extends BaseRepository
                 $q->where('branch_id', $branchId);
             });
         }
-
+        if ($search) {
+                $query->whereHas('companyUser', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                });
+            }
         $users = $query->get();
 
         $dateFields = [
