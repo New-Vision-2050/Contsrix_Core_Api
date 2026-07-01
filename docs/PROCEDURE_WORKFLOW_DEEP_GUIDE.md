@@ -63,13 +63,16 @@ New Process-based workflow code should go through `WorkflowEngine`:
 
 `ProcedureWorkflowService` still exists for template-step flows that do **not** create `Process` records, such as EmployeeTask extensions and completion approvals.
 
-### Centralized Notification System (Event + Listener + Registry)
+### Centralized Notification System (Event + Listener + Registry + Job)
 
-Process-based notifications are now handled centrally. Each module registers a `WorkflowNotifier` for its processable type.
+All workflow notifications (email, SMS, WhatsApp, push) are handled centrally through a single pipeline. Both Process-based and non-Process workflows converge on `WorkflowEngine::dispatchNotifications()` → `SendWorkflowNotificationsJob`.
 
 **Architecture**:
 - `WorkflowStepActivated` event is fired whenever a `ProcessStep` becomes active.
-- `SendWorkflowStepNotification` listener handles real-time dispatch through `WorkflowNotifierRegistry` plus email + SMS.
+- `SendWorkflowStepNotification` listener handles real-time broadcast, then delegates to `WorkflowEngine::dispatchNotifications()`.
+- `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()` automatically calls `WorkflowEngine::dispatchNotifications()` after resolving users — **no manual notification call needed by services**.
+- `WorkflowEngine::dispatchNotifications()` resolves channels from step flags, sends push (FCM) synchronously, and dispatches `SendWorkflowNotificationsJob` with primitive IDs only (no model serialization).
+- `SendWorkflowNotificationsJob` is a queued job (`ShouldQueue`) that fetches fresh `User` models inside `handle()` and sends `WorkflowActionRequired` notification synchronously — avoids UUID serialization crash.
 - `EmployeeTaskWorkflowNotifier` broadcasts `EmployeeTaskNotification` and real inbox counts.
 - `ClientRequestWorkflowNotifier` is registered for `client_request`; it is currently a no-op for real-time step activation and returns zero counts until ClientRequest has an inbox counter.
 - `WorkflowActionRequired` notification sends mail (via `toMail()`), SMS (via `toSms()`), and WhatsApp (via `toWhatsapp()`).
@@ -80,9 +83,24 @@ Process-based notifications are now handled centrally. Each module registers a `
 - Real-time behavior is module-specific through the registered `WorkflowNotifier`.
 - Do not manually broadcast in the create path or notifications will be duplicated.
 
-**For non-Process workflows** (EmployeeTask extensions/approvals):
-- These call `dispatchStepNotifications()` directly since they don't create `ProcessStep` records.
-- Located in `EmployeeTaskExtensionService::create()` and `EmployeeTaskApprovalService::create()`.
+**For non-Process workflows** (EmployeeTask extensions/approvals/start/end):
+- `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()` automatically dispatches notifications internally.
+- Services do NOT call any separate notification method — just call `resolveActionTakerUserIdsForStep()` and notifications fire automatically.
+- The 4 services (`EmployeeTaskExtensionService`, `EmployeeTaskApprovalService`, `EmployeeTaskStartRequestService`, `EmployeeTaskEndRequestService`) no longer have `dispatchStepNotifications()` methods.
+
+**WhatsApp phone number formatting**:
+- `toWhatsapp()` prepends `phone_code` (country code) to `phone` to build the full international number (e.g. `+201234567890`).
+- `TwilioWhatsApp::normalizeWhatsAppNumber()` ensures the `whatsapp:` prefix and `+` country code are correctly formatted.
+- If user has no `phone` or no `phone_code` (and phone doesn't start with `+`), WhatsApp is skipped with a log warning.
+
+**Twilio WhatsApp driver configuration**:
+- `TwilioWhatsApp` constructor tries the `drivers` DB table first, then falls back to env config (`TWILIO_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`).
+- No DB driver record required — env vars are sufficient.
+- `WhatsAppChannel` logs every send attempt (success, failure, exception) for monitoring.
+
+**Queue monitoring**:
+- `SendWorkflowNotificationsJob` implements `ShouldQueue` with `$tries = 3` and `$backoff = 30`.
+- Monitor via `php artisan queue:work`, `php artisan queue:failed`, and `storage/logs/laravel.log`.
 
 ### To Customize Email Content
 1. Edit `resources/views/emails/workflowActionRequired.blade.php`.
@@ -101,7 +119,7 @@ Process-based notifications are now handled centrally. Each module registers a `
 1. Call `WorkflowEngine::startWorkflow()` when the entity enters a workflow.
 2. Register a `WorkflowNotifier` for the new `processable_type`.
 3. Reuse `ProcessWorkflowService::approveStep()` / `rejectStep()` or mirror the existing ClientRequest business rules if the entity needs custom status transitions.
-4. If it does not create `Process` records, use `ProcedureWorkflowService` and dispatch notifications manually like extensions/approvals.
+4. If it does not create `Process` records, use `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()` — notifications (email/SMS/WhatsApp/push) are dispatched automatically inside that method. No manual notification call needed.
 
 ### To Apply Form Conditions (Backend Enforcement)
 Form conditions stored on child `ProcedureSetting` records are enforced by `EmployeeTaskFormConditionService` **before** any workflow starts:
@@ -919,7 +937,7 @@ new WorkflowStepActivated(
 1. Looks up a module notifier from `WorkflowNotifierRegistry` by `process.processable_type`.
 2. Calls `WorkflowNotifier::notifyStepActivated()` for real-time module-specific behavior.
 3. Broadcasts `InboxCountsUpdated` with counts from `WorkflowNotifier::inboxCountsForUser()`.
-4. Sends `WorkflowActionRequired` by mail/SMS when `notify_by_email` or `notify_by_sms` is enabled.
+4. Delegates email/SMS/WhatsApp/push to `WorkflowEngine::dispatchNotifications()`, which dispatches `SendWorkflowNotificationsJob` with primitive IDs.
 
 ### EmployeeTaskNotification Event
 
@@ -1895,15 +1913,24 @@ The `processStep` parameter is nullable to support non-Process workflows (extens
 
 Styled like existing project emails (`loginWithOtp.blade.php`). Supports RTL/LTR based on app locale.
 
-### 26.5 Non-Process Workflows (Extensions + Approvals)
+### 26.5 Non-Process Workflows (Extensions + Approvals + Start + End)
 
 Extensions and approvals do NOT create `Process`/`ProcessStep` records. They cannot use the `WorkflowStepActivated` event.
 
-Instead, `EmployeeTaskExtensionService::create()` and `EmployeeTaskApprovalService::create()` call `dispatchStepNotifications()` directly:
-- Resolves users via `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()`
-- Checks `notify_by_email` / `notify_by_sms` flags on the `ProcedureSettingStep`
-- Sends `WorkflowActionRequired` notification to each user
-- Also broadcasts real-time events manually
+Instead, all 4 services call `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()`, which **automatically** dispatches notifications internally via `WorkflowEngine::dispatchNotifications()`:
+- Resolves users via `ActionTakerResolver::resolveUsersForStep()`
+- Calls `WorkflowEngine::dispatchNotifications()` with the resolved user IDs and step
+- `WorkflowEngine` resolves channels from `notify_by_email` / `notify_by_sms` / `notify_by_whatsapp` flags
+- Dispatches `SendWorkflowNotificationsJob` with primitive IDs
+- Also sends push (FCM) synchronously
+
+**Services no longer have `dispatchStepNotifications()` methods.** The old manual notification calls have been removed from:
+- `EmployeeTaskExtensionService`
+- `EmployeeTaskApprovalService`
+- `EmployeeTaskStartRequestService`
+- `EmployeeTaskEndRequestService`
+
+Services still manually broadcast real-time events (`broadcastTaskNotification()` + `broadcastInboxCounts()`) since those are WebSocket-specific and not part of the notification pipeline.
 
 ### 26.6 Changes to EmployeeTaskRequestService::create()
 
@@ -1917,9 +1944,13 @@ Instead, `EmployeeTaskExtensionService::create()` and `EmployeeTaskApprovalServi
 |------|---------|
 | `modules/ProcedureSetting/Database/Migrations/2026_06_12_100003_add_notify_by_sms_and_skipping_period_to_procedure_setting_steps.php` | Migration for new columns |
 | `modules/ProcedureSetting/Events/WorkflowStepActivated.php` | Event fired when step becomes active |
-| `modules/ProcedureSetting/Notifications/WorkflowActionRequired.php` | Mail + SMS notification |
-| `modules/ProcedureSetting/Listeners/SendWorkflowStepNotification.php` | Central listener for all channels |
+| `modules/ProcedureSetting/Notifications/WorkflowActionRequired.php` | Mail + SMS + WhatsApp notification (NOT queued, sent synchronously inside job) |
+| `modules/ProcedureSetting/Listeners/SendWorkflowStepNotification.php` | Central listener: real-time broadcast + delegates to WorkflowEngine::dispatchNotifications() |
+| `modules/ProcedureSetting/Jobs/SendWorkflowNotificationsJob.php` | Queued job with primitive IDs — fetches models in handle(), sends notifications synchronously |
 | `modules/ProcedureSetting/Jobs/AutoApproveWorkflowStep.php` | Delayed job for skipping_period auto-approve |
+| `modules/ProcedureSetting/Services/WorkflowEngine.php` | Central dispatch: `dispatchNotifications()` method |
+| `app/Channels/WhatsAppChannel.php` | WhatsApp channel with logging for monitoring |
+| `app/Notifications/Drivers/WhatsApp/TwilioWhatsApp.php` | Twilio WhatsApp driver with env fallback + phone normalization |
 | `resources/views/emails/workflowActionRequired.blade.php` | Email blade template |
 
 ---

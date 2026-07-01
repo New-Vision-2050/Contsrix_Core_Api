@@ -116,14 +116,15 @@ class TwilioWhatsApp
     {
         $number = trim($number);
 
+        $hasPrefix = str_starts_with($number, 'whatsapp:');
+        if ($hasPrefix) {
+            $number = substr($number, 9);
+        }
+
         if (! str_starts_with($number, '+')) {
             $number = '+' . ltrim($number, '+');
         }
 
-        if (! str_starts_with($number, 'whatsapp:')) {
-            $number = 'whatsapp:' . $number;
-        }
-
-        return $number;
+        return 'whatsapp:' . $number;
     }
 }

@@ -7,10 +7,8 @@ namespace Modules\ProcedureSetting\Listeners;
 use Illuminate\Support\Facades\Log;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
 use Modules\ProcedureSetting\Events\WorkflowStepActivated;
-use Modules\ProcedureSetting\Notifications\WorkflowActionRequired;
-use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
+use Modules\ProcedureSetting\Services\WorkflowEngine;
 use Modules\Process\Services\WorkflowNotifierRegistry;
-use Modules\User\Models\User;
 
 /**
  * Central listener that handles all notification channels when a workflow step becomes active:
@@ -39,86 +37,12 @@ class SendWorkflowStepNotification
         // 1. Real-time broadcast (always sent regardless of email/SMS/push flags)
         $this->broadcastRealTime($event);
 
-        // 2. Push notification (FCM) when the step is configured for it
-        WorkflowPushNotificationService::sendForStep($templateStep, $userIds);
-
-        // 3. Resolve notification channels from template flags
-        $channels = [];
-        if ($templateStep->notify_by_email) {
-            $channels[] = 'mail';
-        }
-        if ($templateStep->notify_by_sms) {
-            $channels[] = 'sms';
-        }
-        if ($templateStep->notify_by_whatsapp) {
-            $channels[] = 'whatsapp';
-        }
-
-        if ($channels === []) {
-            return;
-        }
-
-        // 4. Send Laravel Notifications (email + SMS + WhatsApp) to each user
-        $users = User::query()->whereIn('id', $userIds)->get();
-
-        foreach ($users as $user) {
-            $userChannels = $this->channelsAvailableForUser($channels, $user, $event);
-
-            if ($userChannels === []) {
-                continue;
-            }
-
-            try {
-                $user->notify(new WorkflowActionRequired(
-                    $event->processStep,
-                    $templateStep,
-                    $userChannels,
-                ));
-            } catch (\Throwable $e) {
-                Log::error('WorkflowActionRequired notification failed', [
-                    'user_id' => $user->id,
-                    'process_step_id' => $event->processStep->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-    }
-
-    private function channelsAvailableForUser(array $channels, User $user, WorkflowStepActivated $event): array
-    {
-        $available = $channels;
-
-        if (in_array('mail', $available, true) && trim((string) $user->email) === '') {
-            Log::warning('WorkflowActionRequired mail skipped: user has no email', [
-                'user_id' => $user->id,
-                'process_step_id' => $event->processStep->id,
-            ]);
-            $available = array_values(array_diff($available, ['mail']));
-        }
-
-        if (in_array('sms', $available, true) && trim((string) $user->phone) === '') {
-            Log::warning('WorkflowActionRequired sms skipped: user has no phone', [
-                'user_id' => $user->id,
-                'process_step_id' => $event->processStep->id,
-            ]);
-            $available = array_values(array_diff($available, ['sms']));
-        }
-
-        if (in_array('whatsapp', $available, true)) {
-            $phone = trim((string) $user->phone);
-            $phoneCode = trim((string) ($user->phone_code ?? ''));
-            if ($phone === '' || ($phoneCode === '' && ! str_starts_with($phone, '+'))) {
-                Log::warning('WorkflowActionRequired whatsapp skipped: user has no phone or phone_code', [
-                    'user_id' => $user->id,
-                    'process_step_id' => $event->processStep->id,
-                    'has_phone' => $phone !== '',
-                    'has_phone_code' => $phoneCode !== '',
-                ]);
-                $available = array_values(array_diff($available, ['whatsapp']));
-            }
-        }
-
-        return $available;
+        // 2. Email / SMS / WhatsApp / Push — delegated to WorkflowEngine (central dispatch)
+        app(WorkflowEngine::class)->dispatchNotifications(
+            $templateStep,
+            $userIds,
+            $event->processStep?->id,
+        );
     }
 
     private function broadcastRealTime(WorkflowStepActivated $event): void
@@ -146,5 +70,4 @@ class SendWorkflowStepNotification
             ));
         }
     }
-
 }
