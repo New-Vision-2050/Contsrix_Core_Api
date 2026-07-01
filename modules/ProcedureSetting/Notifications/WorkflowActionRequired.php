@@ -7,13 +7,14 @@ namespace Modules\ProcedureSetting\Notifications;
 use App\Notifications\Drivers\SMS\MoraSms;
 use App\Notifications\Drivers\WhatsApp\TwilioWhatsApp;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Modules\Country\Models\Country;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\Process\Models\ProcessStep;
 
-class WorkflowActionRequired extends Notification
+class WorkflowActionRequired extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -63,8 +64,10 @@ class WorkflowActionRequired extends Notification
         $driver = $this->resolveWhatsAppDriver($notifiable);
         $stepName = $this->templateStep->name ?? 'Workflow Step';
 
+        $fullPhone = $this->buildInternationalPhoneNumber($notifiable);
+
         return $driver
-            ->to($notifiable->phone)
+            ->to($fullPhone)
             ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]));
     }
 
@@ -88,5 +91,29 @@ class WorkflowActionRequired extends Notification
     private function resolveWhatsAppDriver(object $notifiable): TwilioWhatsApp
     {
         return new TwilioWhatsApp;
+    }
+
+    private function buildInternationalPhoneNumber(object $notifiable): string
+    {
+        $phone = trim((string) ($notifiable->phone ?? ''));
+        $phoneCode = trim((string) ($notifiable->phone_code ?? ''));
+
+        if ($phone === '') {
+            return '';
+        }
+
+        if (str_starts_with($phone, '+')) {
+            return $phone;
+        }
+
+        $code = ltrim($phoneCode, '+');
+        if ($code !== '') {
+            if (str_starts_with($phone, '0')) {
+                $phone = substr($phone, 1);
+            }
+            return '+' . $code . $phone;
+        }
+
+        return $phone;
     }
 }

@@ -18,20 +18,28 @@ class TwilioWhatsApp
     {
         $this->line = $line;
 
-        $driver = Driver::query()
-            ->where('driver_type', 'whatsapp')
-            ->where('name', 'twilio')
-            ->first();
+        try {
+            $driver = Driver::query()
+                ->where('driver_type', 'whatsapp')
+                ->where('name', 'twilio')
+                ->first();
 
-        if ($driver && ! empty($driver->config['TWILIO_SID']) && ! empty($driver->config['TWILIO_AUTH_TOKEN'])) {
-            $this->accountSid = $driver->config['TWILIO_SID'];
-            $this->authToken = $driver->config['TWILIO_AUTH_TOKEN'];
-            $this->whatsappFrom = $driver->config['TWILIO_WHATSAPP_FROM'] ?? '';
-        } else {
-            $this->accountSid = config('services.twilio.sid', '');
-            $this->authToken = config('services.twilio.auth_token', '');
-            $this->whatsappFrom = config('services.twilio.whatsapp_from', '');
+            if ($driver && ! empty($driver->config['TWILIO_SID']) && ! empty($driver->config['TWILIO_AUTH_TOKEN'])) {
+                $this->accountSid = $driver->config['TWILIO_SID'];
+                $this->authToken = $driver->config['TWILIO_AUTH_TOKEN'];
+                $this->whatsappFrom = $driver->config['TWILIO_WHATSAPP_FROM'] ?? '';
+
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('TwilioWhatsApp: could not query drivers table, falling back to env config', [
+                'error' => $e->getMessage(),
+            ]);
         }
+
+        $this->accountSid = config('services.twilio.sid', '');
+        $this->authToken = config('services.twilio.auth_token', '');
+        $this->whatsappFrom = config('services.twilio.whatsapp_from', '');
     }
 
     public function line(string $line = ''): self
@@ -108,8 +116,12 @@ class TwilioWhatsApp
     {
         $number = trim($number);
 
+        if (! str_starts_with($number, '+')) {
+            $number = '+' . ltrim($number, '+');
+        }
+
         if (! str_starts_with($number, 'whatsapp:')) {
-            $number = 'whatsapp:'.$number;
+            $number = 'whatsapp:' . $number;
         }
 
         return $number;

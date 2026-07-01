@@ -104,12 +104,18 @@ class SendWorkflowStepNotification
             $available = array_values(array_diff($available, ['sms']));
         }
 
-        if (in_array('whatsapp', $available, true) && trim((string) $user->phone) === '') {
-            Log::warning('WorkflowActionRequired whatsapp skipped: user has no phone', [
-                'user_id' => $user->id,
-                'process_step_id' => $event->processStep->id,
-            ]);
-            $available = array_values(array_diff($available, ['whatsapp']));
+        if (in_array('whatsapp', $available, true)) {
+            $phone = trim((string) $user->phone);
+            $phoneCode = trim((string) ($user->phone_code ?? ''));
+            if ($phone === '' || ($phoneCode === '' && ! str_starts_with($phone, '+'))) {
+                Log::warning('WorkflowActionRequired whatsapp skipped: user has no phone or phone_code', [
+                    'user_id' => $user->id,
+                    'process_step_id' => $event->processStep->id,
+                    'has_phone' => $phone !== '',
+                    'has_phone_code' => $phoneCode !== '',
+                ]);
+                $available = array_values(array_diff($available, ['whatsapp']));
+            }
         }
 
         return $available;
