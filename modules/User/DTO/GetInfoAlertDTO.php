@@ -10,5 +10,6 @@ class GetInfoAlertDTO
         public readonly ?string $userId = null,
         public readonly ?string $type = null,
         public readonly ?string $branchId = null,
+        public readonly ?string $search = null,
     ) {}
 }
