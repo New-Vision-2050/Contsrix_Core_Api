@@ -20,6 +20,7 @@ class GetInfoAlertRequest extends FormRequest
             'user_id' => 'nullable|uuid|exists:users,id',
             'type' => 'nullable|string|in:work_permit,passport,identity,border_number,entry_number,qualification,bank_account',
             'branch_id' => 'nullable|exists:management_hierarchies,id',
+            'search'    => 'nullable|string|max:255',
         ];
     }
 
@@ -29,6 +30,7 @@ class GetInfoAlertRequest extends FormRequest
             userId: $this->get('user_id'),
             type: $this->get('type'),
             branchId: $this->get('branch_id'),
+            search: $this->get('search'),
         );
     }
 }
