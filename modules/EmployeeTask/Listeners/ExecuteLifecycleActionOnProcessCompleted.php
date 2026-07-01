@@ -37,13 +37,18 @@ final class ExecuteLifecycleActionOnProcessCompleted
     {
         $task    = $event->task;
         $process = $event->process;
-        $form    = $this->resolveForm($process);
+
+        if ($process !== null) {
+            $form     = $this->resolveForm($process);
+            $metadata = $process->metadata ?? [];
+        } else {
+            $form     = $this->resolveFormFromKey($event->formKey);
+            $metadata = $event->metadata ?? [];
+        }
 
         if ($form === null) {
             return;
         }
-
-        $metadata = $process->metadata ?? [];
 
         if ($event->approved) {
             $task->load('user');
@@ -52,7 +57,9 @@ final class ExecuteLifecycleActionOnProcessCompleted
             $this->discardStagedFiles($task, $metadata);
         }
 
-        $this->updateLinkedRequest($process, $event->approved, $metadata['review_notes'] ?? null);
+        if ($process !== null) {
+            $this->updateLinkedRequest($process, $event->approved, $metadata['review_notes'] ?? null);
+        }
     }
 
     private function executeApprovedAction(
@@ -521,6 +528,19 @@ final class ExecuteLifecycleActionOnProcessCompleted
 
         try {
             return InternalProcessForm::from($procedureSetting->form);
+        } catch (\ValueError) {
+            return null;
+        }
+    }
+
+    private function resolveFormFromKey(?string $formKey): ?InternalProcessForm
+    {
+        if ($formKey === null) {
+            return null;
+        }
+
+        try {
+            return InternalProcessForm::from($formKey);
         } catch (\ValueError) {
             return null;
         }

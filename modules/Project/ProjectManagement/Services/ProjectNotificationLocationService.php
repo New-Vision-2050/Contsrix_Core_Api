@@ -35,7 +35,19 @@ class ProjectNotificationLocationService
             return [];
         }
 
-        // 2. Batch-query the latest attendance per user for today only.
+        // 2. Get the latest user_locations record per user (no date filter).
+        //    The track-location API always writes to user_locations, even when
+        //    the user has active attendance, so this is the most reliable source.
+        $latestLocationIds = UserLocation::whereIn('user_id', $userIds)
+            ->selectRaw('user_id, MAX(id) as max_id')
+            ->groupBy('user_id')
+            ->pluck('max_id');
+
+        $latestUserLocations = UserLocation::whereIn('id', $latestLocationIds)
+            ->get()
+            ->keyBy('user_id');
+
+        // 3. Batch-query the latest attendance per user for today (for status).
         $latestAttendanceSubquery = Attendance::whereIn('user_id', $userIds)
             ->whereBetween('clock_in_time', [now()->startOfDay(), now()->endOfDay()])
             ->where('is_absent', false)
@@ -50,17 +62,10 @@ class ProjectNotificationLocationService
             ->get()
             ->keyBy('user_id');
 
-        // 3. Get users with names.
+        // 4. Get users with names.
         $users = User::whereIn('id', $userIds)->get()->keyBy('id');
 
-        // 3b. Get latest user_locations record per user (location sent via track-location API without attendance).
-        $latestUserLocations = UserLocation::whereIn('user_id', $userIds)
-            ->where('recorded_at', '>=', now()->startOfDay())
-            ->orderBy('recorded_at', 'desc')
-            ->get()
-            ->keyBy('user_id');
-
-        // 4. Get busy users (tasks in_progress or approved today).
+        // 5. Get busy users (tasks in_progress or approved today).
         $busyUserIds = EmployeeTaskRequest::whereIn('user_id', $userIds)
             ->whereIn('status', ['in_progress', 'approved'])
             ->whereDate('task_date', today())
@@ -68,7 +73,7 @@ class ProjectNotificationLocationService
             ->unique()
             ->toArray();
 
-        // 5. Build result per user.
+        // 6. Build result per user.
         $results = [];
         foreach ($userIds as $userId) {
             $user = $users->get($userId);
@@ -78,9 +83,21 @@ class ProjectNotificationLocationService
 
             $attendance = $attendances->get($userId);
 
-            // Get the latest tracking point (location_tracking is sorted ascending by timestamp).
+            // Primary: latest user_locations record (from track-location API).
             $latestPoint = null;
-            if ($attendance && ! empty($attendance->location_tracking)) {
+            $userLoc = $latestUserLocations->get($userId);
+            if ($userLoc) {
+                $latestPoint = [
+                    'latitude' => $userLoc->latitude,
+                    'longitude' => $userLoc->longitude,
+                    'accuracy' => $userLoc->accuracy,
+                    'timestamp' => $userLoc->recorded_at?->format('Y-m-d H:i:s'),
+                    'location_source' => $userLoc->location_source ?? 'GPS',
+                ];
+            }
+
+            // Fallback 1: attendance.location_tracking (last tracking point).
+            if (! $latestPoint && $attendance && ! empty($attendance->location_tracking)) {
                 $trackingData = $attendance->location_tracking;
                 $tracking = end($trackingData);
                 if (is_array($tracking)) {
@@ -88,27 +105,13 @@ class ProjectNotificationLocationService
                 }
             }
 
-            // Fallback to clock-in location.
+            // Fallback 2: attendance.clock_in_location.
             if (! $latestPoint && $attendance && ! empty($attendance->clock_in_location)) {
                 $latestPoint = array_merge($attendance->clock_in_location, [
                     'timestamp' => $attendance->clock_in_time ? Carbon::parse($attendance->clock_in_time)->format('Y-m-d H:i:s') : null,
                     'type' => 'clock_in',
                     'location_source' => 'clock_in',
                 ]);
-            }
-
-            // Fallback to user_locations table (location sent via track-location API without attendance).
-            if (! $latestPoint) {
-                $userLoc = $latestUserLocations->get($userId);
-                if ($userLoc) {
-                    $latestPoint = [
-                        'latitude' => $userLoc->latitude,
-                        'longitude' => $userLoc->longitude,
-                        'accuracy' => $userLoc->accuracy,
-                        'timestamp' => $userLoc->recorded_at?->format('Y-m-d H:i:s'),
-                        'location_source' => $userLoc->location_source ?? 'GPS',
-                    ];
-                }
             }
 
             $employeeLat = $latestPoint['latitude'] ?? null;
@@ -151,7 +154,7 @@ class ProjectNotificationLocationService
             ];
         }
 
-        // 6. Sort by distance (nulls last).
+        // 7. Sort by distance (nulls last).
         usort($results, function ($a, $b) {
             if ($a['distance_meters'] === null) {
                 return 1;
@@ -163,7 +166,7 @@ class ProjectNotificationLocationService
             return $a['distance_meters'] <=> $b['distance_meters'];
         });
 
-        // 7. Filter by radius if provided.
+        // 8. Filter by radius if provided.
         if ($radiusMeters !== null) {
             $results = array_filter($results, fn ($r) => $r['distance_meters'] === null || $r['distance_meters'] <= $radiusMeters);
             $results = array_values($results);

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\CarbonImmutable;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
+use Modules\EmployeeTask\Events\EmployeeTaskLifecycleProcessCompleted;
 use Modules\EmployeeTask\Events\EmployeeTaskNotification;
 use Modules\EmployeeTask\Events\InboxCountsUpdated;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
@@ -589,9 +590,14 @@ class EmployeeTaskRequestService
     }
 
     /**
-     * Create a Process snapshot for a lifecycle action (start/end) on an existing
-     * task. The process is created with the supplied metadata so the concrete
-     * business logic can be executed later when the process completes.
+     * Create a Process snapshot for a lifecycle action (start/end/update/etc.)
+     * on an existing task. The process is created with the supplied metadata so
+     * the concrete business logic can be executed later when the process completes.
+     *
+     * When the workflow auto-approves (no steps or no resolvable action takers),
+     * no Process is created. Instead, WorkflowProcedureTaken is fired to mark the
+     * procedure as taken, and EmployeeTaskLifecycleProcessCompleted is dispatched
+     * so the listener applies the business logic immediately.
      *
      * Returns the created Process, or null when the workflow auto-approves.
      */
@@ -621,7 +627,28 @@ class EmployeeTaskRequestService
             resolvedSetting: $resolvedSetting,
         );
 
-        return $result->autoApprove ? null : $result->activeProcess;
+        if ($result->autoApprove) {
+            if ($resolvedSetting !== null) {
+                event(new WorkflowProcedureTaken(
+                    processableType:    $task->procedureSettingType()->value,
+                    processableId:      $task->id,
+                    procedureSettingId: $resolvedSetting->id,
+                    takenBy:            $task->user_id,
+                ));
+            }
+
+            event(new EmployeeTaskLifecycleProcessCompleted(
+                task:     $task,
+                process:  null,
+                approved: true,
+                metadata: $metadata,
+                formKey:  $formKey,
+            ));
+
+            return null;
+        }
+
+        return $result->activeProcess;
     }
 
     private function procedureTypeForForm(string $formKey): string

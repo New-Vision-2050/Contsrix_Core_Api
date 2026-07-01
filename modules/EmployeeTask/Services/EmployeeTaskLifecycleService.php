@@ -85,15 +85,10 @@ final class EmployeeTaskLifecycleService
                 );
 
                 if ($process === null) {
-                    // Workflow auto-approved: mark the procedure as taken and execute immediately.
-                    $this->requestService->markProceduresTakenForForm(
-                        $task,
-                        (string) $task->user_id,
-                        InternalProcessForm::StartTask->value,
-                        $parentSetting,
-                    );
-
-                    return $this->performStart($task, $dto, $user);
+                    // Auto-approve handled centrally by createLifecycleProcess:
+                    // WorkflowProcedureTaken + EmployeeTaskLifecycleProcessCompleted
+                    // have already been fired, and the listener executed performStart.
+                    return $task->fresh()->load(['sessions']);
                 }
 
                 $this->startRequestService->createFromProcess($task, $dto, $procedureSetting, $process);
@@ -267,14 +262,10 @@ final class EmployeeTaskLifecycleService
                 );
 
                 if ($process === null) {
-                    $this->requestService->markProceduresTakenForForm(
-                        $task,
-                        (string) $task->user_id,
-                        $formKey,
-                        $parentSetting,
-                    );
-
-                    return $this->performEnd($task, $dto);
+                    // Auto-approve handled centrally by createLifecycleProcess:
+                    // WorkflowProcedureTaken + EmployeeTaskLifecycleProcessCompleted
+                    // have already been fired, and the listener executed performEnd.
+                    return $task->fresh()->load(['sessions']);
                 }
 
                 $this->endRequestService->createFromProcess($task, $dto, $procedureSetting, $process);
