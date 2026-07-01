@@ -143,7 +143,7 @@ class ProjectNotificationRepository
 
     public function update(string $id, array $data): bool
     {
-        return ProjectNotification::query()->where('id', $id)->update($data);
+        return ProjectNotification::query()->where('id', $id)->first()->update($data);
     }
 
     public function delete(string $id): bool
