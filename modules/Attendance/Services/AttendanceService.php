@@ -695,8 +695,9 @@ class AttendanceService
             })
             ->select($this->baseAttendanceSelectColumns())
             ->with($with)
-            ->orderBy('start_time')
-            ->get();
+            ->get()
+            ->sortBy('start_time')
+            ->values();
     }
 
     private function recalculateWorkHoursAndSave(Attendance $attendance): void
@@ -871,8 +872,9 @@ class AttendanceService
             ->whereIn('id', $repIds)
             ->with(AttendanceTeamPresenter::requiredRelations())
             ->select($this->baseAttendanceSelectColumns())
-            ->orderBy('start_time')
-            ->get();
+            ->get()
+            ->sortBy('start_time')
+            ->values();
 
         return new LengthAwarePaginator($records, $total, $perPage, $page);
     }
