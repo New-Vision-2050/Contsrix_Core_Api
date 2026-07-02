@@ -322,7 +322,7 @@ class ProjectNotificationController extends Controller
         $notification = $this->notificationService->approve(
             $request->route('id'),
             (string) $request->user()->id,
-            $request->input('procedure_setting_id'),
+            $request->input('internal_procedure_setting_id'),
         );
 
         return Json::item(ProjectNotificationPresenter::detail($notification));
@@ -332,14 +332,14 @@ class ProjectNotificationController extends Controller
     {
         $request->validate([
             'reason' => ['required', 'string', 'max:1000'],
-            'procedure_setting_id' => ['nullable', 'string'],
+            'internal_procedure_setting_id' => ['nullable', 'string'],
         ]);
 
         $notification = $this->notificationService->reject(
             $request->route('id'),
             (string) $request->user()->id,
             $request->input('reason'),
-            $request->input('procedure_setting_id'),
+            $request->input('internal_procedure_setting_id'),
         );
 
         return Json::item(ProjectNotificationPresenter::detail($notification));
