@@ -80,7 +80,7 @@ class ProjectNotificationPresenter
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'pending_processes'           => $this->resolvePendingProcesses($n),
             'attachments'                 => $n->relationLoaded('media')
-                ? MediaPresenter::collection($n->media)
+                ? MediaPresenter::collection($n->getMedia('attachments'))
                 : [],
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
         ];
@@ -189,25 +189,32 @@ class ProjectNotificationPresenter
      * grouped by form/procedure title.
      *
      * Sources checked (only when the relationship is loaded, to avoid N+1):
-     *   1. ProjectNotification media → createProjectNotificationTask
+     *   1. ProjectNotification media (attachments collection) → createProjectNotificationTask
      *   2. EmployeeTaskRequest media → createProjectNotificationTask (task-level uploads)
      *   3. EmployeeTaskApprovalRequest media → sendForApproval
-     *   4. ProjectNotificationWorkResumption media → projectNotificationWorkResumption
+     *   4. ProjectNotificationSiteStatusUpdate media → updateProjectNotificationSiteStatus
+     *   5. ProjectNotificationFine media → projectNotificationFine
+     *   6. ProjectNotificationWorkStoppageReport media → projectNotificationWorkStoppageReport
+     *   7. ProjectNotificationWorkResumption media → projectNotificationWorkResumption
+     *   8. Staged files on notification (site_status_update_attachments collection) → updateProjectNotificationSiteStatus
      *
      * @return list<array{title: string, attachments: list<array{url: string, name: string}>}>
      */
     private function presentProcedureAttachments(ProjectNotification $n): array
     {
         $groups   = [];
-        $locale   = app()->getLocale();
         $formTitle = InternalProcessForm::CreateProjectNotificationTask->labelAr();
 
-        // 1. ProjectNotification's own media
+        // 1. ProjectNotification's own media (only the 'attachments' collection,
+        //    not staged files from other collections like 'site_status_update_attachments').
         if ($n->relationLoaded('media') && $n->media->isNotEmpty()) {
-            $groups[] = [
-                'title'       => $formTitle,
-                'attachments' => $this->formatMediaItems($n->media),
-            ];
+            $createMedia = $n->getMedia('attachments');
+            if ($createMedia->isNotEmpty()) {
+                $groups[] = [
+                    'title'       => $formTitle,
+                    'attachments' => $this->formatMediaItems($createMedia),
+                ];
+            }
         }
 
         $task = $n->relationLoaded('employeeTask') ? $n->employeeTask : null;
@@ -228,20 +235,76 @@ class ProjectNotificationPresenter
             foreach ($task->approvalRequests as $approval) {
                 if ($approval->relationLoaded('media') && $approval->media->isNotEmpty()) {
                     $groups[] = [
-                        'title'       => $locale === 'ar' ? 'إرسال للاعتماد' : 'Send for Approval',
+                        'title'       => app()->getLocale() === 'ar' ? 'إرسال للاعتماد' : 'Send for Approval',
                         'attachments' => $this->formatMediaItems($approval->media),
                     ];
                 }
             }
         }
 
-        // 4. Work resumption media (projectNotificationWorkResumption)
+        // 4. Site status updates' media (updateProjectNotificationSiteStatus)
+        if ($task->relationLoaded('siteStatusUpdates')) {
+            foreach ($task->siteStatusUpdates as $update) {
+                if ($update->relationLoaded('media') && $update->media->isNotEmpty()) {
+                    $groups[] = [
+                        'title'       => InternalProcessForm::UpdateProjectNotificationSiteStatus->labelAr(),
+                        'attachments' => $this->formatMediaItems($update->media),
+                    ];
+                }
+            }
+        }
+
+        // 5. Fines' media (projectNotificationFine)
+        if ($task->relationLoaded('fines')) {
+            foreach ($task->fines as $fine) {
+                if ($fine->relationLoaded('media') && $fine->media->isNotEmpty()) {
+                    $groups[] = [
+                        'title'       => InternalProcessForm::ProjectNotificationFine->labelAr(),
+                        'attachments' => $this->formatMediaItems($fine->media),
+                    ];
+                }
+            }
+        }
+
+        // 6. Work stoppage reports' media (projectNotificationWorkStoppageReport)
+        if ($task->relationLoaded('workStoppageReports')) {
+            foreach ($task->workStoppageReports as $report) {
+                if ($report->relationLoaded('media') && $report->media->isNotEmpty()) {
+                    $groups[] = [
+                        'title'       => InternalProcessForm::ProjectNotificationWorkStoppageReport->labelAr(),
+                        'attachments' => $this->formatMediaItems($report->media),
+                    ];
+                }
+            }
+        }
+
+        // 7. Work resumption media (projectNotificationWorkResumption)
         if ($task->relationLoaded('workResumptions')) {
             foreach ($task->workResumptions as $resumption) {
                 if ($resumption->relationLoaded('media') && $resumption->media->isNotEmpty()) {
                     $groups[] = [
                         'title'       => InternalProcessForm::ProjectNotificationWorkResumption->labelAr(),
                         'attachments' => $this->formatMediaItems($resumption->media),
+                    ];
+                }
+            }
+        }
+
+        // 8. Staged files still on the notification (workflow pending).
+        if ($n->relationLoaded('media')) {
+            $stagedCollections = [
+                'site_status_update_attachments'     => InternalProcessForm::UpdateProjectNotificationSiteStatus,
+                'fine_attachments'                   => InternalProcessForm::ProjectNotificationFine,
+                'work_stoppage_report_attachments'   => InternalProcessForm::ProjectNotificationWorkStoppageReport,
+                'work_resumption_attachments'        => InternalProcessForm::ProjectNotificationWorkResumption,
+                'update_attachments'                 => InternalProcessForm::UpdateProjectNotificationTask,
+            ];
+            foreach ($stagedCollections as $collection => $form) {
+                $staged = $n->getMedia($collection);
+                if ($staged->isNotEmpty()) {
+                    $groups[] = [
+                        'title'       => $form->labelAr(),
+                        'attachments' => $this->formatMediaItems($staged),
                     ];
                 }
             }
