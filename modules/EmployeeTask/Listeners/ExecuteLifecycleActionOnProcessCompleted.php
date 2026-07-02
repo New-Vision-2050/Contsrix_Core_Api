@@ -193,9 +193,6 @@ final class ExecuteLifecycleActionOnProcessCompleted
         }
 
         $update = $metadata['update'] ?? [];
-        if ($update === []) {
-            return;
-        }
 
         $siteStatusUpdate = ProjectNotificationSiteStatusUpdate::query()->create([
             'company_id' => $notification->company_id,
