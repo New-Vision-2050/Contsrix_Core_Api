@@ -752,8 +752,16 @@ class ProjectNotificationService
         // the task is already in_progress. The EmployeeTaskStatusSyncObserver
         // mirrors the resulting task status onto the notification once the
         // workflow resolves.
-        if ($task && $this->taskHasActiveProcess($task->id, $procedureSettingId)) {
-            $this->employeeTaskRequestService->approveWorkflowStep($task->id, $userId, $procedureSettingId);
+        if ($task && $this->taskHasActiveProcess($task->id)) {
+            // Resolve the correct procedure_setting_id: if the provided one matches
+            // an active process, use it; otherwise fall back to the first active
+            // process so the approve always targets a real pending workflow.
+            $resolvedProcedureSettingId = $this->resolveProcedureSettingIdForActiveProcess(
+                $task->id,
+                $procedureSettingId,
+            );
+
+            $this->employeeTaskRequestService->approveWorkflowStep($task->id, $userId, $resolvedProcedureSettingId);
 
             $notification->forceFill([
                 'approved_by' => $userId,
@@ -796,8 +804,13 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $notification->employee_task_request_id ? $notification->employeeTask : null;
 
-        if ($task && $this->taskHasActiveProcess($task->id, $procedureSettingId)) {
-            $this->employeeTaskRequestService->rejectWorkflowStep($task->id, $userId, $reason, $procedureSettingId);
+        if ($task && $this->taskHasActiveProcess($task->id)) {
+            $resolvedProcedureSettingId = $this->resolveProcedureSettingIdForActiveProcess(
+                $task->id,
+                $procedureSettingId,
+            );
+
+            $this->employeeTaskRequestService->rejectWorkflowStep($task->id, $userId, $reason, $resolvedProcedureSettingId);
 
             $notification->forceFill([
                 'rejected_by' => $userId,
@@ -863,6 +876,29 @@ class ProjectNotificationService
             $taskId,
             $procedureSettingId,
         );
+    }
+
+    /**
+     * Resolve the procedure_setting_id to use for workflow step approval.
+     *
+     * If the provided ID matches an active process, use it directly.
+     * Otherwise, fall back to the first active process's procedure_setting_id
+     * so the approve/reject always targets a real pending workflow.
+     */
+    private function resolveProcedureSettingIdForActiveProcess(string $taskId, ?string $procedureSettingId): ?string
+    {
+        if ($procedureSettingId !== null && $this->taskHasActiveProcess($taskId, $procedureSettingId)) {
+            return $procedureSettingId;
+        }
+
+        // Fall back to the first active process.
+        $process = \Modules\Process\Models\Process::query()
+            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+            ->where('processable_id', $taskId)
+            ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
+            ->first();
+
+        return $process?->procedure_setting_id;
     }
 
     /**
