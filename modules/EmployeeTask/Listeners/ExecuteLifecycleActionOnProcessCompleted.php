@@ -52,7 +52,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
 
         if ($event->approved) {
             $task->load('user');
-            $this->executeApprovedAction($task, $form, $metadata);
+            $this->executeApprovedAction($task, $form, $metadata, $process);
         } else {
             $this->discardStagedFiles($task, $metadata);
         }
@@ -66,6 +66,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
         EmployeeTaskRequest $task,
         InternalProcessForm $form,
         array $metadata,
+        ?Process $process = null,
     ): void {
         match ($form) {
             InternalProcessForm::StartTask,
