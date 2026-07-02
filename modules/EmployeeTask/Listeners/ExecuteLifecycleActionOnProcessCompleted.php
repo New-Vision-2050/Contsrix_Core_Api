@@ -184,7 +184,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
 
     private function applyProjectNotificationSiteStatusUpdate(
         EmployeeTaskRequest $task,
-        Process $process,
+        ?Process $process,
         array $metadata,
     ): void {
         $notification = $task->projectNotification;
@@ -198,8 +198,8 @@ final class ExecuteLifecycleActionOnProcessCompleted
             'company_id' => $notification->company_id,
             'project_notification_id' => $notification->id,
             'employee_task_request_id' => $task->id,
-            'process_id' => $process->id,
-            'procedure_setting_id' => $process->procedure_setting_id,
+            'process_id' => $process?->id,
+            'procedure_setting_id' => $process?->procedure_setting_id,
             'requested_by' => $metadata['user_id'] ?? null,
             'status' => 'approved',
             ...$update,
@@ -226,7 +226,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
 
     private function applyProjectNotificationLocationConfirmation(
         EmployeeTaskRequest $task,
-        Process $process,
+        ?Process $process,
         array $metadata,
     ): void {
         $notification = $task->projectNotification;
@@ -243,8 +243,8 @@ final class ExecuteLifecycleActionOnProcessCompleted
             'company_id' => $notification->company_id,
             'project_notification_id' => $notification->id,
             'employee_task_request_id' => $task->id,
-            'process_id' => $process->id,
-            'procedure_setting_id' => $process->procedure_setting_id,
+            'process_id' => $process?->id,
+            'procedure_setting_id' => $process?->procedure_setting_id,
             'requested_by' => $metadata['user_id'] ?? null,
             'status' => 'approved',
             ...$update,
@@ -253,7 +253,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
 
     private function applyProjectNotificationFine(
         EmployeeTaskRequest $task,
-        Process $process,
+        ?Process $process,
         array $metadata,
     ): void {
         $notification = $task->projectNotification;
@@ -270,8 +270,8 @@ final class ExecuteLifecycleActionOnProcessCompleted
             'company_id' => $notification->company_id,
             'project_notification_id' => $notification->id,
             'employee_task_request_id' => $task->id,
-            'process_id' => $process->id,
-            'procedure_setting_id' => $process->procedure_setting_id,
+            'process_id' => $process?->id,
+            'procedure_setting_id' => $process?->procedure_setting_id,
             'requested_by' => $metadata['user_id'] ?? null,
             'status' => 'approved',
             'reason' => $update['reason'] ?? null,
@@ -295,7 +295,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
 
     private function applyProjectNotificationWorkStoppageReport(
         EmployeeTaskRequest $task,
-        Process $process,
+        ?Process $process,
         array $metadata,
     ): void {
         $notification = $task->projectNotification;
@@ -312,8 +312,8 @@ final class ExecuteLifecycleActionOnProcessCompleted
             'company_id' => $notification->company_id,
             'project_notification_id' => $notification->id,
             'employee_task_request_id' => $task->id,
-            'process_id' => $process->id,
-            'procedure_setting_id' => $process->procedure_setting_id,
+            'process_id' => $process?->id,
+            'procedure_setting_id' => $process?->procedure_setting_id,
             'requested_by' => $metadata['user_id'] ?? null,
             'status' => 'approved',
             'other_notes' => $update['other_notes'] ?? null,
@@ -358,7 +358,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
 
     private function applyProjectNotificationWorkResumption(
         EmployeeTaskRequest $task,
-        Process $process,
+        ?Process $process,
         array $metadata,
     ): void {
         $notification = $task->projectNotification;
@@ -375,8 +375,8 @@ final class ExecuteLifecycleActionOnProcessCompleted
             'company_id' => $notification->company_id,
             'project_notification_id' => $notification->id,
             'employee_task_request_id' => $task->id,
-            'process_id' => $process->id,
-            'procedure_setting_id' => $process->procedure_setting_id,
+            'process_id' => $process?->id,
+            'procedure_setting_id' => $process?->procedure_setting_id,
             'requested_by' => $metadata['user_id'] ?? null,
             'status' => 'approved',
             'reasons_resolved' => $update['reasons_resolved'] ?? false,
@@ -391,7 +391,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
 
     private function applyProjectNotificationTaskPostponement(
         EmployeeTaskRequest $task,
-        Process $process,
+        ?Process $process,
         array $metadata,
     ): void {
         $notification = $task->projectNotification;
@@ -408,8 +408,8 @@ final class ExecuteLifecycleActionOnProcessCompleted
             'company_id' => $notification->company_id,
             'project_notification_id' => $notification->id,
             'employee_task_request_id' => $task->id,
-            'process_id' => $process->id,
-            'procedure_setting_id' => $process->procedure_setting_id,
+            'process_id' => $process?->id,
+            'procedure_setting_id' => $process?->procedure_setting_id,
             'previous_task_date' => $notification->task_date,
             'previous_task_time' => $notification->task_time,
             'new_task_date' => $update['new_task_date'] ?? null,
