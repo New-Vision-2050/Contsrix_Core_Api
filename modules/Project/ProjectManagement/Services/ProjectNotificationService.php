@@ -382,6 +382,15 @@ class ProjectNotificationService
             $this->repository->update($id, $this->enrichContractorData($dto->toArray()));
             $this->attachUpdateFiles($notification, $dto->files);
 
+            // Record the taken procedure with form data metadata.
+            event(new WorkflowProcedureTaken(
+                processableType:    $task->procedureSettingType()->value,
+                processableId:      $task->id,
+                procedureSettingId: $dto->internalProcedureSettingId,
+                takenBy:            $userId,
+                metadata:           ['update' => $dto->toArray()],
+            ));
+
             return $notification->fresh();
         }
 

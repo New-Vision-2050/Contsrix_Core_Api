@@ -271,16 +271,19 @@ final class ProcedureWorkflowService
      * Central entry point for recording that a procedure has been completed
      * or approved. Uses the internal_procedure_takens morph table so any
      * entity type can track its taken procedures.
+     *
+     * @param ?array $metadata  Optional form data / payload submitted with this procedure.
      */
     public function markProcedureTaken(
         string $processableType,
         string $processableId,
         string $procedureSettingId,
         ?string $takenBy = null,
+        ?array $metadata = null,
     ): void {
         $setting = ProcedureSetting::find($procedureSettingId);
 
-        InternalProcedureTaken::query()->firstOrCreate(
+        InternalProcedureTaken::query()->updateOrCreate(
             [
                 'processable_type'      => $processableType,
                 'processable_id'        => $processableId,
@@ -289,6 +292,7 @@ final class ProcedureWorkflowService
             [
                 'company_id'   => $setting?->company_id ?? (string) tenant('id'),
                 'form'         => $setting?->form,
+                'metadata'     => $metadata,
                 'taken_by'     => $takenBy,
                 'taken_at'     => now(),
             ],

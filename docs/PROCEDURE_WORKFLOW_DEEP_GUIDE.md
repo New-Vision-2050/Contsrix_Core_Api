@@ -161,7 +161,7 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 | `resolveActionTakerUserIdsForStep($step, $createdByUserId = null, $context = [])` | `array<string>` | `ProcedureSettingStep`, `?string`, `array` | Broadcasting (EmployeeTask services) |
 | `resolveProcedureSettingForBranch($procedureType, $companyId, $branchId)` | `?ProcedureSetting` | `string`, `string`, `?string` | Delegates to `WorkflowEngine::resolveParentSetting()` |
 | `resolveInternalProcedureSettingByForm($procedureCategoryType, $formKey, $companyId, $branchId = null)` | `?ProcedureSetting` | `string`, `string`, `string`, `?string` | EmployeeTask extension/approval creation; delegates to `WorkflowEngine::resolveSettingsForEntry()` |
-| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy = null)` | `void` | `string`, `string`, `string`, `?string` | All EmployeeTask action services; idempotent (`firstOrCreate`) |
+| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy = null, $metadata = null)` | `void` | `string`, `string`, `string`, `?string`, `?array` | All EmployeeTask action services; stores optional form metadata; uses `updateOrCreate` (updates metadata on re-submission) |
 | `getTakenProcedureIds($processableType, $processableId)` | `list<string>` | `string`, `string` | `EmployeeTaskAvailableActionsService::forTask()` |
 | `isProcedureTaken($processableType, $processableId, $procedureSettingId)` | `bool` | `string`, `string`, `string` | Point checks against `internal_procedure_takens` table |
 
@@ -808,7 +808,7 @@ internal_procedure_takens
 
 | Method | Description |
 |--------|-------------|
-| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy)` | Records a procedure as taken (idempotent via `firstOrCreate`) |
+| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy, $metadata = null)` | Records a procedure as taken (`updateOrCreate`); stores optional `$metadata` array in `internal_procedure_takens.metadata` |
 | `getTakenProcedureIds($processableType, $processableId)` | Returns all taken procedure setting IDs for an entity |
 | `isProcedureTaken($processableType, $processableId, $procedureSettingId)` | Checks if a specific procedure is taken |
 
@@ -1683,7 +1683,7 @@ internal_procedure_takens
 
 | Method | Behaviour |
 |--------|-----------|
-| `markProcedureTaken($type, $id, $settingId, $takenBy)` | Idempotent `firstOrCreate`; resolves `form` from setting |
+| `markProcedureTaken($type, $id, $settingId, $takenBy, $metadata = null)` | `updateOrCreate`; resolves `form` from setting; stores optional metadata |
 | `getTakenProcedureIds($type, $id)` | Returns `list<string>` of all taken setting IDs |
 | `isProcedureTaken($type, $id, $settingId)` | Boolean point-check |
 | `advance(..., $processableType, $processableId)` | Extended signature — auto-calls `markProcedureTaken()` when `isFinal = true` |
@@ -1703,6 +1703,7 @@ internal_procedure_takens
 
 #### New Migrations
 - `ProcedureSetting/Migrations/2026_06_19_000002_create_internal_procedure_takens_table.php`
+- `ProcedureSetting/Migrations/2026_07_02_000001_add_metadata_to_internal_procedure_takens_table.php` — adds nullable `metadata` JSON column to `internal_procedure_takens`. Stores form data / payload submitted with the procedure. Populated by `markProcedureTaken()` when `$metadata` is passed via `WorkflowProcedureTaken` event.
 - `EmployeeTask/Migrations/2026_06_19_000003_drop_taken_internal_procedure_ids_from_employee_task_requests.php`
 - `Process/Migrations/2026_06_23_000001_add_procedure_setting_id_to_processes.php` — adds nullable `procedure_setting_id` UUID column to `processes`. Populated only for child/internal procedure settings (those with `form != null`). When the process reaches `Completed`, `ProcessWorkflowService::fireProcedureTakenIfApplicable()` fires `WorkflowProcedureTaken` for this setting ID.
 
@@ -1710,7 +1711,7 @@ internal_procedure_takens
 - `null` for parent-level (ClientRequest, PriceOffer) processes — no event fires.
 - Set to `$setting->id` for any child `ProcedureSetting` where `form !== null` (e.g. `createTask`, `endTask`).
 - On process `Completed`, `WorkflowProcedureTaken` is dispatched automatically — **no manual `markProcedureTaken()` call needed by callers**.
-- Idempotent: `RecordInternalProcedureTaken` uses `firstOrCreate`, so double-firing is harmless.
+- Idempotent: `RecordInternalProcedureTaken` uses `updateOrCreate`, so double-firing is harmless. Metadata is always refreshed on re-submission.
 
 #### Removed
 - `employee_task_requests.taken_internal_procedure_ids` JSON column
@@ -2610,12 +2611,14 @@ new WorkflowProcedureTaken(
     processableId:      $cr->id,
     procedureSettingId: $settingId,
     takenBy:            $userId,      // nullable
+    metadata:           ['update' => $dto->toArray()],  // optional, stores form data in internal_procedure_takens.metadata
 )
 ```
 
 **Listener**: `Modules\ProcedureSetting\Listeners\RecordInternalProcedureTaken`
 - Registered in `ProcedureSettingServiceProvider::registerEventListeners()`
-- Calls `ProcedureWorkflowService::markProcedureTaken()` → writes to `internal_procedure_takens`
+- Calls `ProcedureWorkflowService::markProcedureTaken()` → writes to `internal_procedure_takens` (including `metadata` if provided)
+- `ProcessWorkflowService::fireProcedureTakenIfApplicable()` automatically passes `$process->metadata` to the event when a Process completes
 
 #### Call-site map after Phase 3
 
