@@ -1040,6 +1040,146 @@ class ProjectNotificationService
     }
 
     /**
+     * Return all periodic site status updates for a notification.
+     *
+     * Includes:
+     *   - Approved updates (records already created in DB after workflow completed)
+     *   - Pending updates (in-progress Processes with form=updateProjectNotificationSiteStatus)
+     *
+     * Each item includes form_data, approval status, date, and attachments.
+     *
+     * @return array{items: list<array>, summary: array}
+     */
+    public function siteStatusUpdates(string $notificationId): array
+    {
+        $notification = $this->get($notificationId);
+        $task = $this->linkedTask($notificationId);
+
+        // 1. Load approved site status update records (created after workflow completed).
+        $approvedUpdates = ProjectNotificationSiteStatusUpdate::query()
+            ->where('project_notification_id', $notification->id)
+            ->with(['requester', 'reviewer', 'process.steps.actionByUser'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        // 2. Load pending/in-progress processes for the site status form.
+        $pendingProcesses = \Modules\Process\Models\Process::query()
+            ->where('processable_type', $task->procedureSettingType()->value)
+            ->where('processable_id', $task->id)
+            ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
+            ->whereHas('procedureSetting', function ($q) {
+                $q->where('form', InternalProcessForm::UpdateProjectNotificationSiteStatus->value);
+            })
+            ->with(['steps.procedureSettingStep', 'steps.actionByUser', 'procedureSetting'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $items = [];
+
+        // Approved records.
+        foreach ($approvedUpdates as $update) {
+            $process = $update->process;
+            $items[] = [
+                'id'                    => $update->id,
+                'status'                => 'approved',
+                'description'           => $update->description,
+                'attachments'           => \Modules\Shared\Media\Presenters\MediaPresenter::collection(
+                    $update->getMedia('attachments')
+                ),
+                'requested_by'          => $update->requester ? [
+                    'id'   => $update->requester->id,
+                    'name' => $update->requester->name,
+                ] : null,
+                'reviewed_by'           => $update->reviewer ? [
+                    'id'   => $update->reviewer->id,
+                    'name' => $update->reviewer->name,
+                ] : null,
+                'reviewed_at'           => $update->reviewed_at?->format('Y-m-d H:i:s'),
+                'review_notes'          => $update->review_notes,
+                'created_at'            => $update->created_at?->format('Y-m-d H:i:s'),
+                'process'               => $process ? [
+                    'id'     => $process->id,
+                    'status' => $process->status?->value,
+                    'steps'  => $process->relationLoaded('steps')
+                        ? $process->steps->map(fn ($step) => [
+                            'step_order' => $step->template_step_order,
+                            'status'     => $step->status?->value,
+                            'action_by'  => $step->actionByUser ? [
+                                'id'   => $step->actionByUser->id,
+                                'name' => $step->actionByUser->name,
+                            ] : null,
+                            'acted_at'   => $step->acted_at?->format('Y-m-d H:i:s'),
+                        ])->toArray()
+                        : [],
+                ] : null,
+            ];
+        }
+
+        // Pending processes (not yet approved — data is in process metadata).
+        foreach ($pendingProcesses as $process) {
+            $metadata = $process->metadata ?? [];
+            $updateData = $metadata['update'] ?? [];
+
+            // Collect staged file IDs from metadata.
+            $fileIds = $metadata['files'] ?? [];
+            $attachments = [];
+            if (is_array($fileIds) && $fileIds !== []) {
+                $mediaItems = \Modules\Shared\Media\Models\CustomMedia::query()
+                    ->whereIn('id', array_map('intval', $fileIds))
+                    ->get();
+                $attachments = \Modules\Shared\Media\Presenters\MediaPresenter::collection($mediaItems);
+            }
+
+            $items[] = [
+                'id'                    => $process->id,
+                'status'                => 'pending',
+                'description'           => $updateData['description'] ?? null,
+                'attachments'           => $attachments,
+                'requested_by'          => isset($metadata['user_id'])
+                    ? [
+                        'id'   => $metadata['user_id'],
+                        'name' => \Modules\User\Models\User::find($metadata['user_id'])?->name,
+                    ]
+                    : null,
+                'reviewed_by'           => null,
+                'reviewed_at'           => null,
+                'review_notes'          => null,
+                'created_at'            => $process->created_at?->format('Y-m-d H:i:s'),
+                'process'               => [
+                    'id'     => $process->id,
+                    'status' => $process->status?->value,
+                    'steps'  => $process->relationLoaded('steps')
+                        ? $process->steps->map(fn ($step) => [
+                            'step_order' => $step->template_step_order,
+                            'name'       => $step->procedureSettingStep?->name,
+                            'status'     => $step->status?->value,
+                            'action_by'  => $step->actionByUser ? [
+                                'id'   => $step->actionByUser->id,
+                                'name' => $step->actionByUser->name,
+                            ] : null,
+                            'acted_at'   => $step->acted_at?->format('Y-m-d H:i:s'),
+                        ])->toArray()
+                        : [],
+                ],
+            ];
+        }
+
+        // Sort all items by created_at descending.
+        usort($items, fn ($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
+
+        $summary = [
+            'total'    => count($items),
+            'approved' => $approvedUpdates->count(),
+            'pending'  => $pendingProcesses->count(),
+        ];
+
+        return [
+            'items'   => $items,
+            'summary' => $summary,
+        ];
+    }
+
+    /**
      * Return the timeline of taken internal procedures for the linked EmployeeTask.
      * Uses whereHas('projectNotification') to find the EmployeeTaskRequest by the
      * notification id, then queries internal_procedure_takens by the task id.

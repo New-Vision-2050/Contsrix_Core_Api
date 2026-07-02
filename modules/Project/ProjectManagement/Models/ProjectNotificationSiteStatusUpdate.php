@@ -31,6 +31,7 @@ class ProjectNotificationSiteStatusUpdate extends Model
         'procedure_setting_id',
         'update_date',
         'update_time',
+        'description',
         'site_status_id',
         'current_site_status_id',
         'work_stages_completed',

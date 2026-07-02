@@ -159,6 +159,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
            ;
         Route::post('/{id}/request-task-postponement', [ProjectNotificationController::class, 'requestTaskPostponement'])
            ;
+        Route::get('/{id}/site-status-updates', [ProjectNotificationController::class, 'siteStatusUpdates'])
+            ;
         Route::get('/{id}/procedures', [ProjectNotificationController::class, 'procedures'])
             ;
         Route::post('/{id}/end', [ProjectNotificationController::class, 'end'])
