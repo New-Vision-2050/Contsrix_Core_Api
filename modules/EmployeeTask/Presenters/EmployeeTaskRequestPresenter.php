@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Modules\Attendance\Support\HoursFormatter;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 final class EmployeeTaskRequestPresenter
 {
@@ -63,10 +64,7 @@ final class EmployeeTaskRequestPresenter
                 : null,
             'current_step'               => $this->presentCurrentStep($task),
             'attachments' => $task->relationLoaded('media')
-                ? $task->media->map(fn($media) => [
-                    'id'        => $media->id,
-                    'url'       => $media->getFullUrl(),
-                ])->values()->all()
+                ? MediaPresenter::collection($task->media)
                 : [],
             'sessions'                   => $task->relationLoaded('sessions')
                 ? EmployeeTaskSessionPresenter::collection($task->sessions)

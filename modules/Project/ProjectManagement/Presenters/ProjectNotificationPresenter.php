@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Presenters;
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 class ProjectNotificationPresenter
 {
@@ -79,10 +80,7 @@ class ProjectNotificationPresenter
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'pending_processes'           => $this->resolvePendingProcesses($n),
             'attachments'                 => $n->relationLoaded('media')
-                ? $n->media->map(fn($media) => [
-                    'id'  => $media->id,
-                    'url' => $media->getFullUrl(),
-                ])->values()->all()
+                ? MediaPresenter::collection($n->media)
                 : [],
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
         ];
@@ -258,12 +256,6 @@ class ProjectNotificationPresenter
      */
     private function formatMediaItems($mediaItems): array
     {
-        return collect($mediaItems)
-            ->map(fn ($media) => [
-                'url'  => $media->getFullUrl(),
-                'name' => $media->name ?? $media->file_name,
-            ])
-            ->values()
-            ->all();
+        return MediaPresenter::collection($mediaItems);
     }
 }

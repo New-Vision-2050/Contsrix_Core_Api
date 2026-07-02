@@ -1138,14 +1138,15 @@ class ProjectNotificationService
             return [];
         }
 
-        $ids = [];
-        foreach ($files as $file) {
-            $media = $notification->addMedia($file)
-                ->toMediaCollection('work_stoppage_report_attachments');
-            $ids[] = $media->id;
-        }
+        $media = $this->fileUploadService->uploadFile(
+            model: $notification,
+            file: $files,
+            filePath: 'project-notifications/work-stoppage-reports',
+            collectionName: 'work_stoppage_report_attachments',
+            visibility: 'public',
+        );
 
-        return $ids;
+        return $media->pluck('id')->all();
     }
 
     /**
@@ -1157,10 +1158,13 @@ class ProjectNotificationService
             return;
         }
 
-        foreach ($files as $file) {
-            $report->addMedia($file)
-                ->toMediaCollection('attachments');
-        }
+        $this->fileUploadService->uploadFile(
+            model: $report,
+            file: $files,
+            filePath: 'project-notifications/work-stoppage-reports',
+            collectionName: 'attachments',
+            visibility: 'public',
+        );
     }
 
     private function createWorkResumptionRecord(
@@ -1197,14 +1201,15 @@ class ProjectNotificationService
             return [];
         }
 
-        $ids = [];
-        foreach ($files as $file) {
-            $media = $notification->addMedia($file)
-                ->toMediaCollection('work_resumption_attachments');
-            $ids[] = $media->id;
-        }
+        $media = $this->fileUploadService->uploadFile(
+            model: $notification,
+            file: $files,
+            filePath: 'project-notifications/work-resumptions',
+            collectionName: 'work_resumption_attachments',
+            visibility: 'public',
+        );
 
-        return $ids;
+        return $media->pluck('id')->all();
     }
 
     /**
@@ -1216,10 +1221,13 @@ class ProjectNotificationService
             return;
         }
 
-        foreach ($files as $file) {
-            $resumption->addMedia($file)
-                ->toMediaCollection('attachments');
-        }
+        $this->fileUploadService->uploadFile(
+            model: $resumption,
+            file: $files,
+            filePath: 'project-notifications/work-resumptions',
+            collectionName: 'attachments',
+            visibility: 'public',
+        );
     }
 
     private function createLocationConfirmationRecord(
@@ -1281,14 +1289,15 @@ class ProjectNotificationService
             return [];
         }
 
-        $ids = [];
-        foreach ($files as $file) {
-            $media = $notification->addMedia($file)
-                ->toMediaCollection('fine_attachments');
-            $ids[] = $media->id;
-        }
+        $media = $this->fileUploadService->uploadFile(
+            model: $notification,
+            file: $files,
+            filePath: 'project-notifications/fines',
+            collectionName: 'fine_attachments',
+            visibility: 'public',
+        );
 
-        return $ids;
+        return $media->pluck('id')->all();
     }
 
     /**
@@ -1300,10 +1309,13 @@ class ProjectNotificationService
             return;
         }
 
-        foreach ($files as $file) {
-            $fine->addMedia($file)
-                ->toMediaCollection('attachments');
-        }
+        $this->fileUploadService->uploadFile(
+            model: $fine,
+            file: $files,
+            filePath: 'project-notifications/fines',
+            collectionName: 'attachments',
+            visibility: 'public',
+        );
     }
 
     private function createSiteStatusUpdateRecord(
@@ -1336,14 +1348,15 @@ class ProjectNotificationService
             return [];
         }
 
-        $ids = [];
-        foreach ($files as $file) {
-            $media = $notification->addMedia($file)
-                ->toMediaCollection('site_status_update_attachments');
-            $ids[] = $media->id;
-        }
+        $media = $this->fileUploadService->uploadFile(
+            model: $notification,
+            file: $files,
+            filePath: 'project-notifications/site-status-updates',
+            collectionName: 'site_status_update_attachments',
+            visibility: 'public',
+        );
 
-        return $ids;
+        return $media->pluck('id')->all();
     }
 
     /**
@@ -1355,10 +1368,13 @@ class ProjectNotificationService
             return;
         }
 
-        foreach ($files as $file) {
-            $update->addMedia($file)
-                ->toMediaCollection('attachments');
-        }
+        $this->fileUploadService->uploadFile(
+            model: $update,
+            file: $files,
+            filePath: 'project-notifications/site-status-updates',
+            collectionName: 'attachments',
+            visibility: 'public',
+        );
     }
 
     /**
@@ -1371,14 +1387,15 @@ class ProjectNotificationService
             return [];
         }
 
-        $ids = [];
-        foreach ($files as $file) {
-            $media = $notification->addMedia($file)
-                ->toMediaCollection('update_attachments');
-            $ids[] = $media->id;
-        }
+        $media = $this->fileUploadService->uploadFile(
+            model: $notification,
+            file: $files,
+            filePath: 'project-notifications/updates',
+            collectionName: 'update_attachments',
+            visibility: 'public',
+        );
 
-        return $ids;
+        return $media->pluck('id')->all();
     }
 
     /**
@@ -1390,10 +1407,13 @@ class ProjectNotificationService
             return;
         }
 
-        foreach ($files as $file) {
-            $notification->addMedia($file)
-                ->toMediaCollection('attachments');
-        }
+        $this->fileUploadService->uploadFile(
+            model: $notification,
+            file: $files,
+            filePath: 'project-notifications/attachments',
+            collectionName: 'attachments',
+            visibility: 'public',
+        );
     }
 
     /**
