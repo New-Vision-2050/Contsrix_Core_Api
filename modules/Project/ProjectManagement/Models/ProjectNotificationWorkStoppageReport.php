@@ -12,11 +12,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\Process\Models\Process;
 use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class ProjectNotificationWorkStoppageReport extends Model
+class ProjectNotificationWorkStoppageReport extends Model implements HasMedia
 {
     use UuidTrait;
     use CustomBelongsToTenant;
+    use InteractsWithMedia;
 
     protected $table = 'project_notification_work_stoppage_reports';
 
@@ -46,6 +49,11 @@ class ProjectNotificationWorkStoppageReport extends Model
     public function getTenantIdColumn(): string
     {
         return 'company_id';
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('attachments');
     }
 
     public function projectNotification(): BelongsTo

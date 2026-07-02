@@ -41,6 +41,9 @@ class ProjectNotificationRepository
                 'employeeTask.approvalRequests.media',
                 'employeeTask.projectNotification.media',
                 'employeeTask.workResumptions.media',
+                'employeeTask.siteStatusUpdates.media',
+                'employeeTask.fines.media',
+                'employeeTask.workStoppageReports.media',
             ])
             ->find($id);
     }

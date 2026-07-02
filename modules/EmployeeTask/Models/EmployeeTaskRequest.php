@@ -193,6 +193,30 @@ class EmployeeTaskRequest extends Model implements HasMedia
         );
     }
 
+    public function siteStatusUpdates(): HasMany
+    {
+        return $this->hasMany(
+            \Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate::class,
+            'employee_task_request_id'
+        );
+    }
+
+    public function fines(): HasMany
+    {
+        return $this->hasMany(
+            \Modules\Project\ProjectManagement\Models\ProjectNotificationFine::class,
+            'employee_task_request_id'
+        );
+    }
+
+    public function workStoppageReports(): HasMany
+    {
+        return $this->hasMany(
+            \Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport::class,
+            'employee_task_request_id'
+        );
+    }
+
     public function endRequests(): HasMany
     {
         return $this->hasMany(EmployeeTaskEndRequest::class, 'employee_task_request_id');

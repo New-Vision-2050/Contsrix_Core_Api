@@ -88,6 +88,11 @@ class ProjectNotification extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('attachments');
+        $this->addMediaCollection('site_status_update_attachments');
+        $this->addMediaCollection('fine_attachments');
+        $this->addMediaCollection('work_stoppage_report_attachments');
+        $this->addMediaCollection('work_resumption_attachments');
+        $this->addMediaCollection('update_attachments');
     }
 
     public function project(): BelongsTo
