@@ -11,11 +11,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\Process\Models\Process;
 use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class ProjectNotificationSiteStatusUpdate extends Model
+class ProjectNotificationSiteStatusUpdate extends Model implements HasMedia
 {
     use UuidTrait;
     use CustomBelongsToTenant;
+    use InteractsWithMedia;
 
     protected $table = 'project_notification_site_status_updates';
 
