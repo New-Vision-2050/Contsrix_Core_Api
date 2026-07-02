@@ -310,7 +310,7 @@ final class WorkflowEngine
      * return an array of pending-process descriptors for the given user.
      *
      * Each descriptor contains:
-     *   - process_id, procedure_setting_id, form, mobile_inbox_action_key,
+     *   - process_id, procedure_setting_id, form, form_label, mobile_inbox_action_key,
      *     pending_step_id, pending_step_order
      *
      * This centralises the logic previously duplicated in
@@ -349,6 +349,7 @@ final class WorkflowEngine
                     'process_id' => $process->id,
                     'procedure_setting_id' => $process->procedure_setting_id,
                     'form' => $formKey,
+                    'form_label' => $form?->labelAr(),
                     'mobile_inbox_action_key' => $form?->mobileInboxActionKey() ?? 'accept_reject',
                     'pending_step_id' => $pendingStep->id,
                     'pending_step_order' => $pendingStep->template_step_order,

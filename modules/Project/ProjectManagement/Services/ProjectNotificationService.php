@@ -856,7 +856,7 @@ class ProjectNotificationService
      * Resolve the in-progress processes that have a pending step assigned to the
      * given user. Used by the mobile inbox to show which workflow(s) need action.
      *
-     * @return list<array{process_id: string, procedure_setting_id: string, form: string, pending_step_id: string, pending_step_order: int}>
+     * @return list<array{process_id: string, procedure_setting_id: string, form: string, form_label: ?string, mobile_inbox_action_key: string, pending_step_id: string, pending_step_order: int}>
      */
     public function resolvePendingProcessesForInbox(ProjectNotification $notification, string $userId): array
     {
