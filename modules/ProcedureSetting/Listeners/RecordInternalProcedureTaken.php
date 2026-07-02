@@ -24,6 +24,7 @@ final class RecordInternalProcedureTaken
             $event->processableId,
             $event->procedureSettingId,
             $event->takenBy,
+            $event->metadata,
         );
     }
 }

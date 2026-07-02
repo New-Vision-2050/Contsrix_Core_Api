@@ -341,10 +341,13 @@ class ProcessWorkflowService
             return;
         }
 
+        $metadata = $process->metadata ?? null;
+
         event(new WorkflowProcedureTaken(
             processableType:    $process->processable_type,
             processableId:      $process->processable_id,
             procedureSettingId: $process->procedure_setting_id,
+            metadata:           $metadata,
         ));
     }
 

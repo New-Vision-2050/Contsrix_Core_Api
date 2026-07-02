@@ -16,10 +16,14 @@ namespace Modules\ProcedureSetting\Events;
  */
 final class WorkflowProcedureTaken
 {
+    /**
+     * @param ?array $metadata  Optional form data / payload submitted with this procedure.
+     */
     public function __construct(
         public readonly string  $processableType,
         public readonly string  $processableId,
         public readonly string  $procedureSettingId,
         public readonly ?string $takenBy = null,
+        public readonly ?array  $metadata = null,
     ) {}
 }

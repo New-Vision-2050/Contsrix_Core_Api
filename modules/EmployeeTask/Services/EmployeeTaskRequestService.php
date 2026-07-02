@@ -634,6 +634,7 @@ class EmployeeTaskRequestService
                     processableId:      $task->id,
                     procedureSettingId: $resolvedSetting->id,
                     takenBy:            $task->user_id,
+                    metadata:           $metadata,
                 ));
             }
 

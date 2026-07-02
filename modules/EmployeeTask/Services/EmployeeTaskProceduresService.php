@@ -93,6 +93,12 @@ final class EmployeeTaskProceduresService
                 $formData = $process->metadata['update'] ?? $process->metadata ?? null;
             }
 
+            // Fall back to InternalProcedureTaken.metadata when no Process matched
+            // (e.g., takeAction path or auto-approve with no Process created).
+            if ($formData === null && $takenRecord->metadata !== null) {
+                $formData = $takenRecord->metadata['update'] ?? $takenRecord->metadata;
+            }
+
             $items[] = [
                 'taken' => $takenRecord,
                 'process' => $process,
