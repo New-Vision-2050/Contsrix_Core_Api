@@ -752,8 +752,16 @@ class ProjectNotificationService
         // the task is already in_progress. The EmployeeTaskStatusSyncObserver
         // mirrors the resulting task status onto the notification once the
         // workflow resolves.
-        if ($task && $this->taskHasActiveProcess($task->id, $procedureSettingId)) {
-            $this->employeeTaskRequestService->approveWorkflowStep($task->id, $userId, $procedureSettingId);
+        if ($task && $this->taskHasActiveProcess($task->id)) {
+            // Resolve the correct procedure_setting_id: if the provided one matches
+            // an active process, use it; otherwise fall back to the first active
+            // process so the approve always targets a real pending workflow.
+            $resolvedProcedureSettingId = $this->resolveProcedureSettingIdForActiveProcess(
+                $task->id,
+                $procedureSettingId,
+            );
+
+            $this->employeeTaskRequestService->approveWorkflowStep($task->id, $userId, $resolvedProcedureSettingId);
 
             $notification->forceFill([
                 'approved_by' => $userId,
@@ -763,22 +771,29 @@ class ProjectNotificationService
             return $this->get($id);
         }
 
-        if (!in_array($notification->status, ['pending'], true)) {
+        if (!in_array($notification->status, ['pending', 'in_progress'], true)) {
             throw ProjectNotificationException::cannotApprove($notification->status);
         }
 
-        $notification->update([
-            'status' => 'approved',
-            'approved_by' => $userId,
-            'approved_at' => now(),
-        ]);
-
-        if ($task && $task->status === EmployeeTaskStatus::Pending->value) {
-            $task->update([
-                'status' => EmployeeTaskStatus::Approved->value,
+        if ($notification->status === 'pending') {
+            $notification->update([
+                'status' => 'approved',
                 'approved_by' => $userId,
                 'approved_at' => now(),
             ]);
+
+            if ($task && $task->status === EmployeeTaskStatus::Pending->value) {
+                $task->update([
+                    'status' => EmployeeTaskStatus::Approved->value,
+                    'approved_by' => $userId,
+                    'approved_at' => now(),
+                ]);
+            }
+        } else {
+            $notification->forceFill([
+                'approved_by' => $userId,
+                'approved_at' => now(),
+            ])->save();
         }
 
         return $this->get($id);
@@ -789,8 +804,13 @@ class ProjectNotificationService
         $notification = $this->get($id);
         $task = $notification->employee_task_request_id ? $notification->employeeTask : null;
 
-        if ($task && $this->taskHasActiveProcess($task->id, $procedureSettingId)) {
-            $this->employeeTaskRequestService->rejectWorkflowStep($task->id, $userId, $reason, $procedureSettingId);
+        if ($task && $this->taskHasActiveProcess($task->id)) {
+            $resolvedProcedureSettingId = $this->resolveProcedureSettingIdForActiveProcess(
+                $task->id,
+                $procedureSettingId,
+            );
+
+            $this->employeeTaskRequestService->rejectWorkflowStep($task->id, $userId, $reason, $resolvedProcedureSettingId);
 
             $notification->forceFill([
                 'rejected_by' => $userId,
@@ -801,24 +821,32 @@ class ProjectNotificationService
             return $this->get($id);
         }
 
-        if (!in_array($notification->status, ['pending'], true)) {
+        if (!in_array($notification->status, ['pending', 'in_progress'], true)) {
             throw ProjectNotificationException::cannotReject($notification->status);
         }
 
-        $notification->update([
-            'status' => 'rejected',
-            'rejected_by' => $userId,
-            'rejected_at' => now(),
-            'rejection_reason' => $reason,
-        ]);
-
-        if ($task && $task->status === EmployeeTaskStatus::Pending->value) {
-            $task->update([
-                'status' => EmployeeTaskStatus::Rejected->value,
+        if ($notification->status === 'pending') {
+            $notification->update([
+                'status' => 'rejected',
                 'rejected_by' => $userId,
                 'rejected_at' => now(),
                 'rejection_reason' => $reason,
             ]);
+
+            if ($task && $task->status === EmployeeTaskStatus::Pending->value) {
+                $task->update([
+                    'status' => EmployeeTaskStatus::Rejected->value,
+                    'rejected_by' => $userId,
+                    'rejected_at' => now(),
+                    'rejection_reason' => $reason,
+                ]);
+            }
+        } else {
+            $notification->forceFill([
+                'rejected_by' => $userId,
+                'rejected_at' => now(),
+                'rejection_reason' => $reason,
+            ])->save();
         }
 
         return $this->get($id);
@@ -828,7 +856,7 @@ class ProjectNotificationService
      * Resolve the in-progress processes that have a pending step assigned to the
      * given user. Used by the mobile inbox to show which workflow(s) need action.
      *
-     * @return list<array{process_id: string, procedure_setting_id: string, form: string, pending_step_id: string, pending_step_order: int}>
+     * @return list<array{process_id: string, procedure_setting_id: string, form: string, form_label: ?string, mobile_inbox_action_key: string, pending_step_id: string, pending_step_order: int}>
      */
     public function resolvePendingProcessesForInbox(ProjectNotification $notification, string $userId): array
     {
@@ -848,6 +876,29 @@ class ProjectNotificationService
             $taskId,
             $procedureSettingId,
         );
+    }
+
+    /**
+     * Resolve the procedure_setting_id to use for workflow step approval.
+     *
+     * If the provided ID matches an active process, use it directly.
+     * Otherwise, fall back to the first active process's procedure_setting_id
+     * so the approve/reject always targets a real pending workflow.
+     */
+    private function resolveProcedureSettingIdForActiveProcess(string $taskId, ?string $procedureSettingId): ?string
+    {
+        if ($procedureSettingId !== null && $this->taskHasActiveProcess($taskId, $procedureSettingId)) {
+            return $procedureSettingId;
+        }
+
+        // Fall back to the first active process.
+        $process = \Modules\Process\Models\Process::query()
+            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+            ->where('processable_id', $taskId)
+            ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
+            ->first();
+
+        return $process?->procedure_setting_id;
     }
 
     /**
