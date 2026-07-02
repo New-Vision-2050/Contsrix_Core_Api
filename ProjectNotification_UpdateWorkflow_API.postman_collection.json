@@ -409,63 +409,21 @@
           "mode": "formdata",
           "formdata": [
             {
-              "key": "update_date",
-              "value": "2026-06-28",
+              "key": "description",
+              "value": "تم إنجاز 40% من أعمال التمديد والتركيب، جاري العمل على المرحلة الثانية",
               "type": "text",
-              "description": "تاريخ التحديث"
+              "description": "وصف التحديث الدوري لحالة الموقع (text, max 5000 chars)"
             },
             {
-              "key": "update_time",
-              "value": "14:30",
+              "key": "internal_procedure_setting_id",
+              "value": "{{internal_procedure_setting_id}}",
               "type": "text",
-              "description": "وقت التحديث"
-            },
-            {
-              "key": "site_status_id",
-              "value": "{{site_status_id}}",
-              "type": "text",
-              "description": "حالة الموقع الحالية"
-            },
-            {
-              "key": "current_site_status_id",
-              "value": "{{current_site_status_id}}",
-              "type": "text",
-              "description": "حالة الموقع"
-            },
-            {
-              "key": "work_stages_completed",
-              "value": "تمديد / تركيب",
-              "type": "text",
-              "description": "مراحل العمل المنجزة حاليا"
-            },
-            {
-              "key": "current_status_description",
-              "value": "وصف الحالة الحالية",
-              "type": "text",
-              "description": "وصف الحالة الحالية"
-            },
-            {
-              "key": "completion_percentage",
-              "value": "40",
-              "type": "text",
-              "description": "نسبة الإنجاز الحالية"
-            },
-            {
-              "key": "updates_obstacles",
-              "value": "تأخر في وصول المواد",
-              "type": "text",
-              "description": "التحديثات / المعوقات"
-            },
-            {
-              "key": "additional_notes",
-              "value": "ملاحظات إضافية",
-              "type": "text",
-              "description": "ملاحظات إضافية"
+              "description": "معرف إجراء العمل (optional - لتحديد مسار الموافقات)"
             },
             {
               "key": "files",
               "type": "file",
-              "description": "صور إضافية من الموقع (jpeg, png, webp, max 10MB)",
+              "description": "صور / ملفات مرفقة من الموقع (jpg, jpeg, png, webp, pdf, doc, docx, max 10MB each)",
               "src": []
             },
             {
@@ -502,6 +460,45 @@
           "code": 200,
           "_postman_previewlanguage": "json",
           "body": "{\n  \"data\": {\n    \"id\": \"{{notification_id}}\",\n    \"notification_number\": \"NTF-2026-00014\",\n    \"status\": \"pending\"\n  },\n  \"message\": \"Site status update request submitted successfully\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "5b. Get Site Status Updates (التحديث الدوري لحالة الموقع)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/site-status-updates",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "projects",
+            "notifications",
+            "{{notification_id}}",
+            "site-status-updates"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - Site Status Updates List",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"uuid-1\",\n        \"status\": \"approved\",\n        \"description\": \"تم إنجاز 40% من الأعمال\",\n        \"attachments\": [\n          {\n            \"id\": \"media-uuid-1\",\n            \"url\": \"https://example.com/storage/site-status/photo1.jpg\",\n            \"mime_type\": \"image/jpeg\",\n            \"size\": 102400\n          }\n        ],\n        \"requested_by\": { \"id\": \"user-uuid\", \"name\": \"أحمد محمد\" },\n        \"reviewed_by\": { \"id\": \"admin-uuid\", \"name\": \"مدير المشاريع\" },\n        \"reviewed_at\": \"2026-07-02 15:00:00\",\n        \"review_notes\": null,\n        \"created_at\": \"2026-07-02 14:30:00\",\n        \"process\": {\n          \"id\": \"process-uuid\",\n          \"status\": \"completed\",\n          \"steps\": [\n            {\n              \"step_order\": 1,\n              \"status\": \"approved\",\n              \"action_by\": { \"id\": \"admin-uuid\", \"name\": \"مدير المشاريع\" },\n              \"acted_at\": \"2026-07-02 15:00:00\"\n            }\n          ]\n        }\n      },\n      {\n        \"id\": \"process-uuid-2\",\n        \"status\": \"pending\",\n        \"description\": \"جاري العمل على مرحلة التمديد\",\n        \"attachments\": [\n          {\n            \"id\": \"media-uuid-2\",\n            \"url\": \"https://example.com/storage/site-status/photo2.jpg\",\n            \"mime_type\": \"image/jpeg\",\n            \"size\": 204800\n          }\n        ],\n        \"requested_by\": { \"id\": \"user-uuid\", \"name\": \"أحمد محمد\" },\n        \"reviewed_by\": null,\n        \"reviewed_at\": null,\n        \"review_notes\": null,\n        \"created_at\": \"2026-07-02 16:00:00\",\n        \"process\": {\n          \"id\": \"process-uuid-2\",\n          \"status\": \"in_progress\",\n          \"steps\": [\n            {\n              \"step_order\": 1,\n              \"name\": \"موافقة المدير\",\n              \"status\": \"pending\",\n              \"action_by\": null,\n              \"acted_at\": null\n            }\n          ]\n        }\n      }\n    ],\n    \"summary\": {\n      \"total\": 2,\n      \"approved\": 1,\n      \"pending\": 1\n    }\n  },\n  \"message\": \"Site status updates retrieved successfully\"\n}"
         }
       ]
     },

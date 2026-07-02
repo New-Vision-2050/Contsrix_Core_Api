@@ -570,6 +570,25 @@ class ProjectNotificationController extends Controller
     }
 
     /**
+     * GET /projects/notifications/{id}/site-status-updates
+     *
+     * Returns all periodic site status updates (التحديث الدوري لحالة الموقع) for a
+     * notification, including approved records and pending workflow processes.
+     * Each item includes form_data, approval status, date, attachments, and
+     * workflow steps with approvers.
+     */
+    public function siteStatusUpdates(Request $request): JsonResponse
+    {
+        try {
+            $result = $this->notificationService->siteStatusUpdates($request->route('id'));
+
+            return Json::item($result, message: 'Site status updates retrieved successfully');
+        } catch (ProjectNotificationException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
+    /**
      * GET /projects/notifications/{id}/procedures
      *
      * Returns the timeline of all taken (completed) internal procedures for the
