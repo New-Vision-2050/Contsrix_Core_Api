@@ -1480,8 +1480,148 @@ Sends email via `AttachmentRequestMail`.
 - The mobile inbox (`/my-inbox`) only returns notifications with `status = approved`. After `POST /notifications/{id}/confirm-receive`, the task moves to `in_progress` and appears in `/my-tasks` instead.
 - `/filters` returns the same response shape as `GET /employee-tasks/filters`: `statuses` (key, title_ar, title_en, count), `projects` (key, title, count), `duration` (key, title_ar, title_en, min_minutes, max_minutes).
 - Notification status is auto-synced from the linked `EmployeeTaskRequest` by `EmployeeTaskStatusSyncObserver` whenever the task status changes (e.g., `in_progress` after confirm-receive, `completed` after end). The observer maps `paused` → `in_progress` for the notification.
-- The linked `EmployeeTaskRequest` exposes its taken internal procedures via `GET /employee-tasks/{employee_task_id}/procedures`. The mobile app can use the linked task ID to display the procedures (الإجراءات) timeline for the assigned task. Response includes `items` (ordered by step with `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`) and `summary` (`total`, `last_action`, `start_date`, `progress`).
+- The linked `EmployeeTaskRequest` exposes its taken internal procedures via `GET /employee-tasks/{employee_task_id}/procedures`. The mobile app can use the linked task ID to display the procedures (الإجراءات) timeline for the assigned task. Response includes `items` (ordered by step with `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`, `status`, `steps`, `approved_by`, `attachments`, `form_data`) and `summary` (`total`, `last_action`, `start_date`, `progress`).
 - `GET /notifications/{id}/procedures` is a convenience wrapper over the employee-task endpoint: it resolves the linked `EmployeeTaskRequest` from the notification id and returns the same `items` + `summary` shape. Supports `?debug=true` for additional debug info.
+
+#### Procedures Response Format (v2 — enriched)
+
+Each item in the `items` array now contains the full workflow context, submitted form data, and attachments. **A form can be submitted multiple times** (e.g., multiple site-status updates, multiple fines), so the `items` array may contain multiple entries with the same `form` key — each is a separate taken procedure with its own data.
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "step_number": 1,
+      "name": "إنشاء إشعار مشروع",
+      "icon": "clipboard-list",
+      "percentage": 10.0,
+      "form": "createProjectNotificationTask",
+      "taken_by": { "id": "uuid", "name": "أحمد محمد" },
+      "taken_at": "2026-07-01 09:30:00",
+      "status": "completed",
+      "steps": [
+        {
+          "step_order": 1,
+          "name": "موافقة المدير",
+          "status": "approved",
+          "action_by": { "id": "uuid", "name": "خالد علي" },
+          "acted_at": "2026-07-01 10:00:00"
+        },
+        {
+          "step_order": 2,
+          "name": "موافقة المشرف",
+          "status": "approved",
+          "action_by": { "id": "uuid", "name": "سعد المرسي" },
+          "acted_at": "2026-07-01 10:30:00"
+        }
+      ],
+      "approved_by": { "id": "uuid", "name": "سعد المرسي" },
+      "attachments": [
+        {
+          "id": 101,
+          "url": "https://s3.example.com/project-notifications/attachments/file_abc.jpg",
+          "name": "site_photo.jpg",
+          "mime_type": "image/jpeg",
+          "type": "image",
+          "size": 245678
+        }
+      ],
+      "form_data": {
+        "notification_type": "إصلاح عاجل",
+        "feeder_number": "F-12",
+        "work_description": "استبدال الكابل التالف",
+        "notes": "تم الكشف الميداني"
+      }
+    },
+    {
+      "id": "uuid",
+      "step_number": 2,
+      "name": "التحديث الدوري لحالة الموقع",
+      "icon": "refresh",
+      "percentage": 30.0,
+      "form": "updateProjectNotificationSiteStatus",
+      "taken_by": { "id": "uuid", "name": "أحمد محمد" },
+      "taken_at": "2026-07-01 14:00:00",
+      "status": "completed",
+      "steps": [
+        {
+          "step_order": 1,
+          "name": "مراجعة المشرف",
+          "status": "approved",
+          "action_by": { "id": "uuid", "name": "خالد علي" },
+          "acted_at": "2026-07-01 14:30:00"
+        }
+      ],
+      "approved_by": { "id": "uuid", "name": "خالد علي" },
+      "attachments": [
+        {
+          "id": 102,
+          "url": "https://s3.example.com/project-notifications/site-status-updates/report_1.pdf",
+          "name": "site_report.pdf",
+          "mime_type": "application/pdf",
+          "type": "document",
+          "size": 1024000
+        }
+      ],
+      "form_data": {
+        "update_date": "2026-07-01",
+        "update_time": "14:00",
+        "site_status_id": "uuid",
+        "completion_percentage": "45.00",
+        "current_status_description": "تم إنجاز 45% من الأعمال"
+      }
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "last_action": "التحديث الدوري لحالة الموقع",
+    "start_date": "2026-07-01",
+    "progress": 20
+  }
+}
+```
+
+**Field reference — each item**:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string (UUID) | Taken procedure record ID |
+| `step_number` | int | Sequential display number (1-based) |
+| `name` | string\|null | Procedure setting name (Arabic label) |
+| `icon` | string\|null | Icon identifier for UI |
+| `percentage` | float\|null | Progress weight (0–100) |
+| `form` | string | Form key (e.g., `createProjectNotificationTask`, `updateProjectNotificationSiteStatus`, `projectNotificationFine`) |
+| `taken_by` | {id, name}\|null | User who submitted/initiated the procedure |
+| `taken_at` | string\|null | Submission timestamp (`Y-m-d H:i:s`) |
+| `status` | string\|null | Workflow process status (`completed`, `in_progress`, `pending`, `failed`) — always `completed` for taken procedures |
+| `steps` | array | Workflow approval steps, each with `step_order`, `name`, `status` (`approved`/`rejected`/`pending`), `action_by` ({id, name}\|null), `acted_at` |
+| `approved_by` | {id, name}\|null | User who approved the final workflow step |
+| `attachments` | array | Files uploaded with this procedure — each has `id`, `url`, `name`, `mime_type`, `type`, `size` |
+| `form_data` | object\|null | The submitted form payload (varies by `form` key — see below) |
+
+**`form_data` varies by `form` key**:
+
+| `form` | `form_data` contents |
+|---|---|
+| `createProjectNotificationTask` | Initial notification fields (notification_type, feeder_number, work_description, notes, etc.) |
+| `updateProjectNotificationTask` | Updated fields (notification_type, feeder_number, work_description, contractor_name, etc.) |
+| `updateProjectNotificationSiteStatus` | {update_date, update_time, site_status_id, current_site_status_id, work_stages_completed, current_status_description, completion_percentage, updates_obstacles, additional_notes} |
+| `projectNotificationFine` | {reason, items: [{name_ar, name_en, quantity, unit_amount, total_amount}], total_amount} |
+| `confirmProjectNotificationLocation` | {latitude, longitude, distance_meters, is_inside_location} |
+| `projectNotificationWorkStoppageReport` | {other_notes, reasons: [{reason_id, notes}]} |
+| `projectNotificationWorkResumption` | {reasons_resolved, safety_notes_reviewed, site_ready, contractor_notified, notes} |
+| `projectNotificationTaskPostponement` | {new_task_date, new_task_time, reason} |
+| `endProjectNotificationTask` | {latitude, longitude, notes} |
+
+**Multiple submissions**: Forms like `updateProjectNotificationSiteStatus`, `projectNotificationFine`, `updateProjectNotificationTask`, etc. can be submitted multiple times. Each submission creates a separate taken procedure entry with its own `form_data`, `attachments`, and `steps`. The frontend should render each entry as a separate card/row in the timeline, grouped by `form` key if needed.
+
+**Frontend rendering tips**:
+- Render the timeline as a vertical list of cards, ordered by `step_number`.
+- Each card shows: `name` (title), `taken_by.name` + `taken_at` (subtitle), `status` badge.
+- Expandable section: `steps` (approval chain), `attachments` (file previews/downloads), `form_data` (submitted data as key-value pairs).
+- `approved_by` is a shortcut to the last approver — display it as a badge or summary.
+- For multiple submissions of the same form, group them under a collapsible section per `form` key, or show them inline with a repeated badge.
 - **Workflow-based request endpoints** (`request-update`, `request-site-status-update`, `request-fine`, `confirm-location`, `request-work-stoppage-report`, `request-work-resumption`, `request-task-postponement`, `end`): Each creates a Process snapshot with the submitted data (except `end`, which uses the EmployeeTask lifecycle end flow). The actual DB record is created only after all workflow steps are approved. If `internal_procedure_setting_id` is null or no procedure setting is configured, the change is applied immediately (no workflow). All accept an optional `internal_procedure_setting_id` UUID parameter.
 - `request-update` accepts: `notification_type`, `feeder_number`, `work_description`, `contractor_name`, `contractor_technical_name`, `contractor_mobile`, `task_latitude`, `task_longitude`, `notes`, `internal_procedure_setting_id`, `files[]` (jpg/jpeg/png/webp, max 10MB).
 - `request-site-status-update` accepts: `update_date` (Y-m-d), `update_time` (H:i), `site_status_id` (UUID), `current_site_status_id` (UUID), `work_stages_completed`, `current_status_description`, `completion_percentage` (0-100), `updates_obstacles`, `additional_notes`, `internal_procedure_setting_id`, `files[]`, optional `current_latitude`/`current_longitude` (used by the `InsideTaskLocation` condition).

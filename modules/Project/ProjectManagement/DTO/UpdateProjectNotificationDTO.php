@@ -31,6 +31,8 @@ final class UpdateProjectNotificationDTO
         public readonly ?string $taskDate                  = null,
         public readonly ?float  $durationHours             = null,
         public readonly ?string $notes                     = null,
+        public readonly ?array  $files                     = null,
+        public readonly ?array  $deletedMediaIds           = null,
     ) {}
 
     public function toArray(): array
