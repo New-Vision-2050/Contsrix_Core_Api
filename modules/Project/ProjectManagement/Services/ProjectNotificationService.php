@@ -763,22 +763,29 @@ class ProjectNotificationService
             return $notification->fresh();
         }
 
-        if (!in_array($notification->status, ['pending'], true)) {
+        if (!in_array($notification->status, ['pending', 'in_progress'], true)) {
             throw ProjectNotificationException::cannotApprove($notification->status);
         }
 
-        $notification->update([
-            'status' => 'approved',
-            'approved_by' => $userId,
-            'approved_at' => now(),
-        ]);
-
-        if ($task && $task->status === EmployeeTaskStatus::Pending->value) {
-            $task->update([
-                'status' => EmployeeTaskStatus::Approved->value,
+        if ($notification->status === 'pending') {
+            $notification->update([
+                'status' => 'approved',
                 'approved_by' => $userId,
                 'approved_at' => now(),
             ]);
+
+            if ($task && $task->status === EmployeeTaskStatus::Pending->value) {
+                $task->update([
+                    'status' => EmployeeTaskStatus::Approved->value,
+                    'approved_by' => $userId,
+                    'approved_at' => now(),
+                ]);
+            }
+        } else {
+            $notification->forceFill([
+                'approved_by' => $userId,
+                'approved_at' => now(),
+            ])->save();
         }
 
         return $notification->fresh();
@@ -801,24 +808,32 @@ class ProjectNotificationService
             return $notification->fresh();
         }
 
-        if (!in_array($notification->status, ['pending'], true)) {
+        if (!in_array($notification->status, ['pending', 'in_progress'], true)) {
             throw ProjectNotificationException::cannotReject($notification->status);
         }
 
-        $notification->update([
-            'status' => 'rejected',
-            'rejected_by' => $userId,
-            'rejected_at' => now(),
-            'rejection_reason' => $reason,
-        ]);
-
-        if ($task && $task->status === EmployeeTaskStatus::Pending->value) {
-            $task->update([
-                'status' => EmployeeTaskStatus::Rejected->value,
+        if ($notification->status === 'pending') {
+            $notification->update([
+                'status' => 'rejected',
                 'rejected_by' => $userId,
                 'rejected_at' => now(),
                 'rejection_reason' => $reason,
             ]);
+
+            if ($task && $task->status === EmployeeTaskStatus::Pending->value) {
+                $task->update([
+                    'status' => EmployeeTaskStatus::Rejected->value,
+                    'rejected_by' => $userId,
+                    'rejected_at' => now(),
+                    'rejection_reason' => $reason,
+                ]);
+            }
+        } else {
+            $notification->forceFill([
+                'rejected_by' => $userId,
+                'rejected_at' => now(),
+                'rejection_reason' => $reason,
+            ])->save();
         }
 
         return $notification->fresh();
