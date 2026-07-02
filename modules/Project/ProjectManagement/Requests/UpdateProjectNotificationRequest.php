@@ -42,6 +42,10 @@ class UpdateProjectNotificationRequest extends FormRequest
             'task_date'                   => ['nullable', 'date_format:Y-m-d'],
             'duration_hours'              => ['nullable', 'numeric', 'min:0.25', 'max:24'],
             'notes'                       => ['nullable', 'string'],
+            'files'                       => ['nullable', 'array'],
+            'files.*'                     => ['file', 'max:20480'],
+            'deleted_media_ids'           => ['nullable', 'array'],
+            'deleted_media_ids.*'         => ['integer', 'exists:media,id'],
         ];
     }
 
@@ -72,6 +76,8 @@ class UpdateProjectNotificationRequest extends FormRequest
             taskDate: $this->input('task_date'),
             durationHours: $this->filled('duration_hours') ? (float) $this->input('duration_hours') : null,
             notes: $this->input('notes'),
+            files: $this->hasFile('files') ? $this->file('files') : null,
+            deletedMediaIds: $this->input('deleted_media_ids'),
         );
     }
 }

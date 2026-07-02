@@ -332,6 +332,25 @@ class ProjectNotificationService
 
         $this->repository->update($id, $data);
 
+        // Delete requested media files
+        if (! empty($dto->deletedMediaIds)) {
+            foreach ($dto->deletedMediaIds as $mediaId) {
+                $media = $notification->getMedia('attachments')->where('id', $mediaId)->first();
+                $media?->delete();
+            }
+        }
+
+        // Upload new files
+        if (! empty($dto->files)) {
+            $this->fileUploadService->uploadFile(
+                model: $notification,
+                file: $dto->files,
+                filePath: 'project-notifications/attachments',
+                collectionName: 'attachments',
+                visibility: 'public',
+            );
+        }
+
         return $notification->fresh();
     }
 
