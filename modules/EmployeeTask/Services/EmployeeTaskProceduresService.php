@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Models\InternalProcedureTaken;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\Process\Models\Process;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Shared\Media\Models\CustomMedia;
@@ -37,20 +38,22 @@ final class EmployeeTaskProceduresService
             throw EmployeeTaskException::notFound();
         }
 
+        $processableType = $task->procedureSettingType()->value;
+
         /** @var Collection<int, InternalProcedureTaken> $taken */
         $taken = InternalProcedureTaken::query()
-            ->where('processable_type', $task->procedureSettingType()->value)
+            ->where('processable_type', $processableType)
             ->where('processable_id', $taskId)
             ->with(['procedureSetting', 'takenByUser'])
             ->orderBy('taken_at')
             ->get();
 
-        // Load all completed processes for this task, with steps and action users.
+        // Load ALL processes (completed + in-progress) for this task.
         $processes = Process::query()
-            ->where('processable_type', $task->procedureSettingType()->value)
+            ->where('processable_type', $processableType)
             ->where('processable_id', $taskId)
-            ->where('status', ProcessStatus::Completed)
-            ->with(['steps.procedureSettingStep', 'steps.actionByUser'])
+            ->whereIn('status', [ProcessStatus::InProgress, ProcessStatus::Completed])
+            ->with(['steps.procedureSettingStep', 'steps.actionByUser', 'procedureSetting'])
             ->orderBy('created_at')
             ->get();
 
@@ -101,6 +104,35 @@ final class EmployeeTaskProceduresService
 
             $items[] = [
                 'taken' => $takenRecord,
+                'process' => $process,
+                'attachments' => $attachments,
+                'form_data' => $formData,
+            ];
+        }
+
+        // Append in-progress processes that have no matching taken record.
+        // These represent pending workflow steps (e.g. creation approval still in progress).
+        foreach ($processes as $process) {
+            if (in_array($process->id, $usedProcessIds, true)) {
+                continue;
+            }
+            if ($process->status !== ProcessStatus::InProgress) {
+                continue;
+            }
+
+            $attachments = [];
+            $fileIds = $process->metadata['files'] ?? [];
+            if (is_array($fileIds)) {
+                foreach ($fileIds as $id) {
+                    if (isset($mediaMap[$id])) {
+                        $attachments[] = $mediaMap[$id];
+                    }
+                }
+            }
+            $formData = $process->metadata['update'] ?? $process->metadata ?? null;
+
+            $items[] = [
+                'taken' => null,
                 'process' => $process,
                 'attachments' => $attachments,
                 'form_data' => $formData,
@@ -162,6 +194,10 @@ final class EmployeeTaskProceduresService
         $last       = $taken->last();
         $first      = $taken->first();
 
+        // Include in-progress (pending) procedures in the total count.
+        $pendingCount = collect($items)->where('taken', '===', null)->count();
+        $totalWithPending = $total + $pendingCount;
+
         $avgProgress = $total > 0
             ? (int) round(
                 $taken->avg(fn ($t) => (float) ($t->procedureSetting?->percentage ?? 0))
@@ -169,7 +205,7 @@ final class EmployeeTaskProceduresService
             : 0;
 
         $summary = [
-            'total'       => $total,
+            'total'       => $totalWithPending,
             'last_action' => $last?->procedureSetting?->name,
             'start_date'  => $first?->taken_at?->format('Y-m-d'),
             'progress'    => $avgProgress,

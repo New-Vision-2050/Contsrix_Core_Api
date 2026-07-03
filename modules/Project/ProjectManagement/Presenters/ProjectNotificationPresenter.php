@@ -89,7 +89,7 @@ class ProjectNotificationPresenter
         ];
     }
 
-    public function toListArray(bool $fullEmployeeTask = false): array
+    public function toListArray(bool $fullEmployeeTask = false, bool $assignedTasks = false): array
     {
         $n = $this->notification;
 
@@ -103,7 +103,7 @@ class ProjectNotificationPresenter
             'contractor_name'             => $n->contractor_name,
             'feeder_number'               => $n->feeder_number,
             'status'                      => $n->status,
-            'status_label'                => $this->statusLabel($n->status),
+            'status_label'                => $this->statusLabel($n->status, $assignedTasks),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
             'task_time'                   => $n->task_time?->format('H:i'),
             'duration_hours'              => $n->relationLoaded('employeeTask') && $n->employeeTask
@@ -139,11 +139,11 @@ class ProjectNotificationPresenter
         return (new self($notification))->toArray();
     }
 
-    public static function collection(iterable $notifications, bool $fullEmployeeTask = false): array
+    public static function collection(iterable $notifications, bool $fullEmployeeTask = false, bool $assignedTasks = false): array
     {
         $result = [];
         foreach ($notifications as $notification) {
-            $result[] = (new self($notification))->toListArray($fullEmployeeTask);
+            $result[] = (new self($notification))->toListArray($fullEmployeeTask, $assignedTasks);
         }
         return $result;
     }
@@ -171,7 +171,7 @@ class ProjectNotificationPresenter
         return $setting?->id;
     }
 
-    private function statusLabel(string $status): string
+    private function statusLabel(string $status, bool $assignedTasks = false): string
     {
         $locale = app()->getLocale();
 
@@ -183,6 +183,10 @@ class ProjectNotificationPresenter
             'completed' => ['ar' => 'مكتمل', 'en' => 'Completed'],
             'cancelled' => ['ar' => 'ملغي', 'en' => 'Cancelled'],
         ];
+
+        if ($assignedTasks && $status === 'in_progress') {
+            return $locale === 'ar' ? 'تم الاستلام' : 'Received';
+        }
 
         return $labels[$status][$locale] ?? $status;
     }

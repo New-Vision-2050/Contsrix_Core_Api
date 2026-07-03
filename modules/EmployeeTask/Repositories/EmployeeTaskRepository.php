@@ -391,6 +391,10 @@ class EmployeeTaskRepository
         return EmployeeTaskRequest::query()
             ->where('user_id', $userId)
             ->whereIn('status', EmployeeTaskStatus::activeStatuses())
+            ->where(function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->first();
     }
 
