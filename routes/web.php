@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\User\Controllers\UserController;
 use App\Events\ConnectionTestEvent;
+use App\Http\Controllers\TwilioVoiceController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -25,3 +26,8 @@ Route::get('/test-broadcast', function () {
 
 // Get user companies by email - No tenant initialization required
 
+// Twilio voice webhook (public, no auth — Twilio calls this)
+Route::post('/twilio/voice', [TwilioVoiceController::class, 'handleIncoming']);
+
+// Outbound voice call (add your auth middleware if needed)
+Route::post('/api/twilio/voice/call', [TwilioVoiceController::class, 'call']);

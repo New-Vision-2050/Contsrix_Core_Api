@@ -122,6 +122,7 @@ class UpdateProcedureSettingStepRequest extends FormRequest
             'notify_by_whatsapp' => 'sometimes|boolean',
             'notify_by_sms'      => 'sometimes|boolean',
             'notify_by_push'     => 'sometimes|boolean',
+            'notify_by_voice'    => 'sometimes|boolean',
             'skipping_period'    => 'sometimes|nullable|integer|min:0',
 
             'escalation_management_hierarchy_id' => 'sometimes|nullable|integer|exists:management_hierarchies,id',

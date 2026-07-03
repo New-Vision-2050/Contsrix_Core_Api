@@ -45,6 +45,12 @@ return [
         'auth_token' => env('TWILIO_AUTH_TOKEN', ''),
         'whatsapp_from' => env('TWILIO_WHATSAPP_FROM', ''), // e.g. whatsapp:+14155238886
     ],
+    'twilio_voice' => [
+        'sid' => env('TWILIO_SID', ''),
+        'api_key_sid' => env('TWILIO_VOICE_API_KEY_SID', ''),
+        'api_key_secret' => env('TWILIO_VOICE_API_KEY_SECRET', ''),
+        'from' => env('TWILIO_VOICE_FROM', env('TWILIO_WHATSAPP_FROM', '')),
+    ],
     'google' => [
         'maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
     ],

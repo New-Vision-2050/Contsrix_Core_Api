@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Notifications;
 
 use App\Notifications\Drivers\SMS\MoraSms;
+use App\Notifications\Drivers\Voice\TwilioVoice;
 use App\Notifications\Drivers\WhatsApp\TwilioWhatsApp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -65,12 +66,21 @@ class WorkflowActionRequired extends Notification
 
         $fullPhone = $this->buildInternationalPhoneNumber($notifiable);
 
-        $templateSid = 'HX85df75809e53a804f5b4f9ef24aabb6d';
+        return $driver
+            ->to($fullPhone)
+            ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]));
+    }
+
+    public function toVoice(object $notifiable): TwilioVoice
+    {
+        $driver = new TwilioVoice;
+        $stepName = $this->templateStep->name ?? 'Workflow Step';
+
+        $fullPhone = $this->buildInternationalPhoneNumber($notifiable);
 
         return $driver
             ->to($fullPhone)
-            ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]))
-            ->template($templateSid, ['1' => $stepName]);
+            ->twimlUrl(url('/twilio/voice'));
     }
 
     private function resolveSmsDriver(object $notifiable): MoraSms

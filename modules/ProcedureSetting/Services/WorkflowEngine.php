@@ -193,6 +193,9 @@ final class WorkflowEngine
         if ($templateStep->notify_by_whatsapp) {
             $channels[] = 'whatsapp';
         }
+        if ($templateStep->notify_by_voice) {
+            $channels[] = 'voice';
+        }
 
         if ($channels === []) {
             return;

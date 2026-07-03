@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Channels\SmsChannel;
+use App\Channels\VoiceChannel;
 use App\Channels\WhatsAppChannel;
 use App\Http\Controllers\HelperClass\MailClass;
 use Illuminate\Support\Facades\Notification;
@@ -33,6 +34,10 @@ class AppServiceProvider extends ServiceProvider
 
         Notification::extend('whatsapp', function ($app) {
             return new WhatsAppChannel();
+        });
+
+        Notification::extend('voice', function ($app) {
+            return new VoiceChannel();
         });
 
         // Defer mail config loading to avoid database query during bootstrap

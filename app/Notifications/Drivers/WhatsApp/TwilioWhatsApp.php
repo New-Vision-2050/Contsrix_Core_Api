@@ -13,46 +13,33 @@ class TwilioWhatsApp
     protected string $accountSid;
     protected string $authToken;
     protected string $whatsappFrom;
-    protected string $templateSid = '';
-    protected array $templateVariables = [];
 
     public function __construct(string $line = '')
     {
         $this->line = $line;
 
+        try {
+            $driver = Driver::query()
+                ->where('driver_type', 'whatsapp')
+                ->where('name', 'twilio')
+                ->first();
+
+            if ($driver && ! empty($driver->config['TWILIO_SID']) && ! empty($driver->config['TWILIO_AUTH_TOKEN'])) {
+                $this->accountSid = $driver->config['TWILIO_SID'];
+                $this->authToken = $driver->config['TWILIO_AUTH_TOKEN'];
+                $this->whatsappFrom = $driver->config['TWILIO_WHATSAPP_FROM'] ?? '';
+
+                return;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('TwilioWhatsApp: could not query drivers table, falling back to env config', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $this->accountSid = config('services.twilio.sid', '');
         $this->authToken = config('services.twilio.auth_token', '');
         $this->whatsappFrom = config('services.twilio.whatsapp_from', '');
-
-        if (empty($this->accountSid) || empty($this->authToken) || empty($this->whatsappFrom)) {
-            try {
-                $driver = Driver::query()
-                    ->where('driver_type', 'whatsapp')
-                    ->where('name', 'twilio')
-                    ->first();
-
-                if ($driver && ! empty($driver->config['TWILIO_SID']) && ! empty($driver->config['TWILIO_AUTH_TOKEN'])) {
-                    if (empty($this->accountSid)) {
-                        $this->accountSid = $driver->config['TWILIO_SID'];
-                    }
-                    if (empty($this->authToken)) {
-                        $this->authToken = $driver->config['TWILIO_AUTH_TOKEN'];
-                    }
-                    if (empty($this->whatsappFrom)) {
-                        $this->whatsappFrom = $driver->config['TWILIO_WHATSAPP_FROM'] ?? '';
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning('TwilioWhatsApp: could not query drivers table, falling back to env config', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        Log::debug('TwilioWhatsApp: resolved configuration', [
-            'whatsapp_from' => $this->whatsappFrom,
-            'source' => $this->whatsappFrom === (config('services.twilio.whatsapp_from', '')) ? 'env' : 'database',
-        ]);
     }
 
     public function line(string $line = ''): self
@@ -72,14 +59,6 @@ class TwilioWhatsApp
     public function from(string $from): self
     {
         $this->whatsappFrom = $from;
-
-        return $this;
-    }
-
-    public function template(string $templateSid, array $variables = []): self
-    {
-        $this->templateSid = $templateSid;
-        $this->templateVariables = $variables;
 
         return $this;
     }
@@ -106,16 +85,13 @@ class TwilioWhatsApp
         try {
             $client = new Client($this->accountSid, $this->authToken);
 
-            $params = ['from' => $from];
-
-            if (! empty($this->templateSid)) {
-                $params['contentSid'] = $this->templateSid;
-                $params['contentVariables'] = json_encode($this->templateVariables, JSON_UNESCAPED_UNICODE);
-            } else {
-                $params['body'] = $this->line;
-            }
-
-            $message = $client->messages->create($to, $params);
+            $message = $client->messages->create(
+                $to,
+                [
+                    'from' => $from,
+                    'body' => $this->line,
+                ]
+            );
 
             Log::info('Twilio WhatsApp message sent', [
                 'sid' => $message->sid,
