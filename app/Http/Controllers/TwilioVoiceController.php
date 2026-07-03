@@ -16,7 +16,7 @@ class TwilioVoiceController
         $response = <<<TWIML
 <?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="alice" language="ar-EG">مرحباً، أهلاً بك في كونستريكس.</Say>
+    <Say voice="Polly.Zeina" language="ar-EG">مرحباً، أهلاً بك في كونستريكس.</Say>
 </Response>
 TWIML;
 
