@@ -85,12 +85,21 @@ class AttendanceStatusService
             return collect();
         }
 
-        return Attendance::query()
-            ->whereIn('id', $repIds)
-            ->with(AttendanceTeamPresenter::requiredRelations())
-            ->select($this->baseAttendanceSelectColumns())
-            ->orderBy('start_time')
-            ->get();
+        $columns = $this->baseAttendanceSelectColumns();
+        $relations = AttendanceTeamPresenter::requiredRelations();
+
+        return $repIds
+            ->chunk(200)
+            ->flatMap(function (Collection $chunk) use ($columns, $relations): Collection {
+                return Attendance::query()
+                    ->whereIn('id', $chunk->all())
+                    ->with($relations)
+                    ->select($columns)
+                    ->orderBy('start_time')
+                    ->get();
+            })
+            ->sortBy('start_time')
+            ->values();
     }
 
     public function build(?User $user, ?Attendance $attendance, ?string $requestedDate = null): array

@@ -10,14 +10,14 @@ class EmployeeTaskTypeSeeder extends Seeder
 {
     public function run(): void
     {
-        $taskType = EmployeeTaskType::firstOrCreate(
+        $taskType = EmployeeTaskType::updateOrCreate(
             ['key' => 'employee-task'],
-            ['id' => (string) Str::uuid(), 'name' => 'Employee Task']
+            [ 'name' => 'مهمة عمل']
         );
 
-        EmployeeTaskType::firstOrCreate(
+        EmployeeTaskType::updateOrCreate(
             ['key' => 'project_notification'],
-            ['id' => (string) Str::uuid(), 'name' => 'إشعار مشروع']
+            ['name' => 'إشعار مشروع']
         );
     }
 }
