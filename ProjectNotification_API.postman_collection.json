@@ -709,6 +709,44 @@
               "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": null,\n  \"payload\": [\n    {\n      \"user_id\": \"user-uuid-1\",\n      \"name\": \"أحمد محمد\",\n      \"status\": \"available\",\n      \"status_label\": \"متاح\",\n      \"distance_meters\": 320,\n      \"distance_label\": \"320 م\",\n      \"last_update\": \"2026-06-27 09:45:00\",\n      \"location\": {\n        \"latitude\": 24.714,\n        \"longitude\": 46.6755,\n        \"accuracy\": 5,\n        \"source\": \"GPS\"\n      },\n      \"attendance\": {\n        \"id\": \"attendance-uuid\",\n        \"status\": \"active\",\n        \"clock_in_time\": \"08:00:00\"\n      }\n    },\n    {\n      \"user_id\": \"user-uuid-2\",\n      \"name\": \"خالد علي\",\n      \"status\": \"busy\",\n      \"status_label\": \"مشغول\",\n      \"distance_meters\": 1500,\n      \"distance_label\": \"1.5 كم\",\n      \"last_update\": \"2026-06-27 09:30:00\",\n      \"location\": {\n        \"latitude\": 24.72,\n        \"longitude\": 46.68,\n        \"accuracy\": 10,\n        \"source\": \"GPS\"\n      },\n      \"attendance\": {\n        \"id\": \"attendance-uuid-2\",\n        \"status\": \"active\",\n        \"clock_in_time\": \"07:30:00\"\n      }\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Get Notification Types (Dropdown)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/notification-types",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "notification-types"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\", \"message\": \"Notification types retrieved successfully\", \"payload\": [{\"id\": \"uuid-1\", \"value\": \"جهد متوسط كابلات هوائي\", \"name_ar\": \"جهد متوسط كابلات هوائي\", \"name_en\": \"Medium voltage aerial cables\", \"sort_order\": 1, \"is_active\": true}, {\"id\": \"uuid-2\", \"value\": \"جهد متوسط كابلات ارضي\", \"name_ar\": \"جهد متوسط كابلات ارضي\", \"name_en\": \"Medium voltage ground cables\", \"sort_order\": 2, \"is_active\": true}, {\"id\": \"uuid-3\", \"value\": \"جهد منخفض كابلات ارضي\", \"name_ar\": \"جهد منخفض كابلات ارضي\", \"name_en\": \"Low voltage ground cables\", \"sort_order\": 3, \"is_active\": true}, {\"id\": \"uuid-4\", \"value\": \"جهد منخفض كابلات هوائي\", \"name_ar\": \"جهد منخفض كابلات هوائي\", \"name_en\": \"Low voltage aerial cables\", \"sort_order\": 4, \"is_active\": true}, {\"id\": \"uuid-5\", \"value\": \"جهد متوسط معدات هوائي\", \"name_ar\": \"جهد متوسط معدات هوائي\", \"name_en\": \"Medium voltage aerial equipment\", \"sort_order\": 5, \"is_active\": true}, {\"id\": \"uuid-6\", \"value\": \"جهد متوسط معدات ارضي\", \"name_ar\": \"جهد متوسط معدات ارضي\", \"name_en\": \"Medium voltage ground equipment\", \"sort_order\": 6, \"is_active\": true}, {\"id\": \"uuid-7\", \"value\": \"جهد منخفض معدات ارضي\", \"name_ar\": \"جهد منخفض معدات ارضي\", \"name_en\": \"Low voltage ground equipment\", \"sort_order\": 7, \"is_active\": true}, {\"id\": \"uuid-8\", \"value\": \"جهد منخفض معدات هوائي\", \"name_ar\": \"جهد منخفض معدات هوائي\", \"name_en\": \"Low voltage aerial equipment\", \"sort_order\": 8, \"is_active\": true}]}"
+            }
+          ]
         }
       ]
     },
@@ -2459,24 +2497,58 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
             ],
             "url": {
               "raw": "{{url}}/projects/notifications/{{notification_id}}/procedures",
-              "host": ["{{url}}"],
-              "path": ["projects", "notifications", "{{notification_id}}", "procedures"]
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "{{notification_id}}",
+                "procedures"
+              ]
             },
             "description": "Returns the timeline of all taken (completed) internal procedures for the linked EmployeeTask, ordered by taken_at ascending.\n\nUse this after confirm-receive / take-action / end to display the procedures (الإجراءات) tab.\n\nResponse includes:\n- `items`: ordered list with `step_number`, `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`.\n- `summary`: `total`, `last_action`, `start_date`, `progress`."
           },
           "response": [
             {
               "name": "Success",
-              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/projects/notifications/{{notification_id}}/procedures", "host": ["{{url}}"], "path": ["projects", "notifications", "{{notification_id}}", "procedures"] } },
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{url}}/projects/notifications/{{notification_id}}/procedures",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "projects",
+                    "notifications",
+                    "{{notification_id}}",
+                    "procedures"
+                  ]
+                }
+              },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
               "cookie": [],
               "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Procedures retrieved successfully\",\n  \"payload\": {\n    \"items\": [\n      {\n        \"id\": \"taken-uuid-1\",\n        \"step_number\": 1,\n        \"name\": \"تأكيد استلام\",\n        \"icon\": \"check-circle\",\n        \"percentage\": 25,\n        \"form\": { \"key\": \"confirmProjectNotificationPresence\", \"label_ar\": \"تأكيد استلام\" },\n        \"taken_by\": { \"id\": \"user-uuid\", \"name\": \"المهندس أحمد\" },\n        \"taken_at\": \"2026-06-25 09:00:00\"\n      },\n      {\n        \"id\": \"taken-uuid-2\",\n        \"step_number\": 2,\n        \"name\": \"تحديث\",\n        \"icon\": \"refresh\",\n        \"percentage\": 50,\n        \"form\": { \"key\": \"updateProjectNotificationTask\", \"label_ar\": \"تحديث\" },\n        \"taken_by\": { \"id\": \"user-uuid\", \"name\": \"المهندس أحمد\" },\n        \"taken_at\": \"2026-06-25 11:30:00\"\n      }\n    ],\n    \"summary\": {\n      \"total\": 2,\n      \"last_action\": \"تحديث\",\n      \"start_date\": \"2026-06-25\",\n      \"progress\": 38\n    }\n  }\n}"
             }

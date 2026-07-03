@@ -10,6 +10,7 @@ use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSee
 use Modules\ProcedureSetting\Database\Seeders\ProjectNotificationProcedureSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ContractorSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectNotificationSiteStatusSeeder;
+use Modules\Project\ProjectManagement\Database\Seeders\ProjectNotificationTypeSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectNotificationWorkStoppageReasonSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectPermissionsSeeder;
 use Modules\Project\TermServices\Database\Seeders\TermServicesSeeder;
@@ -173,6 +174,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProjectNotificationProcedureSeeder::class);
         $this->call(ProjectNotificationSiteStatusSeeder::class);
         $this->call(ProjectNotificationWorkStoppageReasonSeeder::class);
+        $this->call(ProjectNotificationTypeSeeder::class);
         $this->call(ContractorSeeder::class);
 
 
