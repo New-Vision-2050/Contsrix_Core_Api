@@ -22,6 +22,7 @@ class TwilioVoice
         $this->authToken = config('services.twilio.auth_token', '');
         $this->apiKeySid = config('services.twilio_voice.api_key_sid', '');
         $this->apiKeySecret = config('services.twilio_voice.api_key_secret', '');
+        $this->from = config('services.twilio_voice.from', '');
 
         if (empty($this->accountSid) || (empty($this->authToken) && (empty($this->apiKeySid) || empty($this->apiKeySecret)))) {
             try {
@@ -42,6 +43,9 @@ class TwilioVoice
                     }
                     if (empty($this->apiKeySecret)) {
                         $this->apiKeySecret = $driver->config['TWILIO_VOICE_API_KEY_SECRET'] ?? '';
+                    }
+                    if (empty($this->from)) {
+                        $this->from = $driver->config['TWILIO_VOICE_FROM'] ?? '';
                     }
                 }
             } catch (\Throwable $e) {
