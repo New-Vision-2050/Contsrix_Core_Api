@@ -45,6 +45,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(LogApiRequestMiddleware::class);
         $middleware->prepend(\App\Http\Middleware\DomainToTenantMiddleware::class);
 
+        $middleware->validateCsrfTokens(except: [
+            '/twilio/voice',
+            '/twilio/voice/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);
