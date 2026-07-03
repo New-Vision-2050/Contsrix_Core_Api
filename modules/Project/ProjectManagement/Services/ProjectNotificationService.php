@@ -40,6 +40,7 @@ use Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatus;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationType;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReason;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason;
@@ -160,20 +161,25 @@ class ProjectNotificationService
     }
 
     /**
-     * List distinct notification types from existing project notifications.
+     * List active project notification types from the seeded lookup table.
      * Used to populate the notification type dropdown/filter.
      *
-     * @return list<array{value: string}>
+     * @return list<array{id: string, value: string, name_ar: string, name_en: string, sort_order: int, is_active: bool}>
      */
     public function listNotificationTypes(): array
     {
-        return ProjectNotification::query()
-            ->whereNotNull('notification_type')
-            ->where('notification_type', '!=', '')
-            ->distinct()
-            ->orderBy('notification_type')
-            ->pluck('notification_type')
-            ->map(fn ($type) => ['value' => $type])
+        return ProjectNotificationType::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn ($type) => [
+                'id' => $type->id,
+                'value' => $type->name_ar,
+                'name_ar' => $type->name_ar,
+                'name_en' => $type->name_en,
+                'sort_order' => $type->sort_order,
+                'is_active' => $type->is_active,
+            ])
             ->values()
             ->all();
     }
