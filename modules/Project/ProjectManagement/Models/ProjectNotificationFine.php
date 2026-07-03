@@ -53,6 +53,11 @@ class ProjectNotificationFine extends Model implements HasMedia
         return 'company_id';
     }
 
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('attachments');
+    }
+
     public function projectNotification(): BelongsTo
     {
         return $this->belongsTo(ProjectNotification::class, 'project_notification_id')->withoutGlobalScopes();

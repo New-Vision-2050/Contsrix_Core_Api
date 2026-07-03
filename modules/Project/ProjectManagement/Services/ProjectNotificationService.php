@@ -121,7 +121,7 @@ class ProjectNotificationService
         // 5. Sync notification status from the task.
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
 
-        return $notification->fresh();
+        return $this->repository->findById($notification->id) ?? $notification->fresh();
     }
 
     public function list(FilterProjectNotificationDTO $dto): LengthAwarePaginator
@@ -351,7 +351,7 @@ class ProjectNotificationService
             );
         }
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     /**
@@ -391,7 +391,7 @@ class ProjectNotificationService
                 metadata:           ['update' => $dto->toArray()],
             ));
 
-            return $notification->fresh();
+            return $this->get($id);
         }
 
         $metadata = [
@@ -407,7 +407,7 @@ class ProjectNotificationService
             $procedureSetting,
         );
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     /**
@@ -445,7 +445,7 @@ class ProjectNotificationService
             // No procedure configured → create immediately.
             $this->createSiteStatusUpdateRecord($notification, $task, $dto, $userId);
 
-            return $notification->fresh();
+            return $this->get($id);
         }
 
         $metadata = [
@@ -462,7 +462,7 @@ class ProjectNotificationService
             $procedureSetting,
         );
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     /**
@@ -500,7 +500,7 @@ class ProjectNotificationService
             // No procedure configured → create immediately.
             $this->createFineRecord($notification, $task, $dto, $userId);
 
-            return $notification->fresh();
+            return $this->get($id);
         }
 
         $metadata = [
@@ -521,7 +521,7 @@ class ProjectNotificationService
             $procedureSetting,
         );
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     /**
@@ -559,7 +559,7 @@ class ProjectNotificationService
             // No procedure configured → create immediately.
             $this->createLocationConfirmationRecord($notification, $task, $dto, $userId);
 
-            return $notification->fresh();
+            return $this->get($id);
         }
 
         $metadata = [
@@ -575,7 +575,7 @@ class ProjectNotificationService
             $procedureSetting,
         );
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     /**
@@ -605,7 +605,7 @@ class ProjectNotificationService
             // No procedure configured → create immediately.
             $this->createWorkStoppageReportRecord($notification, $task, $dto, $userId);
 
-            return $notification->fresh();
+            return $this->get($id);
         }
 
         $metadata = [
@@ -625,7 +625,7 @@ class ProjectNotificationService
             $procedureSetting,
         );
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     /**
@@ -654,7 +654,7 @@ class ProjectNotificationService
         if ($procedureSetting === null) {
             $this->createWorkResumptionRecord($notification, $task, $dto, $userId);
 
-            return $notification->fresh();
+            return $this->get($id);
         }
 
         $metadata = [
@@ -677,7 +677,7 @@ class ProjectNotificationService
             $procedureSetting,
         );
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     /**
@@ -711,7 +711,7 @@ class ProjectNotificationService
                 $userId,
             );
 
-            return $notification->fresh();
+            return $this->get($id);
         }
 
         $metadata = [
@@ -731,7 +731,7 @@ class ProjectNotificationService
             $procedureSetting,
         );
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     public function delete(string $id): bool
@@ -768,7 +768,7 @@ class ProjectNotificationService
                 'approved_at' => now(),
             ])->save();
 
-            return $notification->fresh();
+            return $this->get($id);
         }
 
         if (!in_array($notification->status, ['pending', 'in_progress'], true)) {
@@ -796,7 +796,7 @@ class ProjectNotificationService
             ])->save();
         }
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     public function reject(string $id, string $userId, string $reason, ?string $procedureSettingId = null): ProjectNotification
@@ -818,7 +818,7 @@ class ProjectNotificationService
                 'rejection_reason' => $reason,
             ])->save();
 
-            return $notification->fresh();
+            return $this->get($id);
         }
 
         if (!in_array($notification->status, ['pending', 'in_progress'], true)) {
@@ -849,7 +849,7 @@ class ProjectNotificationService
             ])->save();
         }
 
-        return $notification->fresh();
+        return $this->get($id);
     }
 
     /**
