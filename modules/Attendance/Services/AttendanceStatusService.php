@@ -89,13 +89,12 @@ class AttendanceStatusService
         $relations = AttendanceTeamPresenter::requiredRelations();
 
         return $repIds
-            ->chunk(200)
+            ->chunk(100)
             ->flatMap(function (Collection $chunk) use ($columns, $relations): Collection {
                 return Attendance::query()
                     ->whereIn('id', $chunk->all())
                     ->with($relations)
                     ->select($columns)
-                    ->orderBy('start_time')
                     ->get();
             })
             ->sortBy('start_time')
