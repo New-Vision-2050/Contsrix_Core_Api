@@ -28,8 +28,6 @@ class TwilioWhatsApp
                 $this->accountSid = $driver->config['TWILIO_SID'];
                 $this->authToken = $driver->config['TWILIO_AUTH_TOKEN'];
                 $this->whatsappFrom = $driver->config['TWILIO_WHATSAPP_FROM'] ?? '';
-
-                return;
             }
         } catch (\Throwable $e) {
             Log::warning('TwilioWhatsApp: could not query drivers table, falling back to env config', [
@@ -37,9 +35,20 @@ class TwilioWhatsApp
             ]);
         }
 
-        $this->accountSid = config('services.twilio.sid', '');
-        $this->authToken = config('services.twilio.auth_token', '');
-        $this->whatsappFrom = config('services.twilio.whatsapp_from', '');
+        if (empty($this->accountSid)) {
+            $this->accountSid = config('services.twilio.sid', '');
+        }
+        if (empty($this->authToken)) {
+            $this->authToken = config('services.twilio.auth_token', '');
+        }
+        if (empty($this->whatsappFrom)) {
+            $this->whatsappFrom = config('services.twilio.whatsapp_from', '');
+        }
+
+        Log::debug('TwilioWhatsApp: resolved configuration', [
+            'whatsapp_from' => $this->whatsappFrom,
+            'source' => $this->whatsappFrom === (config('services.twilio.whatsapp_from', '')) ? 'env' : 'database',
+        ]);
     }
 
     public function line(string $line = ''): self
