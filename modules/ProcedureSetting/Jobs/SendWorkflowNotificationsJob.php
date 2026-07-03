@@ -112,6 +112,16 @@ class SendWorkflowNotificationsJob implements ShouldQueue
             }
         }
 
+        if (in_array('voice', $available, true)) {
+            $phone = trim((string) $user->phone);
+            if ($phone === '') {
+                Log::warning('SendWorkflowNotificationsJob: voice skipped, user has no phone', [
+                    'user_id' => $user->id,
+                ]);
+                $available = array_values(array_diff($available, ['voice']));
+            }
+        }
+
         return $available;
     }
 }
