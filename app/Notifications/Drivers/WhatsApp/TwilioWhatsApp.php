@@ -13,6 +13,8 @@ class TwilioWhatsApp
     protected string $accountSid;
     protected string $authToken;
     protected string $whatsappFrom;
+    protected string $templateSid = '';
+    protected array $templateVariables = [];
 
     public function __construct(string $line = '')
     {
@@ -74,6 +76,14 @@ class TwilioWhatsApp
         return $this;
     }
 
+    public function template(string $templateSid, array $variables = []): self
+    {
+        $this->templateSid = $templateSid;
+        $this->templateVariables = $variables;
+
+        return $this;
+    }
+
     public function send(): mixed
     {
         if (empty($this->accountSid) || empty($this->authToken) || empty($this->whatsappFrom)) {
@@ -96,13 +106,16 @@ class TwilioWhatsApp
         try {
             $client = new Client($this->accountSid, $this->authToken);
 
-            $message = $client->messages->create(
-                $to,
-                [
-                    'from' => $from,
-                    'body' => $this->line,
-                ]
-            );
+            $params = ['from' => $from];
+
+            if (! empty($this->templateSid)) {
+                $params['contentSid'] = $this->templateSid;
+                $params['contentVariables'] = json_encode($this->templateVariables, JSON_UNESCAPED_UNICODE);
+            } else {
+                $params['body'] = $this->line;
+            }
+
+            $message = $client->messages->create($to, $params);
 
             Log::info('Twilio WhatsApp message sent', [
                 'sid' => $message->sid,
