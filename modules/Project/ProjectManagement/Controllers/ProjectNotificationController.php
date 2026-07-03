@@ -370,7 +370,7 @@ class ProjectNotificationController extends Controller
         ]);
 
         return Json::items(
-            ProjectNotificationPresenter::collection($paginator->items(), true),
+            ProjectNotificationPresenter::collection($paginator->items(), true, true),
             paginationSettings: [
                 'total' => $paginator->total(),
                 'per_page' => $paginator->perPage(),

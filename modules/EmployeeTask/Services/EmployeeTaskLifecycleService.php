@@ -49,9 +49,11 @@ final class EmployeeTaskLifecycleService
             throw EmployeeTaskException::pendingStartRequestExists();
         }
 
-        $activeTask = $this->taskRepo->findActiveTaskForUser((string) $user->id);
-        if ($activeTask && $activeTask->id !== $task->id) {
-            throw EmployeeTaskException::hasOtherOpenTask();
+        if (! $task->is_project_notification) {
+            $activeTask = $this->taskRepo->findActiveTaskForUser((string) $user->id);
+            if ($activeTask && $activeTask->id !== $task->id) {
+                throw EmployeeTaskException::hasOtherOpenTask();
+            }
         }
 
         // Project-notification tasks are created from the dashboard and their

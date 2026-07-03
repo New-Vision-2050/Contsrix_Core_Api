@@ -1026,15 +1026,6 @@ class ProjectNotificationService
                 throw EmployeeTaskException::pendingStartRequestExists();
             }
 
-            $activeTask = EmployeeTaskRequest::query()
-                ->where('user_id', $user->id)
-                ->whereIn('status', EmployeeTaskStatus::activeStatuses())
-                ->first();
-
-            if ($activeTask && $activeTask->id !== $task->id) {
-                throw EmployeeTaskException::hasOtherOpenTask();
-            }
-
             $task = $this->lifecycleService->performStart($task, $dto, $user);
         }
 
