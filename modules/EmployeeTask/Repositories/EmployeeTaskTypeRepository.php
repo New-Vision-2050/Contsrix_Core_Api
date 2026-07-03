@@ -11,7 +11,9 @@ class EmployeeTaskTypeRepository
 {
     public function list(array $filters = []): Collection
     {
-        return EmployeeTaskType::filter($filters)->get();
+        return EmployeeTaskType::filter($filters)
+            ->where('key', '!=', 'project_notification')
+            ->get();
     }
 
     public function create(array $data): EmployeeTaskType
