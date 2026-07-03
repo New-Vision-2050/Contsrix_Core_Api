@@ -49,6 +49,10 @@ class EmployeeTaskRepository
     {
         $query = EmployeeTaskRequest::filter($filters)
             ->where('user_id', $userId)
+            ->where(function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->with(['sessions']);
 
         $this->applySorting($query, $sort);
@@ -403,7 +407,11 @@ class EmployeeTaskRepository
         $dateTo   = $filters['date_to']   ?? null;
 
         $statusQuery = EmployeeTaskRequest::query()
-            ->where('user_id', $userId);
+            ->where('user_id', $userId)
+            ->where(function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            });
         $this->applyDateFilters($statusQuery, $taskDate, $dateFrom, $dateTo);
         $statusCounts = $statusQuery
             ->selectRaw('status, COUNT(*) as count')
@@ -413,6 +421,10 @@ class EmployeeTaskRepository
 
         $projectQuery = EmployeeTaskRequest::query()
             ->where('user_id', $userId)
+            ->where(function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->whereNotNull('project_id');
         $this->applyDateFilters($projectQuery, $taskDate, $dateFrom, $dateTo);
         $projectRows = $projectQuery
@@ -431,7 +443,11 @@ class EmployeeTaskRepository
         }
 
         $durationQuery = EmployeeTaskRequest::query()
-            ->where('user_id', $userId);
+            ->where('user_id', $userId)
+            ->where(function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            });
         $this->applyDateFilters($durationQuery, $taskDate, $dateFrom, $dateTo);
         $durationStats = $durationQuery
             ->selectRaw('MIN(duration_hours) as min_hours, MAX(duration_hours) as max_hours')
