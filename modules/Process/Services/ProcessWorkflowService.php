@@ -63,14 +63,31 @@ class ProcessWorkflowService
 
             $sortOrder = $setting->sort_order ?? ($index + 1);
 
-            $exists = Process::query()
-                ->where('processable_id', $processableId)
-                ->where('processable_type', $processableType)
-                ->where('sort_order', $sortOrder)
-                ->exists();
+            // Internal/lifecycle forms (e.g. site-status updates, fines, work
+            // stoppage reports) can be requested multiple times for the same task.
+            // Without this guard, the second request would find the same sort_order
+            // already used, skip creating a process, and return null — which the
+            // caller treats as auto-approve. We find the next free sort_order so each
+            // request gets its own approval workflow.
+            if ($setting->form !== null) {
+                while (Process::query()
+                    ->where('processable_id', $processableId)
+                    ->where('processable_type', $processableType)
+                    ->where('sort_order', $sortOrder)
+                    ->exists()
+                ) {
+                    $sortOrder++;
+                }
+            } else {
+                $exists = Process::query()
+                    ->where('processable_id', $processableId)
+                    ->where('processable_type', $processableType)
+                    ->where('sort_order', $sortOrder)
+                    ->exists();
 
-            if ($exists) {
-                continue;
+                if ($exists) {
+                    continue;
+                }
             }
 
             $process = Process::create([
