@@ -6,6 +6,7 @@ namespace Modules\ProcedureSetting\Services;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Modules\ProcedureSetting\DTO\WorkflowStartResult;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Jobs\SendWorkflowNotificationsJob;
@@ -196,6 +197,16 @@ final class WorkflowEngine
         if ($templateStep->notify_by_voice) {
             $channels[] = 'voice';
         }
+
+        Log::debug('WorkflowEngine::dispatchNotifications selected channels', [
+            'template_step_id' => $templateStep->id,
+            'channels' => $channels,
+            'notify_by_email' => $templateStep->notify_by_email,
+            'notify_by_sms' => $templateStep->notify_by_sms,
+            'notify_by_whatsapp' => $templateStep->notify_by_whatsapp,
+            'notify_by_push' => $templateStep->notify_by_push,
+            'notify_by_voice' => $templateStep->notify_by_voice,
+        ]);
 
         if ($channels === []) {
             return;
