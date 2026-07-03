@@ -80,7 +80,22 @@ class WorkflowActionRequired extends Notification
 
         return $driver
             ->to($fullPhone)
-            ->twimlUrl(url('/twilio/voice'));
+            ->twimlUrl($this->buildTwimlUrl());
+    }
+
+    private function buildTwimlUrl(): string
+    {
+        $appUrl = rtrim((string) config('app.url'), '/');
+
+        if ($appUrl === '' || $appUrl === 'http://localhost') {
+            $appUrl = 'https://core-be-production.constrix-nv.com';
+        }
+
+        if (! str_starts_with($appUrl, 'http://') && ! str_starts_with($appUrl, 'https://')) {
+            $appUrl = 'https://' . $appUrl;
+        }
+
+        return $appUrl . '/twilio/voice';
     }
 
     private function resolveSmsDriver(object $notifiable): MoraSms
