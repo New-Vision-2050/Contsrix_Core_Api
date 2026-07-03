@@ -65,9 +65,12 @@ class WorkflowActionRequired extends Notification
 
         $fullPhone = $this->buildInternationalPhoneNumber($notifiable);
 
+        $templateSid = 'HX85df75809e53a804f5b4f9ef24aabb6d';
+
         return $driver
             ->to($fullPhone)
-            ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]));
+            ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]))
+            ->template($templateSid, ['1' => $stepName]);
     }
 
     private function resolveSmsDriver(object $notifiable): MoraSms
