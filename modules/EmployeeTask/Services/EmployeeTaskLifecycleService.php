@@ -16,6 +16,7 @@ use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\EmployeeTask\Repositories\EmployeeTaskSessionRepository;
 use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
 use Modules\EmployeeTask\Services\EmployeeTaskEndRequestService;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
@@ -276,7 +277,15 @@ final class EmployeeTaskLifecycleService
             });
         }
 
-        return $this->performEnd($task, $dto);
+        $task = $this->performEnd($task, $dto);
+
+        // When the end-task form has no workflow steps, the lifecycle takes the
+        // action directly. We still notify the centralized workflow engine via the
+        // WorkflowProcedureTaken event so internal_procedure_takens stays in sync
+        // and available-actions/procedures can order downstream actions correctly.
+        $this->markEndTaskProcedureTaken($task, $dto);
+
+        return $task;
     }
 
     /**
@@ -321,6 +330,45 @@ final class EmployeeTaskLifecycleService
 
         $task->refresh()->load(['sessions']);
         return $task;
+    }
+
+    /**
+     * Notify the workflow engine that the end-task procedure was taken even when
+     * the form has no workflow steps (direct/auto-approve end). The
+     * RecordInternalProcedureTaken listener records it in internal_procedure_takens,
+     * making the procedures timeline and the available-actions ordering consistent.
+     */
+    private function markEndTaskProcedureTaken(EmployeeTaskRequest $task, EndTaskDTO $dto): void
+    {
+        $procedureSettingId = $dto->internalProcedureSettingId;
+
+        if ($procedureSettingId === null) {
+            $formKey = $task->is_project_notification
+                ? InternalProcessForm::EndProjectNotificationTask->value
+                : InternalProcessForm::EndTask->value;
+
+            $procedureSettingId = ProcedureSetting::query()
+                ->where('parent_id', $task->procedure_setting_id)
+                ->where('form', $formKey)
+                ->where('is_active', true)
+                ->value('id');
+        }
+
+        if ($procedureSettingId === null) {
+            return;
+        }
+
+        event(new WorkflowProcedureTaken(
+            processableType: $task->procedureSettingType()->value,
+            processableId: $task->id,
+            procedureSettingId: $procedureSettingId,
+            takenBy: $task->user_id,
+            metadata: [
+                'latitude' => $dto->latitude,
+                'longitude' => $dto->longitude,
+                'notes' => $dto->notes,
+            ],
+        ));
     }
 
     private function resolveParentFromProcedureSetting(ProcedureSetting $setting): ?ProcedureSetting

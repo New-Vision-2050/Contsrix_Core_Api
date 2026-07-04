@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\EmployeeTask\Services;
 
+use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
@@ -30,6 +31,11 @@ final class EmployeeTaskAvailableActionsService
 
         if (! $task) {
             throw EmployeeTaskException::notFound();
+        }
+
+        // No further actions can be taken on terminal tasks.
+        if (in_array($task->status, EmployeeTaskStatus::terminalStatuses(), true)) {
+            return [];
         }
 
         $task->loadMissing('user.userProfessionalData');
