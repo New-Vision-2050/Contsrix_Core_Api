@@ -6,7 +6,9 @@ namespace Modules\Project\ProjectManagement\Tests\Feature;
 
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Models\UserLocation;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
@@ -110,6 +112,61 @@ class ProjectNotificationEmployeesWithLocationsTest extends BaseAttendanceReport
         $offlineRow = $payload->firstWhere('user_id', (string) $offlineUser->id);
         $this->assertSame('offline', $offlineRow['status']);
         $this->assertNull($offlineRow['location']);
+    }
+
+    public function test_latest_user_location_is_determined_by_recorded_at_not_uuid_id(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-04 15:40:00'));
+
+        $project = $this->createProject();
+        $user = $this->createProjectUser('Location User');
+        $this->assignToProject($project, $user);
+
+        // UserLocation.id is a UUID and is NOT chronological. The newer record intentionally
+        // has a smaller id than the older record, so any MAX(id) logic would pick the stale point.
+        // Insert directly so the deterministic ids are stored regardless of UuidTrait behavior.
+        DB::table('user_locations')->insert([
+            [
+                'id' => '00000000-0000-0000-0000-000000000000',
+                'user_id' => $user->id,
+                'company_id' => $this->company->id,
+                'latitude' => 21.7126771,
+                'longitude' => 39.2211670,
+                'accuracy' => 2.18,
+                'location_source' => 'GPS',
+                'recorded_at' => '2026-07-04 15:39:35',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+                'user_id' => $user->id,
+                'company_id' => $this->company->id,
+                'latitude' => 21.6349003,
+                'longitude' => 39.1325632,
+                'accuracy' => 2.21,
+                'location_source' => 'GPS',
+                'recorded_at' => '2026-07-01 12:50:41',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/notifications/employees-with-locations?'.http_build_query([
+                'project_id' => $project->id,
+                'latitude' => 21.900157203209186,
+                'longitude' => 39.20270970649,
+            ]));
+
+        $response->assertOk();
+
+        $row = collect($response->json('payload'))->firstWhere('user_id', (string) $user->id);
+
+        $this->assertSame('2026-07-04 15:39:35', $row['last_update']);
+        $this->assertSame(21.7126771, $row['location']['latitude']);
+        $this->assertSame(39.2211670, $row['location']['longitude']);
     }
 
     public function test_radius_filter_excludes_employees_outside_range(): void

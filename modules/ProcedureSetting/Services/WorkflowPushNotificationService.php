@@ -35,9 +35,12 @@ final class WorkflowPushNotificationService
             return;
         }
 
+        $stepName = $step->name ?? __('emails.workflow-push-action-required-title');
         $title = __('emails.workflow-push-action-required-title');
-        $body = __('emails.workflow-push-action-required-body');
-        $stepName = $step->name ?? $title;
+        $body = __('emails.workflow-push-action-required-body', [
+            'step' => $stepName,
+            'order' => $step->step_order ?? 1,
+        ]);
 
         foreach ($users as $user) {
             try {

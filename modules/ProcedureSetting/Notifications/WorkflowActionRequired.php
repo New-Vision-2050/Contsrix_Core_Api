@@ -52,50 +52,55 @@ class WorkflowActionRequired extends Notification
     public function toSms(object $notifiable)
     {
         $driver = $this->resolveSmsDriver($notifiable);
-        $stepName = $this->templateStep->name ?? 'Workflow Step';
 
         return $driver
             ->to($notifiable->phone)
-            ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]));
+            ->line($this->buildActionMessage());
     }
 
     public function toWhatsapp(object $notifiable): TwilioWhatsApp
     {
         $driver = $this->resolveWhatsAppDriver($notifiable);
-        $stepName = $this->templateStep->name ?? 'Workflow Step';
 
         $fullPhone = $this->buildInternationalPhoneNumber($notifiable);
 
         return $driver
             ->to($fullPhone)
-            ->line(__('emails.workflow-action-required-sms', ['step' => $stepName]));
+            ->line($this->buildActionMessage());
     }
 
     public function toVoice(object $notifiable): TwilioVoice
     {
         $driver = new TwilioVoice;
-        $stepName = $this->templateStep->name ?? 'Workflow Step';
-
         $fullPhone = $this->buildInternationalPhoneNumber($notifiable);
 
         return $driver
             ->to($fullPhone)
-            ->twimlUrl($this->buildTwimlUrl());
+            ->twiml($this->buildVoiceTwiml());
     }
 
-    private function buildTwimlUrl(): string
+    private function buildActionMessage(): string
     {
-        $appUrl = rtrim((string) config('app.url'), '/');
+        $stepName = $this->templateStep->name ?? 'Workflow Step';
 
-        if ($appUrl === '' || $appUrl === 'http://localhost') {
-            $appUrl = 'https://core-be-production.constrix-nv.com';
-        }
+        return __('emails.workflow-action-required-detailed', [
+            'step' => $stepName,
+            'order' => $this->templateStep->step_order ?? 1,
+        ]);
+    }
 
-        if (! str_starts_with($appUrl, 'http://') && ! str_starts_with($appUrl, 'https://')) {
-            $appUrl = 'https://' . $appUrl;
-        }
+    private function buildVoiceTwiml(): string
+    {
+        $message = htmlspecialchars($this->buildActionMessage(), ENT_XML1, 'UTF-8');
 
-        return $appUrl . '/twilio/voice';
+        return <<<TWIML
+<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Say voice="Polly.Zeina" language="ar-EG">$message</Say>
+    <Pause length="1"/>
+    <Say voice="Polly.Zeina" language="ar-EG">$message</Say>
+</Response>
+TWIML;
     }
 
     private function resolveSmsDriver(object $notifiable): MoraSms

@@ -11,6 +11,7 @@ class TwilioVoice
     protected string $to = '';
     protected string $from = '';
     protected string $url = '';
+    protected string $twiml = '';
     protected string $accountSid;
     protected string $authToken;
     protected string $apiKeySid;
@@ -74,6 +75,12 @@ class TwilioVoice
         return $this;
     }
 
+    public function twiml(string $twiml): self
+    {
+        $this->twiml = $twiml;
+        return $this;
+    }
+
     public function send(): mixed
     {
         $missingAuth = empty($this->authToken) && (empty($this->apiKeySid) || empty($this->apiKeySecret));
@@ -82,20 +89,25 @@ class TwilioVoice
             return false;
         }
 
-        if (empty($this->url)) {
-            Log::error('Twilio Voice TwiML URL is required.');
+        if (empty($this->url) && empty($this->twiml)) {
+            Log::error('Twilio Voice requires either a TwiML URL or raw TwiML.');
             return false;
         }
 
         try {
             $client = $this->createTwilioClient();
 
+            $params = [];
+            if (! empty($this->twiml)) {
+                $params['twiml'] = $this->twiml;
+            } else {
+                $params['url'] = $this->url;
+            }
+
             $call = $client->calls->create(
                 $this->to,
                 $this->from,
-                [
-                    'url' => $this->url,
-                ]
+                $params
             );
 
             Log::info('Twilio Voice call initiated', [
