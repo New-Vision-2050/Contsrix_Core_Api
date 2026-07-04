@@ -16,7 +16,7 @@ class TwilioVoiceController
         $response = <<<TWIML
 <?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="Polly.Zeina" language="ar-EG">مرحباً، أهلاً بك في كونستريكس.</Say>
+    <Say voice="Polly.Zeina" language="ar-EG">مرحباً، أهلاً بك في ابعاد الرؤية .</Say>
 </Response>
 TWIML;
 
@@ -36,7 +36,7 @@ TWIML;
 
         $to = $validated['to'];
         $from = $validated['from'] ?? config('services.twilio_voice.from');
-        $twimlUrl = $validated['twiml_url'] ?? url('/api/twilio/voice');
+        $twimlUrl = $validated['twiml_url'] ?? url('/twilio/voice');
 
         $sid = (new TwilioVoice)
             ->to($to)
