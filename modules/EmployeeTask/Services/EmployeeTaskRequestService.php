@@ -628,16 +628,8 @@ class EmployeeTaskRequestService
         );
 
         if ($result->autoApprove) {
-            if ($resolvedSetting !== null) {
-                event(new WorkflowProcedureTaken(
-                    processableType:    $task->procedureSettingType()->value,
-                    processableId:      $task->id,
-                    procedureSettingId: $resolvedSetting->id,
-                    takenBy:            $task->user_id,
-                    metadata:           $metadata,
-                ));
-            }
-
+            // WorkflowEngine::startWorkflow() already fired WorkflowProcedureTaken
+            // when the resolved setting has no resolvable steps.
             event(new EmployeeTaskLifecycleProcessCompleted(
                 task:     $task,
                 process:  null,

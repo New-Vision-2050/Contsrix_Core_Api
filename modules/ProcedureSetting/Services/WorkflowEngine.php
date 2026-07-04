@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Modules\ProcedureSetting\DTO\WorkflowStartResult;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Jobs\SendWorkflowNotificationsJob;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
@@ -151,9 +152,26 @@ final class WorkflowEngine
             $metadata,
         );
 
-        return $process === null
+        $result = $process === null
             ? new WorkflowStartResult(autoApprove: true, activeProcess: null)
             : new WorkflowStartResult(autoApprove: false, activeProcess: $process);
+
+        // When the caller explicitly resolved a lifecycle form (e.g. end task, site
+        // status update) and it has no resolvable workflow steps, treat it as an
+        // auto-approved internal procedure. Fire the centralized event so the
+        // listener records it in internal_procedure_takens, keeping the procedures
+        // timeline and available-actions ordering consistent.
+        if ($result->autoApprove && $resolvedSetting !== null && $resolvedSetting->form !== null) {
+            event(new WorkflowProcedureTaken(
+                processableType: $processableType,
+                processableId: $processableId,
+                procedureSettingId: $resolvedSetting->id,
+                takenBy: $createdByUserId,
+                metadata: $metadata,
+            ));
+        }
+
+        return $result;
     }
 
     /**
