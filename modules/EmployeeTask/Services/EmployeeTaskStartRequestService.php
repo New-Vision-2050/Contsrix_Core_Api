@@ -69,7 +69,7 @@ final class EmployeeTaskStartRequestService
                 ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
                 ->first();
 
-            if ($setting !== null && $setting->steps->isNotEmpty()) {
+            if ($setting !== null) {
                 return $setting;
             }
 
@@ -290,11 +290,6 @@ final class EmployeeTaskStartRequestService
 
         if (! $setting) {
             throw EmployeeTaskException::invalidProcedureSetting();
-        }
-
-        // No steps configured → auto-approve (return null so caller skips workflow)
-        if ($setting->steps->isEmpty()) {
-            return null;
         }
 
         return $setting;
