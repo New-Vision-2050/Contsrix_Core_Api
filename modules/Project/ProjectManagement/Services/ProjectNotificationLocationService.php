@@ -38,12 +38,18 @@ class ProjectNotificationLocationService
         // 2. Get the latest user_locations record per user (no date filter).
         //    The track-location API always writes to user_locations, even when
         //    the user has active attendance, so this is the most reliable source.
-        $latestLocationIds = UserLocation::whereIn('user_id', $userIds)
-            ->selectRaw('user_id, MAX(id) as max_id')
-            ->groupBy('user_id')
-            ->pluck('max_id');
+        //    Note: id is a UUID, so MAX(id) is meaningless; order by recorded_at.
+        $latestLocationSubquery = UserLocation::whereIn('user_id', $userIds)
+            ->select('user_id', \DB::raw('MAX(recorded_at) as max_recorded_at'))
+            ->groupBy('user_id');
 
-        $latestUserLocations = UserLocation::whereIn('id', $latestLocationIds)
+        $latestUserLocations = UserLocation::joinSub($latestLocationSubquery, 'latest_locations', function ($join) {
+            $join->on('user_locations.user_id', '=', 'latest_locations.user_id')
+                ->on('user_locations.recorded_at', '=', 'latest_locations.max_recorded_at');
+        })
+            ->select('user_locations.*')
+            ->orderByDesc('user_locations.created_at')
+            ->orderByDesc('user_locations.id')
             ->get()
             ->keyBy('user_id');
 
