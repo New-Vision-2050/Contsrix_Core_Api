@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectManagement\Services;
 
 use Modules\Project\ProjectManagement\Repositories\ProjectEmployeeRepository;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectRole;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -75,6 +76,15 @@ class ProjectEmployeeService
             ->where('company_id', tenant('id'))
             ->firstOrFail();
 
+        $mandatoryReason = $this->getMandatoryReason(
+            userId: (string) $contractEmployee->user_id,
+            project: $project
+        );
+
+        if ($mandatoryReason !== null) {
+            throw new \Exception('Cannot remove mandatory project employee: '.$mandatoryReason, 422);
+        }
+
         return $this->repository->delete($contractEmployeeId);
     }
 
@@ -95,11 +105,38 @@ class ProjectEmployeeService
     {
         $projectEmployee = $this->repository->findOneOrFail($projectEmployeeId);
 
+        ProjectManagement::withoutGlobalScope('shareable')
+            ->where('id', $projectEmployee->project_id)
+            ->where('company_id', tenant('id'))
+            ->firstOrFail();
+
+        $roleBelongsToProject = ProjectRole::query()
+            ->where('id', $projectRoleId)
+            ->where('project_id', $projectEmployee->project_id)
+            ->exists();
+
+        if (! $roleBelongsToProject) {
+            throw new \Exception('Project role does not belong to this project', 422);
+        }
+
         $updated = $this->repository->update($projectEmployeeId, [
             'project_role_id' => $projectRoleId,
         ]);
 
         // Reload with relationships
         return $this->repository->findOneOrFail($projectEmployeeId, ['user', 'assignedBy', 'projectRole', 'company']);
+    }
+
+    private function getMandatoryReason(string $userId, ProjectManagement $project): ?string
+    {
+        if ($project->manager_id && $userId === (string) $project->manager_id) {
+            return 'project_manager';
+        }
+
+        if ($project->created_by_user_id && $userId === (string) $project->created_by_user_id) {
+            return 'project_creator';
+        }
+
+        return null;
     }
 }
