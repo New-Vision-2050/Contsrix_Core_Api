@@ -240,7 +240,9 @@ final class EmployeeTaskStartRequestService
     {
         $task->load('user.userProfessionalData');
         $timezone     = $this->resolveTimezone($task);
-        $radiusMeters = $this->locationService->snapshotRadiusFromConstraint($task->user);
+        $radiusMeters = $task->is_project_notification && $task->radius_meters !== null
+            ? (int) $task->radius_meters
+            : $this->locationService->snapshotRadiusFromConstraint($task->user);
         $now          = CarbonImmutable::now($timezone);
 
         $this->taskRepo->update($task, [

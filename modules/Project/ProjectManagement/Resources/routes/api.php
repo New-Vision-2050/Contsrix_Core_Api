@@ -117,6 +117,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // Project Notifications Routes
     Route::prefix('notifications')->group(function () {
         // Static routes MUST come before /{id} to avoid route conflicts
+        Route::get('/map-tasks', [ProjectNotificationController::class, 'mapTasks'])
+            ->permission(Permission::PROJECT_NOTIFICATION_LIST());
         Route::get('/contractors', [ContractorController::class, 'index'])
             ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
         Route::get('/employees-with-locations', [ProjectNotificationController::class, 'employeesWithLocations'])

@@ -59,6 +59,24 @@ class ProjectNotificationRepository
     }
 
     /**
+     * Map view query: returns all matching notifications without pagination,
+     * eager loading the assigned user and their branch timezone chain.
+     */
+    public function allForMap(array $filters): Collection
+    {
+        $query = ProjectNotification::filter($filters)
+            ->with([
+                'assignedUser.userProfessionalData.branch.address.country.timezones',
+                'project',
+                'contractor',
+            ]);
+
+        $this->applySorting($query, null);
+
+        return $query->get();
+    }
+
+    /**
      * Mobile "my-tasks" query. The assigned_user_id filter is applied directly
      * because the EloquentFilter relation handling can drop it when the
      * assignedUser relation is whitelisted in $relations.
