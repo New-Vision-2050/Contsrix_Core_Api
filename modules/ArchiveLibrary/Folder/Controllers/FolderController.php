@@ -147,6 +147,7 @@ class FolderController extends Controller
         $searchType = $request->getSearchType();
         $branchId = $request->getBranchId();
         $sort = $request->getSort();
+        $contractualEngagementKey = $request->getContractualEngagementKey();
 
         $result = $this->folderService->getFoldersAndFiles(
             $userId,
@@ -162,7 +163,8 @@ class FolderController extends Controller
             $searchType,
             $branchId,
             $sort,
-            $request->wantsWithoutTenancy()
+            $request->wantsWithoutTenancy(),
+            $contractualEngagementKey
         );
 
 
