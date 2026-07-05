@@ -101,6 +101,7 @@ class ProjectNotificationService
             assignmentResponsibleId: $dto->assignmentResponsibleId,
             notes: $dto->notes,
             files: $dto->files,
+            radiusMeters: $dto->locationRadius,
         );
 
         // 3. Delegate to EmployeeTaskRequestService with the dedicated form key.
@@ -999,7 +1000,12 @@ class ProjectNotificationService
      */
     public function confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
     {
-        $task = $this->linkedTask($notificationId);
+        $notification = $this->get($notificationId);
+        $task = $notification->employeeTask;
+
+        if (! $task) {
+            throw ProjectNotificationException::linkedTaskNotFound($notificationId);
+        }
 
         // If the creation workflow (createProjectNotificationTask) still has pending
         // steps, the employee confirms/approves the current step. On the final step
@@ -1027,6 +1033,11 @@ class ProjectNotificationService
             }
 
             $task = $this->lifecycleService->performStart($task, $dto, $user);
+
+            // Record the exact moment the employee confirmed/received the task.
+            if ($notification->confirmation_receive_date === null) {
+                $notification->update(['confirmation_receive_date' => now()]);
+            }
         }
 
         return $task->fresh();

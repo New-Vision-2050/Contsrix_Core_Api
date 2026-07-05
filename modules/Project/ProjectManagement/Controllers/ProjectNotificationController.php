@@ -524,6 +524,8 @@ class ProjectNotificationController extends Controller
             $user,
         );
 
+        $task->load('projectNotification');
+
         return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task confirmed successfully');
     }
 
@@ -542,6 +544,8 @@ class ProjectNotificationController extends Controller
             ),
             $user,
         );
+
+        $task->load('projectNotification');
 
         return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task started successfully');
     }

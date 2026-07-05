@@ -361,7 +361,7 @@ class AdminEmployeeTaskController extends Controller
         $adminId = (string) Auth::id();
         $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to']);
 
-        $taskCount         = $this->requestService->inboxAll($adminId, $filters)->count();
+        $taskCount         = $this->requestService->inboxAll($adminId, $filters)->where('status', 'pending')->count();
         $extCount          = $this->extensionService->listInboxAllForAdmin($adminId, $filters)->count();
         $approvalCount     = $this->requestService->inboxAllApprovals($adminId, $filters)->count();
         $endRequestCount   = $this->requestService->inboxAllEndRequests($adminId, $filters)->count();

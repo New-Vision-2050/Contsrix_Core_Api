@@ -36,6 +36,7 @@ class ProjectNotificationExport extends BaseExport
             'Project',
             'Status',
             'Task Date',
+            'Confirmation Receive Date',
             'Distance (m)',
             'Created At',
         ];
@@ -56,6 +57,7 @@ class ProjectNotificationExport extends BaseExport
             $row->project?->name,
             $row->status,
             $row->task_date?->format('Y-m-d'),
+            $row->confirmation_receive_date?->format('Y-m-d H:i:s'),
             $row->selected_distance_meters,
             $row->created_at?->format('Y-m-d H:i:s'),
         ];

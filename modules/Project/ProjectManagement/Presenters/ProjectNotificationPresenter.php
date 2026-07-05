@@ -56,6 +56,7 @@ class ProjectNotificationPresenter
             'rejected_by'                 => $n->rejected_by,
             'rejected_at'                 => $n->rejected_at?->format('Y-m-d H:i:s'),
             'rejection_reason'            => $n->rejection_reason,
+            'confirmation_receive_date'   => $n->confirmation_receive_date?->format('Y-m-d H:i:s'),
             'created_by_user_id'          => $n->created_by_user_id,
             'created_at'                  => $n->created_at?->format('Y-m-d H:i:s'),
             'updated_at'                  => $n->updated_at?->format('Y-m-d H:i:s'),
@@ -110,6 +111,7 @@ class ProjectNotificationPresenter
                 ? ($n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null)
                 : null,
             'selected_distance_meters'    => $n->selected_distance_meters,
+            'confirmation_receive_date'     => $n->confirmation_receive_date?->format('Y-m-d H:i:s'),
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'pending_processes'           => $this->resolvePendingProcesses($n),
             'violations_count'            => 0,

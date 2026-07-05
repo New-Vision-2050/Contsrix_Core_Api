@@ -62,6 +62,13 @@ final class EmployeeTaskRequestPresenter
             'task_type'                       => $task->relationLoaded('employeeTaskType') && $task->employeeTaskType
                 ? ['id' => $task->employeeTaskType->id, 'key' => $task->employeeTaskType->key, 'title' => $task->employeeTaskType->title]
                 : null,
+            'project_notification'       => $task->relationLoaded('projectNotification') && $task->projectNotification
+                ? [
+                    'id' => $task->projectNotification->id,
+                    'notification_number' => $task->projectNotification->notification_number,
+                    'confirmation_receive_date' => $task->projectNotification->confirmation_receive_date?->format('Y-m-d H:i:s'),
+                ]
+                : null,
             'current_step'               => $this->presentCurrentStep($task),
             'attachments' => $task->relationLoaded('media')
                 ? MediaPresenter::collection($task->media)

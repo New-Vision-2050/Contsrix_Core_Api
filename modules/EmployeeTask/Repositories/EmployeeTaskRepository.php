@@ -89,19 +89,28 @@ class EmployeeTaskRepository
      * Returns pending tasks where the given admin is either:
      *  - an explicit action-taker on the current step, OR
      *  - the step has no action-takers configured (open step).
+     *
+     * Also includes rejected project notification tasks so they remain visible
+     * after auto-rejection when the task date passes.
      */
     public function paginateInboxForAdmin(string $adminId, array $filters, int $perPage = 15): LengthAwarePaginator
     {
         $query = EmployeeTaskRequest::query()
-            ->where('employee_task_requests.status', 'pending')
-            ->whereHas('processes', function ($q) use ($adminId) {
-                $q->where('status', ProcessStatus::InProgress)
-                  ->whereHas('steps', function ($q) use ($adminId) {
-                      $q->where('status', 'pending')
-                        ->where(function ($q) use ($adminId) {
-                            $q->where('assigned_user_id', $adminId)
-                              ->orWhereJsonContains('authorized_user_ids', $adminId);
+            ->where(function ($q) use ($adminId) {
+                $q->where('employee_task_requests.status', 'pending')
+                  ->whereHas('processes', function ($q) use ($adminId) {
+                      $q->where('status', ProcessStatus::InProgress)
+                        ->whereHas('steps', function ($q) use ($adminId) {
+                            $q->where('status', 'pending')
+                              ->where(function ($q) use ($adminId) {
+                                  $q->where('assigned_user_id', $adminId)
+                                    ->orWhereJsonContains('authorized_user_ids', $adminId);
+                              });
                         });
+                  })
+                  ->orWhere(function ($q) {
+                      $q->where('employee_task_requests.status', 'rejected')
+                        ->where('employee_task_requests.is_project_notification', true);
                   });
             })
             ->with([
@@ -165,16 +174,26 @@ class EmployeeTaskRepository
     {
         $query = EmployeeTaskRequest::query()
             ->filter($filters)
-            ->where('employee_task_requests.status', 'pending')
-            ->whereHas('processes', function ($q) use ($adminId) {
-                $q->where('status', ProcessStatus::InProgress)
-                  ->whereHas('steps', function ($q) use ($adminId) {
-                      $q->where('status', 'pending')
-                        ->where(function ($q) use ($adminId) {
-                            $q->where('assigned_user_id', $adminId)
-                              ->orWhereJsonContains('authorized_user_ids', $adminId);
+            ->where(function ($q) use ($adminId) {
+                // Actionable pending tasks with a workflow step for this admin.
+                $q->where('employee_task_requests.status', 'pending')
+                  ->whereHas('processes', function ($q) use ($adminId) {
+                      $q->where('status', ProcessStatus::InProgress)
+                        ->whereHas('steps', function ($q) use ($adminId) {
+                            $q->where('status', 'pending')
+                              ->where(function ($q) use ($adminId) {
+                                  $q->where('assigned_user_id', $adminId)
+                                    ->orWhereJsonContains('authorized_user_ids', $adminId);
+                              });
                         });
                   });
+
+                // Rejected project notification tasks must stay visible in the inbox
+                // even after auto-rejection (task date passed) or manual rejection.
+                $q->orWhere(function ($q) {
+                    $q->where('employee_task_requests.status', 'rejected')
+                      ->where('employee_task_requests.is_project_notification', true);
+                });
             })
             ->with([
                 'user',

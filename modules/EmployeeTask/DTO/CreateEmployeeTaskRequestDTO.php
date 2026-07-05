@@ -25,6 +25,7 @@ final class CreateEmployeeTaskRequestDTO
         public readonly ?string $assignmentResponsibleId  = null,
         public readonly ?string $notes                    = null,
         public readonly ?array  $files                    = null,
+        public readonly ?int    $radiusMeters             = null,
     ) {}
 
     public function toArray(): array
@@ -44,6 +45,7 @@ final class CreateEmployeeTaskRequestDTO
             'task_time'                  => $this->taskTime,
             'task_latitude'              => $this->taskLatitude,
             'task_longitude'             => $this->taskLongitude,
+            'radius_meters'              => $this->radiusMeters,
             'notes'                      => $this->notes,
             'status'                     => 'pending',
         ];
