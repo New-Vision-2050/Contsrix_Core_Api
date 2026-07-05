@@ -559,7 +559,7 @@ class EmployeeTaskRequestService
 
     public function getInboxCountsForAdmin(string $adminId, array $filters = []): array
     {
-        $tasks = $this->repository->allInboxForAdmin($adminId, $filters)->count();
+        $tasks = $this->repository->allInboxForAdmin($adminId, $filters)->where('status', 'pending')->count();
         $extensions = $this->repository->allExtensionInboxForAdmin($adminId, $filters)->count();
         $approvals = $this->repository->allApprovalInboxForAdmin($adminId, $filters)->count();
 

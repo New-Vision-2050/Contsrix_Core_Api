@@ -78,7 +78,9 @@ class ProjectNotificationRepository
     /**
      * Mobile inbox query. Bypasses the EloquentFilter status filter so
      * notifications with any top-level status appear as long as they have
-     * a pending workflow process assigned to the user.
+     * a pending workflow process assigned to the user, OR they were rejected
+     * (e.g. auto-rejected because the task date passed) and are assigned to
+     * the current user.
      */
     public function paginatedForInbox(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
@@ -119,15 +121,21 @@ class ProjectNotificationRepository
             });
         }
 
-        // Core inbox filter: must have an in-progress process with a pending
-        // step assigned to (or authorized for) the current user.
-        $query->whereHas(
-            'employeeTask.processes',
-            $this->engine->pendingProcessScopeForUser(
-                ProcedureSettingType::ProjectNotificationTask->value,
-                $userId,
-            ),
-        );
+        // Core inbox filter: actionable items with an in-progress process, OR
+        // rejected items assigned to the current user so they do not vanish after
+        // auto-rejection when the task date passes.
+        $query->where(function ($q) use ($userId) {
+            $q->whereHas(
+                'employeeTask.processes',
+                $this->engine->pendingProcessScopeForUser(
+                    ProcedureSettingType::ProjectNotificationTask->value,
+                    $userId,
+                ),
+            )->orWhere(function ($q) use ($userId) {
+                $q->where('project_notifications.status', 'rejected')
+                  ->where('project_notifications.assigned_user_id', $userId);
+            });
+        });
 
         $query->with([
             'assignedUser',
