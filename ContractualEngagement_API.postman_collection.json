@@ -1,0 +1,892 @@
+{
+    "info": {
+        "_postman_id": "contractual-engagement-api",
+        "name": "ContractualEngagement API",
+        "description": "API endpoints for managing contractual engagements and their optional assignment to projects",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "List Active Contractual Engagements",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status code is 200\", function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test(\"Response has data array\", function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.data).to.be.an('array');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "company-id",
+                        "value": "{{company_id}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{url}}/projects/contractual-engagements",
+                    "host": [
+                        "{{url}}"
+                    ],
+                    "path": [
+                        "projects",
+                        "contractual-engagements"
+                    ]
+                },
+                "description": "Retrieve all active contractual engagements for dropdown selection"
+            },
+            "response": [
+                {
+                    "name": "Success Response",
+                    "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "company-id",
+                                "value": "{{company_id}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/projects/contractual-engagements",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "projects",
+                                "contractual-engagements"
+                            ]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "cookie": [],
+                    "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name_ar\": \"العقد الموحد بجدة\",\n            \"name_en\": \"Unified Contract in Jeddah\",\n            \"sort_order\": 1,\n            \"code\": \"JEDDAH_UNIFIED\"\n        },\n        {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name_ar\": \"العقد الموحد بمكة\",\n            \"name_en\": \"Unified Contract in Makkah\",\n            \"sort_order\": 2,\n            \"code\": \"MAKKAH_UNIFIED\"\n        }\n    ]\n}"
+                }
+            ]
+        },
+        {
+            "name": "Create Project with Contractual Engagement",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status code is 201\", function () {",
+                            "    pm.response.to.have.status(201);",
+                            "});",
+                            "",
+                            "pm.test(\"Response has project data\", function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.data).to.have.property('id');",
+                            "    pm.expect(jsonData.data).to.have.property('contractual_engagement_id');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "company-id",
+                        "value": "{{company_id}}",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"project_type_id\": 1,\n    \"sub_project_type_id\": 1,\n    \"sub_sub_project_type_id\": 1,\n    \"name\": \"New Project with Unified Contract\",\n    \"contractual_engagement_id\": \"{{contractual_engagement_id}}\",\n    \"project_value\": 100000,\n    \"status\": 1\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{url}}/projects",
+                    "host": [
+                        "{{url}}"
+                    ],
+                    "path": [
+                        "projects"
+                    ]
+                },
+                "description": "Create a new project with an optional contractual_engagement_id. Send without the field to test optional creation."
+            },
+            "response": [
+                {
+                    "name": "Success Response",
+                    "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "company-id",
+                                "value": "{{company_id}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"project_type_id\": 1,\n    \"sub_project_type_id\": 1,\n    \"sub_sub_project_type_id\": 1,\n    \"name\": \"New Project with Unified Contract\",\n    \"contractual_engagement_id\": \"550e8400-e29b-41d4-a716-446655440001\",\n    \"project_value\": 100000,\n    \"status\": 1\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{url}}/projects",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "projects"
+                            ]
+                        }
+                    },
+                    "status": "Created",
+                    "code": 201,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "cookie": [],
+                    "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"serial_number\": \"PRJ-2026-00001\",\n        \"name\": \"New Project with Unified Contract\",\n        \"contract_id\": null,\n        \"contractual_engagement_id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"contractual_engagement\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name_ar\": \"العقد الموحد بجدة\",\n            \"name_en\": \"Unified Contract in Jeddah\",\n            \"code\": \"JEDDAH_UNIFIED\"\n        },\n        \"project_type_id\": 1,\n        \"sub_project_type_id\": 1,\n        \"sub_sub_project_type_id\": 1,\n        \"status\": 1\n    }\n}"
+                }
+            ]
+        },
+        {
+            "name": "Update Project Contractual Engagement",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status code is 200\", function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test(\"Response has updated project data\", function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.data).to.have.property('id');",
+                            "    pm.expect(jsonData.data).to.have.property('contractual_engagement_id');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "company-id",
+                        "value": "{{company_id}}",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"project_type_id\": 1,\n    \"sub_project_type_id\": 1,\n    \"sub_sub_project_type_id\": 1,\n    \"name\": \"Updated Project Contract\",\n    \"contractual_engagement_id\": \"{{contractual_engagement_id}}\",\n    \"project_value\": 150000,\n    \"status\": 1\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{url}}/projects/{{project_id}}",
+                    "host": [
+                        "{{url}}"
+                    ],
+                    "path": [
+                        "projects",
+                        "{{project_id}}"
+                    ]
+                },
+                "description": "Update an existing project. Set contractual_engagement_id to null or omit it to clear the relationship."
+            },
+            "response": [
+                {
+                    "name": "Success Response",
+                    "originalRequest": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "company-id",
+                                "value": "{{company_id}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"project_type_id\": 1,\n    \"sub_project_type_id\": 1,\n    \"sub_sub_project_type_id\": 1,\n    \"name\": \"Updated Project Contract\",\n    \"contractual_engagement_id\": \"550e8400-e29b-41d4-a716-446655440002\",\n    \"project_value\": 150000,\n    \"status\": 1\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{url}}/projects/123e4567-e89b-12d3-a456-426614174000",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "projects",
+                                "123e4567-e89b-12d3-a456-426614174000"
+                            ]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "cookie": [],
+                    "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"serial_number\": \"PRJ-2026-00001\",\n        \"name\": \"Updated Project Contract\",\n        \"contractual_engagement_id\": \"550e8400-e29b-41d4-a716-446655440002\",\n        \"contractual_engagement\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name_ar\": \"العقد الموحد بمكة\",\n            \"name_en\": \"Unified Contract in Makkah\",\n            \"code\": \"MAKKAH_UNIFIED\"\n        },\n        \"project_type_id\": 1,\n        \"sub_project_type_id\": 1,\n        \"sub_sub_project_type_id\": 1,\n        \"status\": 1\n    }\n}"
+                }
+            ]
+        },
+        {
+            "name": "Get Project with Contractual Engagement",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status code is 200\", function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test(\"Response has project data\", function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.data).to.have.property('id');",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "company-id",
+                        "value": "{{company_id}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{url}}/projects/{{project_id}}",
+                    "host": [
+                        "{{url}}"
+                    ],
+                    "path": [
+                        "projects",
+                        "{{project_id}}"
+                    ]
+                },
+                "description": "Retrieve project details including the loaded contractual_engagement relation"
+            },
+            "response": [
+                {
+                    "name": "Success Response",
+                    "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "company-id",
+                                "value": "{{company_id}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/projects/123e4567-e89b-12d3-a456-426614174000",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "projects",
+                                "123e4567-e89b-12d3-a456-426614174000"
+                            ]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "cookie": [],
+                    "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"serial_number\": \"PRJ-2026-00001\",\n        \"name\": \"Updated Project Contract\",\n        \"contractual_engagement_id\": \"550e8400-e29b-41d4-a716-446655440002\",\n        \"contractual_engagement\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name_ar\": \"العقد الموحد بمكة\",\n            \"name_en\": \"Unified Contract in Makkah\",\n            \"code\": \"MAKKAH_UNIFIED\"\n        },\n        \"project_type_id\": 1,\n        \"sub_project_type_id\": 1,\n        \"sub_sub_project_type_id\": 1,\n        \"status\": 1\n    }\n}"
+                }
+            ]
+        },
+        {
+            "name": "Get Employees by Contractual Engagement Key",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status code is 200\", function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test(\"Response has data array\", function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.data).to.be.an(\"array\");",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "company-id",
+                        "value": "{{company_id}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{url}}/projects/employees/contractual-engagement/{{contractual_engagement_key}}?company_id={{company_id}}",
+                    "host": [
+                        "{{url}}"
+                    ],
+                    "path": [
+                        "projects",
+                        "employees",
+                        "contractual-engagement",
+                        "{{contractual_engagement_key}}"
+                    ],
+                    "query": [
+                        {
+                            "key": "company_id",
+                            "value": "{{company_id}}",
+                            "description": "Optional company UUID"
+                        }
+                    ],
+                    "variable": [
+                        {
+                            "key": "contractual_engagement_key",
+                            "value": "{{contractual_engagement_key}}",
+                            "description": "Contractual engagement code (e.g., JEDDAH_UNIFIED)"
+                        }
+                    ]
+                },
+                "description": "Get employees assigned to all projects that share a given contractual engagement key/code."
+            },
+            "response": [
+                {
+                    "name": "Success Response",
+                    "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "company-id",
+                                "value": "{{company_id}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/projects/employees/contractual-engagement/JEDDAH_UNIFIED",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "projects",
+                                "employees",
+                                "contractual-engagement",
+                                "JEDDAH_UNIFIED"
+                            ]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "cookie": [],
+                    "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": \"123e4567-e89b-12d3-a456-426614174001\",\n            \"user\": {\n                \"id\": \"user-uuid-1\",\n                \"name\": \"Ahmed Ali\"\n            },\n            \"project_role\": {\n                \"id\": \"role-uuid\",\n                \"name\": \"Project Manager\"\n            },\n            \"project\": {\n                \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n                \"name\": \"Jeddah Tower Project\"\n            },\n            \"attendance\": {\n                \"status\": \"present\",\n                \"checked_in_at\": \"08:00\"\n            }\n        }\n    ]\n}"
+                }
+            ]
+        },
+        {
+            "name": "Get Attachment Requests by Contractual Engagement Key",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status code is 200\", function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test(\"Response has paginated data\", function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.data).to.be.an(\"array\");",
+                            "    pm.expect(jsonData).to.have.property(\"total\");",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "company-id",
+                        "value": "{{company_id}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{url}}/projects/attachment-requests?contractual_engagement_key={{contractual_engagement_key}}&page=1&per_page=10",
+                    "host": [
+                        "{{url}}"
+                    ],
+                    "path": [
+                        "projects",
+                        "attachment-requests"
+                    ],
+                    "query": [
+                        {
+                            "key": "contractual_engagement_key",
+                            "value": "{{contractual_engagement_key}}",
+                            "description": "Contractual engagement code (e.g., JEDDAH_UNIFIED)"
+                        },
+                        {
+                            "key": "page",
+                            "value": "1",
+                            "description": "Page number"
+                        },
+                        {
+                            "key": "per_page",
+                            "value": "10",
+                            "description": "Items per page"
+                        }
+                    ]
+                },
+                "description": "List attachment requests for all projects that match a contractual engagement key."
+            },
+            "response": [
+                {
+                    "name": "Success Response",
+                    "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "company-id",
+                                "value": "{{company_id}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/projects/attachment-requests?contractual_engagement_key=JEDDAH_UNIFIED&page=1&per_page=10",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "projects",
+                                "attachment-requests"
+                            ],
+                            "query": [
+                                {
+                                    "key": "contractual_engagement_key",
+                                    "value": "JEDDAH_UNIFIED"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "per_page",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "cookie": [],
+                    "body": "{\n    \"data\": [\n        {\n            \"id\": \"atr-uuid-1\",\n            \"serial_number\": \"ATR-20260705-0001\",\n            \"project_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"project\": {\n                \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n                \"name\": \"Jeddah Tower Project\"\n            },\n            \"status\": \"pending\",\n            \"name\": \"Foundation drawings\"\n        }\n    ],\n    \"current_page\": 1,\n    \"per_page\": 10,\n    \"total\": 1,\n    \"last_page\": 1\n}"
+                }
+            ]
+        },
+        {
+            "name": "Get Project Notifications by Contractual Engagement Key",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status code is 200\", function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test(\"Response has paginated data\", function () {",
+                            "    var jsonData = pm.response.json();",
+                            "    pm.expect(jsonData.data).to.be.an(\"array\");",
+                            "    pm.expect(jsonData).to.have.property(\"total\");",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "company-id",
+                        "value": "{{company_id}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{url}}/projects/notifications?contractual_engagement_key={{contractual_engagement_key}}&page=1&per_page=10",
+                    "host": [
+                        "{{url}}"
+                    ],
+                    "path": [
+                        "projects",
+                        "notifications"
+                    ],
+                    "query": [
+                        {
+                            "key": "contractual_engagement_key",
+                            "value": "{{contractual_engagement_key}}",
+                            "description": "Contractual engagement code (e.g., JEDDAH_UNIFIED)"
+                        },
+                        {
+                            "key": "page",
+                            "value": "1",
+                            "description": "Page number"
+                        },
+                        {
+                            "key": "per_page",
+                            "value": "10",
+                            "description": "Items per page"
+                        }
+                    ]
+                },
+                "description": "List project notifications for all projects that match a contractual engagement key."
+            },
+            "response": [
+                {
+                    "name": "Success Response",
+                    "originalRequest": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "company-id",
+                                "value": "{{company_id}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/projects/notifications?contractual_engagement_key=JEDDAH_UNIFIED&page=1&per_page=10",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "projects",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "contractual_engagement_key",
+                                    "value": "JEDDAH_UNIFIED"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "per_page",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "_postman_previewlanguage": "json",
+                    "header": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "cookie": [],
+                    "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": \"ntf-uuid-1\",\n            \"notification_number\": \"NTF-2026-00001\",\n            \"project_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"project\": {\n                \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n                \"name\": \"Jeddah Tower Project\"\n            },\n            \"status\": \"pending\",\n            \"work_description\": \"Inspection request\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 1,\n        \"per_page\": 10,\n        \"current_page\": 1,\n        \"last_page\": 1\n    }\n}"
+                }
+            ]
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "url",
+            "value": "http://localhost/api/v1",
+            "type": "string",
+            "description": "Base API URL"
+        },
+        {
+            "key": "token",
+            "value": "your-bearer-token-here",
+            "type": "string",
+            "description": "Bearer authentication token"
+        },
+        {
+            "key": "company_id",
+            "value": "your-company-uuid-here",
+            "type": "string",
+            "description": "Company UUID for tenant context"
+        },
+        {
+            "key": "project_id",
+            "value": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string",
+            "description": "Project UUID for testing"
+        },
+        {
+            "key": "contractual_engagement_id",
+            "value": "550e8400-e29b-41d4-a716-446655440001",
+            "type": "string",
+            "description": "Contractual Engagement UUID (e.g., Jeddah unified contract)"
+        },
+        {
+            "key": "contractual_engagement_key",
+            "value": "JEDDAH_UNIFIED",
+            "type": "string",
+            "description": "Contractual engagement code (e.g., JEDDAH_UNIFIED)"
+        }
+    ]
+}

@@ -104,6 +104,58 @@ class ProjectEmployeeController extends Controller
     }
 
     /**
+     * Get all employees assigned to projects under a contractual engagement key
+     */
+    public function getByContractualEngagement(Request $request): JsonResponse
+    {
+        try {
+            $key = $request->route('key');
+
+            if (!$key) {
+                return Json::error('Contractual engagement key is required', 400);
+            }
+
+            $companyId = $request->query('company_id');
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date', now()->toDateString());
+
+            $employees = $this->service->getEmployeesByContractualEngagement($key, $companyId);
+            $userIds = $employees
+                ->pluck('user_id')
+                ->filter()
+                ->unique()
+                ->values();
+
+            $attendanceStatusByUserId = $this->attendanceStatusService->buildForUsers($userIds, array_filter([
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ], static fn ($value) => $value !== null && $value !== ''));
+
+            $data = $employees->map(function ($employee) use ($attendanceStatusByUserId, $startDate) {
+                $presented = (new ProjectEmployeePresenter($employee))->getData();
+                $userId = $employee->user_id ? (string) $employee->user_id : null;
+
+                $presented['attendance'] = $userId && $attendanceStatusByUserId->has($userId)
+                    ? $attendanceStatusByUserId->get($userId)
+                    : $this->attendanceStatusService->syntheticAbsent($employee->user, $startDate);
+
+                $presented['project'] = $employee->relationLoaded('project') && $employee->project
+                    ? [
+                        'id' => $employee->project->id,
+                        'name' => $employee->project->name,
+                    ]
+                    : null;
+
+                return $presented;
+            });
+
+            return Json::items($data->toArray());
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Remove an employee from a project
      */
     public function removeEmployee(Request $request): JsonResponse

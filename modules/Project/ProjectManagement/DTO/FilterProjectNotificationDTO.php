@@ -7,19 +7,20 @@ namespace Modules\Project\ProjectManagement\DTO;
 final class FilterProjectNotificationDTO
 {
     public function __construct(
-        public readonly ?string $projectId       = null,
-        public readonly ?string $status          = null,
-        public readonly ?string $notificationType = null,
-        public readonly ?string $workType        = null,
-        public readonly ?string $contractorName  = null,
-        public readonly ?string $contractorId    = null,
-        public readonly ?string $assignedUserId  = null,
-        public readonly ?string $taskDate       = null,
-        public readonly ?string $dateFrom        = null,
-        public readonly ?string $dateTo          = null,
-        public readonly ?string $search          = null,
-        public readonly ?int    $perPage         = 15,
-        public readonly ?string $sort            = null,
+        public readonly ?string $projectId              = null,
+        public readonly ?string $status                = null,
+        public readonly ?string $notificationType       = null,
+        public readonly ?string $workType               = null,
+        public readonly ?string $contractorName         = null,
+        public readonly ?string $contractorId           = null,
+        public readonly ?string $assignedUserId         = null,
+        public readonly ?string $taskDate               = null,
+        public readonly ?string $dateFrom               = null,
+        public readonly ?string $dateTo                 = null,
+        public readonly ?string $search                 = null,
+        public readonly ?string $contractualEngagementKey = null,
+        public readonly ?int    $perPage                = 15,
+        public readonly ?string $sort                    = null,
     ) {}
 
     public function toFilters(): array
@@ -34,8 +35,9 @@ final class FilterProjectNotificationDTO
             'assigned_user_id'  => $this->assignedUserId,
             'task_date'         => $this->taskDate,
             'date_from'         => $this->dateFrom,
-            'date_to'           => $this->dateTo,
-            'search'            => $this->search,
+            'date_to'                   => $this->dateTo,
+            'search'                    => $this->search,
+            'contractual_engagement_key' => $this->contractualEngagementKey,
         ], fn ($value) => $value !== null);
     }
 }

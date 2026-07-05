@@ -47,6 +47,7 @@ class ProjectManagement extends Model
         'project_owner_type',
         'project_owner_id',
         'contract_id',
+        'contractual_engagement_id',
         'client_id',
         'project_classification_id',
         'cost_center_branch_id',
@@ -69,6 +70,7 @@ class ProjectManagement extends Model
         'project_owner_type' => 'string',
         'project_owner_id' => 'string',
         'contract_id' => 'string',
+        'contractual_engagement_id' => 'string',
         'client_id' => 'string',
         'project_classification_id' => 'string',
         'cost_center_branch_id' => 'string',
@@ -170,6 +172,11 @@ class ProjectManagement extends Model
     public function client()
     {
         return $this->belongsTo(User::class, 'client_id')->withoutGlobalScopes();
+    }
+
+    public function contractualEngagement()
+    {
+        return $this->belongsTo(ContractualEngagement::class, 'contractual_engagement_id')->withoutGlobalScopes();
     }
 
     public function costCenterBranch()

@@ -42,6 +42,7 @@ class ProjectManagementRepository extends BaseRepository
                 'management',
                 'currency',
                 'company',
+                'contractualEngagement',
             ])
             ->filter(request()->all())
             ->orderBy('created_at', 'desc');
@@ -83,7 +84,8 @@ class ProjectManagementRepository extends BaseRepository
             'costCenterBranch',
             'management',
             'currency',
-            'company'
+            'company',
+            'contractualEngagement',
         ]);
 
         return $this->paginatedList([], $page, $perPage, $query);
@@ -114,7 +116,8 @@ class ProjectManagementRepository extends BaseRepository
             'management',
             'currency',
             'company',
-            'shares'
+            'shares',
+            'contractualEngagement',
         ])->findOrFail($id->toString());
     }
 
@@ -134,7 +137,8 @@ class ProjectManagementRepository extends BaseRepository
             'costCenterBranch',
             'management',
             'currency',
-            'company'
+            'company',
+            'contractualEngagement',
         ]);
     }
 

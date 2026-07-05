@@ -97,7 +97,9 @@ class ProjectNotificationLocationService
                     'latitude' => $userLoc->latitude,
                     'longitude' => $userLoc->longitude,
                     'accuracy' => $userLoc->accuracy,
-                    'timestamp' => $userLoc->recorded_at?->format('Y-m-d H:i:s'),
+                    'timestamp' => $userLoc->recorded_at
+                        ? $userLoc->recorded_at->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d H:i:s')
+                        : null,
                     'location_source' => $userLoc->location_source ?? 'GPS',
                 ];
             }
@@ -114,7 +116,9 @@ class ProjectNotificationLocationService
             // Fallback 2: attendance.clock_in_location.
             if (! $latestPoint && $attendance && ! empty($attendance->clock_in_location)) {
                 $latestPoint = array_merge($attendance->clock_in_location, [
-                    'timestamp' => $attendance->clock_in_time ? Carbon::parse($attendance->clock_in_time)->format('Y-m-d H:i:s') : null,
+                    'timestamp' => $attendance->clock_in_time
+                        ? Carbon::parse($attendance->clock_in_time, $attendance->timezone ?? getTimeZoneBranchByRequest())->format('Y-m-d H:i:s')
+                        : null,
                     'type' => 'clock_in',
                     'location_source' => 'clock_in',
                 ]);
@@ -155,7 +159,9 @@ class ProjectNotificationLocationService
                 'attendance' => $attendance ? [
                     'id' => $attendance->id,
                     'status' => $attendance->status,
-                    'clock_in_time' => $attendance->clock_in_time ? Carbon::parse($attendance->clock_in_time)->format('H:i:s') : null,
+                    'clock_in_time' => $attendance->clock_in_time
+                        ? Carbon::parse($attendance->clock_in_time, $attendance->timezone ?? getTimeZoneBranchByRequest())->format('H:i:s')
+                        : null,
                 ] : null,
             ];
         }
