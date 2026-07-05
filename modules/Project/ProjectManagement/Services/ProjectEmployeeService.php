@@ -61,6 +61,11 @@ class ProjectEmployeeService
         return $this->repository->getByProject($projectId, $companyId);
     }
 
+    public function getEmployeesByContractualEngagement(string $code, ?string $companyId = null): Collection
+    {
+        return $this->repository->getByContractualEngagement($code, $companyId);
+    }
+
     public function removeEmployeeFromProject(string $contractEmployeeId): bool
     {
         $contractEmployee = $this->repository->findOneOrFail($contractEmployeeId);

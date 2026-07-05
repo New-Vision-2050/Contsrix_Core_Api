@@ -123,12 +123,13 @@ class ProjectManagementController extends Controller
         $engagements = ContractualEngagement::query()
             ->where('is_active', true)
             ->orderBy('sort_order')
-            ->get(['id', 'name_ar', 'name_en', 'sort_order']);
+            ->get(['id', 'name_ar', 'name_en', 'code', 'sort_order']);
 
         $items = $engagements->map(fn (ContractualEngagement $engagement) => [
             'id' => $engagement->id,
             'name_ar' => $engagement->name_ar,
             'name_en' => $engagement->name_en,
+            'code' => $engagement->code,
             'sort_order' => $engagement->sort_order,
         ])->toArray();
 

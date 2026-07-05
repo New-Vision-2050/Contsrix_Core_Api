@@ -59,6 +59,12 @@ class AttachmentRequestRepository extends BaseRepository
             $query->where('project_id', $filters['project_id']);
         }
 
+        if (!empty($filters['contractual_engagement_key'])) {
+            $query->whereHas('project.contractualEngagement', function ($q) use ($filters) {
+                $q->where('code', $filters['contractual_engagement_key']);
+            });
+        }
+
         if (!empty($filters['type'])) {
             $query->where('status', $filters['type']);
         }

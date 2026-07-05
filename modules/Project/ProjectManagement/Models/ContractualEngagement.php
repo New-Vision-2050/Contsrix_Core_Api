@@ -20,6 +20,7 @@ class ContractualEngagement extends Model
     protected $fillable = [
         'name_ar',
         'name_en',
+        'code',
         'sort_order',
         'is_active',
     ];

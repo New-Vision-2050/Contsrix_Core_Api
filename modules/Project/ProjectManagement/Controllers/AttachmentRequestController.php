@@ -60,12 +60,13 @@ class AttachmentRequestController extends Controller
     {
         try {
             $filters = array_filter([
-                'project_id'  => $request->query('project_id'),
-                'type'        => $request->query('type'),
-                'direction'   => $request->query('direction'),
-                'receiver_id' => $request->query('receiver_id'),
-                'name'        => $request->query('name'),
-                'per_page'    => $request->query('per_page', 15),
+                'project_id'                 => $request->query('project_id'),
+                'contractual_engagement_key' => $request->query('contractual_engagement_key'),
+                'type'                       => $request->query('type'),
+                'direction'                  => $request->query('direction'),
+                'receiver_id'                => $request->query('receiver_id'),
+                'name'                       => $request->query('name'),
+                'per_page'                   => $request->query('per_page', 15),
             ], fn ($v) => $v !== null && $v !== '');
 
             $paginated = $this->service->getAllRequests($filters);

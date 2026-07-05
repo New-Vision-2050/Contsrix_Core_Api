@@ -122,6 +122,7 @@ class ProjectManagementPresenter extends AbstractPresenter
                 'id' => $this->projectManagement->contractualEngagement->id,
                 'name_ar' => $this->projectManagement->contractualEngagement->name_ar,
                 'name_en' => $this->projectManagement->contractualEngagement->name_en,
+                'code' => $this->projectManagement->contractualEngagement->code,
             ] : null;
 
             // Add employees assigned to this project

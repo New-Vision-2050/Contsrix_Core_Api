@@ -28,6 +28,13 @@ class ProjectNotificationFilter extends SearchModelFilter
         return $this->where('project_id', $projectId);
     }
 
+    public function contractualEngagementKey($code)
+    {
+        return $this->whereHas('project.contractualEngagement', function ($query) use ($code) {
+            $query->where('code', $code);
+        });
+    }
+
     public function notificationType($type)
     {
         return $this->where('notification_type', $type);

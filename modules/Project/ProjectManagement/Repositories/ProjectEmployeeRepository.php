@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectManagement\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Illuminate\Database\Eloquent\Collection;
 
 class ProjectEmployeeRepository extends BaseRepository
@@ -17,15 +18,43 @@ class ProjectEmployeeRepository extends BaseRepository
 
     public function getByProject(string $projectId, ?string $companyId = null): Collection
     {
+        return $this->buildProjectEmployeeQuery($companyId)
+            ->where('project_id', $projectId)
+            ->get();
+    }
+
+    public function getByContractualEngagement(string $code, ?string $companyId = null): Collection
+    {
+        $targetCompanyId = $companyId ?? (string) tenant('id');
+
+        $projectIds = ProjectManagement::query()
+            ->where('company_id', $targetCompanyId)
+            ->whereHas('contractualEngagement', function ($q) use ($code) {
+                $q->where('code', $code);
+            })
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($projectIds)) {
+            return new Collection();
+        }
+
+        return $this->buildProjectEmployeeQuery($companyId)
+            ->whereIn('project_id', $projectIds)
+            ->get();
+    }
+
+    private function buildProjectEmployeeQuery(?string $companyId = null)
+    {
         $search = request()->input('search');
 
         $query = $this->model
-            ->where('project_id', $projectId)
             ->with([
                 'user.userProfessionalData.attendanceConstraint',
                 'assignedBy',
                 'projectRole.permissions',
                 'company',
+                'project',
             ]);
 
         if ($companyId) {
@@ -48,7 +77,7 @@ class ProjectEmployeeRepository extends BaseRepository
             });
         }
 
-        return $query->get();
+        return $query;
     }
 
     public function assignEmployee(array $data): ProjectEmployee
