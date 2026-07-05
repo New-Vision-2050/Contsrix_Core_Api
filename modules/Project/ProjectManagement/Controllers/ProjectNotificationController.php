@@ -74,6 +74,26 @@ class ProjectNotificationController extends Controller
     }
 
     /**
+     * GET /projects/notifications/map-tasks
+     *
+     * Map view: all notifications without pagination, with coordinates, radius,
+     * task name, assigned user and receive date formatted in the assigned user's
+     * branch timezone. Supports status filter via ?status=...
+     */
+    public function mapTasks(FilterProjectNotificationsRequest $request): JsonResponse
+    {
+        $notifications = $this->notificationService->mapTasks($request->toDTO());
+
+        return Json::item(
+            [
+                'items' => ProjectNotificationPresenter::mapCollection($notifications),
+                'statuses' => ProjectNotificationPresenter::statusLookup(),
+            ],
+            message: 'Map tasks retrieved successfully',
+        );
+    }
+
+    /**
      * GET /projects/notifications/site-statuses
      *
      * Returns the active site statuses dropdown for the periodic site status update form.

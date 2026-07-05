@@ -158,6 +158,53 @@ class ProjectNotificationPresenter
         return (new self($notification))->toArray();
     }
 
+    public function toMapArray(): array
+    {
+        $n = $this->notification;
+
+        return [
+            'id'              => $n->id,
+            'notification_number' => $n->notification_number,
+            'task_name'       => $n->work_description,
+            'latitude'        => $n->task_latitude ? (float) $n->task_latitude : null,
+            'longitude'       => $n->task_longitude ? (float) $n->task_longitude : null,
+            'radius'          => $n->location_radius ? (int) $n->location_radius : null,
+            'status'          => $n->status,
+            'status_label'    => $this->statusLabel($n->status),
+            'assigned_user'   => $n->relationLoaded('assignedUser') && $n->assignedUser
+                ? ['id' => $n->assignedUser->id, 'name' => $n->assignedUser->name]
+                : null,
+            'receive_date'    => $this->formatInMapTimezone($n->confirmation_receive_date),
+        ];
+    }
+
+    public static function mapCollection(iterable $notifications): array
+    {
+        $result = [];
+        foreach ($notifications as $notification) {
+            $result[] = (new self($notification))->toMapArray();
+        }
+        return $result;
+    }
+
+    public static function statusLookup(): array
+    {
+        $presenter = new self(new ProjectNotification());
+
+        $statuses = ['pending', 'approved', 'rejected', 'in_progress', 'completed', 'cancelled'];
+        $result = [];
+
+        foreach ($statuses as $status) {
+            $result[] = [
+                'key' => $status,
+                'label_ar' => $presenter->statusLabel($status, 'ar'),
+                'label_en' => $presenter->statusLabel($status, 'en'),
+            ];
+        }
+
+        return $result;
+    }
+
     private function resolvePendingProcesses(ProjectNotification $notification): array
     {
         return $notification->getAttribute('pending_processes') ?? [];
@@ -176,9 +223,9 @@ class ProjectNotificationPresenter
         return $setting?->id;
     }
 
-    private function statusLabel(string $status): string
+    private function statusLabel(string $status, ?string $locale = null): string
     {
-        $locale = app()->getLocale();
+        $locale ??= app()->getLocale();
 
         $labels = [
             'pending' => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
@@ -343,5 +390,33 @@ class ProjectNotificationPresenter
         $timezone = $this->notification->employeeTask?->timezone ?? getTimeZoneBranchByRequest();
 
         return $date->setTimezone($timezone)->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Convert a UTC datetime to the assigned user's branch timezone for the map view.
+     * Falls back to the current request's branch timezone.
+     */
+    private function formatInMapTimezone(?Carbon $date): ?string
+    {
+        if (! $date) {
+            return null;
+        }
+
+        $timezone = $this->resolveAssignedUserBranchTimezone() ?? getTimeZoneBranchByRequest();
+
+        return $date->setTimezone($timezone)->format('Y-m-d H:i:s');
+    }
+
+    private function resolveAssignedUserBranchTimezone(): ?string
+    {
+        $user = $this->notification->assignedUser;
+
+        if (! $user) {
+            return null;
+        }
+
+        $timezones = $user->userProfessionalData?->branch?->address?->country?->timezones;
+
+        return $timezones[0]['zoneName'] ?? null;
     }
 }

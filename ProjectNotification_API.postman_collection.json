@@ -174,6 +174,56 @@
           ]
         },
         {
+          "name": "Map Tasks (No Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/projects/notifications/map-tasks?project_id={{project_id}}&status=pending",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "projects",
+                "notifications",
+                "map-tasks"
+              ],
+              "query": [
+                {
+                  "key": "project_id",
+                  "value": "{{project_id}}",
+                  "description": "Filter by project ID"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "Filter by status (pending, approved, rejected, in_progress, completed, cancelled). Comma-separated values supported"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Map tasks retrieved successfully\",\n  \"payload\": {\n    \"items\": [\n      {\n        \"id\": \"uuid-here\",\n        \"notification_number\": \"NTF-2026-00001\",\n        \"task_name\": \"صيانة عامة للنظام الكهربائي\",\n        \"latitude\": 24.7136,\n        \"longitude\": 46.6753,\n        \"radius\": 100,\n        \"status\": \"pending\",\n        \"status_label\": \"بانتظار الرد\",\n        \"assigned_user\": {\n          \"id\": \"user-uuid\",\n          \"name\": \"أحمد محمد\"\n        },\n        \"receive_date\": \"2026-07-05 14:30:00\"\n      }\n    ],\n    \"statuses\": [\n      {\n        \"key\": \"pending\",\n        \"label_ar\": \"بانتظار الرد\",\n        \"label_en\": \"Pending\"\n      },\n      {\n        \"key\": \"approved\",\n        \"label_ar\": \"مقبول\",\n        \"label_en\": \"Approved\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "Create Project Notification (5-Step Wizard Submit)",
           "request": {
             "method": "POST",

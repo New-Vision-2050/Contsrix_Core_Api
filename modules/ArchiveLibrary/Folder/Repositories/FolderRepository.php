@@ -161,7 +161,8 @@ class FolderRepository extends BaseRepository
         string $searchType = 'all',
         ?int $branchId = null,
         ?string $sort = null,
-        bool $withoutTenancy = false
+        bool $withoutTenancy = false,
+        ?string $contractualEngagementKey = null
     )
     {
         $folderQuery = $withoutTenancy
@@ -169,11 +170,17 @@ class FolderRepository extends BaseRepository
             : $this->model->query();
 
 
-        $folderQuery = $folderQuery->when(!request()->has("project_id") && !request()->has("is_project")
+        $folderQuery = $folderQuery->when(!request()->has("project_id") && !request()->has("is_project") && !request()->has("contractual_engagement_key")
         ,function($query){
            $query->whereNull("project_id");
         })->when(request()->has("is_project") && $parentId == null,function ($query){
             $query->whereNotNull("project_id");
+        })->when(!empty($contractualEngagementKey), function ($query) use ($contractualEngagementKey) {
+            $query->whereHas('project', function ($q) use ($contractualEngagementKey) {
+                $q->whereHas('contractualEngagement', function ($ce) use ($contractualEngagementKey) {
+                    $ce->where('code', $contractualEngagementKey);
+                });
+            });
         });
 //        })->when(request()->has("project_id"),function($query){
 //            $query->where("project_id",request()->get("project_id"));
@@ -253,6 +260,14 @@ class FolderRepository extends BaseRepository
         {
             $filesQuery->whereNull('folder_id');
 
+        }
+
+        if (!empty($contractualEngagementKey)) {
+            $filesQuery->whereHas('project', function ($q) use ($contractualEngagementKey) {
+                $q->whereHas('contractualEngagement', function ($ce) use ($contractualEngagementKey) {
+                    $ce->where('code', $contractualEngagementKey);
+                });
+            });
         }
 
         // Filter by document type (MIME type) if provided

@@ -109,7 +109,9 @@ final class EmployeeTaskLifecycleService
     public function performStart(EmployeeTaskRequest $task, StartTaskDTO $dto, User $user): EmployeeTaskRequest
     {
         $timezone      = $this->resolveTimezone($user);
-        $radiusMeters  = $this->locationService->snapshotRadiusFromConstraint($user);
+        $radiusMeters  = $task->is_project_notification && $task->radius_meters !== null
+            ? (int) $task->radius_meters
+            : $this->locationService->snapshotRadiusFromConstraint($user);
         $now           = CarbonImmutable::now($timezone);
 
         $this->taskRepo->update($task, [

@@ -136,6 +136,17 @@ class ProjectNotificationService
     }
 
     /**
+     * Map view: all notifications (no pagination) with coordinates, radius, task
+     * name, assigned user and branch-timezone receive date.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, ProjectNotification>
+     */
+    public function mapTasks(FilterProjectNotificationDTO $dto): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->repository->allForMap($dto->toFilters());
+    }
+
+    /**
      * List active site statuses for the dropdown in the periodic site status update form.
      *
      * @return \Illuminate\Database\Eloquent\Collection<int, ProjectNotificationSiteStatus>

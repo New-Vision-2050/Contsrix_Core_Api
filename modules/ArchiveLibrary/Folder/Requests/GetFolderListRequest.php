@@ -23,6 +23,7 @@ class GetFolderListRequest extends FormRequest
             'branch_id' => 'nullable|integer|exists:management_hierarchies,id',
             'sort' => 'nullable|string|in:asc,desc',
             'withoutTenancy' => 'nullable|boolean',
+            'contractual_engagement_key' => 'nullable|string|max:255',
         ];
     }
 
@@ -74,5 +75,10 @@ class GetFolderListRequest extends FormRequest
     public function getIsFavourite(): ?bool
     {
         return $this->input('document_type') == "fav" ? true : null;
+    }
+
+    public function getContractualEngagementKey(): ?string
+    {
+        return $this->input('contractual_engagement_key');
     }
 }
