@@ -19,6 +19,7 @@ class UpdateProjectManagementCommand
         private ?string $projectOwnerType = null,
         private ?string $projectOwnerId = null,
         private ?string $contractId = null,
+        private ?string $contractualEngagementId = null,
         private ?string $clientId = null,
         private ?string $projectClassificationId = null,
         private ?string $costCenterBranchId = null,
@@ -79,6 +80,11 @@ class UpdateProjectManagementCommand
         return $this->contractId;
     }
 
+    public function getContractualEngagementId(): ?string
+    {
+        return $this->contractualEngagementId;
+    }
+
     public function getClientId(): ?string
     {
         return $this->clientId;
@@ -126,6 +132,7 @@ class UpdateProjectManagementCommand
             'project_owner_type' => $this->projectOwnerType,
             'project_owner_id' => $this->projectOwnerId,
             'contract_id' => $this->contractId,
+            'contractual_engagement_id' => $this->contractualEngagementId,
             'client_id' => $this->clientId,
             'project_classification_id' => $this->projectClassificationId,
             'cost_center_branch_id' => $this->costCenterBranchId,
@@ -143,6 +150,7 @@ class UpdateProjectManagementCommand
             'project_owner_type' => $this->projectOwnerType,
             'project_owner_id' => $this->projectOwnerId,
             'contract_id' => $this->contractId,
+            'contractual_engagement_id' => $this->contractualEngagementId,
             'client_id' => $this->clientId,
             'project_classification_id' => $this->projectClassificationId,
             'cost_center_branch_id' => $this->costCenterBranchId,

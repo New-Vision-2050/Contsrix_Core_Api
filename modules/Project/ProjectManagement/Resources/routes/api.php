@@ -20,6 +20,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         ->permission(Permission::PROJECT_MANAGEMENT_EXPORT());
     Route::get('/widgets', [ProjectManagementController::class, 'widgets'])
         ->permission(Permission::PROJECT_MANAGEMENT_LIST());
+    Route::get('/contractual-engagements', [ProjectManagementController::class, 'contractualEngagements']);
 
     // Project Sharing Routes
     Route::prefix('sharing')->group(function () {

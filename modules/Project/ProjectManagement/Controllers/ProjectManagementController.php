@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectManagement\Handlers\DeleteProjectManagementHandler;
 use Modules\Project\ProjectManagement\Handlers\UpdateProjectManagementHandler;
+use Modules\Project\ProjectManagement\Models\ContractualEngagement;
 use Modules\Project\ProjectManagement\Presenters\ProjectManagementPresenter;
 use Modules\Project\ProjectManagement\Requests\CreateProjectManagementRequest;
 use Modules\Project\ProjectManagement\Requests\DeleteProjectManagementRequest;
@@ -112,5 +113,25 @@ class ProjectManagementController extends Controller
         $presentedData = ProjectManagementDashboardWidgetsPresenter::presentWidgets($widgetsData);
 
         return Json::items($presentedData);
+    }
+
+    /**
+     * List active contractual engagements for dropdown selection.
+     */
+    public function contractualEngagements(): JsonResponse
+    {
+        $engagements = ContractualEngagement::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'name_ar', 'name_en', 'sort_order']);
+
+        $items = $engagements->map(fn (ContractualEngagement $engagement) => [
+            'id' => $engagement->id,
+            'name_ar' => $engagement->name_ar,
+            'name_en' => $engagement->name_en,
+            'sort_order' => $engagement->sort_order,
+        ])->toArray();
+
+        return Json::items($items);
     }
 }

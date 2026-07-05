@@ -111,6 +111,8 @@ class ProjectNotificationPresenter
             'duration_hours'              => $n->relationLoaded('employeeTask') && $n->employeeTask
                 ? ($n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null)
                 : null,
+            'task_latitude'               => $n->task_latitude ? (float) $n->task_latitude : null,
+            'task_longitude'              => $n->task_longitude ? (float) $n->task_longitude : null,
             'selected_distance_meters'    => $n->selected_distance_meters,
             'confirmation_receive_date'     => $this->formatInTimezone($n->confirmation_receive_date),
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
