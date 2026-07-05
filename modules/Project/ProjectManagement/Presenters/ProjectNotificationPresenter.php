@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Presenters;
 
+use Carbon\Carbon;
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
@@ -52,14 +53,14 @@ class ProjectNotificationPresenter
             'duration_hours'              => $n->duration_hours ? (float) $n->duration_hours : null,
             'notes'                       => $n->notes,
             'approved_by'                 => $n->approved_by,
-            'approved_at'                 => $n->approved_at?->format('Y-m-d H:i:s'),
+            'approved_at'                 => $this->formatInTimezone($n->approved_at),
             'rejected_by'                 => $n->rejected_by,
-            'rejected_at'                 => $n->rejected_at?->format('Y-m-d H:i:s'),
+            'rejected_at'                 => $this->formatInTimezone($n->rejected_at),
             'rejection_reason'            => $n->rejection_reason,
-            'confirmation_receive_date'   => $n->confirmation_receive_date?->format('Y-m-d H:i:s'),
+            'confirmation_receive_date'   => $this->formatInTimezone($n->confirmation_receive_date),
             'created_by_user_id'          => $n->created_by_user_id,
-            'created_at'                  => $n->created_at?->format('Y-m-d H:i:s'),
-            'updated_at'                  => $n->updated_at?->format('Y-m-d H:i:s'),
+            'created_at'                  => $this->formatInTimezone($n->created_at),
+            'updated_at'                  => $this->formatInTimezone($n->updated_at),
             'violations_count'            => 0,
             'assigned_user'               => $n->relationLoaded('assignedUser') && $n->assignedUser
                 ? ['id' => $n->assignedUser->id, 'name' => $n->assignedUser->name]
@@ -111,11 +112,11 @@ class ProjectNotificationPresenter
                 ? ($n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null)
                 : null,
             'selected_distance_meters'    => $n->selected_distance_meters,
-            'confirmation_receive_date'     => $n->confirmation_receive_date?->format('Y-m-d H:i:s'),
+            'confirmation_receive_date'     => $this->formatInTimezone($n->confirmation_receive_date),
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'pending_processes'           => $this->resolvePendingProcesses($n),
             'violations_count'            => 0,
-            'created_at'                  => $n->created_at?->format('Y-m-d H:i:s'),
+            'created_at'                  => $this->formatInTimezone($n->created_at),
             'assigned_user'               => $n->relationLoaded('assignedUser') && $n->assignedUser
                 ? ['id' => $n->assignedUser->id, 'name' => $n->assignedUser->name]
                 : null,
@@ -325,5 +326,20 @@ class ProjectNotificationPresenter
     private function formatMediaItems($mediaItems): array
     {
         return MediaPresenter::collection($mediaItems);
+    }
+
+    /**
+     * Convert a UTC datetime to the user's branch timezone.
+     * Falls back to the linked task's timezone or the current request's branch timezone.
+     */
+    private function formatInTimezone(?Carbon $date): ?string
+    {
+        if (! $date) {
+            return null;
+        }
+
+        $timezone = $this->notification->employeeTask?->timezone ?? getTimeZoneBranchByRequest();
+
+        return $date->setTimezone($timezone)->format('Y-m-d H:i:s');
     }
 }
