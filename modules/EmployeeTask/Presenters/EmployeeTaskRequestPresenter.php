@@ -52,10 +52,10 @@ final class EmployeeTaskRequestPresenter
             'notes'                      => $task->notes,
             'rejection_reason'           => $task->rejection_reason,
             'cancellation_reason'        => $task->cancellation_reason,
-            'approved_at'                => $task->approved_at?->format('Y-m-d H:i:s'),
-            'rejected_at'                => $task->rejected_at?->format('Y-m-d H:i:s'),
-            'cancelled_at'               => $task->cancelled_at?->format('Y-m-d H:i:s'),
-            'created_at'                 => $task->created_at?->format('Y-m-d H:i:s'),
+            'approved_at'                => $this->formatInTimezone($task->approved_at),
+            'rejected_at'                => $this->formatInTimezone($task->rejected_at),
+            'cancelled_at'               => $this->formatInTimezone($task->cancelled_at),
+            'created_at'                 => $this->formatInTimezone($task->created_at),
             'user'                       => $task->relationLoaded('user') && $task->user
                 ? ['id' => $task->user->id, 'name' => $task->user->name]
                 : null,
@@ -66,7 +66,7 @@ final class EmployeeTaskRequestPresenter
                 ? [
                     'id' => $task->projectNotification->id,
                     'notification_number' => $task->projectNotification->notification_number,
-                    'confirmation_receive_date' => $task->projectNotification->confirmation_receive_date?->format('Y-m-d H:i:s'),
+                    'confirmation_receive_date' => $this->formatInTimezone($task->projectNotification->confirmation_receive_date),
                 ]
                 : null,
             'current_step'               => $this->presentCurrentStep($task),
@@ -211,5 +211,20 @@ final class EmployeeTaskRequestPresenter
         $m = intdiv($seconds % 3600, 60);
         $s = $seconds % 60;
         return sprintf('%02d:%02d:%02d', $h, $m, $s);
+    }
+
+    /**
+     * Convert a UTC datetime to the task's timezone.
+     * Falls back to the current request's branch timezone when the task has no timezone.
+     */
+    private function formatInTimezone(?\Carbon\Carbon $date): ?string
+    {
+        if (! $date) {
+            return null;
+        }
+
+        $timezone = $this->task->timezone ?? getTimeZoneBranchByRequest();
+
+        return $date->setTimezone($timezone)->format('Y-m-d H:i:s');
     }
 }
