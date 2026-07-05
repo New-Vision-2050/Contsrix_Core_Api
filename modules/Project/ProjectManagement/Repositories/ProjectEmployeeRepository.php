@@ -26,6 +26,7 @@ class ProjectEmployeeRepository extends BaseRepository
                 'assignedBy',
                 'projectRole.permissions',
                 'company',
+                'project',
             ]);
 
         if ($companyId) {
