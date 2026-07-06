@@ -32,7 +32,8 @@ class ResourceShareRepository extends BaseRepository
                         },
                     ]);
                 },
-                'sharedWithCompany',
+                'ownerCompany.mainBranch',
+                'sharedWithCompany.mainBranch',
                 'respondedByUser'
             ])
             ->get();
@@ -55,7 +56,7 @@ class ResourceShareRepository extends BaseRepository
                         },
                     ]);
                 },
-                'ownerCompany',
+                'ownerCompany.mainBranch',
                 'sharedByUser',
                 'type',
                 'relation',
@@ -81,7 +82,7 @@ class ResourceShareRepository extends BaseRepository
                         },
                     ]);
                 },
-                'ownerCompany'
+                'ownerCompany.mainBranch'
             ])
             ->get();
     }
