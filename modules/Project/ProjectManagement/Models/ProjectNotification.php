@@ -9,6 +9,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
@@ -139,5 +140,10 @@ class ProjectNotification extends Model implements HasMedia
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
+    }
+
+    public function siteStatusUpdates(): HasMany
+    {
+        return $this->hasMany(ProjectNotificationSiteStatusUpdate::class, 'project_notification_id');
     }
 }

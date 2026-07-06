@@ -94,6 +94,7 @@ class ProjectNotificationPresenter
                 ? MediaPresenter::collection($n->getMedia('attachments'))
                 : [],
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
+            'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
         ];
     }
 
@@ -148,6 +149,7 @@ class ProjectNotificationPresenter
                     ])
                 : null,
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
+            'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
         ];
     }
 
@@ -430,5 +432,17 @@ class ProjectNotificationPresenter
         $timezones = $user->userProfessionalData?->branch?->address?->country?->timezones;
 
         return $timezones[0]['zoneName'] ?? null;
+    }
+
+    /**
+     * Resolve the description from the latest site status update, or null if none exists.
+     */
+    private function resolveLastSiteUpdateStatus(ProjectNotification $n): ?string
+    {
+        if (! $n->relationLoaded('siteStatusUpdates') || $n->siteStatusUpdates->isEmpty()) {
+            return null;
+        }
+
+        return $n->siteStatusUpdates->first()->description;
     }
 }
