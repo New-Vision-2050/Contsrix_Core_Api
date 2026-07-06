@@ -69,6 +69,10 @@ final class EmployeeTaskRequestPresenter
                     'confirmation_receive_date' => $this->formatInTimezone($task->projectNotification->confirmation_receive_date),
                 ]
                 : null,
+            'company'                    => $task->relationLoaded('company') && $task->company
+                ? ['id' => $task->company->id, 'name' => $task->company->name]
+                : null,
+            'company_name'               => $task->relationLoaded('company') && $task->company ? $task->company->name : null,
             'current_step'               => $this->presentCurrentStep($task),
             'attachments' => $task->relationLoaded('media')
                 ? MediaPresenter::collection($task->media)

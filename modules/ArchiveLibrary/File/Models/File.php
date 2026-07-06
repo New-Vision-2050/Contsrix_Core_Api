@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Modules\ArchiveLibrary\File\Database\factories\FileFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\User\Models\User;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -200,6 +201,11 @@ class File extends Model implements HasMedia , Auditable
     public function project()
     {
         return $this->belongsTo(\Modules\Project\ProjectManagement\Models\ProjectManagement::class, 'project_id');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
 
 }

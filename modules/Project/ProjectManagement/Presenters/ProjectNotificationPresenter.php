@@ -71,6 +71,12 @@ class ProjectNotificationPresenter
             'project'                     => $n->relationLoaded('project') && $n->project
                 ? ['id' => $n->project->id, 'name' => $n->project->name]
                 : null,
+            'company'                     => $n->relationLoaded('company') && $n->company
+                ? ['id' => $n->company->id, 'name' => $n->company->name]
+                : null,
+            'company_name'                => $n->relationLoaded('company') && $n->company
+                ? $n->company->name
+                : null,
             'contractor'                  => $n->relationLoaded('contractor') && $n->contractor
                 ? [
                     'id'     => $n->contractor->id,
@@ -119,6 +125,12 @@ class ProjectNotificationPresenter
             'pending_processes'           => $this->resolvePendingProcesses($n),
             'violations_count'            => 0,
             'created_at'                  => $this->formatInTimezone($n->created_at),
+            'company'                     => $n->relationLoaded('company') && $n->company
+                ? ['id' => $n->company->id, 'name' => $n->company->name]
+                : null,
+            'company_name'                => $n->relationLoaded('company') && $n->company
+                ? $n->company->name
+                : null,
             'assigned_user'               => $n->relationLoaded('assignedUser') && $n->assignedUser
                 ? ['id' => $n->assignedUser->id, 'name' => $n->assignedUser->name]
                 : null,

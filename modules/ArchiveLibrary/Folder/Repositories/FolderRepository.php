@@ -211,7 +211,7 @@ class FolderRepository extends BaseRepository
             $folders = collect();
         } else {
             // Query folders based on parent_id
-            $foldersQuery = (clone $folderQuery)->withCount([
+            $foldersQuery = (clone $folderQuery)->with('company')->withCount([
                 'files' => function ($q) use ($withoutTenancy) {
                     if ($withoutTenancy) {
                         $q->withoutTenancy();
@@ -252,7 +252,7 @@ class FolderRepository extends BaseRepository
         }
 
         // Query files based on parent_id (folder_id)
-        $filesQuery = clone $fileQueryBase;
+        $filesQuery = (clone $fileQueryBase)->with('company');
 
         if ($parentId != null) {
             $filesQuery->where('folder_id', $parentId);

@@ -97,6 +97,10 @@ class ProjectManagementPresenter extends AbstractPresenter
                 'name' => $this->projectManagement->company->name,
             ] : null;
 
+            $data['company_name'] = $this->projectManagement->company
+                ? $this->projectManagement->company->name
+                : null;
+
             $data['client'] = $this->projectManagement->client ? [
                 'id' => $this->projectManagement->client->id,
                 'name' => $this->projectManagement->client->name,
