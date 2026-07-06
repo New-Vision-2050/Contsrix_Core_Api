@@ -258,13 +258,10 @@ class ProjectShareController extends Controller
             if ($project->company_id !== $currentCompanyId) {
                 $ownerCompany = $project->company()->withoutGlobalScopes()->first();
                 if ($ownerCompany) {
-                    $companies->push([
-                        'id' => $ownerCompany->id,
-                        'name' => $ownerCompany->name,
-                        'serial_number' => $ownerCompany->serial_number,
+                    $companies->push(array_merge(ResourceSharePresenter::companyData($ownerCompany), [
                         'role' => 'owner',
                         'shared_at' => $project->created_at?->toISOString(),
-                    ]);
+                    ]));
                 }
             }
 
@@ -280,15 +277,19 @@ class ProjectShareController extends Controller
                     return $share->shared_with_company_id !== $currentCompanyId;
                 })
                 ->map(function ($share) {
-                    return [
-                        'id' => $share->sharedWithCompany->id,
-                        'name' => $share->sharedWithCompany->name,
-                        'serial_number' => $share->sharedWithCompany->serial_number,
+                    $companyData = ResourceSharePresenter::companyData($share->sharedWithCompany);
+
+                    if (! $companyData) {
+                        return null;
+                    }
+
+                    return array_merge($companyData, [
                         'role' => 'receiver',
                         'shared_at' => $share->created_at?->toISOString(),
                         'accepted_at' => $share->responded_at?->toISOString(),
-                    ];
-                });
+                    ]);
+                })
+                ->filter();
 
             $companies = $companies->merge($sharedCompanies);
 

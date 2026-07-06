@@ -15,6 +15,8 @@ class ProjectEmployeePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $mandatoryReason = $this->mandatoryReason();
+
         return [
             'id' => $this->projectEmployee->id,
             'project_id' => $this->projectEmployee->project_id,
@@ -43,7 +45,29 @@ class ProjectEmployeePresenter extends AbstractPresenter
             'company_name' => $this->projectEmployee->company
                 ? $this->projectEmployee->company->name
                 : null,
+            'is_mandatory' => $mandatoryReason !== null,
+            'mandatory_reason' => $mandatoryReason,
             'created_at' => $this->projectEmployee->created_at?->toISOString(),
         ];
+    }
+
+    private function mandatoryReason(): ?string
+    {
+        $project = $this->projectEmployee->project;
+        $userId = $this->projectEmployee->user_id ? (string) $this->projectEmployee->user_id : null;
+
+        if (! $project || ! $userId) {
+            return null;
+        }
+
+        if ($project->manager_id && $userId === (string) $project->manager_id) {
+            return 'project_manager';
+        }
+
+        if ($project->created_by_user_id && $userId === (string) $project->created_by_user_id) {
+            return 'project_creator';
+        }
+
+        return null;
     }
 }
