@@ -45,6 +45,7 @@ class ProjectNotificationRepository
                 'employeeTask.siteStatusUpdates.media',
                 'employeeTask.fines.media',
                 'employeeTask.workStoppageReports.media',
+                'siteStatusUpdates' => fn ($q) => $q->latest('update_date')->limit(1),
             ])
             ->find($id);
     }
@@ -52,7 +53,15 @@ class ProjectNotificationRepository
     public function paginated(array $filters, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
         $query = ProjectNotification::filter($filters)
-            ->with(['assignedUser', 'project', 'company', 'contractor', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting']);
+            ->with([
+                'assignedUser',
+                'project',
+                'company',
+                'contractor',
+                'employeeTask.user',
+                'employeeTask.createProjectNotificationTaskProcedureSetting',
+                'siteStatusUpdates' => fn ($q) => $q->latest('update_date')->limit(1),
+            ]);
 
         $this->applySorting($query, $sort);
 
