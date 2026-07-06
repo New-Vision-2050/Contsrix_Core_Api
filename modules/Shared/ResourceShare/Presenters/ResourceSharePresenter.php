@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Shared\ResourceShare\Presenters;
 
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Shared\ResourceShare\Models\ResourceShare;
 
 class ResourceSharePresenter
@@ -18,16 +19,8 @@ class ResourceSharePresenter
             'id' => $this->share->id,
             'shareable_type' => $this->share->shareable_type,
             'shareable_id' => $this->share->shareable_id,
-            'owner_company' => $this->share->ownerCompany ? [
-                'id' => $this->share->ownerCompany->id,
-                'name' => $this->share->ownerCompany->name,
-                'serial_number' => $this->share->ownerCompany->serial_number,
-            ] : null,
-            'shared_with_company' => $this->share->sharedWithCompany ? [
-                'id' => $this->share->sharedWithCompany->id,
-                'name' => $this->share->sharedWithCompany->name,
-                'serial_number' => $this->share->sharedWithCompany->serial_number,
-            ] : null,
+            'owner_company' => $this->companyData($this->share->ownerCompany),
+            'shared_with_company' => $this->companyData($this->share->sharedWithCompany),
             'status' => $this->share->status,
             'schema_ids' => $this->share->schema_ids,
             'shared_by' => $this->share->sharedByUser ? [
@@ -59,6 +52,27 @@ class ResourceSharePresenter
             ] : null,
             'created_at' => $this->share->created_at?->toISOString(),
             'updated_at' => $this->share->updated_at?->toISOString(),
+        ];
+    }
+
+    public static function companyData(?Company $company): ?array
+    {
+        if (! $company) {
+            return null;
+        }
+
+        $mainBranch = $company->relationLoaded('mainBranch')
+            ? $company->mainBranch
+            : $company->mainBranch()->first();
+
+        return [
+            'id' => $company->id,
+            'name' => $company->name,
+            'serial_no' => $company->serial_no,
+            'serial_number' => $company->serial_no,
+            'email' => $company->email ?: $mainBranch?->email,
+            'phone' => $company->phone ?: $mainBranch?->phone,
+            'phone_code' => $mainBranch?->phone_code,
         ];
     }
 }
