@@ -139,6 +139,13 @@ class FilePresenter extends AbstractPresenter
             "created_at"=>$this->file->created_at,
             "updated_at"=>$this->file->updated_at,
             "last_log" => $this->getLastAudit(),
+            'company' => $this->file->relationLoaded('company') && $this->file->company ? [
+                'id' => $this->file->company->id,
+                'name' => $this->file->company->name,
+            ] : null,
+            'company_name' => $this->file->relationLoaded('company') && $this->file->company
+                ? $this->file->company->name
+                : null,
         ];
     }
 

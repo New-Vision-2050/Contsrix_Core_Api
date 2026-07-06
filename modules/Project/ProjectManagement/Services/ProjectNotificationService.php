@@ -8,6 +8,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationTaskPostponement;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkResumption;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
@@ -1061,7 +1063,12 @@ class ProjectNotificationService
 
     public function endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest
     {
-        $task = $this->linkedTask($notificationId);
+        $notification = $this->get($notificationId);
+        $task = $notification->employeeTask;
+
+        if (! $task) {
+            throw ProjectNotificationException::linkedTaskNotFound($notificationId);
+        }
 
         $task = $this->lifecycleService->end($task->id, $dto);
 
@@ -1074,6 +1081,17 @@ class ProjectNotificationService
                 visibility: 'public',
             );
         }
+
+        ProjectNotificationSiteStatusUpdate::query()->create([
+            'company_id' => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'employee_task_request_id' => $task->id,
+            'description' => 'تم الانهاء من الاعمال',
+            'status' => 'approved',
+            'requested_by' => $task->user_id,
+            'update_date' => now()->toDateString(),
+            'update_time' => now()->format('H:i:s'),
+        ]);
 
         return $task->fresh()->load('media');
     }

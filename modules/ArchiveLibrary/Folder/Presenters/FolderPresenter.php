@@ -156,6 +156,13 @@ class FolderPresenter extends AbstractPresenter
             "updated_at"=>$this->folder->updated_at,
             "is_password"=>$this->folder->password != null?1 : 0,
             "last_log" => $this->getLastAudit(),
+            'company' => $this->folder->relationLoaded('company') && $this->folder->company ? [
+                'id' => $this->folder->company->id,
+                'name' => $this->folder->company->name,
+            ] : null,
+            'company_name' => $this->folder->relationLoaded('company') && $this->folder->company
+                ? $this->folder->company->name
+                : null,
         ];
     }
 

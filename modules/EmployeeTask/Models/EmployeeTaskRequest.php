@@ -18,6 +18,7 @@ use Modules\EmployeeTask\Events\EmployeeTaskLifecycleProcessCompleted;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 use Modules\Process\Enums\ProcessStatus;
@@ -119,6 +120,11 @@ class EmployeeTaskRequest extends Model implements HasMedia
     public function project(): BelongsTo
     {
         return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
 
     public function projectNotification(): BelongsTo

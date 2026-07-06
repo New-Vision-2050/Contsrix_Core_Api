@@ -42,6 +42,9 @@ class ProjectEmployeePresenter extends AbstractPresenter
                 'id' => $this->projectEmployee->company->id,
                 'name' => $this->projectEmployee->company->name,
             ] : null,
+            'company_name' => $this->projectEmployee->company
+                ? $this->projectEmployee->company->name
+                : null,
             'is_mandatory' => $mandatoryReason !== null,
             'mandatory_reason' => $mandatoryReason,
             'created_at' => $this->projectEmployee->created_at?->toISOString(),

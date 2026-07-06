@@ -10,6 +10,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
@@ -133,5 +134,10 @@ class ProjectNotification extends Model implements HasMedia
     public function rejecter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rejected_by')->withoutGlobalScopes();
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
 }

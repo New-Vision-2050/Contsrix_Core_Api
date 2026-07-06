@@ -544,7 +544,7 @@ class ProjectNotificationController extends Controller
             $user,
         );
 
-        $task->load('projectNotification');
+        $task->load(['projectNotification', 'company']);
 
         return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task confirmed successfully');
     }
@@ -565,7 +565,7 @@ class ProjectNotificationController extends Controller
             $user,
         );
 
-        $task->load('projectNotification');
+        $task->load(['projectNotification', 'company']);
 
         return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task started successfully');
     }
@@ -653,6 +653,8 @@ class ProjectNotificationController extends Controller
                 files: $request->hasFile('files') ? $request->file('files') : null,
             ),
         );
+
+        $task->load('company');
 
         return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task ended successfully');
     }

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\ArchiveLibrary\Folder\Database\factories\FolderFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\ArchiveLibrary\File\Models\File;
+use Modules\Company\CompanyCore\Models\Company;
 //use BasePackage\Shared\Traits\HasTranslations;
 use Modules\User\Models\User;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -86,6 +87,11 @@ class Folder extends Model implements HasMedia ,Auditable
     public function project()
     {
         return $this->belongsTo(\Modules\Project\ProjectManagement\Models\ProjectManagement::class, 'project_id');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
     protected static function newFactory(): FolderFactory
     {
