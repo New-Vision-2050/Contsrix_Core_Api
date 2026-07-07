@@ -67,6 +67,7 @@ class ProjectNotification extends Model implements HasMedia
         'rejected_at',
         'rejection_reason',
         'confirmation_receive_date',
+        'location_confirmed_at',
         'task_date',
         'task_time',
         'duration_hours',
@@ -83,6 +84,7 @@ class ProjectNotification extends Model implements HasMedia
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
         'confirmation_receive_date' => 'datetime',
+        'location_confirmed_at' => 'datetime',
         'task_date' => 'date:Y-m-d',
         'task_time' => 'datetime:H:i',
     ];

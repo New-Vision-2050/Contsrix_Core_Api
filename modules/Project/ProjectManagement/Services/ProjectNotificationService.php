@@ -206,8 +206,10 @@ class ProjectNotificationService
     {
         $filters = $dto->toFilters();
         // Mobile "My Tasks" tab shows notifications that are approved, started,
-        // finished, or rejected.
-        $filters['status'] = 'approved,in_progress,completed,rejected';
+        // finished, or rejected. "received" and "in_progress" are both included
+        // since they represent the two in-progress sub-states (location not yet
+        // confirmed / confirmed).
+        $filters['status'] = 'approved,received,in_progress,completed,rejected';
 
         return $this->repository->paginatedForMyTasks(
             $filters,
@@ -1492,7 +1494,7 @@ class ProjectNotificationService
         RequestProjectNotificationLocationConfirmationDTO $dto,
         string $userId,
     ): ProjectNotificationLocationConfirmation {
-        return ProjectNotificationLocationConfirmation::query()->create([
+        $confirmation = ProjectNotificationLocationConfirmation::query()->create([
             'company_id' => $notification->company_id,
             'project_notification_id' => $notification->id,
             'employee_task_request_id' => $task->id,
@@ -1500,6 +1502,15 @@ class ProjectNotificationService
             'status' => 'approved',
             ...$dto->toArray(),
         ]);
+
+        // Record the exact moment the employee confirmed the location. Once set,
+        // the notification's "in_progress" status is displayed as "قيد التنفيذ"
+        // (In Progress) instead of "تم الاستلام" (Received).
+        if ($notification->location_confirmed_at === null) {
+            $notification->update(['location_confirmed_at' => now()]);
+        }
+
+        return $confirmation;
     }
 
     private function createFineRecord(
