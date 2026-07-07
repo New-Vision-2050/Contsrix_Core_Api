@@ -16,11 +16,33 @@ class ProjectNotificationFilter extends SearchModelFilter
 
     public function status($status)
     {
-        if (is_string($status) && str_contains($status, ',')) {
-            return $this->whereIn('project_notifications.status', explode(',', $status));
+        $statuses = is_string($status) && str_contains($status, ',')
+            ? explode(',', $status)
+            : [$status];
+
+        // "received" and "in_progress" both map to the same raw status column
+        // value ('in_progress'); they are distinguished by whether the employee
+        // has also confirmed the location (location_confirmed_at). Only take the
+        // slower, split path when one of these pseudo-statuses is requested.
+        if (! array_intersect(['received', 'in_progress'], $statuses)) {
+            return count($statuses) > 1
+                ? $this->whereIn('project_notifications.status', $statuses)
+                : $this->where('project_notifications.status', $statuses[0]);
         }
 
-        return $this->where('project_notifications.status', $status);
+        return $this->where(function ($query) use ($statuses) {
+            foreach ($statuses as $value) {
+                $query->orWhere(function ($q) use ($value) {
+                    match ($value) {
+                        'received' => $q->where('project_notifications.status', 'in_progress')
+                            ->whereNull('project_notifications.location_confirmed_at'),
+                        'in_progress' => $q->where('project_notifications.status', 'in_progress')
+                            ->whereNotNull('project_notifications.location_confirmed_at'),
+                        default => $q->where('project_notifications.status', $value),
+                    };
+                });
+            }
+        });
     }
 
     public function projectId($projectId)
@@ -53,6 +75,16 @@ class ProjectNotificationFilter extends SearchModelFilter
     public function contractorId($contractorId)
     {
         return $this->where('contractor_id', $contractorId);
+    }
+
+    public function contractorCategory($category)
+    {
+        return $this->where('contractor_category', $category);
+    }
+
+    public function severity($severity)
+    {
+        return $this->where('severity', $severity);
     }
 
     public function assignedUserId($userId)

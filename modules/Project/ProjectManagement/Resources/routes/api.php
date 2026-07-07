@@ -129,6 +129,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ;
         Route::get('/notification-types', [ProjectNotificationController::class, 'notificationTypes'])
             ;
+        Route::get('/charts', [ProjectNotificationController::class, 'charts'])
+            ;
         Route::post('/export', [ProjectNotificationController::class, 'export'])
             ->permission(Permission::PROJECT_NOTIFICATION_EXPORT());
 

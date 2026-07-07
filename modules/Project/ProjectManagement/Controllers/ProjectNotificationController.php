@@ -20,9 +20,11 @@ use Modules\EmployeeTask\Requests\EndTaskRequest;
 use Modules\EmployeeTask\Requests\StartTaskRequest;
 use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
 use Modules\Project\ProjectManagement\Exports\ProjectNotificationExport;
+use Modules\Project\ProjectManagement\Presenters\ProjectNotificationChartsPresenter;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationEmployeeLocationPresenter;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter;
 use Modules\Project\ProjectManagement\Requests\CreateProjectNotificationRequest;
+use Modules\Project\ProjectManagement\Requests\FilterProjectNotificationChartsRequest;
 use Modules\Project\ProjectManagement\Requests\FilterProjectNotificationsRequest;
 use Modules\Project\ProjectManagement\Requests\GetProjectNotificationEmployeesRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationFineRequest;
@@ -33,6 +35,7 @@ use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationUpdateR
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationWorkResumptionRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationWorkStoppageReportRequest;
 use Modules\Project\ProjectManagement\Requests\UpdateProjectNotificationRequest;
+use Modules\Project\ProjectManagement\Services\ProjectNotificationChartsService;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationLocationService;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationService;
 
@@ -41,6 +44,7 @@ class ProjectNotificationController extends Controller
     public function __construct(
         private readonly ProjectNotificationService $notificationService,
         private readonly ProjectNotificationLocationService $locationService,
+        private readonly ProjectNotificationChartsService $chartsService,
     ) {}
 
     /**
@@ -56,6 +60,23 @@ class ProjectNotificationController extends Controller
             $types,
             message: 'Notification types retrieved successfully',
         );
+    }
+
+    /**
+     * GET /projects/notifications/charts
+     *
+     * Returns aggregated, cross-filterable chart data for project notifications.
+     * Each dimension is aggregated excluding its own filter so the frontend can
+     * display cross-filtering UX (selecting a value in one chart updates all
+     * other charts while keeping the selected chart's full distribution visible).
+     */
+    public function charts(FilterProjectNotificationChartsRequest $request): JsonResponse
+    {
+        $chartsData = $this->chartsService->getChartsData($request->toDTO());
+
+        $presentedData = ProjectNotificationChartsPresenter::presentCharts($chartsData);
+
+        return Json::item($presentedData);
     }
 
     public function index(FilterProjectNotificationsRequest $request): JsonResponse
