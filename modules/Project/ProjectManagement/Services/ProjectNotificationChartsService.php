@@ -250,8 +250,10 @@ class ProjectNotificationChartsService
     public function getAssignedEmployeeChart(FilterProjectNotificationChartsDTO $dto): array
     {
         $rows = $this->baseQuery($dto, 'assigned_user_id')
-            ->whereNotNull('assigned_user_id')
-            ->leftJoin('users', 'users.id', '=', 'project_notifications.assigned_user_id')
+            ->whereNotNull('assigned_user_ids')
+            ->leftJoin('users', function ($join) {
+                $join->on('users.id', '=', DB::raw("JSON_UNQUOTE(JSON_EXTRACT(project_notifications.assigned_user_ids, '$[0]'))"));
+            })
             ->select('users.id as user_id', 'users.name as user_name', DB::raw('count(*) as count'))
             ->groupBy('users.id', 'users.name')
             ->orderByDesc('count')

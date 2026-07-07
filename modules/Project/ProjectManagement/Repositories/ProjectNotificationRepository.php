@@ -24,12 +24,11 @@ class ProjectNotificationRepository
 
     public function findById(string $id): ?ProjectNotification
     {
-        return ProjectNotification::query()
+        $notification = ProjectNotification::query()
             ->with([
                 'project',
                 'company',
                 'contractor',
-                'assignedUser',
                 'creator',
                 'media',
                 'employeeTask.user',
@@ -48,13 +47,16 @@ class ProjectNotificationRepository
                 'siteStatusUpdates' => fn ($q) => $q->latest('update_date')->limit(1),
             ])
             ->find($id);
+
+        $this->preloadAssignedUsers($notification);
+
+        return $notification;
     }
 
     public function paginated(array $filters, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
         $query = ProjectNotification::filter($filters)
             ->with([
-                'assignedUser',
                 'project',
                 'company',
                 'contractor',
@@ -65,7 +67,10 @@ class ProjectNotificationRepository
 
         $this->applySorting($query, $sort);
 
-        return $query->paginate($perPage);
+        $result = $query->paginate($perPage);
+        $this->preloadAssignedUsers($result->getCollection());
+
+        return $result;
     }
 
     /**
@@ -76,7 +81,6 @@ class ProjectNotificationRepository
     {
         $query = ProjectNotification::filter($filters)
             ->with([
-                'assignedUser.userProfessionalData.branch.address.country.timezones',
                 'project',
                 'company',
                 'contractor',
@@ -84,24 +88,29 @@ class ProjectNotificationRepository
 
         $this->applySorting($query, null);
 
-        return $query->get();
+        $result = $query->get();
+        $this->preloadAssignedUsers($result);
+
+        return $result;
     }
 
     /**
-     * Mobile "my-tasks" query. The assigned_user_id filter is applied directly
-     * because the EloquentFilter relation handling can drop it when the
-     * assignedUser relation is whitelisted in $relations.
+     * Mobile "my-tasks" query. Filters by JSON contains on assigned_user_ids
+     * so that any notification assigned to the current user appears.
      */
     public function paginatedForMyTasks(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
         $query = ProjectNotification::query()
-            ->where('assigned_user_id', $userId)
+            ->whereJsonContains('assigned_user_ids', $userId)
             ->filter($filters)
-            ->with(['assignedUser', 'project', 'company', 'contractor', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting']);
+            ->with(['project', 'company', 'contractor', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting']);
 
         $this->applySorting($query, $sort);
 
-        return $query->paginate($perPage);
+        $result = $query->paginate($perPage);
+        $this->preloadAssignedUsers($result->getCollection());
+
+        return $result;
     }
 
     /**
@@ -157,7 +166,6 @@ class ProjectNotificationRepository
         );
 
         $query->with([
-            'assignedUser',
             'project',
             'company',
             'contractor',
@@ -169,7 +177,10 @@ class ProjectNotificationRepository
 
         $this->applySorting($query, $sort);
 
-        return $query->paginate($perPage);
+        $result = $query->paginate($perPage);
+        $this->preloadAssignedUsers($result->getCollection());
+
+        return $result;
     }
 
     public function update(string $id, array $data): bool
@@ -210,6 +221,42 @@ class ProjectNotificationRepository
 
             return "NTF-{$year}-" . str_pad((string) $sequence, 5, '0', STR_PAD_LEFT);
         });
+    }
+
+    /**
+     * Eager-load all assigned User models for a collection of notifications
+     * and set them via the model's preloadedAssignedUsers property to avoid
+     * N+1 queries when accessing assigned_users.
+     *
+     * @param  \Illuminate\Support\Collection<int, ProjectNotification>|ProjectNotification|null  $notifications
+     */
+    private function preloadAssignedUsers($notifications): void
+    {
+        if ($notifications === null) {
+            return;
+        }
+
+        if ($notifications instanceof ProjectNotification) {
+            $notifications = collect([$notifications]);
+        }
+
+        $allUserIds = $notifications->pluck('assigned_user_ids')->flatten()->unique()->values()->all();
+
+        if (empty($allUserIds)) {
+            $notifications->each(fn ($n) => $n->setPreloadedAssignedUsers(collect()));
+            return;
+        }
+
+        $users = \Modules\User\Models\User::withoutGlobalScopes()
+            ->whereIn('id', $allUserIds)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($notifications as $notification) {
+            $ids = $notification->assigned_user_ids ?? [];
+            $assigned = collect($ids)->map(fn ($id) => $users->get($id))->filter();
+            $notification->setPreloadedAssignedUsers($assigned);
+        }
     }
 
     private function applySorting($query, ?string $sort): void

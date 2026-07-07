@@ -11,8 +11,8 @@ class EmployeeTaskStatusSyncObserver
 {
     private const STATUS_MAP = [
         'pending' => 'pending',
-        'approved' => 'completed',
-        'rejected' => 'completed',
+        'approved' => 'in_progress',
+        'rejected' => 'cancelled',
         'in_progress' => 'in_progress',
         'paused' => 'in_progress',
         'completed' => 'completed',

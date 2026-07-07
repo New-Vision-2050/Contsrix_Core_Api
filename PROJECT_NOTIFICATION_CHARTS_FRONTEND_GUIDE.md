@@ -54,6 +54,7 @@ The response uses the standard envelope via `Json::item()`:
   "payload": {
     "status": { ... },
     "notification_type": { ... },
+    "severity": { ... },
     "work_type": { ... },
     "contractor_category": { ... },
     "project": { ... },
@@ -110,6 +111,7 @@ The response uses the standard envelope via `Json::item()`:
 |-----------|-------------|-------------|------------------------|
 | `status` | `status` | Distribution by notification status | Donut/Pie chart |
 | `notification_type` | `notification_type` | Distribution by notification type | Bar chart |
+| `severity` | `severity` | Distribution by severity | Bar chart |
 | `work_type` | `work_type` | Distribution by work type | Bar chart |
 | `contractor_category` | `contractor_category` | Distribution by contractor category | Bar chart |
 | `project` | `project` | Distribution by project | Horizontal bar chart |

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\User\Models\User;
@@ -57,7 +58,9 @@ class ProjectNotification extends Model implements HasMedia
         'repair_point',
         'permit_source',
         'permit_recipient',
-        'assigned_user_id',
+        'assigned_user_ids',
+        'all_users_can_approve',
+        'independent_progress',
         'selected_distance_meters',
         'status',
         'created_by_user_id',
@@ -87,6 +90,9 @@ class ProjectNotification extends Model implements HasMedia
         'location_confirmed_at' => 'datetime',
         'task_date' => 'date:Y-m-d',
         'task_time' => 'datetime:H:i',
+        'assigned_user_ids' => 'array',
+        'all_users_can_approve' => 'boolean',
+        'independent_progress' => 'boolean',
     ];
 
     public function getTenantIdColumn(): string
@@ -119,9 +125,39 @@ class ProjectNotification extends Model implements HasMedia
         return $this->belongsTo(EmployeeTaskRequest::class, 'employee_task_request_id')->withoutGlobalScopes();
     }
 
-    public function assignedUser(): BelongsTo
+    /**
+     * Preloaded collection of assigned User models (set by repository for eager loading).
+     */
+    protected ?Collection $preloadedAssignedUsers = null;
+
+    public function setPreloadedAssignedUsers(Collection $users): void
     {
-        return $this->belongsTo(User::class, 'assigned_user_id')->withoutGlobalScopes();
+        $this->preloadedAssignedUsers = $users;
+    }
+
+    /**
+     * All users assigned to this notification (from the assigned_user_ids JSON array).
+     */
+    public function getAssignedUsersAttribute(): Collection
+    {
+        if ($this->preloadedAssignedUsers !== null) {
+            return $this->preloadedAssignedUsers;
+        }
+
+        $ids = $this->assigned_user_ids ?? [];
+        if (empty($ids)) {
+            return collect();
+        }
+
+        return User::withoutGlobalScopes()->whereIn('id', $ids)->get();
+    }
+
+    /**
+     * Convenience accessor: the first assigned user (for backward compatibility).
+     */
+    public function getAssignedUserAttribute(): ?User
+    {
+        return $this->assigned_users->first();
     }
 
     public function creator(): BelongsTo

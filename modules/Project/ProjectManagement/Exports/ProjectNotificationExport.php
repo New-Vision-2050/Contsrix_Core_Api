@@ -16,9 +16,23 @@ class ProjectNotificationExport extends BaseExport
 
     public function collection()
     {
-        return ProjectNotification::filter($this->filters)
-            ->with(['assignedUser', 'project'])
+        $notifications = ProjectNotification::filter($this->filters)
+            ->with(['project'])
             ->get();
+
+        $allUserIds = $notifications->pluck('assigned_user_ids')->flatten()->unique()->values()->all();
+        if (! empty($allUserIds)) {
+            $users = \Modules\User\Models\User::withoutGlobalScopes()
+                ->whereIn('id', $allUserIds)
+                ->get()
+                ->keyBy('id');
+            foreach ($notifications as $n) {
+                $ids = $n->assigned_user_ids ?? [];
+                $n->setPreloadedAssignedUsers(collect($ids)->map(fn ($id) => $users->get($id))->filter());
+            }
+        }
+
+        return $notifications;
     }
 
     public function headings(): array
@@ -53,7 +67,7 @@ class ProjectNotificationExport extends BaseExport
             $row->contractor_number,
             $row->feeder_number,
             $row->contractor_technical_name,
-            $row->assignedUser?->name,
+            $row->assigned_user?->name,
             $row->project?->name,
             $row->status,
             $row->task_date?->format('Y-m-d'),

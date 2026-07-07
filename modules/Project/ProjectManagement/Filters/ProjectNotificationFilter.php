@@ -12,7 +12,7 @@ class ProjectNotificationFilter extends SearchModelFilter
 {
     protected $drop_id = false;
 
-    public $relations = ['project', 'assignedUser', 'creator'];
+    public $relations = ['project', 'creator'];
 
     public function status($status)
     {
@@ -89,7 +89,7 @@ class ProjectNotificationFilter extends SearchModelFilter
 
     public function assignedUserId($userId)
     {
-        return $this->where('assigned_user_id', $userId);
+        return $this->whereJsonContains('assigned_user_ids', $userId);
     }
 
     public function taskUserId($userId)

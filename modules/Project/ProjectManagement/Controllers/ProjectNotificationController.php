@@ -398,7 +398,6 @@ class ProjectNotificationController extends Controller
         );
 
         $paginator->getCollection()->loadMissing([
-            'assignedUser',
             'employeeTask.user',
             'employeeTask.sessions',
             'employeeTask.employeeTaskType',
@@ -434,7 +433,6 @@ class ProjectNotificationController extends Controller
         );
 
         $paginator->getCollection()->loadMissing([
-            'assignedUser',
             'employeeTask.user',
             'employeeTask.sessions',
             'employeeTask.employeeTaskType',
@@ -538,7 +536,10 @@ class ProjectNotificationController extends Controller
 
     public function availableActions(Request $request): JsonResponse
     {
-        $actions = $this->notificationService->availableActions($request->route('id'));
+        $actions = $this->notificationService->availableActions(
+            $request->route('id'),
+            (string) Auth::id(),
+        );
 
         return Json::items($actions, message: 'Available actions retrieved successfully');
     }
@@ -673,6 +674,7 @@ class ProjectNotificationController extends Controller
                 internalProcedureSettingId: $request->input('internal_procedure_setting_id'),
                 files: $request->hasFile('files') ? $request->file('files') : null,
             ),
+            (string) Auth::id(),
         );
 
         $task->load('company');

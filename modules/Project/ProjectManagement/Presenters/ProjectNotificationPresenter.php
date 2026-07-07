@@ -44,7 +44,9 @@ class ProjectNotificationPresenter
             'repair_point'                => $n->repair_point,
             'permit_source'               => $n->permit_source,
             'permit_recipient'            => $n->permit_recipient,
-            'assigned_user_id'            => $n->assigned_user_id,
+            'assigned_user_ids'           => $n->assigned_user_ids,
+            'all_users_can_approve'        => $n->all_users_can_approve,
+            'independent_progress'         => $n->independent_progress,
             'selected_distance_meters'    => $n->selected_distance_meters,
             'status'                      => $n->status,
             'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null),
@@ -63,9 +65,8 @@ class ProjectNotificationPresenter
             'created_at'                  => $this->formatInTimezone($n->created_at),
             'updated_at'                  => $this->formatInTimezone($n->updated_at),
             'violations_count'            => 0,
-            'assigned_user'               => $n->relationLoaded('assignedUser') && $n->assignedUser
-                ? ['id' => $n->assignedUser->id, 'name' => $n->assignedUser->name]
-                : null,
+            'assigned_users'              => $this->formatAssignedUsers($n),
+            'assigned_user'               => $this->formatFirstAssignedUser($n),
             'creator'                     => $n->relationLoaded('creator') && $n->creator
                 ? ['id' => $n->creator->id, 'name' => $n->creator->name]
                 : null,
@@ -134,9 +135,8 @@ class ProjectNotificationPresenter
             'company_name'                => $n->relationLoaded('company') && $n->company
                 ? $n->company->name
                 : null,
-            'assigned_user'               => $n->relationLoaded('assignedUser') && $n->assignedUser
-                ? ['id' => $n->assignedUser->id, 'name' => $n->assignedUser->name]
-                : null,
+            'assigned_users'              => $this->formatAssignedUsers($n),
+            'assigned_user'               => $this->formatFirstAssignedUser($n),
             'employee_task'               => $n->relationLoaded('employeeTask') && $n->employeeTask
                 ? ($fullEmployeeTask
                     ? EmployeeTaskRequestPresenter::single($n->employeeTask)
@@ -187,9 +187,8 @@ class ProjectNotificationPresenter
             'radius'          => $n->location_radius ? (int) $n->location_radius : null,
             'status'          => $n->status,
             'status_label'    => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null),
-            'assigned_user'   => $n->relationLoaded('assignedUser') && $n->assignedUser
-                ? ['id' => $n->assignedUser->id, 'name' => $n->assignedUser->name]
-                : null,
+            'assigned_users'  => $this->formatAssignedUsers($n),
+            'assigned_user'   => $this->formatFirstAssignedUser($n),
             'receive_date'    => $this->formatInMapTimezone($n->confirmation_receive_date),
         ];
     }
@@ -438,9 +437,34 @@ class ProjectNotificationPresenter
         return $date->setTimezone($timezone)->format('Y-m-d H:i:s');
     }
 
+    /**
+     * Format all assigned users as an array of {id, name} objects.
+     */
+    private function formatAssignedUsers(ProjectNotification $n): array
+    {
+        return $n->assigned_users->map(fn ($user) => [
+            'id'   => $user->id,
+            'name' => $user->name,
+        ])->values()->all();
+    }
+
+    /**
+     * Format the first assigned user as {id, name} or null.
+     */
+    private function formatFirstAssignedUser(ProjectNotification $n): ?array
+    {
+        $user = $n->assigned_user;
+
+        if (! $user) {
+            return null;
+        }
+
+        return ['id' => $user->id, 'name' => $user->name];
+    }
+
     private function resolveAssignedUserBranchTimezone(): ?string
     {
-        $user = $this->notification->assignedUser;
+        $user = $this->notification->assigned_user;
 
         if (! $user) {
             return null;

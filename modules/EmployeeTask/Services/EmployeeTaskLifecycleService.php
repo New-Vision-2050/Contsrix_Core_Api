@@ -33,7 +33,7 @@ final class EmployeeTaskLifecycleService
         private readonly EmployeeTaskRequestService       $requestService,
     ) {}
 
-    public function start(string $taskId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
+    public function start(string $taskId, StartTaskDTO $dto, User $user, ?string $independentUserId = null): EmployeeTaskRequest
     {
         $task = $this->taskRepo->findById($taskId);
 
@@ -74,7 +74,7 @@ final class EmployeeTaskLifecycleService
                 ? $this->resolveParentFromProcedureSetting($procedureSetting)
                 : null;
 
-            return DB::transaction(function () use ($task, $dto, $user, $procedureSetting, $parentSetting): EmployeeTaskRequest {
+            return DB::transaction(function () use ($task, $dto, $user, $procedureSetting, $parentSetting, $independentUserId): EmployeeTaskRequest {
                 $process = $this->requestService->createLifecycleProcess(
                     $task,
                     InternalProcessForm::StartTask->value,
@@ -84,6 +84,7 @@ final class EmployeeTaskLifecycleService
                         'notes'     => $dto->notes,
                     ],
                     $procedureSetting,
+                    $independentUserId,
                 );
 
                 if ($process === null) {
@@ -211,7 +212,7 @@ final class EmployeeTaskLifecycleService
         return $task->refresh()->load(['sessions']);
     }
 
-    public function end(string $taskId, EndTaskDTO $dto): EmployeeTaskRequest
+    public function end(string $taskId, EndTaskDTO $dto, ?string $independentUserId = null): EmployeeTaskRequest
     {
         $task = $this->taskRepo->findById($taskId);
 
@@ -253,7 +254,7 @@ final class EmployeeTaskLifecycleService
                 ? $this->resolveParentFromProcedureSetting($procedureSetting)
                 : null;
 
-            return DB::transaction(function () use ($task, $dto, $formKey, $procedureSetting, $parentSetting): EmployeeTaskRequest {
+            return DB::transaction(function () use ($task, $dto, $formKey, $procedureSetting, $parentSetting, $independentUserId): EmployeeTaskRequest {
                 $process = $this->requestService->createLifecycleProcess(
                     $task,
                     $formKey,
@@ -263,6 +264,7 @@ final class EmployeeTaskLifecycleService
                         'notes'     => $dto->notes,
                     ],
                     $procedureSetting,
+                    $independentUserId,
                 );
 
                 if ($process === null) {

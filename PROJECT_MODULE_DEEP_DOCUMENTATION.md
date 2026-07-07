@@ -285,18 +285,19 @@ notification_type, severity, work_type, feeder_number, work_description,
 contractor_id, contractor_name, contractor_number, contractor_technical_number,
 contractor_technical_name, contractor_category, contractor_notes, contractor_mobile,
 task_latitude, task_longitude, location_radius, location_link, repair_point,
-assigned_user_id, selected_distance_meters, status, created_by_user_id,
+assigned_user_ids (JSON array), all_users_can_approve (bool, default true), independent_progress (bool, default false), selected_distance_meters, status, created_by_user_id,
 approved_by, approved_at, rejected_by, rejected_at, rejection_reason,
 task_date, duration_hours, notes
 ```
 
-**Casts**: `task_latitude` → `decimal:7`, `task_longitude` → `decimal:7`, `location_radius` → `integer`, `selected_distance_meters` → `integer`, `duration_hours` → `decimal:2`, `approved_at`/`rejected_at` → `datetime`, `task_date` → `date:Y-m-d`
+**Casts**: `task_latitude` → `decimal:7`, `task_longitude` → `decimal:7`, `location_radius` → `integer`, `selected_distance_meters` → `integer`, `duration_hours` → `decimal:2`, `approved_at`/`rejected_at` → `datetime`, `task_date` → `date:Y-m-d`, `assigned_user_ids` → `array`, `all_users_can_approve` → `boolean`, `independent_progress` → `boolean`
 
 **Relationships**:
 - `project()` → `belongsTo(ProjectManagement, 'project_id')->withoutGlobalScopes()`
 - `contractor()` → `belongsTo(Contractor, 'contractor_id')->withoutGlobalScopes()`
 - `employeeTask()` → `belongsTo(EmployeeTaskRequest, 'employee_task_request_id')->withoutGlobalScopes()`
-- `assignedUser()` → `belongsTo(User, 'assigned_user_id')->withoutGlobalScopes()`
+- `assigned_users` (accessor) → Collection of `User` models from `assigned_user_ids` JSON array (supports preloading via `setPreloadedAssignedUsers()`)
+- `assigned_user` (accessor) → first assigned `User` or null (backward compatibility)
 - `creator()` → `belongsTo(User, 'created_by_user_id')->withoutGlobalScopes()`
 - `approver()` → `belongsTo(User, 'approved_by')->withoutGlobalScopes()`
 - `rejecter()` → `belongsTo(User, 'rejected_by')->withoutGlobalScopes()`
@@ -1002,7 +1003,7 @@ Accepts a `UuidInterface` and calls `ProjectManagementRepository::deleteProjectM
 
 Constructor parameters:
 ```
-projectId (string), createdByUserId (string), assignedUserId (string),
+projectId (string), createdByUserId (string), assignedUserIds (array),
 taskDate (string), durationHours (float), taskLatitude (float), taskLongitude (float),
 notificationType (?string), severity (?string = 'منخفض'), workType (?string),
 feederNumber (?string), workDescription (?string),
@@ -1011,7 +1012,8 @@ contractorTechnicalNumber (?string), contractorTechnicalName (?string),
 contractorCategory (?string), contractorNotes (?string), contractorMobile (?string),
 locationRadius (?int), locationLink (?string), repairPoint (?string),
 selectedDistanceMeters (?int), notes (?string), files (?array),
-approvalResponsibleId (?string), assignmentResponsibleId (?string)
+approvalResponsibleId (?string), assignmentResponsibleId (?string),
+allUsersCanApprove (bool = true), independentProgress (bool = false)
 ```
 
 `toArray()` returns all fields except `files`, `approvalResponsibleId`, `assignmentResponsibleId`.
@@ -1188,9 +1190,11 @@ Returns four widgets with current count/value, previous period count/value, perc
 Manages project notifications — dashboard-created task assignments dispatched to employees. Each notification creates a linked `EmployeeTaskRequest` via the `EmployeeTask` module using the `CreateProjectNotificationTask` form key. The mobile lifecycle uses `ConfirmProjectNotificationPresence` as the confirm-receive step, which moves the task from the employee inbox (`approved`) to the assigned tasks list (`in_progress`).
 
 Key methods:
-- `create(CreateProjectNotificationDTO $dto): ProjectNotification` — Creates the notification row, then delegates to `EmployeeTaskRequestService::create()` with `InternalProcessForm::CreateProjectNotificationTask->value` as the form key. The linked `EmployeeTaskRequest` gets `is_project_notification = true`, `task_source = 'dashboard'`, and `project_notification_id` set. The `currentLatitude`/`currentLongitude` are explicitly `null` because the admin creates this from the dashboard, not from the employee's current GPS context.
+- `create(CreateProjectNotificationDTO $dto): ProjectNotification` — Creates the notification row, then delegates to `EmployeeTaskRequestService::create()` with `InternalProcessForm::CreateProjectNotificationTask->value` as the form key. The first assigned user is used as the primary `user_id` for the EmployeeTaskRequest. After creation, `injectAssignedUsersIntoWorkflow()` adds all assigned users to the `authorized_user_ids` of all pending process steps when `all_users_can_approve` is true. The linked `EmployeeTaskRequest` gets `is_project_notification = true`, `task_source = 'dashboard'`, and `project_notification_id` set. The `currentLatitude`/`currentLongitude` are explicitly `null` because the admin creates this from the dashboard, not from the employee's current GPS context.
+
+  **Independent Progress**: When `independent_progress` is true, lifecycle workflow processes (site status update, fine, location confirmation, work stoppage, work resumption, task postponement, end task) are created per-user — each assigned user gets their own `Process` with `user_id` set, allowing them to progress through procedures independently. The creation workflow remains shared. The `createLifecycleProcessForNotification()` helper method handles this logic: when `independent_progress` is true, it passes the acting user's ID as `independentUserId` and skips `injectAssignedUsersIntoWorkflow()`. When false, it creates a shared process and injects all assigned users (if `all_users_can_approve`).
 - `list(FilterProjectNotificationDTO $dto): LengthAwarePaginator` — Paginated list with filters.
-- `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications whose `assigned_user_id` matches the current user and status is `approved`, `in_progress`, `completed`, or `rejected` (tasks assigned to the user that are already approved, started, finished, or rejected).
+- `myTasks(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications where `assigned_user_ids` JSON array contains the current user and status is `approved`, `in_progress`, `completed`, or `rejected` (tasks assigned to the user that are already approved, started, finished, or rejected).
 - `myInbox(FilterProjectNotificationDTO $dto, string $userId): LengthAwarePaginator` — Mobile endpoint: notifications that need workflow action. Delegates to `ProjectNotificationRepository::paginatedForInbox()` which bypasses the EloquentFilter status filter and uses `WorkflowEngine::pendingProcessScopeForUser()` directly. **No top-level status filter** — any notification (pending, approved, in_progress, completed) with an in-progress process that has a pending step assigned to the current user (`assigned_user_id` or `authorized_user_ids`) will appear. This ensures update/site-status/fine/postponement workflows on already-approved notifications show up in the inbox.
 - `inboxCounts(string $userId, array $filters = []): array` — Count of notifications with a pending workflow process assigned to the user, regardless of top-level notification status. Uses `WorkflowEngine::pendingProcessScopeForUser()` via `applyWorkflowInboxFilter()`.
 - `filterMetadata(string $userId, array $filters = []): array` — Filter metadata for the mobile filter UI: status counts, project counts, min/max duration; scoped by the same process-based workflow inbox filter (no top-level status restriction).
@@ -1213,9 +1217,9 @@ Key methods:
 - `resolvePendingProcessesForInbox(ProjectNotification $notification, string $userId): array` — Delegates to `WorkflowEngine::resolvePendingProcessesForUser()`. Resolves pending workflow processes for the inbox display, returning an array of `{process_id, procedure_setting_id, form, mobile_inbox_action_key, pending_step_id, pending_step_order}`. The `form` key falls back to `$process->procedureSetting?->form` if not in `$process->metadata['form']`.
 - `confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile confirm-receive. If the linked task is still `pending`, it is auto-approved first, then the task is started. This moves the notification from the inbox (`approved`) to the assigned tasks list (`in_progress`). Form key: `ConfirmProjectNotificationPresence`.
 - `startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile: backward-compatible alias that delegates to `confirmReceive()` internally.
-- `endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest` — Mobile: employee ends the linked task. Form key: `EndProjectNotificationTask`.
-- `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a generic internal procedure action (e.g., `UpdateProjectNotificationTask`).
-- `availableActions(string $notificationId): array` — Lists available workflow actions for the notification, same as `GET /employee-tasks/{id}/available-actions`.
+- `endTask(string $notificationId, EndTaskDTO $dto, ?string $userId = null): EmployeeTaskRequest` — Mobile: employee ends the linked task. When `independent_progress` is true, passes the user ID as `independentUserId` to `EmployeeTaskLifecycleService::end()` for per-user process creation. Form key: `EndProjectNotificationTask`.
+- `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a generic internal procedure action (e.g., `UpdateProjectNotificationTask`). When `independent_progress` is true, the `WorkflowProcedureTaken` event includes the user ID so the `internal_procedure_takens` record is scoped per-user.
+- `availableActions(string $notificationId, ?string $userId = null): array` — Lists available workflow actions for the notification. When `independent_progress` is true, filters taken procedures by the acting user's ID so each user sees only their own progress. Same as `GET /employee-tasks/{id}/available-actions`.
 - `procedures(string $notificationId, bool $debug = false): array` — Returns the timeline of all taken (completed) internal procedures for the linked `EmployeeTask`, ordered by `taken_at` ascending, plus a summary block. Returns `{items, summary}` (and optionally `debug`).
 
 **WorkflowEngine Integration**:
@@ -1227,6 +1231,25 @@ Key methods:
 - All `request*` methods' procedure-setting resolution → `WorkflowEngine::resolveLifecycleSetting()`
 
 The `ProcedureWorkflowService` dependency was removed from the service constructor since all setting resolution now goes through `WorkflowEngine`.
+
+**Independent Progress Architecture**:
+
+When `independent_progress` is true on a `ProjectNotification`, each assigned user progresses through lifecycle workflow procedures independently. This is implemented by:
+
+1. **`Process.user_id`** — A nullable column on the `processes` table. When `null`, the process is shared (backward compatible). When set, the process is scoped to that specific user.
+2. **`InternalProcedureTaken.user_id`** — A nullable column on the `internal_procedure_takens` table. When `null`, the procedure taken record is shared. When set, it's scoped to that user.
+3. **`WorkflowEngine::startWorkflow()`** — Accepts an optional `independentUserId` parameter. When set, the created `Process` gets `user_id` set, and the `WorkflowProcedureTaken` event includes the user ID.
+4. **`ProcessWorkflowService::createProcessesFromSettings()`** — Accepts an optional `userId` parameter. When set, the process is scoped to that user, and process existence checks filter by `user_id`.
+5. **`ProcessWorkflowService::moveToNextProcessOrFinalize()`** — When advancing to the next process, filters by `user_id` if the current process has one. The `onAllProcessesCompleted` callback only fires when no pending processes remain across **all** users.
+6. **`WorkflowEngine::pendingProcessScopeForUser()`** — Filters in-progress processes to those where `user_id` is null (shared) or matches the acting user.
+7. **`WorkflowEngine::resolvePendingProcessesForUser()`** — Skips processes belonging to other users in independent mode.
+8. **`ProcedureWorkflowService::getTakenProcedureIds()`** and `markProcedureTaken()` — Accept an optional `userId` for per-user procedure tracking.
+9. **`InternalProcedureAvailableActionsService::forProcessable()`** — Accepts an optional `userId` to filter taken procedures per user.
+10. **`EmployeeTaskRequestService::approveWorkflowStep()` / `rejectWorkflowStep()`** — When multiple in-progress processes exist (independent mode), iterates to find the one with a pending step for the acting user, preferring the user-scoped process.
+11. **`ProjectNotificationService::createLifecycleProcessForNotification()`** — Helper that routes lifecycle process creation through the independent progress logic: passes `independentUserId` when `independent_progress` is true, and skips `injectAssignedUsersIntoWorkflow()` for independent processes.
+12. **`EmployeeTaskLifecycleService::start()` / `end()`** — Accept an optional `independentUserId` and pass it through to `createLifecycleProcess()`.
+
+The creation workflow (`CreateProjectNotificationTask`) remains shared regardless of `independent_progress` — it's the admin's single approval step to dispatch the task. Only lifecycle procedures (site status, fine, location confirmation, work stoppage/resumption, task postponement, end task) are per-user when `independent_progress` is true.
 
 **Cross-Module Relationship with EmployeeTask**:
 
@@ -1297,9 +1320,9 @@ Normal employee task creation (`CreateTask` form) is unaffected — all conditio
 Injects `WorkflowEngine` for inbox query logic.
 
 - `create(array $data): ProjectNotification`
-- `findById(string $id): ?ProjectNotification` — Eager-loads project, contractor, assignedUser, creator, media, employeeTask.user, employeeTask.employeeTaskType, employeeTask.media, employeeTask.sessions, employeeTask.extensionRequests, employeeTask.currentProcedureStep.actionTakers.user, employeeTask.createProjectNotificationTaskProcedureSetting.
-- `paginated(array $filters, int $perPage = 15, ?string $sort = null): LengthAwarePaginator` — Uses `ProjectNotification::filter($filters)` (EloquentFilter). Eager-loads assignedUser, project, contractor, employeeTask.user, employeeTask.createProjectNotificationTaskProcedureSetting. **Not used for inbox** — use `paginatedForInbox` instead.
-- `paginatedForMyTasks(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator` — Filters by `assigned_user_id = $userId` then applies EloquentFilter.
+- `findById(string $id): ?ProjectNotification` — Eager-loads project, contractor, creator, media, employeeTask chain. Assigned users are preloaded via `preloadAssignedUsers()`.
+- `paginated(array $filters, int $perPage = 15, ?string $sort = null): LengthAwarePaginator` — Uses `ProjectNotification::filter($filters)` (EloquentFilter). Eager-loads project, contractor, employeeTask.user, employeeTask.createProjectNotificationTaskProcedureSetting. Assigned users preloaded via `preloadAssignedUsers()`. **Not used for inbox** — use `paginatedForInbox` instead.
+- `paginatedForMyTasks(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator` — Filters by `whereJsonContains('assigned_user_ids', $userId)` then applies EloquentFilter.
 - `paginatedForInbox(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator` — **Dedicated inbox query** that bypasses `ProjectNotification::filter()` entirely to avoid the EloquentFilter `status` filter. Applies non-status filters manually (project_id, notification_type, work_type, contractor_name, contractor_id, task_date, date_from, date_to, search). Uses `WorkflowEngine::pendingProcessScopeForUser()` for the core workflow inbox filter. Eager-loads `employeeTask.processes.procedureSetting` and `employeeTask.processes.steps` so `resolvePendingProcessesForInbox` works without extra queries.
 - `update(string $id, array $data): bool`
 - `delete(string $id): bool`

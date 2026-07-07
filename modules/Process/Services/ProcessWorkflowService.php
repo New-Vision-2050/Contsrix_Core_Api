@@ -32,6 +32,7 @@ class ProcessWorkflowService
         ?string $createdByUserId = null,
         array $context = [],
         ?array $metadata = null,
+        ?string $userId = null,
     ): ?Process {
         $firstProcess = null;
 
@@ -74,6 +75,7 @@ class ProcessWorkflowService
                     ->where('processable_id', $processableId)
                     ->where('processable_type', $processableType)
                     ->where('sort_order', $sortOrder)
+                    ->when($userId !== null, fn ($q) => $q->where('user_id', $userId))
                     ->exists()
                 ) {
                     $sortOrder++;
@@ -83,6 +85,7 @@ class ProcessWorkflowService
                     ->where('processable_id', $processableId)
                     ->where('processable_type', $processableType)
                     ->where('sort_order', $sortOrder)
+                    ->when($userId !== null, fn ($q) => $q->where('user_id', $userId))
                     ->exists();
 
                 if ($exists) {
@@ -93,6 +96,7 @@ class ProcessWorkflowService
             $process = Process::create([
                 'processable_type'      => $processableType,
                 'processable_id'        => $processableId,
+                'user_id'               => $userId,
                 'execute_type'          => $setting->execute_type ?? 'sequence',
                 'status'                => $index === 0 ? ProcessStatus::InProgress : ProcessStatus::Pending,
                 'template_snapshot'     => $snapshots,
@@ -365,6 +369,7 @@ class ProcessWorkflowService
             processableId:      $process->processable_id,
             procedureSettingId: $process->procedure_setting_id,
             metadata:           $metadata,
+            userId:             $process->user_id,
         ));
     }
 
@@ -374,6 +379,7 @@ class ProcessWorkflowService
             ->where('processable_id', $currentProcess->processable_id)
             ->where('processable_type', $currentProcess->processable_type)
             ->where('status', ProcessStatus::Pending)
+            ->when($currentProcess->user_id !== null, fn ($q) => $q->where('user_id', $currentProcess->user_id))
             ->orderBy('sort_order')
             ->first();
 
@@ -381,7 +387,15 @@ class ProcessWorkflowService
             $nextProcess->update(['status' => ProcessStatus::InProgress]);
             $this->initializeProcessSteps($nextProcess);
         } else {
-            if (method_exists($currentProcess->processable, 'onAllProcessesCompleted')) {
+            // Only fire onAllProcessesCompleted when no more pending processes
+            // exist for this processable entity across all users (or in shared mode).
+            $hasPending = Process::query()
+                ->where('processable_id', $currentProcess->processable_id)
+                ->where('processable_type', $currentProcess->processable_type)
+                ->where('status', ProcessStatus::Pending)
+                ->exists();
+
+            if (! $hasPending && method_exists($currentProcess->processable, 'onAllProcessesCompleted')) {
                 $currentProcess->processable->onAllProcessesCompleted($currentProcess);
             }
         }
