@@ -209,7 +209,7 @@ class ProjectNotificationService
         // finished, or rejected. "received" and "in_progress" are both included
         // since they represent the two in-progress sub-states (location not yet
         // confirmed / confirmed).
-        $filters['status'] = 'approved,received,in_progress,completed,rejected';
+        $filters['status'] = 'received,in_progress,completed';
 
         return $this->repository->paginatedForMyTasks(
             $filters,
@@ -799,7 +799,7 @@ class ProjectNotificationService
 
         if ($notification->status === 'pending') {
             $notification->update([
-                'status' => 'approved',
+                'status' => 'completed',
                 'approved_by' => $userId,
                 'approved_at' => now(),
             ]);
@@ -849,7 +849,7 @@ class ProjectNotificationService
 
         if ($notification->status === 'pending') {
             $notification->update([
-                'status' => 'rejected',
+                'status' => 'completed',
                 'rejected_by' => $userId,
                 'rejected_at' => now(),
                 'rejection_reason' => $reason,
@@ -969,8 +969,8 @@ class ProjectNotificationService
     {
         $statusMap = [
             'pending' => 'pending',
-            'approved' => 'approved',
-            'rejected' => 'rejected',
+            'approved' => 'completed',
+            'rejected' => 'completed',
             'in_progress' => 'in_progress',
             'completed' => 'completed',
             'cancelled' => 'cancelled',
