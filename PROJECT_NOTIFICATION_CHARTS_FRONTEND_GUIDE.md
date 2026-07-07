@@ -57,6 +57,8 @@ The response uses the standard envelope via `Json::item()`:
     "work_type": { ... },
     "contractor_category": { ... },
     "project": { ... },
+    "assigned_employee": { ... },
+    "contractor": { ... },
     "trend": { ... }
   },
   "message": "...",
@@ -111,6 +113,8 @@ The response uses the standard envelope via `Json::item()`:
 | `work_type` | `work_type` | Distribution by work type | Bar chart |
 | `contractor_category` | `contractor_category` | Distribution by contractor category | Bar chart |
 | `project` | `project` | Distribution by project | Horizontal bar chart |
+| `assigned_employee` | `assigned_employee` | Each assigned employee with their notification count | Horizontal bar chart |
+| `contractor` | `contractor` | Each contractor with their assigned notification count | Horizontal bar chart |
 | `trend` | `trend` | Monthly count of notifications created | Line chart |
 
 ---

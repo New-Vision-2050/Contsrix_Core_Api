@@ -50,6 +50,8 @@ class ProjectNotificationChartsService
             'work_type'           => $this->getWorkTypeChart($dto),
             'contractor_category' => $this->getContractorCategoryChart($dto),
             'project'             => $this->getProjectChart($dto),
+            'assigned_employee'   => $this->getAssignedEmployeeChart($dto),
+            'contractor'          => $this->getContractorChart($dto),
             'trend'               => $this->getTrendChart($dto),
         ];
     }
@@ -206,6 +208,64 @@ class ProjectNotificationChartsService
             $data[] = [
                 'code'       => $row->project_id,
                 'label'      => $row->project_name,
+                'count'      => (int) $row->count,
+                'percentage' => $total > 0 ? round(($row->count / $total) * 100, 2) : 0.0,
+            ];
+        }
+
+        return ['total' => (int) $total, 'data' => $data];
+    }
+
+    /**
+     * Assigned employee distribution — each employee with their count of
+     * assigned project notifications (cross-filtered: excludes assigned_user_id filter).
+     */
+    public function getAssignedEmployeeChart(FilterProjectNotificationChartsDTO $dto): array
+    {
+        $rows = $this->baseQuery($dto, 'assigned_user_id')
+            ->whereNotNull('assigned_user_id')
+            ->leftJoin('users', 'users.id', '=', 'project_notifications.assigned_user_id')
+            ->select('users.id as user_id', 'users.name as user_name', DB::raw('count(*) as count'))
+            ->groupBy('users.id', 'users.name')
+            ->orderByDesc('count')
+            ->get();
+
+        $total = $rows->sum('count');
+
+        $data = [];
+        foreach ($rows as $row) {
+            $data[] = [
+                'code'       => $row->user_id,
+                'label'      => $row->user_name ?? __('غير محدد'),
+                'count'      => (int) $row->count,
+                'percentage' => $total > 0 ? round(($row->count / $total) * 100, 2) : 0.0,
+            ];
+        }
+
+        return ['total' => (int) $total, 'data' => $data];
+    }
+
+    /**
+     * Contractor distribution — each contractor with their count of assigned
+     * project notifications (cross-filtered: excludes contractor_id filter).
+     */
+    public function getContractorChart(FilterProjectNotificationChartsDTO $dto): array
+    {
+        $rows = $this->baseQuery($dto, 'contractor_id')
+            ->whereNotNull('contractor_id')
+            ->leftJoin('contractors', 'contractors.id', '=', 'project_notifications.contractor_id')
+            ->select('contractors.id as contractor_id', 'contractors.name as contractor_name', DB::raw('count(*) as count'))
+            ->groupBy('contractors.id', 'contractors.name')
+            ->orderByDesc('count')
+            ->get();
+
+        $total = $rows->sum('count');
+
+        $data = [];
+        foreach ($rows as $row) {
+            $data[] = [
+                'code'       => $row->contractor_id,
+                'label'      => $row->contractor_name ?? __('غير محدد'),
                 'count'      => (int) $row->count,
                 'percentage' => $total > 0 ? round(($row->count / $total) * 100, 2) : 0.0,
             ];
