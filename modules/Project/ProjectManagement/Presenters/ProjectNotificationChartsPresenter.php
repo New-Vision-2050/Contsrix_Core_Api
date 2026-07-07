@@ -21,6 +21,8 @@ class ProjectNotificationChartsPresenter
             'work_type'           => self::presentDimension($chartsData['work_type'], 'work_type'),
             'contractor_category' => self::presentDimension($chartsData['contractor_category'], 'contractor_category'),
             'project'             => self::presentDimension($chartsData['project'], 'project'),
+            'assigned_employee'   => self::presentDimension($chartsData['assigned_employee'], 'assigned_employee'),
+            'contractor'          => self::presentDimension($chartsData['contractor'], 'contractor'),
             'trend'               => self::presentTrend($chartsData['trend']),
         ];
     }
