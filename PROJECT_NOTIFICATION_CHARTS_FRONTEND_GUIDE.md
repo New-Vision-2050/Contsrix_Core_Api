@@ -30,7 +30,7 @@ All parameters act as filters. When a filter is applied, every chart dimension i
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `project_id` | UUID | Filter by project |
-| `status` | string | Filter by notification status (e.g. `pending`, `approved`, `in_progress`, `received`, `rejected`, `completed`) |
+| `status` | string | Filter by notification status (`pending`, `received`, `in_progress`, `completed`). Comma-separated for multiple (e.g. `pending,received`) |
 | `notification_type` | string | Filter by notification type |
 | `work_type` | string | Filter by work type |
 | `contractor_name` | string | Partial match on contractor name |
@@ -161,18 +161,39 @@ GET /api/projects/notifications/charts?project_id={uuid}&date_from=2026-01-01&da
 
 ---
 
-## Status Codes
+## Status Codes & Location Confirmation
 
-| Code | Meaning |
-|------|---------|
-| `pending` | Pending approval |
-| `approved` | Approved |
-| `in_progress` | In progress (location confirmed) |
-| `received` | In progress (location not yet confirmed) |
-| `rejected` | Rejected |
-| `completed` | Completed |
+| Code | Label (AR) | Label (EN) | Raw Status | `location_confirmed_at` | Meaning |
+|------|------------|------------|------------|-------------------------|---------|
+| `pending` | بانتظار الرد | Pending | `pending` | — | Pending approval |
+| `received` | تم الاستلام | Received | `in_progress` | `NULL` | Employee received the notification but has not yet confirmed location |
+| `in_progress` | قيد التنفيذ | In Progress | `in_progress` | NOT NULL | Employee confirmed location and task is in progress |
+| `completed` | مكتمل | Completed | `completed` | — | Task completed |
 
-> **Note**: `received` and `in_progress` both map to the raw `in_progress` status but are distinguished by whether `location_confirmed_at` is set. The backend handles this automatically.
+### How Location Confirmation Works
+
+The `received` and `in_progress` codes **both map to the same raw database status** (`in_progress`). They are distinguished by the `location_confirmed_at` timestamp:
+
+- **`received`** → `status = 'in_progress'` AND `location_confirmed_at IS NULL`
+  - The employee has acknowledged/received the notification but has not yet arrived at the site to confirm their location.
+- **`in_progress`** → `status = 'in_progress'` AND `location_confirmed_at IS NOT NULL`
+  - The employee has confirmed their location (arrived at site) and the task is actively in progress.
+
+### Status Filtering
+
+When filtering by `status`, the backend automatically applies the correct logic:
+
+| Filter Value | Query Logic |
+|-------------|-------------|
+| `?status=pending` | `WHERE status = 'pending'` |
+| `?status=received` | `WHERE status = 'in_progress' AND location_confirmed_at IS NULL` |
+| `?status=in_progress` | `WHERE status = 'in_progress' AND location_confirmed_at IS NOT NULL` |
+| `?status=completed` | `WHERE status = 'completed'` |
+| `?status=pending,received` | `WHERE (status = 'pending') OR (status = 'in_progress' AND location_confirmed_at IS NULL)` |
+
+> Multiple statuses can be passed as a comma-separated string (e.g. `?status=pending,received`).
+
+These match the statuses returned by the `map-tasks` endpoint's `statusLookup`.
 
 ---
 
