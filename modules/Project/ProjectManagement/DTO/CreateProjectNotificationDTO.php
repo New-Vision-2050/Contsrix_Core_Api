@@ -10,7 +10,7 @@ final class CreateProjectNotificationDTO
         public readonly ?string $notificationNumber    = null,
         public readonly string  $projectId,
         public readonly string  $createdByUserId,
-        public readonly string  $assignedUserId,
+        public readonly array   $assignedUserIds,
         public readonly string  $taskDate,
         public readonly ?string $taskTime,
         public readonly float   $durationHours,
@@ -40,6 +40,8 @@ final class CreateProjectNotificationDTO
         public readonly ?array  $files                     = null,
         public readonly ?string $approvalResponsibleId     = null,
         public readonly ?string $assignmentResponsibleId   = null,
+        public readonly bool    $allUsersCanApprove        = true,
+        public readonly bool    $independentProgress       = false,
     ) {}
 
     public function toArray(): array
@@ -48,7 +50,9 @@ final class CreateProjectNotificationDTO
             'notification_number'         => $this->notificationNumber,
             'project_id'                  => $this->projectId,
             'created_by_user_id'          => $this->createdByUserId,
-            'assigned_user_id'            => $this->assignedUserId,
+            'assigned_user_ids'           => $this->assignedUserIds,
+            'all_users_can_approve'        => $this->allUsersCanApprove,
+            'independent_progress'         => $this->independentProgress,
             'task_date'                   => $this->taskDate,
             'task_time'                   => $this->taskTime,
             'duration_hours'              => $this->durationHours,

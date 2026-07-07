@@ -27,6 +27,7 @@ class InternalProcedureTaken extends Model
         'processable_type',
         'processable_id',
         'procedure_setting_id',
+        'user_id',
         'form',
         'metadata',
         'taken_by',
@@ -35,6 +36,7 @@ class InternalProcedureTaken extends Model
 
     protected $casts = [
         'id'         => 'string',
+        'user_id'    => 'string',
         'metadata'   => 'array',
         'taken_at'   => 'datetime',
     ];

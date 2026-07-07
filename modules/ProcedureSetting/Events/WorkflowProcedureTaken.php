@@ -25,5 +25,6 @@ final class WorkflowProcedureTaken
         public readonly string  $procedureSettingId,
         public readonly ?string $takenBy = null,
         public readonly ?array  $metadata = null,
+        public readonly ?string $userId = null,
     ) {}
 }

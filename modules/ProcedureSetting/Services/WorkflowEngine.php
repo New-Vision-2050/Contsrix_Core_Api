@@ -132,6 +132,7 @@ final class WorkflowEngine
         array $context = [],
         ?array $metadata = null,
         ?ProcedureSetting $resolvedSetting = null,
+        ?string $independentUserId = null,
     ): WorkflowStartResult {
         if ($resolvedSetting !== null) {
             $settings = new Collection([$resolvedSetting->load(['steps' => fn ($query) => $query->orderBy('step_order')])]);
@@ -150,6 +151,7 @@ final class WorkflowEngine
             $createdByUserId,
             $context,
             $metadata,
+            $independentUserId,
         );
 
         $result = $process === null
@@ -168,6 +170,7 @@ final class WorkflowEngine
                 procedureSettingId: $resolvedSetting->id,
                 takenBy: $createdByUserId,
                 metadata: $metadata,
+                userId: $independentUserId,
             ));
         }
 
@@ -327,6 +330,11 @@ final class WorkflowEngine
         return function ($q) use ($processableType, $userId) {
             $q->where('processable_type', $processableType)
                 ->where('status', ProcessStatus::InProgress)
+                ->where(function ($q) use ($userId) {
+                    // Shared processes (user_id = null) or the user's own independent processes
+                    $q->whereNull('user_id')
+                        ->orWhere('user_id', $userId);
+                })
                 ->whereHas('steps', function ($q) use ($userId) {
                     $q->where('status', ProcessStepStatus::Pending)
                         ->where(function ($q) use ($userId) {
@@ -359,6 +367,12 @@ final class WorkflowEngine
         $result = [];
         foreach ($task->processes as $process) {
             if ($process->status !== ProcessStatus::InProgress) {
+                continue;
+            }
+
+            // In independent mode, only show processes belonging to this user
+            // (or shared processes with user_id = null)
+            if ($process->user_id !== null && $process->user_id !== $userId) {
                 continue;
             }
 
@@ -441,6 +455,7 @@ final class WorkflowEngine
         array $metadata,
         array $context = [],
         ?ProcedureSetting $resolvedSetting = null,
+        ?string $independentUserId = null,
     ): WorkflowStartResult {
         if ($resolvedSetting === null) {
             $resolvedSetting = $this->resolveSettingsForEntry($procedureType, $formKey, $companyId, $branchId)->first();
@@ -461,6 +476,7 @@ final class WorkflowEngine
             context: $context,
             metadata: $metadata,
             resolvedSetting: $resolvedSetting,
+            independentUserId: $independentUserId,
         );
     }
 

@@ -362,16 +362,20 @@ class EmployeeTaskRequestService
                 $query->where('procedure_setting_id', $procedureSettingId);
             }
 
-            $process = $query->firstOrFail();
+            // In independent mode there may be multiple in-progress processes
+            // for the same task. Prefer the one scoped to the acting user, then
+            // fall back to shared processes (user_id = null).
+            $processes = $query->orderByRaw("CASE WHEN user_id = ? THEN 0 WHEN user_id IS NULL THEN 1 ELSE 2 END", [$adminId])->get();
 
-            $step = $this->findPendingStepForActor($process, $adminId);
-            if (! $step) {
-                throw EmployeeTaskException::notFound();
+            foreach ($processes as $process) {
+                $step = $this->findPendingStepForActor($process, $adminId);
+                if ($step) {
+                    $this->processService->approveStep($step->id);
+                    return $task->fresh();
+                }
             }
 
-            $this->processService->approveStep($step->id);
-
-            return $task->fresh();
+            throw EmployeeTaskException::notFound();
         });
     }
 
@@ -402,16 +406,20 @@ class EmployeeTaskRequestService
                 $query->where('procedure_setting_id', $procedureSettingId);
             }
 
-            $process = $query->firstOrFail();
+            // In independent mode there may be multiple in-progress processes
+            // for the same task. Prefer the one scoped to the acting user, then
+            // fall back to shared processes (user_id = null).
+            $processes = $query->orderByRaw("CASE WHEN user_id = ? THEN 0 WHEN user_id IS NULL THEN 1 ELSE 2 END", [$adminId])->get();
 
-            $step = $this->findPendingStepForActor($process, $adminId);
-            if (! $step) {
-                throw EmployeeTaskException::notFound();
+            foreach ($processes as $process) {
+                $step = $this->findPendingStepForActor($process, $adminId);
+                if ($step) {
+                    $this->processService->rejectStep($step->id);
+                    return $task->fresh();
+                }
             }
 
-            $this->processService->rejectStep($step->id);
-
-            return $task->fresh();
+            throw EmployeeTaskException::notFound();
         });
     }
 
@@ -606,6 +614,7 @@ class EmployeeTaskRequestService
         string $formKey,
         array $metadata,
         ?ProcedureSetting $resolvedSetting = null,
+        ?string $independentUserId = null,
     ): ?Process {
         $procedureType = $this->procedureTypeForForm($formKey);
         $task->load('user.userProfessionalData');
@@ -625,6 +634,7 @@ class EmployeeTaskRequestService
             context: $context,
             metadata: $metadata,
             resolvedSetting: $resolvedSetting,
+            independentUserId: $independentUserId,
         );
 
         if ($result->autoApprove) {

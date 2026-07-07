@@ -25,7 +25,7 @@ final class EmployeeTaskAvailableActionsService
     /**
      * @return list<array>
      */
-    public function forTask(string $taskId): array
+    public function forTask(string $taskId, ?string $userId = null): array
     {
         $task = $this->repository->findById($taskId);
 
@@ -50,6 +50,7 @@ final class EmployeeTaskAvailableActionsService
             $task->company_id,
             $branchId,
             $task->procedure_setting_id,
+            $userId,
         );
     }
 }

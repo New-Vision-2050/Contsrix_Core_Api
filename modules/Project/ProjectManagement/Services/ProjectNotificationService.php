@@ -85,7 +85,7 @@ class ProjectNotificationService
         $projectNotificationTypeId = $this->resolveProjectNotificationTypeId();
 
         $taskDto = new CreateEmployeeTaskRequestDTO(
-            userId: $dto->assignedUserId,
+            userId: $dto->assignedUserIds[0],
             title: $notification->notification_number,
             employee_task_type_id: $projectNotificationTypeId,
             itemType: 'project_notification',
@@ -122,10 +122,102 @@ class ProjectNotificationService
 
         $notification->update(['employee_task_request_id' => $task->id]);
 
-        // 5. Sync notification status from the task.
+        // 5. Inject all assigned users into the workflow process steps so that
+        //    any of them can approve/reject when all_users_can_approve is true.
+        $this->injectAssignedUsersIntoWorkflow($task, $notification);
+
+        // 6. Sync notification status from the task.
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
 
         return $this->repository->findById($notification->id) ?? $notification->fresh();
+    }
+
+    /**
+     * Inject all assigned user IDs into the authorized_user_ids of all pending
+     * process steps for the linked task's workflow.
+     *
+     * When all_users_can_approve is true (default), every assigned user is
+     * authorized to approve/reject any workflow step. When false, only the
+     * originally resolved action takers remain.
+     */
+    private function injectAssignedUsersIntoWorkflow(
+        EmployeeTaskRequest $task,
+        ProjectNotification $notification,
+    ): void {
+        if (! $notification->all_users_can_approve) {
+            return;
+        }
+
+        // When independent_progress is true, lifecycle processes are created
+        // per-user. Injecting all users into a shared creation process is still
+        // valid, but lifecycle methods skip this call entirely.
+        $assignedUserIds = $notification->assigned_user_ids ?? [];
+        if (empty($assignedUserIds)) {
+            return;
+        }
+
+        $processes = \Modules\Process\Models\Process::query()
+            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+            ->where('processable_id', $task->id)
+            ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
+            ->whereHas('steps', fn ($q) => $q->where('status', \Modules\Process\Enums\ProcessStepStatus::Pending))
+            ->with('steps')
+            ->get();
+
+        foreach ($processes as $process) {
+            // Update template_snapshot to include all assigned users.
+            $snapshot = $process->template_snapshot ?? [];
+            foreach ($snapshot as &$row) {
+                $existing = $row['authorized_user_ids'] ?? [$row['assigned_user_id'] ?? null];
+                $merged = array_values(array_unique(array_filter(array_merge($existing, $assignedUserIds))));
+                $row['authorized_user_ids'] = $merged;
+            }
+            unset($row);
+            $process->update(['template_snapshot' => $snapshot]);
+
+            // Update each pending step's authorized_user_ids.
+            foreach ($process->steps as $step) {
+                if ($step->status !== \Modules\Process\Enums\ProcessStepStatus::Pending) {
+                    continue;
+                }
+                $existing = $step->authorized_user_ids ?? [$step->assigned_user_id];
+                $merged = array_values(array_unique(array_filter(array_merge($existing, $assignedUserIds))));
+                $step->update(['authorized_user_ids' => $merged]);
+            }
+        }
+    }
+
+    /**
+     * Create a lifecycle workflow process for a project notification, handling
+     * the independent_progress flag.
+     *
+     * When independent_progress is true, the process is scoped to the acting
+     * user (independentUserId) so each assigned user progresses through
+     * procedures independently. When false, the process is shared and all
+     * assigned users are injected into the workflow steps (if all_users_can_approve).
+     */
+    private function createLifecycleProcessForNotification(
+        EmployeeTaskRequest $task,
+        ProjectNotification $notification,
+        string $formKey,
+        array $metadata,
+        ?ProcedureSetting $procedureSetting,
+        string $userId,
+    ): void {
+        $independentUserId = $notification->independent_progress ? $userId : null;
+
+        $this->employeeTaskRequestService->createLifecycleProcess(
+            $task,
+            $formKey,
+            $metadata,
+            $procedureSetting,
+            $independentUserId,
+        );
+
+        // Only inject all users for shared processes (independent_progress = false).
+        if (! $notification->independent_progress) {
+            $this->injectAssignedUsersIntoWorkflow($task, $notification);
+        }
     }
 
     public function list(FilterProjectNotificationDTO $dto): LengthAwarePaginator
@@ -411,6 +503,7 @@ class ProjectNotificationService
                 procedureSettingId: $dto->internalProcedureSettingId,
                 takenBy:            $userId,
                 metadata:           ['update' => $dto->toArray()],
+                userId:             $notification->independent_progress ? $userId : null,
             ));
 
             return $this->get($id);
@@ -422,11 +515,13 @@ class ProjectNotificationService
             'files'  => $this->stageUpdateFiles($notification, $dto->files),
         ];
 
-        $this->employeeTaskRequestService->createLifecycleProcess(
+        $this->createLifecycleProcessForNotification(
             $task,
+            $notification,
             InternalProcessForm::UpdateProjectNotificationTask->value,
             $metadata,
             $procedureSetting,
+            $userId,
         );
 
         return $this->get($id);
@@ -477,11 +572,13 @@ class ProjectNotificationService
             'user_id' => $userId,
         ];
 
-        $this->employeeTaskRequestService->createLifecycleProcess(
+        $this->createLifecycleProcessForNotification(
             $task,
+            $notification,
             InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
             $metadata,
             $procedureSetting,
+            $userId,
         );
 
         return $this->get($id);
@@ -536,11 +633,13 @@ class ProjectNotificationService
             'user_id' => $userId,
         ];
 
-        $this->employeeTaskRequestService->createLifecycleProcess(
+        $this->createLifecycleProcessForNotification(
             $task,
+            $notification,
             InternalProcessForm::ProjectNotificationFine->value,
             $metadata,
             $procedureSetting,
+            $userId,
         );
 
         return $this->get($id);
@@ -590,11 +689,13 @@ class ProjectNotificationService
             'user_id' => $userId,
         ];
 
-        $this->employeeTaskRequestService->createLifecycleProcess(
+        $this->createLifecycleProcessForNotification(
             $task,
+            $notification,
             InternalProcessForm::ConfirmProjectNotificationLocation->value,
             $metadata,
             $procedureSetting,
+            $userId,
         );
 
         return $this->get($id);
@@ -640,11 +741,13 @@ class ProjectNotificationService
             'user_id' => $userId,
         ];
 
-        $this->employeeTaskRequestService->createLifecycleProcess(
+        $this->createLifecycleProcessForNotification(
             $task,
+            $notification,
             InternalProcessForm::ProjectNotificationWorkStoppageReport->value,
             $metadata,
             $procedureSetting,
+            $userId,
         );
 
         return $this->get($id);
@@ -692,11 +795,13 @@ class ProjectNotificationService
             'user_id' => $userId,
         ];
 
-        $this->employeeTaskRequestService->createLifecycleProcess(
+        $this->createLifecycleProcessForNotification(
             $task,
+            $notification,
             InternalProcessForm::ProjectNotificationWorkResumption->value,
             $metadata,
             $procedureSetting,
+            $userId,
         );
 
         return $this->get($id);
@@ -746,11 +851,13 @@ class ProjectNotificationService
             'user_id' => $userId,
         ];
 
-        $this->employeeTaskRequestService->createLifecycleProcess(
+        $this->createLifecycleProcessForNotification(
             $task,
+            $notification,
             InternalProcessForm::ProjectNotificationTaskPostponement->value,
             $metadata,
             $procedureSetting,
+            $userId,
         );
 
         return $this->get($id);
@@ -799,7 +906,7 @@ class ProjectNotificationService
 
         if ($notification->status === 'pending') {
             $notification->update([
-                'status' => 'completed',
+                'status' => 'in_progress',
                 'approved_by' => $userId,
                 'approved_at' => now(),
             ]);
@@ -849,7 +956,7 @@ class ProjectNotificationService
 
         if ($notification->status === 'pending') {
             $notification->update([
-                'status' => 'completed',
+                'status' => 'cancelled',
                 'rejected_by' => $userId,
                 'rejected_at' => now(),
                 'rejection_reason' => $reason,
@@ -969,8 +1076,8 @@ class ProjectNotificationService
     {
         $statusMap = [
             'pending' => 'pending',
-            'approved' => 'completed',
-            'rejected' => 'completed',
+            'approved' => 'in_progress',
+            'rejected' => 'cancelled',
             'in_progress' => 'in_progress',
             'completed' => 'completed',
             'cancelled' => 'cancelled',
@@ -998,11 +1105,14 @@ class ProjectNotificationService
     // Mobile helpers — delegate to the linked EmployeeTaskRequest
     // ──────────────────────────────────────────────────────────────────────────
 
-    public function availableActions(string $notificationId): array
+    public function availableActions(string $notificationId, ?string $userId = null): array
     {
         $task = $this->linkedTask($notificationId);
 
-        return $this->availableActionsService->forTask($task->id);
+        $notification = $this->get($notificationId);
+        $scopedUserId = $notification->independent_progress ? $userId : null;
+
+        return $this->availableActionsService->forTask($task->id, $scopedUserId);
     }
 
     /**
@@ -1063,7 +1173,7 @@ class ProjectNotificationService
         return $this->confirmReceive($notificationId, $dto, $user);
     }
 
-    public function endTask(string $notificationId, EndTaskDTO $dto): EmployeeTaskRequest
+    public function endTask(string $notificationId, EndTaskDTO $dto, ?string $userId = null): EmployeeTaskRequest
     {
         $notification = $this->get($notificationId);
         $task = $notification->employeeTask;
@@ -1072,7 +1182,9 @@ class ProjectNotificationService
             throw ProjectNotificationException::linkedTaskNotFound($notificationId);
         }
 
-        $task = $this->lifecycleService->end($task->id, $dto);
+        $independentUserId = $notification->independent_progress ? $userId : null;
+
+        $task = $this->lifecycleService->end($task->id, $dto, $independentUserId);
 
         if (! empty($dto->files)) {
             $this->fileUploadService->uploadFile(
@@ -1111,8 +1223,10 @@ class ProjectNotificationService
         string $userId,
     ): array {
         $task = $this->linkedTask($notificationId);
+        $notification = $this->get($notificationId);
 
-        $availableActions = $this->availableActionsService->forTask($task->id);
+        $scopedUserId = $notification->independent_progress ? $userId : null;
+        $availableActions = $this->availableActionsService->forTask($task->id, $scopedUserId);
         $availableIds = array_column($availableActions, 'id');
 
         if (! in_array($procedureSettingId, $availableIds, true)) {
@@ -1124,6 +1238,7 @@ class ProjectNotificationService
             $task->id,
             $procedureSettingId,
             $userId,
+            userId: $scopedUserId,
         ));
 
         return ['procedure_setting_id' => $procedureSettingId];

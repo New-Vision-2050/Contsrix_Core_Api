@@ -46,6 +46,7 @@ final class InternalProcedureAvailableActionsService
         string $companyId,
         ?string $branchId,
         ?string $parentSettingId = null,
+        ?string $userId = null,
     ): array {
         $parentSettingId = $parentSettingId ?? $this->resolveParentSettingId($procedureCategoryType, $companyId, $branchId);
 
@@ -60,7 +61,7 @@ final class InternalProcedureAvailableActionsService
             ->orderBy('sort_order')
             ->get();
 
-        $takenIds = $this->workflowService->getTakenProcedureIds($processableType, $processableId);
+        $takenIds = $this->workflowService->getTakenProcedureIds($processableType, $processableId, $userId);
 
         return $items
             ->filter(function (ProcedureSetting $setting) use ($takenIds): bool {

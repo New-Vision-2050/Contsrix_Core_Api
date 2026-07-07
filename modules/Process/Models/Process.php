@@ -26,6 +26,7 @@ class Process extends Model
     protected $fillable = [
         'processable_id',
         'processable_type',
+        'user_id',
         'type',
         'execute_type',
         'status',
@@ -38,6 +39,7 @@ class Process extends Model
     protected $casts = [
         'id'                   => 'string',
         'processable_id'       => 'string',
+        'user_id'              => 'string',
         'procedure_setting_id' => 'string',
         'status'               => ProcessStatus::class,
         'template_snapshot'    => 'array',
@@ -71,5 +73,10 @@ class Process extends Model
     public function procedureSetting(): BelongsTo
     {
         return $this->belongsTo(ProcedureSetting::class, 'procedure_setting_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\User\Models\User::class, 'user_id');
     }
 }

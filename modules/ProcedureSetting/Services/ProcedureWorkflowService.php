@@ -280,6 +280,7 @@ final class ProcedureWorkflowService
         string $procedureSettingId,
         ?string $takenBy = null,
         ?array $metadata = null,
+        ?string $userId = null,
     ): void {
         $setting = ProcedureSetting::find($procedureSettingId);
 
@@ -288,6 +289,7 @@ final class ProcedureWorkflowService
                 'processable_type'      => $processableType,
                 'processable_id'        => $processableId,
                 'procedure_setting_id'  => $procedureSettingId,
+                'user_id'               => $userId,
             ],
             [
                 'company_id'   => $setting?->company_id ?? (string) tenant('id'),
@@ -302,14 +304,23 @@ final class ProcedureWorkflowService
     /**
      * Get all taken internal procedure setting IDs for a given processable entity.
      *
+     * When $userId is provided, only returns procedures taken by that user
+     * (for independent_progress mode). When null, returns all taken procedures
+     * (shared mode, backward compatible).
+     *
      * @return list<string>
      */
-    public function getTakenProcedureIds(string $processableType, string $processableId): array
+    public function getTakenProcedureIds(string $processableType, string $processableId, ?string $userId = null): array
     {
-        return InternalProcedureTaken::query()
+        $query = InternalProcedureTaken::query()
             ->where('processable_type', $processableType)
-            ->where('processable_id', $processableId)
-            ->pluck('procedure_setting_id')
+            ->where('processable_id', $processableId);
+
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+
+        return $query->pluck('procedure_setting_id')
             ->unique()
             ->values()
             ->all();
@@ -322,12 +333,18 @@ final class ProcedureWorkflowService
         string $processableType,
         string $processableId,
         string $procedureSettingId,
+        ?string $userId = null,
     ): bool {
-        return InternalProcedureTaken::query()
+        $query = InternalProcedureTaken::query()
             ->where('processable_type', $processableType)
             ->where('processable_id', $processableId)
-            ->where('procedure_setting_id', $procedureSettingId)
-            ->exists();
+            ->where('procedure_setting_id', $procedureSettingId);
+
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+
+        return $query->exists();
     }
 
     private function loadStep(?int $stepId): ProcedureSettingStep

@@ -20,7 +20,10 @@ class CreateProjectNotificationRequest extends FormRequest
         return [
             'notification_number'         => ['nullable', 'string', 'max:50', Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'))],
             'project_id'                  => ['required', 'uuid', 'exists:projects,id'],
-            'assigned_user_id'            => ['required', 'uuid', 'exists:users,id'],
+            'assigned_user_ids'          => ['required', 'array', 'min:1'],
+            'assigned_user_ids.*'         => ['uuid', 'exists:users,id'],
+            'all_users_can_approve'       => ['nullable', 'boolean'],
+            'independent_progress'        => ['nullable', 'boolean'],
             'task_date'                   => ['required', 'date_format:Y-m-d'],
             'task_time'                   => ['nullable', 'date_format:H:i'],
             'duration_hours'              => ['required', 'numeric', 'min:0.25', 'max:24'],
@@ -60,7 +63,7 @@ class CreateProjectNotificationRequest extends FormRequest
             notificationNumber: $this->input('notification_number'),
             projectId: $this->input('project_id'),
             createdByUserId: (string) $this->user()->id,
-            assignedUserId: $this->input('assigned_user_id'),
+            assignedUserIds: $this->input('assigned_user_ids'),
             taskDate: $this->input('task_date'),
             taskTime: $this->input('task_time'),
             durationHours: (float) $this->input('duration_hours'),
@@ -90,6 +93,8 @@ class CreateProjectNotificationRequest extends FormRequest
             files: $this->hasFile('files') ? $this->file('files') : null,
             approvalResponsibleId: $this->input('approval_responsible_id'),
             assignmentResponsibleId: $this->input('assignment_responsible_id'),
+            allUsersCanApprove: (bool) $this->input('all_users_can_approve', false),
+            independentProgress: (bool) $this->input('independent_progress', true),
         );
     }
 }
