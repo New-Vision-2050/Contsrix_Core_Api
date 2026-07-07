@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Services;
 
 use Illuminate\Support\Facades\DB;
-use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\Project\ProjectManagement\DTO\FilterProjectNotificationChartsDTO;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 
@@ -58,28 +57,56 @@ class ProjectNotificationChartsService
 
     /**
      * Status distribution (cross-filtered: excludes status filter).
+     *
+     * The raw "in_progress" status is split into two pseudo-statuses:
+     *   - "received"  — in_progress but location not yet confirmed
+     *   - "in_progress" — in_progress and location confirmed
+     * This matches the statusLookup() used by the map-tasks endpoint.
      */
     public function getStatusChart(FilterProjectNotificationChartsDTO $dto): array
     {
-        $rows = $this->baseQuery($dto, 'status')
-            ->select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->pluck('count', 'status')
-            ->toArray();
+        $validStatuses = ['pending', 'in_progress', 'completed'];
 
-        $total = array_sum($rows);
+        $rows = $this->baseQuery($dto, 'status')
+            ->whereIn('status', $validStatuses)
+            ->select(
+                'status',
+                DB::raw('location_confirmed_at IS NOT NULL as location_confirmed'),
+                DB::raw('count(*) as count'),
+            )
+            ->groupBy('status', 'location_confirmed')
+            ->get();
+
+        $total = $rows->sum('count');
 
         $data = [];
-        foreach ($rows as $status => $count) {
+        foreach ($rows as $row) {
+            $code = $this->resolveStatusCode($row->status, (bool) $row->location_confirmed);
             $data[] = [
-                'code'       => $status,
-                'label'      => $this->statusLabel($status),
-                'count'      => $count,
-                'percentage' => $total > 0 ? round(($count / $total) * 100, 2) : 0.0,
+                'code'       => $code,
+                'label'      => $this->statusLabel($code),
+                'count'      => (int) $row->count,
+                'percentage' => $total > 0 ? round(($row->count / $total) * 100, 2) : 0.0,
             ];
         }
 
-        return ['total' => $total, 'data' => $data];
+        // Merge duplicates (e.g. two rows for "received" from different raw statuses)
+        $merged = [];
+        foreach ($data as $item) {
+            if (isset($merged[$item['code']])) {
+                $merged[$item['code']]['count'] += $item['count'];
+            } else {
+                $merged[$item['code']] = $item;
+            }
+        }
+        $data = array_values($merged);
+
+        // Recalculate percentages after merge
+        foreach ($data as &$item) {
+            $item['percentage'] = $total > 0 ? round(($item['count'] / $total) * 100, 2) : 0.0;
+        }
+
+        return ['total' => (int) $total, 'data' => $data];
     }
 
     /**
@@ -304,14 +331,35 @@ class ProjectNotificationChartsService
     }
 
     /**
+     * Resolve the pseudo-status code from raw status + location_confirmed_at.
+     */
+    private function resolveStatusCode(string $status, bool $locationConfirmed): string
+    {
+        if ($status === 'in_progress' && ! $locationConfirmed) {
+            return 'received';
+        }
+
+        return $status;
+    }
+
+    /**
      * Resolve a human-readable label for a status value.
+     * Uses the same labels as ProjectNotificationPresenter::statusLabel().
      */
     private function statusLabel(string $status): string
     {
-        try {
-            return EmployeeTaskStatus::from($status)->label(app()->getLocale());
-        } catch (\ValueError) {
-            return $status;
-        }
+        $locale = app()->getLocale();
+
+        $labels = [
+            'pending'     => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
+            'approved'    => ['ar' => 'مقبول', 'en' => 'Approved'],
+            'rejected'    => ['ar' => 'مرفوض', 'en' => 'Rejected'],
+            'received'    => ['ar' => 'تم الاستلام', 'en' => 'Received'],
+            'in_progress' => ['ar' => 'قيد التنفيذ', 'en' => 'In Progress'],
+            'completed'   => ['ar' => 'مكتمل', 'en' => 'Completed'],
+            'cancelled'   => ['ar' => 'ملغي', 'en' => 'Cancelled'],
+        ];
+
+        return $labels[$status][$locale] ?? $status;
     }
 }
