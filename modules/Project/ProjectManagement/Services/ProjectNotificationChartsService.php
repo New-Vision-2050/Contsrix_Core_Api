@@ -352,8 +352,6 @@ class ProjectNotificationChartsService
 
         $labels = [
             'pending'     => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
-            'approved'    => ['ar' => 'مقبول', 'en' => 'Approved'],
-            'rejected'    => ['ar' => 'مرفوض', 'en' => 'Rejected'],
             'received'    => ['ar' => 'تم الاستلام', 'en' => 'Received'],
             'in_progress' => ['ar' => 'قيد التنفيذ', 'en' => 'In Progress'],
             'completed'   => ['ar' => 'مكتمل', 'en' => 'Completed'],

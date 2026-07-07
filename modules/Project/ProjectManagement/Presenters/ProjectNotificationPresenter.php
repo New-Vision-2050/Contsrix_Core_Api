@@ -257,8 +257,6 @@ class ProjectNotificationPresenter
 
         $labels = [
             'pending' => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
-            'approved' => ['ar' => 'مقبول', 'en' => 'Approved'],
-            'rejected' => ['ar' => 'مرفوض', 'en' => 'Rejected'],
             // Pseudo-status used by statusLookup()/filters to target the
             // "in_progress but location not yet confirmed" sub-state directly.
             'received' => $receivedLabel,
