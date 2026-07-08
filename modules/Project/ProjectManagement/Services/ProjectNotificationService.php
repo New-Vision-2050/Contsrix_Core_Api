@@ -23,6 +23,7 @@ use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\ProcedureSetting\Conditions\ConditionContext;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\WorkflowEngine;
 use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO;

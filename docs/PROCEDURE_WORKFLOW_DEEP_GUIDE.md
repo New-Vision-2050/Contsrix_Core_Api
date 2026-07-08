@@ -2,7 +2,9 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-07-04 — WorkflowEngine::startWorkflow() now auto-records lifecycle procedures on auto-approve; lifecycle resolvers no longer require steps. | **Previous:** 2026-07-01 — Notification system fully centralized. `WorkflowEngine::dispatchNotifications()` is the single entry point for email/SMS/WhatsApp/push. `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()` now auto-dispatches notifications internally — services no longer call `dispatchStepNotifications()`. New `SendWorkflowNotificationsJob` (queued, primitive IDs only) fixes UUID serialization crash (`TypeError: Illegal offset type`). `WorkflowActionRequired` no longer implements `ShouldQueue`. WhatsApp: `toWhatsapp()` prepends `phone_code` for Twilio international format. `TwilioWhatsApp` constructor falls back to env config when no DB driver. `WhatsAppChannel` logs all send attempts. See §Centralized Notification System, §17.5, §21.5, §26.3, §26.5, §26.7.
+> **Last updated:** 2026-07-08 — Independent progress support added. `Process` and `InternalProcedureTaken` now have nullable `user_id` column. When `ProjectNotification.independent_progress = true`, lifecycle workflow processes are created per-user (each assigned user gets their own `Process` with `user_id` set). `ProcedureWorkflowService::getTakenProcedureIds()` and `isProcedureTaken()` accept optional `?string $userId` — when provided, includes shared (`user_id = null`) + user-scoped records, excludes other users' records. `WorkflowEngine::startWorkflow()` and `startLifecycleWorkflow()` accept optional `?string $independentUserId`. `EmployeeTaskRequestService::createLifecycleProcess()` accepts `?string $independentUserId`. `EmployeeTaskLifecycleService::start()`/`end()` accept `?string $independentUserId`. `EmployeeTaskAvailableActionsService::forTask()` and `InternalProcedureAvailableActionsService::forProcessable()` accept `?string $userId`. `EmployeeTaskRequestService::approveWorkflowStep()`/`rejectWorkflowStep()` iterate multiple in-progress processes (independent mode) preferring user-scoped. `ProjectNotificationService` adds `createLifecycleProcessForNotification()` helper, `availableActions()`/`takeAction()`/`endTask()` accept `?string $userId`. Unique constraint on `internal_procedure_takens` now includes `user_id`. Unique constraint on `processes` now includes `user_id`. See §Independent Progress.
+>
+> **Previous:** 2026-07-04 — WorkflowEngine::startWorkflow() now auto-records lifecycle procedures on auto-approve; lifecycle resolvers no longer require steps. | **Previous:** 2026-07-01 — Notification system fully centralized. `WorkflowEngine::dispatchNotifications()` is the single entry point for email/SMS/WhatsApp/push. `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()` now auto-dispatches notifications internally — services no longer call `dispatchStepNotifications()`. New `SendWorkflowNotificationsJob` (queued, primitive IDs only) fixes UUID serialization crash (`TypeError: Illegal offset type`). `WorkflowActionRequired` no longer implements `ShouldQueue`. WhatsApp: `toWhatsapp()` prepends `phone_code` for Twilio international format. `TwilioWhatsApp` constructor falls back to env config when no DB driver. `WhatsAppChannel` logs all send attempts. See §Centralized Notification System, §17.5, §21.5, §26.3, §26.5, §26.7.
 >
 > **Previous:** 2026-06-30 — Added §40 (Module → Type → Forms → Conditions Lookup Table — the one table a weak AI needs to know which type, forms, and pre/in-form conditions apply to any module). Also added §35 (Complete Module Dependency Map), §36 (Step-by-Step Cookbook for any new module), §37 (Debug Guide with decision trees), §38 (Documentation Maintenance Protocol — MANDATORY), §39 (Quick Reference Card). Also: `WorkflowEngine` gained inbox & lifecycle helpers: `pendingProcessScopeForUser()`, `resolvePendingProcessesForUser()`, `hasActiveProcess()`, `startLifecycleWorkflow()`, `resolveLifecycleSetting()`. Project notification inbox no longer filters by top-level `status=pending`; any notification with a pending workflow step assigned to the user appears. `ProjectNotificationService` and `ProjectNotificationRepository` now delegate to `WorkflowEngine` instead of duplicating process-query logic. See §WorkflowEngine API table, §Inbox Queries, §35-§40.
 >
@@ -161,9 +163,9 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 | `resolveActionTakerUserIdsForStep($step, $createdByUserId = null, $context = [])` | `array<string>` | `ProcedureSettingStep`, `?string`, `array` | Broadcasting (EmployeeTask services) |
 | `resolveProcedureSettingForBranch($procedureType, $companyId, $branchId)` | `?ProcedureSetting` | `string`, `string`, `?string` | Delegates to `WorkflowEngine::resolveParentSetting()` |
 | `resolveInternalProcedureSettingByForm($procedureCategoryType, $formKey, $companyId, $branchId = null)` | `?ProcedureSetting` | `string`, `string`, `string`, `?string` | EmployeeTask extension/approval creation; delegates to `WorkflowEngine::resolveSettingsForEntry()` |
-| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy = null, $metadata = null)` | `void` | `string`, `string`, `string`, `?string`, `?array` | All EmployeeTask action services; stores optional form metadata; uses `updateOrCreate` (updates metadata on re-submission) |
-| `getTakenProcedureIds($processableType, $processableId)` | `list<string>` | `string`, `string` | `EmployeeTaskAvailableActionsService::forTask()` |
-| `isProcedureTaken($processableType, $processableId, $procedureSettingId)` | `bool` | `string`, `string`, `string` | Point checks against `internal_procedure_takens` table |
+| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy = null, $metadata = null, $userId = null)` | `void` | `string`, `string`, `string`, `?string`, `?array`, `?string` | All EmployeeTask action services; stores optional form metadata; uses `updateOrCreate` (updates metadata on re-submission); `$userId` scopes the record to a specific user for independent progress |
+| `getTakenProcedureIds($processableType, $processableId, $userId = null)` | `list<string>` | `string`, `string`, `?string` | `EmployeeTaskAvailableActionsService::forTask()`, `InternalProcedureAvailableActionsService::forProcessable()` — when `$userId` is provided, includes shared (`user_id = null`) + user-scoped records, excludes other users' records |
+| `isProcedureTaken($processableType, $processableId, $procedureSettingId, $userId = null)` | `bool` | `string`, `string`, `string`, `?string` | Point checks against `internal_procedure_takens` table — when `$userId` is provided, includes shared + user-scoped records |
 
 ### WorkflowEngine
 
@@ -172,18 +174,18 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 | `resolveParentSetting($type, $companyId, $branchId)` | `?ProcedureSetting` | `string`, `string`, `?string` | Shared company/branch/default workflow lookup |
 | `resolveSettingsForEntry($type, $formKey, $companyId, $branchId)` | `Collection<ProcedureSetting>` | `string`, `?string`, `string`, `?string` | Preview and workflow start |
 | `previewResponsibles($type, $formKey, $companyId, $branchId, $createdByUserId, $context = [])` | `array{auto_approve: bool, step: ?array, action_takers: array}` | `string`, `?string`, `string`, `?string`, `?string`, `array` | ProcedureSettingController, EmployeeTask creation |
-| `startWorkflow($processableType, $processableId, $type, $formKey, $companyId, $branchId, $createdByUserId = null, $context = [], $metadata = null, $resolvedSetting = null)` | `WorkflowStartResult` | `string`, `string`, `string`, `?string`, `string`, `?string`, `?string`, `array`, `?array`, `?ProcedureSetting` | EmployeeTaskRequestService, ClientRequestWorkflowService. Auto-fires `WorkflowProcedureTaken` when `$resolvedSetting` is provided and has no resolvable steps. |
-| `pendingProcessScopeForUser($processableType, $userId)` | `\Closure` | `string`, `string` | ProjectNotificationService::applyWorkflowInboxFilter, ProjectNotificationRepository::paginatedForInbox — returns a closure for `whereHas('employeeTask.processes', ...)` filtering in-progress processes with a pending step assigned to/authorized for the user |
+| `startWorkflow($processableType, $processableId, $type, $formKey, $companyId, $branchId, $createdByUserId = null, $context = [], $metadata = null, $resolvedSetting = null, $independentUserId = null)` | `WorkflowStartResult` | `string`, `string`, `string`, `?string`, `string`, `?string`, `?string`, `array`, `?array`, `?ProcedureSetting`, `?string` | EmployeeTaskRequestService, ClientRequestWorkflowService. Auto-fires `WorkflowProcedureTaken` when `$resolvedSetting` is provided and has no resolvable steps. When `$independentUserId` is set, the created `Process` gets `user_id` set and the `WorkflowProcedureTaken` event includes the user ID. |
+| `pendingProcessScopeForUser($processableType, $userId)` | `\Closure` | `string`, `string` | ProjectNotificationService::applyWorkflowInboxFilter, ProjectNotificationRepository::paginatedForInbox — returns a closure for `whereHas('employeeTask.processes', ...)` filtering in-progress processes with a pending step assigned to/authorized for the user. Includes shared (`user_id = null`) + user-scoped processes. |
 | `resolvePendingProcessesForUser($task, $userId)` | `list<array{process_id, procedure_setting_id, form, mobile_inbox_action_key, pending_step_id, pending_step_order}>` | `Model`, `string` | ProjectNotificationService::resolvePendingProcessesForInbox — requires `$task->processes` relation loaded; calls `loadMissing('processes.procedureSetting')` internally |
 | `hasActiveProcess($processableType, $processableId, $procedureSettingId = null)` | `bool` | `string`, `string`, `?string` | ProjectNotificationService::taskHasActiveProcess, confirmReceive |
-| `startLifecycleWorkflow($processableType, $processableId, $procedureType, $formKey, $companyId, $branchId, $createdByUserId, $metadata, $context = [], $resolvedSetting = null)` | `WorkflowStartResult` | `string`, `string`, `string`, `string`, `string`, `?string`, `?string`, `array`, `array`, `?ProcedureSetting` | Centralised lifecycle start (update, site-status, fine, etc.); resolves setting by form key if not provided, then delegates to `startWorkflow()` |
+| `startLifecycleWorkflow($processableType, $processableId, $procedureType, $formKey, $companyId, $branchId, $createdByUserId, $metadata, $context = [], $resolvedSetting = null, $independentUserId = null)` | `WorkflowStartResult` | `string`, `string`, `string`, `string`, `string`, `?string`, `?string`, `array`, `array`, `?ProcedureSetting`, `?string` | Centralised lifecycle start (update, site-status, fine, etc.); resolves setting by form key if not provided, then delegates to `startWorkflow()` with `$independentUserId` |
 | `resolveLifecycleSetting($explicitSettingId, $procedureType, $formKey, $companyId, $branchId)` | `?ProcedureSetting` | `?string`, `string`, `string`, `string`, `?string` | ProjectNotificationService request* methods — if `$explicitSettingId` is non-null, looks it up directly; otherwise delegates to `resolveSettingsForEntry()->first()` |
 
 ### ProcessWorkflowService
 
 | Method | Returns | Parameters | Used By |
 |--------|---------|-----------|---------|
-| `createProcessesFromSettings($processableType, $processableId, $settings, $createdByUserId = null, $context = [])` | `?Process` | `string`, `string`, `Collection`, `?string`, `array` | EmployeeTaskRequestService, ClientRequestWorkflowService |
+| `createProcessesFromSettings($processableType, $processableId, $settings, $createdByUserId = null, $context = [], $userId = null)` | `?Process` | `string`, `string`, `Collection`, `?string`, `array`, `?string` | EmployeeTaskRequestService, ClientRequestWorkflowService. When `$userId` is set, the `Process` gets `user_id` set for independent progress. |
 | `initializeProcessSteps($process, $context = [])` | `void` | `Process`, `array` | ProcessWorkflowService internals |
 | `approveStep($id)` | `ProcessStep` | `string` (UUID) | ClientRequestWorkflowService, Process controllers |
 | `rejectStep($id)` | `ProcessStep` | `string` (UUID) | ClientRequestWorkflowService, Process controllers |
@@ -205,8 +207,9 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 | Method | Returns | Key Logic |
 |--------|---------|-----------|
 | `create($dto)` | `EmployeeTaskRequest` | Resolves creator branch, previews via `WorkflowEngine`, creates task, calls `markCreateTaskProceduresTaken()`, starts workflow |
-| `approve($id, $adminId)` | `EmployeeTaskRequest` | findPendingStepForActor + `ProcessWorkflowService::approveStep` (Process-based) |
-| `reject($id, $adminId, $reason)` | `EmployeeTaskRequest` | findPendingStepForActor + `ProcessWorkflowService::rejectStep` |
+| `approve($id, $adminId, $procedureSettingId = null)` | `EmployeeTaskRequest` | `approveWorkflowStep()` — finds pending step for actor. In independent mode, iterates multiple in-progress processes preferring user-scoped (`user_id = $adminId`) then shared (`user_id = null`). |
+| `reject($id, $adminId, $reason, $procedureSettingId = null)` | `EmployeeTaskRequest` | `rejectWorkflowStep()` — same iteration logic as approve for independent mode. |
+| `createLifecycleProcess($task, $formKey, $metadata, $procedureSetting, $independentUserId = null)` | `?Process` | Creates a lifecycle workflow process. When `$independentUserId` is set, the process is scoped to that user. |
 | `broadcastTaskNotification($task, $currentStep, $userIds = [])` | `void` | Takes `array $userIds` instead of deriving from actionTakers |
 | `broadcastInboxCounts($userIds, $filters = [])` | `void` | Takes `array $userIds` instead of `ProcedureSettingStep` |
 | `markCreateTaskProceduresTaken($task, $userId)` *(private)* | `void` | Finds all active `createTask`-form children and records each via `markProcedureTaken()` |
@@ -236,7 +239,7 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 
 | Method | Returns | Key Logic |
 |--------|---------|-----------|
-| `forTask($taskId)` | `list<array>` | Loads active child procedures, calls `getTakenProcedureIds()` from central morph table, filters by `appears_after_ids` (ALL must be taken) / `appears_before_ids` (hide if ANY taken), returns ordered visible list |
+| `forTask($taskId, $userId = null)` | `list<array>` | Loads active child procedures, calls `getTakenProcedureIds()` from central morph table with `$userId` for independent progress filtering, filters by `appears_after_ids` (ALL must be taken) / `appears_before_ids` (hide if ANY taken), returns ordered visible list |
 
 ### EmployeeTaskFormConditionService
 
@@ -294,6 +297,7 @@ The system models **business approval workflows** as configurable chains of **st
 | `status` | `in_progress`, `completed`, `failed` |
 | `execute_type` | `sequence` (one at a time) or `parallel` (all at once) |
 | `template_snapshot` | JSON array of frozen step configs at creation time |
+| `user_id` | Nullable. When `null`, the process is shared (backward compatible). When set, the process is scoped to that specific user (independent progress mode). |
 
 ### ProcessStep (Runtime Node)
 
@@ -799,20 +803,21 @@ internal_procedure_takens
   processable_type    (string, morph type e.g. 'employee_task')
   processable_id      (UUID, morph ID)
   procedure_setting_id (UUID, FK → procedure_settings)
+  user_id             (UUID, nullable — set when independent_progress = true)
   form                (string, nullable)
   taken_by            (UUID, nullable)
   taken_at            (timestamp)
 ```
 
-**Unique constraint**: `(processable_type, processable_id, procedure_setting_id)` — prevents duplicate entries.
+**Unique constraint**: `(processable_type, processable_id, procedure_setting_id, user_id)` — prevents duplicate entries. The `user_id` column allows multiple records for the same procedure: one shared (`user_id = null`) and one per user (`user_id = specific user`).
 
 **ProcedureWorkflowService** provides three central methods:
 
 | Method | Description |
 |--------|-------------|
-| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy, $metadata = null)` | Records a procedure as taken (`updateOrCreate`); stores optional `$metadata` array in `internal_procedure_takens.metadata` |
-| `getTakenProcedureIds($processableType, $processableId)` | Returns all taken procedure setting IDs for an entity |
-| `isProcedureTaken($processableType, $processableId, $procedureSettingId)` | Checks if a specific procedure is taken |
+| `markProcedureTaken($processableType, $processableId, $procedureSettingId, $takenBy, $metadata = null, $userId = null)` | Records a procedure as taken (`updateOrCreate`); stores optional `$metadata` array in `internal_procedure_takens.metadata`; `$userId` scopes the record to a specific user for independent progress |
+| `getTakenProcedureIds($processableType, $processableId, $userId = null)` | Returns all taken procedure setting IDs for an entity. When `$userId` is provided, includes shared (`user_id = null`) + user-scoped records, excludes other users' records. |
+| `isProcedureTaken($processableType, $processableId, $procedureSettingId, $userId = null)` | Checks if a specific procedure is taken. When `$userId` is provided, includes shared + user-scoped records. |
 
 **Auto-marking in `advance()`**: When `advance()` is called with `processableType` and `processableId` parameters and the workflow reaches its final step (`isFinal = true`), the procedure is automatically marked as taken. Callers no longer need to manually call `markProcedureTaken()` after workflow completion.
 
@@ -851,6 +856,56 @@ If `C` had `appears_before_ids = [B]` instead:
 ```
 
 **Duplicate Forms**: Two children can share the same `form` key. The mobile app MUST send back the specific `id` of the tapped item, not just the `form` key.
+
+---
+
+## 9.5. Independent Progress (`independent_progress`)
+
+When `ProjectNotification.independent_progress = true`, each assigned user progresses through lifecycle workflow procedures **independently** — each gets their own `Process` with `user_id` set, rather than sharing a single process.
+
+### What's Shared vs Independent
+
+| Workflow | Shared or Independent |
+|---|---|
+| Task creation (`CreateProjectNotificationTask`) | **Shared** — one approval workflow for the task (`user_id = null`) |
+| Confirm-receive (`ConfirmProjectNotificationPresence`) | **Shared** — each user confirms their own receipt, but the task starts once |
+| Site status update | **Independent** — each user has their own process |
+| Fine | **Independent** |
+| Location confirmation | **Independent** |
+| Work stoppage report | **Independent** |
+| Work resumption | **Independent** |
+| Task postponement | **Independent** |
+| End task | **Independent** |
+
+### How It Works
+
+1. **`Process.user_id`** — Nullable column on `processes` table. `null` = shared (backward compatible). Set = scoped to that user.
+2. **`InternalProcedureTaken.user_id`** — Nullable column on `internal_procedure_takens` table. `null` = shared. Set = scoped to that user.
+3. **`WorkflowEngine::startWorkflow()`** — Accepts `?string $independentUserId`. When set, the created `Process` gets `user_id` set, and the `WorkflowProcedureTaken` event includes the user ID.
+4. **`ProcedureWorkflowService::getTakenProcedureIds($type, $id, $userId)`** — When `$userId` is provided, includes shared (`user_id = null`) + user-scoped records, excludes other users' records. This ensures the creation procedure (always shared) is visible to all users, while lifecycle procedures are per-user.
+5. **`pendingProcessScopeForUser()`** — Filters in-progress processes to those where `user_id` is null (shared) or matches the acting user.
+6. **`EmployeeTaskRequestService::approveWorkflowStep()` / `rejectWorkflowStep()`** — In independent mode, iterates multiple in-progress processes preferring user-scoped (`user_id = $adminId`) then shared (`user_id = null`), finding the one with a pending step for the actor.
+7. **`ProjectNotificationService::createLifecycleProcessForNotification()`** — Helper that routes lifecycle process creation: passes `independentUserId` when `independent_progress = true`, and skips `injectAssignedUsersIntoWorkflow()` for independent processes.
+
+### Interaction with `all_users_can_approve`
+
+| `all_users_can_approve` | `independent_progress` | Process count | Who can approve | Progress |
+|---|---|---|---|---|
+| `false` (default) | `false` | 1 shared | Only hierarchy-resolved approver | Shared — one completion for all |
+| `true` | `false` | 1 shared | All assigned users | Shared — one completion for all |
+| `false` (default) | `true` (default) | 1 per user | Only hierarchy-resolved approver | Independent — each user completes their own |
+| `true` | `true` | 1 per user | All assigned users | Independent — each user completes their own |
+
+### My Tasks vs My Inbox
+
+| API | Creation workflow | Lifecycle workflows (independent) |
+|---|---|---|
+| `/my-tasks` | All assigned users see it | All assigned users see the task (always) |
+| `/my-inbox` | All assigned users see it | Only the user who triggered it sees it |
+
+### Backward Compatibility
+
+All new parameters are optional with `null` defaults. Regular employee tasks create `user_id = null` (shared) processes. The new code paths only activate when a non-null `independentUserId` is passed, which only happens from `ProjectNotificationService` when `independent_progress = true`.
 
 ---
 
