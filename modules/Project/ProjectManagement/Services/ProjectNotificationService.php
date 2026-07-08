@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Services;
 
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
@@ -1255,12 +1256,16 @@ class ProjectNotificationService
      *
      * Each item includes form_data, approval status, date, and attachments.
      *
-     * @return array{items: list<array>, summary: array}
+     * @return array{items: list<array>, summary: array, timezone: string}
      */
     public function siteStatusUpdates(string $notificationId): array
     {
         $notification = $this->get($notificationId);
         $task = $this->linkedTask($notificationId);
+
+        // Resolve the timezone for this notification: prefer the linked task's
+        // stored timezone, then fall back to the current request's branch timezone.
+        $timezone = $task->timezone ?? getTimeZoneBranchByRequest() ?? config('app.timezone');
 
         // 1. Load approved site status update records (created after workflow completed).
         $approvedUpdates = ProjectNotificationSiteStatusUpdate::query()
@@ -1301,9 +1306,9 @@ class ProjectNotificationService
                     'id'   => $update->reviewer->id,
                     'name' => $update->reviewer->name,
                 ] : null,
-                'reviewed_at'           => $update->reviewed_at?->format('Y-m-d H:i:s'),
+                'reviewed_at'           => $this->formatInTimezone($update->reviewed_at, $timezone),
                 'review_notes'          => $update->review_notes,
-                'created_at'            => $update->created_at?->format('Y-m-d H:i:s'),
+                'created_at'            => $this->formatInTimezone($update->created_at, $timezone),
                 'process'               => $process ? [
                     'id'     => $process->id,
                     'status' => $process->status?->value,
@@ -1315,7 +1320,7 @@ class ProjectNotificationService
                                 'id'   => $step->actionByUser->id,
                                 'name' => $step->actionByUser->name,
                             ] : null,
-                            'acted_at'   => $step->acted_at?->format('Y-m-d H:i:s'),
+                            'acted_at'   => $this->formatInTimezone($step->acted_at, $timezone),
                         ])->toArray()
                         : [],
                 ] : null,
@@ -1351,7 +1356,7 @@ class ProjectNotificationService
                 'reviewed_by'           => null,
                 'reviewed_at'           => null,
                 'review_notes'          => null,
-                'created_at'            => $process->created_at?->format('Y-m-d H:i:s'),
+                'created_at'            => $this->formatInTimezone($process->created_at, $timezone),
                 'process'               => [
                     'id'     => $process->id,
                     'status' => $process->status?->value,
@@ -1364,7 +1369,7 @@ class ProjectNotificationService
                                 'id'   => $step->actionByUser->id,
                                 'name' => $step->actionByUser->name,
                             ] : null,
-                            'acted_at'   => $step->acted_at?->format('Y-m-d H:i:s'),
+                            'acted_at'   => $this->formatInTimezone($step->acted_at, $timezone),
                         ])->toArray()
                         : [],
                 ],
@@ -1381,9 +1386,22 @@ class ProjectNotificationService
         ];
 
         return [
-            'items'   => $items,
-            'summary' => $summary,
+            'items'    => $items,
+            'summary'  => $summary,
+            'timezone' => $timezone,
         ];
+    }
+
+    /**
+     * Convert a UTC Carbon datetime to the requested timezone string.
+     */
+    private function formatInTimezone(?Carbon $date, string $timezone): ?string
+    {
+        if (! $date) {
+            return null;
+        }
+
+        return $date->setTimezone($timezone)->format('Y-m-d H:i:s');
     }
 
     /**
