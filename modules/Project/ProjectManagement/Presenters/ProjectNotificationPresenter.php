@@ -206,7 +206,7 @@ class ProjectNotificationPresenter
     {
         $presenter = new self(new ProjectNotification());
 
-        $statuses = ['pending', 'received', 'confirmed_location', 'completed', 'cancelled'];
+        $statuses = ['pending', 'received', 'confirmed_location', 'completed'];
         $result = [];
 
         foreach ($statuses as $status) {
@@ -250,7 +250,7 @@ class ProjectNotificationPresenter
 
         if ($status === 'cancelled') {
             if (! $received) {
-                return 'cancelled';
+                return 'pending';
             }
             return $locationConfirmed ? 'confirmed_location' : 'received';
         }
@@ -264,7 +264,7 @@ class ProjectNotificationPresenter
      * The "in_progress" and "cancelled" statuses cover employee-facing sub-states:
      *   - Receipt confirmed only (تم الاستلام / Received) — $locationConfirmed = false, $received = true
      *   - Location also confirmed (تم تأكيد الموقع / Confirmed Location) — $locationConfirmed = true
-     *   - Never received (ملغي / Cancelled) — $received = false (only for cancelled)
+     *   - Never received (قيد الانتظار / Pending) — $received = false (only for cancelled)
      *
      * $locationConfirmed defaults to true and $received defaults to true so
      * generic/lookup usage (no specific notification instance) resolves to
@@ -276,7 +276,6 @@ class ProjectNotificationPresenter
 
         $receivedLabel = ['ar' => 'تم الاستلام', 'en' => 'Received'];
         $confirmedLocationLabel = ['ar' => 'تم تأكيد الموقع', 'en' => 'Confirmed Location'];
-        $cancelledLabel = ['ar' => 'ملغي', 'en' => 'Cancelled'];
 
         $labels = [
             'pending' => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
@@ -290,12 +289,11 @@ class ProjectNotificationPresenter
                 ? $confirmedLocationLabel
                 : $receivedLabel,
             'completed' => ['ar' => 'مكتمل', 'en' => 'Completed'],
-            // Pseudo-status used by statusLookup()/filters for cancelled-and-never-received.
-            'cancelled' => $cancelledLabel,
-            // Raw cancelled status: show the actual progress sub-state if the
-            // employee had already received/confirmed before cancellation.
+            // Raw cancelled status: an un-received cancellation is treated as a
+            // pending (never-started) notification. Otherwise, show the actual
+            // progress sub-state the employee had reached before cancellation.
             'cancelled_raw' => ! $received
-                ? $cancelledLabel
+                ? ['ar' => 'بانتظار الرد', 'en' => 'Pending']
                 : ($locationConfirmed ? $confirmedLocationLabel : $receivedLabel),
         ];
 

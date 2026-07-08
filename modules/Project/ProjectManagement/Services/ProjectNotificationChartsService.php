@@ -61,7 +61,7 @@ class ProjectNotificationChartsService
      * The raw "in_progress" and "cancelled" statuses are split into pseudo-statuses:
      *   - "received"           — in_progress/cancelled but location not yet confirmed (but received)
      *   - "confirmed_location"  — in_progress/cancelled and location confirmed
-     *   - "cancelled"           — cancelled and never received
+     *   - "pending"             — cancelled and never received (treated as never started)
      * This matches the statusLookup() used by the map-tasks endpoint.
      */
     public function getStatusChart(FilterProjectNotificationChartsDTO $dto): array
@@ -345,7 +345,7 @@ class ProjectNotificationChartsService
 
         if ($status === 'cancelled') {
             if (! $received) {
-                return 'cancelled';
+                return 'pending';
             }
             return $locationConfirmed ? 'confirmed_location' : 'received';
         }
@@ -367,7 +367,6 @@ class ProjectNotificationChartsService
             'confirmed_location' => ['ar' => 'تم تأكيد الموقع', 'en' => 'Confirmed Location'],
             'in_progress'        => ['ar' => 'تم تأكيد الموقع', 'en' => 'Confirmed Location'],
             'completed'          => ['ar' => 'مكتمل', 'en' => 'Completed'],
-            'cancelled'          => ['ar' => 'ملغي', 'en' => 'Cancelled'],
         ];
 
         return $labels[$status][$locale] ?? $status;
