@@ -338,8 +338,9 @@ final class EmployeeTaskLifecycleService
         }
 
         $totalSessionMinutes = $this->sessionRepo->sumCompletedMinutes($task->id);
-        $timeFrom            = CarbonImmutable::parse($task->time_from, $timezone);
-        $totalElapsedMinutes = max(0, (int) $timeFrom->diffInMinutes($now));
+        $totalElapsedMinutes = $task->time_from !== null
+            ? max(0, (int) CarbonImmutable::parse($task->time_from, $timezone)->diffInMinutes($now))
+            : 0;
         $totalPauseMinutes   = max(0, $totalElapsedMinutes - $totalSessionMinutes);
         $totalTaskHours      = round($totalSessionMinutes / 60, 2);
 

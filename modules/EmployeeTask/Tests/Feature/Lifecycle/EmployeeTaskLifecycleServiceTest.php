@@ -272,6 +272,17 @@ final class EmployeeTaskLifecycleServiceTest extends TestCase
         $this->service->end($this->task->id, new EndTaskDTO(24.7136, 46.6753));
     }
 
+    public function test_perform_end_completes_approved_task_without_time_from(): void
+    {
+        $dto    = new EndTaskDTO(latitude: 24.7136, longitude: 46.6753, notes: 'Closed without starting');
+        $result = $this->service->performEnd($this->task, $dto);
+
+        $this->assertSame('completed', $result->status);
+        $this->assertNotNull($result->time_to);
+        $this->assertSame(0.0, (float) $result->total_task_hours);
+        $this->assertSame(0, (int) $result->total_pause_minutes);
+    }
+
     // -------------------------------------------------------------------------
     // Full cycle: start → pause → resume → end
     // -------------------------------------------------------------------------
