@@ -20,11 +20,11 @@ class ProjectNotificationFilter extends SearchModelFilter
             ? explode(',', $status)
             : [$status];
 
-        // "received" and "in_progress" both map to the same raw status column
-        // value ('in_progress'); they are distinguished by whether the employee
-        // has also confirmed the location (location_confirmed_at). Only take the
-        // slower, split path when one of these pseudo-statuses is requested.
-        if (! array_intersect(['received', 'in_progress'], $statuses)) {
+        // "received" and "confirmed_location" both map to the same raw status
+        // column value ('in_progress'); they are distinguished by whether the
+        // employee has also confirmed the location (location_confirmed_at). Only
+        // take the slower, split path when one of these pseudo-statuses is requested.
+        if (! array_intersect(['received', 'confirmed_location'], $statuses)) {
             return count($statuses) > 1
                 ? $this->whereIn('project_notifications.status', $statuses)
                 : $this->where('project_notifications.status', $statuses[0]);
@@ -36,7 +36,7 @@ class ProjectNotificationFilter extends SearchModelFilter
                     match ($value) {
                         'received' => $q->where('project_notifications.status', 'in_progress')
                             ->whereNull('project_notifications.location_confirmed_at'),
-                        'in_progress' => $q->where('project_notifications.status', 'in_progress')
+                        'confirmed_location' => $q->where('project_notifications.status', 'in_progress')
                             ->whereNotNull('project_notifications.location_confirmed_at'),
                         default => $q->where('project_notifications.status', $value),
                     };
