@@ -37,4 +37,9 @@ class ProjectNotificationException extends RuntimeException
     {
         return new self('The requested procedure is not currently available for this notification.');
     }
+
+    public static function voiceRecipientHasNoPhone(): self
+    {
+        return new self('The assigned user has no phone number, so the voice notification cannot be sent.');
+    }
 }

@@ -155,6 +155,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
            ;
         Route::post('/{id}/request-site-status-update', [ProjectNotificationController::class, 'requestSiteStatusUpdate'])
            ;
+        Route::post('/{id}/notify-site-status-update-by-voice', [ProjectNotificationController::class, 'notifySiteStatusUpdateByVoice'])
+           ;
         Route::post('/{id}/request-fine', [ProjectNotificationController::class, 'requestFine'])
            ;
         Route::post('/{id}/confirm-location', [ProjectNotificationController::class, 'confirmLocation'])

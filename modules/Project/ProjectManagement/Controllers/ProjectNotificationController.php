@@ -223,6 +223,28 @@ class ProjectNotificationController extends Controller
     }
 
     /**
+     * POST /projects/notifications/{id}/notify-site-status-update-by-voice
+     *
+     * Trigger a voice call to the assigned user reminding them to update the
+     * site status for this project notification.
+     */
+    public function notifySiteStatusUpdateByVoice(Request $request): JsonResponse
+    {
+        try {
+            $notification = $this->notificationService->notifySiteStatusUpdateByVoice(
+                $request->route('id'),
+            );
+
+            return Json::item(
+                ProjectNotificationPresenter::detail($notification),
+                message: 'Voice reminder sent successfully',
+            );
+        } catch (ProjectNotificationException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
+    /**
      * POST /projects/notifications/{id}/request-fine
      *
      * Submit a workflow-based fine request. The fine data is stored in the Process
