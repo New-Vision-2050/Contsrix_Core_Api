@@ -131,7 +131,13 @@ class EmployeeTaskRequestService
         // only once the Process reaches Completed status (via ProcessWorkflowService
         // firing WorkflowProcedureTaken). This prevents startTask (or any procedure
         // that appears_after createTask) from appearing before the admin approves.
-        $this->createProcessesForTask($task, $formKey, $parentSetting);
+        if (! empty($dto->independentUserIds)) {
+            foreach ($dto->independentUserIds as $independentUserId) {
+                $this->createProcessesForTask($task, $formKey, $parentSetting, $independentUserId);
+            }
+        } else {
+            $this->createProcessesForTask($task, $formKey, $parentSetting);
+        }
 
         $this->dispatchStaleRejectionJob($task, $creator);
 
@@ -226,6 +232,7 @@ class EmployeeTaskRequestService
         EmployeeTaskRequest $task,
         ?string $formKey = null,
         ?ProcedureSetting $parentSetting = null,
+        ?string $independentUserId = null,
     ): void {
         $formKey = $formKey ?? InternalProcessForm::CreateTask->value;
         $procedureType = $this->procedureTypeForForm($formKey);
@@ -234,6 +241,9 @@ class EmployeeTaskRequestService
             ? (string) $task->user->userProfessionalData->branch_id
             : null;
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
+        if ($independentUserId !== null) {
+            $context['assigned_user_id'] = $independentUserId;
+        }
 
         // Resolve the parent once so we can use it for both workflow start and
         // post-auto-approve marking.
@@ -252,6 +262,7 @@ class EmployeeTaskRequestService
             branchId: $branchId,
             createdByUserId: $task->user_id,
             context: $context,
+            independentUserId: $independentUserId,
         );
 
         if ($result->autoApprove) {
@@ -273,10 +284,15 @@ class EmployeeTaskRequestService
             return;
         }
 
-        $task->update([
-            'approval_responsible_id' => $currentStep->assigned_user_id,
-            'current_procedure_step_id' => $currentStep->step_id,
-        ]);
+        // Only record the primary current step on the task for the shared process
+        // or the first independent user. Subsequent independent processes do not
+        // overwrite the task-level current step.
+        if ($independentUserId === null || $independentUserId === $task->user_id) {
+            $task->update([
+                'approval_responsible_id' => $currentStep->assigned_user_id,
+                'current_procedure_step_id' => $currentStep->step_id,
+            ]);
+        }
 
         // Notifications (real-time + email + SMS) are now dispatched centrally
         // via the WorkflowStepActivated event fired inside ProcessWorkflowService::createProcessStep().
@@ -627,6 +643,9 @@ class EmployeeTaskRequestService
             ? (string) $task->user->userProfessionalData->branch_id
             : null;
         $context = $task->project_id ? ['project_id' => $task->project_id] : [];
+        if ($independentUserId !== null) {
+            $context['assigned_user_id'] = $independentUserId;
+        }
 
         $result = $this->engine->startWorkflow(
             processableType: $task->procedureSettingType()->value,

@@ -26,6 +26,7 @@ final class CreateEmployeeTaskRequestDTO
         public readonly ?string $notes                    = null,
         public readonly ?array  $files                    = null,
         public readonly ?int    $radiusMeters             = null,
+        public readonly ?array  $independentUserIds       = null,
     ) {}
 
     public function toArray(): array

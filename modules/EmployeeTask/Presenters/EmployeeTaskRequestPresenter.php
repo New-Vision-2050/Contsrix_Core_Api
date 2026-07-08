@@ -57,7 +57,7 @@ final class EmployeeTaskRequestPresenter
             'cancelled_at'               => $this->formatInTimezone($task->cancelled_at),
             'created_at'                 => $this->formatInTimezone($task->created_at),
             'user'                       => $task->relationLoaded('user') && $task->user
-                ? ['id' => $task->user->id, 'name' => $task->user->name]
+                ? ['id' => $task->user->id, 'name' => $task->user->name, 'phone' => $task->user->phone]
                 : null,
             'task_type'                       => $task->relationLoaded('employeeTaskType') && $task->employeeTaskType
                 ? ['id' => $task->employeeTaskType->id, 'key' => $task->employeeTaskType->key, 'title' => $task->employeeTaskType->title]
