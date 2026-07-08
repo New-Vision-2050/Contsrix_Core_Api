@@ -58,30 +58,32 @@ class ProjectNotificationChartsService
     /**
      * Status distribution (cross-filtered: excludes status filter).
      *
-     * The raw "in_progress" status is split into two pseudo-statuses:
-     *   - "received"           — in_progress but location not yet confirmed
-     *   - "confirmed_location"  — in_progress and location confirmed
+     * The raw "in_progress" and "cancelled" statuses are split into pseudo-statuses:
+     *   - "received"           — in_progress/cancelled but location not yet confirmed (but received)
+     *   - "confirmed_location"  — in_progress/cancelled and location confirmed
+     *   - "cancelled"           — cancelled and never received
      * This matches the statusLookup() used by the map-tasks endpoint.
      */
     public function getStatusChart(FilterProjectNotificationChartsDTO $dto): array
     {
-        $validStatuses = ['pending', 'in_progress', 'completed'];
+        $validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
 
         $rows = $this->baseQuery($dto, 'status')
             ->whereIn('status', $validStatuses)
             ->select(
                 'status',
                 DB::raw('location_confirmed_at IS NOT NULL as location_confirmed'),
+                DB::raw('confirmation_receive_date IS NOT NULL as received'),
                 DB::raw('count(*) as count'),
             )
-            ->groupBy('status', 'location_confirmed')
+            ->groupBy('status', 'location_confirmed', 'received')
             ->get();
 
         $total = $rows->sum('count');
 
         $data = [];
         foreach ($rows as $row) {
-            $code = $this->resolveStatusCode($row->status, (bool) $row->location_confirmed);
+            $code = $this->resolveStatusCode($row->status, (bool) $row->location_confirmed, (bool) $row->received);
             $data[] = [
                 'code'       => $code,
                 'label'      => $this->statusLabel($code),
@@ -335,9 +337,16 @@ class ProjectNotificationChartsService
     /**
      * Resolve the pseudo-status code from raw status + location_confirmed_at.
      */
-    private function resolveStatusCode(string $status, bool $locationConfirmed): string
+    private function resolveStatusCode(string $status, bool $locationConfirmed, bool $received = true): string
     {
         if ($status === 'in_progress') {
+            return $locationConfirmed ? 'confirmed_location' : 'received';
+        }
+
+        if ($status === 'cancelled') {
+            if (! $received) {
+                return 'cancelled';
+            }
             return $locationConfirmed ? 'confirmed_location' : 'received';
         }
 
