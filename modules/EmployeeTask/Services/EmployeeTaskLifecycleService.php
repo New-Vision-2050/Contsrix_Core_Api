@@ -141,11 +141,15 @@ final class EmployeeTaskLifecycleService
 
         $closeAtIso = $now->addHours((float) $task->duration_hours)->toIso8601String();
 
-        AutoCloseTaskAtDurationExpiryJob::dispatch(
-            taskId:     $task->id,
-            companyId:  $task->company_id,
-            closeAtIso: $closeAtIso,
-        )->delay($deadline);
+        // Project notification tasks are not auto-closed on duration expiry.
+        // The employee must manually end the task via the project notification lifecycle.
+        if (! $task->is_project_notification) {
+            AutoCloseTaskAtDurationExpiryJob::dispatch(
+                taskId:     $task->id,
+                companyId:  $task->company_id,
+                closeAtIso: $closeAtIso,
+            )->delay($deadline);
+        }
 
         return $task->load(['sessions']);
     }

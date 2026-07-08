@@ -271,11 +271,14 @@ final class EmployeeTaskStartRequestService
 
         $closeAtIso = $now->addHours((float) $task->duration_hours)->toIso8601String();
 
-        AutoCloseTaskAtDurationExpiryJob::dispatch(
-            taskId:     $task->id,
-            companyId:  $task->company_id,
-            closeAtIso: $closeAtIso,
-        )->delay($deadline);
+        // Project notification tasks are not auto-closed on duration expiry.
+        if (! $task->is_project_notification) {
+            AutoCloseTaskAtDurationExpiryJob::dispatch(
+                taskId:     $task->id,
+                companyId:  $task->company_id,
+                closeAtIso: $closeAtIso,
+            )->delay($deadline);
+        }
     }
 
     private function loadInternalProcedureSetting(string $id, EmployeeTaskRequest $task): ?ProcedureSetting

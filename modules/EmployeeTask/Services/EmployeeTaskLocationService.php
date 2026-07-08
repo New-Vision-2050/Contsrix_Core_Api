@@ -132,11 +132,14 @@ final class EmployeeTaskLocationService
         if ($minutesOut >= $thresholdMinutes) {
             $closeAt = $firstOut->addMinutes($thresholdMinutes);
 
-            AutoCloseTaskIfOutOfLocationJob::dispatch(
-                taskId:     $task->id,
-                companyId:  $task->company_id,
-                closeAtIso: $closeAt->toIso8601String(),
-            );
+            // Project notification tasks are not auto-closed.
+            if (! $task->is_project_notification) {
+                AutoCloseTaskIfOutOfLocationJob::dispatch(
+                    taskId:     $task->id,
+                    companyId:  $task->company_id,
+                    closeAtIso: $closeAt->toIso8601String(),
+                );
+            }
 
             Cache::forget($cacheKey);
 
