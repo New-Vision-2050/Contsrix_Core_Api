@@ -44,7 +44,7 @@ class ProjectNotificationRepository
                 'employeeTask.siteStatusUpdates.media',
                 'employeeTask.fines.media',
                 'employeeTask.workStoppageReports.media',
-                'siteStatusUpdates' => fn ($q) => $q->latest('update_date')->limit(1),
+                'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
             ])
             ->find($id);
 
@@ -62,7 +62,7 @@ class ProjectNotificationRepository
                 'contractor',
                 'employeeTask.user',
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
-                'siteStatusUpdates' => fn ($q) => $q->latest('update_date')->limit(1),
+                'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
             ]);
 
         $this->applySorting($query, $sort);
