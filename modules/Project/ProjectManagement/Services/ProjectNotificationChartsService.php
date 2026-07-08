@@ -59,8 +59,8 @@ class ProjectNotificationChartsService
      * Status distribution (cross-filtered: excludes status filter).
      *
      * The raw "in_progress" status is split into two pseudo-statuses:
-     *   - "received"  — in_progress but location not yet confirmed
-     *   - "in_progress" — in_progress and location confirmed
+     *   - "received"           — in_progress but location not yet confirmed
+     *   - "confirmed_location"  — in_progress and location confirmed
      * This matches the statusLookup() used by the map-tasks endpoint.
      */
     public function getStatusChart(FilterProjectNotificationChartsDTO $dto): array
@@ -337,8 +337,8 @@ class ProjectNotificationChartsService
      */
     private function resolveStatusCode(string $status, bool $locationConfirmed): string
     {
-        if ($status === 'in_progress' && ! $locationConfirmed) {
-            return 'received';
+        if ($status === 'in_progress') {
+            return $locationConfirmed ? 'confirmed_location' : 'received';
         }
 
         return $status;
@@ -353,11 +353,12 @@ class ProjectNotificationChartsService
         $locale = app()->getLocale();
 
         $labels = [
-            'pending'     => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
-            'received'    => ['ar' => 'تم الاستلام', 'en' => 'Received'],
-            'in_progress' => ['ar' => 'قيد التنفيذ', 'en' => 'In Progress'],
-            'completed'   => ['ar' => 'مكتمل', 'en' => 'Completed'],
-            'cancelled'   => ['ar' => 'ملغي', 'en' => 'Cancelled'],
+            'pending'            => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
+            'received'           => ['ar' => 'تم الاستلام', 'en' => 'Received'],
+            'confirmed_location' => ['ar' => 'تم تأكيد الموقع', 'en' => 'Confirmed Location'],
+            'in_progress'        => ['ar' => 'تم تأكيد الموقع', 'en' => 'Confirmed Location'],
+            'completed'          => ['ar' => 'مكتمل', 'en' => 'Completed'],
+            'cancelled'          => ['ar' => 'ملغي', 'en' => 'Cancelled'],
         ];
 
         return $labels[$status][$locale] ?? $status;

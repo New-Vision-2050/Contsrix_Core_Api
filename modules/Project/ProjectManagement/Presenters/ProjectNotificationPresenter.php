@@ -206,7 +206,7 @@ class ProjectNotificationPresenter
     {
         $presenter = new self(new ProjectNotification());
 
-        $statuses = ['pending', 'received', 'in_progress', 'completed'];
+        $statuses = ['pending', 'received', 'confirmed_location', 'completed'];
         $result = [];
 
         foreach ($statuses as $status) {
@@ -243,24 +243,28 @@ class ProjectNotificationPresenter
      *
      * The "in_progress" status covers two employee-facing sub-states:
      *   - Receipt confirmed only (تم الاستلام / Received) — $locationConfirmed = false
-     *   - Location also confirmed (قيد التنفيذ / In Progress) — $locationConfirmed = true
+     *   - Location also confirmed (تم تأكيد الموقع / Confirmed Location) — $locationConfirmed = true
      *
      * $locationConfirmed defaults to true so generic/lookup usage (no specific
-     * notification instance) resolves to the general "In Progress" label.
+     * notification instance) resolves to the "Confirmed Location" label.
      */
     private function statusLabel(string $status, ?string $locale = null, bool $locationConfirmed = true): string
     {
         $locale ??= app()->getLocale();
 
         $receivedLabel = ['ar' => 'تم الاستلام', 'en' => 'Received'];
+        $confirmedLocationLabel = ['ar' => 'تم تأكيد الموقع', 'en' => 'Confirmed Location'];
 
         $labels = [
             'pending' => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
             // Pseudo-status used by statusLookup()/filters to target the
             // "in_progress but location not yet confirmed" sub-state directly.
             'received' => $receivedLabel,
+            // Pseudo-status used by statusLookup()/filters to target the
+            // "in_progress and location confirmed" sub-state directly.
+            'confirmed_location' => $confirmedLocationLabel,
             'in_progress' => $locationConfirmed
-                ? ['ar' => 'قيد التنفيذ', 'en' => 'In Progress']
+                ? $confirmedLocationLabel
                 : $receivedLabel,
             'completed' => ['ar' => 'مكتمل', 'en' => 'Completed'],
             'cancelled' => ['ar' => 'ملغي', 'en' => 'Cancelled'],
