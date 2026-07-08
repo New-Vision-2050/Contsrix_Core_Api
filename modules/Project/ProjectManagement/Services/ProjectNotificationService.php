@@ -48,6 +48,7 @@ use Modules\Project\ProjectManagement\Models\ProjectNotificationType;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReason;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason;
+use Modules\Project\ProjectManagement\Notifications\SiteStatusUpdateRequiredVoiceNotification;
 use Modules\Project\ProjectManagement\Repositories\ProjectNotificationRepository;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
@@ -615,6 +616,24 @@ class ProjectNotificationService
         );
 
         return $this->get($id);
+    }
+
+    /**
+     * Send a voice call reminder to the assigned user asking them to update
+     * the site status for the given project notification.
+     */
+    public function notifySiteStatusUpdateByVoice(string $id): ProjectNotification
+    {
+        $notification = $this->get($id);
+        $user = $notification->assigned_user;
+
+        if (! $user || trim((string) $user->phone) === '') {
+            throw ProjectNotificationException::voiceRecipientHasNoPhone();
+        }
+
+        $user->notify(new SiteStatusUpdateRequiredVoiceNotification($notification));
+
+        return $notification;
     }
 
     /**

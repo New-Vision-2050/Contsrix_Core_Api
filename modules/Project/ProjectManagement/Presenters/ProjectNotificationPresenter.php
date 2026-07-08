@@ -97,6 +97,7 @@ class ProjectNotificationPresenter
                 : [],
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
             'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
+            'last_site_update_date'      => $this->resolveLastSiteUpdateDate($n),
         ];
     }
 
@@ -152,6 +153,7 @@ class ProjectNotificationPresenter
                 : null,
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
             'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
+            'last_site_update_date'      => $this->resolveLastSiteUpdateDate($n),
         ];
     }
 
@@ -522,5 +524,18 @@ class ProjectNotificationPresenter
         }
 
         return $n->siteStatusUpdates->first()->description;
+    }
+
+    /**
+     * Resolve the created_at datetime of the latest site status update,
+     * formatted in the branch timezone.
+     */
+    private function resolveLastSiteUpdateDate(ProjectNotification $n): ?string
+    {
+        if (! $n->relationLoaded('siteStatusUpdates') || $n->siteStatusUpdates->isEmpty()) {
+            return null;
+        }
+
+        return $this->formatInTimezone($n->siteStatusUpdates->first()->created_at);
     }
 }

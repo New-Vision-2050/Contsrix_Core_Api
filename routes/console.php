@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\CreateWaitingAttendanceCommand;
+use App\Console\Commands\SendSiteStatusUpdateRemindersCommand;
 use App\Console\Commands\UpdateAttendanceStatusCommand;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -52,3 +53,12 @@ Schedule::command('attendance:send-silent-notifications')
     ->timezone('Asia/Riyadh')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/attendance-silent-notifications.log'));
+
+
+// Send FCM push reminders to assigned users when a project notification's
+// last site status update is older than 30 days. Repeats until completed.
+Schedule::command(SendSiteStatusUpdateRemindersCommand::class)
+    ->everyFiveMinutes()
+    ->timezone('Asia/Riyadh')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/project-notification-site-status-reminders.log'));
