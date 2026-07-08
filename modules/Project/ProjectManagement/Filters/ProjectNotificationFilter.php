@@ -20,11 +20,12 @@ class ProjectNotificationFilter extends SearchModelFilter
             ? explode(',', $status)
             : [$status];
 
-        // "received" and "confirmed_location" both map to the same raw status
-        // column value ('in_progress'); they are distinguished by whether the
-        // employee has also confirmed the location (location_confirmed_at). Only
-        // take the slower, split path when one of these pseudo-statuses is requested.
-        if (! array_intersect(['received', 'confirmed_location'], $statuses)) {
+        // "received", "confirmed_location", and "cancelled" map to raw status
+        // values 'in_progress' or 'cancelled'; they are distinguished by whether
+        // the employee has received the task (confirmation_receive_date) and/or
+        // confirmed the location (location_confirmed_at). Only take the slower,
+        // split path when one of these pseudo-statuses is requested.
+        if (! array_intersect(['received', 'confirmed_location', 'cancelled'], $statuses)) {
             return count($statuses) > 1
                 ? $this->whereIn('project_notifications.status', $statuses)
                 : $this->where('project_notifications.status', $statuses[0]);
@@ -34,10 +35,27 @@ class ProjectNotificationFilter extends SearchModelFilter
             foreach ($statuses as $value) {
                 $query->orWhere(function ($q) use ($value) {
                     match ($value) {
-                        'received' => $q->where('project_notifications.status', 'in_progress')
-                            ->whereNull('project_notifications.location_confirmed_at'),
-                        'confirmed_location' => $q->where('project_notifications.status', 'in_progress')
-                            ->whereNotNull('project_notifications.location_confirmed_at'),
+                        'received' => $q->where(function ($sq) {
+                            $sq->where(function ($ssq) {
+                                $ssq->where('project_notifications.status', 'in_progress')
+                                    ->whereNull('project_notifications.location_confirmed_at');
+                            })->orWhere(function ($ssq) {
+                                $ssq->where('project_notifications.status', 'cancelled')
+                                    ->whereNotNull('project_notifications.confirmation_receive_date')
+                                    ->whereNull('project_notifications.location_confirmed_at');
+                            });
+                        }),
+                        'confirmed_location' => $q->where(function ($sq) {
+                            $sq->where(function ($ssq) {
+                                $ssq->where('project_notifications.status', 'in_progress')
+                                    ->whereNotNull('project_notifications.location_confirmed_at');
+                            })->orWhere(function ($ssq) {
+                                $ssq->where('project_notifications.status', 'cancelled')
+                                    ->whereNotNull('project_notifications.location_confirmed_at');
+                            });
+                        }),
+                        'cancelled' => $q->where('project_notifications.status', 'cancelled')
+                            ->whereNull('project_notifications.confirmation_receive_date'),
                         default => $q->where('project_notifications.status', $value),
                     };
                 });

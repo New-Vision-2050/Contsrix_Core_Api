@@ -49,7 +49,7 @@ class ProjectNotificationPresenter
             'independent_progress'         => $n->independent_progress,
             'selected_distance_meters'    => $n->selected_distance_meters,
             'status'                      => $n->status,
-            'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null),
+            'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
             'task_time'                   => $n->task_time?->format('H:i'),
             'duration_hours'              => $n->duration_hours ? (float) $n->duration_hours : null,
@@ -114,7 +114,7 @@ class ProjectNotificationPresenter
             'contractor_name'             => $n->contractor_name,
             'feeder_number'               => $n->feeder_number,
             'status'                      => $n->status,
-            'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null),
+            'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
             'task_time'                   => $n->task_time?->format('H:i'),
             'duration_hours'              => $n->relationLoaded('employeeTask') && $n->employeeTask
@@ -186,7 +186,7 @@ class ProjectNotificationPresenter
             'longitude'       => $n->task_longitude ? (float) $n->task_longitude : null,
             'radius'          => $n->location_radius ? (int) $n->location_radius : null,
             'status'          => $n->status,
-            'status_label'    => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null),
+            'status_label'    => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
             'assigned_users'  => $this->formatAssignedUsers($n),
             'assigned_user'   => $this->formatFirstAssignedUser($n),
             'receive_date'    => $this->formatInMapTimezone($n->confirmation_receive_date),
@@ -206,7 +206,7 @@ class ProjectNotificationPresenter
     {
         $presenter = new self(new ProjectNotification());
 
-        $statuses = ['pending', 'received', 'confirmed_location', 'completed'];
+        $statuses = ['pending', 'received', 'confirmed_location', 'completed', 'cancelled'];
         $result = [];
 
         foreach ($statuses as $status) {
@@ -241,19 +241,22 @@ class ProjectNotificationPresenter
     /**
      * Resolve the display label for a notification status.
      *
-     * The "in_progress" status covers two employee-facing sub-states:
-     *   - Receipt confirmed only (تم الاستلام / Received) — $locationConfirmed = false
+     * The "in_progress" and "cancelled" statuses cover employee-facing sub-states:
+     *   - Receipt confirmed only (تم الاستلام / Received) — $locationConfirmed = false, $received = true
      *   - Location also confirmed (تم تأكيد الموقع / Confirmed Location) — $locationConfirmed = true
+     *   - Never received (ملغي / Cancelled) — $received = false (only for cancelled)
      *
-     * $locationConfirmed defaults to true so generic/lookup usage (no specific
-     * notification instance) resolves to the "Confirmed Location" label.
+     * $locationConfirmed defaults to true and $received defaults to true so
+     * generic/lookup usage (no specific notification instance) resolves to
+     * the "Confirmed Location" label for in_progress and "Received" for cancelled.
      */
-    private function statusLabel(string $status, ?string $locale = null, bool $locationConfirmed = true): string
+    private function statusLabel(string $status, ?string $locale = null, bool $locationConfirmed = true, bool $received = true): string
     {
         $locale ??= app()->getLocale();
 
         $receivedLabel = ['ar' => 'تم الاستلام', 'en' => 'Received'];
         $confirmedLocationLabel = ['ar' => 'تم تأكيد الموقع', 'en' => 'Confirmed Location'];
+        $cancelledLabel = ['ar' => 'ملغي', 'en' => 'Cancelled'];
 
         $labels = [
             'pending' => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
@@ -267,8 +270,19 @@ class ProjectNotificationPresenter
                 ? $confirmedLocationLabel
                 : $receivedLabel,
             'completed' => ['ar' => 'مكتمل', 'en' => 'Completed'],
-            'cancelled' => ['ar' => 'ملغي', 'en' => 'Cancelled'],
+            // Pseudo-status used by statusLookup()/filters for cancelled-and-never-received.
+            'cancelled' => $cancelledLabel,
+            // Raw cancelled status: show the actual progress sub-state if the
+            // employee had already received/confirmed before cancellation.
+            'cancelled_raw' => ! $received
+                ? $cancelledLabel
+                : ($locationConfirmed ? $confirmedLocationLabel : $receivedLabel),
         ];
+
+        // Map the raw 'cancelled' status to the conditional entry.
+        if ($status === 'cancelled') {
+            return $labels['cancelled_raw'][$locale] ?? $status;
+        }
 
         return $labels[$status][$locale] ?? $status;
     }

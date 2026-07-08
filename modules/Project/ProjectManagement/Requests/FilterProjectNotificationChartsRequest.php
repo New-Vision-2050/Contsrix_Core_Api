@@ -18,7 +18,7 @@ class FilterProjectNotificationChartsRequest extends FormRequest
     {
         return [
             'project_id'                 => ['nullable', 'uuid', 'exists:projects,id'],
-            'status'                     => ['nullable', 'string', 'regex:/^(pending|received|confirmed_location|completed)(,(pending|received|confirmed_location|completed))*$/'],
+            'status'                     => ['nullable', 'string', 'regex:/^(pending|received|confirmed_location|completed|cancelled)(,(pending|received|confirmed_location|completed|cancelled))*$/'],
             'notification_type'          => ['nullable', 'string'],
             'work_type'                  => ['nullable', 'string'],
             'contractor_name'            => ['nullable', 'string'],
