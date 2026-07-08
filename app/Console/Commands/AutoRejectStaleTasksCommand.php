@@ -76,6 +76,10 @@ class AutoRejectStaleTasksCommand extends Command
                 EmployeeTaskStatus::Approved->value,
             ])
             ->whereDate('task_date', '<', $today->toDateString())
+            ->where(function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->get();
 
         if ($staleTasks->isEmpty()) {

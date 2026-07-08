@@ -44,6 +44,12 @@ final class EmployeeTaskAutoCloseService
                 return false;
             }
 
+            // Project notification tasks are never auto-closed. The employee
+            // must manually end the task via the project notification lifecycle.
+            if ($fresh->is_project_notification) {
+                return false;
+            }
+
             $timezone = $fresh->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
             $closeAtInTz = $closeAt->setTimezone($timezone);
 

@@ -317,7 +317,13 @@ final class ProcedureWorkflowService
             ->where('processable_id', $processableId);
 
         if ($userId !== null) {
-            $query->where('user_id', $userId);
+            // Include shared (user_id = null) records alongside user-scoped ones.
+            // The creation workflow is always shared, so its taken record has
+            // user_id = null. Lifecycle procedures in independent mode have
+            // user_id set. Both must be visible when filtering by user.
+            $query->where(function ($q) use ($userId): void {
+                $q->whereNull('user_id')->orWhere('user_id', $userId);
+            });
         }
 
         return $query->pluck('procedure_setting_id')
@@ -341,7 +347,9 @@ final class ProcedureWorkflowService
             ->where('procedure_setting_id', $procedureSettingId);
 
         if ($userId !== null) {
-            $query->where('user_id', $userId);
+            $query->where(function ($q) use ($userId): void {
+                $q->whereNull('user_id')->orWhere('user_id', $userId);
+            });
         }
 
         return $query->exists();

@@ -190,6 +190,11 @@ class EmployeeTaskRequestService
      */
     private function dispatchStaleRejectionJob(EmployeeTaskRequest $task, ?User $creator): void
     {
+        // Project notification tasks are never auto-rejected.
+        if ($task->is_project_notification) {
+            return;
+        }
+
         $timezone = $this->resolveCreatorTimezone($creator);
         $taskDate = CarbonImmutable::parse($task->task_date, $timezone);
         $midnightAfter = $taskDate->endOfDay();

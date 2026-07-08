@@ -50,6 +50,12 @@ class AutoRejectStaleTaskJob implements ShouldQueue
                 return;
             }
 
+            // Project notification tasks are never auto-rejected. They follow
+            // a separate lifecycle managed by the project notification module.
+            if ($task->is_project_notification) {
+                return;
+            }
+
             if (!in_array($task->status, [
                 EmployeeTaskStatus::Pending->value,
                 EmployeeTaskStatus::Approved->value,
