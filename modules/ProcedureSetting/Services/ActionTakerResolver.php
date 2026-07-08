@@ -32,7 +32,8 @@ class ActionTakerResolver
             'himself' => $createdByUserId !== null ? [$createdByUserId] : [],
 
             // The entity assigned to the task/request (e.g. EmployeeTaskRequest.user_id).
-            'assigned_user' => $createdByUserId !== null ? [$createdByUserId] : [],
+            // For independent processes, the specific user is passed in context.
+            'assigned_user' => $this->resolveAssignedUser($createdByUserId, $context),
 
             default => $this->resolveSpecificUserIds($step),
         };
@@ -50,6 +51,21 @@ class ActionTakerResolver
         $users = $this->resolveUsersForStep($step, $createdByUserId, $context);
 
         return $users[0] ?? null;
+    }
+
+    /**
+     * Resolve the user IDs for the 'assigned_user' action taker type.
+     * For independent processes, a specific user is supplied in context.
+     *
+     * @return list<string>
+     */
+    private function resolveAssignedUser(?string $createdByUserId, array $context): array
+    {
+        if (isset($context['assigned_user_id']) && $context['assigned_user_id'] !== null && $context['assigned_user_id'] !== '') {
+            return [(string) $context['assigned_user_id']];
+        }
+
+        return $createdByUserId !== null ? [$createdByUserId] : [];
     }
 
     // -------------------------------------------------------------------------

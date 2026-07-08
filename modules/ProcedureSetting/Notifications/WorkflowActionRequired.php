@@ -89,16 +89,26 @@ class WorkflowActionRequired extends Notification
         ]);
     }
 
+    private function buildVoiceMessage(): string
+    {
+        $stepName = $this->templateStep->name ?? 'Workflow Step';
+
+        return trans('emails.workflow-action-required-detailed', [
+            'step' => $stepName,
+            'order' => $this->templateStep->step_order ?? 1,
+        ], 'en');
+    }
+
     private function buildVoiceTwiml(): string
     {
-        $message = htmlspecialchars($this->buildActionMessage(), ENT_XML1, 'UTF-8');
+        $message = htmlspecialchars($this->buildVoiceMessage(), ENT_XML1, 'UTF-8');
 
         return <<<TWIML
 <?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="Polly.Zeina" language="ar-EG">$message</Say>
+    <Say voice="Polly.Joanna" language="en-US">$message</Say>
     <Pause length="1"/>
-    <Say voice="Polly.Zeina" language="ar-EG">$message</Say>
+    <Say voice="Polly.Joanna" language="en-US">$message</Say>
 </Response>
 TWIML;
     }

@@ -146,7 +146,7 @@ class ProjectNotificationPresenter
                         'serial_number'  => $n->employeeTask->serial_number,
                         'duration_hours' => $n->employeeTask->duration_hours ? (float) $n->employeeTask->duration_hours : null,
                         'user'           => $n->employeeTask->relationLoaded('user') && $n->employeeTask->user
-                            ? ['id' => $n->employeeTask->user->id, 'name' => $n->employeeTask->user->name]
+                            ? ['id' => $n->employeeTask->user->id, 'name' => $n->employeeTask->user->name, 'phone' => $n->employeeTask->user->phone]
                             : null,
                     ])
                 : null,
@@ -474,18 +474,19 @@ class ProjectNotificationPresenter
     }
 
     /**
-     * Format all assigned users as an array of {id, name} objects.
+     * Format all assigned users as an array of {id, name, phone} objects.
      */
     private function formatAssignedUsers(ProjectNotification $n): array
     {
         return $n->assigned_users->map(fn ($user) => [
-            'id'   => $user->id,
-            'name' => $user->name,
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'phone' => $user->phone,
         ])->values()->all();
     }
 
     /**
-     * Format the first assigned user as {id, name} or null.
+     * Format the first assigned user as {id, name, phone} or null.
      */
     private function formatFirstAssignedUser(ProjectNotification $n): ?array
     {
@@ -495,7 +496,7 @@ class ProjectNotificationPresenter
             return null;
         }
 
-        return ['id' => $user->id, 'name' => $user->name];
+        return ['id' => $user->id, 'name' => $user->name, 'phone' => $user->phone];
     }
 
     private function resolveAssignedUserBranchTimezone(): ?string

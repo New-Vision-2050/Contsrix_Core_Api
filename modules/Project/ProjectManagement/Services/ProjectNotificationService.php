@@ -105,6 +105,7 @@ class ProjectNotificationService
             notes: $dto->notes,
             files: $dto->files,
             radiusMeters: $dto->locationRadius,
+            independentUserIds: $dto->independentProgress ? $dto->assignedUserIds : null,
         );
 
         // 3. Delegate to EmployeeTaskRequestService with the dedicated form key.
