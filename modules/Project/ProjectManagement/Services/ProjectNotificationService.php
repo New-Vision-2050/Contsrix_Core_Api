@@ -1217,7 +1217,13 @@ class ProjectNotificationService
 
         $independentUserId = $notification->independent_progress ? $userId : null;
 
-        $task = $this->lifecycleService->end($task->id, $dto, $independentUserId);
+        // Approved-but-never-started project notifications can be closed directly
+        // (e.g. the employee chose to end the task without confirming receipt).
+        if ($task->status === EmployeeTaskStatus::Approved->value) {
+            $task = $this->lifecycleService->performEnd($task, $dto);
+        } else {
+            $task = $this->lifecycleService->end($task->id, $dto, $independentUserId);
+        }
 
         if (! empty($dto->files)) {
             $this->fileUploadService->uploadFile(
