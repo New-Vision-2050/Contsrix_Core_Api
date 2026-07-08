@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Notifications;
 
 use App\Notifications\Drivers\Voice\TwilioVoice;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 
 class SiteStatusUpdateRequiredVoiceNotification extends Notification
 {
-    use Queueable;
 
     public function __construct(private readonly ProjectNotification $notification) {}
 
@@ -24,6 +22,14 @@ class SiteStatusUpdateRequiredVoiceNotification extends Notification
     {
         $driver = new TwilioVoice;
         $fullPhone = $this->buildInternationalPhoneNumber($notifiable);
+
+        \Log::info('SiteStatusUpdateRequiredVoiceNotification: preparing voice call', [
+            'notifiable_id' => $notifiable->id ?? null,
+            'notifiable_phone' => $notifiable->phone ?? null,
+            'full_phone' => $fullPhone,
+            'notification_id' => $this->notification->id,
+            'notification_number' => $this->notification->notification_number,
+        ]);
 
         return $driver
             ->to($fullPhone)
