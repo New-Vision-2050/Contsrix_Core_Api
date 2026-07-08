@@ -447,6 +447,15 @@ class ProjectNotificationService
 
         $data = $this->enrichContractorData($dto->toArray());
 
+        // Append new assigned users instead of replacing the existing list.
+        $newlyAssignedUserIds = [];
+        if (! empty($dto->assignedUserIds)) {
+            $existingUserIds = $notification->assigned_user_ids ?? [];
+            $mergedUserIds = array_values(array_unique(array_filter(array_merge($existingUserIds, $dto->assignedUserIds))));
+            $newlyAssignedUserIds = array_values(array_diff($mergedUserIds, $existingUserIds));
+            $data['assigned_user_ids'] = $mergedUserIds;
+        }
+
         $this->repository->update($id, $data);
 
         // Delete requested media files
@@ -466,6 +475,27 @@ class ProjectNotificationService
                 collectionName: 'attachments',
                 visibility: 'public',
             );
+        }
+
+        // When new employees are appended, make sure they can take action:
+        // - independent_progress=true  → each new user gets their own workflow process.
+        // - all_users_can_approve=true → new users are injected into pending shared steps.
+        if (! empty($newlyAssignedUserIds)) {
+            $notification = $notification->fresh();
+            $task = $notification->employeeTask;
+            if ($task !== null) {
+                if ($notification->independent_progress) {
+                    $this->employeeTaskRequestService->createIndependentProcessesForUsers(
+                        $task,
+                        $newlyAssignedUserIds,
+                        InternalProcessForm::CreateProjectNotificationTask->value,
+                    );
+                }
+
+                if ($notification->all_users_can_approve) {
+                    $this->injectAssignedUsersIntoWorkflow($task, $notification);
+                }
+            }
         }
 
         return $this->get($id);
