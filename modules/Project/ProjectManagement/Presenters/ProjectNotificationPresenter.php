@@ -48,7 +48,7 @@ class ProjectNotificationPresenter
             'all_users_can_approve'        => $n->all_users_can_approve,
             'independent_progress'         => $n->independent_progress,
             'selected_distance_meters'    => $n->selected_distance_meters,
-            'status'                      => $n->status,
+            'status'                      => $this->resolvePseudoStatus($n->status, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
             'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
             'task_time'                   => $n->task_time?->format('H:i'),
@@ -113,7 +113,7 @@ class ProjectNotificationPresenter
             'contractor_id'               => $n->contractor_id,
             'contractor_name'             => $n->contractor_name,
             'feeder_number'               => $n->feeder_number,
-            'status'                      => $n->status,
+            'status'                      => $this->resolvePseudoStatus($n->status, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
             'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
             'task_time'                   => $n->task_time?->format('H:i'),
@@ -185,7 +185,7 @@ class ProjectNotificationPresenter
             'latitude'        => $n->task_latitude ? (float) $n->task_latitude : null,
             'longitude'       => $n->task_longitude ? (float) $n->task_longitude : null,
             'radius'          => $n->location_radius ? (int) $n->location_radius : null,
-            'status'          => $n->status,
+            'status'          => $this->resolvePseudoStatus($n->status, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
             'status_label'    => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
             'assigned_users'  => $this->formatAssignedUsers($n),
             'assigned_user'   => $this->formatFirstAssignedUser($n),
@@ -236,6 +236,26 @@ class ProjectNotificationPresenter
         $setting = $task->relationLoaded('createProjectNotificationTaskProcedureSetting') ? $task->createProjectNotificationTaskProcedureSetting : null;
 
         return $setting?->id;
+    }
+
+    /**
+     * Resolve the pseudo-status code from raw status + flags.
+     * Mirrors ProjectNotificationChartsService::resolveStatusCode().
+     */
+    private static function resolvePseudoStatus(string $status, bool $locationConfirmed, bool $received): string
+    {
+        if ($status === 'in_progress') {
+            return $locationConfirmed ? 'confirmed_location' : 'received';
+        }
+
+        if ($status === 'cancelled') {
+            if (! $received) {
+                return 'cancelled';
+            }
+            return $locationConfirmed ? 'confirmed_location' : 'received';
+        }
+
+        return $status;
     }
 
     /**
