@@ -515,7 +515,7 @@ class ProjectNotificationPresenter
     }
 
     /**
-     * Resolve the current_status_description from the latest site status update, or null if none exists.
+     * Resolve the description from the latest site status update, or null if none exists.
      */
     private function resolveLastSiteUpdateStatus(ProjectNotification $n): ?string
     {
@@ -523,7 +523,7 @@ class ProjectNotificationPresenter
             return null;
         }
 
-        return $n->siteStatusUpdates->first()->current_status_description;
+        return $n->siteStatusUpdates->first()->description;
     }
 
     /**
