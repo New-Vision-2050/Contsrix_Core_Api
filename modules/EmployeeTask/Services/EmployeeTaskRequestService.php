@@ -145,6 +145,38 @@ class EmployeeTaskRequestService
     }
 
     /**
+     * Create separate workflow processes for additional users on an existing task.
+     * Used when updating a notification/task to append more assigned users while
+     * keeping independent progress per user.
+     */
+    public function createIndependentProcessesForUsers(
+        EmployeeTaskRequest $task,
+        array $userIds,
+        ?string $formKey = null,
+    ): void {
+        if (empty($userIds)) {
+            return;
+        }
+
+        $formKey = $formKey ?? InternalProcessForm::CreateTask->value;
+        $procedureType = $this->procedureTypeForForm($formKey);
+
+        $parentSetting = $task->procedure_setting_id !== null
+            ? ProcedureSetting::query()->find($task->procedure_setting_id)
+            : $this->engine->resolveParentSetting(
+                $procedureType,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+
+        foreach ($userIds as $userId) {
+            $this->createProcessesForTask($task, $formKey, $parentSetting, $userId);
+        }
+    }
+
+    /**
      * Mark all internal procedures matching a given form as "taken" for this task.
      * Called for auto-approve paths (create, start, end) where no pending workflow
      * process exists. When a real workflow exists, the taken status is recorded by

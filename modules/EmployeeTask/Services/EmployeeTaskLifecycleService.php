@@ -11,12 +11,15 @@ use Modules\EmployeeTask\DTO\StartTaskDTO;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Jobs\AutoCloseTaskAtDurationExpiryJob;
+use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\EmployeeTask\Repositories\EmployeeTaskSessionRepository;
 use Modules\EmployeeTask\Services\EmployeeTaskApprovalService;
 use Modules\EmployeeTask\Services\EmployeeTaskEndRequestService;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Models\Process;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
@@ -230,6 +233,29 @@ final class EmployeeTaskLifecycleService
         }
 
         if ($task->hasPendingEndRequest()) {
+            $pendingEndRequest = EmployeeTaskEndRequest::query()
+                ->where('employee_task_request_id', $task->id)
+                ->where('status', 'pending')
+                ->first();
+
+            // If the linked process is already completed or missing, the previous
+            // end request is stale. Complete the end now rather than blocking the user.
+            if ($pendingEndRequest !== null) {
+                $process = $pendingEndRequest->process_id !== null
+                    ? Process::query()->find($pendingEndRequest->process_id)
+                    : null;
+
+                if ($process === null || $process->status === ProcessStatus::Completed) {
+                    $task = $this->performEnd($task, $dto);
+                    $pendingEndRequest->update([
+                        'status'      => 'approved',
+                        'reviewed_at' => now(),
+                    ]);
+
+                    return $task->fresh()->load(['sessions']);
+                }
+            }
+
             throw EmployeeTaskException::pendingEndRequestExists();
         }
 
