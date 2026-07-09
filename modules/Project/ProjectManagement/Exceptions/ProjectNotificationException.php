@@ -13,6 +13,11 @@ class ProjectNotificationException extends RuntimeException
         return new self("Project notification [{$id}] not found.");
     }
 
+    public static function statusNotFound(string $type): self
+    {
+        return new self("{$type} status not found or inactive.");
+    }
+
     public static function cannotApprove(string $status): self
     {
         return new self("Cannot approve a notification with status [{$status}].");

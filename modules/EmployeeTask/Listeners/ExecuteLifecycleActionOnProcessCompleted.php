@@ -205,6 +205,10 @@ final class ExecuteLifecycleActionOnProcessCompleted
             ...$update,
         ]);
 
+        if (! empty($metadata['update_site_status_id'])) {
+            $notification->update(['update_site_status_id' => $metadata['update_site_status_id']]);
+        }
+
         $this->moveStagedSiteStatusFilesToAttachments($notification, $siteStatusUpdate, $metadata['files'] ?? []);
     }
 

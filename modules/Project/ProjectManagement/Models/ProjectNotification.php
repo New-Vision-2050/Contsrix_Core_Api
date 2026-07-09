@@ -63,6 +63,8 @@ class ProjectNotification extends Model implements HasMedia
         'independent_progress',
         'selected_distance_meters',
         'status',
+        'update_site_status_id',
+        'end_task_status_id',
         'created_by_user_id',
         'approved_by',
         'approved_at',
@@ -185,5 +187,15 @@ class ProjectNotification extends Model implements HasMedia
     public function siteStatusUpdates(): HasMany
     {
         return $this->hasMany(ProjectNotificationSiteStatusUpdate::class, 'project_notification_id');
+    }
+
+    public function updateSiteStatus(): BelongsTo
+    {
+        return $this->belongsTo(ProjectNotificationUpdateSiteStatus::class, 'update_site_status_id')->withoutGlobalScopes();
+    }
+
+    public function endTaskStatus(): BelongsTo
+    {
+        return $this->belongsTo(ProjectNotificationEndTaskStatus::class, 'end_task_status_id')->withoutGlobalScopes();
     }
 }

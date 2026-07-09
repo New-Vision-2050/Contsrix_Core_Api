@@ -49,7 +49,9 @@ class ProjectNotificationPresenter
             'independent_progress'         => $n->independent_progress,
             'selected_distance_meters'    => $n->selected_distance_meters,
             'status'                      => $this->resolvePseudoStatus($n->status, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
-            'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
+            'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null, $this->resolveUpdateSiteStatusLabel($n), $this->resolveEndTaskStatusLabel($n)),
+            'update_site_status'          => $this->formatUpdateSiteStatus($n),
+            'end_task_status'             => $this->formatEndTaskStatus($n),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
             'task_time'                   => $n->task_time?->format('H:i'),
             'duration_hours'              => $n->duration_hours ? (float) $n->duration_hours : null,
@@ -115,7 +117,7 @@ class ProjectNotificationPresenter
             'contractor_name'             => $n->contractor_name,
             'feeder_number'               => $n->feeder_number,
             'status'                      => $this->resolvePseudoStatus($n->status, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
-            'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
+            'status_label'                => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null, $this->resolveUpdateSiteStatusLabel($n), $this->resolveEndTaskStatusLabel($n)),
             'task_date'                   => $n->task_date?->format('Y-m-d'),
             'task_time'                   => $n->task_time?->format('H:i'),
             'duration_hours'              => $n->relationLoaded('employeeTask') && $n->employeeTask
@@ -188,7 +190,7 @@ class ProjectNotificationPresenter
             'longitude'       => $n->task_longitude ? (float) $n->task_longitude : null,
             'radius'          => $n->location_radius ? (int) $n->location_radius : null,
             'status'          => $this->resolvePseudoStatus($n->status, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
-            'status_label'    => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null),
+            'status_label'    => $this->statusLabel($n->status, null, $n->location_confirmed_at !== null, $n->confirmation_receive_date !== null, $this->resolveUpdateSiteStatusLabel($n), $this->resolveEndTaskStatusLabel($n)),
             'assigned_users'  => $this->formatAssignedUsers($n),
             'assigned_user'   => $this->formatFirstAssignedUser($n),
             'receive_date'    => $this->formatInMapTimezone($n->confirmation_receive_date),
@@ -268,16 +270,39 @@ class ProjectNotificationPresenter
      *   - Location also confirmed (تم تأكيد الموقع / Confirmed Location) — $locationConfirmed = true
      *   - Never received (قيد الانتظار / Pending) — $received = false (only for cancelled)
      *
+     * When a specific notification instance is rendered, the chosen
+     * update_site_status is used for in_progress and the chosen end_task_status
+     * is used for completed. For completed, the generic "Completed" label is
+     * kept only when the chosen end_task_status is "work_completion".
+     *
      * $locationConfirmed defaults to true and $received defaults to true so
      * generic/lookup usage (no specific notification instance) resolves to
      * the "Confirmed Location" label for in_progress and "Received" for cancelled.
      */
-    private function statusLabel(string $status, ?string $locale = null, bool $locationConfirmed = true, bool $received = true): string
-    {
+    private function statusLabel(
+        string $status,
+        ?string $locale = null,
+        bool $locationConfirmed = true,
+        bool $received = true,
+        ?array $updateSiteStatus = null,
+        ?array $endTaskStatus = null,
+    ): string {
         $locale ??= app()->getLocale();
 
         $receivedLabel = ['ar' => 'تم الاستلام', 'en' => 'Received'];
         $confirmedLocationLabel = ['ar' => 'تم تأكيد الموقع', 'en' => 'Confirmed Location'];
+
+        if ($status === 'in_progress' && $updateSiteStatus) {
+            return $updateSiteStatus[$locale] ?? $updateSiteStatus['ar'] ?? $updateSiteStatus['en'] ?? $status;
+        }
+
+        if ($status === 'completed' && $endTaskStatus) {
+            $endTaskStatusKey = $this->notification->endTaskStatus?->key;
+
+            if ($endTaskStatusKey && $endTaskStatusKey !== 'work_completion') {
+                return $endTaskStatus[$locale] ?? $endTaskStatus['ar'] ?? $endTaskStatus['en'] ?? $status;
+            }
+        }
 
         $labels = [
             'pending' => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
@@ -512,6 +537,76 @@ class ProjectNotificationPresenter
         $timezones = $user->userProfessionalData?->branch?->address?->country?->timezones;
 
         return $timezones[0]['zoneName'] ?? null;
+    }
+
+    private function formatUpdateSiteStatus(ProjectNotification $n): ?array
+    {
+        $status = $n->relationLoaded('updateSiteStatus') ? $n->updateSiteStatus : null;
+
+        if (! $status) {
+            return null;
+        }
+
+        return [
+            'id' => $status->id,
+            'key' => $status->key,
+            'name_ar' => $status->name_ar,
+            'name_en' => $status->name_en,
+        ];
+    }
+
+    private function formatEndTaskStatus(ProjectNotification $n): ?array
+    {
+        $status = $n->relationLoaded('endTaskStatus') ? $n->endTaskStatus : null;
+
+        if (! $status) {
+            return null;
+        }
+
+        return [
+            'id' => $status->id,
+            'key' => $status->key,
+            'name_ar' => $status->name_ar,
+            'name_en' => $status->name_en,
+        ];
+    }
+
+    /**
+     * Build name arrays for the chosen update site status to feed statusLabel().
+     *
+     * @return array{ar: string, en: string}|null
+     */
+    private function resolveUpdateSiteStatusLabel(ProjectNotification $n): ?array
+    {
+        $status = $n->relationLoaded('updateSiteStatus') ? $n->updateSiteStatus : null;
+
+        if (! $status) {
+            return null;
+        }
+
+        return [
+            'ar' => $status->name_ar,
+            'en' => $status->name_en,
+        ];
+    }
+
+    /**
+     * Build name arrays for the chosen end task status to feed statusLabel().
+     *
+     * @return array{ar: string, en: string}|null
+     */
+    private function resolveEndTaskStatusLabel(ProjectNotification $n): ?array
+    {
+        $status = $n->relationLoaded('endTaskStatus') ? $n->endTaskStatus : null;
+
+        if (! $status) {
+            return null;
+        }
+
+        return [
+            'ar' => $status->name_ar,
+            'en' => $status->name_en,
+        ];
     }
 
     /**

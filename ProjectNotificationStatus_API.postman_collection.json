@@ -1,0 +1,377 @@
+{
+  "info": {
+    "_postman_id": "project-notification-status-api-collection",
+    "name": "Project Notification Status API",
+    "description": "API endpoints for managing project notification update site statuses and end task statuses in the ProjectManagement module.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "List Update Site Statuses",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/update-site-statuses",
+          "host": ["{{url}}"],
+          "path": ["projects", "notifications", "update-site-statuses"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": true,\n  \"message\": \"Update site statuses retrieved successfully\",\n  \"data\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"key\": \"digging_in_progress\",\n      \"name_ar\": \"جاري الحفر\",\n      \"name_en\": \"Digging in progress\",\n      \"sort_order\": 1\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n      \"key\": \"extension_in_progress\",\n      \"name_ar\": \"جار التمديد\",\n      \"name_en\": \"Extension in progress\",\n      \"sort_order\": 2\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n      \"key\": \"welding_in_progress\",\n      \"name_ar\": \"جاري اللحام\",\n      \"name_en\": \"Welding in progress\",\n      \"sort_order\": 3\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440004\",\n      \"key\": \"waiting_for_permits\",\n      \"name_ar\": \"بانتظار التصاريح\",\n      \"name_en\": \"Waiting for permits\",\n      \"sort_order\": 4\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440005\",\n      \"key\": \"contractor_not_started\",\n      \"name_ar\": \"المقاول لم يبدء\",\n      \"name_en\": \"Contractor has not started\",\n      \"sort_order\": 5\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440006\",\n      \"key\": \"contractor_postponed\",\n      \"name_ar\": \"المقاول اجل\",\n      \"name_en\": \"Contractor postponed\",\n      \"sort_order\": 6\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440007\",\n      \"key\": \"contractor_apologized_stopped\",\n      \"name_ar\": \"المقاول اعتذر متوقف\",\n      \"name_en\": \"Contractor apologized, work stopped\",\n      \"sort_order\": 7\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440008\",\n      \"key\": \"obstacle_present\",\n      \"name_ar\": \"وجود عائق\",\n      \"name_en\": \"Obstacle present\",\n      \"sort_order\": 8\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440009\",\n      \"key\": \"completed_waiting_for_operation\",\n      \"name_ar\": \"تم الانتهاء بانتظار التشغيل\",\n      \"name_en\": \"Completed, waiting for operation\",\n      \"sort_order\": 9\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440010\",\n      \"key\": \"operated\",\n      \"name_ar\": \"تم التشغيل\",\n      \"name_en\": \"Operated\",\n      \"sort_order\": 10\n    },\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440011\",\n      \"key\": \"execution_difficulty\",\n      \"name_ar\": \"صعوبه التنفيذ\",\n      \"name_en\": \"Execution difficulty\",\n      \"sort_order\": 11\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "List End Task Statuses",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/projects/notifications/end-task-statuses",
+          "host": ["{{url}}"],
+          "path": ["projects", "notifications", "end-task-statuses"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": true,\n  \"message\": \"End task statuses retrieved successfully\",\n  \"data\": [\n    {\n      \"id\": \"660e8400-e29b-41d4-a716-446655440001\",\n      \"key\": \"malfunction\",\n      \"name_ar\": \"معطل\",\n      \"name_en\": \"Malfunction\",\n      \"sort_order\": 1\n    },\n    {\n      \"id\": \"660e8400-e29b-41d4-a716-446655440002\",\n      \"key\": \"shift_handover\",\n      \"name_ar\": \"تسليم شيفت\",\n      \"name_en\": \"Shift handover\",\n      \"sort_order\": 2\n    },\n    {\n      \"id\": \"660e8400-e29b-41d4-a716-446655440003\",\n      \"key\": \"work_completion\",\n      \"name_ar\": \"انهاء الاعمال\",\n      \"name_en\": \"Work completion\",\n      \"sort_order\": 3\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Site Status (by status_id)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status_id\": \"550e8400-e29b-41d4-a716-446655440001\"\n}"
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/update-site-status",
+          "host": ["{{url}}"],
+          "path": ["projects", "notifications", "{{notification_id}}", "update-site-status"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": true,\n  \"message\": \"Site status updated successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440001\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"update_site_status\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"key\": \"digging_in_progress\",\n      \"name_ar\": \"جاري الحفر\",\n      \"name_en\": \"Digging in progress\"\n    },\n    \"end_task_status\": null\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Site Status (by status_key)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status_key\": \"digging_in_progress\"\n}"
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/update-site-status",
+          "host": ["{{url}}"],
+          "path": ["projects", "notifications", "{{notification_id}}", "update-site-status"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": true,\n  \"message\": \"Site status updated successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440001\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"update_site_status\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"key\": \"digging_in_progress\",\n      \"name_ar\": \"جاري الحفر\",\n      \"name_en\": \"Digging in progress\"\n    }\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update End Task Status (by status_id)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status_id\": \"660e8400-e29b-41d4-a716-446655440003\"\n}"
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/end-task-status",
+          "host": ["{{url}}"],
+          "path": ["projects", "notifications", "{{notification_id}}", "end-task-status"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": true,\n  \"message\": \"End task status updated successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440001\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"end_task_status\": {\n      \"id\": \"660e8400-e29b-41d4-a716-446655440003\",\n      \"key\": \"work_completion\",\n      \"name_ar\": \"انهاء الاعمال\",\n      \"name_en\": \"Work completion\"\n    }\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update End Task Status (by status_key)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status_key\": \"work_completion\"\n}"
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/end-task-status",
+          "host": ["{{url}}"],
+          "path": ["projects", "notifications", "{{notification_id}}", "end-task-status"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": true,\n  \"message\": \"End task status updated successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440001\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"end_task_status\": {\n      \"id\": \"660e8400-e29b-41d4-a716-446655440003\",\n      \"key\": \"work_completion\",\n      \"name_ar\": \"انهاء الاعمال\",\n      \"name_en\": \"Work completion\"\n    }\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Request Site Status Update (with status_id)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "description",
+              "value": "Updated site status via mobile",
+              "type": "text",
+              "description": "Optional description"
+            },
+            {
+              "key": "status_id",
+              "value": "digging_in_progress",
+              "type": "text",
+              "description": "Update site status UUID or key (optional)"
+            },
+            {
+              "key": "current_latitude",
+              "value": "24.7136",
+              "type": "text",
+              "description": "Current latitude"
+            },
+            {
+              "key": "current_longitude",
+              "value": "46.6753",
+              "type": "text",
+              "description": "Current longitude"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/request-site-status-update",
+          "host": ["{{url}}"],
+          "path": ["projects", "notifications", "{{notification_id}}", "request-site-status-update"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": true,\n  \"message\": \"Site status update requested successfully\",\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440001\",\n    \"notification_number\": \"NTF-2026-00001\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"جاري الحفر\",\n    \"update_site_status\": {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"key\": \"digging_in_progress\",\n      \"name_ar\": \"جاري الحفر\",\n      \"name_en\": \"Digging in progress\"\n    }\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "End Task (with status_id)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "latitude",
+              "value": "24.7136",
+              "type": "text",
+              "description": "Required latitude"
+            },
+            {
+              "key": "longitude",
+              "value": "46.6753",
+              "type": "text",
+              "description": "Required longitude"
+            },
+            {
+              "key": "notes",
+              "value": "Task completed",
+              "type": "text",
+              "description": "Optional notes"
+            },
+            {
+              "key": "status_id",
+              "value": "work_completion",
+              "type": "text",
+              "description": "End task status UUID or key (optional)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{url}}/projects/notifications/{{notification_id}}/end",
+          "host": ["{{url}}"],
+          "path": ["projects", "notifications", "{{notification_id}}", "end"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"status\": true,\n  \"message\": \"Task ended successfully\",\n  \"data\": {\n    \"id\": \"880e8400-e29b-41d4-a716-446655440001\",\n    \"serial_number\": \"TASK-2026-00001\",\n    \"status\": \"completed\",\n    \"project_notification\": {\n      \"id\": \"770e8400-e29b-41d4-a716-446655440001\",\n      \"status_label\": \"مكتمل\",\n      \"end_task_status\": {\n        \"id\": \"660e8400-e29b-41d4-a716-446655440003\",\n        \"key\": \"work_completion\",\n        \"name_ar\": \"انهاء الاعمال\",\n        \"name_en\": \"Work completion\"\n      }\n    }\n  }\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "url",
+      "value": "http://localhost/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-bearer-token-here",
+      "type": "string"
+    },
+    {
+      "key": "notification_id",
+      "value": "uuid-here",
+      "type": "string"
+    }
+  ]
+}

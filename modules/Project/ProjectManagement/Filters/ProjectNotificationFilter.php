@@ -7,6 +7,8 @@ namespace Modules\Project\ProjectManagement\Filters;
 use BasePackage\Shared\Filters\SearchModelFilter;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Enums\ProcessStepStatus;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationEndTaskStatus;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationUpdateSiteStatus;
 
 class ProjectNotificationFilter extends SearchModelFilter
 {
@@ -20,21 +22,45 @@ class ProjectNotificationFilter extends SearchModelFilter
             ? explode(',', $status)
             : [$status];
 
-        // "received" and "confirmed_location" map to raw status values
-        // 'in_progress' or 'cancelled'; they are distinguished by whether the
-        // employee has received the task (confirmation_receive_date) and/or
-        // confirmed the location (location_confirmed_at). An un-received
-        // cancellation is treated as "pending". Only take the slower, split path
-        // when one of these pseudo-statuses is requested.
-        if (! array_intersect(['received', 'confirmed_location'], $statuses)) {
-            return count($statuses) > 1
-                ? $this->whereIn('project_notifications.status', $statuses)
-                : $this->where('project_notifications.status', $statuses[0]);
+        // Resolve dynamic status keys coming from the status chart / new status labels.
+        $updateSiteStatusIds = ProjectNotificationUpdateSiteStatus::query()
+            ->whereIn('key', $statuses)
+            ->where('is_active', true)
+            ->pluck('id', 'key')
+            ->toArray();
+
+        $endTaskStatusIds = ProjectNotificationEndTaskStatus::query()
+            ->whereIn('key', $statuses)
+            ->where('is_active', true)
+            ->pluck('id', 'key')
+            ->toArray();
+
+        // Fast path: only raw/pseudo statuses with no dynamic keys.
+        if (empty($updateSiteStatusIds) && empty($endTaskStatusIds)) {
+            if (! array_intersect(['received', 'confirmed_location'], $statuses)) {
+                return count($statuses) > 1
+                    ? $this->whereIn('project_notifications.status', $statuses)
+                    : $this->where('project_notifications.status', $statuses[0]);
+            }
         }
 
-        return $this->where(function ($query) use ($statuses) {
+        return $this->where(function ($query) use ($statuses, $updateSiteStatusIds, $endTaskStatusIds) {
             foreach ($statuses as $value) {
-                $query->orWhere(function ($q) use ($value) {
+                $query->orWhere(function ($q) use ($value, $updateSiteStatusIds, $endTaskStatusIds) {
+                    if (isset($updateSiteStatusIds[$value])) {
+                        $q->where('project_notifications.status', 'in_progress')
+                            ->where('project_notifications.update_site_status_id', $updateSiteStatusIds[$value]);
+
+                        return;
+                    }
+
+                    if (isset($endTaskStatusIds[$value])) {
+                        $q->where('project_notifications.status', 'completed')
+                            ->where('project_notifications.end_task_status_id', $endTaskStatusIds[$value]);
+
+                        return;
+                    }
+
                     match ($value) {
                         'received' => $q->where(function ($sq) {
                             $sq->where(function ($ssq) {

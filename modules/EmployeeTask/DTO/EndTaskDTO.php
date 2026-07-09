@@ -15,5 +15,6 @@ final class EndTaskDTO
         public readonly ?string $notes = null,
         public readonly ?string $internalProcedureSettingId = null,
         public readonly ?array  $files = null,
+        public readonly ?string $statusId = null,
     ) {}
 }

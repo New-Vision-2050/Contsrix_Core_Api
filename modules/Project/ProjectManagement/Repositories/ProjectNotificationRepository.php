@@ -30,6 +30,8 @@ class ProjectNotificationRepository
                 'company',
                 'contractor',
                 'creator',
+                'updateSiteStatus',
+                'endTaskStatus',
                 'media',
                 'employeeTask.user',
                 'employeeTask.employeeTaskType',
@@ -60,6 +62,8 @@ class ProjectNotificationRepository
                 'project',
                 'company',
                 'contractor',
+                'updateSiteStatus',
+                'endTaskStatus',
                 'employeeTask.user',
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
                 'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
@@ -84,6 +88,8 @@ class ProjectNotificationRepository
                 'project',
                 'company',
                 'contractor',
+                'updateSiteStatus',
+                'endTaskStatus',
             ]);
 
         $this->applySorting($query, null);
@@ -103,7 +109,15 @@ class ProjectNotificationRepository
         $query = ProjectNotification::query()
             ->whereJsonContains('assigned_user_ids', $userId)
             ->filter($filters)
-            ->with(['project', 'company', 'contractor', 'employeeTask.user', 'employeeTask.createProjectNotificationTaskProcedureSetting']);
+            ->with([
+                'project',
+                'company',
+                'contractor',
+                'updateSiteStatus',
+                'endTaskStatus',
+                'employeeTask.user',
+                'employeeTask.createProjectNotificationTaskProcedureSetting',
+            ]);
 
         $this->applySorting($query, $sort);
 
@@ -169,6 +183,8 @@ class ProjectNotificationRepository
             'project',
             'company',
             'contractor',
+            'updateSiteStatus',
+            'endTaskStatus',
             'employeeTask.user',
             'employeeTask.createProjectNotificationTaskProcedureSetting',
             'employeeTask.processes.procedureSetting',
