@@ -125,6 +125,14 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
         Route::get('/site-statuses', [ProjectNotificationController::class, 'siteStatuses'])
             ;
+        Route::get('/update-site-statuses', [ProjectNotificationController::class, 'updateSiteStatuses'])
+            ;
+        Route::get('/end-task-statuses', [ProjectNotificationController::class, 'endTaskStatuses'])
+            ;
+        Route::post('/{id}/update-site-status', [ProjectNotificationController::class, 'updateSiteStatus'])
+            ;
+        Route::post('/{id}/end-task-status', [ProjectNotificationController::class, 'updateEndTaskStatus'])
+            ;
         Route::get('/work-stoppage-reasons', [ProjectNotificationController::class, 'workStoppageReasons'])
             ;
         Route::get('/notification-types', [ProjectNotificationController::class, 'notificationTypes'])

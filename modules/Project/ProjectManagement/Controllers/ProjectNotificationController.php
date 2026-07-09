@@ -135,6 +135,104 @@ class ProjectNotificationController extends Controller
     }
 
     /**
+     * GET /projects/notifications/update-site-statuses
+     *
+     * Returns the active update site statuses dropdown for the site status update form.
+     */
+    public function updateSiteStatuses(Request $request): JsonResponse
+    {
+        $statuses = $this->notificationService->listUpdateSiteStatuses();
+
+        return Json::items(
+            $statuses->map(static fn ($status) => [
+                'id' => $status->id,
+                'key' => $status->key,
+                'name_ar' => $status->name_ar,
+                'name_en' => $status->name_en,
+                'sort_order' => $status->sort_order,
+            ])->toArray(),
+            message: 'Update site statuses retrieved successfully',
+        );
+    }
+
+    /**
+     * GET /projects/notifications/end-task-statuses
+     *
+     * Returns the active end task statuses dropdown for the end task form.
+     */
+    public function endTaskStatuses(Request $request): JsonResponse
+    {
+        $statuses = $this->notificationService->listEndTaskStatuses();
+
+        return Json::items(
+            $statuses->map(static fn ($status) => [
+                'id' => $status->id,
+                'key' => $status->key,
+                'name_ar' => $status->name_ar,
+                'name_en' => $status->name_en,
+                'sort_order' => $status->sort_order,
+            ])->toArray(),
+            message: 'End task statuses retrieved successfully',
+        );
+    }
+
+    /**
+     * POST /projects/notifications/{id}/update-site-status
+     *
+     * Update the site status of a project notification. Accepts either a status
+     * UUID or the status unique key.
+     */
+    public function updateSiteStatus(Request $request): JsonResponse
+    {
+        $request->validate([
+            'status_id' => ['required_without:status_key', 'string'],
+            'status_key' => ['required_without:status_id', 'string'],
+        ]);
+
+        try {
+            $notification = $this->notificationService->updateSiteStatus(
+                $request->route('id'),
+                $request->input('status_id') ?? $request->input('status_key'),
+            );
+
+            return Json::item(
+                ProjectNotificationPresenter::detail($notification),
+                message: 'Site status updated successfully',
+            );
+        } catch (ProjectNotificationException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * POST /projects/notifications/{id}/end-task-status
+     *
+     * Update the end task status of a project notification. Accepts either a
+     * status UUID or the status unique key.
+     */
+    public function updateEndTaskStatus(Request $request): JsonResponse
+    {
+        $request->validate([
+            'status_id' => ['required_without:status_key', 'string'],
+            'status_key' => ['required_without:status_id', 'string'],
+        ]);
+
+        try {
+            $notification = $this->notificationService->updateEndTaskStatus(
+                $request->route('id'),
+                $request->input('status_id') ?? $request->input('status_key'),
+            );
+
+            return Json::item(
+                ProjectNotificationPresenter::detail($notification),
+                message: 'End task status updated successfully',
+            );
+        } catch (ProjectNotificationException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
+    /**
      * GET /projects/notifications/work-stoppage-reasons
      *
      * Returns the active work stoppage reasons dropdown for the work stoppage report form.
@@ -695,6 +793,7 @@ class ProjectNotificationController extends Controller
                 notes: $request->input('notes'),
                 internalProcedureSettingId: $request->input('internal_procedure_setting_id'),
                 files: $request->hasFile('files') ? $request->file('files') : null,
+                statusId: $request->input('status_id'),
             ),
             (string) Auth::id(),
         );

@@ -39,12 +39,14 @@ use Modules\Project\ProjectManagement\DTO\UpdateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
 use Modules\Project\ProjectManagement\Models\Contractor;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationEndTaskStatus;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationFine;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatus;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationType;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationUpdateSiteStatus;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReason;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason;
@@ -255,6 +257,108 @@ class ProjectNotificationService
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
+    }
+
+    /**
+     * List active update site statuses for the dropdown in the site status update form.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, ProjectNotificationUpdateSiteStatus>
+     */
+    public function listUpdateSiteStatuses(): \Illuminate\Database\Eloquent\Collection
+    {
+        return ProjectNotificationUpdateSiteStatus::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+    }
+
+    /**
+     * List active end task statuses for the dropdown in the end task form.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, ProjectNotificationEndTaskStatus>
+     */
+    public function listEndTaskStatuses(): \Illuminate\Database\Eloquent\Collection
+    {
+        return ProjectNotificationEndTaskStatus::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+    }
+
+    /**
+     * Resolve an update site status by UUID or by unique key.
+     */
+    public function resolveUpdateSiteStatus(string $statusIdOrKey): ProjectNotificationUpdateSiteStatus
+    {
+        $status = ProjectNotificationUpdateSiteStatus::query()
+            ->where(function ($query) use ($statusIdOrKey) {
+                $query->where('id', $statusIdOrKey)
+                    ->orWhere('key', $statusIdOrKey);
+            })
+            ->where('is_active', true)
+            ->first();
+
+        if (! $status) {
+            throw ProjectNotificationException::statusNotFound('Update site');
+        }
+
+        return $status;
+    }
+
+    /**
+     * Resolve an end task status by UUID or by unique key.
+     */
+    public function resolveEndTaskStatus(string $statusIdOrKey): ProjectNotificationEndTaskStatus
+    {
+        $status = ProjectNotificationEndTaskStatus::query()
+            ->where(function ($query) use ($statusIdOrKey) {
+                $query->where('id', $statusIdOrKey)
+                    ->orWhere('key', $statusIdOrKey);
+            })
+            ->where('is_active', true)
+            ->first();
+
+        if (! $status) {
+            throw ProjectNotificationException::statusNotFound('End task');
+        }
+
+        return $status;
+    }
+
+    /**
+     * Update the site status of a project notification by status UUID or key.
+     */
+    public function updateSiteStatus(string $notificationId, string $statusIdOrKey): ProjectNotification
+    {
+        $notification = $this->repository->findById($notificationId);
+
+        if (! $notification) {
+            throw ProjectNotificationException::notFound('Project notification not found');
+        }
+
+        $status = $this->resolveUpdateSiteStatus($statusIdOrKey);
+
+        $notification->update(['update_site_status_id' => $status->id]);
+
+        return $notification->fresh();
+    }
+
+    /**
+     * Update the end task status of a project notification by status UUID or key.
+     */
+    public function updateEndTaskStatus(string $notificationId, string $statusIdOrKey): ProjectNotification
+    {
+        $notification = $this->repository->findById($notificationId);
+
+        if (! $notification) {
+            throw ProjectNotificationException::notFound('Project notification not found');
+        }
+
+        $status = $this->resolveEndTaskStatus($statusIdOrKey);
+
+        $notification->update(['end_task_status_id' => $status->id]);
+
+        return $notification->fresh();
     }
 
     /**
@@ -582,6 +686,10 @@ class ProjectNotificationService
             $dto->currentLongitude,
         );
 
+        $updateSiteStatusId = $dto->statusId
+            ? $this->resolveUpdateSiteStatus($dto->statusId)->id
+            : null;
+
         $procedureSetting = $this->engine->resolveLifecycleSetting(
             $dto->internalProcedureSettingId,
             $task->procedureSettingType()->value,
@@ -593,8 +701,12 @@ class ProjectNotificationService
         );
 
         if ($procedureSetting === null) {
-            // No procedure configured → create immediately.
+            // No procedure configured → create immediately and update the chosen status.
             $this->createSiteStatusUpdateRecord($notification, $task, $dto, $userId);
+
+            if ($updateSiteStatusId) {
+                $notification->update(['update_site_status_id' => $updateSiteStatusId]);
+            }
 
             return $this->get($id);
         }
@@ -602,6 +714,7 @@ class ProjectNotificationService
         $metadata = [
             'form' => InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
             'update' => $dto->toArray(),
+            'update_site_status_id' => $updateSiteStatusId,
             'files' => $this->stageSiteStatusUpdateFiles($notification, $dto->files),
             'user_id' => $userId,
         ];
@@ -1234,6 +1347,10 @@ class ProjectNotificationService
             throw ProjectNotificationException::linkedTaskNotFound($notificationId);
         }
 
+        $endTaskStatusId = $dto->statusId
+            ? $this->resolveEndTaskStatus($dto->statusId)->id
+            : null;
+
         $independentUserId = $notification->independent_progress ? $userId : null;
 
         // Approved-but-never-started project notifications can be closed directly
@@ -1264,6 +1381,10 @@ class ProjectNotificationService
             'update_date' => now()->toDateString(),
             'update_time' => now()->format('H:i:s'),
         ]);
+
+        if ($endTaskStatusId) {
+            $notification->update(['end_task_status_id' => $endTaskStatusId]);
+        }
 
         return $task->fresh()->load('media');
     }

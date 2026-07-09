@@ -19,6 +19,7 @@ class EndTaskRequest extends FormRequest
             'latitude'  => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'notes'     => ['nullable', 'string'],
+            'status_id' => ['nullable', 'string'],
             'internal_procedure_setting_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
             'files'     => ['nullable', 'array', 'max:10'],
             'files.*'   => ['file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],

@@ -58,18 +58,59 @@ class ProjectNotificationChartsService
     /**
      * Status distribution (cross-filtered: excludes status filter).
      *
-     * The raw "in_progress" and "cancelled" statuses are split into pseudo-statuses:
-     *   - "received"           — in_progress/cancelled but location not yet confirmed (but received)
-     *   - "confirmed_location"  — in_progress/cancelled and location confirmed
-     *   - "pending"             — cancelled and never received (treated as never started)
-     * This matches the statusLookup() used by the map-tasks endpoint.
+     * in_progress notifications are grouped by the chosen update_site_status.
+     * completed notifications are grouped by the chosen end_task_status, where
+     * only the "work_completion" key is labelled as "Completed"; other end-task
+     * statuses are shown with their own names.
+     *
+     * cancelled notifications keep the previous pseudo-status split, and
+     * pending notifications remain as a single bucket.
      */
     public function getStatusChart(FilterProjectNotificationChartsDTO $dto): array
     {
         $validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+        $base = $this->baseQuery($dto, 'status')->whereIn('status', $validStatuses);
 
-        $rows = $this->baseQuery($dto, 'status')
-            ->whereIn('status', $validStatuses)
+        $pendingCount = (clone $base)->where('status', 'pending')->count();
+
+        $inProgressRows = (clone $base)
+            ->where('status', 'in_progress')
+            ->leftJoin('project_notification_update_site_statuses', 'project_notifications.update_site_status_id', '=', 'project_notification_update_site_statuses.id')
+            ->select(
+                'project_notification_update_site_statuses.id as status_id',
+                'project_notification_update_site_statuses.key as status_key',
+                'project_notification_update_site_statuses.name_ar',
+                'project_notification_update_site_statuses.name_en',
+                DB::raw('count(*) as count'),
+            )
+            ->groupBy(
+                'project_notification_update_site_statuses.id',
+                'project_notification_update_site_statuses.key',
+                'project_notification_update_site_statuses.name_ar',
+                'project_notification_update_site_statuses.name_en',
+            )
+            ->get();
+
+        $completedRows = (clone $base)
+            ->where('status', 'completed')
+            ->leftJoin('project_notification_end_task_statuses', 'project_notifications.end_task_status_id', '=', 'project_notification_end_task_statuses.id')
+            ->select(
+                'project_notification_end_task_statuses.id as status_id',
+                'project_notification_end_task_statuses.key as status_key',
+                'project_notification_end_task_statuses.name_ar',
+                'project_notification_end_task_statuses.name_en',
+                DB::raw('count(*) as count'),
+            )
+            ->groupBy(
+                'project_notification_end_task_statuses.id',
+                'project_notification_end_task_statuses.key',
+                'project_notification_end_task_statuses.name_ar',
+                'project_notification_end_task_statuses.name_en',
+            )
+            ->get();
+
+        $cancelledRows = (clone $base)
+            ->where('status', 'cancelled')
             ->select(
                 'status',
                 DB::raw('location_confirmed_at IS NOT NULL as location_confirmed'),
@@ -79,31 +120,62 @@ class ProjectNotificationChartsService
             ->groupBy('status', 'location_confirmed', 'received')
             ->get();
 
-        $total = $rows->sum('count');
-
         $data = [];
-        foreach ($rows as $row) {
-            $code = $this->resolveStatusCode($row->status, (bool) $row->location_confirmed, (bool) $row->received);
+        $total = 0;
+
+        if ($pendingCount > 0) {
+            $data[] = [
+                'code'       => 'pending',
+                'label'      => $this->statusLabel('pending'),
+                'count'      => (int) $pendingCount,
+                'percentage' => 0.0,
+            ];
+            $total += $pendingCount;
+        }
+
+        foreach ($inProgressRows as $row) {
+            $count = (int) $row->count;
+            $label = $this->resolveStatusName($row->name_ar, $row->name_en, $this->statusLabel('in_progress'));
+            $data[] = [
+                'code'       => $row->status_key ?? 'in_progress_unknown',
+                'label'      => $label,
+                'count'      => $count,
+                'percentage' => 0.0,
+            ];
+            $total += $count;
+        }
+
+        foreach ($completedRows as $row) {
+            $count = (int) $row->count;
+
+            if ($row->status_key === 'work_completion') {
+                $code = 'completed';
+                $label = $this->statusLabel('completed');
+            } else {
+                $code = $row->status_key ?? 'completed_unknown';
+                $label = $this->resolveStatusName($row->name_ar, $row->name_en, $this->statusLabel('completed'));
+            }
+
+            $data[] = [
+                'code'       => $code,
+                'label'      => $label,
+                'count'      => $count,
+                'percentage' => 0.0,
+            ];
+            $total += $count;
+        }
+
+        foreach ($cancelledRows as $row) {
+            $code = $this->resolveStatusCode('cancelled', (bool) $row->location_confirmed, (bool) $row->received);
             $data[] = [
                 'code'       => $code,
                 'label'      => $this->statusLabel($code),
                 'count'      => (int) $row->count,
-                'percentage' => $total > 0 ? round(($row->count / $total) * 100, 2) : 0.0,
+                'percentage' => 0.0,
             ];
+            $total += $row->count;
         }
 
-        // Merge duplicates (e.g. two rows for "received" from different raw statuses)
-        $merged = [];
-        foreach ($data as $item) {
-            if (isset($merged[$item['code']])) {
-                $merged[$item['code']]['count'] += $item['count'];
-            } else {
-                $merged[$item['code']] = $item;
-            }
-        }
-        $data = array_values($merged);
-
-        // Recalculate percentages after merge
         foreach ($data as &$item) {
             $item['percentage'] = $total > 0 ? round(($item['count'] / $total) * 100, 2) : 0.0;
         }
@@ -370,5 +442,28 @@ class ProjectNotificationChartsService
         ];
 
         return $labels[$status][$locale] ?? $status;
+    }
+
+    /**
+     * Pick the locale-appropriate status name, falling back to Arabic then English,
+     * and finally to a default label if no name is available.
+     */
+    private function resolveStatusName(?string $nameAr, ?string $nameEn, string $default): string
+    {
+        $locale = app()->getLocale();
+
+        if ($locale === 'en' && $nameEn) {
+            return $nameEn;
+        }
+
+        if ($nameAr) {
+            return $nameAr;
+        }
+
+        if ($nameEn) {
+            return $nameEn;
+        }
+
+        return $default;
     }
 }

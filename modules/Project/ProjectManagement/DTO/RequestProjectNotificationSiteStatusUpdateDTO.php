@@ -13,6 +13,7 @@ final class RequestProjectNotificationSiteStatusUpdateDTO
      */
     public function __construct(
         public readonly ?string $description = null,
+        public readonly ?string $statusId = null,
         public readonly ?string $internalProcedureSettingId = null,
         public readonly ?array $files = null,
         public readonly ?float $currentLatitude = null,
