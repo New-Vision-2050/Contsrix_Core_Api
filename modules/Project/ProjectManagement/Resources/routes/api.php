@@ -181,6 +181,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ;
         Route::post('/{id}/end', [ProjectNotificationController::class, 'end'])
            ;
+        Route::post('/{id}/reassign', [ProjectNotificationController::class, 'reassign'])
+           ;
 
         // CRUD routes
         Route::get('/', [ProjectNotificationController::class, 'index'])

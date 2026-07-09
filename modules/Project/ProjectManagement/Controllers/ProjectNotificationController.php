@@ -27,6 +27,7 @@ use Modules\Project\ProjectManagement\Requests\CreateProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Requests\FilterProjectNotificationChartsRequest;
 use Modules\Project\ProjectManagement\Requests\FilterProjectNotificationsRequest;
 use Modules\Project\ProjectManagement\Requests\GetProjectNotificationEmployeesRequest;
+use Modules\Project\ProjectManagement\Requests\ReassignProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationFineRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationLocationConfirmationRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationSiteStatusUpdateRequest;
@@ -801,5 +802,23 @@ class ProjectNotificationController extends Controller
         $task->load('company');
 
         return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task ended successfully');
+    }
+
+    /**
+     * Reassign the linked task to another employee and reset it so the new
+     * employee starts a fresh lifecycle on the next confirm-receive.
+     */
+    public function reassign(ReassignProjectNotificationRequest $request): JsonResponse
+    {
+        $notification = $this->notificationService->reassignTask(
+            $request->route('id'),
+            $request->input('user_id'),
+            (string) Auth::id(),
+        );
+
+        return Json::item(
+            ProjectNotificationPresenter::single($notification),
+            message: 'Task reassigned successfully',
+        );
     }
 }

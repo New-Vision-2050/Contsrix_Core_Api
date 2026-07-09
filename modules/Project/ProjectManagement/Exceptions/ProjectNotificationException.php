@@ -47,4 +47,14 @@ class ProjectNotificationException extends RuntimeException
     {
         return new self('The assigned user has no phone number, so the voice notification cannot be sent.');
     }
+
+    public static function shiftHandoverRequiresAnotherEmployeeLocationConfirmation(): self
+    {
+        return new self('Shift handover requires another assigned employee to confirm the location before ending.');
+    }
+
+    public static function userNotFound(): self
+    {
+        return new self('The selected user was not found.');
+    }
 }
