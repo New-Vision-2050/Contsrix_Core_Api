@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectManagement\Services;
 
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
@@ -26,6 +27,7 @@ use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\WorkflowEngine;
+use Modules\Process\Models\Process;
 use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationFineDTO;
@@ -209,10 +211,10 @@ class ProjectNotificationService
         array $metadata,
         ?ProcedureSetting $procedureSetting,
         string $userId,
-    ): void {
+    ): ?Process {
         $independentUserId = $notification->independent_progress ? $userId : null;
 
-        $this->employeeTaskRequestService->createLifecycleProcess(
+        $process = $this->employeeTaskRequestService->createLifecycleProcess(
             $task,
             $formKey,
             $metadata,
@@ -224,6 +226,8 @@ class ProjectNotificationService
         if (! $notification->independent_progress) {
             $this->injectAssignedUsersIntoWorkflow($task, $notification);
         }
+
+        return $process;
     }
 
     public function list(FilterProjectNotificationDTO $dto): LengthAwarePaginator
@@ -1314,10 +1318,52 @@ class ProjectNotificationService
             ]);
         }
 
-        // Once the creation workflow is complete and the task is approved, start it
-        // directly. The create workflow already contained all required steps, so we
-        // do not start a separate start-task procedure here.
+        // Once the creation workflow is complete and the task is approved, start it.
+        // When independent_progress is enabled, each employee gets their own
+        // ConfirmProjectNotificationPresence lifecycle process so the confirm-receive
+        // itself becomes a separate lifecycle step.
         if (! $this->taskHasActiveProcess($task->id) && $task->status === EmployeeTaskStatus::Approved->value) {
+            if ($notification->independent_progress) {
+                $procedureSetting = $this->engine->resolveLifecycleSetting(
+                    $dto->internalProcedureSettingId,
+                    $task->procedureSettingType()->value,
+                    InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                    $task->company_id,
+                    $task->user?->userProfessionalData?->branch_id !== null
+                        ? (string) $task->user->userProfessionalData->branch_id
+                        : null,
+                );
+
+                $metadata = [
+                    'form' => InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                    'latitude' => $dto->latitude,
+                    'longitude' => $dto->longitude,
+                    'notes' => $dto->notes,
+                    'user_id' => (string) $user->id,
+                ];
+
+                $process = $this->createLifecycleProcessForNotification(
+                    $task,
+                    $notification,
+                    InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                    $metadata,
+                    $procedureSetting,
+                    (string) $user->id,
+                );
+
+                if ($process !== null) {
+                    $this->employeeTaskRequestService->approveWorkflowStep($task->id, (string) $user->id);
+                    $task = $task->fresh();
+                }
+
+                // The listener may have started the task if the workflow completed.
+                if ($task->status === EmployeeTaskStatus::InProgress->value && $notification->confirmation_receive_date === null) {
+                    $notification->update(['confirmation_receive_date' => now()]);
+                }
+
+                return $task->fresh();
+            }
+
             if ($task->hasPendingStartRequest()) {
                 throw EmployeeTaskException::pendingStartRequestExists();
             }
@@ -1347,9 +1393,15 @@ class ProjectNotificationService
             throw ProjectNotificationException::linkedTaskNotFound($notificationId);
         }
 
-        $endTaskStatusId = $dto->statusId
-            ? $this->resolveEndTaskStatus($dto->statusId)->id
+        $endTaskStatus = $dto->statusId
+            ? $this->resolveEndTaskStatus($dto->statusId)
             : null;
+
+        if ($endTaskStatus?->key === 'shift_handover') {
+            $this->ensureShiftHandoverHasAnotherEmployeeLocationConfirmation($notification, $userId);
+        }
+
+        $endTaskStatusId = $endTaskStatus?->id;
 
         $independentUserId = $notification->independent_progress ? $userId : null;
 
@@ -1387,6 +1439,93 @@ class ProjectNotificationService
         }
 
         return $task->fresh()->load('media');
+    }
+
+    /**
+     * Reassign the linked task to another employee and reset it so the new
+     * employee can start a fresh lifecycle. The new employee is added to the
+     * notification's assigned users, the task status is reset to approved, and
+     * lifecycle markers are cleared so confirm-receive starts a new process.
+     */
+    public function reassignTask(
+        string $notificationId,
+        string $targetUserId,
+        string $actorUserId,
+    ): ProjectNotification {
+        $notification = $this->get($notificationId);
+        $task = $notification->employeeTask;
+
+        if (! $task) {
+            throw ProjectNotificationException::linkedTaskNotFound($notificationId);
+        }
+
+        $targetUser = User::query()->find($targetUserId);
+        if (! $targetUser) {
+            throw ProjectNotificationException::userNotFound();
+        }
+
+        $assignedUserIds = $notification->assigned_user_ids ?? [];
+        if (! in_array($targetUserId, $assignedUserIds, true)) {
+            $assignedUserIds[] = $targetUserId;
+        }
+
+        DB::transaction(function () use ($notification, $task, $targetUserId, $assignedUserIds) {
+            $notification->update([
+                'assigned_user_ids' => $assignedUserIds,
+                'independent_progress' => true,
+                'confirmation_receive_date' => null,
+                'location_confirmed_at' => null,
+                'end_task_status_id' => null,
+            ]);
+
+            $task->update([
+                'user_id' => $targetUserId,
+                'status' => EmployeeTaskStatus::Approved->value,
+                'approved_at' => now(),
+                'time_from' => null,
+                'time_to' => null,
+                'total_task_hours' => null,
+                'total_pause_minutes' => null,
+                'shift_end_method' => null,
+                'start_location' => null,
+                'end_location' => null,
+                'radius_meters' => null,
+                'timezone' => null,
+            ]);
+
+            $this->syncNotificationStatusFromTask($notification->fresh(), $task->fresh());
+        });
+
+        return $this->get($notificationId);
+    }
+
+    /**
+     * Ensure a shift_handover end task has been confirmed by another assigned
+     * employee. The employee ending the task must not be the same employee who
+     * confirmed the location, keeping the handover lifecycle separate from the
+     * confirmation lifecycle.
+     */
+    private function ensureShiftHandoverHasAnotherEmployeeLocationConfirmation(
+        ProjectNotification $notification,
+        ?string $userId,
+    ): void {
+        if ($userId === null) {
+            throw ProjectNotificationException::shiftHandoverRequiresAnotherEmployeeLocationConfirmation();
+        }
+
+        $assignedUserIds = $notification->assigned_user_ids ?? [];
+
+        $hasOtherConfirmed = ProjectNotificationLocationConfirmation::query()
+            ->where('project_notification_id', $notification->id)
+            ->where('status', 'approved')
+            ->where('is_inside_location', true)
+            ->where('requested_by', '!=', $userId)
+            ->whereIn('requested_by', $assignedUserIds)
+            ->exists();
+
+        if (! $hasOtherConfirmed) {
+            throw ProjectNotificationException::shiftHandoverRequiresAnotherEmployeeLocationConfirmation();
+        }
     }
 
     /**
