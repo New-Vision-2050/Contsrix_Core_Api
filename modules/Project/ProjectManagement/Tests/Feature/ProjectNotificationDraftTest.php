@@ -132,7 +132,7 @@ class ProjectNotificationDraftTest extends BaseAttendanceReportTestCase
         $this->assertNotNull($data['employee_task']);
     }
 
-    public function test_default_list_excludes_drafts(): void
+    public function test_default_list_includes_drafts(): void
     {
         $project = $this->createProject();
         $draft = $this->createDraftNotification($project);
@@ -144,10 +144,10 @@ class ProjectNotificationDraftTest extends BaseAttendanceReportTestCase
         $response->assertOk();
 
         $ids = collect($response->json('payload'))->pluck('id');
-        $this->assertFalse($ids->contains($draft->id));
+        $this->assertTrue($ids->contains($draft->id));
     }
 
-    public function test_status_draft_filter_returns_only_creator_drafts(): void
+    public function test_status_draft_filter_returns_all_drafts(): void
     {
         $project = $this->createProject();
         $draft = $this->createDraftNotification($project);
@@ -173,7 +173,7 @@ class ProjectNotificationDraftTest extends BaseAttendanceReportTestCase
 
         $ids = collect($response->json('payload'))->pluck('id');
         $this->assertTrue($ids->contains($draft->id));
-        $this->assertFalse($ids->contains($otherDraft->id));
+        $this->assertTrue($ids->contains($otherDraft->id));
     }
 
     public function test_creator_can_view_draft(): void

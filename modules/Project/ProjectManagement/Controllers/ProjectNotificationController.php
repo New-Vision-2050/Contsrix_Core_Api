@@ -82,29 +82,7 @@ class ProjectNotificationController extends Controller
 
     public function index(FilterProjectNotificationsRequest $request): JsonResponse
     {
-        $dto = $request->toDTO();
-
-        if ($dto->status === 'draft') {
-            $dto = new \Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO(
-                projectId: $dto->projectId,
-                status: $dto->status,
-                notificationType: $dto->notificationType,
-                workType: $dto->workType,
-                contractorName: $dto->contractorName,
-                contractorId: $dto->contractorId,
-                assignedUserId: $dto->assignedUserId,
-                taskDate: $dto->taskDate,
-                dateFrom: $dto->dateFrom,
-                dateTo: $dto->dateTo,
-                search: $dto->search,
-                contractualEngagementKey: $dto->contractualEngagementKey,
-                createdByUserId: (string) $request->user()->id,
-                perPage: $dto->perPage,
-                sort: $dto->sort,
-            );
-        }
-
-        $paginator = $this->notificationService->list($dto);
+        $paginator = $this->notificationService->list($request->toDTO());
 
         return Json::items(
             ProjectNotificationPresenter::collection($paginator->items()),
