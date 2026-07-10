@@ -868,7 +868,7 @@ When `ProjectNotification.independent_progress = true`, each assigned user progr
 | Workflow | Shared or Independent |
 |---|---|
 | Task creation (`CreateProjectNotificationTask`) | **Shared** — one approval workflow for the task (`user_id = null`) |
-| Confirm-receive (`ConfirmProjectNotificationPresence`) | **Shared** — each user confirms their own receipt, but the task starts once |
+| Confirm-receive (`ConfirmProjectNotificationPresence`) | **Per-user when `independent_progress = true`** — each user gets their own process and receipt confirmation; the task starts once. **Shared** otherwise. |
 | Site status update | **Independent** — each user has their own process |
 | Fine | **Independent** |
 | Location confirmation | **Independent** |
@@ -905,7 +905,45 @@ When `ProjectNotification.independent_progress = true`, each assigned user progr
 
 ### Backward Compatibility
 
-All new parameters are optional with `null` defaults. Regular employee tasks create `user_id = null` (shared) processes. The new code paths only activate when a non-null `independentUserId` is passed, which only happens from `ProjectNotificationService` when `independent_progress = true`.
+All new parameters are optional with `null` defaults. Regular employee tasks create `user_id = null` (shared) processes. The new code paths only activate when a non-null `independentUserId` is passed, which only happens from `ProjectNotificationService` when `independent_progress` is true.
+
+---
+
+## 9.6. Task Reassignment & Lifecycle Reset
+
+Project notifications support reassigning the linked `EmployeeTaskRequest` to another employee via:
+
+```
+POST /api/v1/projects/notifications/{id}/reassign
+{ user_id: <uuid> }
+```
+
+### What happens on reassignment
+
+1. **Target user added** — The selected `user_id` is appended to `ProjectNotification.assigned_user_ids` (if not already present).
+2. **Independent progress enabled** — `independent_progress` is set to `true` so every assigned user has their own lifecycle.
+3. **Task ownership switched** — `EmployeeTaskRequest.user_id` is updated to the target user so action-taker resolution points to them.
+4. **Task state reset** — Status is set back to `approved`, and start/end session fields (`time_from`, `time_to`, `total_task_hours`, `total_pause_minutes`, `shift_end_method`, `start_location`, `end_location`, `radius_meters`, `timezone`) are cleared.
+5. **Notification lifecycle markers cleared** — `confirmation_receive_date`, `location_confirmed_at`, and `end_task_status_id` are set to `null`.
+
+### New lifecycle starts on confirm-receive
+
+When the reassigned user calls:
+
+```
+POST /api/v1/projects/notifications/{id}/confirm-receive
+```
+
+- `confirmReceive()` sees the task is `approved` and, because `independent_progress` is now `true`, creates a **per-user** `Process` for the form `ConfirmProjectNotificationPresence` with `user_id` set to the reassigned user.
+- The first step of that process is approved immediately.
+- The listener starts the task, moving it to `in_progress`.
+- From this point, the reassigned user progresses through lifecycle procedures independently (site status updates, fines, location confirmations, work stoppage/resumption, postponement, end task).
+
+### Design notes
+
+- The creation workflow (`CreateProjectNotificationTask`) remains untouched; only the lifecycle is reset for the reassigned user.
+- Reassignment does not enforce a specific prior task status. It can be used after `shift_handover` (task `completed`) or from an `approved` task that was never started.
+- When ending with `shift_handover`, the existing validation requires another assigned employee to have confirmed the location before the task can be ended, preventing self-handover within the same lifecycle.
 
 ---
 

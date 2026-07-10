@@ -1485,7 +1485,7 @@ class ProjectNotificationService
                 'time_from' => null,
                 'time_to' => null,
                 'total_task_hours' => null,
-                'total_pause_minutes' => null,
+                'total_pause_minutes' => 0,
                 'shift_end_method' => null,
                 'start_location' => null,
                 'end_location' => null,
