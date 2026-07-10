@@ -121,6 +121,17 @@ class ProjectNotificationRepository
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
             ]);
 
+        // Hide notifications that have a pending workflow process for the user;
+        // those are shown in my-inbox until the user confirms/approves the step,
+        // then they automatically move back to my-tasks.
+        $query->whereDoesntHave(
+            'employeeTask.processes',
+            $this->engine->pendingProcessScopeForUser(
+                ProcedureSettingType::ProjectNotificationTask->value,
+                $userId,
+            ),
+        );
+
         $this->applySorting($query, $sort);
 
         $result = $query->paginate($perPage);

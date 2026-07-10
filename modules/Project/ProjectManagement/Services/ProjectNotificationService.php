@@ -1583,6 +1583,7 @@ class ProjectNotificationService
                 [
                     'form' => InternalProcessForm::ConfirmProjectNotificationPresence->value,
                     'user_id' => $targetUserId,
+                    'assigned_user_id' => $targetUserId,
                 ],
                 $procedureSetting,
                 $targetUserId,
@@ -1696,7 +1697,7 @@ class ProjectNotificationService
 
         // Always create a pending step so the process is visible in the user's
         // inbox. Use the resolved step, or a minimal step if none was found.
-        \Modules\Process\Models\ProcessStep::create([
+        $processStep = \Modules\Process\Models\ProcessStep::create([
             'process_id'   => $process->id,
             'step_id'      => $step?->id,
             'template_step_order' => $step?->step_order ?? 1,
@@ -1704,6 +1705,21 @@ class ProjectNotificationService
             'authorized_user_ids' => [$targetUserId],
             'status'       => \Modules\Process\Enums\ProcessStepStatus::Pending,
         ]);
+
+        // Fire the same event the central engine fires so push/voice/email/SMS
+        // notifications are dispatched for the reassigned user. Without this the
+        // fallback path is silent.
+        if ($step !== null) {
+            event(new \Modules\ProcedureSetting\Events\WorkflowStepActivated(
+                processStep: $processStep,
+                templateStep: $step,
+                userIds: [$targetUserId],
+                context: [
+                    'form' => InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                    'user_id' => $targetUserId,
+                ],
+            ));
+        }
     }
 
     private function collectProcedureSettingDescendantIds(string $parentId): array
