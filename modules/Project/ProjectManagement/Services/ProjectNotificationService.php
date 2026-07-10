@@ -220,6 +220,7 @@ class ProjectNotificationService
             $metadata,
             $procedureSetting,
             $independentUserId,
+            $notification->company_id,
         );
 
         // Only inject all users for shared processes (independent_progress = false).
@@ -1192,17 +1193,17 @@ class ProjectNotificationService
     }
 
     /**
-     * Cancel old in-progress confirm-receive processes for the given user so
-     * they don't prevent seeding a fresh process on reassignment.
+     * Cancel ALL old in-progress processes for the task so neither the previous
+     * assignee nor the target user has stale processes (confirm-receive, end-task,
+     * update, site-status, fines, etc.) that would cause duplicate inbox entries
+     * or orphaned workflows after reassignment.
      */
     private function cancelOldConfirmReceiveProcessesForUser(EmployeeTaskRequest $task, string $userId): void
     {
         $oldProcesses = Process::query()
             ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
             ->where('processable_id', $task->id)
-            ->where('user_id', $userId)
             ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
-            ->whereHas('procedureSetting', fn ($q) => $q->where('form', InternalProcessForm::ConfirmProjectNotificationPresence->value))
             ->get();
 
         foreach ($oldProcesses as $oldProcess) {
@@ -1372,7 +1373,7 @@ class ProjectNotificationService
                     $dto->internalProcedureSettingId,
                     $task->procedureSettingType()->value,
                     InternalProcessForm::ConfirmProjectNotificationPresence->value,
-                    $task->company_id,
+                    $notification->company_id,
                     $task->user?->userProfessionalData?->branch_id !== null
                         ? (string) $task->user->userProfessionalData->branch_id
                         : null,
@@ -1451,7 +1452,10 @@ class ProjectNotificationService
 
         // Approved-but-never-started project notifications can be closed directly
         // (e.g. the employee chose to end the task without confirming receipt).
+        // However, if there is a pending confirm-receive process (e.g. after
+        // reassignment), cancel it first so it doesn't stay orphaned in the inbox.
         if ($task->status === EmployeeTaskStatus::Approved->value) {
+            $this->cancelOldConfirmReceiveProcessesForUser($task, (string) $userId);
             $task = $this->lifecycleService->performEnd($task, $dto);
         } else {
             $task = $this->lifecycleService->end($task->id, $dto, $independentUserId);
@@ -1535,6 +1539,7 @@ class ProjectNotificationService
                 'end_location' => null,
                 'radius_meters' => null,
                 'timezone' => null,
+                'current_procedure_step_id' => null,
             ]);
 
             // Cancel old in-progress confirm-receive processes for the target
@@ -1547,17 +1552,48 @@ class ProjectNotificationService
         $notification = $notification->fresh();
         $task = $task->fresh();
 
-        // Seed a pending confirm-receive workflow process directly for the target
-        // user so the notification appears in their mobile inbox. We bypass the
-        // normal WorkflowEngine flow because action-taker resolution may return
-        // empty for the reassigned user (e.g. management-hierarchy steps), which
-        // would cause auto-approve with no process created.
+        // Start a fresh confirm-receive lifecycle process through the central
+        // WorkflowEngine so all steps, notifications, and inbox filtering work
+        // exactly like normal task creation. We use the notification's company_id
+        // (task.company_id is null for project notification tasks).
         if (
             $task->status === EmployeeTaskStatus::Approved->value
             && ! $this->hasPendingConfirmReceiveProcessForUser($task, $targetUserId)
             && $notification->independent_progress
         ) {
-            $this->seedConfirmReceiveProcess($task, $notification, $targetUserId);
+            $targetUser = User::query()
+                ->with('userProfessionalData.branch')
+                ->find($targetUserId);
+            $branchId = $targetUser?->userProfessionalData?->branch_id !== null
+                ? (string) $targetUser->userProfessionalData->branch_id
+                : null;
+
+            $procedureSetting = $this->engine->resolveLifecycleSetting(
+                null,
+                $task->procedureSettingType()->value,
+                InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                $notification->company_id,
+                $branchId,
+            );
+
+            $process = $this->createLifecycleProcessForNotification(
+                $task,
+                $notification,
+                InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                [
+                    'form' => InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                    'user_id' => $targetUserId,
+                ],
+                $procedureSetting,
+                $targetUserId,
+            );
+
+            // Fallback: if the central engine auto-approved (no resolvable users
+            // for the reassigned user's step), seed a minimal pending process so
+            // the notification still appears in their inbox.
+            if ($process === null) {
+                $this->seedConfirmReceiveProcess($task, $notification, $targetUserId, $procedureSetting);
+            }
         }
 
         return $this->get($notificationId);
@@ -1573,6 +1609,7 @@ class ProjectNotificationService
         EmployeeTaskRequest $task,
         ProjectNotification $notification,
         string $targetUserId,
+        ?ProcedureSetting $procedureSetting = null,
     ): void {
         // Use the notification's company_id (always set) instead of the task's
         // company_id, which may be null for project notification tasks.
@@ -1586,13 +1623,15 @@ class ProjectNotificationService
             ? (string) $targetUser->userProfessionalData->branch_id
             : null;
 
-        $procedureSetting = $this->engine->resolveLifecycleSetting(
-            null,
-            $task->procedureSettingType()->value,
-            InternalProcessForm::ConfirmProjectNotificationPresence->value,
-            $companyId,
-            $branchId,
-        );
+        if ($procedureSetting === null) {
+            $procedureSetting = $this->engine->resolveLifecycleSetting(
+                null,
+                $task->procedureSettingType()->value,
+                InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                $companyId,
+                $branchId,
+            );
+        }
 
         // Resolve the first step from the setting (or its descendants).
         $step = null;
