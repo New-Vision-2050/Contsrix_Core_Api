@@ -1698,7 +1698,7 @@ class ProjectNotificationService
         // inbox. Use the resolved step, or a minimal step if none was found.
         \Modules\Process\Models\ProcessStep::create([
             'process_id'   => $process->id,
-            'step_id'      => $step?->id ?? 0,
+            'step_id'      => $step?->id,
             'template_step_order' => $step?->step_order ?? 1,
             'assigned_user_id'    => $targetUserId,
             'authorized_user_ids' => [$targetUserId],
