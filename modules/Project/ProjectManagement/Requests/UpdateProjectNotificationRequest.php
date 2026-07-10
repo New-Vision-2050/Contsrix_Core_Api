@@ -86,7 +86,7 @@ class UpdateProjectNotificationRequest extends FormRequest
             permitSource: $this->input('permit_source'),
             permitRecipient: $this->input('permit_recipient'),
             assignedUserIds: $this->input('assigned_user_ids'),
-            allUsersCanApprove: $this->filled('all_users_can_approve') ? (bool) $this->input('all_users_can_approve') : null,
+            allUsersCanApprove: $this->filled('all_users_can_approve') ? (bool) $this->input('all_users_can_approve') : false,
             independentProgress: $this->filled('independent_progress') ? (bool) $this->input('independent_progress') : null,
             selectedDistanceMeters: $this->filled('selected_distance_meters') ? (int) $this->input('selected_distance_meters') : null,
             taskDate: $this->input('task_date'),

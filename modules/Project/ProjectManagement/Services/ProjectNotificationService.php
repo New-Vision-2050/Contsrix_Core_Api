@@ -2081,7 +2081,7 @@ class ProjectNotificationService
         // 1. Load approved site status update records (created after workflow completed).
         $approvedUpdates = ProjectNotificationSiteStatusUpdate::query()
             ->where('project_notification_id', $notification->id)
-            ->with(['requester', 'reviewer', 'process.steps.actionByUser'])
+            ->with(['requester', 'reviewer', 'media', 'process.steps.actionByUser'])
             ->orderByDesc('created_at')
             ->get();
 
