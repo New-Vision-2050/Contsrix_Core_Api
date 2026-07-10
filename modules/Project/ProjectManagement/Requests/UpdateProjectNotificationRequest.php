@@ -17,6 +17,10 @@ class UpdateProjectNotificationRequest extends FormRequest
 
     public function rules(): array
     {
+        $isDraft = $this->boolean('is_draft');
+        $assignedUserIdsRule = $isDraft ? ['nullable', 'array'] : ['nullable', 'array', 'min:1'];
+        $assignedUserItemRule = $isDraft ? ['uuid'] : ['uuid', 'exists:users,id'];
+
         return [
             'notification_number'         => ['nullable', 'string', 'max:50', Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'))->ignore($this->route('id'))],
             'notification_type'           => ['nullable', 'string', 'max:255'],
@@ -40,8 +44,8 @@ class UpdateProjectNotificationRequest extends FormRequest
             'repair_point'                => ['nullable', 'string', 'max:255'],
             'permit_source'               => ['nullable', 'string', 'max:255'],
             'permit_recipient'            => ['nullable', 'string', 'max:255'],
-            'assigned_user_ids'           => ['nullable', 'array', 'min:1'],
-            'assigned_user_ids.*'          => ['uuid', 'exists:users,id'],
+            'assigned_user_ids'           => $assignedUserIdsRule,
+            'assigned_user_ids.*'          => $assignedUserItemRule,
             'all_users_can_approve'        => ['nullable', 'boolean'],
             'independent_progress'         => ['nullable', 'boolean'],
             'selected_distance_meters'    => ['nullable', 'integer'],
