@@ -7,7 +7,6 @@ namespace Modules\Project\ProjectManagement\Services;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
@@ -1518,84 +1517,122 @@ class ProjectNotificationService
         $notification = $notification->fresh();
         $task = $task->fresh();
 
-        // Seed a pending confirm-receive workflow for the target user so the
-        // notification appears in their mobile inbox and they can start a fresh
-        // lifecycle. This mirrors the initial assignment flow where the employee
-        // sees an actionable confirm-receive step. The check is scoped to the
-        // target user so an active process for a previous user does not block it.
+        // Seed a pending confirm-receive workflow process directly for the target
+        // user so the notification appears in their mobile inbox. We bypass the
+        // normal WorkflowEngine flow because action-taker resolution may return
+        // empty for the reassigned user (e.g. management-hierarchy steps), which
+        // would cause auto-approve with no process created.
         if (
             $task->status === EmployeeTaskStatus::Approved->value
             && ! $this->hasPendingConfirmReceiveProcessForUser($task, $targetUserId)
             && $notification->independent_progress
         ) {
-            $procedureSetting = $this->engine->resolveLifecycleSetting(
-                null,
-                $task->procedureSettingType()->value,
-                InternalProcessForm::ConfirmProjectNotificationPresence->value,
-                $task->company_id,
-                $task->user?->userProfessionalData?->branch_id !== null
-                    ? (string) $task->user->userProfessionalData->branch_id
-                    : null,
-            );
-
-            $metadata = [
-                'form' => InternalProcessForm::ConfirmProjectNotificationPresence->value,
-                'user_id' => $targetUserId,
-            ];
-
-            Log::debug('Seeding confirm-receive process for reassigned user', [
-                'notification_id' => $notificationId,
-                'task_id' => $task->id,
-                'target_user_id' => $targetUserId,
-                'procedure_setting_id' => $procedureSetting?->id,
-            ]);
-
-            $process = $this->createLifecycleProcessForNotification(
-                $task,
-                $notification,
-                InternalProcessForm::ConfirmProjectNotificationPresence->value,
-                $metadata,
-                $procedureSetting,
-                $targetUserId,
-            );
-
-            // Ensure the pending step is explicitly assigned to the target user.
-            // This makes reassignment robust even when the procedure setting uses
-            // action-taker types that would otherwise resolve to a different user.
-            if ($process !== null) {
-                $pendingStep = $process->steps()
-                    ->where('status', \Modules\Process\Enums\ProcessStepStatus::Pending)
-                    ->first();
-
-                if ($pendingStep !== null) {
-                    $pendingStep->update([
-                        'assigned_user_id' => $targetUserId,
-                        'authorized_user_ids' => [$targetUserId],
-                    ]);
-
-                    $snapshot = $process->template_snapshot ?? [];
-                    foreach ($snapshot as &$row) {
-                        if ($row['step_id'] === $pendingStep->step_id) {
-                            $row['assigned_user_id'] = $targetUserId;
-                            $row['authorized_user_ids'] = [$targetUserId];
-                        }
-                    }
-                    unset($row);
-                    $process->update(['template_snapshot' => $snapshot]);
-                }
-            }
-        } else {
-            Log::debug('Skipping confirm-receive process seeding for reassigned user', [
-                'notification_id' => $notificationId,
-                'task_id' => $task->id,
-                'target_user_id' => $targetUserId,
-                'task_status' => $task->status,
-                'independent_progress' => $notification->independent_progress,
-                'has_pending_confirm_receive' => $this->hasPendingConfirmReceiveProcessForUser($task, $targetUserId),
-            ]);
+            $this->seedConfirmReceiveProcess($task, $notification, $targetUserId);
         }
 
         return $this->get($notificationId);
+    }
+
+    /**
+     * Create a per-user ConfirmProjectNotificationPresence process with a single
+     * pending step assigned to the target user. This bypasses action-taker
+     * resolution so reassignment works regardless of the procedure setting's
+     * configured action-taker types.
+     */
+    private function seedConfirmReceiveProcess(
+        EmployeeTaskRequest $task,
+        ProjectNotification $notification,
+        string $targetUserId,
+    ): void {
+        $procedureSetting = $this->engine->resolveLifecycleSetting(
+            null,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::ConfirmProjectNotificationPresence->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
+
+        // Resolve the first step from the setting (or its descendants).
+        $step = null;
+        if ($procedureSetting !== null) {
+            $settingIds = [$procedureSetting->id];
+            $descendants = $this->collectProcedureSettingDescendantIds($procedureSetting->id);
+            $settingIds = array_merge($settingIds, $descendants);
+
+            $step = \Modules\ProcedureSetting\Models\ProcedureSettingStep::query()
+                ->whereIn('procedure_setting_id', $settingIds)
+                ->orderBy('step_order')
+                ->first();
+        }
+
+        // Find the next free sort_order for this user-scoped process.
+        $sortOrder = $procedureSetting->sort_order ?? 1;
+        while (Process::query()
+            ->where('processable_id', $task->id)
+            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+            ->where('sort_order', $sortOrder)
+            ->where('user_id', $targetUserId)
+            ->exists()
+        ) {
+            $sortOrder++;
+        }
+
+        $snapshot = [];
+        if ($step !== null) {
+            $snapshot = [[
+                'step_id'               => $step->id,
+                'template_step_order'   => $step->step_order,
+                'assigned_user_id'      => $targetUserId,
+                'authorized_user_ids'   => [$targetUserId],
+                'specific_procedure_types' => (array) ($step->action_taker_specific_procedure_type ?? []),
+                'action_taker_type'     => $step->action_taker_type?->value,
+                'escalation_management_hierarchy_id' => $step->escalation_management_hierarchy_id,
+            ]];
+        }
+
+        $process = Process::create([
+            'processable_type'      => ProcedureSettingType::ProjectNotificationTask->value,
+            'processable_id'        => $task->id,
+            'user_id'               => $targetUserId,
+            'execute_type'          => $procedureSetting?->execute_type ?? 'sequence',
+            'status'                => \Modules\Process\Enums\ProcessStatus::InProgress,
+            'sort_order'            => $sortOrder,
+            'template_snapshot'     => $snapshot,
+            'procedure_setting_id'  => $procedureSetting?->id,
+            'metadata'              => [
+                'form' => InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                'user_id' => $targetUserId,
+            ],
+        ]);
+
+        // Create the pending step directly with the target user as action taker.
+        if ($step !== null) {
+            \Modules\Process\Models\ProcessStep::create([
+                'process_id'   => $process->id,
+                'step_id'      => $step->id,
+                'template_step_order' => $step->step_order,
+                'assigned_user_id'    => $targetUserId,
+                'authorized_user_ids' => [$targetUserId],
+                'status'       => \Modules\Process\Enums\ProcessStepStatus::Pending,
+            ]);
+        }
+    }
+
+    private function collectProcedureSettingDescendantIds(string $parentId): array
+    {
+        $children = ProcedureSetting::query()
+            ->where('parent_id', $parentId)
+            ->pluck('id')
+            ->all();
+
+        $result = $children;
+        foreach ($children as $childId) {
+            $result = array_merge($result, $this->collectProcedureSettingDescendantIds($childId));
+        }
+
+        return $result;
     }
 
     /**
