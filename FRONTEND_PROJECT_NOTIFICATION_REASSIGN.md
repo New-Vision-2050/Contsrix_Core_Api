@@ -2,7 +2,7 @@
 
 ## Overview
 
-When a project notification task needs to be reassigned to another employee, the dashboard should expose a **Reassign** action. This action resets the linked employee task for the selected user and starts a fresh lifecycle when that user confirms receipt.
+When a project notification task needs to be reassigned to one or more employees, the dashboard should expose a **Reassign** action. This action resets the linked employee task, replaces the notification's assigned users with the selected list, and starts a fresh per-user lifecycle when each employee confirms receipt.
 
 This is commonly used after a task is ended with `shift_handover` status, so the next employee can take over with a clean lifecycle.
 
@@ -37,9 +37,9 @@ Use the existing notification response fields:
 
 ### UI behavior
 
-- Render the assigned users as a selectable list (radio buttons or list tiles).
-- The currently assigned user should be pre-selected or highlighted.
-- If the desired user is not in `assigned_users`, allow the admin to pick any employee, because the reassign API will append the selected user to `assigned_user_ids` automatically.
+- Render the assigned users as a multi-selectable list (checkboxes or multi-select chips), matching the user selector used in notification creation.
+- The currently assigned users should be pre-selected or highlighted.
+- The admin can select any employees (existing or new). The reassign API replaces `assigned_user_ids` with the submitted list, exactly like the creation form.
 - Optionally call `/api/v1/projects/notifications/employees-with-locations` if you want to filter by available/nearby employees.
 
 ---
@@ -88,7 +88,10 @@ Content-Type: application/json
 
 ```json
 {
-  "user_id": "uuid-of-selected-employee"
+  "assigned_user_ids": [
+    "uuid-of-selected-employee-1",
+    "uuid-of-selected-employee-2"
+  ]
 }
 ```
 
@@ -111,9 +114,9 @@ The API returns the refreshed notification payload:
 
 ### Error cases to handle
 
-- `422` validation error — invalid or missing `user_id`
+- `422` validation error — invalid, missing, or empty `assigned_user_ids`
 - `404` — notification not found
-- `409`/generic error — linked task not found or selected user not found
+- `409`/generic error — linked task not found or one of the selected users not found
 
 ---
 
@@ -121,14 +124,14 @@ The API returns the refreshed notification payload:
 
 After reassigning:
 
-1. The new employee sees the notification in their **Inbox** immediately because the backend creates a pending `ConfirmProjectNotificationPresence` process for them.
-2. The employee calls:
+1. Each new employee sees the notification in their **Inbox** immediately because the backend creates a pending per-user `CreateProjectNotificationTask` process for them (the same creation workflow used during notification creation).
+2. Each employee calls:
    ```http
    POST /api/v1/projects/notifications/{id}/confirm-receive
    ```
    with `latitude`, `longitude`, and optional `notes`.
-3. The pending process is approved and the task moves to `in_progress`.
-4. The employee's independent lifecycle begins.
+3. The employee's pending creation workflow step is approved and the task moves to `in_progress` on the first confirmation.
+4. Each confirmed employee begins their own independent lifecycle.
 
 Do **not** block reassignment based on the current task status. The backend accepts any status so admins can reassign freely, including from `approved` (never started) or `completed` (after shift handover).
 
@@ -147,10 +150,10 @@ Do **not** block reassignment based on the current task status. The backend acce
   ┌─────────────────────────────┐
   │ Map with task location marker│
   ├─────────────────────────────┤
-  │ Select employee:             │
-  │ ○ Employee A                │
-  │ ● Employee B (selected)       │
-  │ ○ Employee C                  │
+  │ Select employee(s):          │
+  │ ☑ Employee A                 │
+  │ ☑ Employee B (selected)      │
+  │ ☑ Employee C (selected)      │
   ├─────────────────────────────┤
   │ [Cancel]  [Confirm Reassign]  │
   └─────────────────────────────┘
@@ -160,7 +163,7 @@ Do **not** block reassignment based on the current task status. The backend acce
 
 ## Notes for Frontend AI
 
-- Reuse the existing user selector and map components used in notification creation.
-- The reassignment target can be any existing assigned user or a new employee; the API appends them automatically.
+- Reuse the existing multi-user selector and map components used in notification creation.
+- The reassignment target list replaces the previous `assigned_user_ids`; send the full desired list, not just the delta.
 - The map is informational only; no new coordinates are submitted during reassignment.
 - After success, refresh the notification state from the API response before updating the UI.

@@ -57,4 +57,9 @@ class ProjectNotificationException extends RuntimeException
     {
         return new self('The selected user was not found.');
     }
+
+    public static function validationFailed(string $message): self
+    {
+        return new self($message);
+    }
 }

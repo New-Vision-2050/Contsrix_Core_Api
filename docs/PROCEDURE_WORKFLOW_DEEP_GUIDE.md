@@ -2,7 +2,7 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-07-10 — Clarified project-notification reassignment in §9.6 and §9.7. Reassignment now reuses the creation workflow (`CreateProjectNotificationTask`) via `EmployeeTaskRequestService::createIndependentProcessesForUsers()` instead of seeding a standalone `ConfirmProjectNotificationPresence` process. Added six common procedure-setting/reassignment traps for AI assistants: parent vs. child settings, `form = null`, `Process.procedure_setting_id` rules, creation-form-key reuse, pending-process detection by form, and the two-stage confirm-receive flow.
+> **Last updated:** 2026-07-10 — Reassignment endpoint now accepts multiple users via `assigned_user_ids` (§9.6). `ProjectNotificationService::reassignTask()` replaces the assigned-user list, cancels all stale processes, and creates per-user `CreateProjectNotificationTask` processes for every supplied user. Also clarified reassignment in §9.6 and §9.7 and added six common procedure-setting/reassignment traps for AI assistants.
 >
 > **Previous:** 2026-07-08 — Independent progress support added. `Process` and `InternalProcedureTaken` now have nullable `user_id` column. When `ProjectNotification.independent_progress = true`, lifecycle workflow processes are created per-user (each assigned user gets their own `Process` with `user_id` set). `ProcedureWorkflowService::getTakenProcedureIds()` and `isProcedureTaken()` accept optional `?string $userId` — when provided, includes shared (`user_id = null`) + user-scoped records, excludes other users' records. `WorkflowEngine::startWorkflow()` and `startLifecycleWorkflow()` accept optional `?string $independentUserId`. `EmployeeTaskRequestService::createLifecycleProcess()` accepts `?string $independentUserId`. `EmployeeTaskLifecycleService::start()`/`end()` accept `?string $independentUserId`. `EmployeeTaskAvailableActionsService::forTask()` and `InternalProcedureAvailableActionsService::forProcessable()` accept `?string $userId`. `EmployeeTaskRequestService::approveWorkflowStep()`/`rejectWorkflowStep()` iterate multiple in-progress processes (independent mode) preferring user-scoped. `ProjectNotificationService` adds `createLifecycleProcessForNotification()` helper, `availableActions()`/`takeAction()`/`endTask()` accept `?string $userId`. Unique constraint on `internal_procedure_takens` now includes `user_id`. Unique constraint on `processes` now includes `user_id`. See §Independent Progress.
 >
@@ -914,25 +914,26 @@ All new parameters are optional with `null` defaults. Regular employee tasks cre
 
 ## 9.6. Task Reassignment & Lifecycle Reset
 
-Project notifications support reassigning the linked `EmployeeTaskRequest` to another employee via:
+Project notifications support reassigning the linked `EmployeeTaskRequest` to one or more employees via:
 
 ```
 POST /api/v1/projects/notifications/{id}/reassign
-{ user_id: <uuid> }
+{ assigned_user_ids: [<uuid>, <uuid>, ...] }
 ```
 
 ### What happens on reassignment
 
-1. **Target user added** — The selected `user_id` is appended to `ProjectNotification.assigned_user_ids` (if not already present).
+1. **Target users replace the assigned list** — The submitted `assigned_user_ids` array becomes the new `ProjectNotification.assigned_user_ids`, matching the creation request format. Any users not in the new list are removed from assignment.
 2. **Independent progress enabled** — `independent_progress` is set to `true` so every assigned user has their own lifecycle.
-3. **Task ownership switched** — `EmployeeTaskRequest.user_id` is updated to the target user so action-taker resolution points to them.
+3. **Task ownership switched** — `EmployeeTaskRequest.user_id` is updated to the first supplied user so action-taker resolution points to the primary assignee.
 4. **Task state reset** — Status is set back to `approved`, and start/end session fields (`time_from`, `time_to`, `total_task_hours`, `total_pause_minutes`, `shift_end_method`, `start_location`, `end_location`, `radius_meters`, `timezone`) are cleared.
 5. **Notification lifecycle markers cleared** — `confirmation_receive_date`, `location_confirmed_at`, and `end_task_status_id` are set to `null`.
-6. **Fresh creation workflow process started** — The reassignment reuses the same creation workflow mechanism that dispatched the task originally:
-   - `ProjectNotificationService::reassignTask()` calls `EmployeeTaskRequestService::createIndependentProcessesForUsers($task, [$targetUserId], InternalProcessForm::CreateProjectNotificationTask->value)`.
-   - This creates a per-user `Process` with `form = 'createProjectNotificationTask'` and `user_id` set to the reassigned user, exactly as creation does when `independent_progress` is enabled.
-   - The process is resolved through the central `WorkflowEngine` using the notification's `internal_procedure_setting_id` parent and the `CreateProjectNotificationTask` form key, so steps, notifications, and ordering behave exactly like initial creation.
-   - If the engine auto-approves (no resolvable action takers), a minimal fallback `Process` with `form = 'confirmProjectNotificationPresence'` is seeded so the notification still appears in the inbox.
+6. **Old processes cancelled** — All in-progress `Process` records for the task are cancelled so previous assignees and new assignees don't have stale workflows.
+7. **Fresh creation workflow processes started** — The reassignment reuses the same creation workflow mechanism that dispatched the task originally:
+   - `ProjectNotificationService::reassignTask()` calls `EmployeeTaskRequestService::createIndependentProcessesForUsers($task, $targetUserIds, InternalProcessForm::CreateProjectNotificationTask->value)`.
+   - This creates one per-user `Process` per supplied user with `form = 'createProjectNotificationTask'` and `user_id` set, exactly as creation does when `independent_progress` is enabled.
+   - Each process is resolved through the central `WorkflowEngine` using the notification's `internal_procedure_setting_id` parent and the `CreateProjectNotificationTask` form key, so steps, notifications, and ordering behave exactly like initial creation.
+   - If the engine auto-approves for a user (no resolvable action takers), a minimal fallback `Process` with `form = 'confirmProjectNotificationPresence'` is seeded for that user so the notification still appears in their inbox.
 
 ### New lifecycle starts on confirm-receive
 

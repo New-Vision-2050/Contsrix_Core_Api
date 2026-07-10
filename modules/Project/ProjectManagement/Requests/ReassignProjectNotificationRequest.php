@@ -16,7 +16,8 @@ class ReassignProjectNotificationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'uuid', 'exists:users,id'],
+            'assigned_user_ids'  => ['required', 'array', 'min:1'],
+            'assigned_user_ids.*' => ['uuid', 'exists:users,id'],
         ];
     }
 }
