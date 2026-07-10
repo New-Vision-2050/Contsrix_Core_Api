@@ -39,6 +39,7 @@ use Modules\Project\ProjectManagement\Requests\UpdateProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationChartsService;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationLocationService;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationService;
+use Modules\RoleAndPermission\Enums\Permission;
 
 class ProjectNotificationController extends Controller
 {
