@@ -38,6 +38,7 @@ final class UpdateProjectNotificationDTO
         public readonly ?string $notes                     = null,
         public readonly ?array  $files                     = null,
         public readonly ?array  $deletedMediaIds           = null,
+        public readonly bool    $isDraft                   = false,
     ) {}
 
     public function toArray(): array
@@ -73,5 +74,44 @@ final class UpdateProjectNotificationDTO
             'duration_hours'              => $this->durationHours,
             'notes'                       => $this->notes,
         ], fn ($value) => $value !== null);
+    }
+
+    /**
+     * Return every writable field so a draft update can overwrite and clear
+     * fields that were not supplied by the frontend.
+     */
+    public function toDraftArray(): array
+    {
+        return [
+            'notification_number'         => $this->notificationNumber,
+            'notification_type'           => $this->notificationType,
+            'severity'                    => $this->severity,
+            'work_type'                   => $this->workType,
+            'feeder_number'               => $this->feederNumber,
+            'machine_number'              => $this->machineNumber,
+            'work_description'            => $this->workDescription,
+            'contractor_id'               => $this->contractorId,
+            'contractor_name'             => $this->contractorName,
+            'contractor_number'           => $this->contractorNumber,
+            'contractor_technical_number' => $this->contractorTechnicalNumber,
+            'contractor_technical_name'   => $this->contractorTechnicalName,
+            'contractor_category'         => $this->contractorCategory,
+            'contractor_notes'            => $this->contractorNotes,
+            'contractor_mobile'           => $this->contractorMobile,
+            'task_latitude'               => $this->taskLatitude,
+            'task_longitude'              => $this->taskLongitude,
+            'location_radius'             => $this->locationRadius,
+            'location_link'               => $this->locationLink,
+            'repair_point'                => $this->repairPoint,
+            'permit_source'               => $this->permitSource,
+            'permit_recipient'            => $this->permitRecipient,
+            'assigned_user_ids'           => $this->assignedUserIds,
+            'all_users_can_approve'        => $this->allUsersCanApprove,
+            'independent_progress'         => $this->independentProgress,
+            'selected_distance_meters'    => $this->selectedDistanceMeters,
+            'task_date'                   => $this->taskDate,
+            'duration_hours'              => $this->durationHours,
+            'notes'                       => $this->notes,
+        ];
     }
 }

@@ -47,6 +47,7 @@ class UpdateProjectNotificationRequest extends FormRequest
             'selected_distance_meters'    => ['nullable', 'integer'],
             'task_date'                   => ['nullable', 'date_format:Y-m-d'],
             'duration_hours'              => ['nullable', 'numeric', 'min:0.25', 'max:24'],
+            'is_draft'                    => ['nullable', 'boolean'],
             'notes'                       => ['nullable', 'string'],
             'files'                       => ['nullable', 'array'],
             'files.*'                     => ['file', 'max:20480'],
@@ -89,6 +90,7 @@ class UpdateProjectNotificationRequest extends FormRequest
             notes: $this->input('notes'),
             files: $this->hasFile('files') ? $this->file('files') : null,
             deletedMediaIds: $this->input('deleted_media_ids'),
+            isDraft: $this->boolean('is_draft'),
         );
     }
 }

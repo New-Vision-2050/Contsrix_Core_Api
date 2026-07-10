@@ -72,13 +72,56 @@ class ProjectNotificationService
 
     public function create(CreateProjectNotificationDTO $dto): ProjectNotification
     {
+        if ($dto->isDraft) {
+            return $this->createDraft($dto);
+        }
+
+        return $this->publishNotification($dto);
+    }
+
+    /**
+     * Prevent lifecycle actions from running against an unpublished draft.
+     */
+    private function guardNotDraft(ProjectNotification $notification, string $action = 'perform this action'): void
+    {
+        if ($notification->status === 'draft') {
+            throw ProjectNotificationException::validationFailed(
+                "Cannot {$action} on a draft notification."
+            );
+        }
+    }
+
+    /**
+     * Persist a project notification as a draft. No lifecycle actions are triggered.
+     */
+    private function createDraft(CreateProjectNotificationDTO $dto): ProjectNotification
+    {
         $companyId = (string) tenant('id');
-        $creator = User::find($dto->createdByUserId);
-        $branchId = $creator?->userProfessionalData?->branch_id !== null
-            ? (string) $creator->userProfessionalData->branch_id
-            : null;
 
         $data = $this->enrichContractorData($dto->toArray());
+        unset($data['files']);
+
+        $notification = $this->repository->create([
+            ...$data,
+            'company_id' => $companyId,
+            'status' => 'draft',
+        ]);
+
+        $this->attachFilesToNotification($notification, $dto->files);
+
+        return $this->repository->findById($notification->id) ?? $notification->fresh();
+    }
+
+    /**
+     * Publish a project notification: create the row and run the full lifecycle
+     * (EmployeeTask, workflow processes, notifications, approvals, etc.).
+     */
+    private function publishNotification(CreateProjectNotificationDTO $dto): ProjectNotification
+    {
+        $companyId = (string) tenant('id');
+
+        $data = $this->enrichContractorData($dto->toArray());
+        unset($data['files']);
 
         // 1. Create the ProjectNotification row. notification_number is manual if
         // provided; otherwise the observer auto-generates it.
@@ -447,7 +490,8 @@ class ProjectNotificationService
      */
     public function inboxCounts(string $userId, array $filters = []): array
     {
-        $query = ProjectNotification::query();
+        $query = ProjectNotification::query()
+            ->where('project_notifications.status', '!=', 'draft');
         $this->applyWorkflowInboxFilter($query, $userId);
 
         $this->applyDateFilters($query, $filters);
@@ -471,7 +515,8 @@ class ProjectNotificationService
      */
     public function filterMetadata(string $userId, array $filters = []): array
     {
-        $base = ProjectNotification::query();
+        $base = ProjectNotification::query()
+            ->where('project_notifications.status', '!=', 'draft');
         $this->applyWorkflowInboxFilter($base, $userId);
 
         $this->applyDateFilters($base, $filters);
@@ -555,6 +600,159 @@ class ProjectNotificationService
     {
         $notification = $this->get($id);
 
+        if ($notification->status === 'draft') {
+            return $dto->isDraft
+                ? $this->updateDraft($notification, $dto)
+                : $this->publishDraft($notification, $dto);
+        }
+
+        if ($dto->isDraft) {
+            throw ProjectNotificationException::validationFailed('Cannot revert a published notification to draft.');
+        }
+
+        return $this->updatePublished($notification, $dto);
+    }
+
+    /**
+     * Overwrite a draft notification with the supplied data. Lifecycle actions are
+     * skipped and the status remains 'draft'.
+     */
+    private function updateDraft(
+        ProjectNotification $notification,
+        UpdateProjectNotificationDTO $dto,
+    ): ProjectNotification {
+        $data = $this->enrichContractorData($dto->toDraftArray());
+        unset($data['files'], $data['deleted_media_ids']);
+
+        $this->repository->update($notification->id, $data);
+
+        $this->syncNotificationMedia($notification, $dto->deletedMediaIds, $dto->files);
+
+        return $this->get($notification->id);
+    }
+
+    /**
+     * Publish an existing draft notification by finalizing the row and running
+     * the full lifecycle.
+     */
+    private function publishDraft(
+        ProjectNotification $notification,
+        UpdateProjectNotificationDTO $dto,
+    ): ProjectNotification {
+        $data = $this->enrichContractorData($dto->toArray());
+        unset($data['files'], $data['deleted_media_ids']);
+
+        $publishedData = [
+            ...$this->fillPublishDataFromDraft($notification, $data),
+            'status' => 'pending',
+        ];
+
+        $this->repository->update($notification->id, $publishedData);
+
+        $notification = $notification->fresh();
+
+        if (! empty($dto->deletedMediaIds)) {
+            foreach ($dto->deletedMediaIds as $mediaId) {
+                $media = $notification->getMedia('attachments')->where('id', $mediaId)->first();
+                $media?->delete();
+            }
+        }
+
+        $projectNotificationTypeId = $this->resolveProjectNotificationTypeId();
+
+        $assignedUserIds = $notification->assigned_user_ids ?? [];
+
+        $taskDto = new CreateEmployeeTaskRequestDTO(
+            userId: (string) ($assignedUserIds[0] ?? ''),
+            title: $notification->notification_number,
+            employee_task_type_id: $projectNotificationTypeId,
+            itemType: 'project_notification',
+            itemId: $notification->id,
+            durationHours: (float) $notification->duration_hours,
+            taskDate: $notification->task_date?->format('Y-m-d') ?? '',
+            taskTime: $notification->task_time?->format('H:i'),
+            taskLatitude: (float) $notification->task_latitude,
+            taskLongitude: (float) $notification->task_longitude,
+            currentLatitude: null,
+            currentLongitude: null,
+            description: $notification->work_description,
+            projectId: $notification->project_id,
+            approvalResponsibleId: $dto->approvalResponsibleId,
+            assignmentResponsibleId: $dto->assignmentResponsibleId,
+            notes: $notification->notes,
+            files: $dto->files,
+            radiusMeters: $notification->location_radius,
+            independentUserIds: $notification->independent_progress ? $assignedUserIds : null,
+        );
+
+        $task = $this->employeeTaskRequestService->create(
+            $taskDto,
+            InternalProcessForm::CreateProjectNotificationTask->value,
+        );
+
+        $task->update([
+            'project_notification_id' => $notification->id,
+            'is_project_notification' => true,
+            'sender_user_id' => $notification->created_by_user_id,
+            'task_source' => 'dashboard',
+        ]);
+
+        $notification->update(['employee_task_request_id' => $task->id]);
+
+        $this->injectAssignedUsersIntoWorkflow($task, $notification);
+        $this->syncNotificationStatusFromTask($notification->fresh(), $task);
+
+        return $this->get($notification->id);
+    }
+
+    /**
+     * Merge the draft's existing data with the final publish payload so required
+     * fields already saved on the draft are not lost.
+     */
+    private function fillPublishDataFromDraft(ProjectNotification $notification, array $data): array
+    {
+        $requiredFields = [
+            'project_id',
+            'assigned_user_ids',
+            'task_date',
+            'duration_hours',
+            'task_latitude',
+            'task_longitude',
+        ];
+
+        foreach ($requiredFields as $field) {
+            if (! isset($data[$field]) || $data[$field] === null || $data[$field] === '') {
+                $existing = $notification->getAttribute($field);
+                if ($existing !== null && $existing !== '') {
+                    $data[$field] = $existing;
+                }
+            }
+        }
+
+        foreach ($requiredFields as $field) {
+            if (! isset($data[$field]) || $data[$field] === null || $data[$field] === '') {
+                throw ProjectNotificationException::validationFailed(
+                    "Missing required field for publishing: {$field}"
+                );
+            }
+        }
+
+        if (! is_array($data['assigned_user_ids']) || empty($data['assigned_user_ids'])) {
+            throw ProjectNotificationException::validationFailed(
+                'Missing required field for publishing: assigned_user_ids'
+            );
+        }
+
+        return $data;
+    }
+
+    /**
+     * Standard update for an already-published notification.
+     */
+    private function updatePublished(
+        ProjectNotification $notification,
+        UpdateProjectNotificationDTO $dto,
+    ): ProjectNotification {
         $data = $this->enrichContractorData($dto->toArray());
 
         // Append new assigned users instead of replacing the existing list.
@@ -566,26 +764,9 @@ class ProjectNotificationService
             $data['assigned_user_ids'] = $mergedUserIds;
         }
 
-        $this->repository->update($id, $data);
+        $this->repository->update($notification->id, $data);
 
-        // Delete requested media files
-        if (! empty($dto->deletedMediaIds)) {
-            foreach ($dto->deletedMediaIds as $mediaId) {
-                $media = $notification->getMedia('attachments')->where('id', $mediaId)->first();
-                $media?->delete();
-            }
-        }
-
-        // Upload new files
-        if (! empty($dto->files)) {
-            $this->fileUploadService->uploadFile(
-                model: $notification,
-                file: $dto->files,
-                filePath: 'project-notifications/attachments',
-                collectionName: 'attachments',
-                visibility: 'public',
-            );
-        }
+        $this->syncNotificationMedia($notification, $dto->deletedMediaIds, $dto->files);
 
         // When new employees are appended, make sure they can take action:
         // - independent_progress=true  → each new user gets their own workflow process.
@@ -608,7 +789,28 @@ class ProjectNotificationService
             }
         }
 
-        return $this->get($id);
+        return $this->get($notification->id);
+    }
+
+    /**
+     * Apply media deletions and uploads for a notification.
+     *
+     * @param array<int, int>|null $deletedMediaIds
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     */
+    private function syncNotificationMedia(
+        ProjectNotification $notification,
+        ?array $deletedMediaIds,
+        ?array $files,
+    ): void {
+        if (! empty($deletedMediaIds)) {
+            foreach ($deletedMediaIds as $mediaId) {
+                $media = $notification->getMedia('attachments')->where('id', $mediaId)->first();
+                $media?->delete();
+            }
+        }
+
+        $this->attachFilesToNotification($notification, $files);
     }
 
     /**
@@ -622,6 +824,7 @@ class ProjectNotificationService
         string $userId,
     ): ProjectNotification {
         $notification = $this->get($id);
+        $this->guardNotDraft($notification, 'request update');
         $task = $this->linkedTask($id);
 
         $procedureSetting = $this->engine->resolveLifecycleSetting(
@@ -765,6 +968,7 @@ class ProjectNotificationService
         string $userId,
     ): ProjectNotification {
         $notification = $this->get($id);
+        $this->guardNotDraft($notification, 'request fine');
         $task = $this->linkedTask($id);
 
         $this->checkWorkflowFormConditions(
@@ -1043,6 +1247,7 @@ class ProjectNotificationService
     public function approve(string $id, string $userId, ?string $procedureSettingId = null): ProjectNotification
     {
         $notification = $this->get($id);
+        $this->guardNotDraft($notification, 'approve');
         $task = $notification->employee_task_request_id ? $notification->employeeTask : null;
 
         // When the linked task is driven by a real approval workflow, advance the
@@ -1101,6 +1306,7 @@ class ProjectNotificationService
     public function reject(string $id, string $userId, string $reason, ?string $procedureSettingId = null): ProjectNotification
     {
         $notification = $this->get($id);
+        $this->guardNotDraft($notification, 'reject');
         $task = $notification->employee_task_request_id ? $notification->employeeTask : null;
 
         if ($task && $this->taskHasActiveProcess($task->id)) {
@@ -1333,6 +1539,7 @@ class ProjectNotificationService
     public function confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest
     {
         $notification = $this->get($notificationId);
+        $this->guardNotDraft($notification, 'confirm receive');
         $task = $notification->employeeTask;
 
         if (! $task) {
@@ -1431,6 +1638,7 @@ class ProjectNotificationService
     public function endTask(string $notificationId, EndTaskDTO $dto, ?string $userId = null): EmployeeTaskRequest
     {
         $notification = $this->get($notificationId);
+        $this->guardNotDraft($notification, 'end task');
         $task = $notification->employeeTask;
 
         if (! $task) {
@@ -1505,6 +1713,7 @@ class ProjectNotificationService
         }
 
         $notification = $this->get($notificationId);
+        $this->guardNotDraft($notification, 'reassign');
         $task = $notification->employeeTask;
 
         if (! $task) {
@@ -1826,8 +2035,9 @@ class ProjectNotificationService
         string $procedureSettingId,
         string $userId,
     ): array {
-        $task = $this->linkedTask($notificationId);
         $notification = $this->get($notificationId);
+        $this->guardNotDraft($notification, 'take action');
+        $task = $this->linkedTask($notificationId);
 
         $scopedUserId = $notification->independent_progress ? $userId : null;
         $availableActions = $this->availableActionsService->forTask($task->id, $scopedUserId);
@@ -2417,6 +2627,14 @@ class ProjectNotificationService
             collectionName: 'attachments',
             visibility: 'public',
         );
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     */
+    private function attachFilesToNotification(ProjectNotification $notification, ?array $files): void
+    {
+        $this->attachUpdateFiles($notification, $files);
     }
 
     /**

@@ -30,7 +30,8 @@ class ProjectNotificationChartsService
      */
     private function baseQuery(FilterProjectNotificationChartsDTO $dto, ?string $excludeDimension = null): \Illuminate\Database\Eloquent\Builder
     {
-        return ProjectNotification::filter($dto->toFilters($excludeDimension));
+        return ProjectNotification::filter($dto->toFilters($excludeDimension))
+            ->where('project_notifications.status', '!=', 'draft');
     }
 
     /**
@@ -411,6 +412,10 @@ class ProjectNotificationChartsService
      */
     private function resolveStatusCode(string $status, bool $locationConfirmed, bool $received = true): string
     {
+        if ($status === 'draft') {
+            return 'draft';
+        }
+
         if ($status === 'in_progress') {
             return $locationConfirmed ? 'confirmed_location' : 'received';
         }
@@ -434,6 +439,7 @@ class ProjectNotificationChartsService
         $locale = app()->getLocale();
 
         $labels = [
+            'draft'              => ['ar' => 'مسودة', 'en' => 'Draft'],
             'pending'            => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
             'received'           => ['ar' => 'تم الاستلام', 'en' => 'Received'],
             'confirmed_location' => ['ar' => 'تم تأكيد الموقع', 'en' => 'Confirmed Location'],

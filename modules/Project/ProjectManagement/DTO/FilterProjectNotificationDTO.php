@@ -19,6 +19,7 @@ final class FilterProjectNotificationDTO
         public readonly ?string $dateTo                 = null,
         public readonly ?string $search                 = null,
         public readonly ?string $contractualEngagementKey = null,
+        public readonly ?string $createdByUserId        = null,
         public readonly ?int    $perPage                = 15,
         public readonly ?string $sort                    = null,
     ) {}
@@ -38,6 +39,7 @@ final class FilterProjectNotificationDTO
             'date_to'                   => $this->dateTo,
             'search'                    => $this->search,
             'contractual_engagement_key' => $this->contractualEngagementKey,
+            'created_by_user_id'         => $this->createdByUserId,
         ], fn ($value) => $value !== null);
     }
 }

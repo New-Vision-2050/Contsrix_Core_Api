@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectManagement\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\RequiredIf;
 use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 
 class CreateProjectNotificationRequest extends FormRequest
@@ -15,20 +16,29 @@ class CreateProjectNotificationRequest extends FormRequest
         return true;
     }
 
+    private function requiredUnlessDraft(): RequiredIf
+    {
+        return Rule::requiredIf(fn () => ! $this->boolean('is_draft'));
+    }
+
     public function rules(): array
     {
+        $isDraft = $this->boolean('is_draft');
+        $userExistsRule = $isDraft ? ['uuid'] : ['uuid', 'exists:users,id'];
+
         return [
             'notification_number'         => ['nullable', 'string', 'max:50', Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'))],
-            'project_id'                  => ['required', 'uuid', 'exists:projects,id'],
-            'assigned_user_ids'          => ['required', 'array', 'min:1'],
-            'assigned_user_ids.*'         => ['uuid', 'exists:users,id'],
+            'project_id'                  => [$this->requiredUnlessDraft(), 'uuid', 'exists:projects,id'],
+            'assigned_user_ids'           => [$this->requiredUnlessDraft(), 'array', 'min:1'],
+            'assigned_user_ids.*'         => $userExistsRule,
             'all_users_can_approve'       => ['nullable', 'boolean'],
             'independent_progress'        => ['nullable', 'boolean'],
-            'task_date'                   => ['required', 'date_format:Y-m-d'],
+            'task_date'                   => [$this->requiredUnlessDraft(), 'date_format:Y-m-d'],
             'task_time'                   => ['nullable', 'date_format:H:i'],
-            'duration_hours'              => ['required', 'numeric', 'min:0.25', 'max:24'],
-            'task_latitude'               => ['required', 'numeric', 'between:-90,90'],
-            'task_longitude'              => ['required', 'numeric', 'between:-180,180'],
+            'duration_hours'              => [$this->requiredUnlessDraft(), 'numeric', 'min:0.25', 'max:24'],
+            'task_latitude'               => [$this->requiredUnlessDraft(), 'numeric', 'between:-90,90'],
+            'task_longitude'              => [$this->requiredUnlessDraft(), 'numeric', 'between:-180,180'],
+            'is_draft'                    => ['nullable', 'boolean'],
             'notification_type'           => ['nullable', 'string', 'max:255'],
             'severity'                    => ['nullable', 'string'],
             'work_type'                   => ['nullable', 'string', 'max:255'],
@@ -59,6 +69,8 @@ class CreateProjectNotificationRequest extends FormRequest
 
     public function toDTO(): CreateProjectNotificationDTO
     {
+        $isDraft = $this->boolean('is_draft');
+
         return new CreateProjectNotificationDTO(
             notificationNumber: $this->input('notification_number'),
             projectId: $this->input('project_id'),
@@ -66,9 +78,9 @@ class CreateProjectNotificationRequest extends FormRequest
             assignedUserIds: $this->input('assigned_user_ids'),
             taskDate: $this->input('task_date'),
             taskTime: $this->input('task_time'),
-            durationHours: (float) $this->input('duration_hours'),
-            taskLatitude: (float) $this->input('task_latitude'),
-            taskLongitude: (float) $this->input('task_longitude'),
+            durationHours: $this->filled('duration_hours') ? (float) $this->input('duration_hours') : null,
+            taskLatitude: $this->filled('task_latitude') ? (float) $this->input('task_latitude') : null,
+            taskLongitude: $this->filled('task_longitude') ? (float) $this->input('task_longitude') : null,
             notificationType: $this->input('notification_type'),
             severity: $this->input('severity', 'منخفض'),
             workType: $this->input('work_type'),
@@ -95,6 +107,7 @@ class CreateProjectNotificationRequest extends FormRequest
             assignmentResponsibleId: $this->input('assignment_responsible_id'),
             allUsersCanApprove: (bool) $this->input('all_users_can_approve', false),
             independentProgress: (bool) $this->input('independent_progress', true),
+            isDraft: $isDraft,
         );
     }
 }
