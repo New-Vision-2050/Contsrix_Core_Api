@@ -1307,6 +1307,12 @@ class ProjectNotificationService
         if ($this->taskHasActiveProcess($task->id)) {
             $this->employeeTaskRequestService->approveWorkflowStep($task->id, (string) $user->id);
             $task = $task->fresh();
+
+            // If the pre-created confirm-receive process was approved and the listener
+            // started the task, record the receipt timestamp for the new lifecycle.
+            if ($task->status === EmployeeTaskStatus::InProgress->value && $notification->confirmation_receive_date === null) {
+                $notification->update(['confirmation_receive_date' => now()]);
+            }
         }
 
         // Legacy fallback: only when the task was created without a workflow and still
@@ -1495,6 +1501,43 @@ class ProjectNotificationService
 
             $this->syncNotificationStatusFromTask($notification->fresh(), $task->fresh());
         });
+
+        $notification = $notification->fresh();
+        $task = $task->fresh();
+
+        // Seed a pending confirm-receive workflow for the target user so the
+        // notification appears in their mobile inbox and they can start a fresh
+        // lifecycle. This mirrors the initial assignment flow where the employee
+        // sees an actionable confirm-receive step.
+        if (
+            $task->status === EmployeeTaskStatus::Approved->value
+            && ! $this->taskHasActiveProcess($task->id)
+            && $notification->independent_progress
+        ) {
+            $procedureSetting = $this->engine->resolveLifecycleSetting(
+                null,
+                $task->procedureSettingType()->value,
+                InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                $task->company_id,
+                $task->user?->userProfessionalData?->branch_id !== null
+                    ? (string) $task->user->userProfessionalData->branch_id
+                    : null,
+            );
+
+            $metadata = [
+                'form' => InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                'user_id' => $targetUserId,
+            ];
+
+            $this->createLifecycleProcessForNotification(
+                $task,
+                $notification,
+                InternalProcessForm::ConfirmProjectNotificationPresence->value,
+                $metadata,
+                $procedureSetting,
+                $targetUserId,
+            );
+        }
 
         return $this->get($notificationId);
     }

@@ -925,6 +925,7 @@ POST /api/v1/projects/notifications/{id}/reassign
 3. **Task ownership switched** — `EmployeeTaskRequest.user_id` is updated to the target user so action-taker resolution points to them.
 4. **Task state reset** — Status is set back to `approved`, and start/end session fields (`time_from`, `time_to`, `total_task_hours`, `total_pause_minutes`, `shift_end_method`, `start_location`, `end_location`, `radius_meters`, `timezone`) are cleared.
 5. **Notification lifecycle markers cleared** — `confirmation_receive_date`, `location_confirmed_at`, and `end_task_status_id` are set to `null`.
+6. **Pending confirm-receive process seeded** — A per-user `Process` for the form `ConfirmProjectNotificationPresence` is created immediately with `user_id` set to the reassigned user. This makes the notification appear in the reassigned user's mobile inbox.
 
 ### New lifecycle starts on confirm-receive
 
@@ -934,9 +935,9 @@ When the reassigned user calls:
 POST /api/v1/projects/notifications/{id}/confirm-receive
 ```
 
-- `confirmReceive()` sees the task is `approved` and, because `independent_progress` is now `true`, creates a **per-user** `Process` for the form `ConfirmProjectNotificationPresence` with `user_id` set to the reassigned user.
-- The first step of that process is approved immediately.
+- `confirmReceive()` sees the pre-created `ConfirmProjectNotificationPresence` process and approves its first step.
 - The listener starts the task, moving it to `in_progress`.
+- `confirmation_receive_date` is recorded for the new lifecycle.
 - From this point, the reassigned user progresses through lifecycle procedures independently (site status updates, fines, location confirmations, work stoppage/resumption, postponement, end task).
 
 ### Design notes
