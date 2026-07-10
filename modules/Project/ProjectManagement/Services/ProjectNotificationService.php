@@ -1513,9 +1513,14 @@ class ProjectNotificationService
 
         $targetUserIds = array_values(array_unique(array_map('strval', $targetUserIds)));
 
-        $existingUsers = User::query()->whereIn('id', $targetUserIds)->pluck('id')->toArray();
+        $existingUserIds = User::query()
+            ->whereIn('id', $targetUserIds)
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->toArray();
+
         foreach ($targetUserIds as $userId) {
-            if (! in_array($userId, $existingUsers, true)) {
+            if (! in_array($userId, $existingUserIds, true)) {
                 throw ProjectNotificationException::userNotFound();
             }
         }
