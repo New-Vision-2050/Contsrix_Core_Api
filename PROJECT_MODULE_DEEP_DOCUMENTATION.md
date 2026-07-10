@@ -1217,10 +1217,11 @@ Key methods:
 - `resolvePendingProcessesForInbox(ProjectNotification $notification, string $userId): array` — Delegates to `WorkflowEngine::resolvePendingProcessesForUser()`. Resolves pending workflow processes for the inbox display, returning an array of `{process_id, procedure_setting_id, form, mobile_inbox_action_key, pending_step_id, pending_step_order}`. The `form` key falls back to `$process->procedureSetting?->form` if not in `$process->metadata['form']`.
 - `confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile confirm-receive. If the linked task is still `pending`, it is auto-approved first, then the task is started. This moves the notification from the inbox (`approved`) to the assigned tasks list (`in_progress`). Form key: `ConfirmProjectNotificationPresence`.
 - `startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile: backward-compatible alias that delegates to `confirmReceive()` internally.
-- `endTask(string $notificationId, EndTaskDTO $dto, ?string $userId = null): EmployeeTaskRequest` — Mobile: employee ends the linked task. When `independent_progress` is true, passes the user ID as `independentUserId` to `EmployeeTaskLifecycleService::end()` for per-user process creation. Form key: `EndProjectNotificationTask`.
+- `endTask(string $notificationId, EndTaskDTO $dto, ?string $userId = null): EmployeeTaskRequest` — Mobile: employee ends the linked task. When `independent_progress` is true, passes the user ID as `independentUserId` to `EmployeeTaskLifecycleService::end()` for per-user process creation. If the selected end-task status is `shift_handover`, the backend requires another assigned employee (not the current user) to have an approved location confirmation before allowing the task to end. Form key: `EndProjectNotificationTask`.
 - `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a generic internal procedure action (e.g., `UpdateProjectNotificationTask`). When `independent_progress` is true, the `WorkflowProcedureTaken` event includes the user ID so the `internal_procedure_takens` record is scoped per-user.
 - `availableActions(string $notificationId, ?string $userId = null): array` — Lists available workflow actions for the notification. When `independent_progress` is true, filters taken procedures by the acting user's ID so each user sees only their own progress. Same as `GET /employee-tasks/{id}/available-actions`.
 - `procedures(string $notificationId, bool $debug = false): array` — Returns the timeline of all taken (completed) internal procedures for the linked `EmployeeTask`, ordered by `taken_at` ascending, plus a summary block. Returns `{items, summary}` (and optionally `debug`).
+- `reassignTask(string $notificationId, string $targetUserId, string $actorUserId): ProjectNotification` — Reassigns the linked `EmployeeTaskRequest` to the target user and resets lifecycle markers so the target user starts a fresh lifecycle. The target user is added to `assigned_user_ids`, `independent_progress` is enabled, the task `user_id` is switched to the target user, and `confirmation_receive_date`, `location_confirmed_at`, and `end_task_status_id` are cleared. The next confirm-receive will create a new per-user `ConfirmProjectNotificationPresence` process.
 
 **WorkflowEngine Integration**:
 
@@ -1250,6 +1251,8 @@ When `independent_progress` is true on a `ProjectNotification`, each assigned us
 12. **`EmployeeTaskLifecycleService::start()` / `end()`** — Accept an optional `independentUserId` and pass it through to `createLifecycleProcess()`.
 
 The creation workflow (`CreateProjectNotificationTask`) remains shared regardless of `independent_progress` — it's the admin's single approval step to dispatch the task. Only lifecycle procedures (site status, fine, location confirmation, work stoppage/resumption, task postponement, end task) are per-user when `independent_progress` is true.
+
+**Reassignment**: `ProjectNotificationService::reassignTask()` switches `EmployeeTaskRequest.user_id` to the target user, enables `independent_progress`, appends the user to `assigned_user_ids`, and clears lifecycle markers (`confirmation_receive_date`, `location_confirmed_at`, `end_task_status_id`). When the reassigned user confirms receipt, a new per-user `ConfirmProjectNotificationPresence` process is created, giving them a fresh lifecycle independent of previous users.
 
 **Cross-Module Relationship with EmployeeTask**:
 
@@ -1489,6 +1492,7 @@ Sends email via `AttachmentRequestMail`.
 | POST | `/notifications/{id}/request-task-postponement` | `PROJECT_NOTIFICATION_UPDATE` | Workflow-based task postponement (`ProjectNotificationTaskPostponement` form) |
 | GET | `/notifications/{id}/procedures` | `PROJECT_NOTIFICATION_VIEW` | Linked EmployeeTask procedures timeline + summary |
 | POST | `/notifications/{id}/end` | `PROJECT_NOTIFICATION_UPDATE` | Mobile: end linked task |
+| POST | `/notifications/{id}/reassign` | `PROJECT_NOTIFICATION_UPDATE` | Reassign linked task to another employee and reset lifecycle markers |
 
 **Route prefix**: `/api/v1/projects/notifications`
 
@@ -1654,6 +1658,7 @@ Each item in the `items` array now contains the full workflow context, submitted
 - `request-work-resumption` accepts: `reasons_resolved` (required, boolean), `safety_notes_reviewed` (required, boolean), `site_ready` (required, boolean), `contractor_notified` (required, boolean), `notes`, `files[]` (pdf/jpg/jpeg/png/doc/docx, max 20MB, max 10 files), `internal_procedure_setting_id`.
 - `request-task-postponement` accepts: `new_task_date` (required, Y-m-d), `new_task_time` (required, H:i), `reason` (required, max 500), `internal_procedure_setting_id`.
 - `end` (POST `/projects/notifications/{id}/end`) accepts: `latitude` (required, -90 to 90), `longitude` (required, -180 to 180), `notes`, optional `internal_procedure_setting_id`, optional `files[]` (jpg/jpeg/png/webp, max 5MB per file, up to 10 files). Uploaded images are stored on the linked `EmployeeTaskRequest` in the `end_attachments` media collection. If `InsideTaskLocation` is active on `EndProjectNotificationTask`, the employee must be within the configured radius of the task location.
+- `reassign` (POST `/projects/notifications/{id}/reassign`) accepts: `user_id` (required, UUID, must exist in `users.id`). Reassigns the linked task to the selected user, enables `independent_progress`, clears lifecycle markers, and resets the task status to `approved` so the user can confirm receipt and start a fresh lifecycle.
 
 ---
 
