@@ -1552,48 +1552,27 @@ class ProjectNotificationService
         $notification = $notification->fresh();
         $task = $task->fresh();
 
-        // Start a fresh confirm-receive lifecycle process through the central
-        // WorkflowEngine so all steps, notifications, and inbox filtering work
-        // exactly like normal task creation. We use the notification's company_id
-        // (task.company_id is null for project notification tasks).
+        // Start a fresh confirm-receive workflow process for the reassigned user
+        // using the same mechanism and form key as project-notification creation.
+        // When independent_progress is true, EmployeeTaskRequestService creates a
+        // per-user process exactly like it does when the notification is first
+        // created with multiple assigned users.
         if (
             $task->status === EmployeeTaskStatus::Approved->value
             && ! $this->hasPendingConfirmReceiveProcessForUser($task, $targetUserId)
             && $notification->independent_progress
         ) {
-            $targetUser = User::query()
-                ->with('userProfessionalData.branch')
-                ->find($targetUserId);
-            $branchId = $targetUser?->userProfessionalData?->branch_id !== null
-                ? (string) $targetUser->userProfessionalData->branch_id
-                : null;
-
-            $procedureSetting = $this->engine->resolveLifecycleSetting(
-                null,
-                $task->procedureSettingType()->value,
-                InternalProcessForm::ConfirmProjectNotificationPresence->value,
-                $notification->company_id,
-                $branchId,
-            );
-
-            $process = $this->createLifecycleProcessForNotification(
+            $this->employeeTaskRequestService->createIndependentProcessesForUsers(
                 $task,
-                $notification,
-                InternalProcessForm::ConfirmProjectNotificationPresence->value,
-                [
-                    'form' => InternalProcessForm::ConfirmProjectNotificationPresence->value,
-                    'user_id' => $targetUserId,
-                    'assigned_user_id' => $targetUserId,
-                ],
-                $procedureSetting,
-                $targetUserId,
+                [$targetUserId],
+                InternalProcessForm::CreateProjectNotificationTask->value,
             );
 
             // Fallback: if the central engine auto-approved (no resolvable users
             // for the reassigned user's step), seed a minimal pending process so
             // the notification still appears in their inbox.
-            if ($process === null) {
-                $this->seedConfirmReceiveProcess($task, $notification, $targetUserId, $procedureSetting);
+            if (! $this->hasPendingConfirmReceiveProcessForUser($task, $targetUserId)) {
+                $this->seedConfirmReceiveProcess($task, $notification, $targetUserId, null);
             }
         }
 
@@ -1720,6 +1699,60 @@ class ProjectNotificationService
                 ],
             ));
         }
+    }
+
+    /**
+     * Resolve the procedure setting that should drive the confirm-receive step
+     * after reassignment. First try the dedicated ConfirmProjectNotificationPresence
+     * form key; if that is not configured, fall back to the first active child of
+     * the notification's internal procedure setting that has steps. This handles
+     * setups where confirm-receive is modelled as part of the creation workflow
+     * tree without its own form key.
+     */
+    private function resolveConfirmReceiveProcedureSetting(
+        EmployeeTaskRequest $task,
+        ProjectNotification $notification,
+        ?string $branchId,
+    ): ?ProcedureSetting {
+        // Prefer the same creation workflow tree so reassign behaves exactly
+        // like project-notification creation (same steps, same notifications).
+        $byForm = $this->engine->resolveLifecycleSetting(
+            null,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::CreateProjectNotificationTask->value,
+            $notification->company_id,
+            $branchId,
+        );
+
+        if ($byForm !== null) {
+            return $byForm;
+        }
+
+        // Fallback for setups that keep confirm-receive as its own form.
+        $byForm = $this->engine->resolveLifecycleSetting(
+            null,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::ConfirmProjectNotificationPresence->value,
+            $notification->company_id,
+            $branchId,
+        );
+
+        if ($byForm !== null) {
+            return $byForm;
+        }
+
+        // Last resort: first active child under the internal procedure setting.
+        $parentId = $notification->internal_procedure_setting_id;
+        if ($parentId === null) {
+            return null;
+        }
+
+        return ProcedureSetting::query()
+            ->where('parent_id', $parentId)
+            ->where('is_active', true)
+            ->whereHas('steps')
+            ->orderBy('sort_order')
+            ->first();
     }
 
     private function collectProcedureSettingDescendantIds(string $parentId): array
