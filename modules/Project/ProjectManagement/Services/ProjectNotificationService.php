@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Services;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
@@ -1176,6 +1177,18 @@ class ProjectNotificationService
         );
     }
 
+    private function hasPendingConfirmReceiveProcessForUser(EmployeeTaskRequest $task, string $userId): bool
+    {
+        return Process::query()
+            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+            ->where('processable_id', $task->id)
+            ->where('user_id', $userId)
+            ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
+            ->whereHas('procedureSetting', fn ($q) => $q->where('form', InternalProcessForm::ConfirmProjectNotificationPresence->value))
+            ->whereHas('steps', fn ($q) => $q->where('status', \Modules\Process\Enums\ProcessStepStatus::Pending))
+            ->exists();
+    }
+
     /**
      * Resolve the procedure_setting_id to use for workflow step approval.
      *
@@ -1508,10 +1521,11 @@ class ProjectNotificationService
         // Seed a pending confirm-receive workflow for the target user so the
         // notification appears in their mobile inbox and they can start a fresh
         // lifecycle. This mirrors the initial assignment flow where the employee
-        // sees an actionable confirm-receive step.
+        // sees an actionable confirm-receive step. The check is scoped to the
+        // target user so an active process for a previous user does not block it.
         if (
             $task->status === EmployeeTaskStatus::Approved->value
-            && ! $this->taskHasActiveProcess($task->id)
+            && ! $this->hasPendingConfirmReceiveProcessForUser($task, $targetUserId)
             && $notification->independent_progress
         ) {
             $procedureSetting = $this->engine->resolveLifecycleSetting(
@@ -1529,7 +1543,14 @@ class ProjectNotificationService
                 'user_id' => $targetUserId,
             ];
 
-            $this->createLifecycleProcessForNotification(
+            Log::debug('Seeding confirm-receive process for reassigned user', [
+                'notification_id' => $notificationId,
+                'task_id' => $task->id,
+                'target_user_id' => $targetUserId,
+                'procedure_setting_id' => $procedureSetting?->id,
+            ]);
+
+            $process = $this->createLifecycleProcessForNotification(
                 $task,
                 $notification,
                 InternalProcessForm::ConfirmProjectNotificationPresence->value,
@@ -1537,6 +1558,41 @@ class ProjectNotificationService
                 $procedureSetting,
                 $targetUserId,
             );
+
+            // Ensure the pending step is explicitly assigned to the target user.
+            // This makes reassignment robust even when the procedure setting uses
+            // action-taker types that would otherwise resolve to a different user.
+            if ($process !== null) {
+                $pendingStep = $process->steps()
+                    ->where('status', \Modules\Process\Enums\ProcessStepStatus::Pending)
+                    ->first();
+
+                if ($pendingStep !== null) {
+                    $pendingStep->update([
+                        'assigned_user_id' => $targetUserId,
+                        'authorized_user_ids' => [$targetUserId],
+                    ]);
+
+                    $snapshot = $process->template_snapshot ?? [];
+                    foreach ($snapshot as &$row) {
+                        if ($row['step_id'] === $pendingStep->step_id) {
+                            $row['assigned_user_id'] = $targetUserId;
+                            $row['authorized_user_ids'] = [$targetUserId];
+                        }
+                    }
+                    unset($row);
+                    $process->update(['template_snapshot' => $snapshot]);
+                }
+            }
+        } else {
+            Log::debug('Skipping confirm-receive process seeding for reassigned user', [
+                'notification_id' => $notificationId,
+                'task_id' => $task->id,
+                'target_user_id' => $targetUserId,
+                'task_status' => $task->status,
+                'independent_progress' => $notification->independent_progress,
+                'has_pending_confirm_receive' => $this->hasPendingConfirmReceiveProcessForUser($task, $targetUserId),
+            ]);
         }
 
         return $this->get($notificationId);
