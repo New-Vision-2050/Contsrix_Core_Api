@@ -1184,8 +1184,34 @@ class ProjectNotificationService
             ->where('user_id', $userId)
             ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
             ->whereHas('procedureSetting', fn ($q) => $q->where('form', InternalProcessForm::ConfirmProjectNotificationPresence->value))
-            ->whereHas('steps', fn ($q) => $q->where('status', \Modules\Process\Enums\ProcessStepStatus::Pending))
+            ->whereHas('steps', fn ($q) => $q
+                ->where('status', \Modules\Process\Enums\ProcessStepStatus::Pending)
+                ->where('assigned_user_id', $userId)
+            )
             ->exists();
+    }
+
+    /**
+     * Cancel old in-progress confirm-receive processes for the given user so
+     * they don't prevent seeding a fresh process on reassignment.
+     */
+    private function cancelOldConfirmReceiveProcessesForUser(EmployeeTaskRequest $task, string $userId): void
+    {
+        $oldProcesses = Process::query()
+            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+            ->where('processable_id', $task->id)
+            ->where('user_id', $userId)
+            ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
+            ->whereHas('procedureSetting', fn ($q) => $q->where('form', InternalProcessForm::ConfirmProjectNotificationPresence->value))
+            ->get();
+
+        foreach ($oldProcesses as $oldProcess) {
+            $oldProcess->steps()
+                ->where('status', \Modules\Process\Enums\ProcessStepStatus::Pending)
+                ->update(['status' => \Modules\Process\Enums\ProcessStepStatus::Rejected]);
+
+            $oldProcess->update(['status' => \Modules\Process\Enums\ProcessStatus::Completed]);
+        }
     }
 
     /**
@@ -1510,6 +1536,10 @@ class ProjectNotificationService
                 'radius_meters' => null,
                 'timezone' => null,
             ]);
+
+            // Cancel old in-progress confirm-receive processes for the target
+            // user so they don't block seeding a fresh lifecycle process.
+            $this->cancelOldConfirmReceiveProcessesForUser($task, $targetUserId);
 
             $this->syncNotificationStatusFromTask($notification->fresh(), $task->fresh());
         });
