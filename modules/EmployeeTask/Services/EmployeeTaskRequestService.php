@@ -668,6 +668,7 @@ class EmployeeTaskRequestService
         array $metadata,
         ?ProcedureSetting $resolvedSetting = null,
         ?string $independentUserId = null,
+        ?string $companyId = null,
     ): ?Process {
         $procedureType = $this->procedureTypeForForm($formKey);
         $task->load('user.userProfessionalData');
@@ -684,7 +685,7 @@ class EmployeeTaskRequestService
             processableId: $task->id,
             type: $procedureType,
             formKey: $formKey,
-            companyId: $task->company_id,
+            companyId: $companyId ?? $task->company_id,
             branchId: $branchId,
             createdByUserId: $task->user_id,
             context: $context,

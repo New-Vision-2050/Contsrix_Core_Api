@@ -39,7 +39,8 @@ enum InternalProcessForm: string
     public function mobileInboxActionKey(): string
     {
         return match ($this) {
-            self::CreateProjectNotificationTask => 'confirm_receive',
+            self::CreateProjectNotificationTask,
+            self::ConfirmProjectNotificationPresence => 'confirm_receive',
             self::UpdateProjectNotificationTask,
             self::UpdateProjectNotificationSiteStatus,
             self::ProjectNotificationFine,
