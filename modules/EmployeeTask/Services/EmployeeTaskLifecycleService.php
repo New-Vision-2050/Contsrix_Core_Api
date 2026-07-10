@@ -78,6 +78,13 @@ final class EmployeeTaskLifecycleService
                 : null;
 
             return DB::transaction(function () use ($task, $dto, $user, $procedureSetting, $parentSetting, $independentUserId): EmployeeTaskRequest {
+                // Project notification tasks have null company_id on the task
+                // itself — resolve it from the linked notification.
+                $companyId = $task->company_id;
+                if ($companyId === null && $task->is_project_notification) {
+                    $companyId = $task->projectNotification?->company_id;
+                }
+
                 $process = $this->requestService->createLifecycleProcess(
                     $task,
                     InternalProcessForm::StartTask->value,
@@ -88,6 +95,7 @@ final class EmployeeTaskLifecycleService
                     ],
                     $procedureSetting,
                     $independentUserId,
+                    $companyId,
                 );
 
                 if ($process === null) {
@@ -285,6 +293,13 @@ final class EmployeeTaskLifecycleService
                 : null;
 
             return DB::transaction(function () use ($task, $dto, $formKey, $procedureSetting, $parentSetting, $independentUserId): EmployeeTaskRequest {
+                // Project notification tasks have null company_id on the task
+                // itself — resolve it from the linked notification.
+                $companyId = $task->company_id;
+                if ($companyId === null && $task->is_project_notification) {
+                    $companyId = $task->projectNotification?->company_id;
+                }
+
                 $process = $this->requestService->createLifecycleProcess(
                     $task,
                     $formKey,
@@ -295,6 +310,7 @@ final class EmployeeTaskLifecycleService
                     ],
                     $procedureSetting,
                     $independentUserId,
+                    $companyId,
                 );
 
                 if ($process === null) {

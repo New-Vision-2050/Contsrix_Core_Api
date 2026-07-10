@@ -1193,9 +1193,10 @@ class ProjectNotificationService
     }
 
     /**
-     * Cancel ALL old in-progress confirm-receive processes for the task so
-     * neither the previous assignee nor the target user has stale processes
-     * that would cause duplicate inbox entries on reassignment.
+     * Cancel ALL old in-progress processes for the task so neither the previous
+     * assignee nor the target user has stale processes (confirm-receive, end-task,
+     * update, site-status, fines, etc.) that would cause duplicate inbox entries
+     * or orphaned workflows after reassignment.
      */
     private function cancelOldConfirmReceiveProcessesForUser(EmployeeTaskRequest $task, string $userId): void
     {
@@ -1203,7 +1204,6 @@ class ProjectNotificationService
             ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
             ->where('processable_id', $task->id)
             ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
-            ->whereHas('procedureSetting', fn ($q) => $q->where('form', InternalProcessForm::ConfirmProjectNotificationPresence->value))
             ->get();
 
         foreach ($oldProcesses as $oldProcess) {
@@ -1452,7 +1452,10 @@ class ProjectNotificationService
 
         // Approved-but-never-started project notifications can be closed directly
         // (e.g. the employee chose to end the task without confirming receipt).
+        // However, if there is a pending confirm-receive process (e.g. after
+        // reassignment), cancel it first so it doesn't stay orphaned in the inbox.
         if ($task->status === EmployeeTaskStatus::Approved->value) {
+            $this->cancelOldConfirmReceiveProcessesForUser($task, (string) $userId);
             $task = $this->lifecycleService->performEnd($task, $dto);
         } else {
             $task = $this->lifecycleService->end($task->id, $dto, $independentUserId);
@@ -1536,6 +1539,7 @@ class ProjectNotificationService
                 'end_location' => null,
                 'radius_meters' => null,
                 'timezone' => null,
+                'current_procedure_step_id' => null,
             ]);
 
             // Cancel old in-progress confirm-receive processes for the target
