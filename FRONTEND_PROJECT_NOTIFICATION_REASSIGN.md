@@ -121,14 +121,14 @@ The API returns the refreshed notification payload:
 
 After reassigning:
 
-1. The new employee sees the notification in **My Tasks** as `approved`.
+1. The new employee sees the notification in their **Inbox** immediately because the backend creates a pending `ConfirmProjectNotificationPresence` process for them.
 2. The employee calls:
    ```http
    POST /api/v1/projects/notifications/{id}/confirm-receive
    ```
    with `latitude`, `longitude`, and optional `notes`.
-3. A new `ConfirmProjectNotificationPresence` lifecycle process is created for that employee.
-4. The task moves to `in_progress` and the employee's independent lifecycle begins.
+3. The pending process is approved and the task moves to `in_progress`.
+4. The employee's independent lifecycle begins.
 
 Do **not** block reassignment based on the current task status. The backend accepts any status so admins can reassign freely, including from `approved` (never started) or `completed` (after shift handover).
 
