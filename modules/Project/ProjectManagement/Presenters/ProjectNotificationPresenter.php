@@ -210,7 +210,7 @@ class ProjectNotificationPresenter
     {
         $presenter = new self(new ProjectNotification());
 
-        $statuses = ['pending', 'received', 'confirmed_location', 'completed'];
+        $statuses = ['draft', 'pending', 'received', 'confirmed_location', 'completed'];
         $result = [];
 
         foreach ($statuses as $status) {
@@ -248,6 +248,10 @@ class ProjectNotificationPresenter
      */
     private static function resolvePseudoStatus(string $status, bool $locationConfirmed, bool $received): string
     {
+        if ($status === 'draft') {
+            return 'draft';
+        }
+
         if ($status === 'in_progress') {
             return $locationConfirmed ? 'confirmed_location' : 'received';
         }
@@ -305,6 +309,7 @@ class ProjectNotificationPresenter
         }
 
         $labels = [
+            'draft' => ['ar' => 'مسودة', 'en' => 'Draft'],
             'pending' => ['ar' => 'بانتظار الرد', 'en' => 'Pending'],
             // Pseudo-status used by statusLookup()/filters to target the
             // "in_progress but location not yet confirmed" sub-state directly.

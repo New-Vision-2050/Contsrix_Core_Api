@@ -71,6 +71,7 @@ class ProjectNotificationRepository
                 'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
             ]);
 
+        $this->applyDraftExclusion($query, $filters);
         $this->applySorting($query, $sort);
 
         $result = $query->paginate($perPage);
@@ -94,6 +95,7 @@ class ProjectNotificationRepository
                 'endTaskStatus',
             ]);
 
+        $this->applyDraftExclusion($query, $filters);
         $this->applySorting($query, null);
 
         $result = $query->get();
@@ -110,6 +112,7 @@ class ProjectNotificationRepository
     {
         $query = ProjectNotification::query()
             ->whereJsonContains('assigned_user_ids', $userId)
+            ->where('project_notifications.status', '!=', 'draft')
             ->filter($filters)
             ->with([
                 'project',
@@ -146,7 +149,8 @@ class ProjectNotificationRepository
      */
     public function paginatedForInbox(array $filters, string $userId, int $perPage = 15, ?string $sort = null): LengthAwarePaginator
     {
-        $query = ProjectNotification::query();
+        $query = ProjectNotification::query()
+            ->where('project_notifications.status', '!=', 'draft');
 
         // Apply non-status filters manually (project, search, dates, etc.).
         if (! empty($filters['project_id'])) {
@@ -305,5 +309,21 @@ class ProjectNotificationRepository
         } else {
             $query->orderByDesc('created_at');
         }
+    }
+
+    /**
+     * Default lists should hide draft notifications. Drafts are only visible when
+     * the caller explicitly filters by status=draft (or a comma-separated list
+     * containing draft).
+     */
+    private function applyDraftExclusion($query, array $filters): void
+    {
+        $statusFilter = $filters['status'] ?? null;
+
+        if (is_string($statusFilter) && str_contains($statusFilter, 'draft')) {
+            return;
+        }
+
+        $query->where('project_notifications.status', '!=', 'draft');
     }
 }

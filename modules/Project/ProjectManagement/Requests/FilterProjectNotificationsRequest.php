@@ -29,6 +29,7 @@ class FilterProjectNotificationsRequest extends FormRequest
             'date_to'           => ['nullable', 'date_format:Y-m-d'],
             'search'                     => ['nullable', 'string', 'max:255'],
             'contractual_engagement_key' => ['nullable', 'string', 'exists:contractual_engagements,code'],
+            'created_by_user_id'         => ['nullable', 'uuid', 'exists:users,id'],
             'per_page'                   => ['nullable', 'integer', 'min:1', 'max:100'],
             'sort'                       => ['nullable', 'string'],
         ];
@@ -49,6 +50,7 @@ class FilterProjectNotificationsRequest extends FormRequest
             dateTo: $this->input('date_to'),
             search: $this->input('search'),
             contractualEngagementKey: $this->input('contractual_engagement_key'),
+            createdByUserId: $this->input('created_by_user_id'),
             perPage: (int) $this->input('per_page', 15),
             sort: $this->input('sort'),
         );

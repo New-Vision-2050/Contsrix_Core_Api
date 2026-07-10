@@ -16,9 +16,15 @@ class ProjectNotificationExport extends BaseExport
 
     public function collection()
     {
-        $notifications = ProjectNotification::filter($this->filters)
-            ->with(['project'])
-            ->get();
+        $query = ProjectNotification::filter($this->filters)
+            ->with(['project']);
+
+        $statusFilter = $this->filters['status'] ?? null;
+        if (! is_string($statusFilter) || ! str_contains($statusFilter, 'draft')) {
+            $query->where('project_notifications.status', '!=', 'draft');
+        }
+
+        $notifications = $query->get();
 
         $allUserIds = $notifications->pluck('assigned_user_ids')->flatten()->unique()->values()->all();
         if (! empty($allUserIds)) {

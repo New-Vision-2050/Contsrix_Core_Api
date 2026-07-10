@@ -82,7 +82,29 @@ class ProjectNotificationController extends Controller
 
     public function index(FilterProjectNotificationsRequest $request): JsonResponse
     {
-        $paginator = $this->notificationService->list($request->toDTO());
+        $dto = $request->toDTO();
+
+        if ($dto->status === 'draft') {
+            $dto = new \Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO(
+                projectId: $dto->projectId,
+                status: $dto->status,
+                notificationType: $dto->notificationType,
+                workType: $dto->workType,
+                contractorName: $dto->contractorName,
+                contractorId: $dto->contractorId,
+                assignedUserId: $dto->assignedUserId,
+                taskDate: $dto->taskDate,
+                dateFrom: $dto->dateFrom,
+                dateTo: $dto->dateTo,
+                search: $dto->search,
+                contractualEngagementKey: $dto->contractualEngagementKey,
+                createdByUserId: (string) $request->user()->id,
+                perPage: $dto->perPage,
+                sort: $dto->sort,
+            );
+        }
+
+        $paginator = $this->notificationService->list($dto);
 
         return Json::items(
             ProjectNotificationPresenter::collection($paginator->items()),
@@ -266,11 +288,30 @@ class ProjectNotificationController extends Controller
     {
         $notification = $this->notificationService->get($request->route('id'));
 
+        if (
+            $notification->status === 'draft'
+            && (string) $notification->created_by_user_id !== (string) $request->user()->id
+        ) {
+            return Json::error('Project notification not found', 404);
+        }
+
         return Json::item(ProjectNotificationPresenter::detail($notification));
     }
 
     public function update(UpdateProjectNotificationRequest $request): JsonResponse
     {
+        $existing = $this->notificationService->get($request->route('id'));
+
+        if ($existing->status === 'draft') {
+            if (! $request->user()->can(Permission::PROJECT_NOTIFICATION_CREATE())) {
+                return Json::error('Forbidden', 403);
+            }
+
+            if ((string) $existing->created_by_user_id !== (string) $request->user()->id) {
+                return Json::error('Project notification not found', 404);
+            }
+        }
+
         $notification = $this->notificationService->update(
             $request->route('id'),
             $request->toDTO(),

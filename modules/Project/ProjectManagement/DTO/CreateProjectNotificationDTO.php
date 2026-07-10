@@ -7,15 +7,15 @@ namespace Modules\Project\ProjectManagement\DTO;
 final class CreateProjectNotificationDTO
 {
     public function __construct(
-        public readonly ?string $notificationNumber    = null,
-        public readonly string  $projectId,
         public readonly string  $createdByUserId,
-        public readonly array   $assignedUserIds,
-        public readonly string  $taskDate,
-        public readonly ?string $taskTime,
-        public readonly float   $durationHours,
-        public readonly float   $taskLatitude,
-        public readonly float   $taskLongitude,
+        public readonly ?string $notificationNumber    = null,
+        public readonly ?string $projectId             = null,
+        public readonly ?array  $assignedUserIds       = null,
+        public readonly ?string $taskDate              = null,
+        public readonly ?string $taskTime              = null,
+        public readonly ?float  $durationHours        = null,
+        public readonly ?float  $taskLatitude         = null,
+        public readonly ?float  $taskLongitude        = null,
         public readonly ?string $notificationType          = null,
         public readonly ?string $severity                  = 'منخفض',
         public readonly ?string $workType                  = null,
@@ -42,6 +42,7 @@ final class CreateProjectNotificationDTO
         public readonly ?string $assignmentResponsibleId   = null,
         public readonly bool    $allUsersCanApprove        = true,
         public readonly bool    $independentProgress       = false,
+        public readonly bool    $isDraft                   = false,
     ) {}
 
     public function toArray(): array

@@ -181,4 +181,9 @@ class ProjectNotificationFilter extends SearchModelFilter
                   ->orWhere('repair_point', 'like', '%' . $term . '%');
         });
     }
+
+    public function createdByUserId($userId)
+    {
+        return $this->where('created_by_user_id', $userId);
+    }
 }
