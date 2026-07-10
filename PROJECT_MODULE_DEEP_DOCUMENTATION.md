@@ -1,7 +1,9 @@
 # Project Module — Deep Documentation
 
-> **Version**: 1.1  
+> **Version**: 1.2  
 > **Scope**: Complete architectural, structural, behavioural, and frontend/UI reference for the `Modules\Project` namespace and all its sub-modules.
+>
+> **Update 2026-07-10**: Clarified `ProjectNotificationService` reassignment and confirm-receive flows. Reassignment now reuses the `CreateProjectNotificationTask` creation workflow via `EmployeeTaskRequestService::createIndependentProcessesForUsers()` instead of seeding a standalone `ConfirmProjectNotificationPresence` process. `confirmReceive()` is documented as a two-stage flow that may first approve the creation workflow before moving into the confirm-receive lifecycle.
 
 ---
 
@@ -1187,7 +1189,11 @@ Returns four widgets with current count/value, previous period count/value, perc
 
 **File**: `Modules\Project\ProjectManagement\Services\ProjectNotificationService`
 
-Manages project notifications — dashboard-created task assignments dispatched to employees. Each notification creates a linked `EmployeeTaskRequest` via the `EmployeeTask` module using the `CreateProjectNotificationTask` form key. The mobile lifecycle uses `ConfirmProjectNotificationPresence` as the confirm-receive step, which moves the task from the employee inbox (`approved`) to the assigned tasks list (`in_progress`).
+Manages project notifications — dashboard-created task assignments dispatched to employees. Each notification creates a linked `EmployeeTaskRequest` via the `EmployeeTask` module using the `CreateProjectNotificationTask` form key. The mobile confirm-receive flow is two-stage:
+1. The creation workflow (`CreateProjectNotificationTask`) is approved by the assigned user. This completes the admin dispatch workflow and leaves the task `approved`.
+2. The confirm-receive lifecycle (`ConfirmProjectNotificationPresence`) is then created and approved, moving the task from the employee inbox (`approved`) to the assigned tasks list (`in_progress`).
+
+Reassignment reproduces the same state as immediately after creation: it starts a fresh per-user `CreateProjectNotificationTask` process for the reassigned user via `EmployeeTaskRequestService::createIndependentProcessesForUsers()`, so the workflow engine resolves steps, notifications, and ordering exactly like initial creation.
 
 Key methods:
 - `create(CreateProjectNotificationDTO $dto): ProjectNotification` — Creates the notification row, then delegates to `EmployeeTaskRequestService::create()` with `InternalProcessForm::CreateProjectNotificationTask->value` as the form key. The first assigned user is used as the primary `user_id` for the EmployeeTaskRequest. After creation, `injectAssignedUsersIntoWorkflow()` adds all assigned users to the `authorized_user_ids` of all pending process steps when `all_users_can_approve` is true. The linked `EmployeeTaskRequest` gets `is_project_notification = true`, `task_source = 'dashboard'`, and `project_notification_id` set. The `currentLatitude`/`currentLongitude` are explicitly `null` because the admin creates this from the dashboard, not from the employee's current GPS context.
@@ -1215,13 +1221,19 @@ Key methods:
 - `requestTaskPostponement(string $id, RequestProjectNotificationTaskPostponementDTO $dto, string $userId): ProjectNotification` — Creates a workflow Process snapshot with the new date/time; on approval, `applyTaskPostponement()` updates both the notification and the linked `EmployeeTaskRequest` with the new date/time. Form key: `ProjectNotificationTaskPostponement`.
 - `applyTaskPostponement(ProjectNotification $notification, EmployeeTaskRequest $task, string $newTaskDate, string $newTaskTime, string $reason): ProjectNotificationTaskPostponement` — Applies the postponement by updating both the notification and the linked task, and stores a `ProjectNotificationTaskPostponement` historical record.
 - `resolvePendingProcessesForInbox(ProjectNotification $notification, string $userId): array` — Delegates to `WorkflowEngine::resolvePendingProcessesForUser()`. Resolves pending workflow processes for the inbox display, returning an array of `{process_id, procedure_setting_id, form, mobile_inbox_action_key, pending_step_id, pending_step_order}`. The `form` key falls back to `$process->procedureSetting?->form` if not in `$process->metadata['form']`.
-- `confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile confirm-receive. If the linked task is still `pending`, it is auto-approved first, then the task is started. This moves the notification from the inbox (`approved`) to the assigned tasks list (`in_progress`). Form key: `ConfirmProjectNotificationPresence`.
+- `confirmReceive(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile confirm-receive. Two-stage flow:
+  1. If the linked task has an active workflow `Process`, the current pending step is approved (this may be the creation workflow `CreateProjectNotificationTask` after reassignment, or any other pending lifecycle step).
+  2. If the linked task is still `pending`, it is auto-approved.
+  3. Once the task is `approved` and no creation/lifecycle workflow steps remain active, a per-user `ConfirmProjectNotificationPresence` lifecycle process is created and immediately approved, starting the task and moving it from the inbox (`approved`) to the assigned tasks list (`in_progress`).
+  4. `confirmation_receive_date` is recorded when the task reaches `in_progress`.
+  
+  This design means a reassigned user may first see and approve a `CreateProjectNotificationTask` process in their inbox — that is expected and matches the creation-time workflow.
 - `startTask(string $notificationId, StartTaskDTO $dto, User $user): EmployeeTaskRequest` — Mobile: backward-compatible alias that delegates to `confirmReceive()` internally.
 - `endTask(string $notificationId, EndTaskDTO $dto, ?string $userId = null): EmployeeTaskRequest` — Mobile: employee ends the linked task. When `independent_progress` is true, passes the user ID as `independentUserId` to `EmployeeTaskLifecycleService::end()` for per-user process creation. If the selected end-task status is `shift_handover`, the backend requires another assigned employee (not the current user) to have an approved location confirmation before allowing the task to end. Form key: `EndProjectNotificationTask`.
 - `takeAction(string $notificationId, string $procedureSettingId, string $userId): array` — Records a generic internal procedure action (e.g., `UpdateProjectNotificationTask`). When `independent_progress` is true, the `WorkflowProcedureTaken` event includes the user ID so the `internal_procedure_takens` record is scoped per-user.
 - `availableActions(string $notificationId, ?string $userId = null): array` — Lists available workflow actions for the notification. When `independent_progress` is true, filters taken procedures by the acting user's ID so each user sees only their own progress. Same as `GET /employee-tasks/{id}/available-actions`.
 - `procedures(string $notificationId, bool $debug = false): array` — Returns the timeline of all taken (completed) internal procedures for the linked `EmployeeTask`, ordered by `taken_at` ascending, plus a summary block. Returns `{items, summary}` (and optionally `debug`).
-- `reassignTask(string $notificationId, string $targetUserId, string $actorUserId): ProjectNotification` — Reassigns the linked `EmployeeTaskRequest` to the target user and resets lifecycle markers so the target user starts a fresh lifecycle. The target user is added to `assigned_user_ids`, `independent_progress` is enabled, the task `user_id` is switched to the target user, and `confirmation_receive_date`, `location_confirmed_at`, and `end_task_status_id` are cleared. A pending per-user `ConfirmProjectNotificationPresence` process is created for the target user so the notification appears in their mobile inbox; the next confirm-receive call approves that process.
+- `reassignTask(string $notificationId, string $targetUserId, string $actorUserId): ProjectNotification` — Reassigns the linked `EmployeeTaskRequest` to the target user and resets lifecycle markers so the target user starts a fresh lifecycle. The target user is added to `assigned_user_ids`, `independent_progress` is enabled, the task `user_id` is switched to the target user, and `confirmation_receive_date`, `location_confirmed_at`, and `end_task_status_id` are cleared. A fresh per-user `CreateProjectNotificationTask` process is started for the target user via `EmployeeTaskRequestService::createIndependentProcessesForUsers()`, using the same form key and central workflow resolution as initial creation. This makes the notification appear in the target user's inbox and triggers the same notifications/steps as creation. If the engine auto-approves (no resolvable action takers), a minimal fallback `ConfirmProjectNotificationPresence` process is seeded. The pending-process guard checks by user + task, not by form, to avoid duplicate processes.
 
 **WorkflowEngine Integration**:
 
@@ -1252,7 +1264,7 @@ When `independent_progress` is true on a `ProjectNotification`, each assigned us
 
 The creation workflow (`CreateProjectNotificationTask`) remains shared regardless of `independent_progress` — it's the admin's single approval step to dispatch the task. Only lifecycle procedures (site status, fine, location confirmation, work stoppage/resumption, task postponement, end task) are per-user when `independent_progress` is true.
 
-**Reassignment**: `ProjectNotificationService::reassignTask()` switches `EmployeeTaskRequest.user_id` to the target user, enables `independent_progress`, appends the user to `assigned_user_ids`, and clears lifecycle markers (`confirmation_receive_date`, `location_confirmed_at`, `end_task_status_id`). When the reassigned user confirms receipt, a new per-user `ConfirmProjectNotificationPresence` process is created, giving them a fresh lifecycle independent of previous users.
+**Reassignment**: `ProjectNotificationService::reassignTask()` switches `EmployeeTaskRequest.user_id` to the target user, enables `independent_progress`, appends the user to `assigned_user_ids`, and clears lifecycle markers (`confirmation_receive_date`, `location_confirmed_at`, `end_task_status_id`). It then starts a fresh per-user `CreateProjectNotificationTask` process for the target user via `EmployeeTaskRequestService::createIndependentProcessesForUsers()`, reproducing the same workflow state the notification had immediately after creation. The reassigned user may therefore see a `CreateProjectNotificationTask` process in their inbox first; `confirmReceive()` will approve it and then move into the per-user `ConfirmProjectNotificationPresence` lifecycle, exactly as happens for a task created the first time.
 
 **Cross-Module Relationship with EmployeeTask**:
 
