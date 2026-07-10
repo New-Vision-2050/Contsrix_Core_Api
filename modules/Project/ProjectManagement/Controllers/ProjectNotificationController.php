@@ -810,16 +810,20 @@ class ProjectNotificationController extends Controller
      */
     public function reassign(ReassignProjectNotificationRequest $request): JsonResponse
     {
+        $assignedUserIds = $request->input('assigned_user_ids');
+
         $notification = $this->notificationService->reassignTask(
             $request->route('id'),
-            $request->input('user_id'),
+            $assignedUserIds,
             (string) Auth::id(),
         );
 
-        $userId = $request->input('user_id');
         $notification->setAttribute(
             'pending_processes',
-            $this->notificationService->resolvePendingProcessesForInbox($notification, $userId),
+            $this->notificationService->resolvePendingProcessesForInbox(
+                $notification,
+                (string) $assignedUserIds[0],
+            ),
         );
 
         return Json::item(

@@ -1177,7 +1177,7 @@ class ProjectNotificationService
         );
     }
 
-    private function hasPendingConfirmReceiveProcessForUser(EmployeeTaskRequest $task, string $userId): bool
+    private function hasPendingProcessForUser(EmployeeTaskRequest $task, string $userId): bool
     {
         return Process::query()
             ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
@@ -1193,11 +1193,11 @@ class ProjectNotificationService
 
     /**
      * Cancel ALL old in-progress processes for the task so neither the previous
-     * assignee nor the target user has stale processes (confirm-receive, end-task,
-     * update, site-status, fines, etc.) that would cause duplicate inbox entries
-     * or orphaned workflows after reassignment.
+     * assignees nor the new assignees have stale processes (confirm-receive,
+     * end-task, update, site-status, fines, etc.) that would cause duplicate
+     * inbox entries or orphaned workflows after reassignment.
      */
-    private function cancelOldConfirmReceiveProcessesForUser(EmployeeTaskRequest $task, string $userId): void
+    private function cancelOldConfirmReceiveProcesses(EmployeeTaskRequest $task): void
     {
         $oldProcesses = Process::query()
             ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
@@ -1454,7 +1454,7 @@ class ProjectNotificationService
         // However, if there is a pending confirm-receive process (e.g. after
         // reassignment), cancel it first so it doesn't stay orphaned in the inbox.
         if ($task->status === EmployeeTaskStatus::Approved->value) {
-            $this->cancelOldConfirmReceiveProcessesForUser($task, (string) $userId);
+            $this->cancelOldConfirmReceiveProcesses($task);
             $task = $this->lifecycleService->performEnd($task, $dto);
         } else {
             $task = $this->lifecycleService->end($task->id, $dto, $independentUserId);
@@ -1489,16 +1489,21 @@ class ProjectNotificationService
     }
 
     /**
-     * Reassign the linked task to another employee and reset it so the new
-     * employee can start a fresh lifecycle. The new employee is added to the
-     * notification's assigned users, the task status is reset to approved, and
-     * lifecycle markers are cleared so confirm-receive starts a new process.
+     * Reassign the linked task to one or more employees and reset it so each
+     * new assignee can start a fresh lifecycle. The supplied user IDs become
+     * the notification's assigned users (mirroring creation), the task status is
+     * reset to approved, lifecycle markers are cleared, and a per-user creation
+     * workflow process is started for every supplied user.
      */
     public function reassignTask(
         string $notificationId,
-        string $targetUserId,
+        array $targetUserIds,
         string $actorUserId,
     ): ProjectNotification {
+        if (empty($targetUserIds)) {
+            throw ProjectNotificationException::validationFailed('At least one assigned user is required.');
+        }
+
         $notification = $this->get($notificationId);
         $task = $notification->employeeTask;
 
@@ -1506,19 +1511,20 @@ class ProjectNotificationService
             throw ProjectNotificationException::linkedTaskNotFound($notificationId);
         }
 
-        $targetUser = User::query()->find($targetUserId);
-        if (! $targetUser) {
-            throw ProjectNotificationException::userNotFound();
+        $targetUserIds = array_values(array_unique(array_map('strval', $targetUserIds)));
+
+        $existingUsers = User::query()->whereIn('id', $targetUserIds)->pluck('id')->toArray();
+        foreach ($targetUserIds as $userId) {
+            if (! in_array($userId, $existingUsers, true)) {
+                throw ProjectNotificationException::userNotFound();
+            }
         }
 
-        $assignedUserIds = $notification->assigned_user_ids ?? [];
-        if (! in_array($targetUserId, $assignedUserIds, true)) {
-            $assignedUserIds[] = $targetUserId;
-        }
+        $primaryUserId = $targetUserIds[0];
 
-        DB::transaction(function () use ($notification, $task, $targetUserId, $assignedUserIds) {
+        DB::transaction(function () use ($notification, $task, $primaryUserId, $targetUserIds) {
             $notification->update([
-                'assigned_user_ids' => $assignedUserIds,
+                'assigned_user_ids' => $targetUserIds,
                 'independent_progress' => true,
                 'confirmation_receive_date' => null,
                 'location_confirmed_at' => null,
@@ -1526,7 +1532,7 @@ class ProjectNotificationService
             ]);
 
             $task->update([
-                'user_id' => $targetUserId,
+                'user_id' => $primaryUserId,
                 'status' => EmployeeTaskStatus::Approved->value,
                 'approved_at' => now(),
                 'time_from' => null,
@@ -1541,9 +1547,9 @@ class ProjectNotificationService
                 'current_procedure_step_id' => null,
             ]);
 
-            // Cancel old in-progress confirm-receive processes for the target
-            // user so they don't block seeding a fresh lifecycle process.
-            $this->cancelOldConfirmReceiveProcessesForUser($task, $targetUserId);
+            // Cancel all old in-progress processes for the task so neither
+            // previous assignees nor the new assignees have stale workflows.
+            $this->cancelOldConfirmReceiveProcesses($task);
 
             $this->syncNotificationStatusFromTask($notification->fresh(), $task->fresh());
         });
@@ -1551,27 +1557,32 @@ class ProjectNotificationService
         $notification = $notification->fresh();
         $task = $task->fresh();
 
-        // Start a fresh confirm-receive workflow process for the reassigned user
-        // using the same mechanism and form key as project-notification creation.
-        // When independent_progress is true, EmployeeTaskRequestService creates a
-        // per-user process exactly like it does when the notification is first
-        // created with multiple assigned users.
+        // Start a fresh creation workflow process for every supplied user using
+        // the same mechanism and form key as project-notification creation.
         if (
             $task->status === EmployeeTaskStatus::Approved->value
-            && ! $this->hasPendingConfirmReceiveProcessForUser($task, $targetUserId)
             && $notification->independent_progress
         ) {
-            $this->employeeTaskRequestService->createIndependentProcessesForUsers(
-                $task,
-                [$targetUserId],
-                InternalProcessForm::CreateProjectNotificationTask->value,
+            $usersNeedingProcess = array_filter(
+                $targetUserIds,
+                fn (string $userId) => ! $this->hasPendingProcessForUser($task, $userId),
             );
 
-            // Fallback: if the central engine auto-approved (no resolvable users
-            // for the reassigned user's step), seed a minimal pending process so
-            // the notification still appears in their inbox.
-            if (! $this->hasPendingConfirmReceiveProcessForUser($task, $targetUserId)) {
-                $this->seedConfirmReceiveProcess($task, $notification, $targetUserId, null);
+            if (! empty($usersNeedingProcess)) {
+                $this->employeeTaskRequestService->createIndependentProcessesForUsers(
+                    $task,
+                    $usersNeedingProcess,
+                    InternalProcessForm::CreateProjectNotificationTask->value,
+                );
+            }
+
+            // Fallback: if the central engine auto-approved for a user (no
+            // resolvable action takers), seed a minimal pending process so the
+            // notification still appears in that user's inbox.
+            foreach ($targetUserIds as $userId) {
+                if (! $this->hasPendingProcessForUser($task, $userId)) {
+                    $this->seedConfirmReceiveProcess($task, $notification, $userId, null);
+                }
             }
         }
 

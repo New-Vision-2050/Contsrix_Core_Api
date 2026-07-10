@@ -2,7 +2,9 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-07-08 — Independent progress support added. `Process` and `InternalProcedureTaken` now have nullable `user_id` column. When `ProjectNotification.independent_progress = true`, lifecycle workflow processes are created per-user (each assigned user gets their own `Process` with `user_id` set). `ProcedureWorkflowService::getTakenProcedureIds()` and `isProcedureTaken()` accept optional `?string $userId` — when provided, includes shared (`user_id = null`) + user-scoped records, excludes other users' records. `WorkflowEngine::startWorkflow()` and `startLifecycleWorkflow()` accept optional `?string $independentUserId`. `EmployeeTaskRequestService::createLifecycleProcess()` accepts `?string $independentUserId`. `EmployeeTaskLifecycleService::start()`/`end()` accept `?string $independentUserId`. `EmployeeTaskAvailableActionsService::forTask()` and `InternalProcedureAvailableActionsService::forProcessable()` accept `?string $userId`. `EmployeeTaskRequestService::approveWorkflowStep()`/`rejectWorkflowStep()` iterate multiple in-progress processes (independent mode) preferring user-scoped. `ProjectNotificationService` adds `createLifecycleProcessForNotification()` helper, `availableActions()`/`takeAction()`/`endTask()` accept `?string $userId`. Unique constraint on `internal_procedure_takens` now includes `user_id`. Unique constraint on `processes` now includes `user_id`. See §Independent Progress.
+> **Last updated:** 2026-07-10 — Reassignment endpoint now accepts multiple users via `assigned_user_ids` (§9.6). `ProjectNotificationService::reassignTask()` replaces the assigned-user list, cancels all stale processes, and creates per-user `CreateProjectNotificationTask` processes for every supplied user. Also clarified reassignment in §9.6 and §9.7 and added six common procedure-setting/reassignment traps for AI assistants.
+>
+> **Previous:** 2026-07-08 — Independent progress support added. `Process` and `InternalProcedureTaken` now have nullable `user_id` column. When `ProjectNotification.independent_progress = true`, lifecycle workflow processes are created per-user (each assigned user gets their own `Process` with `user_id` set). `ProcedureWorkflowService::getTakenProcedureIds()` and `isProcedureTaken()` accept optional `?string $userId` — when provided, includes shared (`user_id = null`) + user-scoped records, excludes other users' records. `WorkflowEngine::startWorkflow()` and `startLifecycleWorkflow()` accept optional `?string $independentUserId`. `EmployeeTaskRequestService::createLifecycleProcess()` accepts `?string $independentUserId`. `EmployeeTaskLifecycleService::start()`/`end()` accept `?string $independentUserId`. `EmployeeTaskAvailableActionsService::forTask()` and `InternalProcedureAvailableActionsService::forProcessable()` accept `?string $userId`. `EmployeeTaskRequestService::approveWorkflowStep()`/`rejectWorkflowStep()` iterate multiple in-progress processes (independent mode) preferring user-scoped. `ProjectNotificationService` adds `createLifecycleProcessForNotification()` helper, `availableActions()`/`takeAction()`/`endTask()` accept `?string $userId`. Unique constraint on `internal_procedure_takens` now includes `user_id`. Unique constraint on `processes` now includes `user_id`. See §Independent Progress.
 >
 > **Previous:** 2026-07-04 — WorkflowEngine::startWorkflow() now auto-records lifecycle procedures on auto-approve; lifecycle resolvers no longer require steps. | **Previous:** 2026-07-01 — Notification system fully centralized. `WorkflowEngine::dispatchNotifications()` is the single entry point for email/SMS/WhatsApp/push. `ProcedureWorkflowService::resolveActionTakerUserIdsForStep()` now auto-dispatches notifications internally — services no longer call `dispatchStepNotifications()`. New `SendWorkflowNotificationsJob` (queued, primitive IDs only) fixes UUID serialization crash (`TypeError: Illegal offset type`). `WorkflowActionRequired` no longer implements `ShouldQueue`. WhatsApp: `toWhatsapp()` prepends `phone_code` for Twilio international format. `TwilioWhatsApp` constructor falls back to env config when no DB driver. `WhatsAppChannel` logs all send attempts. See §Centralized Notification System, §17.5, §21.5, §26.3, §26.5, §26.7.
 >
@@ -64,6 +66,7 @@ New Process-based workflow code should go through `WorkflowEngine`:
 - `WorkflowEngine::startWorkflow()` resolves settings, creates `Process` records, and activates the first step.
 - `WorkflowEngine::resolveParentSetting()` scopes by company + branch workflow, then falls back to the company default workflow.
 - `WorkflowEngine::resolveSettingsForEntry()` returns the parent setting for no-form workflows or matching child settings for form-based workflows.
+- See **§9.7 Common Procedure Setting / Reassignment Traps** before writing any code that resolves settings by `internal_procedure_setting_id`, matches rows by `form`, or seeds confirm-receive processes during reassignment.
 
 `ProcedureWorkflowService` still exists for template-step flows that do **not** create `Process` records, such as EmployeeTask extensions and completion approvals.
 
@@ -179,7 +182,7 @@ If **no child ProcedureSetting is found** for the form, or its `conditions` colu
 | `resolvePendingProcessesForUser($task, $userId)` | `list<array{process_id, procedure_setting_id, form, mobile_inbox_action_key, pending_step_id, pending_step_order}>` | `Model`, `string` | ProjectNotificationService::resolvePendingProcessesForInbox — requires `$task->processes` relation loaded; calls `loadMissing('processes.procedureSetting')` internally |
 | `hasActiveProcess($processableType, $processableId, $procedureSettingId = null)` | `bool` | `string`, `string`, `?string` | ProjectNotificationService::taskHasActiveProcess, confirmReceive |
 | `startLifecycleWorkflow($processableType, $processableId, $procedureType, $formKey, $companyId, $branchId, $createdByUserId, $metadata, $context = [], $resolvedSetting = null, $independentUserId = null)` | `WorkflowStartResult` | `string`, `string`, `string`, `string`, `string`, `?string`, `?string`, `array`, `array`, `?ProcedureSetting`, `?string` | Centralised lifecycle start (update, site-status, fine, etc.); resolves setting by form key if not provided, then delegates to `startWorkflow()` with `$independentUserId` |
-| `resolveLifecycleSetting($explicitSettingId, $procedureType, $formKey, $companyId, $branchId)` | `?ProcedureSetting` | `?string`, `string`, `string`, `string`, `?string` | ProjectNotificationService request* methods — if `$explicitSettingId` is non-null, looks it up directly; otherwise delegates to `resolveSettingsForEntry()->first()` |
+| `resolveLifecycleSetting($explicitSettingId, $procedureType, $formKey, $companyId, $branchId)` | `?ProcedureSetting` | `?string`, `string`, `string`, `string`, `?string` | ProjectNotificationService request* methods — if `$explicitSettingId` is non-null, looks it up directly; otherwise delegates to `resolveSettingsForEntry()->first()`. **Warning:** `$explicitSettingId` is usually `null` for child-by-form resolution; passing the parent `internal_procedure_setting_id` will typically match a row with `form = null` and no steps. See §9.7 Trap 1. |
 
 ### ProcessWorkflowService
 
@@ -911,21 +914,26 @@ All new parameters are optional with `null` defaults. Regular employee tasks cre
 
 ## 9.6. Task Reassignment & Lifecycle Reset
 
-Project notifications support reassigning the linked `EmployeeTaskRequest` to another employee via:
+Project notifications support reassigning the linked `EmployeeTaskRequest` to one or more employees via:
 
 ```
 POST /api/v1/projects/notifications/{id}/reassign
-{ user_id: <uuid> }
+{ assigned_user_ids: [<uuid>, <uuid>, ...] }
 ```
 
 ### What happens on reassignment
 
-1. **Target user added** — The selected `user_id` is appended to `ProjectNotification.assigned_user_ids` (if not already present).
+1. **Target users replace the assigned list** — The submitted `assigned_user_ids` array becomes the new `ProjectNotification.assigned_user_ids`, matching the creation request format. Any users not in the new list are removed from assignment.
 2. **Independent progress enabled** — `independent_progress` is set to `true` so every assigned user has their own lifecycle.
-3. **Task ownership switched** — `EmployeeTaskRequest.user_id` is updated to the target user so action-taker resolution points to them.
+3. **Task ownership switched** — `EmployeeTaskRequest.user_id` is updated to the first supplied user so action-taker resolution points to the primary assignee.
 4. **Task state reset** — Status is set back to `approved`, and start/end session fields (`time_from`, `time_to`, `total_task_hours`, `total_pause_minutes`, `shift_end_method`, `start_location`, `end_location`, `radius_meters`, `timezone`) are cleared.
 5. **Notification lifecycle markers cleared** — `confirmation_receive_date`, `location_confirmed_at`, and `end_task_status_id` are set to `null`.
-6. **Pending confirm-receive process seeded** — A per-user `Process` for the form `ConfirmProjectNotificationPresence` is created immediately with `user_id` set to the reassigned user. This makes the notification appear in the reassigned user's mobile inbox.
+6. **Old processes cancelled** — All in-progress `Process` records for the task are cancelled so previous assignees and new assignees don't have stale workflows.
+7. **Fresh creation workflow processes started** — The reassignment reuses the same creation workflow mechanism that dispatched the task originally:
+   - `ProjectNotificationService::reassignTask()` calls `EmployeeTaskRequestService::createIndependentProcessesForUsers($task, $targetUserIds, InternalProcessForm::CreateProjectNotificationTask->value)`.
+   - This creates one per-user `Process` per supplied user with `form = 'createProjectNotificationTask'` and `user_id` set, exactly as creation does when `independent_progress` is enabled.
+   - Each process is resolved through the central `WorkflowEngine` using the notification's `internal_procedure_setting_id` parent and the `CreateProjectNotificationTask` form key, so steps, notifications, and ordering behave exactly like initial creation.
+   - If the engine auto-approves for a user (no resolvable action takers), a minimal fallback `Process` with `form = 'confirmProjectNotificationPresence'` is seeded for that user so the notification still appears in their inbox.
 
 ### New lifecycle starts on confirm-receive
 
@@ -935,16 +943,94 @@ When the reassigned user calls:
 POST /api/v1/projects/notifications/{id}/confirm-receive
 ```
 
-- `confirmReceive()` sees the pre-created `ConfirmProjectNotificationPresence` process and approves its first step.
-- The listener starts the task, moving it to `in_progress`.
+- `confirmReceive()` first checks for any active workflow `Process` on the linked task.
+- If the creation workflow (`createProjectNotificationTask`) still has pending steps, those steps are approved first, exactly as they would be for a newly created notification.
+- Once the creation workflow is complete and the task is `approved`, `confirmReceive()` creates and immediately approves the per-user `ConfirmProjectNotificationPresence` lifecycle process, starting the task and moving it to `in_progress`.
 - `confirmation_receive_date` is recorded for the new lifecycle.
 - From this point, the reassigned user progresses through lifecycle procedures independently (site status updates, fines, location confirmations, work stoppage/resumption, postponement, end task).
 
 ### Design notes
 
-- The creation workflow (`CreateProjectNotificationTask`) remains untouched; only the lifecycle is reset for the reassigned user.
+- **Reassignment must behave like creation.** Use the `CreateProjectNotificationTask` form key and `EmployeeTaskRequestService::createIndependentProcessesForUsers()` so the workflow engine handles step resolution, notification dispatch, and ordering the same way it does when the notification is first created.
+- **Do not seed `ConfirmProjectNotificationPresence` directly as the first step.** That form is the confirm-receive *lifecycle* step; it should only run after the creation workflow has finished. Creating it immediately during reassign duplicates processes and causes the user to confirm twice.
+- **Detect pending processes by user + task, not by form.** A check that only looks for `form = 'confirmProjectNotificationPresence'` will miss a freshly created `createProjectNotificationTask` process and incorrectly seed a duplicate.
 - Reassignment does not enforce a specific prior task status. It can be used after `shift_handover` (task `completed`) or from an `approved` task that was never started.
 - When ending with `shift_handover`, the existing validation requires another assigned employee to have confirmed the location before the task can be ended, preventing self-handover within the same lifecycle.
+
+---
+
+## 9.7. Common Procedure Setting / Reassignment Traps
+
+### Trap 1: `internal_procedure_setting_id` is the **parent**, not the executable workflow
+
+`ProjectNotification.internal_procedure_setting_id` points to a **parent** `ProcedureSetting` row (`parent_id = NULL`). That parent row may have `form = null` and usually has **no steps** of its own. The actual executable workflows are **child** rows underneath it, each with a non-null `form` key (`createProjectNotificationTask`, `confirmProjectNotificationPresence`, etc.) and their own `steps`, `appears_before_ids`, `appears_after_ids`, and `sort_order`.
+
+**Implication for AI assistants:**
+- Do **not** pass `internal_procedure_setting_id` directly to `resolveLifecycleSetting()` as the explicit setting ID when looking for a child by form. The parent likely has no steps, so the engine will not find what you expect.
+- Pass `null` as the explicit ID and let the engine resolve the parent by type/company/branch, then locate the matching child by `form`.
+
+```php
+// Correct: let the engine find the child by form under the parent
+$procedureSetting = $this->engine->resolveLifecycleSetting(
+    null,
+    $task->procedureSettingType()->value,
+    InternalProcessForm::CreateProjectNotificationTask->value,
+    $notification->company_id,
+    $branchId,
+);
+
+// Wrong: the parent row usually has no steps / form = null
+$procedureSetting = $this->engine->resolveLifecycleSetting(
+    $notification->internal_procedure_setting_id, // parent id!
+    $task->procedureSettingType()->value,
+    InternalProcessForm::CreateProjectNotificationTask->value,
+    $notification->company_id,
+    $branchId,
+);
+```
+
+### Trap 2: A child `ProcedureSetting` with `form = null` cannot be found by form key
+
+Only children with a non-null `form` column are matched by `resolveLifecycleSetting(..., $formKey)`. If the database child row has `form = null`, the engine falls through to auto-approve and no `Process` is created. **Do not "fix" this by writing a migration or SQL update to set `form` on an arbitrary child.** The correct child must already carry the intended form key in production data; if it does not, the data model is incomplete and should be configured through the admin UI (`procedure-settings/{id}/internal-procedures`), not by patching DB values to match code.
+
+### Trap 3: `Process.procedure_setting_id` is only populated for children with `form != null`
+
+`Process.procedure_setting_id` stores the child setting ID. Parent-level processes and manually seeded fallback processes may have `procedure_setting_id = null`. Inbox presenters fall back to `process->metadata['form']` or `process->procedureSetting?->form` when displaying the form key.
+
+### Trap 4: Reassign must reuse the **creation** form key, not the confirm-receive form key
+
+When reassigning a project notification task, the goal is to reproduce the same workflow state the task had **immediately after creation**. At that moment the active workflow is the **creation workflow** (`CreateProjectNotificationTask`), not the confirm-receive lifecycle (`ConfirmProjectNotificationPresence`).
+
+- Use `EmployeeTaskRequestService::createIndependentProcessesForUsers($task, [$targetUserId], InternalProcessForm::CreateProjectNotificationTask->value)`.
+- Do **not** seed a `ConfirmProjectNotificationPresence` process directly during reassign.
+- Confirm-receive will naturally move from the creation workflow into the confirm-receive lifecycle when the user calls the endpoint, exactly as it does for a task created the first time.
+
+### Trap 5: Detecting pending processes by form causes duplicate processes
+
+Any guard that checks "does the user have a pending confirm-receive process?" by filtering on `procedureSetting.form = 'confirmProjectNotificationPresence'` will miss a legitimate `createProjectNotificationTask` process and create a duplicate. Always detect pending state by `processable_type + processable_id + user_id + status + pending steps`, ignoring the form value.
+
+```php
+// Correct: any pending process for this user on this task blocks re-seeding
+Process::query()
+    ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+    ->where('processable_id', $task->id)
+    ->where('user_id', $userId)
+    ->where('status', ProcessStatus::InProgress)
+    ->whereHas('steps', fn ($q) => $q
+        ->where('status', ProcessStepStatus::Pending)
+        ->where('assigned_user_id', $userId)
+    )
+    ->exists();
+
+// Wrong: only looks for the confirm-receive form
+->whereHas('procedureSetting', fn ($q) => $q
+    ->where('form', InternalProcessForm::ConfirmProjectNotificationPresence->value)
+)
+```
+
+### Trap 6: `confirm-receive` is a two-stage flow
+
+`ProjectNotificationService::confirmReceive()` handles both the **creation workflow** (if still active) and the **confirm-receive lifecycle** (once the task is approved). If a reassigned user sees a `createProjectNotificationTask` process in their inbox, that is expected; confirming it advances the creation workflow. Only after the creation workflow completes does the task move to `in_progress` via the `ConfirmProjectNotificationPresence` lifecycle.
 
 ---
 
