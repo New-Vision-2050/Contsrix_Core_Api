@@ -25,11 +25,12 @@ class CreateProjectNotificationRequest extends FormRequest
     {
         $isDraft = $this->boolean('is_draft');
         $userExistsRule = $isDraft ? ['uuid'] : ['uuid', 'exists:users,id'];
+        $assignedUserIdsRule = $isDraft ? ['nullable', 'array'] : ['required', 'array', 'min:1'];
 
         return [
             'notification_number'         => ['nullable', 'string', 'max:50', Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'))],
             'project_id'                  => [$this->requiredUnlessDraft(), 'uuid', 'exists:projects,id'],
-            'assigned_user_ids'           => [$this->requiredUnlessDraft(), 'array', 'min:1'],
+            'assigned_user_ids'           => $assignedUserIdsRule,
             'assigned_user_ids.*'         => $userExistsRule,
             'all_users_can_approve'       => ['nullable', 'boolean'],
             'independent_progress'        => ['nullable', 'boolean'],

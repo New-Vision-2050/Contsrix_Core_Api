@@ -68,6 +68,24 @@ class ProjectNotificationDraftTest extends BaseAttendanceReportTestCase
         ], tenant()->getDatabaseName());
     }
 
+    public function test_draft_create_accepts_empty_assigned_user_ids(): void
+    {
+        $project = $this->createProject();
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/projects/notifications', [
+                'is_draft' => true,
+                'project_id' => $project->id,
+                'assigned_user_ids' => [],
+            ]);
+
+        $response->assertOk();
+
+        $data = $response->json('payload');
+        $this->assertSame('draft', $data['status']);
+    }
+
     public function test_draft_update_overwrites_fields_and_keeps_status_draft(): void
     {
         $project = $this->createProject();
