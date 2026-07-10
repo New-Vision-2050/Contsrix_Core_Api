@@ -1574,14 +1574,24 @@ class ProjectNotificationService
         ProjectNotification $notification,
         string $targetUserId,
     ): void {
+        // Use the notification's company_id (always set) instead of the task's
+        // company_id, which may be null for project notification tasks.
+        $companyId = $notification->company_id ?? $task->company_id;
+
+        // Resolve the target user's branch for branch-specific settings.
+        $targetUser = User::query()
+            ->with('userProfessionalData.branch')
+            ->find($targetUserId);
+        $branchId = $targetUser?->userProfessionalData?->branch_id !== null
+            ? (string) $targetUser->userProfessionalData->branch_id
+            : null;
+
         $procedureSetting = $this->engine->resolveLifecycleSetting(
             null,
             $task->procedureSettingType()->value,
             InternalProcessForm::ConfirmProjectNotificationPresence->value,
-            $task->company_id,
-            $task->user?->userProfessionalData?->branch_id !== null
-                ? (string) $task->user->userProfessionalData->branch_id
-                : null,
+            $companyId,
+            $branchId,
         );
 
         // Resolve the first step from the setting (or its descendants).
@@ -1595,6 +1605,14 @@ class ProjectNotificationService
                 ->whereIn('procedure_setting_id', $settingIds)
                 ->orderBy('step_order')
                 ->first();
+        }
+
+        // Fallback: if no procedure setting was found, use the task's current
+        // procedure step (set during notification creation) so we can still
+        // create a pending step for the reassigned user.
+        if ($step === null && $task->current_procedure_step_id !== null) {
+            $step = \Modules\ProcedureSetting\Models\ProcedureSettingStep::query()
+                ->find($task->current_procedure_step_id);
         }
 
         // Find the next free sort_order for this user-scoped process.
@@ -1637,17 +1655,16 @@ class ProjectNotificationService
             ],
         ]);
 
-        // Create the pending step directly with the target user as action taker.
-        if ($step !== null) {
-            \Modules\Process\Models\ProcessStep::create([
-                'process_id'   => $process->id,
-                'step_id'      => $step->id,
-                'template_step_order' => $step->step_order,
-                'assigned_user_id'    => $targetUserId,
-                'authorized_user_ids' => [$targetUserId],
-                'status'       => \Modules\Process\Enums\ProcessStepStatus::Pending,
-            ]);
-        }
+        // Always create a pending step so the process is visible in the user's
+        // inbox. Use the resolved step, or a minimal step if none was found.
+        \Modules\Process\Models\ProcessStep::create([
+            'process_id'   => $process->id,
+            'step_id'      => $step?->id ?? 0,
+            'template_step_order' => $step?->step_order ?? 1,
+            'assigned_user_id'    => $targetUserId,
+            'authorized_user_ids' => [$targetUserId],
+            'status'       => \Modules\Process\Enums\ProcessStepStatus::Pending,
+        ]);
     }
 
     private function collectProcedureSettingDescendantIds(string $parentId): array
