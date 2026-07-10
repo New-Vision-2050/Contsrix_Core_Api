@@ -312,18 +312,12 @@ class ProjectNotificationRepository
     }
 
     /**
-     * Default lists should hide draft notifications. Drafts are only visible when
-     * the caller explicitly filters by status=draft (or a comma-separated list
-     * containing draft).
+     * Drafts are visible by default alongside published notifications. This
+     * method is kept as a hook in case future requirements need to hide drafts
+     * again or apply conditional exclusion.
      */
     private function applyDraftExclusion($query, array $filters): void
     {
-        $statusFilter = $filters['status'] ?? null;
-
-        if (is_string($statusFilter) && str_contains($statusFilter, 'draft')) {
-            return;
-        }
-
-        $query->where('project_notifications.status', '!=', 'draft');
+        // No-op by design: drafts are included in default lists.
     }
 }
