@@ -221,8 +221,10 @@ final class ExecuteLifecycleActionOnProcessCompleted
             return;
         }
 
+        $fileIds = array_map('intval', $fileIds);
+
         foreach ($notification->getMedia('update_attachments') as $media) {
-            if (in_array($media->id, $fileIds, true)) {
+            if (in_array((int) $media->id, $fileIds, true)) {
                 $media->move($notification, 'attachments');
             }
         }
@@ -360,8 +362,10 @@ final class ExecuteLifecycleActionOnProcessCompleted
             return;
         }
 
+        $fileIds = array_map('intval', $fileIds);
+
         foreach ($notification->getMedia('work_stoppage_report_attachments') as $media) {
-            if (in_array($media->id, $fileIds, true)) {
+            if (in_array((int) $media->id, $fileIds, true)) {
                 $media->move($report, 'attachments');
             }
         }
@@ -453,8 +457,10 @@ final class ExecuteLifecycleActionOnProcessCompleted
             return;
         }
 
+        $fileIds = array_map('intval', $fileIds);
+
         foreach ($notification->getMedia('work_resumption_attachments') as $media) {
-            if (in_array($media->id, $fileIds, true)) {
+            if (in_array((int) $media->id, $fileIds, true)) {
                 $media->move($resumption, 'attachments');
             }
         }
@@ -472,8 +478,10 @@ final class ExecuteLifecycleActionOnProcessCompleted
             return;
         }
 
+        $fileIds = array_map('intval', $fileIds);
+
         foreach ($notification->getMedia('fine_attachments') as $media) {
-            if (in_array($media->id, $fileIds, true)) {
+            if (in_array((int) $media->id, $fileIds, true)) {
                 $media->move($fine, 'attachments');
             }
         }
@@ -491,8 +499,10 @@ final class ExecuteLifecycleActionOnProcessCompleted
             return;
         }
 
+        $fileIds = array_map('intval', $fileIds);
+
         foreach ($notification->getMedia('site_status_update_attachments') as $media) {
-            if (in_array($media->id, $fileIds, true)) {
+            if (in_array((int) $media->id, $fileIds, true)) {
                 $media->move($siteStatusUpdate, 'attachments');
             }
         }
@@ -513,6 +523,8 @@ final class ExecuteLifecycleActionOnProcessCompleted
             return;
         }
 
+        $fileIds = array_map('intval', $fileIds);
+
         $collection = match ($metadata['form'] ?? null) {
             InternalProcessForm::UpdateProjectNotificationSiteStatus->value => 'site_status_update_attachments',
             InternalProcessForm::ProjectNotificationFine->value => 'fine_attachments',
@@ -522,7 +534,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
         };
 
         foreach ($notification->getMedia($collection) as $media) {
-            if (in_array($media->id, $fileIds, true)) {
+            if (in_array((int) $media->id, $fileIds, true)) {
                 $media->delete();
             }
         }

@@ -57,6 +57,8 @@ class UpdateProjectNotificationRequest extends FormRequest
             'files.*'                     => ['file', 'max:20480'],
             'deleted_media_ids'           => ['nullable', 'array'],
             'deleted_media_ids.*'         => ['integer', 'exists:media,id'],
+            'approval_responsible_id'     => ['nullable', 'uuid'],
+            'assignment_responsible_id'   => ['nullable', 'uuid'],
         ];
     }
 
@@ -94,6 +96,8 @@ class UpdateProjectNotificationRequest extends FormRequest
             notes: $this->input('notes'),
             files: $this->hasFile('files') ? $this->file('files') : null,
             deletedMediaIds: $this->input('deleted_media_ids'),
+            approvalResponsibleId: $this->input('approval_responsible_id'),
+            assignmentResponsibleId: $this->input('assignment_responsible_id'),
             isDraft: $this->boolean('is_draft'),
         );
     }
