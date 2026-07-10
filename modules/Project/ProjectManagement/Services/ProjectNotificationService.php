@@ -2190,6 +2190,28 @@ class ProjectNotificationService
         // Sort all items by created_at descending.
         usort($items, fn ($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
 
+        // Include any site-status files still staged on the notification. These can
+        // be left behind when the workflow listener's strict in_array comparison
+        // fails to match string file IDs, so we surface them as attachments on the
+        // most recent approved record to keep the mobile app working.
+        $stagedMedia = $notification->getMedia('site_status_update_attachments');
+        if ($stagedMedia->isNotEmpty() && $items !== []) {
+            $firstApprovedIndex = null;
+            foreach ($items as $index => $item) {
+                if ($item['status'] === 'approved') {
+                    $firstApprovedIndex = $index;
+                    break;
+                }
+            }
+
+            if ($firstApprovedIndex !== null) {
+                $items[$firstApprovedIndex]['attachments'] = array_merge(
+                    $items[$firstApprovedIndex]['attachments'],
+                    \Modules\Shared\Media\Presenters\MediaPresenter::collection($stagedMedia),
+                );
+            }
+        }
+
         $summary = [
             'total'    => count($items),
             'approved' => $approvedUpdates->count(),
