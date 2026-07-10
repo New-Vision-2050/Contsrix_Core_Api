@@ -1184,7 +1184,6 @@ class ProjectNotificationService
             ->where('processable_id', $task->id)
             ->where('user_id', $userId)
             ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
-            ->whereHas('procedureSetting', fn ($q) => $q->where('form', InternalProcessForm::ConfirmProjectNotificationPresence->value))
             ->whereHas('steps', fn ($q) => $q
                 ->where('status', \Modules\Process\Enums\ProcessStepStatus::Pending)
                 ->where('assigned_user_id', $userId)
