@@ -816,6 +816,12 @@ class ProjectNotificationController extends Controller
             (string) Auth::id(),
         );
 
+        $userId = $request->input('user_id');
+        $notification->setAttribute(
+            'pending_processes',
+            $this->notificationService->resolvePendingProcessesForInbox($notification, $userId),
+        );
+
         return Json::item(
             ProjectNotificationPresenter::single($notification),
             message: 'Task reassigned successfully',

@@ -40,6 +40,8 @@ class ProjectNotificationRepository
                 'employeeTask.extensionRequests',
                 'employeeTask.currentProcedureStep.actionTakers.user',
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
+                'employeeTask.processes.procedureSetting',
+                'employeeTask.processes.steps',
                 'employeeTask.approvalRequests.media',
                 'employeeTask.projectNotification.media',
                 'employeeTask.workResumptions.media',
