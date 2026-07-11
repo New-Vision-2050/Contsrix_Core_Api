@@ -335,7 +335,28 @@ project_notification_id, user_id, read_at
 
 ---
 
-#### 2.1.10 `Contractor` (table: `contractors`)
+#### 2.1.10 `ProjectNotificationNote` (table: `project_notification_notes`)
+
+**File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationNote`
+
+**Traits**: `UuidTrait`, `CustomBelongsToTenant`
+
+**Primary Key**: UUID (`string`)
+
+**Fillable Fields**:
+```
+company_id, project_notification_id, user_id, note
+```
+
+**Relationships**:
+- `projectNotification()` → `belongsTo(ProjectNotification, 'project_notification_id')->withoutGlobalScopes()`
+- `user()` → `belongsTo(User, 'user_id')->withoutGlobalScopes()`
+
+**Purpose**: Per-notification user notes. Stores free‑form text notes with creator and timestamp. The backend provides `GET /{id}/notes` and `POST /{id}/notes` endpoints. The presenter includes `last_note` (newest note with user/branch/timezone) in list/detail responses, and the notes list endpoint returns all notes newest first with timezone‑aware timestamps.
+
+---
+
+#### 2.1.11 `Contractor` (table: `contractors`)
 
 **File**: `Modules\Project\ProjectManagement\Models\Contractor`
 
@@ -355,7 +376,7 @@ company_id, name, number, mobile, notes, is_active
 
 ---
 
-#### 2.1.11 `ProjectNotificationSiteStatus` (table: `project_notification_site_statuses`)
+#### 2.1.12 `ProjectNotificationSiteStatus` (table: `project_notification_site_statuses`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatus`
 
@@ -372,7 +393,7 @@ name_ar, name_en, sort_order, is_active
 
 ---
 
-#### 2.1.12 `ProjectNotificationSiteStatusUpdate` (table: `project_notification_site_status_updates`)
+#### 2.1.13 `ProjectNotificationSiteStatusUpdate` (table: `project_notification_site_status_updates`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate`
 
@@ -402,7 +423,7 @@ requested_by, reviewed_by, reviewed_at, review_notes
 
 ---
 
-#### 2.1.13 `ProjectNotificationFine` (table: `project_notification_fines`)
+#### 2.1.14 `ProjectNotificationFine` (table: `project_notification_fines`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationFine`
 
@@ -429,7 +450,7 @@ reviewed_by, reviewed_at, review_notes
 
 ---
 
-#### 2.1.14 `ProjectNotificationFineItem` (table: `project_notification_fine_items`)
+#### 2.1.15 `ProjectNotificationFineItem` (table: `project_notification_fine_items`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem`
 
@@ -448,7 +469,7 @@ total_amount, sort_order
 
 ---
 
-#### 2.1.15 `ProjectNotificationLocationConfirmation` (table: `project_notification_location_confirmations`)
+#### 2.1.16 `ProjectNotificationLocationConfirmation` (table: `project_notification_location_confirmations`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation`
 
@@ -474,7 +495,7 @@ status, requested_by, reviewed_by, reviewed_at, review_notes
 
 ---
 
-#### 2.1.16 `ProjectNotificationWorkStoppageReason` (table: `project_notification_work_stoppage_reasons`)
+#### 2.1.17 `ProjectNotificationWorkStoppageReason` (table: `project_notification_work_stoppage_reasons`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReason`
 
@@ -491,7 +512,7 @@ name_ar, name_en, sort_order, is_active
 
 ---
 
-#### 2.1.17 `ProjectNotificationWorkStoppageReport` (table: `project_notification_work_stoppage_reports`)
+#### 2.1.18 `ProjectNotificationWorkStoppageReport` (table: `project_notification_work_stoppage_reports`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport`
 
@@ -518,7 +539,7 @@ reviewed_at, review_notes
 
 ---
 
-#### 2.1.18 `ProjectNotificationWorkStoppageReportReason` (table: `project_notification_work_stoppage_report_reasons`)
+#### 2.1.19 `ProjectNotificationWorkStoppageReportReason` (table: `project_notification_work_stoppage_report_reasons`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason`
 
@@ -538,7 +559,7 @@ reason_name_ar, reason_name_en, notes, sort_order
 
 ---
 
-#### 2.1.19 `ProjectNotificationWorkResumption` (table: `project_notification_work_resumptions`)
+#### 2.1.20 `ProjectNotificationWorkResumption` (table: `project_notification_work_resumptions`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationWorkResumption`
 
@@ -567,7 +588,7 @@ contractor_notified, notes, status, requested_by, reviewed_by, reviewed_at
 
 ---
 
-#### 2.1.20 `ProjectNotificationTaskPostponement` (table: `project_notification_task_postponements`)
+#### 2.1.21 `ProjectNotificationTaskPostponement` (table: `project_notification_task_postponements`)
 
 **File**: `Modules\Project\ProjectManagement\Models\ProjectNotificationTaskPostponement`
 
@@ -1234,6 +1255,8 @@ Key methods:
 - `delete(string $id): bool`
 - `updateReadStatus(string $notificationId, string $userId, bool $isRead): ProjectNotification` — Creates or deletes a `ProjectNotificationRead` row for the user. When `isRead` is true, `read_at` is set to the current datetime; when false, any existing read record is removed.
 - `attachReadStatus(iterable $notifications, string $userId): void` — Resolves read records for the supplied notifications in a single query and sets an `is_read` boolean attribute on each model. Used by the controller before presenting list/detail/map responses so the frontend can style unread rows.
+- `listNotes(string $notificationId): array` — Returns all user notes for a notification, newest first. Includes timezone-aware `created_at`, `user` (id/name/phone), and `branch` (id/name). Returns `{ items: array, timezone: string }`.
+- `addNote(string $notificationId, string $userId, string $note): array` — Adds a user note to a notification and returns the formatted note with user/branch/timezone.
 - `approve(string $id, string $userId, ?string $procedureSettingId = null): ProjectNotification` — Approves the notification; if the linked task has an active workflow process, it advances that too.
 - `reject(string $id, string $userId, string $reason, ?string $procedureSettingId = null): ProjectNotification`
 - `syncNotificationStatusFromTask(ProjectNotification $notification, $task): void` — Maps task status to notification status.
@@ -1515,6 +1538,8 @@ Sends email via `AttachmentRequestMail`.
 | POST | `/notifications/{id}/approve` | `PROJECT_NOTIFICATION_UPDATE` | Approve notification (optional `procedure_setting_id`) |
 | POST | `/notifications/{id}/reject` | `PROJECT_NOTIFICATION_UPDATE` | Reject notification (requires `reason`, optional `procedure_setting_id`) |
 | POST | `/notifications/{id}/read-status` | `PROJECT_NOTIFICATION_UPDATE` | Mark notification read/unread for current user (body: `is_read` boolean) |
+| GET | `/notifications/{id}/notes` | `PROJECT_NOTIFICATION_VIEW` | List all user notes for a notification (newest first, includes user/branch/timezone) |
+| POST | `/notifications/{id}/notes` | `PROJECT_NOTIFICATION_UPDATE` | Add a user note to a notification (body: `note` string) |
 | GET | `/notifications/my-tasks` | `PROJECT_NOTIFICATION_LIST` | Mobile: all notifications assigned to current employee (after confirm-receive) |
 | GET | `/notifications/my-inbox` | `PROJECT_NOTIFICATION_LIST` | Mobile: notifications with a pending workflow step assigned to the user (any top-level status) |
 | GET | `/notifications/my-inbox-counts` | `PROJECT_NOTIFICATION_LIST` | Mobile: status counts for the employee's notifications (badge) |
@@ -1550,6 +1575,7 @@ Sends email via `AttachmentRequestMail`.
 - The linked `EmployeeTaskRequest` exposes its taken internal procedures via `GET /employee-tasks/{employee_task_id}/procedures`. The mobile app can use the linked task ID to display the procedures (الإجراءات) timeline for the assigned task. Response includes `items` (ordered by step with `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`, `status`, `steps`, `approved_by`, `attachments`, `form_data`) and `summary` (`total`, `last_action`, `start_date`, `progress`).
 - `GET /notifications/{id}/procedures` is a convenience wrapper over the employee-task endpoint: it resolves the linked `EmployeeTaskRequest` from the notification id and returns the same `items` + `summary` shape. Supports `?debug=true` for additional debug info.
 - Every notification response (list, detail, map, my-tasks, my-inbox, and mutating endpoints) now includes an `is_read` boolean for the **current user**. Unread rows can be styled with a different background on the frontend. Use `POST /notifications/{id}/read-status` with `{ "is_read": true }` to mark a notification as read, or `false` to mark it unread.
+- `POST /notifications/{id}/update-site-status` and `POST /notifications/{id}/end-task-status` automatically reset the read state to `false` for all users by deleting any existing `project_notification_reads` rows. This ensures the new status is treated as fresh information.
 
 #### Procedures Response Format (v2 — enriched)
 
@@ -1840,9 +1866,9 @@ Presents request with: all scalar fields, `type` (outgoing/incoming based on sen
 - `toArray(): array` — Transforms a `ProjectNotification` into: all scalar fields, nested `project` (id/name/serial_number), `assigned_user` (id/name) — dashboard-selected user, `created_by` (id/name), `employee_task` (id/serial_number/status/status_label/duration_hours/user), `status_label`, `internal_procedure_setting_id` (confirm-receive procedure setting ID for the linked employee task, used by `POST /projects/notifications/{id}/confirm-receive`), `is_read` (boolean, per current user), `attachments` (media URLs), and timestamps.
 - `static single(ProjectNotification $notification): array` — Single notification response.
 - `static detail(ProjectNotification $notification): array` — Alias for `single()`.
-- `toListArray(): array` — Mobile list/inbox/my-tasks shape: `id`, `notification_number`, `notification_type`, `work_type`, `severity`, `contractor_name`, `magdy_number`, `status`, `status_label`, `task_date`, `duration_hours`, `selected_distance_meters`, `internal_procedure_setting_id`, `is_read`, `violations_count`, `created_at`, `assigned_user`, and `employee_task` (`id`, `status`, `serial_number`, `duration_hours`, `user`).
+- `toListArray(): array` — Mobile list/inbox/my-tasks shape: `id`, `notification_number`, `notification_type`, `work_type`, `severity`, `contractor_name`, `magdy_number`, `status`, `status_label`, `task_date`, `duration_hours`, `selected_distance_meters`, `internal_procedure_setting_id`, `is_read`, `last_note` (newest note with user/branch/timezone), `violations_count`, `created_at`, `assigned_user`, and `employee_task` (`id`, `status`, `serial_number`, `duration_hours`, `user`).
 - `toMapArray(): array` — Map view shape: includes `id`, `notification_number`, `task_name`, `latitude`, `longitude`, `radius`, `status`, `status_label`, `assigned_users`, `assigned_user`, `receive_date`, and `is_read`.
-- `static collection(array $notifications): array` — Maps a collection through `toListArray()`; includes `internal_procedure_setting_id`, `employee_task`, `is_read`, and `duration_hours` so mobile list/inbox views can call confirm-receive, verify the actual task assignee/duration, and style unread rows.
+- `static collection(array $notifications): array` — Maps a collection through `toListArray()`; includes `internal_procedure_setting_id`, `employee_task`, `is_read`, `last_note`, and `duration_hours` so mobile list/inbox views can call confirm-receive, verify the actual task assignee/duration, show the latest note, and style unread rows.
 
 #### `ProjectNotificationEmployeeLocationPresenter`
 

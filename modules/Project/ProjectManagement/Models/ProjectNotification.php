@@ -203,4 +203,9 @@ class ProjectNotification extends Model implements HasMedia
     {
         return $this->hasMany(ProjectNotificationRead::class, 'project_notification_id');
     }
+
+    public function notificationNotes(): HasMany
+    {
+        return $this->hasMany(ProjectNotificationNote::class, 'project_notification_id')->orderByDesc('created_at');
+    }
 }

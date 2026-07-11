@@ -33,6 +33,8 @@ Example list row:
 
 Call this endpoint when the user opens/clicks a notification row, or when toggling a read/unread switch:
 
+> **Important:** `POST /projects/notifications/{id}/update-site-status` and `POST /projects/notifications/{id}/end-task-status` automatically reset `is_read` to `false` for everyone, because the notification now contains new status information. After those endpoints succeed, the row should be styled as unread again.
+
 ```http
 POST /api/v1/projects/notifications/{id}/read-status
 Content-Type: application/json

@@ -817,6 +817,47 @@ class ProjectNotificationController extends Controller
     }
 
     /**
+     * GET /projects/notifications/{id}/notes
+     *
+     * Returns all user notes for a notification, newest first, including the
+     * creator's branch and the timezone-aware created_at timestamp.
+     */
+    public function notes(Request $request): JsonResponse
+    {
+        try {
+            $result = $this->notificationService->listNotes($request->route('id'));
+
+            return Json::item($result, message: 'Notes retrieved successfully');
+        } catch (ProjectNotificationException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * POST /projects/notifications/{id}/notes
+     *
+     * Add a user note to a notification. Body: { "note": "text" }.
+     */
+    public function addNote(Request $request): JsonResponse
+    {
+        $request->validate([
+            'note' => ['required', 'string'],
+        ]);
+
+        try {
+            $note = $this->notificationService->addNote(
+                $request->route('id'),
+                (string) Auth::id(),
+                $request->input('note'),
+            );
+
+            return Json::item($note, message: 'Note added successfully');
+        } catch (ProjectNotificationException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
+    /**
      * GET /projects/notifications/{id}/procedures
      *
      * Returns the timeline of all taken (completed) internal procedures for the
