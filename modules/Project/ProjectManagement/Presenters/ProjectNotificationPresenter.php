@@ -538,8 +538,13 @@ class ProjectNotificationPresenter
 
     private function formatLastNote(ProjectNotification $n): ?array
     {
+        // Return null immediately if relationship is not loaded
+        if (! $n->relationLoaded('notificationNotes')) {
+            return null;
+        }
+
         try {
-            if (! $n->relationLoaded('notificationNotes') || $n->notificationNotes->isEmpty()) {
+            if ($n->notificationNotes->isEmpty()) {
                 return null;
             }
 
