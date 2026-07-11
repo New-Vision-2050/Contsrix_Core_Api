@@ -1550,6 +1550,7 @@ Sends email via `AttachmentRequestMail`.
 - The linked `EmployeeTaskRequest` exposes its taken internal procedures via `GET /employee-tasks/{employee_task_id}/procedures`. The mobile app can use the linked task ID to display the procedures (الإجراءات) timeline for the assigned task. Response includes `items` (ordered by step with `name`, `icon`, `percentage`, `form`, `taken_by`, `taken_at`, `status`, `steps`, `approved_by`, `attachments`, `form_data`) and `summary` (`total`, `last_action`, `start_date`, `progress`).
 - `GET /notifications/{id}/procedures` is a convenience wrapper over the employee-task endpoint: it resolves the linked `EmployeeTaskRequest` from the notification id and returns the same `items` + `summary` shape. Supports `?debug=true` for additional debug info.
 - Every notification response (list, detail, map, my-tasks, my-inbox, and mutating endpoints) now includes an `is_read` boolean for the **current user**. Unread rows can be styled with a different background on the frontend. Use `POST /notifications/{id}/read-status` with `{ "is_read": true }` to mark a notification as read, or `false` to mark it unread.
+- `POST /notifications/{id}/update-site-status` and `POST /notifications/{id}/end-task-status` automatically reset the read state to `false` for all users by deleting any existing `project_notification_reads` rows. This ensures the new status is treated as fresh information.
 
 #### Procedures Response Format (v2 — enriched)
 

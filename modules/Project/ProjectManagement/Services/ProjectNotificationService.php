@@ -616,6 +616,10 @@ class ProjectNotificationService
 
         $notification->update(['update_site_status_id' => $status->id]);
 
+        // A site status change means the notification has new information for its
+        // recipients, so clear any existing read markers so it shows as unread.
+        $this->clearReadStatusForNotification($notification->id);
+
         return $notification->fresh();
     }
 
@@ -634,7 +638,21 @@ class ProjectNotificationService
 
         $notification->update(['end_task_status_id' => $status->id]);
 
+        // End task status is a major lifecycle change, so treat the notification
+        // as fresh information for all recipients.
+        $this->clearReadStatusForNotification($notification->id);
+
         return $notification->fresh();
+    }
+
+    /**
+     * Clear all per-user read markers for a notification so it shows as unread.
+     */
+    private function clearReadStatusForNotification(string $notificationId): void
+    {
+        ProjectNotificationRead::query()
+            ->where('project_notification_id', $notificationId)
+            ->delete();
     }
 
     /**
