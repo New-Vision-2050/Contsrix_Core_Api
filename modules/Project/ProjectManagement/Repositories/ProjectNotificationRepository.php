@@ -53,10 +53,10 @@ class ProjectNotificationRepository
             ])
             ->find($id);
 
-        // Only eager load notificationNotes if the table exists
-        if ($notification && Schema::hasTable('project_notification_notes')) {
-            $notification->load(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
-        }
+        // Temporarily disabled notificationNotes eager loading for debugging
+        // if ($notification && Schema::hasTable('project_notification_notes')) {
+        //     $notification->load(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
+        // }
 
         $this->preloadAssignedUsers($notification);
 
@@ -77,10 +77,10 @@ class ProjectNotificationRepository
                 'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
             ]);
 
-        // Only eager load notificationNotes if the table exists
-        if (Schema::hasTable('project_notification_notes')) {
-            $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
-        }
+        // Temporarily disabled notificationNotes eager loading for debugging
+        // if (Schema::hasTable('project_notification_notes')) {
+        //     $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
+        // }
 
         $this->applyDraftExclusion($query, $filters);
         $this->applySorting($query, $sort);
@@ -135,10 +135,10 @@ class ProjectNotificationRepository
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
             ]);
 
-        // Only eager load notificationNotes if the table exists
-        if (Schema::hasTable('project_notification_notes')) {
-            $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
-        }
+        // Temporarily disabled notificationNotes eager loading for debugging
+        // if (Schema::hasTable('project_notification_notes')) {
+        //     $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
+        // }
 
         // Hide notifications that have a pending workflow process for the user;
         // those are shown in my-inbox until the user confirms/approves the step,
@@ -224,10 +224,10 @@ class ProjectNotificationRepository
             'employeeTask.processes.steps',
         ]);
 
-        // Only eager load notificationNotes if the table exists
-        if (Schema::hasTable('project_notification_notes')) {
-            $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
-        }
+        // Temporarily disabled notificationNotes eager loading for debugging
+        // if (Schema::hasTable('project_notification_notes')) {
+        //     $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
+        // }
 
         $this->applySorting($query, $sort);
 
