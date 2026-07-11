@@ -101,7 +101,7 @@ class ProjectNotificationPresenter
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
             'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
             'last_site_update_date'      => $this->resolveLastSiteUpdateDate($n),
-//            'last_note'                  => $this->formatLastNote($n),
+            'last_note'                  => $this->formatLastNote($n),
         ];
     }
 
@@ -159,7 +159,7 @@ class ProjectNotificationPresenter
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
             'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
             'last_site_update_date'      => $this->resolveLastSiteUpdateDate($n),
-//            'last_note'                  => $this->formatLastNote($n),
+            'last_note'                  => $this->formatLastNote($n),
         ];
     }
 
