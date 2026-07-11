@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Project\ProjectManagement\DTO\UpdateProjectNotificationDTO;
+use Modules\Project\ProjectManagement\Models\ProjectNotification;
 
 class UpdateProjectNotificationRequest extends FormRequest
 {
@@ -21,8 +22,21 @@ class UpdateProjectNotificationRequest extends FormRequest
         $assignedUserIdsRule = $isDraft ? ['nullable', 'array'] : ['nullable', 'array', 'min:1'];
         $assignedUserItemRule = $isDraft ? ['uuid'] : ['uuid', 'exists:users,id'];
 
+        $existingId = $this->route('id');
+        $existingNumber = $existingId
+            ? ProjectNotification::query()->find($existingId)?->notification_number
+            : null;
+
         return [
-            'notification_number'         => ['nullable', 'string', 'max:50', Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'))->ignore($this->route('id'))],
+            'notification_number'         => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::when(
+                    fn () => $this->input('notification_number') !== $existingNumber,
+                    [Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'))->ignore($existingId)]
+                ),
+            ],
             'notification_type'           => ['nullable', 'string', 'max:255'],
             'severity'                    => ['nullable', 'string', 'in:منخفض,متوسط,عالي'],
             'work_type'                   => ['nullable', 'string', 'max:255'],

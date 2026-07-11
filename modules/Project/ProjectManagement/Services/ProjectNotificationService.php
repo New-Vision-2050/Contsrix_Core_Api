@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\DTO\CreateEmployeeTaskRequestDTO;
 use Modules\EmployeeTask\DTO\EndTaskDTO;
 use Modules\EmployeeTask\DTO\StartTaskDTO;
+use Modules\EmployeeTask\Events\EmployeeTaskNotification;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationTaskPostponement;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkResumption;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -27,6 +28,8 @@ use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Services\WorkflowEngine;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
 use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO;
@@ -176,6 +179,7 @@ class ProjectNotificationService
         // 5. Inject all assigned users into the workflow process steps so that
         //    any of them can approve/reject when all_users_can_approve is true.
         $this->injectAssignedUsersIntoWorkflow($task, $notification);
+        $this->injectCreatorIntoWorkflow($task, $notification);
 
         // 6. Sync notification status from the task.
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
@@ -207,11 +211,11 @@ class ProjectNotificationService
             return;
         }
 
-        $processes = \Modules\Process\Models\Process::query()
+        $processes = Process::query()
             ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
             ->where('processable_id', $task->id)
-            ->where('status', \Modules\Process\Enums\ProcessStatus::InProgress)
-            ->whereHas('steps', fn ($q) => $q->where('status', \Modules\Process\Enums\ProcessStepStatus::Pending))
+            ->where('status', ProcessStatus::InProgress)
+            ->whereHas('steps', fn ($q) => $q->where('status', ProcessStepStatus::Pending))
             ->with('steps')
             ->get();
 
@@ -228,12 +232,59 @@ class ProjectNotificationService
 
             // Update each pending step's authorized_user_ids.
             foreach ($process->steps as $step) {
-                if ($step->status !== \Modules\Process\Enums\ProcessStepStatus::Pending) {
+                if ($step->status !== ProcessStepStatus::Pending) {
                     continue;
                 }
                 $existing = $step->authorized_user_ids ?? [$step->assigned_user_id];
                 $merged = array_values(array_unique(array_filter(array_merge($existing, $assignedUserIds))));
                 $step->update(['authorized_user_ids' => $merged]);
+            }
+        }
+    }
+
+    /**
+     * Inject the creator of a project notification into the authorized_user_ids
+     * of every pending workflow step for the linked task. This ensures the
+     * publisher can see the pending task in their inbox and receives a real-time
+     * notification, even when the workflow's first step is assigned to another
+     * user (e.g. the first assigned employee or a manager).
+     */
+    private function injectCreatorIntoWorkflow(
+        EmployeeTaskRequest $task,
+        ProjectNotification $notification,
+    ): void {
+        $creatorId = $notification->created_by_user_id;
+        if (! $creatorId) {
+            return;
+        }
+
+        $processes = Process::query()
+            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+            ->where('processable_id', $task->id)
+            ->where('status', ProcessStatus::InProgress)
+            ->whereHas('steps', fn ($q) => $q->where('status', ProcessStepStatus::Pending))
+            ->with('steps.procedureSettingStep')
+            ->get();
+
+        foreach ($processes as $process) {
+            foreach ($process->steps as $step) {
+                if ($step->status !== ProcessStepStatus::Pending) {
+                    continue;
+                }
+
+                $authorized = $step->authorized_user_ids ?? [];
+                if (in_array($creatorId, $authorized, true)) {
+                    continue;
+                }
+
+                $authorized[] = $creatorId;
+                $step->update([
+                    'authorized_user_ids' => array_values(array_unique(array_filter($authorized))),
+                ]);
+
+                if ($step->procedureSettingStep !== null) {
+                    event(new EmployeeTaskNotification($task, $step->procedureSettingStep, [$creatorId]));
+                }
             }
         }
     }
@@ -700,6 +751,7 @@ class ProjectNotificationService
         $notification->update(['employee_task_request_id' => $task->id]);
 
         $this->injectAssignedUsersIntoWorkflow($task, $notification);
+        $this->injectCreatorIntoWorkflow($task, $notification);
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
 
         return $this->get($notification->id);
