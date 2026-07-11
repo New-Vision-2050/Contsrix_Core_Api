@@ -538,42 +538,30 @@ class ProjectNotificationPresenter
 
     private function formatLastNote(ProjectNotification $n): ?array
     {
-        // Return null immediately if relationship is not loaded
-        if (! $n->relationLoaded('notificationNotes')) {
+        if (! $n->relationLoaded('notificationNotes') || $n->notificationNotes->isEmpty()) {
             return null;
         }
 
-        try {
-            if ($n->notificationNotes->isEmpty()) {
-                return null;
-            }
+        $note = $n->notificationNotes->first();
+        $user = $note->user;
+        $branch = ($user && $user->relationLoaded('userProfessionalData'))
+            ? $user->userProfessionalData?->branch
+            : null;
 
-            $note = $n->notificationNotes->first();
-            if (! $note) {
-                return null;
-            }
-
-            $user = $note->user;
-            $branch = $user?->userProfessionalData?->branch;
-
-            return [
-                'id'         => $note->id,
-                'note'       => $note->note,
-                'created_at' => $this->formatInTimezone($note->created_at),
-                'user'       => $user ? [
-                    'id'    => $user->id,
-                    'name'  => $user->name,
-                    'phone' => $user->phone,
-                ] : null,
-                'branch' => $branch ? [
-                    'id'   => $branch->id,
-                    'name' => $branch->name ?? $branch->name_ar ?? null,
-                ] : null,
-            ];
-        } catch (\Exception $e) {
-            // If the notes table doesn't exist or relationship fails, return null
-            return null;
-        }
+        return [
+            'id'         => $note->id,
+            'note'       => $note->note,
+            'created_at' => $this->formatInTimezone($note->created_at),
+            'user'       => $user ? [
+                'id'    => $user->id,
+                'name'  => $user->name,
+                'phone' => $user->phone,
+            ] : null,
+            'branch' => $branch ? [
+                'id'   => $branch->id,
+                'name' => $branch->name ?? $branch->name_ar ?? null,
+            ] : null,
+        ];
     }
 
     private function resolveAssignedUserBranchTimezone(): ?string
