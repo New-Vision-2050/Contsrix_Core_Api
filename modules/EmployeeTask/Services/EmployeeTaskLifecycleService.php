@@ -67,48 +67,45 @@ final class EmployeeTaskLifecycleService
             $this->conditionService->checkStartTaskConditions($task, $user, $dto->latitude, $dto->longitude);
         }
 
-        $procedureSetting = $this->startRequestService->resolveStartTaskProcedure(
-            $task,
-            $dto->internalProcedureSettingId,
-        );
+        // Project notification tasks are dashboard-created and the assigned
+        // employee confirms receipt directly. Running a start-request workflow
+        // would generate a second notification/inbox item for the same employee,
+        // so we always start them directly.
+        if (! $task->is_project_notification) {
+            $procedureSetting = $this->startRequestService->resolveStartTaskProcedure(
+                $task,
+                $dto->internalProcedureSettingId,
+            );
 
-        if ($procedureSetting !== null) {
-            $parentSetting = $procedureSetting->parent_id !== null
-                ? $this->resolveParentFromProcedureSetting($procedureSetting)
-                : null;
+            if ($procedureSetting !== null) {
+                $parentSetting = $procedureSetting->parent_id !== null
+                    ? $this->resolveParentFromProcedureSetting($procedureSetting)
+                    : null;
 
-            return DB::transaction(function () use ($task, $dto, $user, $procedureSetting, $parentSetting, $independentUserId): EmployeeTaskRequest {
-                // Project notification tasks have null company_id on the task
-                // itself — resolve it from the linked notification.
-                $companyId = $task->company_id;
-                if ($companyId === null && $task->is_project_notification) {
-                    $companyId = $task->projectNotification?->company_id;
-                }
+                return DB::transaction(function () use ($task, $dto, $user, $procedureSetting, $parentSetting, $independentUserId): EmployeeTaskRequest {
+                    $companyId = $task->company_id;
+                    $process = $this->requestService->createLifecycleProcess(
+                        $task,
+                        InternalProcessForm::StartTask->value,
+                        [
+                            'latitude'  => $dto->latitude,
+                            'longitude' => $dto->longitude,
+                            'notes'     => $dto->notes,
+                        ],
+                        $procedureSetting,
+                        $independentUserId,
+                        $companyId,
+                    );
 
-                $process = $this->requestService->createLifecycleProcess(
-                    $task,
-                    InternalProcessForm::StartTask->value,
-                    [
-                        'latitude'  => $dto->latitude,
-                        'longitude' => $dto->longitude,
-                        'notes'     => $dto->notes,
-                    ],
-                    $procedureSetting,
-                    $independentUserId,
-                    $companyId,
-                );
+                    if ($process === null) {
+                        return $task->fresh()->load(['sessions']);
+                    }
 
-                if ($process === null) {
-                    // Auto-approve handled centrally by createLifecycleProcess:
-                    // WorkflowProcedureTaken + EmployeeTaskLifecycleProcessCompleted
-                    // have already been fired, and the listener executed performStart.
+                    $this->startRequestService->createFromProcess($task, $dto, $procedureSetting, $process);
+
                     return $task->fresh()->load(['sessions']);
-                }
-
-                $this->startRequestService->createFromProcess($task, $dto, $procedureSetting, $process);
-
-                return $task->fresh()->load(['sessions']);
-            });
+                });
+            }
         }
 
         return $this->performStart($task, $dto, $user);

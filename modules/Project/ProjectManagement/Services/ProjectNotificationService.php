@@ -343,17 +343,24 @@ class ProjectNotificationService
                     continue;
                 }
 
-                $step->update(['assigned_user_id' => $firstUserId]);
+                $alreadyAssigned = $step->assigned_user_id === $firstUserId;
+                $alreadyAuthorized = in_array($firstUserId, $step->authorized_user_ids ?? [], true);
 
-                $authorized = $step->authorized_user_ids ?? [];
-                if (! in_array($firstUserId, $authorized, true)) {
+                if (! $alreadyAssigned) {
+                    $step->update(['assigned_user_id' => $firstUserId]);
+                }
+
+                if (! $alreadyAuthorized) {
+                    $authorized = $step->authorized_user_ids ?? [];
                     $authorized[] = $firstUserId;
                     $step->update([
                         'authorized_user_ids' => array_values(array_unique(array_filter($authorized))),
                     ]);
                 }
 
-                if ($step->procedureSettingStep !== null) {
+                // Only broadcast when the assignment actually changed; otherwise
+                // the WorkflowStepActivated listener already sent the notification.
+                if (! $alreadyAssigned && $step->procedureSettingStep !== null) {
                     event(new EmployeeTaskNotification($task, $step->procedureSettingStep, [$firstUserId]));
                 }
 
