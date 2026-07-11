@@ -53,10 +53,10 @@ class ProjectNotificationRepository
             ])
             ->find($id);
 
-        // Temporarily disabled notificationNotes eager loading for debugging
-        // if ($notification && Schema::hasTable('project_notification_notes')) {
-        //     $notification->load(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
-        // }
+        // Load the single notification's notes for last_note in detail responses.
+        if ($notification) {
+            $notification->load(['notificationNotes' => fn ($q) => $q->with('user')]);
+        }
 
         $this->preloadAssignedUsers($notification);
 
@@ -77,10 +77,9 @@ class ProjectNotificationRepository
                 'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
             ]);
 
-        // Temporarily disabled notificationNotes eager loading for debugging
-        // if (Schema::hasTable('project_notification_notes')) {
-        //     $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
-        // }
+        // Notes are not eager-loaded here; last_note in list responses is intentionally
+        // omitted to avoid the query issue that triggers a 500 on the list endpoint.
+        // Detail responses still include last_note via findById().
 
         $this->applyDraftExclusion($query, $filters);
         $this->applySorting($query, $sort);
@@ -135,10 +134,8 @@ class ProjectNotificationRepository
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
             ]);
 
-        // Temporarily disabled notificationNotes eager loading for debugging
-        // if (Schema::hasTable('project_notification_notes')) {
-        //     $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
-        // }
+        // Notes are not eager-loaded here; last_note in list responses is intentionally
+        // omitted to avoid the query issue that triggers a 500 on the list endpoint.
 
         // Hide notifications that have a pending workflow process for the user;
         // those are shown in my-inbox until the user confirms/approves the step,
@@ -224,10 +221,8 @@ class ProjectNotificationRepository
             'employeeTask.processes.steps',
         ]);
 
-        // Temporarily disabled notificationNotes eager loading for debugging
-        // if (Schema::hasTable('project_notification_notes')) {
-        //     $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
-        // }
+        // Notes are not eager-loaded here; last_note in list responses is intentionally
+        // omitted to avoid the query issue that triggers a 500 on the list endpoint.
 
         $this->applySorting($query, $sort);
 

@@ -670,7 +670,7 @@ class ProjectNotificationService
 
         $notes = ProjectNotificationNote::query()
             ->where('project_notification_id', $notification->id)
-            ->with(['user.userProfessionalData.branch'])
+            ->with(['user'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -699,7 +699,7 @@ class ProjectNotificationService
             'note'                    => $note,
         ]);
 
-        $noteRecord->load(['user.userProfessionalData.branch']);
+        $noteRecord->load('user');
 
         return $this->formatNote($noteRecord, $timezone);
     }
@@ -710,7 +710,9 @@ class ProjectNotificationService
     private function formatNote(ProjectNotificationNote $note, string $timezone): array
     {
         $user   = $note->user;
-        $branch = $user?->userProfessionalData?->branch;
+        $branch = ($user && $user->relationLoaded('userProfessionalData'))
+            ? $user->userProfessionalData?->branch
+            : null;
 
         return [
             'id'         => $note->id,

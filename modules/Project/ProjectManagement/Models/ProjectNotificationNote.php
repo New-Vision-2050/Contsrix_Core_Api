@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Models;
 
-use BasePackage\Shared\Traits\CustomBelongsToTenant;
+use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
