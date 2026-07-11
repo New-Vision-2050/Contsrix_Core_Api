@@ -104,6 +104,28 @@ class ProjectNotificationService
         $data = $this->enrichContractorData($dto->toArray());
         unset($data['files']);
 
+        // If the user sends a notification_number that already belongs to a draft
+        // in this company, update that draft instead of trying to insert a duplicate.
+        if (! empty($dto->notificationNumber)) {
+            $existing = ProjectNotification::query()
+                ->where('company_id', $companyId)
+                ->where('notification_number', $dto->notificationNumber)
+                ->where('status', 'draft')
+                ->first();
+
+            if ($existing) {
+                $this->repository->update($existing->id, [
+                    ...$data,
+                    'company_id' => $companyId,
+                    'status' => 'draft',
+                ]);
+
+                $this->attachFilesToNotification($existing, $dto->files);
+
+                return $this->repository->findById($existing->id) ?? $existing->fresh();
+            }
+        }
+
         $notification = $this->repository->create([
             ...$data,
             'company_id' => $companyId,

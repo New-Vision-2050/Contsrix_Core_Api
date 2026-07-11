@@ -30,6 +30,8 @@ class CreateProjectNotificationRequest extends FormRequest
         $notificationNumberRules = ['nullable', 'string', 'max:50'];
         if (! $isDraft) {
             $notificationNumberRules[] = Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'));
+        } else {
+            $notificationNumberRules[] = Rule::unique('project_notifications', 'notification_number')->where('company_id', tenant('id'))->whereNot('status', 'draft');
         }
 
         return [
