@@ -201,6 +201,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
            ;
         Route::post('/{id}/reject', [ProjectNotificationController::class, 'reject'])
            ;
+        Route::post('/{id}/read-status', [ProjectNotificationController::class, 'updateReadStatus'])
+           ;
     });
 
     Route::get('/{id}', [ProjectManagementController::class, 'show'])
