@@ -46,6 +46,7 @@ use Modules\Project\ProjectManagement\Models\Contractor;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationEndTaskStatus;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationRead;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationNote;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationFine;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation;
@@ -653,6 +654,79 @@ class ProjectNotificationService
         ProjectNotificationRead::query()
             ->where('project_notification_id', $notificationId)
             ->delete();
+    }
+
+    /**
+     * Return all user notes for a notification, newest first, with user/branch/timezone.
+     *
+     * @return array{items: list<array>, timezone: string}
+     */
+    public function listNotes(string $notificationId): array
+    {
+        $notification = $this->get($notificationId);
+        $timezone = $notification->employeeTask?->timezone
+            ?? getTimeZoneBranchByRequest()
+            ?? config('app.timezone');
+
+        $notes = ProjectNotificationNote::query()
+            ->where('project_notification_id', $notification->id)
+            ->with(['user.userProfessionalData.branch'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return [
+            'items'    => $notes->map(fn ($note) => $this->formatNote($note, $timezone))->all(),
+            'timezone' => $timezone,
+        ];
+    }
+
+    /**
+     * Add a user note to a notification and return the formatted note.
+     *
+     * @return array<string, mixed>
+     */
+    public function addNote(string $notificationId, string $userId, string $note): array
+    {
+        $notification = $this->get($notificationId);
+        $timezone = $notification->employeeTask?->timezone
+            ?? getTimeZoneBranchByRequest()
+            ?? config('app.timezone');
+
+        $noteRecord = ProjectNotificationNote::create([
+            'company_id'              => $notification->company_id,
+            'project_notification_id' => $notification->id,
+            'user_id'                 => $userId,
+            'note'                    => $note,
+        ]);
+
+        $noteRecord->load(['user.userProfessionalData.branch']);
+
+        return $this->formatNote($noteRecord, $timezone);
+    }
+
+    /**
+     * Format a single note for API responses.
+     */
+    private function formatNote(ProjectNotificationNote $note, string $timezone): array
+    {
+        $user   = $note->user;
+        $branch = $user?->userProfessionalData?->branch;
+
+        return [
+            'id'         => $note->id,
+            'note'       => $note->note,
+            'created_at' => $this->formatInTimezone($note->created_at, $timezone),
+            'timezone'   => $timezone,
+            'user'       => $user ? [
+                'id'   => $user->id,
+                'name' => $user->name,
+                'phone' => $user->phone,
+            ] : null,
+            'branch'     => $branch ? [
+                'id'   => $branch->id,
+                'name' => $branch->name ?? $branch->name_ar ?? null,
+            ] : null,
+        ];
     }
 
     /**

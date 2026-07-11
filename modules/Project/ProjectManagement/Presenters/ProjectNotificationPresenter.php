@@ -101,6 +101,7 @@ class ProjectNotificationPresenter
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
             'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
             'last_site_update_date'      => $this->resolveLastSiteUpdateDate($n),
+            'last_note'                  => $this->formatLastNote($n),
         ];
     }
 
@@ -158,6 +159,7 @@ class ProjectNotificationPresenter
             'procedure_attachments'      => $this->presentProcedureAttachments($n),
             'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
             'last_site_update_date'      => $this->resolveLastSiteUpdateDate($n),
+            'last_note'                  => $this->formatLastNote($n),
         ];
     }
 
@@ -532,6 +534,32 @@ class ProjectNotificationPresenter
         }
 
         return ['id' => $user->id, 'name' => $user->name, 'phone' => $user->phone];
+    }
+
+    private function formatLastNote(ProjectNotification $n): ?array
+    {
+        if (! $n->relationLoaded('notificationNotes') || $n->notificationNotes->isEmpty()) {
+            return null;
+        }
+
+        $note = $n->notificationNotes->first();
+        $user = $note->user;
+        $branch = $user?->userProfessionalData?->branch;
+
+        return [
+            'id'         => $note->id,
+            'note'       => $note->note,
+            'created_at' => $this->formatInTimezone($note->created_at),
+            'user'       => $user ? [
+                'id'    => $user->id,
+                'name'  => $user->name,
+                'phone' => $user->phone,
+            ] : null,
+            'branch' => $branch ? [
+                'id'   => $branch->id,
+                'name' => $branch->name ?? $branch->name_ar ?? null,
+            ] : null,
+        ];
     }
 
     private function resolveAssignedUserBranchTimezone(): ?string

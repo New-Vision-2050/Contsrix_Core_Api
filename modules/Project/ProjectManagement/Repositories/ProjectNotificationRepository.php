@@ -49,6 +49,7 @@ class ProjectNotificationRepository
                 'employeeTask.fines.media',
                 'employeeTask.workStoppageReports.media',
                 'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
+                'notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')->limit(1),
             ])
             ->find($id);
 
@@ -69,6 +70,7 @@ class ProjectNotificationRepository
                 'employeeTask.user',
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
                 'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
+                'notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')->limit(1),
             ]);
 
         $this->applyDraftExclusion($query, $filters);
@@ -122,6 +124,7 @@ class ProjectNotificationRepository
                 'endTaskStatus',
                 'employeeTask.user',
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
+                'notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')->limit(1),
             ]);
 
         // Hide notifications that have a pending workflow process for the user;
@@ -206,6 +209,7 @@ class ProjectNotificationRepository
             'employeeTask.createProjectNotificationTaskProcedureSetting',
             'employeeTask.processes.procedureSetting',
             'employeeTask.processes.steps',
+            'notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')->limit(1),
         ]);
 
         $this->applySorting($query, $sort);
