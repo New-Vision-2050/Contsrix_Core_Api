@@ -75,6 +75,21 @@ class ProjectNotificationService
 
     public function create(CreateProjectNotificationDTO $dto): ProjectNotification
     {
+        $companyId = (string) tenant('id');
+
+        // If the user provides a notification_number that already exists, update
+        // the existing record instead of creating a duplicate.
+        if (! $dto->isDraft && ! empty($dto->notificationNumber)) {
+            $existing = ProjectNotification::query()
+                ->where('company_id', $companyId)
+                ->where('notification_number', $dto->notificationNumber)
+                ->first();
+
+            if ($existing) {
+                return $this->publishNotification($dto, $existing);
+            }
+        }
+
         if ($dto->isDraft) {
             return $this->createDraft($dto);
         }
@@ -104,6 +119,29 @@ class ProjectNotificationService
         $data = $this->enrichContractorData($dto->toArray());
         unset($data['files']);
 
+        // If the user sends a notification_number that already exists in this
+        // company, update that existing record instead of trying to insert a
+        // duplicate. The existing status is preserved so a published record is
+        // not accidentally reverted to draft.
+        if (! empty($dto->notificationNumber)) {
+            $existing = ProjectNotification::query()
+                ->where('company_id', $companyId)
+                ->where('notification_number', $dto->notificationNumber)
+                ->first();
+
+            if ($existing) {
+                $this->repository->update($existing->id, [
+                    ...$data,
+                    'company_id' => $companyId,
+                    'status' => $existing->status,
+                ]);
+
+                $this->attachFilesToNotification($existing, $dto->files);
+
+                return $this->repository->findById($existing->id) ?? $existing->fresh();
+            }
+        }
+
         $notification = $this->repository->create([
             ...$data,
             'company_id' => $companyId,
@@ -119,20 +157,30 @@ class ProjectNotificationService
      * Publish a project notification: create the row and run the full lifecycle
      * (EmployeeTask, workflow processes, notifications, approvals, etc.).
      */
-    private function publishNotification(CreateProjectNotificationDTO $dto): ProjectNotification
-    {
+    private function publishNotification(
+        CreateProjectNotificationDTO $dto,
+        ?ProjectNotification $existing = null,
+    ): ProjectNotification {
         $companyId = (string) tenant('id');
 
         $data = $this->enrichContractorData($dto->toArray());
         unset($data['files']);
 
-        // 1. Create the ProjectNotification row. notification_number is manual if
-        // provided; otherwise the observer auto-generates it.
-        $notification = $this->repository->create([
-            ...$data,
-            'company_id' => $companyId,
-            'status' => 'pending',
-        ]);
+        // 1. Create or update the ProjectNotification row.
+        if ($existing) {
+            $this->repository->update($existing->id, [
+                ...$data,
+                'company_id' => $companyId,
+                'status' => 'pending',
+            ]);
+            $notification = $existing->fresh();
+        } else {
+            $notification = $this->repository->create([
+                ...$data,
+                'company_id' => $companyId,
+                'status' => 'pending',
+            ]);
+        }
 
         // 2. Build the linked EmployeeTask DTO.
         $projectNotificationTypeId = $this->resolveProjectNotificationTypeId();
@@ -160,21 +208,42 @@ class ProjectNotificationService
             independentUserIds: $dto->independentProgress ? $dto->assignedUserIds : null,
         );
 
-        // 3. Delegate to EmployeeTaskRequestService with the dedicated form key.
-        $task = $this->employeeTaskRequestService->create(
-            $taskDto,
-            InternalProcessForm::CreateProjectNotificationTask->value,
-        );
+        // 3. Create or update the linked EmployeeTask.
+        $task = $notification->employeeTask;
 
-        // 4. Link the task back to the notification and set dashboard-specific fields.
-        $task->update([
-            'project_notification_id' => $notification->id,
-            'is_project_notification' => true,
-            'sender_user_id' => $dto->createdByUserId,
-            'task_source' => 'dashboard',
-        ]);
+        if (! $task) {
+            $task = $this->employeeTaskRequestService->create(
+                $taskDto,
+                InternalProcessForm::CreateProjectNotificationTask->value,
+            );
 
-        $notification->update(['employee_task_request_id' => $task->id]);
+            $task->update([
+                'project_notification_id' => $notification->id,
+                'is_project_notification' => true,
+                'sender_user_id' => $dto->createdByUserId,
+                'task_source' => 'dashboard',
+            ]);
+
+            $notification->update(['employee_task_request_id' => $task->id]);
+        } else {
+            $task->update([
+                'user_id' => $dto->assignedUserIds[0] ?? $task->user_id,
+                'title' => $notification->notification_number,
+                'employee_task_type_id' => $projectNotificationTypeId,
+                'duration_hours' => $dto->durationHours,
+                'task_date' => $dto->taskDate,
+                'task_time' => $dto->taskTime,
+                'task_latitude' => $dto->taskLatitude,
+                'task_longitude' => $dto->taskLongitude,
+                'description' => $dto->workDescription,
+                'project_id' => $dto->projectId,
+                'approval_responsible_id' => $dto->approvalResponsibleId,
+                'assignment_responsible_id' => $dto->assignmentResponsibleId,
+                'notes' => $dto->notes,
+                'radius_meters' => $dto->locationRadius,
+                'sender_user_id' => $dto->createdByUserId,
+            ]);
+        }
 
         // 5. Inject all assigned users into the workflow process steps so that
         //    any of them can approve/reject when all_users_can_approve is true.
