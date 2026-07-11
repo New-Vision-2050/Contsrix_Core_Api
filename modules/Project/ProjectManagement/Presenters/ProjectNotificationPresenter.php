@@ -66,6 +66,7 @@ class ProjectNotificationPresenter
             'created_by_user_id'          => $n->created_by_user_id,
             'created_at'                  => $this->formatInTimezone($n->created_at),
             'updated_at'                  => $this->formatInTimezone($n->updated_at),
+            'is_read'                     => (bool) $n->getAttribute('is_read'),
             'violations_count'            => 0,
             'assigned_users'              => $this->formatAssignedUsers($n),
             'assigned_user'               => $this->formatFirstAssignedUser($n),
@@ -130,6 +131,7 @@ class ProjectNotificationPresenter
             'location_confirmed_at'        => $this->formatInTimezone($n->location_confirmed_at),
             'internal_procedure_setting_id' => $this->resolveInternalProcedureSettingId($n),
             'pending_processes'           => $this->resolvePendingProcesses($n),
+            'is_read'                     => (bool) $n->getAttribute('is_read'),
             'violations_count'            => 0,
             'created_at'                  => $this->formatInTimezone($n->created_at),
             'company'                     => $n->relationLoaded('company') && $n->company
@@ -194,6 +196,7 @@ class ProjectNotificationPresenter
             'assigned_users'  => $this->formatAssignedUsers($n),
             'assigned_user'   => $this->formatFirstAssignedUser($n),
             'receive_date'    => $this->formatInMapTimezone($n->confirmation_receive_date),
+            'is_read'         => (bool) $n->getAttribute('is_read'),
         ];
     }
 

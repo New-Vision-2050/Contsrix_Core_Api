@@ -22,6 +22,7 @@ use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
 use Modules\Project\ProjectManagement\Exports\ProjectNotificationExport;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationChartsPresenter;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationEmployeeLocationPresenter;
+use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter;
 use Modules\Project\ProjectManagement\Requests\CreateProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Requests\FilterProjectNotificationChartsRequest;
@@ -85,6 +86,8 @@ class ProjectNotificationController extends Controller
     {
         $paginator = $this->notificationService->list($request->toDTO());
 
+        $this->notificationService->attachReadStatus($paginator->items(), (string) Auth::id());
+
         return Json::items(
             ProjectNotificationPresenter::collection($paginator->items()),
             paginationSettings: [
@@ -106,6 +109,8 @@ class ProjectNotificationController extends Controller
     public function mapTasks(FilterProjectNotificationsRequest $request): JsonResponse
     {
         $notifications = $this->notificationService->mapTasks($request->toDTO());
+
+        $this->notificationService->attachReadStatus($notifications, (string) Auth::id());
 
         return Json::item(
             [
@@ -198,7 +203,7 @@ class ProjectNotificationController extends Controller
             );
 
             return Json::item(
-                ProjectNotificationPresenter::detail($notification),
+                $this->detailWithReadStatus($notification),
                 message: 'Site status updated successfully',
             );
         } catch (ProjectNotificationException $e) {
@@ -226,7 +231,7 @@ class ProjectNotificationController extends Controller
             );
 
             return Json::item(
-                ProjectNotificationPresenter::detail($notification),
+                $this->detailWithReadStatus($notification),
                 message: 'End task status updated successfully',
             );
         } catch (ProjectNotificationException $e) {
@@ -258,8 +263,10 @@ class ProjectNotificationController extends Controller
     {
         $notification = $this->notificationService->create($request->toDTO());
 
+        $this->notificationService->attachReadStatus([$notification], (string) Auth::id());
+
         return Json::item(
-            ProjectNotificationPresenter::detail($notification)
+            $this->detailWithReadStatus($notification)
         );
     }
 
@@ -274,7 +281,9 @@ class ProjectNotificationController extends Controller
             return Json::error('Project notification not found', 404);
         }
 
-        return Json::item(ProjectNotificationPresenter::detail($notification));
+        $this->notificationService->attachReadStatus([$notification], (string) Auth::id());
+
+        return Json::item($this->detailWithReadStatus($notification));
     }
 
     public function update(UpdateProjectNotificationRequest $request): JsonResponse
@@ -296,7 +305,9 @@ class ProjectNotificationController extends Controller
             $request->toDTO(),
         );
 
-        return Json::item(ProjectNotificationPresenter::detail($notification));
+        $this->notificationService->attachReadStatus([$notification], (string) Auth::id());
+
+        return Json::item($this->detailWithReadStatus($notification));
     }
 
     /**
@@ -315,7 +326,7 @@ class ProjectNotificationController extends Controller
         );
 
         return Json::item(
-            ProjectNotificationPresenter::detail($notification),
+            $this->detailWithReadStatus($notification),
             message: 'Update request submitted successfully',
         );
     }
@@ -336,7 +347,7 @@ class ProjectNotificationController extends Controller
         );
 
         return Json::item(
-            ProjectNotificationPresenter::detail($notification),
+            $this->detailWithReadStatus($notification),
             message: 'Site status update request submitted successfully',
         );
     }
@@ -355,7 +366,7 @@ class ProjectNotificationController extends Controller
             );
 
             return Json::item(
-                ProjectNotificationPresenter::detail($notification),
+                $this->detailWithReadStatus($notification),
                 message: 'Voice reminder sent successfully',
             );
         } catch (ProjectNotificationException $e) {
@@ -379,7 +390,7 @@ class ProjectNotificationController extends Controller
         );
 
         return Json::item(
-            ProjectNotificationPresenter::detail($notification),
+            $this->detailWithReadStatus($notification),
             message: 'Fine request submitted successfully',
         );
     }
@@ -400,7 +411,7 @@ class ProjectNotificationController extends Controller
         );
 
         return Json::item(
-            ProjectNotificationPresenter::detail($notification),
+            $this->detailWithReadStatus($notification),
             message: 'Location confirmation request submitted successfully',
         );
     }
@@ -421,7 +432,7 @@ class ProjectNotificationController extends Controller
         );
 
         return Json::item(
-            ProjectNotificationPresenter::detail($notification),
+            $this->detailWithReadStatus($notification),
             message: 'Work stoppage report request submitted successfully',
         );
     }
@@ -442,7 +453,7 @@ class ProjectNotificationController extends Controller
         );
 
         return Json::item(
-            ProjectNotificationPresenter::detail($notification),
+            $this->detailWithReadStatus($notification),
             message: 'Work resumption request submitted successfully',
         );
     }
@@ -462,7 +473,7 @@ class ProjectNotificationController extends Controller
         );
 
         return Json::item(
-            ProjectNotificationPresenter::detail($notification),
+            $this->detailWithReadStatus($notification),
             message: 'Task postponement request submitted successfully',
         );
     }
@@ -507,7 +518,7 @@ class ProjectNotificationController extends Controller
             $request->input('internal_procedure_setting_id'),
         );
 
-        return Json::item(ProjectNotificationPresenter::detail($notification));
+        return Json::item($this->detailWithReadStatus($notification));
     }
 
     public function reject(Request $request): JsonResponse
@@ -524,7 +535,33 @@ class ProjectNotificationController extends Controller
             $request->input('internal_procedure_setting_id'),
         );
 
-        return Json::item(ProjectNotificationPresenter::detail($notification));
+        return Json::item($this->detailWithReadStatus($notification));
+    }
+
+    /**
+     * POST /projects/notifications/{id}/read-status
+     *
+     * Mark the notification as read or unread for the current user.
+     * Body: { "is_read": true|false }
+     */
+    public function updateReadStatus(Request $request): JsonResponse
+    {
+        $request->validate([
+            'is_read' => ['required', 'boolean'],
+        ]);
+
+        $notification = $this->notificationService->updateReadStatus(
+            $request->route('id'),
+            (string) Auth::id(),
+            $request->boolean('is_read'),
+        );
+
+        $this->notificationService->attachReadStatus([$notification], (string) Auth::id());
+
+        return Json::item(
+            $this->detailWithReadStatus($notification),
+            message: 'Read status updated successfully',
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -537,6 +574,8 @@ class ProjectNotificationController extends Controller
             $request->toDTO(),
             (string) Auth::id(),
         );
+
+        $this->notificationService->attachReadStatus($paginator->items(), (string) Auth::id());
 
         $paginator->getCollection()->loadMissing([
             'employeeTask.user',
@@ -572,6 +611,8 @@ class ProjectNotificationController extends Controller
             $request->toDTO(),
             (string) Auth::id(),
         );
+
+        $this->notificationService->attachReadStatus($paginator->items(), (string) Auth::id());
 
         $paginator->getCollection()->loadMissing([
             'employeeTask.user',
@@ -846,9 +887,22 @@ class ProjectNotificationController extends Controller
             ),
         );
 
+        $this->notificationService->attachReadStatus([$notification], (string) Auth::id());
+
         return Json::item(
             ProjectNotificationPresenter::single($notification),
             message: 'Task reassigned successfully',
         );
+    }
+
+    /**
+     * Present a single notification detail, ensuring the current user's
+     * read/unread state is attached for the frontend row background.
+     */
+    private function detailWithReadStatus(ProjectNotification $notification): array
+    {
+        $this->notificationService->attachReadStatus([$notification], (string) Auth::id());
+
+        return ProjectNotificationPresenter::detail($notification);
     }
 }

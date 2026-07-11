@@ -198,4 +198,9 @@ class ProjectNotification extends Model implements HasMedia
     {
         return $this->belongsTo(ProjectNotificationEndTaskStatus::class, 'end_task_status_id')->withoutGlobalScopes();
     }
+
+    public function reads(): HasMany
+    {
+        return $this->hasMany(ProjectNotificationRead::class, 'project_notification_id');
+    }
 }

@@ -45,6 +45,7 @@ use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
 use Modules\Project\ProjectManagement\Models\Contractor;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationEndTaskStatus;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationRead;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationFine;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation;
@@ -249,6 +250,7 @@ class ProjectNotificationService
         //    any of them can approve/reject when all_users_can_approve is true.
         $this->injectAssignedUsersIntoWorkflow($task, $notification);
         $this->ensureFirstStepAssignedToAssignedUser($task, $notification);
+        $this->truncateCreationWorkflowToSingleStep($task);
 
         // 6. Sync notification status from the task.
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
@@ -370,6 +372,47 @@ class ProjectNotificationService
     }
 
     /**
+     * Project notification creation should behave as a single confirm-receive
+     * step. If the configured procedure setting has additional steps after the
+     * first one, truncate the snapshot and remove any already-created pending
+     * steps. This prevents the employee from receiving another notification/
+     * voice call after confirming receive.
+     */
+    private function truncateCreationWorkflowToSingleStep(EmployeeTaskRequest $task): void
+    {
+        $processes = Process::query()
+            ->where('processable_type', ProcedureSettingType::ProjectNotificationTask->value)
+            ->where('processable_id', $task->id)
+            ->where('status', ProcessStatus::InProgress)
+            ->with('steps')
+            ->get();
+
+        foreach ($processes as $process) {
+            $snapshot = $process->template_snapshot ?? [];
+            if (count($snapshot) <= 1) {
+                continue;
+            }
+
+            $firstStepId = $snapshot[0]['step_id'] ?? null;
+            $firstRow = $snapshot[0];
+
+            $process->update(['template_snapshot' => [$firstRow]]);
+
+            foreach ($process->steps as $step) {
+                if ($step->status !== ProcessStepStatus::Pending) {
+                    continue;
+                }
+
+                if ($firstStepId !== null && $step->step_id === $firstStepId) {
+                    continue;
+                }
+
+                $step->delete();
+            }
+        }
+    }
+
+    /**
      * Create a lifecycle workflow process for a project notification, handling
      * the independent_progress flag.
      *
@@ -423,6 +466,60 @@ class ProjectNotificationService
     public function mapTasks(FilterProjectNotificationDTO $dto): \Illuminate\Database\Eloquent\Collection
     {
         return $this->repository->allForMap($dto->toFilters());
+    }
+
+    /**
+     * Mark a notification as read or unread for a specific user.
+     */
+    public function updateReadStatus(string $notificationId, string $userId, bool $isRead): ProjectNotification
+    {
+        $notification = $this->get($notificationId);
+
+        if ($isRead) {
+            ProjectNotificationRead::updateOrCreate(
+                [
+                    'project_notification_id' => $notification->id,
+                    'user_id' => $userId,
+                ],
+                ['read_at' => now()]
+            );
+        } else {
+            ProjectNotificationRead::query()
+                ->where('project_notification_id', $notification->id)
+                ->where('user_id', $userId)
+                ->delete();
+        }
+
+        return $this->get($notification->id);
+    }
+
+    /**
+     * Attach an `is_read` boolean attribute to each notification for the given user.
+     * This avoids N+1 queries by resolving all read records in a single query.
+     */
+    public function attachReadStatus(iterable $notifications, string $userId): void
+    {
+        $items = collect($notifications);
+
+        if ($items->isEmpty()) {
+            return;
+        }
+
+        $ids = $items->pluck('id')->filter()->unique()->values()->all();
+
+        if (empty($ids)) {
+            return;
+        }
+
+        $readIds = ProjectNotificationRead::query()
+            ->whereIn('project_notification_id', $ids)
+            ->where('user_id', $userId)
+            ->pluck('project_notification_id')
+            ->all();
+
+        foreach ($items as $notification) {
+            $notification->setAttribute('is_read', in_array($notification->id, $readIds, true));
+        }
     }
 
     /**
@@ -832,6 +929,7 @@ class ProjectNotificationService
 
         $this->injectAssignedUsersIntoWorkflow($task, $notification);
         $this->ensureFirstStepAssignedToAssignedUser($task, $notification);
+        $this->truncateCreationWorkflowToSingleStep($task);
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
 
         return $this->get($notification->id);
