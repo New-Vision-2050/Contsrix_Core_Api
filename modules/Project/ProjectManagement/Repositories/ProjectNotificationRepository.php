@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Repositories;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Services\WorkflowEngine;
@@ -53,7 +54,7 @@ class ProjectNotificationRepository
             ->find($id);
 
         // Only eager load notificationNotes if the table exists
-        if ($notification && \Schema::hasTable('project_notification_notes')) {
+        if ($notification && Schema::hasTable('project_notification_notes')) {
             $notification->load(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
         }
 
@@ -77,7 +78,7 @@ class ProjectNotificationRepository
             ]);
 
         // Only eager load notificationNotes if the table exists
-        if (\Schema::hasTable('project_notification_notes')) {
+        if (Schema::hasTable('project_notification_notes')) {
             $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
         }
 
@@ -135,7 +136,7 @@ class ProjectNotificationRepository
             ]);
 
         // Only eager load notificationNotes if the table exists
-        if (\Schema::hasTable('project_notification_notes')) {
+        if (Schema::hasTable('project_notification_notes')) {
             $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
         }
 
@@ -224,7 +225,7 @@ class ProjectNotificationRepository
         ]);
 
         // Only eager load notificationNotes if the table exists
-        if (\Schema::hasTable('project_notification_notes')) {
+        if (Schema::hasTable('project_notification_notes')) {
             $query->with(['notificationNotes' => fn ($q) => $q->with('user.userProfessionalData.branch')]);
         }
 
