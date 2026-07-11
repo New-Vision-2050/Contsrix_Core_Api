@@ -75,11 +75,8 @@ class ProjectNotificationRepository
                 'employeeTask.user',
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
                 'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
+                'notificationNotes' => fn ($q) => $q->with('user')->latest('created_at')->limit(1),
             ]);
-
-        // Notes are not eager-loaded here; last_note in list responses is intentionally
-        // omitted to avoid the query issue that triggers a 500 on the list endpoint.
-        // Detail responses still include last_note via findById().
 
         $this->applyDraftExclusion($query, $filters);
         $this->applySorting($query, $sort);
@@ -132,10 +129,8 @@ class ProjectNotificationRepository
                 'endTaskStatus',
                 'employeeTask.user',
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
+                'notificationNotes' => fn ($q) => $q->with('user')->latest('created_at')->limit(1),
             ]);
-
-        // Notes are not eager-loaded here; last_note in list responses is intentionally
-        // omitted to avoid the query issue that triggers a 500 on the list endpoint.
 
         // Hide notifications that have a pending workflow process for the user;
         // those are shown in my-inbox until the user confirms/approves the step,
@@ -219,10 +214,8 @@ class ProjectNotificationRepository
             'employeeTask.createProjectNotificationTaskProcedureSetting',
             'employeeTask.processes.procedureSetting',
             'employeeTask.processes.steps',
+            'notificationNotes' => fn ($q) => $q->with('user')->latest('created_at')->limit(1),
         ]);
-
-        // Notes are not eager-loaded here; last_note in list responses is intentionally
-        // omitted to avoid the query issue that triggers a 500 on the list endpoint.
 
         $this->applySorting($query, $sort);
 
