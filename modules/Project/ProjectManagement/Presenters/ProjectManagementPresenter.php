@@ -17,7 +17,7 @@ use Modules\Project\ProjectType\Presenters\ArchiveLibrarySettingPresenter;
 use Modules\Project\ProjectType\Presenters\RolesAndPermissionsSettingPresenter;
 use Modules\Project\ProjectType\Presenters\ProjectSharingSettingPresenter;
 use Modules\Project\ProjectType\Presenters\MaintenanceEmergencySettingPresenter;
-
+use Modules\Project\ProjectType\Presenters\ContractorSettingPresenter;
 class ProjectManagementPresenter extends AbstractPresenter
 {
     private ProjectManagement $projectManagement;
@@ -174,6 +174,7 @@ class ProjectManagementPresenter extends AbstractPresenter
                 7 => 'attachment_cycle_setting',
                 8 => 'archive_library_setting',
                 12 => 'maintenance_emergency_setting',
+                13 => 'contractor_setting',
             ];
 
             // Add contract settings from subSubProjectType wrapped in permissions array
@@ -258,6 +259,13 @@ class ProjectManagementPresenter extends AbstractPresenter
                     $this->projectManagement->subSubProjectType->maintenanceEmergencySetting &&
                     $this->projectManagement->subSubProjectType->maintenanceEmergencySetting->is_shown) {
                     $permissions['maintenance_emergency_setting'] = (new MaintenanceEmergencySettingPresenter($this->projectManagement->subSubProjectType->maintenanceEmergencySetting))->getData();
+                }
+                // Schema 13: Contractor Setting
+                if ($this->shouldIncludeSchema(13, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('contractorSetting') &&
+                    $this->projectManagement->subSubProjectType->contractorSetting &&
+                    $this->projectManagement->subSubProjectType->contractorSetting) {
+                    $permissions['contractor_setting'] = (new ContractorSettingPresenter($this->projectManagement->subSubProjectType->contractorSetting))->getData();
                 }
             }
             $data['permissions'] = $permissions;
