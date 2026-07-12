@@ -613,9 +613,9 @@ class AttendanceConstraintService
 
         // Combine the results into a final, clean response.
         $additionalLocations = $this->buildAdditionalLocationRules($user, $constraints);
-        $activeConstraintIds = $constraints->where('is_active', true)->pluck('id')->all();
-        $rawLocationCount = !empty($activeConstraintIds)
-            ? AttendanceConstraintLocation::whereIn('attendance_constraint_id', $activeConstraintIds)->count()
+        $constraintIds = $constraints->pluck('id')->all();
+        $rawLocationCount = !empty($constraintIds)
+            ? AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)->count()
             : 0;
 
         return [
@@ -642,7 +642,7 @@ class AttendanceConstraintService
                 'applicable_constraint_ids' => $constraints->pluck('id')->all(),
                 'applicable_constraint_count' => $constraints->count(),
                 'location_constraint_id' => $locationConstraint?->id,
-                'active_constraint_ids' => $activeConstraintIds,
+                'constraint_ids' => $constraintIds,
                 'raw_location_count' => $rawLocationCount,
                 'additional_locations_count' => count($additionalLocations),
                 'tenancy_initialized' => tenancy()->initialized,
@@ -921,7 +921,7 @@ class AttendanceConstraintService
         $applicableTableLocations = collect();
         $constraintIds = [];
         if ($applicableConstraints) {
-            $constraintIds = $applicableConstraints->where('is_active', true)->pluck('id')->all();
+            $constraintIds = $applicableConstraints->pluck('id')->all();
             if (!empty($constraintIds)) {
                 $applicableTableLocations = AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)
                     ->get()
@@ -1228,7 +1228,6 @@ class AttendanceConstraintService
         $applicableTableLocs = [];
         $applicableConstraints = $this->getApplicableConstraintsForDataRetrieval($user);
         $applicableIds = $applicableConstraints
-            ->where('is_active', true)
             ->pluck('id')
             ->reject(fn ($id) => $id === $mainConstraint->id)
             ->all();
