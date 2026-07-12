@@ -222,6 +222,11 @@ class ProjectManagement extends Model
         return $this->hasMany(ProjectRole::class, 'project_id');
     }
 
+    public function contractors(): HasMany
+    {
+        return $this->hasMany(Contractor::class, 'project_id')->withoutGlobalScopes();
+    }
+
     public function notifications(): HasMany
     {
         return $this->hasMany(ProjectNotification::class, 'project_id')->withoutGlobalScopes();

@@ -115,6 +115,14 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     });
 
     // Project Notifications Routes
+    Route::prefix('{project}/contractors')->group(function () {
+        Route::get('/', [ContractorController::class, 'index']);
+        Route::post('/', [ContractorController::class, 'store']);
+        Route::get('/{id}', [ContractorController::class, 'show']);
+        Route::put('/{id}', [ContractorController::class, 'update']);
+        Route::delete('/{id}', [ContractorController::class, 'destroy']);
+    });
+
     Route::prefix('notifications')->group(function () {
         // Static routes MUST come before /{id} to avoid route conflicts
         Route::get('/map-tasks', [ProjectNotificationController::class, 'mapTasks'])

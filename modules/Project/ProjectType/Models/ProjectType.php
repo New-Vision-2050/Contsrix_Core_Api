@@ -124,6 +124,11 @@ class ProjectType extends Model
         return $this->hasOne(MaintenanceEmergencySetting::class, 'project_type_id');
     }
 
+    public function contractorSetting()
+    {
+        return $this->hasOne(ContractorSetting::class, 'project_type_id');
+    }
+
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";
@@ -163,7 +168,7 @@ class ProjectType extends Model
 
     public function hasSchema(): bool
     {
-        return $this->is_have_schema;
+        return (bool) $this->is_have_schema;
     }
 
     protected static function newFactory(): ProjectTypeFactory
