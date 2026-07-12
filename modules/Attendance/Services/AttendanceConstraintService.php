@@ -613,6 +613,10 @@ class AttendanceConstraintService
 
         // Combine the results into a final, clean response.
         $additionalLocations = $this->buildAdditionalLocationRules($user, $constraints);
+        $activeConstraintIds = $constraints->where('is_active', true)->pluck('id')->all();
+        $rawLocationCount = !empty($activeConstraintIds)
+            ? AttendanceConstraintLocation::whereIn('attendance_constraint_id', $activeConstraintIds)->count()
+            : 0;
 
         return [
             'day_status'              => $timeRulesResult['day_status'],
@@ -638,7 +642,11 @@ class AttendanceConstraintService
                 'applicable_constraint_ids' => $constraints->pluck('id')->all(),
                 'applicable_constraint_count' => $constraints->count(),
                 'location_constraint_id' => $locationConstraint?->id,
+                'active_constraint_ids' => $activeConstraintIds,
+                'raw_location_count' => $rawLocationCount,
                 'additional_locations_count' => count($additionalLocations),
+                'tenancy_initialized' => tenancy()->initialized,
+                'tenant_key' => tenancy()->initialized ? tenant()->getTenantKey() : null,
             ],
         ];
     }
@@ -932,6 +940,11 @@ class AttendanceConstraintService
             'applicable_constraint_ids' => $constraintIds,
             'applicable_table_locations_count' => $applicableTableLocations->count(),
             'additional_constraints_count' => $user->additionalAttendanceConstraints->count(),
+            'tenancy_initialized' => tenancy()->initialized,
+            'tenant_key' => tenancy()->initialized ? tenant()->getTenantKey() : null,
+            'user_company_id' => $user->company_id,
+            'raw_query_sql' => AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)->toSql(),
+            'raw_query_bindings' => $constraintIds,
         ]);
 
         $branchLocations = $user->additionalAttendanceConstraints
