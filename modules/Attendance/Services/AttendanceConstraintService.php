@@ -612,6 +612,8 @@ class AttendanceConstraintService
         $locationRulesResult = $this->buildLocationRules($locationConstraint, $user);
 
         // Combine the results into a final, clean response.
+        $additionalLocations = $this->buildAdditionalLocationRules($user, $constraints);
+
         return [
             'day_status'              => $timeRulesResult['day_status'],
             'day_name'                => $now->isoFormat(format: 'dddd'),
@@ -626,11 +628,17 @@ class AttendanceConstraintService
             'lateness_rules'          => $timeRulesResult['lateness_rules'],
             'early_clock_in_rules'    => $timeRulesResult['early_clock_in_rules'],
             'location_work'           => $locationRulesResult,
-            'additional_locations'    => $this->buildAdditionalLocationRules($user, $constraints),
+            'additional_locations'    => $additionalLocations,
             'max_over_time'           => $timeConstraint?->max_over_time,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
                 'location' => $locationConstraint?->id,
+            ],
+            '_debug'                  => [
+                'applicable_constraint_ids' => $constraints->pluck('id')->all(),
+                'applicable_constraint_count' => $constraints->count(),
+                'location_constraint_id' => $locationConstraint?->id,
+                'additional_locations_count' => count($additionalLocations),
             ],
         ];
     }
@@ -903,6 +911,7 @@ class AttendanceConstraintService
         // additional_locations response so the mobile/FE knows every allowed
         // clock-in location.
         $applicableTableLocations = collect();
+        $constraintIds = [];
         if ($applicableConstraints) {
             $constraintIds = $applicableConstraints->where('is_active', true)->pluck('id')->all();
             if (!empty($constraintIds)) {
@@ -917,6 +926,13 @@ class AttendanceConstraintService
                     ]);
             }
         }
+
+        Log::info('buildAdditionalLocationRules: debug', [
+            'user_id' => $user->id,
+            'applicable_constraint_ids' => $constraintIds,
+            'applicable_table_locations_count' => $applicableTableLocations->count(),
+            'additional_constraints_count' => $user->additionalAttendanceConstraints->count(),
+        ]);
 
         $branchLocations = $user->additionalAttendanceConstraints
             ->where('is_active', true)

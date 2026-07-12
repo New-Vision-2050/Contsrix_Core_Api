@@ -501,6 +501,7 @@ class UserAttendanceService
                 'radius' => $locationWork['radius'] ?? null,
             ] : null,
             'additional_locations' => $workRules['additional_locations'] ?? [],
+            '_debug' => $workRules['_debug'] ?? null,
         ];
     }
 
