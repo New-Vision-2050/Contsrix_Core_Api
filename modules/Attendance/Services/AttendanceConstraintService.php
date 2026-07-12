@@ -625,7 +625,7 @@ class AttendanceConstraintService
             'lateness_rules'          => $timeRulesResult['lateness_rules'],
             'early_clock_in_rules'    => $timeRulesResult['early_clock_in_rules'],
             'location_work'           => $locationRulesResult,
-            'additional_locations'    => $this->buildAdditionalLocationRules($user),
+            'additional_locations'    => $this->buildAdditionalLocationRules($user, $locationConstraint),
             'max_over_time'           => $timeConstraint?->max_over_time,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
@@ -878,7 +878,7 @@ class AttendanceConstraintService
     }
 
     /**
-     * Collect all allowed branch locations from the user's main constraint and any additional
+     * Collect all allowed branch locations from the winning location constraint and any additional
      * (non-main) attendance constraints. Returns an array of location objects:
      * [{id?, name, latitude, longitude, radius}]. Used by /attendance/user-constraint/today
      * so the mobile/FE knows every location the employee is allowed to clock in from.
@@ -886,25 +886,23 @@ class AttendanceConstraintService
      * Sources merged:
      *  1. branch_locations JSON from each additional constraint
      *  2. attendance_constraint_locations rows from each additional constraint
-     *  3. attendance_constraint_locations rows from the user's directly-assigned main constraint
+     *  3. attendance_constraint_locations rows from the winning location constraint (main or
+     *     branch/department-assigned)
      */
-    private function buildAdditionalLocationRules(User $user): array
+    private function buildAdditionalLocationRules(User $user, ?AttendanceConstraint $locationConstraint = null): array
     {
         $user->loadMissing([
             'additionalAttendanceConstraints.additionalLocations',
-            'userProfessionalData.attendanceConstraint.additionalLocations',
-            'professionalData.attendanceConstraint.additionalLocations',
         ]);
 
-        // The user's directly-assigned (main) constraint may also have table-backed
-        // additional locations created via /attendance/constraints/{id}/locations.
-        // Those must appear alongside the additional (sub-)constraint locations.
-        $mainConstraint = $user->userProfessionalData?->attendanceConstraint
-            ?? $user->professionalData?->attendanceConstraint;
-
+        // The winning location constraint (either the user's directly-assigned main
+        // constraint or a branch/department-assigned one) may have table-backed
+        // locations created via /attendance/constraints/{id}/locations. Those must
+        // appear alongside the additional (sub-)constraint locations.
         $mainTableLocations = collect();
-        if ($mainConstraint && $mainConstraint->is_active) {
-            $mainTableLocations = $mainConstraint->additionalLocations
+        if ($locationConstraint && $locationConstraint->is_active) {
+            $locationConstraint->loadMissing('additionalLocations');
+            $mainTableLocations = $locationConstraint->additionalLocations
                 ->map(fn ($loc) => [
                     'id'        => $loc->id,
                     'name'      => $loc->name,
