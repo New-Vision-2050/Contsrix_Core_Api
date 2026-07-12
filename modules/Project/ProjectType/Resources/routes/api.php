@@ -13,6 +13,7 @@ use Modules\Project\ProjectType\Controllers\ArchiveLibrarySettingController;
 use Modules\Project\ProjectType\Controllers\RolesAndPermissionsSettingController;
 use Modules\Project\ProjectType\Controllers\ProjectSharingSettingController;
 use Modules\Project\ProjectType\Controllers\MaintenanceEmergencySettingController;
+use Modules\Project\ProjectType\Controllers\ContractorSettingController;
 use Modules\Project\ProjectType\Controllers\SchemaController;
 use Modules\RoleAndPermission\Enums\Permission;
 
@@ -111,6 +112,12 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{projectTypeId}/maintenance-emergency-settings', [MaintenanceEmergencySettingController::class, 'show'])
         ->permission(Permission::PROJECT_TYPE_VIEW());
     Route::put('/{projectTypeId}/maintenance-emergency-settings', [MaintenanceEmergencySettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Contractor Settings routes
+    Route::get('/{projectTypeId}/contractor-settings', [ContractorSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/contractor-settings', [ContractorSettingController::class, 'update'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 
     // Schema routes

@@ -58,8 +58,16 @@ return new class extends Migration
                     ->references('id')
                     ->on('users')
                     ->nullOnDelete();
+            });
+        }
 
-                $table->index(['processable_type', 'processable_id', 'user_id']);
+        $iptIndexes = collect(DB::select("SHOW INDEXES FROM internal_procedure_takens"))->pluck('Key_name')->unique();
+        if (! $iptIndexes->contains('ipt_user_morph_index')) {
+            Schema::table('internal_procedure_takens', function (Blueprint $table) {
+                $table->index(
+                    ['processable_type', 'processable_id', 'user_id'],
+                    'ipt_user_morph_index',
+                );
             });
         }
 
@@ -73,7 +81,6 @@ return new class extends Migration
             // Constraint may already be dropped or never existed.
         }
 
-        $iptIndexes = collect(DB::select("SHOW INDEXES FROM internal_procedure_takens"))->pluck('Key_name')->unique();
         if (! $iptIndexes->contains('ipt_unique_processable_procedure_user')) {
             Schema::table('internal_procedure_takens', function (Blueprint $table) {
                 $table->unique(
@@ -92,7 +99,7 @@ return new class extends Migration
                 ['processable_type', 'processable_id', 'procedure_setting_id'],
                 'ipt_unique_processable_procedure',
             );
-            $table->dropIndex(['processable_type', 'processable_id', 'user_id']);
+            $table->dropIndex('ipt_user_morph_index');
             $table->dropForeign(['user_id']);
             $table->dropColumn('user_id');
         });
