@@ -9,6 +9,7 @@ use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
 use Modules\Project\ProjectManagement\Controllers\ContractorController;
+use Modules\Project\ProjectManagement\Controllers\ProjectContractorController;
 use Modules\Project\ProjectType\Controllers\ProjectOrderPermitController;
 use Modules\RoleAndPermission\Enums\Permission;
 
@@ -116,12 +117,20 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     });
 
     // Project Notifications Routes
-    Route::prefix('{project}/contractors')->group(function () {
-        Route::get('/', [ContractorController::class, 'index']);
-        Route::post('/', [ContractorController::class, 'store']);
-        Route::get('/{id}', [ContractorController::class, 'show']);
-        Route::put('/{id}', [ContractorController::class, 'update']);
-        Route::delete('/{id}', [ContractorController::class, 'destroy']);
+    // Route::prefix('{project}/contractors')->group(function () {
+    //     Route::get('/', [ContractorController::class, 'index']);
+    //     Route::post('/', [ContractorController::class, 'store']);
+    //     Route::get('/{id}', [ContractorController::class, 'show']);
+    //     Route::put('/{id}', [ContractorController::class, 'update']);
+    //     Route::delete('/{id}', [ContractorController::class, 'destroy']);
+    // });
+
+    Route::prefix('{project}/project-contractors')->group(function () {
+        Route::get('/', [ProjectContractorController::class, 'index']);
+        Route::post('/', [ProjectContractorController::class, 'store']);
+        Route::get('/{id}', [ProjectContractorController::class, 'show']);
+        Route::put('/{id}', [ProjectContractorController::class, 'update']);
+        Route::delete('/{id}', [ProjectContractorController::class, 'destroy']);
     });
 
     Route::prefix('{project}/order-permits')->group(function () {

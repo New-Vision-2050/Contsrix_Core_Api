@@ -228,6 +228,11 @@ class ProjectManagement extends Model
         return $this->hasMany(Contractor::class, 'project_id')->withoutGlobalScopes();
     }
 
+    public function projectContractors(): HasMany
+    {
+        return $this->hasMany(ProjectContractor::class, 'project_id')->withoutGlobalScopes();
+    }
+
     public function orderPermits(): HasMany
     {
         return $this->hasMany(ProjectOrderPermit::class, 'project_id')->withoutGlobalScopes();
