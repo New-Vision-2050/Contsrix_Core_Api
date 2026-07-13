@@ -12,6 +12,7 @@ use Modules\Attendance\Contracts\BehavioralConstraintServiceInterface;
 use Modules\Attendance\Contracts\SecurityConstraintServiceInterface;
 use Modules\Attendance\Contracts\ComplianceConstraintServiceInterface;
 use Modules\Attendance\Models\AttendanceConstraint;
+use Modules\Attendance\Models\AttendanceConstraintLocation;
 use Modules\Attendance\Models\AttendanceConstraintViolation;
 use Modules\Attendance\Models\Attendance;
 use Modules\User\Models\User;
@@ -147,8 +148,13 @@ class AttendanceConstraintService
     {
         // Get the entire configuration object for the constraint.
         $config = $constraint->constraint_config ?? [];
-        if (!empty($constraint->branch_locations) || isset($config['location_rules'])) {
-            $constraintForLocation = $this->mergeAdditionalLocationsForUser($attendance, $constraint);
+
+        // Merge the constraint's own table locations (and any user additional-constraint
+        // locations) so validation uses the same combined list exposed by
+        // user-constraint/today's additional_locations.
+        $constraintForLocation = $this->mergeAdditionalLocationsForUser($attendance, $constraint);
+
+        if (!empty($constraintForLocation->branch_locations) || isset($config['location_rules'])) {
             $violation = $this->locationConstraintService->validateLocationConstraint($attendance, $constraintForLocation);
             if ($violation) {
                 return $violation;
@@ -606,6 +612,12 @@ class AttendanceConstraintService
         $locationRulesResult = $this->buildLocationRules($locationConstraint, $user);
 
         // Combine the results into a final, clean response.
+        $additionalLocations = $this->buildAdditionalLocationRules($user, $constraints);
+        $constraintIds = $constraints->pluck('id')->all();
+        $rawLocationCount = !empty($constraintIds)
+            ? AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)->count()
+            : 0;
+
         return [
             'day_status'              => $timeRulesResult['day_status'],
             'day_name'                => $now->isoFormat(format: 'dddd'),
@@ -620,11 +632,21 @@ class AttendanceConstraintService
             'lateness_rules'          => $timeRulesResult['lateness_rules'],
             'early_clock_in_rules'    => $timeRulesResult['early_clock_in_rules'],
             'location_work'           => $locationRulesResult,
-            'additional_locations'    => $this->buildAdditionalLocationRules($user),
+            'additional_locations'    => $additionalLocations,
             'max_over_time'           => $timeConstraint?->max_over_time,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
                 'location' => $locationConstraint?->id,
+            ],
+            '_debug'                  => [
+                'applicable_constraint_ids' => $constraints->pluck('id')->all(),
+                'applicable_constraint_count' => $constraints->count(),
+                'location_constraint_id' => $locationConstraint?->id,
+                'constraint_ids' => $constraintIds,
+                'raw_location_count' => $rawLocationCount,
+                'additional_locations_count' => count($additionalLocations),
+                'tenancy_initialized' => tenancy()->initialized,
+                'tenant_key' => tenancy()->initialized ? tenant()->getTenantKey() : null,
             ],
         ];
     }
@@ -873,18 +895,57 @@ class AttendanceConstraintService
     }
 
     /**
-     * Collect all allowed branch locations from the user's additional (non-main) attendance constraints.
-     * Returns an array of location objects: [{name, latitude, longitude, radius}].
-     * Used by the /attendance/user-constraint/today response so the mobile/FE knows every
-     * location the employee is allowed to clock in from.
+     * Collect all allowed locations from every applicable constraint and any additional
+     * (non-main) attendance constraints. Returns an array of location objects:
+     * [{id?, name, latitude, longitude, radius}]. Used by /attendance/user-constraint/today
+     * so the mobile/FE knows every location the employee is allowed to clock in from.
      *
      * Sources merged:
      *  1. branch_locations JSON from each additional constraint
      *  2. attendance_constraint_locations rows from each additional constraint
+     *  3. attendance_constraint_locations rows from ALL applicable constraints (main,
+     *     branch/department-assigned, etc.)
      */
-    private function buildAdditionalLocationRules(User $user): array
+    private function buildAdditionalLocationRules(User $user, ?Collection $applicableConstraints = null): array
     {
-        $user->loadMissing('additionalAttendanceConstraints.additionalLocations');
+        $user->loadMissing([
+            'additionalAttendanceConstraints.additionalLocations',
+        ]);
+
+        // Every applicable constraint (the user's directly-assigned main constraint,
+        // branch/department-assigned constraints, and any additional constraints)
+        // may have table-backed locations created via
+        // /attendance/constraints/{id}/locations. All of them must appear in the
+        // additional_locations response so the mobile/FE knows every allowed
+        // clock-in location.
+        $applicableTableLocations = collect();
+        $constraintIds = [];
+        if ($applicableConstraints) {
+            $constraintIds = $applicableConstraints->pluck('id')->all();
+            if (!empty($constraintIds)) {
+                $applicableTableLocations = AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)
+                    ->get()
+                    ->map(fn ($loc) => [
+                        'id'        => $loc->id,
+                        'name'      => $loc->name,
+                        'latitude'  => (float) $loc->latitude,
+                        'longitude' => (float) $loc->longitude,
+                        'radius'    => (int) $loc->radius,
+                    ]);
+            }
+        }
+
+        Log::info('buildAdditionalLocationRules: debug', [
+            'user_id' => $user->id,
+            'applicable_constraint_ids' => $constraintIds,
+            'applicable_table_locations_count' => $applicableTableLocations->count(),
+            'additional_constraints_count' => $user->additionalAttendanceConstraints->count(),
+            'tenancy_initialized' => tenancy()->initialized,
+            'tenant_key' => tenancy()->initialized ? tenant()->getTenantKey() : null,
+            'user_company_id' => $user->company_id,
+            'raw_query_sql' => AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)->toSql(),
+            'raw_query_bindings' => $constraintIds,
+        ]);
 
         $branchLocations = $user->additionalAttendanceConstraints
             ->where('is_active', true)
@@ -905,7 +966,8 @@ class AttendanceConstraintService
                 'latitude'  => (float) $loc->latitude,
                 'longitude' => (float) $loc->longitude,
                 'radius'    => (int) $loc->radius,
-            ]);
+            ])
+            ->merge($applicableTableLocations);
 
         return $branchLocations->merge($tableLocations)->values()->all();
     }
@@ -1125,9 +1187,11 @@ class AttendanceConstraintService
     }
 
     /**
-     * Merge branch_locations from the user's additional (non-main) attendance constraints
-     * into a clone of the main constraint so location validation sees all allowed locations.
-     * Time, shift, and all other rules remain governed by the original main constraint only.
+     * Merge all table-backed additional locations (including the main constraint's own
+     * attendance_constraint_locations rows), table locations from all applicable constraints,
+     * and branch_locations from the user's additional (non-main) attendance constraints into a
+     * clone of the constraint so location validation sees every allowed location.
+     * Time, shift, and all other rules remain governed by the original constraint only.
      */
     private function mergeAdditionalLocationsForUser(
         Attendance $attendance,
@@ -1144,6 +1208,40 @@ class AttendanceConstraintService
 
         if (!$user) {
             return $mainConstraint;
+        }
+
+        $mainConstraint->loadMissing('additionalLocations');
+
+        $mainTableLocs = $mainConstraint->additionalLocations
+            ->map(fn($loc) => [
+                'name'      => $loc->name,
+                'latitude'  => (float) $loc->latitude,
+                'longitude' => (float) $loc->longitude,
+                'radius'    => (int) $loc->radius,
+            ])
+            ->values()
+            ->all();
+
+        // Also fetch table locations from all applicable constraints for this user
+        // (covers branch/department-assigned constraints that are not the main one
+        // and not in additionalAttendanceConstraints).
+        $applicableTableLocs = [];
+        $applicableConstraints = $this->getApplicableConstraintsForDataRetrieval($user);
+        $applicableIds = $applicableConstraints
+            ->pluck('id')
+            ->reject(fn ($id) => $id === $mainConstraint->id)
+            ->all();
+        if (!empty($applicableIds)) {
+            $applicableTableLocs = AttendanceConstraintLocation::whereIn('attendance_constraint_id', $applicableIds)
+                ->get()
+                ->map(fn($loc) => [
+                    'name'      => $loc->name,
+                    'latitude'  => (float) $loc->latitude,
+                    'longitude' => (float) $loc->longitude,
+                    'radius'    => (int) $loc->radius,
+                ])
+                ->values()
+                ->all();
         }
 
         $additionalConstraints = $user->additionalAttendanceConstraints()
@@ -1167,7 +1265,7 @@ class AttendanceConstraintService
             ->values()
             ->all();
 
-        $additionalLocations = array_merge($branchLocs, $tableLocs);
+        $additionalLocations = array_merge($mainTableLocs, $applicableTableLocs, $branchLocs, $tableLocs);
 
         if (empty($additionalLocations)) {
             return $mainConstraint;
