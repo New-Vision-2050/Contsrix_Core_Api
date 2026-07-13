@@ -30,15 +30,13 @@ class ProjectContractorController extends Controller
             $query->where('project_id', $projectId);
         }
 
-        $projectContractors = $query->orderBy('name')->get(['id', 'name', 'number', 'mobile', 'notes']);
+        $projectContractors = $query->orderBy('name')->get();
 
-        return Json::items($projectContractors->map(fn ($projectContractor) => [
-            'id' => $projectContractor->id,
-            'name' => $projectContractor->name,
-            'number' => $projectContractor->number,
-            'mobile' => $projectContractor->mobile,
-            'notes' => $projectContractor->notes,
-        ])->all());
+        return Json::items(
+            $projectContractors->map(fn ($projectContractor) =>
+                (new ProjectContractorPresenter($projectContractor))->getData(true)
+            )->all()
+        );
     }
 
     public function store(StoreProjectContractorRequest $request, string $project): JsonResponse
