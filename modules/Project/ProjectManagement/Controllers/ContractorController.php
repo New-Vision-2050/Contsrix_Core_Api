@@ -27,7 +27,7 @@ class ContractorController extends Controller
     {
         $projectId = $request->route('project');
 
-        $query = Contractor::query()->where('is_active', true);
+        $query = Contractor::query();
 
         if ($projectId) {
             $query->where('project_id', $projectId);
