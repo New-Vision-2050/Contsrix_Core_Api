@@ -21,7 +21,7 @@ class UpdateProjectContractorRequest extends FormRequest
             'commercial_register' => ['nullable', 'string', 'max:255'],
             'activity' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
-            'country_id' => ['nullable', 'uuid', 'exists:countries,id'],
+            'country_id' => ['nullable', 'exists:countries,id'],
             'logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'project_contractor_id' => ['nullable', 'string', 'max:255'],
             'project_manager_name' => ['nullable', 'string', 'max:255'],

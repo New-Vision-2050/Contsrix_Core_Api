@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+           Schema::dropIfExists('project_contractor_representatives');
            Schema::dropIfExists('project_contractors');
 
         Schema::create('project_contractors', function (Blueprint $table) {
