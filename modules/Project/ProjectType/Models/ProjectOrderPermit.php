@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Project\ProjectType\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Country\Models\State;
+use Modules\Project\ProjectManagement\Models\Contractor;
+
+class ProjectOrderPermit extends Model
+{
+    protected $table = 'project_order_permit';
+
+    protected $fillable = [
+        'project_id',
+        'order_permit_id',
+        'order_permit_department_id',
+        'contractor_id',
+        'name',
+        'type',
+        'assigned_date',
+        'state_id',
+        'lat',
+        'long',
+        'price',
+    ];
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'assigned_date' => 'date',
+    ];
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(ProjectManagement::class, 'project_id');
+    }
+
+    public function orderPermit(): BelongsTo
+    {
+        return $this->belongsTo(OrderPermit::class, 'order_permit_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(OrderPermitDepartment::class, 'order_permit_department_id');
+    }
+
+    public function contractor(): BelongsTo
+    {
+        return $this->belongsTo(Contractor::class, 'contractor_id');
+    }
+
+    public function state(): BelongsTo
+    {
+        return $this->belongsTo(State::class, 'state_id');
+    }
+}

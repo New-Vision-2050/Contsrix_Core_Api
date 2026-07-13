@@ -129,6 +129,11 @@ class ProjectType extends Model
         return $this->hasOne(ContractorSetting::class, 'project_type_id');
     }
 
+    public function orderPermitSetting()
+    {
+        return $this->hasOne(OrderPermitSetting::class, 'project_type_id');
+    }
+
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";
