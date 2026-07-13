@@ -11,6 +11,7 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Project\ProjectManagement\Database\factories\ProjectManagementFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Project\ProjectType\Models\ProjectType;
+use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Shared\Currency\Models\Currency;
 use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
@@ -225,6 +226,16 @@ class ProjectManagement extends Model
     public function contractors(): HasMany
     {
         return $this->hasMany(Contractor::class, 'project_id')->withoutGlobalScopes();
+    }
+
+    public function projectContractors(): HasMany
+    {
+        return $this->hasMany(ProjectContractor::class, 'project_id')->withoutGlobalScopes();
+    }
+
+    public function orderPermits(): HasMany
+    {
+        return $this->hasMany(ProjectOrderPermit::class, 'project_id')->withoutGlobalScopes();
     }
 
     public function notifications(): HasMany

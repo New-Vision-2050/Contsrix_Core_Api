@@ -18,6 +18,7 @@ use Modules\Project\ProjectType\Presenters\RolesAndPermissionsSettingPresenter;
 use Modules\Project\ProjectType\Presenters\ProjectSharingSettingPresenter;
 use Modules\Project\ProjectType\Presenters\MaintenanceEmergencySettingPresenter;
 use Modules\Project\ProjectType\Presenters\ContractorSettingPresenter;
+use Modules\Project\ProjectType\Presenters\OrderPermitSettingPresenter;
 class ProjectManagementPresenter extends AbstractPresenter
 {
     private ProjectManagement $projectManagement;
@@ -175,6 +176,7 @@ class ProjectManagementPresenter extends AbstractPresenter
                 8 => 'archive_library_setting',
                 12 => 'maintenance_emergency_setting',
                 13 => 'contractor_setting',
+                14 => 'order_permit_setting',
             ];
 
             // Add contract settings from subSubProjectType wrapped in permissions array
@@ -266,6 +268,14 @@ class ProjectManagementPresenter extends AbstractPresenter
                     $this->projectManagement->subSubProjectType->contractorSetting &&
                     $this->projectManagement->subSubProjectType->contractorSetting) {
                     $permissions['contractor_setting'] = (new ContractorSettingPresenter($this->projectManagement->subSubProjectType->contractorSetting))->getData();
+                }
+
+                // Schema 14: Order Permit Setting
+                if ($this->shouldIncludeSchema(14, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('orderPermitSetting') &&
+                    $this->projectManagement->subSubProjectType->orderPermitSetting &&
+                    $this->projectManagement->subSubProjectType->orderPermitSetting) {
+                    $permissions['order_permit_setting'] = (new OrderPermitSettingPresenter($this->projectManagement->subSubProjectType->orderPermitSetting))->getData();
                 }
             }
             $data['permissions'] = $permissions;
