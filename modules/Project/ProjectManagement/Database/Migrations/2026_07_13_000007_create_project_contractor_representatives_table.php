@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('project_contractor_representatives');
         Schema::create('project_contractor_representatives', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('project_contractor_id');
@@ -16,10 +17,9 @@ return new class extends Migration
             $table->string('nationality')->nullable();
             $table->timestamps();
 
-            // المفتاح الأجنبي الصحيح
             $table->foreign('project_contractor_id')
                 ->references('id')
-                ->on('project_contractors')          // التصحيح هنا
+                ->on('project_contractors')
                 ->cascadeOnDelete();
 
             $table->index('project_contractor_id');
