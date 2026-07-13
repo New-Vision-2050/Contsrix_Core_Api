@@ -819,6 +819,24 @@ class ProjectNotificationController extends Controller
     }
 
     /**
+     * GET /projects/notifications/{id}/site-status-updates/copied
+     *
+     * Returns only approved site status updates that were marked as copied.
+     * Each item has the same shape as the main site-status-updates endpoint,
+     * with `is_copied: true`.
+     */
+    public function copiedSiteStatusUpdates(Request $request): JsonResponse
+    {
+        try {
+            $result = $this->notificationService->copiedSiteStatusUpdates($request->route('id'));
+
+            return Json::item($result, message: 'Copied site status updates retrieved successfully');
+        } catch (ProjectNotificationException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
+    /**
      * GET /projects/notifications/{id}/notes
      *
      * Returns all user notes for a notification, newest first, including the

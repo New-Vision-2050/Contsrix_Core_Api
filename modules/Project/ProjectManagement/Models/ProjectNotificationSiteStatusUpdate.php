@@ -43,6 +43,7 @@ class ProjectNotificationSiteStatusUpdate extends Model implements HasMedia
         'updates_obstacles',
         'additional_notes',
         'status',
+        'is_copied',
         'requested_by',
         'reviewed_by',
         'reviewed_at',
@@ -54,6 +55,7 @@ class ProjectNotificationSiteStatusUpdate extends Model implements HasMedia
         'update_date' => 'date:Y-m-d',
         'completion_percentage' => 'decimal:2',
         'reviewed_at' => 'datetime',
+        'is_copied' => 'boolean',
     ];
 
     public function getTenantIdColumn(): string

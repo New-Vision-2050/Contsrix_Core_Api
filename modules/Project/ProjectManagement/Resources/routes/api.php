@@ -199,6 +199,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
            ;
         Route::get('/{id}/site-status-updates', [ProjectNotificationController::class, 'siteStatusUpdates'])
             ;
+        Route::get('/{id}/site-status-updates/copied', [ProjectNotificationController::class, 'copiedSiteStatusUpdates'])
+            ;
         Route::get('/{id}/notes', [ProjectNotificationController::class, 'notes'])
             ;
         Route::post('/{id}/notes', [ProjectNotificationController::class, 'addNote'])

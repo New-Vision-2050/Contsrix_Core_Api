@@ -23,7 +23,7 @@ class CreateProjectOrderPermitRequest extends FormRequest
             'work_orders.*.assigned_date' => ['nullable', 'date'],
             'work_orders.*.order_permit_id' => ['nullable', 'integer', 'exists:order_permit,id'],
             'work_orders.*.order_permit_department_id' => ['nullable', 'integer', 'exists:order_permit_department,id'],
-            'work_orders.*.contractor_id' => ['nullable', 'string', 'exists:contractors,id'],
+            'work_orders.*.contractor_id' => ['nullable', 'string', 'exists:project_contractors,id'],
             'work_orders.*.state_id' => ['nullable', 'string', 'exists:states,id'],
             'work_orders.*.lat' => ['nullable', 'numeric'],
             'work_orders.*.long' => ['nullable', 'numeric'],
