@@ -21,7 +21,7 @@ class UpdateProjectOrderPermitRequest extends FormRequest
             'assigned_date' => ['nullable', 'date'],
             'order_permit_id' => ['nullable', 'integer', 'exists:order_permit,id'],
             'order_permit_department_id' => ['nullable', 'integer', 'exists:order_permit_department,id'],
-            'contractor_id' => ['nullable', 'string', 'exists:contractors,id'],
+            'contractor_id' => ['nullable', 'string', 'exists:project_contractors,id'],
             'state_id' => ['nullable', 'string', 'exists:states,id'],
             'lat' => ['nullable', 'numeric'],
             'long' => ['nullable', 'numeric'],
