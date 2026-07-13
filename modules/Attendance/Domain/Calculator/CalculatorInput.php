@@ -29,5 +29,18 @@ final class CalculatorInput
         public readonly float $maxOverTimeHours,
         /** IANA timezone identifier used for presentation (stored on attendance row). */
         public readonly string $timezone,
+        /**
+         * Required NET regular hours (constraint max_working_hours). This is the authoritative
+         * "total working hours" target: work up to this is regular, work beyond it (within the
+         * shift window) is overtime. 0/unset => fall back to the scheduled window duration
+         * (legacy behaviour) so existing constraints keep working.
+         */
+        public readonly float $maxWorkingHours = 0.0,
+        /**
+         * NET minutes already worked in the SAME scheduled period by previous (completed)
+         * attendance rows. Lets a re-clock-in "overtime session" know how much of the regular
+         * quota was already consumed, so its overtime is computed correctly.
+         */
+        public readonly int $priorPeriodNetMinutes = 0,
     ) {}
 }

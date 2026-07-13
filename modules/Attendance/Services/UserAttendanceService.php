@@ -116,7 +116,9 @@ class UserAttendanceService
                     $attendances,
                     $dateCarbon,
                     is_array($earlyClockInRules) ? $earlyClockInRules : [],
-                    $currentAttendance
+                    $currentAttendance,
+                    (float) ($workRules['max_working_hours'] ?? 0),
+                    (float) ($workRules['max_over_time'] ?? 0)
                 );
             }
 
@@ -232,7 +234,9 @@ class UserAttendanceService
         Collection $attendances,
         Carbon $date,
         array $earlyClockInRules,
-        ?Attendance $currentAttendance = null
+        ?Attendance $currentAttendance = null,
+        float $maxWorkingHours = 0.0,
+        float $maxOverTime = 0.0
     ): array {
         $timezone = $this->getTimezone();
         $now = Carbon::now($timezone);
@@ -257,7 +261,11 @@ class UserAttendanceService
             $periodStart = $periodBounds[$idx]['start'];
             $periodEnd = $periodBounds[$idx]['end'];
 
-            $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
+            // total_work_hours is the constraint's max_working_hours (the required "total working
+            // hours" target) when configured; otherwise fall back to the scheduled window length.
+            $totalWorkHours = $maxWorkingHours > 0
+                ? round($maxWorkingHours, 2)
+                : $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
 
             // Clock-in / early window (unchanged) — drives can_clock_in per period
@@ -271,7 +279,9 @@ class UserAttendanceService
                 $isActiveByTime,
                 $isActiveForDisplay,
                 $earlyClockInRules,
-                $currentAttendance
+                $currentAttendance,
+                $maxWorkingHours,
+                $maxOverTime
             );
         }
 
@@ -439,7 +449,9 @@ class UserAttendanceService
         bool $isActiveByTime,
         bool $isActiveForDisplay,
         array $earlyClockInRules,
-        ?Attendance $currentAttendance = null
+        ?Attendance $currentAttendance = null,
+        float $maxWorkingHours = 0.0,
+        float $maxOverTime = 0.0
     ): array {
         $cleanedPeriod = $period;
         unset($cleanedPeriod['period_start_time_carbon'], $cleanedPeriod['period_end_time_carbon']);
@@ -453,10 +465,22 @@ class UserAttendanceService
             return $att['status'] === 'active';
         });
 
-        $canClockIn = $isActiveByTime && ! $hasActiveAttendance && $currentAttendance === null;
+        // Allow a follow-up clock-in for OVERTIME after the regular shift auto-closed, but only
+        // while worked hours are still under the max_working_hours + max_over_time ceiling. When
+        // max_working_hours is unset, keep the previous behaviour (no ceiling). The window check
+        // ($isActiveByTime) already blocks overtime outside the shift start/end.
+        $underCeiling = true;
+        if ($maxWorkingHours > 0) {
+            $ceilingHours = $maxWorkingHours + max(0.0, $maxOverTime);
+            $underCeiling = $totalHoursPresent < ($ceilingHours - 0.001);
+        }
+
+        $canClockIn = $isActiveByTime && ! $hasActiveAttendance && $currentAttendance === null && $underCeiling;
 
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
+            'max_working_hours' => $maxWorkingHours > 0 ? round($maxWorkingHours, 2) : null,
+            'max_over_time' => $maxOverTime > 0 ? round($maxOverTime, 2) : null,
             'is_active' => $isActiveForDisplay,
             'total_hours_present' => round($totalHoursPresent, 2),
             'can_clock_in' => $canClockIn,
@@ -493,6 +517,15 @@ class UserAttendanceService
             'day_name' => $workRules['day_name'] ?? null,
             'is_holiday' => $workRules['is_holiday'] ?? false,
             'reason' => $workRules['reason'] ?? null,
+            'total_work_hours' => isset($workRules['max_working_hours']) && $workRules['max_working_hours'] !== null
+                ? round((float) $workRules['max_working_hours'], 2)
+                : null,
+            'max_working_hours' => isset($workRules['max_working_hours']) && $workRules['max_working_hours'] !== null
+                ? round((float) $workRules['max_working_hours'], 2)
+                : null,
+            'max_over_time' => isset($workRules['max_over_time']) && $workRules['max_over_time'] !== null
+                ? round((float) $workRules['max_over_time'], 2)
+                : null,
             'all_work_periods' => $workRules['all_work_periods'] ?? [],
             'location_work' => $locationWork ? [
                 'name' => $locationWork['name'] ?? null,

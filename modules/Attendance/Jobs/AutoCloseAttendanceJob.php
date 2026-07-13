@@ -15,12 +15,14 @@ use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AutoCloseAttendanceService;
 
 /**
- * Closes a shift at its max-overtime deadline (end_time + max_over_time_hours * 60 min).
+ * Fast-path auto clock-out for a shift that has reached its close moment.
  *
- * Dispatched with a future delay at clock-in time so the exact deadline is honoured
- * regardless of cron-command jitter.  The AutoCloseStaleShiftsCommand acts as a
- * safety net: if this job is lost or delayed, the command will catch the shift on
- * its next run (at most 5 minutes late).
+ * Dispatched with a future delay at clock-in time (earliest possible close moment =
+ * clock_in + max_working_hours) so the shift is closed promptly. Because breaks taken
+ * later push the real net-based moment forward, the actual moment is re-computed at run
+ * time via {@see AutoCloseAttendanceService::autoCloseIfDue}; if it is not yet due the
+ * job is a no-op and the AutoCloseStaleShiftsCommand safety net (every 5 min) will close
+ * it once due.
  *
  * Delegates all write logic to {@see AutoCloseAttendanceService} which holds the
  * row-level lock and guarantees a single close even when concurrent callers race.
@@ -35,7 +37,10 @@ class AutoCloseAttendanceJob implements ShouldQueue
     public function __construct(
         public readonly string $attendanceId,
         public readonly string $companyId,
-        /** ISO 8601 instant — equals end_time + max_over_time. Stored as clock_out_time. */
+        /**
+         * ISO 8601 instant of the earliest possible close moment (clock_in + max_working_hours).
+         * Kept for observability/back-compat; the effective moment is re-resolved at run time.
+         */
         public readonly string $closeAtIso,
     ) {}
 
@@ -59,8 +64,7 @@ class AutoCloseAttendanceJob implements ShouldQueue
                 return;
             }
 
-            $closeAt = CarbonImmutable::parse($this->closeAtIso);
-            $closed  = $autoCloseService->closeIfExpired($attendance, $closeAt, 'auto_max_ot');
+            $closed = $autoCloseService->autoCloseIfDue($attendance);
 
             if (!$closed) {
                 Log::debug('AutoCloseAttendanceJob: attendance already closed or not active', [

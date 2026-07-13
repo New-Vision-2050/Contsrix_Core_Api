@@ -90,6 +90,140 @@ final class AutoCloseAttendanceService
         });
     }
 
+    /**
+     * Close an active shift if it has reached its automatic close moment, deciding the moment
+     * from the max_working_hours / max_over_time rules. Safe to call repeatedly (no-op when the
+     * shift is not yet due or already closed).
+     *
+     * @return bool true when the shift was closed on this call.
+     */
+    public function autoCloseIfDue(Attendance $attendance, ?CarbonImmutable $now = null): bool
+    {
+        $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
+        $now = $now ?? CarbonImmutable::now($timezone);
+
+        $decision = $this->resolveAutoCloseMoment($attendance, $now);
+        if ($decision === null) {
+            return false;
+        }
+
+        [$moment, $reason] = $decision;
+
+        return $this->closeIfExpired($attendance, $moment, $reason);
+    }
+
+    /**
+     * Decide whether (and when) an active shift should be auto-closed.
+     *
+     * Rules (when the constraint has max_working_hours set):
+     *  - Regular phase (this row + prior rows have not yet reached max_working_hours of NET work):
+     *    close once cumulative net work reaches max_working_hours. Regular work may run past the
+     *    shift window end_time (needed when max_working_hours > window duration).
+     *  - Overtime phase (regular quota already consumed by earlier rows — i.e. a re-clock-in
+     *    session): overtime is confined to the shift window and capped by max_over_time. Close at
+     *    the earlier of (a) remaining overtime exhausted, or (b) the shift window end_time.
+     *
+     * Legacy (no max_working_hours): close at end_time + max_over_time (previous behaviour).
+     *
+     * @return array{0: CarbonImmutable, 1: string}|null  [closeAt, shift_end_method] or null if not due.
+     */
+    public function resolveAutoCloseMoment(Attendance $attendance, CarbonImmutable $now): ?array
+    {
+        if ($attendance->clock_in_time === null || $attendance->status !== Attendance::STATUS_ACTIVE) {
+            return null;
+        }
+
+        $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
+
+        $clockIn = CarbonImmutable::parse($attendance->clock_in_time, $timezone);
+
+        $scheduledStart = $attendance->start_time ? CarbonImmutable::parse($attendance->start_time, $timezone) : $clockIn;
+        $scheduledEnd   = $attendance->end_time ? CarbonImmutable::parse($attendance->end_time, $timezone) : null;
+        if ($scheduledEnd !== null && !$scheduledEnd->greaterThan($scheduledStart)) {
+            $scheduledEnd = $scheduledEnd->addDay();
+        }
+
+        $maxWorkingHours = (float) ($attendance->max_working_hours ?? 0.0);
+        $maxOverTimeHours = (float) ($attendance->max_over_time ?? 0.0);
+
+        // Legacy fallback: no working-hours target → close at end_time + max_over_time.
+        if ($maxWorkingHours <= 0) {
+            if ($scheduledEnd === null) {
+                return null;
+            }
+            $deadline = $scheduledEnd->addMinutes((int) round($maxOverTimeHours * 60));
+            return $now->greaterThanOrEqualTo($deadline)
+                ? [$scheduledEnd, 'auto_max_ot']
+                : null;
+        }
+
+        $completedBreakMinutes = (int) $attendance->breaks()
+            ->whereNotNull('end_time')
+            ->sum('duration_minutes');
+
+        $priorNetMinutes = $attendance->priorPeriodNetMinutes();
+        $netNowMinutes   = $this->netWorkedMinutesAsOf($attendance, $timezone, $now, $completedBreakMinutes);
+
+        $targetMinutes = (int) round($maxWorkingHours * 60);
+
+        if ($priorNetMinutes < $targetMinutes) {
+            // Regular phase: close when cumulative net reaches max_working_hours.
+            $remainingRegular = $targetMinutes - $priorNetMinutes;
+            if ($netNowMinutes < $remainingRegular) {
+                return null;
+            }
+            $moment = $clockIn->addMinutes($remainingRegular + $completedBreakMinutes);
+            return [$moment, 'auto_max_hours'];
+        }
+
+        // Overtime phase: confine to the shift window, cap by remaining max_over_time.
+        $priorOtMinutes = $attendance->priorPeriodOvertimeMinutes();
+        $remainingOt    = max(0, (int) round($maxOverTimeHours * 60) - $priorOtMinutes);
+
+        $otBoundary = $clockIn->addMinutes($remainingOt + $completedBreakMinutes);
+        $moment = ($scheduledEnd !== null && $scheduledEnd->lessThan($otBoundary))
+            ? $scheduledEnd
+            : $otBoundary;
+
+        return $now->greaterThanOrEqualTo($moment)
+            ? [$moment, 'auto_max_ot']
+            : null;
+    }
+
+    /**
+     * Net worked minutes on a single row as of $asOf: gross (clock-in → asOf) minus completed
+     * break minutes and any elapsed portion of a currently-open break.
+     */
+    private function netWorkedMinutesAsOf(
+        Attendance $attendance,
+        string $timezone,
+        CarbonImmutable $asOf,
+        int $completedBreakMinutes,
+    ): int {
+        $clockIn = CarbonImmutable::parse($attendance->clock_in_time, $timezone);
+        if (!$asOf->greaterThan($clockIn)) {
+            return 0;
+        }
+
+        $grossMinutes = (int) $clockIn->diffInMinutes($asOf);
+
+        $openBreak = $attendance->breaks()
+            ->whereNotNull('start_time')
+            ->whereNull('end_time')
+            ->orderByDesc('start_time')
+            ->first();
+
+        $openBreakMinutes = 0;
+        if ($openBreak && $openBreak->start_time) {
+            $breakStart = CarbonImmutable::parse($openBreak->start_time, $timezone);
+            if ($asOf->greaterThan($breakStart)) {
+                $openBreakMinutes = (int) $breakStart->diffInMinutes($asOf);
+            }
+        }
+
+        return max(0, $grossMinutes - $completedBreakMinutes - $openBreakMinutes);
+    }
+
     private function buildCalculatorInput(Attendance $fresh, CarbonImmutable $closeAt): CalculatorInput
     {
         $timezone = $fresh->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
@@ -125,6 +259,8 @@ final class AutoCloseAttendanceService
             gracePeriodMinutes: $gracePeriodMinutes,
             maxOverTimeHours:  $maxOverTimeHours,
             timezone:          $timezone,
+            maxWorkingHours:   (float) ($fresh->max_working_hours ?? 0.0),
+            priorPeriodNetMinutes: $fresh->priorPeriodNetMinutes(),
         );
     }
 
