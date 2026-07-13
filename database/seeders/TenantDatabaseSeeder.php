@@ -12,7 +12,6 @@ use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSee
 use Modules\Project\ProjectManagement\Database\Seeders\ContractorSeeder;
 use Modules\Project\ProjectType\Database\Seeders\ProjectTypeSeeder;
 use Modules\Project\ProjectType\Database\Seeders\SchemaSeeder;
-use Modules\Project\ProjectType\Database\Seeders\ProjectContractorSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
@@ -87,7 +86,6 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(WebsiteOurServiceSeeder::class);
         $this->call(ProjectTypeSeeder::class);
         $this->call(SchemaSeeder::class);
-        $this->call(ProjectContractorSeeder::class);
         $this->call(ContractorSeeder::class);
 
         $this->call(WorkFlowForBranchesSeeder::class);
