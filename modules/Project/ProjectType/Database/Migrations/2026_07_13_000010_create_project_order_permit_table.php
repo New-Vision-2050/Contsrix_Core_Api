@@ -8,6 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+            Schema::dropIfExists('project_order_permit');
+
         Schema::create('project_order_permit', function (Blueprint $table) {
             $table->id();
             $table->uuid('project_id');
@@ -40,7 +42,7 @@ return new class extends Migration
 
             $table->foreign('contractor_id')
                 ->references('id')
-                ->on('contractors')
+                ->on('project_contractors')
                 ->onDelete('set null');
 
             $table->foreign('state_id')
