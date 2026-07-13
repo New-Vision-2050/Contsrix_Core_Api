@@ -16,7 +16,7 @@ class StateCRUDService
         private StateRepository $repository,
     ) {
     }
-
+//new service
     public function create(CreateStateDTO $createStateDTO): State
     {
          return $this->repository->createState($createStateDTO->toArray());
@@ -30,13 +30,7 @@ class StateCRUDService
             perPage: $perPage,
         );
     }
-        public function listCity(int $page = 1, int $perPage = 10): array
-    {
-        return $this->cityRepository->paginated(
-            page: $page,
-            perPage: $perPage,
-        );
-    }
+
     public function getList(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
