@@ -2441,6 +2441,7 @@ class ProjectNotificationService
             $items[] = [
                 'id'                    => $update->id,
                 'status'                => 'approved',
+                'is_copied'             => (bool) $update->is_copied,
                 'description'           => $update->description,
                 'attachments'           => \Modules\Shared\Media\Presenters\MediaPresenter::collection(
                     $update->getMedia('attachments')
@@ -2492,6 +2493,7 @@ class ProjectNotificationService
             $items[] = [
                 'id'                    => $process->id,
                 'status'                => 'pending',
+                'is_copied'             => false,
                 'description'           => $updateData['description'] ?? null,
                 'attachments'           => $attachments,
                 'requested_by'          => isset($metadata['user_id'])
@@ -2557,6 +2559,76 @@ class ProjectNotificationService
         return [
             'items'    => $items,
             'summary'  => $summary,
+            'timezone' => $timezone,
+        ];
+    }
+
+    /**
+     * Return only approved site status updates that were marked as copied.
+     *
+     * @return array{items: list<array>, summary: array, timezone: string}
+     */
+    public function copiedSiteStatusUpdates(string $notificationId): array
+    {
+        $notification = $this->get($notificationId);
+        $task = $this->linkedTask($notificationId);
+
+        $timezone = $task->timezone ?? getTimeZoneBranchByRequest() ?? config('app.timezone');
+
+        $copiedUpdates = ProjectNotificationSiteStatusUpdate::query()
+            ->where('project_notification_id', $notification->id)
+            ->where('is_copied', true)
+            ->with(['requester', 'reviewer', 'media', 'process.steps.actionByUser'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $items = [];
+        foreach ($copiedUpdates as $update) {
+            $process = $update->process;
+            $items[] = [
+                'id'                    => $update->id,
+                'status'                => 'approved',
+                'is_copied'             => true,
+                'description'           => $update->description,
+                'attachments'           => \Modules\Shared\Media\Presenters\MediaPresenter::collection(
+                    $update->getMedia('attachments')
+                ),
+                'requested_by'          => $update->requester ? [
+                    'id'   => $update->requester->id,
+                    'name' => $update->requester->name,
+                ] : null,
+                'reviewed_by'           => $update->reviewer ? [
+                    'id'   => $update->reviewer->id,
+                    'name' => $update->reviewer->name,
+                ] : null,
+                'reviewed_at'           => $this->formatInTimezone($update->reviewed_at, $timezone),
+                'review_notes'          => $update->review_notes,
+                'created_at'            => $this->formatInTimezone($update->created_at, $timezone),
+                'process'               => $process ? [
+                    'id'     => $process->id,
+                    'status' => $process->status?->value,
+                    'steps'  => $process->relationLoaded('steps')
+                        ? $process->steps->map(fn ($step) => [
+                            'step_order' => $step->template_step_order,
+                            'status'     => $step->status?->value,
+                            'action_by'  => $step->actionByUser ? [
+                                'id'   => $step->actionByUser->id,
+                                'name' => $step->actionByUser->name,
+                            ] : null,
+                            'acted_at'   => $this->formatInTimezone($step->acted_at, $timezone),
+                        ])->toArray()
+                        : [],
+                ] : null,
+            ];
+        }
+
+        return [
+            'items'    => $items,
+            'summary'  => [
+                'total'    => count($items),
+                'approved' => count($items),
+                'pending'  => 0,
+            ],
             'timezone' => $timezone,
         ];
     }
