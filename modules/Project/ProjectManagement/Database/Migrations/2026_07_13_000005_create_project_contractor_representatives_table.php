@@ -16,9 +16,10 @@ return new class extends Migration
             $table->string('nationality')->nullable();
             $table->timestamps();
 
+            // المفتاح الأجنبي الصحيح
             $table->foreign('project_contractor_id')
                 ->references('id')
-                ->on('contractors')
+                ->on('project_contractors')          // التصحيح هنا
                 ->cascadeOnDelete();
 
             $table->index('project_contractor_id');
