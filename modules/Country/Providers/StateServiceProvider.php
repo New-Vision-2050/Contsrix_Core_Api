@@ -7,11 +7,11 @@ namespace Modules\Country\Providers;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 
-class CountryServiceProvider extends ModuleServiceProvider
+class StateServiceProvider extends ModuleServiceProvider
 {
     public static function getModuleName(): string
     {
-        return 'Country';
+        return 'State';
     }
 
     public function boot(): void

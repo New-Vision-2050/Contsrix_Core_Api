@@ -17,7 +17,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::delete('/{id}', [CountryController::class, 'delete']);
 });
 Route::group(['middleware' => ['auth:api']], function () {
-    Route::get('/states', [StateController::class, 'index']);
+    Route::get('/states/list', [StateController::class, 'index']);
 
     Route::post('/states', [StateController::class, 'store']);
     Route::get('/states/{id}', [StateController::class, 'show']);

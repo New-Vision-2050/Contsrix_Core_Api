@@ -21,10 +21,12 @@ class StatePresenter extends AbstractPresenter
         return [
             'id' => $this->State->id,
             'name' => $this->State->name ,
-            "status"=> $this->State->status,
-            "sms_driver" => $this->State->smsDriver?->name,
-             "currency_name" => $this->State->currency_name,
-            "currency_symbol"=> $this->State->currency_symbol
+            "flag"=> $this->State->flag,
+             "country_id" => $this->State->country_id,
+             "country_code" => $this->State->country_code,
+            "type"=> $this->State->type,
+            "latitude"=> $this->State->latitude,
+            "longitude"=> $this->State->longitude
         ];
     }
 }
