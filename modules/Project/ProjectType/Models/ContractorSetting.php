@@ -17,7 +17,7 @@ class ContractorSetting extends Model
     ];
 
     protected $casts = [
-        'is_shown' => 'boolean',
+        'is_shown' => 'int',
     ];
 
     public function projectType(): BelongsTo

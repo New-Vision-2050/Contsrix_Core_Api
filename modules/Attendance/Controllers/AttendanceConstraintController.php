@@ -1039,6 +1039,41 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
+     * Delete a specific location by ID, scoped to a constraint.
+     */
+    public function deleteConstraintLocation(string $constraintId, string $locationId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        // Branch locations are the source of the main location_work, so they cannot be deleted here.
+        $branchLocations = collect($constraint->branch_locations ?? []);
+        $isMainLocation = $branchLocations->contains(
+            fn($loc, $index) => (string) ($loc['branch_id'] ?? ('branch_' . $index)) === $locationId
+        );
+
+        if ($isMainLocation) {
+            return Json::error(
+                'You cannot delete the main location. Remove the branch from the constraint instead.',
+                'main_location_delete_forbidden',
+                null,
+                [],
+                403
+            );
+        }
+
+        $location = AttendanceConstraintLocation::where('id', $locationId)
+            ->where('attendance_constraint_id', $constraint->id)
+            ->where('company_id', Auth::user()->company_id)
+            ->firstOrFail();
+
+        $location->delete();
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+
+        return Json::success('Location deleted successfully');
+    }
+
+    /**
      * Delete a specific location by ID.
      */
     public function deleteLocation(string $locationId): JsonResponse
