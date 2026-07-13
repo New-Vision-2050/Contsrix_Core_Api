@@ -209,6 +209,16 @@
                   "key": "status",
                   "value": "pending",
                   "description": "Filter by status (pending, approved, rejected, in_progress, completed, cancelled). Comma-separated values supported"
+                },
+                {
+                  "key": "date_from",
+                  "value": "2026-07-13",
+                  "description": "Filter task_date from this date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2026-07-20",
+                  "description": "Filter task_date up to this date (YYYY-MM-DD)"
                 }
               ]
             }

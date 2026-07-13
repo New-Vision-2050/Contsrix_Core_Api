@@ -471,19 +471,31 @@ class ProjectNotificationService
 
     /**
      * Mark a notification as read or unread for a specific user.
+     *
+     * When marking as read, all users assigned to the notification are also
+     * marked as read so that the task appears read for everyone in the list.
+     * Marking as unread only affects the acting user.
      */
     public function updateReadStatus(string $notificationId, string $userId, bool $isRead): ProjectNotification
     {
         $notification = $this->get($notificationId);
 
         if ($isRead) {
-            ProjectNotificationRead::updateOrCreate(
-                [
-                    'project_notification_id' => $notification->id,
-                    'user_id' => $userId,
-                ],
-                ['read_at' => now()]
-            );
+            $now = now();
+            $readUserIds = array_unique(array_filter(array_merge(
+                $notification->assigned_user_ids ?? [],
+                [$userId]
+            )));
+
+            foreach ($readUserIds as $readUserId) {
+                ProjectNotificationRead::updateOrCreate(
+                    [
+                        'project_notification_id' => $notification->id,
+                        'user_id' => $readUserId,
+                    ],
+                    ['read_at' => $now]
+                );
+            }
         } else {
             ProjectNotificationRead::query()
                 ->where('project_notification_id', $notification->id)

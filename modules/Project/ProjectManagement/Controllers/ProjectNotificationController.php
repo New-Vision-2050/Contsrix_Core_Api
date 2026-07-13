@@ -104,7 +104,9 @@ class ProjectNotificationController extends Controller
      *
      * Map view: all notifications without pagination, with coordinates, radius,
      * task name, assigned user and receive date formatted in the assigned user's
-     * branch timezone. Supports status filter via ?status=...
+     * branch timezone. Supports:
+     *   - status filter via ?status=...
+     *   - task date range via ?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD
      */
     public function mapTasks(FilterProjectNotificationsRequest $request): JsonResponse
     {
