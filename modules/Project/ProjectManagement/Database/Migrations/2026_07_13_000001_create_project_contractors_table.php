@@ -8,42 +8,84 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('project_contractors')) {
+        if (!Schema::hasTable('project_contractors')) {
             return;
         }
 
-        Schema::create('project_contractors', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('company_id')->nullable();
-            $table->uuid('project_id')->nullable();
-            $table->string('name');
-            $table->string('number')->nullable();
-            $table->string('mobile')->nullable();
-            $table->text('notes')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->string('tax_card')->nullable();
-            $table->string('commercial_register')->nullable();
-            $table->string('activity')->nullable();
-            $table->string('email')->nullable();
-            $table->uuid('country_id')->nullable();
-            $table->string('logo')->nullable();
-            $table->string('project_contractor_id')->nullable();
-            $table->string('project_manager_name')->nullable();
-            $table->string('project_manager_phone')->nullable();
-            $table->string('project_manager_nationality')->nullable();
-            $table->string('project_manager_email')->nullable();
-            $table->timestamps();
+        Schema::table('project_contractors', function (Blueprint $table) {
+            if (!Schema::hasColumn('project_contractors', 'project_id')) {
+                $table->uuid('project_id')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'tax_card')) {
+                $table->string('tax_card')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'commercial_register')) {
+                $table->string('commercial_register')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'activity')) {
+                $table->string('activity')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'email')) {
+                $table->string('email')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'country_id')) {
+                $table->uuid('country_id')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'project_contractor_id')) {
+                $table->string('project_contractor_id')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'project_manager_name')) {
+                $table->string('project_manager_name')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'project_manager_phone')) {
+                $table->string('project_manager_phone')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'project_manager_nationality')) {
+                $table->string('project_manager_nationality')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'project_manager_email')) {
+                $table->string('project_manager_email')->nullable();
+            }
+            if (!Schema::hasColumn('project_contractors', 'logo')) {
+                $table->string('logo')->nullable();
 
-            $table->foreign('company_id')->references('id')->on('companies')->nullOnDelete();
-            $table->foreign('project_id')->references('id')->on('projects')->cascadeOnDelete();
-            $table->foreign('country_id')->references('id')->on('countries')->nullOnDelete();
-            $table->unique(['project_id', 'project_contractor_id'], 'project_contractors_project_reference_unique');
-            $table->index('project_id');
+            }
         });
+
+        if (Schema::hasColumn('project_contractors', 'project_id')) {
+            try {
+                Schema::table('project_contractors', function (Blueprint $table) {
+                    $table->foreign('project_id')->references('id')->on('projects')->cascadeOnDelete();
+                });
+            } catch (\Throwable $e) {
+            }
+        }
+
+        if (Schema::hasColumn('project_contractors', 'country_id')) {
+            try {
+                Schema::table('project_contractors', function (Blueprint $table) {
+                    $table->foreign('country_id')->references('id')->on('countries')->nullOnDelete();
+                });
+            } catch (\Throwable $e) {
+            }
+        }
+
+        try {
+            Schema::table('project_contractors', function (Blueprint $table) {
+                $table->unique(['project_id', 'project_contractor_id'], 'contractors_project_reference_unique');
+            });
+        } catch (\Throwable $e) {
+        }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('project_contractors');
+        Schema::table('project_contractors', function (Blueprint $table) {
+            $table->dropForeign(['project_id']);
+            $table->dropForeign(['country_id']);
+            $table->dropUnique('project_contractors_reference_unique');
+        });
     }
 };
+
+

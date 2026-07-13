@@ -8,10 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('project_contractor_representatives')) {
-            return;
-        }
-
         Schema::create('project_contractor_representatives', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('project_contractor_id');
@@ -22,7 +18,7 @@ return new class extends Migration
 
             $table->foreign('project_contractor_id')
                 ->references('id')
-                ->on('project_contractors')
+                ->on('contractors')
                 ->cascadeOnDelete();
 
             $table->index('project_contractor_id');
