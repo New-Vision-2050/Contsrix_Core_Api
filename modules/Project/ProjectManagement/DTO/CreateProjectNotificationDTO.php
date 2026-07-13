@@ -7,7 +7,6 @@ namespace Modules\Project\ProjectManagement\DTO;
 final class CreateProjectNotificationDTO
 {
     public function __construct(
-        public readonly ?string $notificationNumber    = null,
         public readonly string  $projectId,
         public readonly string  $createdByUserId,
         public readonly string  $assignedUserId,
@@ -16,6 +15,9 @@ final class CreateProjectNotificationDTO
         public readonly float   $durationHours,
         public readonly float   $taskLatitude,
         public readonly float   $taskLongitude,
+        public readonly string  $district,
+        public readonly string  $fullAddress,
+        public readonly ?string $notificationNumber        = null,
         public readonly ?string $notificationType          = null,
         public readonly ?string $severity                  = 'منخفض',
         public readonly ?string $workType                  = null,
@@ -51,6 +53,8 @@ final class CreateProjectNotificationDTO
             'duration_hours'              => $this->durationHours,
             'task_latitude'               => $this->taskLatitude,
             'task_longitude'              => $this->taskLongitude,
+            'district'                    => $this->district,
+            'full_address'                => $this->fullAddress,
             'notification_type'           => $this->notificationType,
             'severity'                    => $this->severity,
             'work_type'                   => $this->workType,

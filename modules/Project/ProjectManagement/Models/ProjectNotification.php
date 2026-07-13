@@ -49,6 +49,8 @@ class ProjectNotification extends Model implements HasMedia
         'contractor_mobile',
         'task_latitude',
         'task_longitude',
+        'district',
+        'full_address',
         'location_radius',
         'location_link',
         'repair_point',
