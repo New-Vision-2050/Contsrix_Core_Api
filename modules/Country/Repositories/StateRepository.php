@@ -25,7 +25,7 @@ class StateRepository extends BaseRepository
 
     public function getStateList(?int $page, ?int $perPage = 10): Collection
     {
-        return $this->paginatedList(['status' => 1], $page, $perPage);
+        return $this->paginatedList(['flag' => 1], $page, $perPage);
     }
 
     public function getStatesWithCities($countryId = null)

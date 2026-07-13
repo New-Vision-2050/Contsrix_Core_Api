@@ -6,7 +6,7 @@ namespace Modules\Country\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
 
-class CountryFilter extends SearchModelFilter
+class StateFilter extends SearchModelFilter
 {
     public $relations = [];
 
@@ -15,11 +15,11 @@ class CountryFilter extends SearchModelFilter
         return $this->where('name', 'LIKE', "%{$name}%");
     }
 
-    public function status($status)
-    {
+    // public function status($status)
+    // {
 
-        return $this->where('status', $status);
-    }
+    //     return $this->where('status', $status);
+    // }
 
     public function CompanyAccessProgram($company_access_program_id)
     {
