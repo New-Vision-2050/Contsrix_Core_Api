@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\LeaveRequest;
+use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 
@@ -20,6 +21,7 @@ class AttendanceCalendarService
     public function __construct(
         private AttendanceConstraintService $constraintService,
         private UserAttendanceService $userAttendanceService,
+        private EmployeeTaskPresenceService $taskPresenceService,
     ) {}
 
     /**
@@ -65,6 +67,9 @@ class AttendanceCalendarService
         // Bulk fetch approved leave requests for the range
         $leaveDates = $this->fetchLeaveDatesForRange($user, $dateStartStr, $dateEndStr);
 
+        // Bulk fetch dates where the user has an assigned/active task (متواجد)
+        $taskDates = $this->taskPresenceService->taskDatesForUser($user->id, $dateStartStr, $dateEndStr);
+
         // Build calendar day-by-day
         $days = [];
         $cursor = $rangeStart->copy();
@@ -75,6 +80,7 @@ class AttendanceCalendarService
         $leaveCount   = 0;
         $offCount     = 0;
         $requiredCount = 0;
+        $onTaskCount   = 0;
         $totalWorkHours = $this->calculateTotalWorkHoursFromGroupedAttendances($attendances);
 
         while ($cursor->lte($rangeEnd)) {
@@ -84,6 +90,7 @@ class AttendanceCalendarService
 
             $dayAttendances = $attendances->get($dateString, collect());
             $hasLeave       = in_array($dateString, $leaveDates, true);
+            $hasTask        = in_array($dateString, $taskDates, true);
 
             $dayData = $this->buildDayData(
                 $user,
@@ -93,6 +100,7 @@ class AttendanceCalendarService
                 $isToday,
                 $dayAttendances,
                 $hasLeave,
+                $hasTask,
                 $timezone
             );
 
@@ -118,6 +126,9 @@ class AttendanceCalendarService
                 case 'required':
                     $requiredCount++;
                     break;
+                case 'on_task':
+                    $onTaskCount++;
+                    break;
             }
 
             $cursor->addDay();
@@ -133,6 +144,7 @@ class AttendanceCalendarService
                 'leave_count'       => $leaveCount,
                 'off_count'         => $offCount,
                 'required_count'    => $requiredCount,
+                'on_task_count'     => $onTaskCount,
                 'total_work_hours'  => $totalWorkHours,
             ],
         ];
@@ -149,6 +161,7 @@ class AttendanceCalendarService
         bool $isToday,
         Collection $dayAttendances,
         bool $hasLeave,
+        bool $hasTask,
         string $timezone
     ): array {
         $dayName = $this->getDayNameArabic($date);
@@ -211,6 +224,18 @@ class AttendanceCalendarService
             $dayStatus = $workRules['day_status'] ?? 'Undefined';
 
             if ($dayStatus === 'work_day') {
+                // Employee has an assigned/active task on this day → present (متواجد).
+                if ($hasTask) {
+                    return $this->formatDay(
+                        $dateString,
+                        $dayName,
+                        'on_task',
+                        __('validation.day_status.on_task'),
+                        null,
+                        $dayAttendances
+                    );
+                }
+
                 return $this->formatDay(
                     $dateString,
                     $dayName,
@@ -253,6 +278,18 @@ class AttendanceCalendarService
         );
 
         if ($hasAbsent && !$hasLate) {
+            // Employee has an assigned/active task on this day → present (متواجد).
+            if ($hasTask) {
+                return $this->formatDay(
+                    $dateString,
+                    $dayName,
+                    'on_task',
+                    __('validation.day_status.on_task'),
+                    null,
+                    $dayAttendances
+                );
+            }
+
             return $this->formatDay(
                 $dateString,
                 $dayName,
@@ -324,6 +361,7 @@ class AttendanceCalendarService
     {
         return match ($statusKey) {
             'present'  => '#4CAF50',
+            'on_task'  => '#00BCD4',
             'late'     => '#FF9800',
             'absent'   => '#F44336',
             'leave'    => '#9C27B0',

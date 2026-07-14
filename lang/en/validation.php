@@ -564,6 +564,7 @@ return [
         'in_location'=>'in loction',
         'clocked_out'=> 'clocked out',
         'absent'=> 'absent',
+        'on_task'=> 'present',
     ],
 
     'unique_translation' => 'The :locale :attribute has already been taken.',
