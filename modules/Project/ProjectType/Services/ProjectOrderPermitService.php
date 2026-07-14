@@ -46,6 +46,17 @@ class ProjectOrderPermitService
             ->get();
     }
 
+    public function listAll(): Collection
+    {
+        $projectIds = ProjectManagement::query()->pluck('id');
+
+        return ProjectOrderPermit::query()
+            ->whereIn('project_id', $projectIds)
+            ->with(['orderPermit', 'department', 'contractor', 'state'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
 
     public function show(string $projectId, string $id): ProjectOrderPermit
     {

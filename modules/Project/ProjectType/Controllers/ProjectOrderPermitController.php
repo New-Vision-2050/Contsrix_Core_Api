@@ -33,6 +33,19 @@ class ProjectOrderPermitController extends Controller
         }
     }
 
+    public function all(Request $request): JsonResponse
+    {
+        try {
+            $items = $this->service->listAll();
+
+            return Json::items(
+                $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()
+            );
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
 
     public function store(CreateProjectOrderPermitRequest $request): JsonResponse
     {
