@@ -8,10 +8,16 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Presenters\AttendanceTeamPresenter;
+use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
 use Modules\User\Models\User;
 
 class AttendanceStatusService
 {
+    public function __construct(
+        private EmployeeTaskPresenceService $taskPresenceService,
+    ) {
+    }
+
     /**
      * @param  Collection<int, string>  $userIds
      * @param  array<string, mixed>  $filters
@@ -21,14 +27,34 @@ class AttendanceStatusService
     {
         $attendanceRecords = $this->getAttendanceRecordsForUsers($userIds, $filters);
         $requestedDate = $filters['start_date'] ?? null;
+        $usersOnTask = $this->usersOnTask($userIds, $filters);
 
         return $attendanceRecords
-            ->mapWithKeys(function (Attendance $attendance) use ($requestedDate): array {
+            ->mapWithKeys(function (Attendance $attendance) use ($requestedDate, $usersOnTask): array {
+                $hasTask = in_array((string) $attendance->user_id, $usersOnTask, true);
+
                 return [
-                    (string) $attendance->user_id => $this->build($attendance->user, $attendance, $requestedDate),
+                    (string) $attendance->user_id => $this->build($attendance->user, $attendance, $requestedDate, $hasTask),
                 ];
             })
             ->filter();
+    }
+
+    /**
+     * Resolve which of the given users have a task that makes them present
+     * (متواجد) within the filtered date range.
+     *
+     * @param  Collection<int, string>  $userIds
+     * @param  array<string, mixed>  $filters
+     * @return array<int, string>
+     */
+    public function usersOnTask(Collection $userIds, array $filters): array
+    {
+        return $this->taskPresenceService->userIdsWithTaskInRange(
+            $userIds,
+            $filters['start_date'] ?? null,
+            $filters['end_date'] ?? ($filters['start_date'] ?? null),
+        );
     }
 
     /**
@@ -101,13 +127,21 @@ class AttendanceStatusService
             ->values();
     }
 
-    public function build(?User $user, ?Attendance $attendance, ?string $requestedDate = null): array
+    public function build(?User $user, ?Attendance $attendance, ?string $requestedDate = null, bool $hasActiveTask = false): array
     {
         if ($attendance !== null) {
             $presented = (new AttendanceTeamPresenter($attendance))->present();
             $presented['employee_status'] = __(
                 'validation.day_status.' . ($attendance->day_status ?? 'work_day')
             );
+
+            $isAbsent = (int) ($presented['is_absent'] ?? 0) === 1
+                || ($presented['status'] ?? null) === Attendance::STATUS_ABSENT;
+
+            // Employee marked absent but has a task on this date → present (متواجد).
+            if ($isAbsent && $hasActiveTask) {
+                return $this->presentViaTask($user, $presented['work_date'] ?? $requestedDate);
+            }
 
             return [
                 'id' => $presented['id'] ?? null,
@@ -123,11 +157,15 @@ class AttendanceStatusService
             ];
         }
 
-        return $this->syntheticAbsent($user, $requestedDate);
+        return $this->syntheticAbsent($user, $requestedDate, $hasActiveTask);
     }
 
-    public function syntheticAbsent(?User $user, ?string $requestedDate = null): array
+    public function syntheticAbsent(?User $user, ?string $requestedDate = null, bool $hasActiveTask = false): array
     {
+        if ($hasActiveTask) {
+            return $this->presentViaTask($user, $requestedDate);
+        }
+
         return [
             'id' => null,
             'employee_status' => 'مطلوب للحضور',
@@ -136,6 +174,30 @@ class AttendanceStatusService
             'is_late' => 0,
             'is_holiday' => 0,
             'day_status' => 'غائب',
+            ...$this->attendanceConstraintFields($user),
+            'work_date' => $requestedDate,
+            'clock_in_time' => null,
+        ];
+    }
+
+    /**
+     * Status payload for an employee who has an assigned/active task on the date.
+     * The employee is reported as present (متواجد) instead of absent.
+     *
+     * @return array<string, mixed>
+     */
+    public function presentViaTask(?User $user, ?string $requestedDate = null): array
+    {
+        $label = __('validation.day_status.on_task');
+
+        return [
+            'id' => null,
+            'employee_status' => $label,
+            'status' => 'on_task',
+            'is_absent' => 0,
+            'is_late' => 0,
+            'is_holiday' => 0,
+            'day_status' => $label,
             ...$this->attendanceConstraintFields($user),
             'work_date' => $requestedDate,
             'clock_in_time' => null,

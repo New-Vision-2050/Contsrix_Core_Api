@@ -9,6 +9,7 @@ use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AttendanceCalendarService;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\UserAttendanceService;
+use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -24,6 +25,7 @@ class AttendanceCalendarServiceTest extends TestCase
         $this->service = new AttendanceCalendarService(
             $this->createMock(AttendanceConstraintService::class),
             $this->createMock(UserAttendanceService::class),
+            $this->createMock(EmployeeTaskPresenceService::class),
         );
 
         $this->calculateTotalWorkHours = new ReflectionMethod($this->service, 'calculateTotalWorkHoursFromGroupedAttendances');

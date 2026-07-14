@@ -96,18 +96,25 @@ class ProjectEmployeeController extends Controller
                 ->unique()
                 ->values();
 
-            $attendanceStatusByUserId = $this->attendanceStatusService->buildForUsers($userIds, array_filter([
+            $statusFilters = array_filter([
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-            ], static fn ($value) => $value !== null && $value !== ''));
+            ], static fn ($value) => $value !== null && $value !== '');
 
-            $data = $employeeCollection->map(function ($employee) use ($attendanceStatusByUserId, $startDate) {
+            $attendanceStatusByUserId = $this->attendanceStatusService->buildForUsers($userIds, $statusFilters);
+            $usersOnTask = $this->attendanceStatusService->usersOnTask($userIds, $statusFilters);
+
+            $data = $employeeCollection->map(function ($employee) use ($attendanceStatusByUserId, $usersOnTask, $startDate) {
                 $presented = (new ProjectEmployeePresenter($employee))->getData();
                 $userId = $employee->user_id ? (string) $employee->user_id : null;
 
                 $presented['attendance'] = $userId && $attendanceStatusByUserId->has($userId)
                     ? $attendanceStatusByUserId->get($userId)
-                    : $this->attendanceStatusService->syntheticAbsent($employee->user, $startDate);
+                    : $this->attendanceStatusService->syntheticAbsent(
+                        $employee->user,
+                        $startDate,
+                        $userId !== null && in_array($userId, $usersOnTask, true)
+                    );
 
                 return $presented;
             });
@@ -172,18 +179,25 @@ class ProjectEmployeeController extends Controller
                 ->unique()
                 ->values();
 
-            $attendanceStatusByUserId = $this->attendanceStatusService->buildForUsers($userIds, array_filter([
+            $statusFilters = array_filter([
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-            ], static fn ($value) => $value !== null && $value !== ''));
+            ], static fn ($value) => $value !== null && $value !== '');
 
-            $data = $employees->map(function ($employee) use ($attendanceStatusByUserId, $startDate) {
+            $attendanceStatusByUserId = $this->attendanceStatusService->buildForUsers($userIds, $statusFilters);
+            $usersOnTask = $this->attendanceStatusService->usersOnTask($userIds, $statusFilters);
+
+            $data = $employees->map(function ($employee) use ($attendanceStatusByUserId, $usersOnTask, $startDate) {
                 $presented = (new ProjectEmployeePresenter($employee))->getData();
                 $userId = $employee->user_id ? (string) $employee->user_id : null;
 
                 $presented['attendance'] = $userId && $attendanceStatusByUserId->has($userId)
                     ? $attendanceStatusByUserId->get($userId)
-                    : $this->attendanceStatusService->syntheticAbsent($employee->user, $startDate);
+                    : $this->attendanceStatusService->syntheticAbsent(
+                        $employee->user,
+                        $startDate,
+                        $userId !== null && in_array($userId, $usersOnTask, true)
+                    );
 
                 $presented['project'] = $employee->relationLoaded('project') && $employee->project
                     ? [
