@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectManagement\Controllers;
 
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -73,9 +74,23 @@ class ProjectEmployeeController extends Controller
             $companyId = $request->query('company_id');
             $startDate = $request->query('start_date');
             $endDate = $request->query('end_date', now()->toDateString());
+            $perPage = $request->query('per_page');
+            $page = (int) $request->query('page', 1);
 
-            $employees = $this->service->getProjectEmployees($projectId, $companyId);
-            $userIds = $employees
+            $validatedPerPage = $this->resolvePaginationPerPage($perPage);
+
+            $employees = $this->service->getProjectEmployees(
+                $projectId,
+                $companyId,
+                $validatedPerPage,
+                $page
+            );
+
+            $employeeCollection = $employees instanceof LengthAwarePaginator
+                ? $employees->getCollection()
+                : $employees;
+
+            $userIds = $employeeCollection
                 ->pluck('user_id')
                 ->filter()
                 ->unique()
@@ -86,7 +101,7 @@ class ProjectEmployeeController extends Controller
                 'end_date' => $endDate,
             ], static fn ($value) => $value !== null && $value !== ''));
 
-            $data = $employees->map(function ($employee) use ($attendanceStatusByUserId, $startDate) {
+            $data = $employeeCollection->map(function ($employee) use ($attendanceStatusByUserId, $startDate) {
                 $presented = (new ProjectEmployeePresenter($employee))->getData();
                 $userId = $employee->user_id ? (string) $employee->user_id : null;
 
@@ -97,10 +112,41 @@ class ProjectEmployeeController extends Controller
                 return $presented;
             });
 
+            if ($employees instanceof LengthAwarePaginator) {
+                return Json::items(
+                    $data->toArray(),
+                    paginationSettings: [
+                        'total' => $employees->total(),
+                        'per_page' => $employees->perPage(),
+                        'current_page' => $employees->currentPage(),
+                        'last_page' => $employees->lastPage(),
+                    ]
+                );
+            }
+
             return Json::items($data->toArray());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }
+    }
+
+    private function resolvePaginationPerPage(mixed $perPage): ?int
+    {
+        if ($perPage === null || $perPage === '') {
+            return null;
+        }
+
+        $perPage = (int) $perPage;
+
+        if ($perPage < 1) {
+            $perPage = 1;
+        }
+
+        if ($perPage > 100) {
+            $perPage = 100;
+        }
+
+        return $perPage;
     }
 
     /**

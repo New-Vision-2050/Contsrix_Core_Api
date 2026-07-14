@@ -8,6 +8,7 @@ use Modules\Project\ProjectManagement\Repositories\ProjectEmployeeRepository;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectRole;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectEmployeeService
@@ -55,11 +56,11 @@ class ProjectEmployeeService
         return $this->repository->getByProject($projectId);
     }
 
-    public function getProjectEmployees(string $projectId, ?string $companyId = null): Collection
+    public function getProjectEmployees(string $projectId, ?string $companyId = null, ?int $perPage = null, ?int $page = null): Collection|LengthAwarePaginator
     {
         $project = ProjectManagement::findOrFail($projectId);
 
-        return $this->repository->getByProject($projectId, $companyId);
+        return $this->repository->getByProject($projectId, $companyId, $perPage, $page);
     }
 
     public function getEmployeesByContractualEngagement(string $code, ?string $companyId = null): Collection
