@@ -8,6 +8,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ProjectEmployeeRepository extends BaseRepository
 {
@@ -16,11 +17,16 @@ class ProjectEmployeeRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getByProject(string $projectId, ?string $companyId = null): Collection
+    public function getByProject(string $projectId, ?string $companyId = null, ?int $perPage = null, ?int $page = null): Collection|LengthAwarePaginator
     {
-        return $this->buildProjectEmployeeQuery($companyId)
-            ->where('project_id', $projectId)
-            ->get();
+        $query = $this->buildProjectEmployeeQuery($companyId)
+            ->where('project_id', $projectId);
+
+        if ($perPage !== null && $perPage > 0) {
+            return $query->paginate($perPage, ['*'], 'page', $page ?? 1);
+        }
+
+        return $query->get();
     }
 
     public function getByContractualEngagement(string $code, ?string $companyId = null): Collection
