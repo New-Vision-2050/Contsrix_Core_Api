@@ -837,6 +837,28 @@ class ProjectNotificationController extends Controller
     }
 
     /**
+     * POST /projects/notifications/{id}/site-status-updates/{site_status_update_id}/copy
+     *
+     * Mark a specific approved site status update as copied (is_copied = true).
+     */
+    public function copySiteStatusUpdate(Request $request): JsonResponse
+    {
+        try {
+            $update = $this->notificationService->copySiteStatusUpdate(
+                $request->route('id'),
+                $request->route('site_status_update_id'),
+            );
+
+            return Json::item(
+                ['id' => $update->id, 'is_copied' => $update->is_copied],
+                message: 'Site status update marked as copied successfully',
+            );
+        } catch (ProjectNotificationException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
+    /**
      * GET /projects/notifications/{id}/notes
      *
      * Returns all user notes for a notification, newest first, including the

@@ -10,6 +10,24 @@
 
 ## 2. API endpoints
 
+### Copy a site status update
+
+```http
+POST /api/v1/projects/notifications/{notification_id}/site-status-updates/{site_status_update_id}/copy
+```
+
+Marks a single approved site status update as copied (`is_copied: true`). On success the update will appear in the copied-only list.
+
+```json
+{
+  "data": {
+    "id": "uuid",
+    "is_copied": true
+  },
+  "message": "Site status update marked as copied successfully"
+}
+```
+
 ### Main list (all updates)
 
 ```http

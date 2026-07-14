@@ -2634,6 +2634,27 @@ class ProjectNotificationService
     }
 
     /**
+     * Mark a specific approved site status update as copied.
+     */
+    public function copySiteStatusUpdate(string $notificationId, string $siteStatusUpdateId): ProjectNotificationSiteStatusUpdate
+    {
+        $notification = $this->get($notificationId);
+
+        $update = ProjectNotificationSiteStatusUpdate::query()
+            ->where('project_notification_id', $notification->id)
+            ->where('id', $siteStatusUpdateId)
+            ->first();
+
+        if (! $update) {
+            throw ProjectNotificationException::siteStatusUpdateNotFound($siteStatusUpdateId);
+        }
+
+        $update->update(['is_copied' => true]);
+
+        return $update->fresh();
+    }
+
+    /**
      * Convert a UTC Carbon datetime to the requested timezone string.
      */
     private function formatInTimezone(?Carbon $date, string $timezone): ?string

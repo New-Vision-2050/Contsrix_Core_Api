@@ -62,4 +62,9 @@ class ProjectNotificationException extends RuntimeException
     {
         return new self($message);
     }
+
+    public static function siteStatusUpdateNotFound(string $id): self
+    {
+        return new self("Site status update [{$id}] not found.");
+    }
 }
