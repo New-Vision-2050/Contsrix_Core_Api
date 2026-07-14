@@ -14,8 +14,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // Order permits (order_permit table)
     Route::get('/order-permits', [OrderPermitController::class, 'index'])
         ->permission(Permission::PROJECT_TYPE_VIEW());
-    Route::post('/order-permits', [OrderPermitController::class, 'store'])
-        ->permission(Permission::PROJECT_TYPE_UPDATE());
+    // Route::post('/order-permits', [OrderPermitController::class, 'store'])
+    //     ->permission(Permission::PROJECT_TYPE_UPDATE());
     Route::get('/order-permits/{id}', [OrderPermitController::class, 'show'])
         ->permission(Permission::PROJECT_TYPE_VIEW());
     Route::put('/order-permits/{id}', [OrderPermitController::class, 'update'])
