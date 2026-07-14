@@ -242,6 +242,12 @@ class ReportDataExtractionService
                 ];
             }
 
+            // A worked task means the employee was present (متواجد) that day,
+            // even if the attendance record had flagged them absent.
+            if (($groupedDaily[$gid][$date]['display_status'] ?? '') === 'absent') {
+                $groupedDaily[$gid][$date]['display_status'] = 'present';
+            }
+
             $groupedDaily[$gid][$date]['total_work_hours'] += (float) ($t->total_task_hours ?? 0);
             $groupedDaily[$gid][$date]['calculated_hours'] += (float) ($t->total_task_hours ?? 0);
             $groupedDaily[$gid][$date]['task_sessions'][]   = [
@@ -252,19 +258,35 @@ class ReportDataExtractionService
         }
 
         // Flatten to per-employee arrays sorted by date; compute sub_row_count per date.
+        // Also recompute present/absent day totals from the daily view so the summary
+        // columns (used by Excel/CSV) stay consistent with task-aware presence.
         $dailyMap = [];
         foreach ($groupedDaily as $gid => $dates) {
             ksort($dates);
             $entries = [];
+            $presentDays = 0;
+            $absentDays  = 0;
             foreach ($dates as $entry) {
                 $entry['sub_row_count'] = max(
                     1,
                     count($entry['attendance_sessions']),
                     count($entry['task_sessions'])
                 );
+
+                if (($entry['display_status'] ?? '') === 'present') {
+                    $presentDays++;
+                } elseif (($entry['display_status'] ?? '') === 'absent') {
+                    $absentDays++;
+                }
+
                 $entries[] = $entry;
             }
             $dailyMap[$gid] = $entries;
+
+            if (isset($base[(string) $gid])) {
+                $base[(string) $gid]['present_days'] = $presentDays;
+                $base[(string) $gid]['absent_days']  = $absentDays;
+            }
         }
 
         $base['__daily'] = $dailyMap;
