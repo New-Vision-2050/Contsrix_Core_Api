@@ -134,7 +134,11 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     });
 
     Route::prefix('{project}/order-permits')->group(function () {
+        Route::get('/', [ProjectOrderPermitController::class, 'index']);
         Route::post('/', [ProjectOrderPermitController::class, 'store']);
+        Route::get('/{id}', [ProjectOrderPermitController::class, 'show']);
+        Route::put('/', [ProjectOrderPermitController::class, 'update']);
+        Route::delete('/', [ProjectOrderPermitController::class, 'destroy']);
     });
 
     Route::prefix('notifications')->group(function () {
