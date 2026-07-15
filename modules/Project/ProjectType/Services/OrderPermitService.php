@@ -15,9 +15,9 @@ class OrderPermitService
     ) {
     }
 
-    public function list(int $projectTypeId): Collection
+    public function list(): Collection
     {
-        return $this->repository->listByProjectTypeId($projectTypeId);
+        return $this->repository->listByProjectTypeId();
     }
 
     public function get(int $id): OrderPermit

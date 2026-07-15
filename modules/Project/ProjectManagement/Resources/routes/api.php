@@ -133,6 +133,9 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::delete('/{id}', [ProjectContractorController::class, 'destroy']);
     });
 
+    // All project order permits (must come before {project}/order-permits)
+    Route::get('/order-permits', [ProjectOrderPermitController::class, 'all']);
+
     Route::prefix('{project}/order-permits')->group(function () {
         Route::get('/', [ProjectOrderPermitController::class, 'index']);
         Route::post('/', [ProjectOrderPermitController::class, 'store']);

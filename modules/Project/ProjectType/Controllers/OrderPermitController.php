@@ -22,8 +22,7 @@ class OrderPermitController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $projectTypeId = (int) $request->query('project_type_id');
-        $items = $this->service->list($projectTypeId);
+        $items = $this->service->list();
 
         return Json::items(OrderPermitPresenter::collection($items));
     }
