@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace Modules\Country\Handlers;
 
-use Modules\Country\Repositories\StateRepository;
+use Modules\Country\Repositories\CountryRepository;
 use Ramsey\Uuid\UuidInterface;
 
-class DeleteStateHandler
+class DeleteCountryHandler
 {
     public function __construct(
-        private StateRepository $repository,
+        private CountryRepository $repository,
     ) {
     }
 
     public function handle(UuidInterface $id)
     {
-        $this->repository->deleteState($id);
+        $this->repository->deleteCountry($id);
     }
 }
