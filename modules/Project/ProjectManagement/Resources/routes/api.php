@@ -8,6 +8,7 @@ use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
+use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
 use Modules\Project\ProjectManagement\Controllers\ContractorController;
 use Modules\RoleAndPermission\Enums\Permission;
 
@@ -137,6 +138,31 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ;
         Route::get('/notification-types', [ProjectNotificationController::class, 'notificationTypes'])
             ;
+
+        // Site status types (dynamic schema for maintenance & emergency)
+        Route::prefix('site-status-types')->group(function () {
+            Route::get('/', [ProjectNotificationSiteStatusTypeController::class, 'index'])
+                ;
+            Route::get('/with-keys', [ProjectNotificationSiteStatusTypeController::class, 'indexWithKeys'])
+                ;
+            Route::post('/', [ProjectNotificationSiteStatusTypeController::class, 'store'])
+                ;
+            Route::get('/{id}', [ProjectNotificationSiteStatusTypeController::class, 'show'])
+                ;
+            Route::put('/{id}', [ProjectNotificationSiteStatusTypeController::class, 'update'])
+                ;
+            Route::delete('/{id}', [ProjectNotificationSiteStatusTypeController::class, 'destroy'])
+                ;
+
+            Route::get('/{id}/keys', [ProjectNotificationSiteStatusTypeController::class, 'keys'])
+                ;
+            Route::post('/{id}/keys', [ProjectNotificationSiteStatusTypeController::class, 'storeKey'])
+                ;
+            Route::put('/{id}/keys/{key_id}', [ProjectNotificationSiteStatusTypeController::class, 'updateKey'])
+                ;
+            Route::delete('/{id}/keys/{key_id}', [ProjectNotificationSiteStatusTypeController::class, 'destroyKey'])
+                ;
+        });
         Route::get('/charts', [ProjectNotificationController::class, 'charts'])
             ;
         Route::post('/export', [ProjectNotificationController::class, 'export'])

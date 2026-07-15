@@ -65,6 +65,10 @@ class CreateProjectNotificationRequest extends FormRequest
             'files.*'                     => ['file', 'max:20480'],
             'approval_responsible_id'     => ['nullable', 'uuid'],
             'assignment_responsible_id'   => ['nullable', 'uuid'],
+            'site_status_type_id'         => ['nullable', 'uuid', 'exists:project_notification_site_status_types,id'],
+            'site_status_type_values'     => ['nullable', 'array'],
+            'site_status_type_values.*.key_id' => ['required_with:site_status_type_values', 'uuid', 'exists:project_notification_site_status_type_keys,id'],
+            'site_status_type_values.*.value' => ['nullable', 'string'],
         ];
     }
 
@@ -106,6 +110,8 @@ class CreateProjectNotificationRequest extends FormRequest
             files: $this->hasFile('files') ? $this->file('files') : null,
             approvalResponsibleId: $this->input('approval_responsible_id'),
             assignmentResponsibleId: $this->input('assignment_responsible_id'),
+            siteStatusTypeId: $this->input('site_status_type_id'),
+            siteStatusTypeValues: $this->input('site_status_type_values'),
             allUsersCanApprove: (bool) $this->input('all_users_can_approve', false),
             independentProgress: (bool) $this->input('independent_progress', true),
             isDraft: $isDraft,

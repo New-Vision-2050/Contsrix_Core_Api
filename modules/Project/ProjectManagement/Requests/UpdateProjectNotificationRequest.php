@@ -73,6 +73,10 @@ class UpdateProjectNotificationRequest extends FormRequest
             'deleted_media_ids.*'         => ['integer', 'exists:media,id'],
             'approval_responsible_id'     => ['nullable', 'uuid'],
             'assignment_responsible_id'   => ['nullable', 'uuid'],
+            'site_status_type_id'         => ['nullable', 'uuid', 'exists:project_notification_site_status_types,id'],
+            'site_status_type_values'     => ['nullable', 'array'],
+            'site_status_type_values.*.key_id' => ['required_with:site_status_type_values', 'uuid', 'exists:project_notification_site_status_type_keys,id'],
+            'site_status_type_values.*.value' => ['nullable', 'string'],
         ];
     }
 
@@ -112,6 +116,8 @@ class UpdateProjectNotificationRequest extends FormRequest
             deletedMediaIds: $this->input('deleted_media_ids'),
             approvalResponsibleId: $this->input('approval_responsible_id'),
             assignmentResponsibleId: $this->input('assignment_responsible_id'),
+            siteStatusTypeId: $this->input('site_status_type_id'),
+            siteStatusTypeValues: $this->input('site_status_type_values'),
             isDraft: $this->boolean('is_draft'),
         );
     }

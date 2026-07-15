@@ -78,6 +78,7 @@ class ProjectNotification extends Model implements HasMedia
         'task_time',
         'duration_hours',
         'notes',
+        'site_status_type_id',
     ];
 
     protected $casts = [
@@ -187,6 +188,16 @@ class ProjectNotification extends Model implements HasMedia
     public function siteStatusUpdates(): HasMany
     {
         return $this->hasMany(ProjectNotificationSiteStatusUpdate::class, 'project_notification_id');
+    }
+
+    public function siteStatusType(): BelongsTo
+    {
+        return $this->belongsTo(ProjectNotificationSiteStatusType::class, 'site_status_type_id')->withoutGlobalScopes();
+    }
+
+    public function siteStatusValues(): HasMany
+    {
+        return $this->hasMany(ProjectNotificationSiteStatusValue::class, 'project_notification_id');
     }
 
     public function updateSiteStatus(): BelongsTo

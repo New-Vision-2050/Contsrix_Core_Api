@@ -51,7 +51,10 @@ use Modules\Project\ProjectManagement\Models\ProjectNotificationFine;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatus;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusType;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusTypeKey;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusValue;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationType;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationUpdateSiteStatus;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReason;
@@ -1836,6 +1839,72 @@ class ProjectNotificationService
         }
 
         return $type->id;
+    }
+
+    /**
+     * Persist or clear the dynamic site-status-type values for a notification.
+     *
+     * - If the type is set to null, all existing values are removed.
+     * - If the type changed and no new values are supplied, existing values are removed.
+     * - If new values are supplied, they fully replace the existing values after
+     *   verifying that each key belongs to the selected type.
+     */
+    private function syncSiteStatusValues(
+        ProjectNotification $notification,
+        ?string $siteStatusTypeId,
+        ?array $values,
+    ): void {
+        $currentTypeId = $notification->site_status_type_id;
+
+        if ($siteStatusTypeId === null) {
+            if ($currentTypeId !== null) {
+                ProjectNotificationSiteStatusValue::query()
+                    ->where('project_notification_id', $notification->id)
+                    ->delete();
+            }
+
+            return;
+        }
+
+        $typeChanged = (string) $currentTypeId !== (string) $siteStatusTypeId;
+
+        if ($typeChanged) {
+            ProjectNotificationSiteStatusValue::query()
+                ->where('project_notification_id', $notification->id)
+                ->delete();
+        }
+
+        if ($values === null) {
+            return;
+        }
+
+        ProjectNotificationSiteStatusValue::query()
+            ->where('project_notification_id', $notification->id)
+            ->delete();
+
+        foreach ($values as $value) {
+            $keyId = $value['key_id'] ?? null;
+            $valueText = $value['value'] ?? null;
+
+            if (! $keyId) {
+                continue;
+            }
+
+            $key = ProjectNotificationSiteStatusTypeKey::query()
+                ->where('id', $keyId)
+                ->where('site_status_type_id', $siteStatusTypeId)
+                ->first();
+
+            if (! $key) {
+                continue;
+            }
+
+            ProjectNotificationSiteStatusValue::create([
+                'project_notification_id' => $notification->id,
+                'site_status_type_key_id' => $keyId,
+                'value' => $valueText,
+            ]);
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────

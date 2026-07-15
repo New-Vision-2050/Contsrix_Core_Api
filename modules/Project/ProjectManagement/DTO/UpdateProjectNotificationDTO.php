@@ -40,6 +40,8 @@ final class UpdateProjectNotificationDTO
         public readonly ?array  $deletedMediaIds           = null,
         public readonly ?string $approvalResponsibleId     = null,
         public readonly ?string $assignmentResponsibleId   = null,
+        public readonly ?string $siteStatusTypeId          = null,
+        public readonly ?array  $siteStatusTypeValues      = null,
         public readonly bool    $isDraft                   = false,
     ) {}
 
@@ -77,6 +79,7 @@ final class UpdateProjectNotificationDTO
             'notes'                       => $this->notes,
             'approval_responsible_id'     => $this->approvalResponsibleId,
             'assignment_responsible_id'   => $this->assignmentResponsibleId,
+            'site_status_type_id'         => $this->siteStatusTypeId,
         ], fn ($value) => $value !== null);
     }
 
@@ -118,6 +121,7 @@ final class UpdateProjectNotificationDTO
             'notes'                       => $this->notes,
             'approval_responsible_id'     => $this->approvalResponsibleId,
             'assignment_responsible_id'   => $this->assignmentResponsibleId,
+            'site_status_type_id'         => $this->siteStatusTypeId,
         ];
     }
 }
