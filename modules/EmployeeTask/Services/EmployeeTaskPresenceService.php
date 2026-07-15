@@ -420,47 +420,49 @@ class EmployeeTaskPresenceService
     }
 
     /**
-     * Merge presence day-spans for tasks that are currently active
-     * (in_progress / paused) but may lack session rows. Days already present in
-     * $map keep their session minutes; new days are added with 0 minutes so they
-     * still count as present without inflating worked hours.
+     * Merge presence day-spans for tasks that are currently active but may lack
+     * session rows. This covers two cases that otherwise show "absent":
+     *   - regular tasks in in_progress / paused status;
+     *   - project-notification tasks whose linked notification is in_progress
+     *     (received) or completed — the task row itself can lag at "approved" and
+     *     never produce a session, so we drive the span from the notification.
+     * Days already present in $map keep their session minutes; new days are added
+     * with 0 minutes so they still count as present without inflating hours.
      *
      * @param  array<string, array<string, int>>  $map  taskId => (Y-m-d => minutes)
      * @param  list<string>  $taskIds
      */
     private function mergeActiveTaskSpans(array &$map, array $taskIds, ?string $startDate, ?string $endDate): void
     {
-        $activeTasks = EmployeeTaskRequest::query()
-            ->withoutGlobalScopes()
-            ->whereIn('id', $taskIds)
-            ->whereIn('status', [
-                EmployeeTaskStatus::InProgress->value,
-                EmployeeTaskStatus::Paused->value,
-            ])
-            ->get(['id', 'time_from', 'task_date']);
-
-        if ($activeTasks->isEmpty()) {
+        if ($taskIds === []) {
             return;
         }
 
-        $notificationDates = ProjectNotification::query()
-            ->whereIn('employee_task_request_id', $activeTasks->pluck('id')->map(static fn ($id) => (string) $id)->all())
-            ->get(['employee_task_request_id', 'task_date'])
-            ->mapWithKeys(static fn ($n) => [
-                (string) $n->employee_task_request_id => $n->task_date?->format('Y-m-d'),
-            ]);
-
         $todayStr = CarbonImmutable::now($this->timezone())->format('Y-m-d');
 
-        foreach ($activeTasks as $task) {
-            $taskId = (string) $task->id;
+        $tasks = EmployeeTaskRequest::query()
+            ->withoutGlobalScopes()
+            ->whereIn('id', $taskIds)
+            ->get(['id', 'status', 'time_from', 'time_to', 'task_date'])
+            ->keyBy(static fn ($task) => (string) $task->id);
 
-            $startDay = $task->time_from?->format('Y-m-d')
-                ?? $task->task_date?->format('Y-m-d')
-                ?? ($notificationDates[$taskId] ?? null)
-                ?? $todayStr;
+        $notifications = ProjectNotification::query()
+            ->whereIn('employee_task_request_id', $taskIds)
+            ->get(['employee_task_request_id', 'status', 'task_date'])
+            ->keyBy(static fn ($n) => (string) $n->employee_task_request_id);
 
-            $endDay = $todayStr;
+        foreach ($taskIds as $taskId) {
+            $taskId = (string) $taskId;
+
+            [$startDay, $endDay] = $this->resolveActiveSpan(
+                $tasks->get($taskId),
+                $notifications->get($taskId),
+                $todayStr,
+            );
+
+            if ($startDay === null || $endDay === null) {
+                continue;
+            }
 
             if ($startDate !== null && $startDay < $startDate) {
                 $startDay = $startDate;
@@ -488,6 +490,47 @@ class EmployeeTaskPresenceService
                 $cursor = $cursor->addDay();
             }
         }
+    }
+
+    /**
+     * Resolve the [startDay, endDay] presence span for an active task. When the
+     * task is linked to a project notification, the notification status/date
+     * drive the span (the task row can lag at "approved"); otherwise the regular
+     * task status is used. Returns [null, null] when the task is not active.
+     *
+     * @return array{0: ?string, 1: ?string}  [Y-m-d start, Y-m-d end]
+     */
+    private function resolveActiveSpan(?EmployeeTaskRequest $task, ?ProjectNotification $notification, string $todayStr): array
+    {
+        if ($notification !== null) {
+            $start = $notification->task_date?->format('Y-m-d')
+                ?? $task?->task_date?->format('Y-m-d');
+
+            if ($notification->status === 'in_progress') {
+                return [$start ?? $todayStr, $todayStr];
+            }
+
+            if ($notification->status === 'completed') {
+                $end = $task?->time_to?->format('Y-m-d') ?? $start;
+
+                return [$start, $end];
+            }
+
+            return [null, null];
+        }
+
+        if ($task !== null && in_array($task->status, [
+            EmployeeTaskStatus::InProgress->value,
+            EmployeeTaskStatus::Paused->value,
+        ], true)) {
+            $start = $task->time_from?->format('Y-m-d')
+                ?? $task->task_date?->format('Y-m-d')
+                ?? $todayStr;
+
+            return [$start, $todayStr];
+        }
+
+        return [null, null];
     }
 
     /**
