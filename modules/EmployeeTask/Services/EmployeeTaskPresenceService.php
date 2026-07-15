@@ -409,7 +409,85 @@ class EmployeeTaskPresenceService
             }
         }
 
+        // Fallback: currently active tasks (in_progress / paused) may have no
+        // session rows at all (e.g. multi-assignee project notifications where the
+        // task was started once and secondary assignees never produced a session).
+        // Treat such a task as making its assignees present from its start date
+        // through today, so the employee isn't wrongly shown as absent.
+        $this->mergeActiveTaskSpans($map, $taskIds, $startDate, $endDate);
+
         return $map;
+    }
+
+    /**
+     * Merge presence day-spans for tasks that are currently active
+     * (in_progress / paused) but may lack session rows. Days already present in
+     * $map keep their session minutes; new days are added with 0 minutes so they
+     * still count as present without inflating worked hours.
+     *
+     * @param  array<string, array<string, int>>  $map  taskId => (Y-m-d => minutes)
+     * @param  list<string>  $taskIds
+     */
+    private function mergeActiveTaskSpans(array &$map, array $taskIds, ?string $startDate, ?string $endDate): void
+    {
+        $activeTasks = EmployeeTaskRequest::query()
+            ->withoutGlobalScopes()
+            ->whereIn('id', $taskIds)
+            ->whereIn('status', [
+                EmployeeTaskStatus::InProgress->value,
+                EmployeeTaskStatus::Paused->value,
+            ])
+            ->get(['id', 'time_from', 'task_date']);
+
+        if ($activeTasks->isEmpty()) {
+            return;
+        }
+
+        $notificationDates = ProjectNotification::query()
+            ->whereIn('employee_task_request_id', $activeTasks->pluck('id')->map(static fn ($id) => (string) $id)->all())
+            ->get(['employee_task_request_id', 'task_date'])
+            ->mapWithKeys(static fn ($n) => [
+                (string) $n->employee_task_request_id => $n->task_date?->format('Y-m-d'),
+            ]);
+
+        $todayStr = CarbonImmutable::now($this->timezone())->format('Y-m-d');
+
+        foreach ($activeTasks as $task) {
+            $taskId = (string) $task->id;
+
+            $startDay = $task->time_from?->format('Y-m-d')
+                ?? $task->task_date?->format('Y-m-d')
+                ?? ($notificationDates[$taskId] ?? null)
+                ?? $todayStr;
+
+            $endDay = $todayStr;
+
+            if ($startDate !== null && $startDay < $startDate) {
+                $startDay = $startDate;
+            }
+            if ($endDate !== null && $endDay > $endDate) {
+                $endDay = $endDate;
+            }
+            if ($startDate !== null && $endDay < $startDate) {
+                continue;
+            }
+            if ($endDate !== null && $startDay > $endDate) {
+                continue;
+            }
+            if ($startDay > $endDay) {
+                continue;
+            }
+
+            $cursor = CarbonImmutable::parse($startDay);
+            $last   = CarbonImmutable::parse($endDay);
+            while ($cursor->lte($last)) {
+                $key = $cursor->format('Y-m-d');
+                if (! isset($map[$taskId][$key])) {
+                    $map[$taskId][$key] = 0;
+                }
+                $cursor = $cursor->addDay();
+            }
+        }
     }
 
     /**
