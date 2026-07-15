@@ -188,6 +188,74 @@ class EmployeeTaskPresenceService
     }
 
     /**
+     * TEMPORARY diagnostics for the calendar presence pipeline for a single user.
+     * Returns every intermediate step so we can see why on_task days do/don't show.
+     *
+     * @return array<string, mixed>
+     */
+    public function debugForUser(mixed $userId, string $startDate, string $endDate): array
+    {
+        $uid = (string) $userId;
+
+        $directTasks = EmployeeTaskRequest::query()
+            ->where('user_id', $uid)
+            ->get(['id', 'user_id', 'status', 'task_date', 'company_id', 'is_project_notification', 'time_from', 'time_to'])
+            ->map(static fn ($t) => [
+                'id'                      => (string) $t->id,
+                'status'                  => $t->status,
+                'task_date'               => (string) $t->task_date,
+                'company_id'              => $t->company_id,
+                'is_project_notification' => (bool) $t->is_project_notification,
+                'time_from'               => (string) $t->time_from,
+                'time_to'                 => (string) $t->time_to,
+            ])->values()->all();
+
+        $directTasksPresent = EmployeeTaskRequest::query()
+            ->where('user_id', $uid)
+            ->whereIn('status', self::presentStatuses())
+            ->pluck('id')
+            ->map(static fn ($id) => (string) $id)
+            ->all();
+
+        $notifications = ProjectNotification::query()
+            ->whereJsonContains('assigned_user_ids', $uid)
+            ->get(['id', 'employee_task_request_id', 'assigned_user_ids', 'status', 'task_date'])
+            ->map(static fn ($n) => [
+                'id'                       => (string) $n->id,
+                'employee_task_request_id' => (string) $n->employee_task_request_id,
+                'assigned_user_ids'        => $n->assigned_user_ids,
+                'notification_status'      => $n->status,
+                'task_date'                => (string) $n->task_date,
+            ])->values()->all();
+
+        $taskIdsByUser = $this->taskIdsByUser([$uid]);
+        $resolvedTaskIds = $taskIdsByUser[$uid] ?? [];
+
+        $sessions = EmployeeTaskSession::query()
+            ->whereIn('employee_task_request_id', $resolvedTaskIds === [] ? ['__none__'] : $resolvedTaskIds)
+            ->get(['employee_task_request_id', 'start_time', 'end_time'])
+            ->map(static fn ($s) => [
+                'task_id'    => (string) $s->employee_task_request_id,
+                'start_time' => $s->start_time?->format('Y-m-d H:i:s'),
+                'end_time'   => $s->end_time?->format('Y-m-d H:i:s'),
+            ])->values()->all();
+
+        return [
+            'user_id'                 => $uid,
+            'range'                   => ['start' => $startDate, 'end' => $endDate],
+            'timezone'                => $this->timezone(),
+            'now'                     => CarbonImmutable::now($this->timezone())->format('Y-m-d H:i:s'),
+            'direct_tasks_all'        => $directTasks,
+            'direct_tasks_present'    => $directTasksPresent,
+            'notifications_assigned'  => $notifications,
+            'resolved_task_ids'       => $resolvedTaskIds,
+            'sessions_for_tasks'      => $sessions,
+            'active_dates_by_task'    => $this->activeDatesByTask($resolvedTaskIds, $startDate, $endDate),
+            'task_dates_for_user'     => $this->taskDatesForUser($uid, $startDate, $endDate),
+        ];
+    }
+
+    /**
      * Resolve, for each of the given users, the IDs of tasks that could make them
      * present. Covers two assignment paths:
      *   1. Regular tasks assigned directly via EmployeeTaskRequest.user_id

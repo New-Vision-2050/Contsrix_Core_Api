@@ -122,8 +122,29 @@ class UserAttendanceController extends Controller
             );
 
             $presenter = new AttendanceCalendarPresenter($result);
+            $payload = $presenter->present();
 
-            return Json::item($presenter->present(), message: __('messages.attendance.calendar_retrieved'));
+            // TEMPORARY: ?debug=1 attaches the task-presence resolution pipeline
+            // so we can see why on_task days do / don't appear.
+            if ($request->boolean('debug')) {
+                $month = $request->input('month') ? (int) $request->input('month') : (int) now()->month;
+                $year  = $request->input('year') ? (int) $request->input('year') : (int) now()->year;
+                $from  = $request->input('from_date');
+                $to    = $request->input('to_date');
+
+                if ($from && $to) {
+                    $debugStart = (string) $from;
+                    $debugEnd   = (string) $to;
+                } else {
+                    $debugStart = sprintf('%04d-%02d-01', $year, $month);
+                    $debugEnd   = \Carbon\Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
+                }
+
+                $payload['_debug'] = app(\Modules\EmployeeTask\Services\EmployeeTaskPresenceService::class)
+                    ->debugForUser($user->id, $debugStart, $debugEnd);
+            }
+
+            return Json::item($payload, message: __('messages.attendance.calendar_retrieved'));
         } catch (AttendanceException $e) {
             return Json::error(
                 $e->getMessage(),
