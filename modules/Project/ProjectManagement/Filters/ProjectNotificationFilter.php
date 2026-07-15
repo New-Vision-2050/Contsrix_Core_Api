@@ -90,7 +90,7 @@ class ProjectNotificationFilter extends SearchModelFilter
 
     public function projectId($projectId)
     {
-        return $this->where('project_id', $projectId);
+        return $this->where('project_notifications.project_id', $projectId);
     }
 
     public function contractualEngagementKey($code)
