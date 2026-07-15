@@ -2528,26 +2528,51 @@ class ProjectNotificationService
         // Sort all items by created_at descending.
         usort($items, fn ($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
 
-        // Include any site-status files still staged on the notification. These can
-        // be left behind when the workflow listener's strict in_array comparison
-        // fails to match string file IDs, so we surface them as attachments on the
-        // most recent approved record to keep the mobile app working.
+        // Include any site-status files still staged on the notification that belong
+        // to a completed workflow. These can be left behind when the file move in
+        // the workflow listener fails. Map each staged file to its originating
+        // process so attachments appear on the correct site status update.
         $stagedMedia = $notification->getMedia('site_status_update_attachments');
         if ($stagedMedia->isNotEmpty() && $items !== []) {
-            $firstApprovedIndex = null;
-            foreach ($items as $index => $item) {
-                if ($item['status'] === 'approved') {
-                    $firstApprovedIndex = $index;
-                    break;
+            $processes = \Modules\Process\Models\Process::query()
+                ->where('processable_type', $task->procedureSettingType()->value)
+                ->where('processable_id', $task->id)
+                ->whereHas('procedureSetting', function ($q) {
+                    $q->where('form', InternalProcessForm::UpdateProjectNotificationSiteStatus->value);
+                })
+                ->get();
+
+            $fileToProcess = [];
+            foreach ($processes as $proc) {
+                foreach (($proc->metadata['files'] ?? []) as $fileId) {
+                    $fileToProcess[(int) $fileId] = $proc->id;
                 }
             }
 
-            if ($firstApprovedIndex !== null) {
-                $items[$firstApprovedIndex]['attachments'] = array_merge(
-                    $items[$firstApprovedIndex]['attachments'],
-                    \Modules\Shared\Media\Presenters\MediaPresenter::collection($stagedMedia),
-                );
+            $stagedByProcess = [];
+            foreach ($stagedMedia as $media) {
+                $processId = $fileToProcess[(int) $media->id] ?? null;
+                if ($processId === null) {
+                    continue;
+                }
+                $stagedByProcess[$processId][] = $media;
             }
+
+            foreach ($items as $index => $item) {
+                $processId = $item['process']['id'] ?? null;
+                if ($processId === null || ! isset($stagedByProcess[$processId])) {
+                    continue;
+                }
+
+                $items[$index]['attachments'] = array_merge(
+                    $items[$index]['attachments'],
+                    \Modules\Shared\Media\Presenters\MediaPresenter::collection($stagedByProcess[$processId]),
+                );
+                unset($stagedByProcess[$processId]);
+            }
+
+            // Any remaining staged files belong to pending/rejected workflows or are
+            // orphaned; do not attach them to any approved record.
         }
 
         $summary = [
