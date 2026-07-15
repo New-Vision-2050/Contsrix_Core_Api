@@ -12,6 +12,8 @@ use Modules\Project\ProjectType\Presenters\AttachmentTermsContractSettingPresent
 use Modules\Project\ProjectType\Presenters\ContractorContractSettingPresenter;
 use Modules\Project\ProjectType\Presenters\EmployeeContractSettingPresenter;
 use Modules\Project\ProjectType\Presenters\DepartmentContractSettingPresenter;
+use Modules\Project\ProjectType\Presenters\ContractorSettingPresenter;
+use Modules\Project\ProjectType\Presenters\OrderPermitSettingPresenter;
 
 class ProjectTypePresenter extends AbstractPresenter
 {
@@ -91,6 +93,14 @@ class ProjectTypePresenter extends AbstractPresenter
 
             if ($this->projectType->relationLoaded('departmentContractSetting') && $this->projectType->departmentContractSetting) {
                 $permissions['department_contract_setting'] = (new DepartmentContractSettingPresenter($this->projectType->departmentContractSetting))->getData();
+            }
+
+            if ($this->projectType->relationLoaded('contractorSetting') && $this->projectType->contractorSetting) {
+                $permissions['contractor_setting'] = (new ContractorSettingPresenter($this->projectType->contractorSetting))->getData();
+            }
+
+            if ($this->projectType->relationLoaded('orderPermitSetting') && $this->projectType->orderPermitSetting) {
+                $permissions['order_permit_setting'] = (new OrderPermitSettingPresenter($this->projectType->orderPermitSetting))->getData();
             }
 
             $data['permissions'] = $permissions;

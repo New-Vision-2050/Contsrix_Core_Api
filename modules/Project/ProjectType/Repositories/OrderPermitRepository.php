@@ -19,8 +19,9 @@ class OrderPermitRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function listByProjectTypeId(int $projectTypeId): Collection
+    public function listByProjectTypeId(): Collection
     {
-        return $this->model->where('project_type_id', $projectTypeId)->orderBy('id')->get();
+        return $this->model->get();
+
     }
 }

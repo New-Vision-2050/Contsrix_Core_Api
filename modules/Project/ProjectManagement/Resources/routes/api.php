@@ -10,6 +10,8 @@ use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
 use Modules\Project\ProjectManagement\Controllers\ContractorController;
+use Modules\Project\ProjectManagement\Controllers\ProjectContractorController;
+use Modules\Project\ProjectType\Controllers\ProjectOrderPermitController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -116,6 +118,33 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     });
 
     // Project Notifications Routes
+    // Route::prefix('{project}/contractors')->group(function () {
+    //     Route::get('/', [ContractorController::class, 'index']);
+    //     Route::post('/', [ContractorController::class, 'store']);
+    //     Route::get('/{id}', [ContractorController::class, 'show']);
+    //     Route::put('/{id}', [ContractorController::class, 'update']);
+    //     Route::delete('/{id}', [ContractorController::class, 'destroy']);
+    // });
+
+    Route::prefix('{project}/project-contractors')->group(function () {
+        Route::get('/', [ProjectContractorController::class, 'index']);
+        Route::post('/', [ProjectContractorController::class, 'store']);
+        Route::get('/{id}', [ProjectContractorController::class, 'show']);
+        Route::put('/{id}', [ProjectContractorController::class, 'update']);
+        Route::delete('/{id}', [ProjectContractorController::class, 'destroy']);
+    });
+
+    // All project order permits (must come before {project}/order-permits)
+    Route::get('/order-permits', [ProjectOrderPermitController::class, 'all']);
+
+    Route::prefix('{project}/order-permits')->group(function () {
+        Route::get('/', [ProjectOrderPermitController::class, 'index']);
+        Route::post('/', [ProjectOrderPermitController::class, 'store']);
+        Route::get('/{id}', [ProjectOrderPermitController::class, 'show']);
+        Route::put('/', [ProjectOrderPermitController::class, 'update']);
+        Route::delete('/', [ProjectOrderPermitController::class, 'destroy']);
+    });
+
     Route::prefix('notifications')->group(function () {
         // Static routes MUST come before /{id} to avoid route conflicts
         Route::get('/map-tasks', [ProjectNotificationController::class, 'mapTasks'])
@@ -202,6 +231,10 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::post('/{id}/request-task-postponement', [ProjectNotificationController::class, 'requestTaskPostponement'])
            ;
         Route::get('/{id}/site-status-updates', [ProjectNotificationController::class, 'siteStatusUpdates'])
+            ;
+        Route::get('/{id}/site-status-updates/copied', [ProjectNotificationController::class, 'copiedSiteStatusUpdates'])
+            ;
+        Route::post('/{id}/site-status-updates/{site_status_update_id}/copy', [ProjectNotificationController::class, 'copySiteStatusUpdate'])
             ;
         Route::get('/{id}/notes', [ProjectNotificationController::class, 'notes'])
             ;

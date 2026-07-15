@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ArchiveLibrary\Folder\Presenters;
 
 use Illuminate\Support\Collection;
+use Modules\ArchiveLibrary\File\Models\File;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
@@ -73,8 +74,8 @@ class FolderPresenter extends AbstractPresenter
     }
 
     /**
-     * Prime the file sizes cache with a single query
-     * Calculates total size of all media files for each folder
+     * Prime the file sizes cache with a single recursive query.
+     * Calculates total size of all media files for each folder including nested folders.
      */
     private static function primeFileSizesCache(Collection $folders): void
     {
@@ -83,50 +84,61 @@ class FolderPresenter extends AbstractPresenter
             return;
         }
 
-        $folderIds = $folders->pluck('id')->toArray();
+        self::$fileSizesCache = self::getRecursiveFolderFileSizes(
+            $folders->pluck('id')->toArray()
+        );
+    }
 
-        // Get all files for all folders with their media sizes in a single optimized query
-        // Using DB join for better performance
-        $fileSizes = \DB::table('files')
-            ->join('media', function($join) {
-                $join->on('files.id', '=', 'media.model_id')
-                     ->where('media.model_type', '=', 'Modules\\ArchiveLibrary\\File\\Models\\File')
-                     ->where('media.collection_name', '=', 'upload');
-            })
-            ->whereIn('files.folder_id', $folderIds)
-            ->select('files.folder_id', \DB::raw('SUM(media.size) as total_size'))
-            ->groupBy('files.folder_id')
-            ->get()
-            ->pluck('total_size', 'folder_id')
-            ->toArray();
-
-        self::$fileSizesCache = $fileSizes;
-        $fileSizesDirect = \DB::table('files')
-            ->join('media', function($join) {
-                $join->on('files.id', '=', 'media.file_id');
-
-            })
-            ->whereIn('files.folder_id', $folderIds)
-            ->select('files.folder_id', \DB::raw('SUM(media.size) as total_size'))
-            ->groupBy('files.folder_id')
-            ->get()
-            ->pluck('total_size', 'folder_id')
-            ->toArray();
-
-        foreach ($fileSizesDirect as $id => $fileSize) {
-
-            if(isset(self::$fileSizesCache[$id]))
-            {
-                self::$fileSizesCache[$id]+=$fileSize;
-
-            }
-            else
-            {
-                self::$fileSizesCache[$id]=$fileSize;
-
-            }
+    /**
+     * Build a recursive CTE to fetch the total media size of all files under
+     * the requested folder ids (including every descendant folder).
+     */
+    private static function getRecursiveFolderFileSizes(array $folderIds): array
+    {
+        if (empty($folderIds)) {
+            return [];
         }
 
+        $placeholders = implode(',', array_fill(0, count($folderIds), '?'));
+
+        $sql = <<<SQL
+WITH RECURSIVE folder_tree AS (
+    SELECT id, id AS root_id FROM folders WHERE id IN ({$placeholders})
+    UNION ALL
+    SELECT f.id, ft.root_id
+    FROM folders f
+    INNER JOIN folder_tree ft ON f.parent_id = ft.id
+)
+SELECT root_id, COALESCE(SUM(size), 0) AS total_size
+FROM (
+    SELECT ft.root_id, media.size
+    FROM folder_tree ft
+    JOIN files ON files.folder_id = ft.id
+    JOIN media ON media.model_id = files.id
+        AND media.model_type = ?
+        AND media.collection_name = ?
+    UNION ALL
+    SELECT ft.root_id, media.size
+    FROM folder_tree ft
+    JOIN files ON files.folder_id = ft.id
+    JOIN media ON media.file_id = files.id
+) AS all_files
+GROUP BY root_id
+SQL;
+
+        $bindings = array_merge(
+            $folderIds,
+            [File::class, 'upload']
+        );
+
+        $results = \DB::select($sql, $bindings);
+
+        $sizes = [];
+        foreach ($results as $row) {
+            $sizes[$row->root_id] = (int) $row->total_size;
+        }
+
+        return $sizes;
     }
 
     /**
@@ -183,33 +195,16 @@ class FolderPresenter extends AbstractPresenter
         return $lastAudit ? (new AuditPresenter($lastAudit))->getData() : null;
     }
 
-    private function getFolderSize()
+    private function getFolderSize(): int
     {
         // Use cache if available
         if (self::$fileSizesCache !== null) {
             return (int) (self::$fileSizesCache[$this->folder->id] ?? 0);
         }
 
-        // Fallback to direct query if cache not primed (single item presentation)
-        $totalSize = \DB::table('files')
-            ->join('media', function($join) {
-                $join->on('files.id', '=', 'media.model_id')
-                     ->where('media.model_type', '=', 'Modules\\ArchiveLibrary\\File\\Models\\File')
-                     ->where('media.collection_name', '=', 'upload');
-            })
-            ->where('files.folder_id', $this->folder->id)
-            ->sum('media.size');
+        // Fallback to a recursive query if cache is not primed (single item presentation)
+        $sizes = self::getRecursiveFolderFileSizes([$this->folder->id]);
 
-
-        $totalSizeDirect = \DB::table('files')
-            ->join('media', function($join) {
-                $join->on('files.id', '=', 'file_id');
-            })
-            ->where('files.folder_id', $this->folder->id)
-            ->sum('media.size');
-
-
-
-        return  $totalSizeDirect+$totalSize;
+        return (int) ($sizes[$this->folder->id] ?? 0);
     }
 }

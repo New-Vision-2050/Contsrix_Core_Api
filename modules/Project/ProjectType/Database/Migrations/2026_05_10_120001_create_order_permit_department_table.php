@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('order_permit_department', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('project_type_id');
+            $table->unsignedBigInteger('order_permit_id')->nullable();
             $table->string('code', 255)->nullable();
             $table->string('description', 255)->nullable();
             $table->timestamps();
@@ -19,6 +20,11 @@ return new class extends Migration
                 ->references('id')
                 ->on('project_types')
                 ->onDelete('cascade');
+
+            $table->foreign('order_permit_id')
+                ->references('id')
+                ->on('order_permit')
+                ->onDelete('set null');
         });
     }
 

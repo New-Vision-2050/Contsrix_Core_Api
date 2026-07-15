@@ -122,8 +122,9 @@ class UserAttendanceController extends Controller
             );
 
             $presenter = new AttendanceCalendarPresenter($result);
+            $payload = $presenter->present();
 
-            return Json::item($presenter->present(), message: __('messages.attendance.calendar_retrieved'));
+            return Json::item($payload, message: __('messages.attendance.calendar_retrieved'));
         } catch (AttendanceException $e) {
             return Json::error(
                 $e->getMessage(),

@@ -480,19 +480,31 @@ class ProjectNotificationService
 
     /**
      * Mark a notification as read or unread for a specific user.
+     *
+     * When marking as read, all users assigned to the notification are also
+     * marked as read so that the task appears read for everyone in the list.
+     * Marking as unread only affects the acting user.
      */
     public function updateReadStatus(string $notificationId, string $userId, bool $isRead): ProjectNotification
     {
         $notification = $this->get($notificationId);
 
         if ($isRead) {
-            ProjectNotificationRead::updateOrCreate(
-                [
-                    'project_notification_id' => $notification->id,
-                    'user_id' => $userId,
-                ],
-                ['read_at' => now()]
-            );
+            $now = now();
+            $readUserIds = array_unique(array_filter(array_merge(
+                $notification->assigned_user_ids ?? [],
+                [$userId]
+            )));
+
+            foreach ($readUserIds as $readUserId) {
+                ProjectNotificationRead::updateOrCreate(
+                    [
+                        'project_notification_id' => $notification->id,
+                        'user_id' => $readUserId,
+                    ],
+                    ['read_at' => $now]
+                );
+            }
         } else {
             ProjectNotificationRead::query()
                 ->where('project_notification_id', $notification->id)
@@ -2509,6 +2521,7 @@ class ProjectNotificationService
             $items[] = [
                 'id'                    => $update->id,
                 'status'                => 'approved',
+                'is_copied'             => (bool) $update->is_copied,
                 'description'           => $update->description,
                 'attachments'           => \Modules\Shared\Media\Presenters\MediaPresenter::collection(
                     $update->getMedia('attachments')
@@ -2560,6 +2573,7 @@ class ProjectNotificationService
             $items[] = [
                 'id'                    => $process->id,
                 'status'                => 'pending',
+                'is_copied'             => false,
                 'description'           => $updateData['description'] ?? null,
                 'attachments'           => $attachments,
                 'requested_by'          => isset($metadata['user_id'])
@@ -2594,25 +2608,97 @@ class ProjectNotificationService
         // Sort all items by created_at descending.
         usort($items, fn ($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
 
-        // Include any site-status files still staged on the notification. These can
-        // be left behind when the workflow listener's strict in_array comparison
-        // fails to match string file IDs, so we surface them as attachments on the
-        // most recent approved record to keep the mobile app working.
+        // Include any site-status files still staged on the notification that were
+        // not moved to their update record. Try to map them by originating process
+        // first, then fall back to the update whose creation time is closest to the
+        // file upload time so attachments appear on the correct site status update.
         $stagedMedia = $notification->getMedia('site_status_update_attachments');
         if ($stagedMedia->isNotEmpty() && $items !== []) {
-            $firstApprovedIndex = null;
-            foreach ($items as $index => $item) {
-                if ($item['status'] === 'approved') {
-                    $firstApprovedIndex = $index;
-                    break;
+            $processes = \Modules\Process\Models\Process::query()
+                ->where('processable_type', $task->procedureSettingType()->value)
+                ->where('processable_id', $task->id)
+                ->whereHas('procedureSetting', function ($q) {
+                    $q->where('form', InternalProcessForm::UpdateProjectNotificationSiteStatus->value);
+                })
+                ->get();
+
+            $fileToProcess = [];
+            foreach ($processes as $proc) {
+                foreach (($proc->metadata['files'] ?? []) as $fileId) {
+                    $fileToProcess[(int) $fileId] = $proc->id;
                 }
             }
 
-            if ($firstApprovedIndex !== null) {
-                $items[$firstApprovedIndex]['attachments'] = array_merge(
-                    $items[$firstApprovedIndex]['attachments'],
-                    \Modules\Shared\Media\Presenters\MediaPresenter::collection($stagedMedia),
-                );
+            $stagedByProcess = [];
+            $unmappedMedia = [];
+            foreach ($stagedMedia as $media) {
+                $processId = $fileToProcess[(int) $media->id] ?? null;
+                if ($processId !== null) {
+                    $stagedByProcess[$processId][] = $media;
+                } else {
+                    $unmappedMedia[] = $media;
+                }
+            }
+
+            $remainingMedia = $unmappedMedia;
+            foreach ($stagedByProcess as $processId => $mediaList) {
+                $matched = false;
+                foreach ($items as $index => $item) {
+                    if (($item['process']['id'] ?? null) === $processId) {
+                        $items[$index]['attachments'] = array_merge(
+                            $items[$index]['attachments'],
+                            \Modules\Shared\Media\Presenters\MediaPresenter::collection(collect($mediaList)),
+                        );
+                        $matched = true;
+                    }
+                }
+                if (! $matched) {
+                    $remainingMedia = array_merge($remainingMedia, $mediaList);
+                }
+            }
+
+            // Fall back to creation-time matching for files without a process mapping.
+            if ($remainingMedia !== []) {
+                $itemDates = [];
+                foreach ($items as $index => $item) {
+                    $createdAt = $item['created_at'] ?? null;
+                    if ($createdAt !== null) {
+                        try {
+                            $itemDates[$index] = \Carbon\Carbon::parse($createdAt, $timezone)->setTimezone('UTC');
+                        } catch (\Throwable) {
+                            $itemDates[$index] = null;
+                        }
+                    }
+                }
+
+                // Pick the closest item by time regardless of the gap so no staged
+                // file is silently dropped from the response; if no item has a
+                // parseable created_at, fall back to the most recent item (index 0,
+                // since $items is already sorted by created_at descending).
+                $mediaByItem = [];
+                foreach ($remainingMedia as $media) {
+                    $bestIndex = null;
+                    $bestDiff = null;
+                    foreach ($itemDates as $index => $itemDate) {
+                        if ($itemDate === null || $media->created_at === null) {
+                            continue;
+                        }
+                        $diff = abs($media->created_at->diffInSeconds($itemDate));
+                        if ($bestDiff === null || $diff < $bestDiff) {
+                            $bestDiff = $diff;
+                            $bestIndex = $index;
+                        }
+                    }
+
+                    $mediaByItem[$bestIndex ?? 0][] = $media;
+                }
+
+                foreach ($mediaByItem as $index => $mediaList) {
+                    $items[$index]['attachments'] = array_merge(
+                        $items[$index]['attachments'],
+                        \Modules\Shared\Media\Presenters\MediaPresenter::collection(collect($mediaList)),
+                    );
+                }
             }
         }
 
@@ -2627,6 +2713,97 @@ class ProjectNotificationService
             'summary'  => $summary,
             'timezone' => $timezone,
         ];
+    }
+
+    /**
+     * Return only approved site status updates that were marked as copied.
+     *
+     * @return array{items: list<array>, summary: array, timezone: string}
+     */
+    public function copiedSiteStatusUpdates(string $notificationId): array
+    {
+        $notification = $this->get($notificationId);
+        $task = $this->linkedTask($notificationId);
+
+        $timezone = $task->timezone ?? getTimeZoneBranchByRequest() ?? config('app.timezone');
+
+        $copiedUpdates = ProjectNotificationSiteStatusUpdate::query()
+            ->where('project_notification_id', $notification->id)
+            ->where('is_copied', true)
+            ->with(['requester', 'reviewer', 'media', 'process.steps.actionByUser'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $items = [];
+        foreach ($copiedUpdates as $update) {
+            $process = $update->process;
+            $items[] = [
+                'id'                    => $update->id,
+                'status'                => 'approved',
+                'is_copied'             => true,
+                'description'           => $update->description,
+                'attachments'           => \Modules\Shared\Media\Presenters\MediaPresenter::collection(
+                    $update->getMedia('attachments')
+                ),
+                'requested_by'          => $update->requester ? [
+                    'id'   => $update->requester->id,
+                    'name' => $update->requester->name,
+                ] : null,
+                'reviewed_by'           => $update->reviewer ? [
+                    'id'   => $update->reviewer->id,
+                    'name' => $update->reviewer->name,
+                ] : null,
+                'reviewed_at'           => $this->formatInTimezone($update->reviewed_at, $timezone),
+                'review_notes'          => $update->review_notes,
+                'created_at'            => $this->formatInTimezone($update->created_at, $timezone),
+                'process'               => $process ? [
+                    'id'     => $process->id,
+                    'status' => $process->status?->value,
+                    'steps'  => $process->relationLoaded('steps')
+                        ? $process->steps->map(fn ($step) => [
+                            'step_order' => $step->template_step_order,
+                            'status'     => $step->status?->value,
+                            'action_by'  => $step->actionByUser ? [
+                                'id'   => $step->actionByUser->id,
+                                'name' => $step->actionByUser->name,
+                            ] : null,
+                            'acted_at'   => $this->formatInTimezone($step->acted_at, $timezone),
+                        ])->toArray()
+                        : [],
+                ] : null,
+            ];
+        }
+
+        return [
+            'items'    => $items,
+            'summary'  => [
+                'total'    => count($items),
+                'approved' => count($items),
+                'pending'  => 0,
+            ],
+            'timezone' => $timezone,
+        ];
+    }
+
+    /**
+     * Mark a specific approved site status update as copied.
+     */
+    public function copySiteStatusUpdate(string $notificationId, string $siteStatusUpdateId): ProjectNotificationSiteStatusUpdate
+    {
+        $notification = $this->get($notificationId);
+
+        $update = ProjectNotificationSiteStatusUpdate::query()
+            ->where('project_notification_id', $notification->id)
+            ->where('id', $siteStatusUpdateId)
+            ->first();
+
+        if (! $update) {
+            throw ProjectNotificationException::siteStatusUpdateNotFound($siteStatusUpdateId);
+        }
+
+        $update->update(['is_copied' => true]);
+
+        return $update->fresh();
     }
 
     /**

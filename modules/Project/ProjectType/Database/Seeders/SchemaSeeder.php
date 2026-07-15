@@ -30,6 +30,8 @@ class SchemaSeeder extends Seeder
                 10 => 'الصلاحيات و الادوار',
                 11 => 'مشاركة المشروع',
                 12 => 'الصيانة والطوارئ',
+                13 => 'المقاولين',
+                14 => 'أوامر العمل',
             ];
 
             $createdCount = 0;
@@ -82,6 +84,30 @@ class SchemaSeeder extends Seeder
                     $projectType->update(['is_have_schema' => true]);
 
                     $this->command->info("Attached 'الصيانة والطوارئ' schema to '{$projectType->name}' project type.");
+                }
+
+                $contractorSchemaId = 13;
+                $contractorProjectTypes = ProjectType::where('company_id', $companyId)
+                    ->whereIn('name', ['التصاميم', 'الإشراف', 'الصيانة والطوارئ'])
+                    ->get();
+
+                foreach ($contractorProjectTypes as $projectType) {
+                    $projectType->schemas()->syncWithoutDetaching([$contractorSchemaId]);
+                    $projectType->update(['is_have_schema' => true]);
+
+                    $this->command->info("Attached 'المقاولين' schema to '{$projectType->name}' project type.");
+                }
+
+                $orderPermitSchemaId = 14;
+                $orderPermitProjectTypes = ProjectType::where('company_id', $companyId)
+                    ->whereIn('name', ['التصاميم', 'الإشراف', 'الصيانة والطوارئ'])
+                    ->get();
+
+                foreach ($orderPermitProjectTypes as $projectType) {
+                    $projectType->schemas()->syncWithoutDetaching([$orderPermitSchemaId]);
+                    $projectType->update(['is_have_schema' => true]);
+
+                    $this->command->info("Attached 'أوامر العمل' schema to '{$projectType->name}' project type.");
                 }
             }
 

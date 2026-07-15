@@ -107,6 +107,8 @@ class ProjectManagementRepository extends BaseRepository
             'subSubProjectType.rolesAndPermissionsSetting',
             'subSubProjectType.projectSharingSetting',
             'subSubProjectType.maintenanceEmergencySetting',
+            'subSubProjectType.contractorSetting',
+            'subSubProjectType.orderPermitSetting',
             'manager',
             'branch',
             'ownerCompany',

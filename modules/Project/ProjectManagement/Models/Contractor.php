@@ -6,13 +6,18 @@ namespace Modules\Project\ProjectManagement\Models;
 
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Country\Models\Country;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
-class Contractor extends Model
+class Contractor extends Model implements HasMedia
 {
     use UuidTrait;
     use BelongsToTenant;
+    use InteractsWithMedia;
 
     protected $table = 'contractors';
 
@@ -22,17 +27,52 @@ class Contractor extends Model
 
     protected $fillable = [
         'company_id',
+        'project_id',
         'name',
         'number',
         'mobile',
         'notes',
         'is_active',
+        'tax_card',
+        'commercial_register',
+        'activity',
+        'email',
+        'country_id',
+        'logo',
+        'project_contractor_id',
+        'project_manager_name',
+        'project_manager_phone',
+        'project_manager_nationality',
+        'project_manager_email',
     ];
 
     protected $casts = [
         'id' => 'string',
+        'company_id' => 'string',
+        'project_id' => 'string',
+        'country_id' => 'string',
         'is_active' => 'boolean',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('logo');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(ProjectManagement::class, 'project_id');
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class, 'country_id');
+    }
+
+    public function representatives(): HasMany
+    {
+        return $this->hasMany(ContractorRepresentative::class, 'contractor_id');
+    }
 
     public function projectNotifications(): HasMany
     {

@@ -119,6 +119,30 @@ class AttendanceReportRepository extends BaseRepository
             ->keyBy('month_key');
     }
 
+    /**
+     * Distinct business dates the employee is counted as physically attended
+     * (clocked in, not absent, not a holiday). Mirrors the `actual_attendance_days`
+     * predicate so callers can dedupe against task-presence days.
+     *
+     * @return list<string>  list of Y-m-d dates
+     */
+    public function getAttendedDates(AttendanceReportFilterDTO $filters): array
+    {
+        return $this->attendanceQuery($filters)
+            ->whereNotNull('clock_in_time')
+            ->where(fn ($q) => $q->where('is_absent', 0)->orWhereNull('is_absent'))
+            ->where(fn ($q) => $q->where('is_holiday', 0)->orWhereNull('is_holiday'))
+            ->distinct()
+            ->pluck('business_date')
+            ->map(static fn ($date) => $date instanceof \DateTimeInterface
+                ? $date->format('Y-m-d')
+                : substr((string) $date, 0, 10))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function getEmploymentContract(string $companyId, string $globalId): ?EmploymentContract
     {
         return EmploymentContract::query()
