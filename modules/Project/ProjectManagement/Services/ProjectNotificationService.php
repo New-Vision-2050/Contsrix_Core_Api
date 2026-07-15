@@ -2591,6 +2591,10 @@ class ProjectNotificationService
                     }
                 }
 
+                // Pick the closest item by time regardless of the gap so no staged
+                // file is silently dropped from the response; if no item has a
+                // parseable created_at, fall back to the most recent item (index 0,
+                // since $items is already sorted by created_at descending).
                 $mediaByItem = [];
                 foreach ($remainingMedia as $media) {
                     $bestIndex = null;
@@ -2600,15 +2604,13 @@ class ProjectNotificationService
                             continue;
                         }
                         $diff = abs($media->created_at->diffInSeconds($itemDate));
-                        if ($diff <= 86400 && ($bestDiff === null || $diff < $bestDiff)) {
+                        if ($bestDiff === null || $diff < $bestDiff) {
                             $bestDiff = $diff;
                             $bestIndex = $index;
                         }
                     }
 
-                    if ($bestIndex !== null) {
-                        $mediaByItem[$bestIndex][] = $media;
-                    }
+                    $mediaByItem[$bestIndex ?? 0][] = $media;
                 }
 
                 foreach ($mediaByItem as $index => $mediaList) {
