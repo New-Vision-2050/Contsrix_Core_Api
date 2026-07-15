@@ -51,7 +51,10 @@ use Modules\Project\ProjectManagement\Models\ProjectNotificationFine;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationFineItem;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationLocationConfirmation;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatus;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusType;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusTypeKey;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate;
+use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusValue;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationType;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationUpdateSiteStatus;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReason;
@@ -139,6 +142,7 @@ class ProjectNotificationService
                 ]);
 
                 $this->attachFilesToNotification($existing, $dto->files);
+                $this->syncSiteStatusValues($existing, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
                 return $this->repository->findById($existing->id) ?? $existing->fresh();
             }
@@ -151,6 +155,7 @@ class ProjectNotificationService
         ]);
 
         $this->attachFilesToNotification($notification, $dto->files);
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
         return $this->repository->findById($notification->id) ?? $notification->fresh();
     }
@@ -255,6 +260,10 @@ class ProjectNotificationService
 
         // 6. Sync notification status from the task.
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
+
+        // 7. Persist dynamic site-status-type values.
+        $notification = $notification->fresh();
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
         return $this->repository->findById($notification->id) ?? $notification->fresh();
     }
@@ -961,6 +970,7 @@ class ProjectNotificationService
         $this->repository->update($notification->id, $data);
 
         $this->syncNotificationMedia($notification, $dto->deletedMediaIds, $dto->files);
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
         return $this->get($notification->id);
     }
@@ -1038,6 +1048,9 @@ class ProjectNotificationService
         $this->truncateCreationWorkflowToSingleStep($task);
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
 
+        $notification = $notification->fresh();
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
+
         return $this->get($notification->id);
     }
 
@@ -1103,6 +1116,7 @@ class ProjectNotificationService
         $this->repository->update($notification->id, $data);
 
         $this->syncNotificationMedia($notification, $dto->deletedMediaIds, $dto->files);
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
         // When new employees are appended, make sure they can take action:
         // - independent_progress=true  → each new user gets their own workflow process.
@@ -1848,6 +1862,115 @@ class ProjectNotificationService
         }
 
         return $type->id;
+    }
+
+    /**
+     * Persist or clear the dynamic site-status-type values for a notification.
+     *
+     * - If the type is set to null, all existing values are removed.
+     * - If the type changed and no new values are supplied, existing values are removed.
+     * - If new values are supplied, they fully replace the existing values after
+     *   verifying that each key belongs to the selected type.
+     */
+    private function syncSiteStatusValues(
+        ProjectNotification $notification,
+        ?string $siteStatusTypeId,
+        ?array $values,
+    ): void {
+        $currentTypeId = $notification->site_status_type_id;
+
+        if ($siteStatusTypeId === null) {
+            if ($currentTypeId !== null) {
+                ProjectNotificationSiteStatusValue::query()
+                    ->where('project_notification_id', $notification->id)
+                    ->delete();
+            }
+
+            return;
+        }
+
+        $typeChanged = (string) $currentTypeId !== (string) $siteStatusTypeId;
+
+        if ($typeChanged) {
+            ProjectNotificationSiteStatusValue::query()
+                ->where('project_notification_id', $notification->id)
+                ->delete();
+        }
+
+        if ($values === null) {
+            return;
+        }
+
+        ProjectNotificationSiteStatusValue::query()
+            ->where('project_notification_id', $notification->id)
+            ->delete();
+
+        foreach ($values as $value) {
+            $keyId = $value['key_id'] ?? null;
+            $valueText = $value['value'] ?? null;
+
+            if (! $keyId) {
+                continue;
+            }
+
+            $key = ProjectNotificationSiteStatusTypeKey::query()
+                ->where('id', $keyId)
+                ->where('site_status_type_id', $siteStatusTypeId)
+                ->first();
+
+            if (! $key) {
+                continue;
+            }
+
+            ProjectNotificationSiteStatusValue::create([
+                'project_notification_id' => $notification->id,
+                'site_status_type_key_id' => $keyId,
+                'value' => $valueText,
+            ]);
+        }
+    }
+
+    /**
+     * Build the notification-level site status values that should be shown in
+     * the site status updates context (keys with show_in_site_status_updates = true).
+     *
+     * @return list<array{id: string, key_id: string, key: string, name_ar: string, name_en: string|null, field_type: string, options: array|null, value: string|null}>
+     */
+    private function resolveSiteStatusNotificationValues(ProjectNotification $notification): array
+    {
+        $type = $notification->siteStatusType;
+
+        if (! $type) {
+            return [];
+        }
+
+        if (! $type->relationLoaded('activeKeys')) {
+            $type->load(['activeKeys' => fn ($q) => $q->where('show_in_site_status_updates', true)]);
+        }
+
+        if (! $notification->relationLoaded('siteStatusValues')) {
+            $notification->load('siteStatusValues.key');
+        }
+
+        $valuesByKeyId = $notification->siteStatusValues
+            ->keyBy('site_status_type_key_id')
+            ->map(static fn ($value) => $value->value);
+
+        return $type->activeKeys
+            ->where('show_in_site_status_updates', true)
+            ->sortBy('sort_order')
+            ->values()
+            ->map(static fn ($key) => [
+                'id' => $key->id,
+                'key_id' => $key->id,
+                'key' => $key->key,
+                'name_ar' => $key->name_ar,
+                'name_en' => $key->name_en,
+                'field_type' => $key->field_type,
+                'options' => $key->options,
+                'value' => $valuesByKeyId[$key->id] ?? null,
+            ])
+            ->all();
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -2629,9 +2752,15 @@ class ProjectNotificationService
         ];
 
         return [
-            'items'    => $items,
-            'summary'  => $summary,
-            'timezone' => $timezone,
+            'items'                 => $items,
+            'summary'               => $summary,
+            'timezone'              => $timezone,
+            'site_status_type'      => $notification->siteStatusType ? [
+                'id' => $notification->siteStatusType->id,
+                'name_ar' => $notification->siteStatusType->name_ar,
+                'name_en' => $notification->siteStatusType->name_en,
+            ] : null,
+            'notification_values'   => $this->resolveSiteStatusNotificationValues($notification),
         ];
     }
 
@@ -2695,13 +2824,19 @@ class ProjectNotificationService
         }
 
         return [
-            'items'    => $items,
-            'summary'  => [
+            'items'                 => $items,
+            'summary'               => [
                 'total'    => count($items),
                 'approved' => count($items),
                 'pending'  => 0,
             ],
-            'timezone' => $timezone,
+            'timezone'              => $timezone,
+            'site_status_type'      => $notification->siteStatusType ? [
+                'id' => $notification->siteStatusType->id,
+                'name_ar' => $notification->siteStatusType->name_ar,
+                'name_en' => $notification->siteStatusType->name_en,
+            ] : null,
+            'notification_values'   => $this->resolveSiteStatusNotificationValues($notification),
         ];
     }
 

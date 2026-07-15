@@ -8,6 +8,7 @@ use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
+use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
 use Modules\Project\ProjectManagement\Controllers\ContractorController;
 use Modules\Project\ProjectManagement\Controllers\ProjectContractorController;
 use Modules\Project\ProjectType\Controllers\ProjectOrderPermitController;
@@ -166,6 +167,31 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ;
         Route::get('/notification-types', [ProjectNotificationController::class, 'notificationTypes'])
             ;
+
+        // Site status types (dynamic schema for maintenance & emergency)
+        Route::prefix('site-status-types')->group(function () {
+            Route::get('/', [ProjectNotificationSiteStatusTypeController::class, 'index'])
+                ->permission(Permission::PROJECT_NOTIFICATION_LIST());
+            Route::get('/with-keys', [ProjectNotificationSiteStatusTypeController::class, 'indexWithKeys'])
+                ->permission(Permission::PROJECT_NOTIFICATION_LIST());
+            Route::post('/', [ProjectNotificationSiteStatusTypeController::class, 'store'])
+                ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
+            Route::get('/{id}', [ProjectNotificationSiteStatusTypeController::class, 'show'])
+                ->permission(Permission::PROJECT_NOTIFICATION_VIEW());
+            Route::put('/{id}', [ProjectNotificationSiteStatusTypeController::class, 'update'])
+                ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+            Route::delete('/{id}', [ProjectNotificationSiteStatusTypeController::class, 'destroy'])
+                ->permission(Permission::PROJECT_NOTIFICATION_DELETE());
+
+            Route::get('/{id}/keys', [ProjectNotificationSiteStatusTypeController::class, 'keys'])
+                ->permission(Permission::PROJECT_NOTIFICATION_LIST());
+            Route::post('/{id}/keys', [ProjectNotificationSiteStatusTypeController::class, 'storeKey'])
+                ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
+            Route::put('/{id}/keys/{key_id}', [ProjectNotificationSiteStatusTypeController::class, 'updateKey'])
+                ->permission(Permission::PROJECT_NOTIFICATION_UPDATE());
+            Route::delete('/{id}/keys/{key_id}', [ProjectNotificationSiteStatusTypeController::class, 'destroyKey'])
+                ->permission(Permission::PROJECT_NOTIFICATION_DELETE());
+        });
         Route::get('/charts', [ProjectNotificationController::class, 'charts'])
             ;
         Route::post('/export', [ProjectNotificationController::class, 'export'])

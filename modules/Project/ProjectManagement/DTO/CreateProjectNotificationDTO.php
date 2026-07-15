@@ -42,6 +42,8 @@ final class CreateProjectNotificationDTO
         public readonly ?array  $files                     = null,
         public readonly ?string $approvalResponsibleId     = null,
         public readonly ?string $assignmentResponsibleId   = null,
+        public readonly ?string $siteStatusTypeId          = null,
+        public readonly ?array  $siteStatusTypeValues      = null,
         public readonly bool    $allUsersCanApprove        = true,
         public readonly bool    $independentProgress       = false,
         public readonly bool    $isDraft                   = false,
@@ -84,6 +86,7 @@ final class CreateProjectNotificationDTO
             'permit_recipient'            => $this->permitRecipient,
             'selected_distance_meters'    => $this->selectedDistanceMeters,
             'notes'                       => $this->notes,
+            'site_status_type_id'         => $this->siteStatusTypeId,
         ];
     }
 }

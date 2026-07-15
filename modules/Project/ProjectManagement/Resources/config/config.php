@@ -77,5 +77,13 @@ return [
         'PROJECT_NOTIFICATION_CREATE' => 'project-management.project-management*notifications.create',
         'PROJECT_NOTIFICATION_UPDATE' => 'project-management.project-management*notifications.update',
         'PROJECT_NOTIFICATION_DELETE' => 'project-management.project-management*notifications.delete',
+
+        // Project Notification Site Status Types Permissions
+        // ============================================================
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_VIEW'   => 'project-management.project-management*site-status-type.view',
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_LIST'   => 'project-management.project-management*site-status-type.list',
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_CREATE' => 'project-management.project-management*site-status-type.create',
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_UPDATE' => 'project-management.project-management*site-status-type.update',
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_DELETE' => 'project-management.project-management*site-status-type.delete',
     ]
 ];

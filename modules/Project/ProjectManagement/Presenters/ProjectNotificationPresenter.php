@@ -104,6 +104,9 @@ class ProjectNotificationPresenter
             'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
             'last_site_update_date'      => $this->resolveLastSiteUpdateDate($n),
             'last_note'                  => $this->formatLastNote($n),
+            'site_status_type_id'        => $n->site_status_type_id,
+            'site_status_type'           => $this->formatSiteStatusType($n),
+            'site_status_values'         => $this->formatSiteStatusValues($n),
         ];
     }
 
@@ -164,6 +167,9 @@ class ProjectNotificationPresenter
             'last_site_update_status'    => $this->resolveLastSiteUpdateStatus($n),
             'last_site_update_date'      => $this->resolveLastSiteUpdateDate($n),
             'last_note'                  => $this->formatLastNote($n),
+            'site_status_type_id'        => $n->site_status_type_id,
+            'site_status_type'           => $this->formatSiteStatusType($n),
+            'site_status_values'         => $this->formatSiteStatusValues($n),
         ];
     }
 
@@ -611,6 +617,40 @@ class ProjectNotificationPresenter
             'name_ar' => $status->name_ar,
             'name_en' => $status->name_en,
         ];
+    }
+
+    private function formatSiteStatusType(ProjectNotification $n): ?array
+    {
+        $type = $n->relationLoaded('siteStatusType') ? $n->siteStatusType : null;
+
+        if (! $type) {
+            return null;
+        }
+
+        return [
+            'id' => $type->id,
+            'name_ar' => $type->name_ar,
+            'name_en' => $type->name_en,
+        ];
+    }
+
+    private function formatSiteStatusValues(ProjectNotification $n): array
+    {
+        if (! $n->relationLoaded('siteStatusValues')) {
+            return [];
+        }
+
+        return $n->siteStatusValues->map(static fn ($value) => [
+            'id' => $value->id,
+            'key_id' => $value->site_status_type_key_id,
+            'key' => $value->key?->key,
+            'name_ar' => $value->key?->name_ar,
+            'name_en' => $value->key?->name_en,
+            'field_type' => $value->key?->field_type,
+            'options' => $value->key?->options,
+            'show_in_site_status_updates' => $value->key?->show_in_site_status_updates,
+            'value' => $value->value,
+        ])->values()->all();
     }
 
     /**

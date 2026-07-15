@@ -32,6 +32,7 @@ class SchemaSeeder extends Seeder
                 12 => 'الصيانة والطوارئ',
                 13 => 'المقاولين',
                 14 => 'أوامر العمل',
+                15 => 'انواع حالة الموقع',
             ];
 
             $createdCount = 0;
@@ -109,6 +110,7 @@ class SchemaSeeder extends Seeder
 
                     $this->command->info("Attached 'أوامر العمل' schema to '{$projectType->name}' project type.");
                 }
+
             }
 
             $this->command->info('Schema seeder completed successfully!');
