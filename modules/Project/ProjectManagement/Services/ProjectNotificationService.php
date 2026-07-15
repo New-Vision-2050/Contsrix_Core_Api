@@ -142,6 +142,7 @@ class ProjectNotificationService
                 ]);
 
                 $this->attachFilesToNotification($existing, $dto->files);
+                $this->syncSiteStatusValues($existing, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
                 return $this->repository->findById($existing->id) ?? $existing->fresh();
             }
@@ -154,6 +155,7 @@ class ProjectNotificationService
         ]);
 
         $this->attachFilesToNotification($notification, $dto->files);
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
         return $this->repository->findById($notification->id) ?? $notification->fresh();
     }
@@ -258,6 +260,10 @@ class ProjectNotificationService
 
         // 6. Sync notification status from the task.
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
+
+        // 7. Persist dynamic site-status-type values.
+        $notification = $notification->fresh();
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
         return $this->repository->findById($notification->id) ?? $notification->fresh();
     }
@@ -952,6 +958,7 @@ class ProjectNotificationService
         $this->repository->update($notification->id, $data);
 
         $this->syncNotificationMedia($notification, $dto->deletedMediaIds, $dto->files);
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
         return $this->get($notification->id);
     }
@@ -1029,6 +1036,9 @@ class ProjectNotificationService
         $this->truncateCreationWorkflowToSingleStep($task);
         $this->syncNotificationStatusFromTask($notification->fresh(), $task);
 
+        $notification = $notification->fresh();
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
+
         return $this->get($notification->id);
     }
 
@@ -1094,6 +1104,7 @@ class ProjectNotificationService
         $this->repository->update($notification->id, $data);
 
         $this->syncNotificationMedia($notification, $dto->deletedMediaIds, $dto->files);
+        $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
         // When new employees are appended, make sure they can take action:
         // - independent_progress=true  → each new user gets their own workflow process.
