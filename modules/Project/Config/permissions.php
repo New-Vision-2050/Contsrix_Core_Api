@@ -33,5 +33,12 @@ return [
         'PROJECT_NOTIFICATION_UPDATE' => 'work-panel.project-management*project-notification.update',
         'PROJECT_NOTIFICATION_DELETE' => 'work-panel.project-management*project-notification.delete',
         'PROJECT_NOTIFICATION_EXPORT' => 'work-panel.project-management*project-notification.export',
+
+        // Project Notification Site Status Types (dynamic schema for maintenance & emergency)
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_LIST'   => 'work-panel.project-management*project-notification-site-status-type.list',
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_VIEW'     => 'work-panel.project-management*project-notification-site-status-type.view',
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_CREATE' => 'work-panel.project-management*project-notification-site-status-type.create',
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_UPDATE' => 'work-panel.project-management*project-notification-site-status-type.update',
+        'PROJECT_NOTIFICATION_SITE_STATUS_TYPE_DELETE' => 'work-panel.project-management*project-notification-site-status-type.delete',
     ],
 ];

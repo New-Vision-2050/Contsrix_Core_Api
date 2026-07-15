@@ -1930,6 +1930,49 @@ class ProjectNotificationService
         }
     }
 
+    /**
+     * Build the notification-level site status values that should be shown in
+     * the site status updates context (keys with show_in_site_status_updates = true).
+     *
+     * @return list<array{id: string, key_id: string, key: string, name_ar: string, name_en: string|null, field_type: string, options: array|null, value: string|null}>
+     */
+    private function resolveSiteStatusNotificationValues(ProjectNotification $notification): array
+    {
+        $type = $notification->siteStatusType;
+
+        if (! $type) {
+            return [];
+        }
+
+        if (! $type->relationLoaded('activeKeys')) {
+            $type->load(['activeKeys' => fn ($q) => $q->where('show_in_site_status_updates', true)]);
+        }
+
+        if (! $notification->relationLoaded('siteStatusValues')) {
+            $notification->load('siteStatusValues.key');
+        }
+
+        $valuesByKeyId = $notification->siteStatusValues
+            ->keyBy('site_status_type_key_id')
+            ->map(static fn ($value) => $value->value);
+
+        return $type->activeKeys
+            ->where('show_in_site_status_updates', true)
+            ->sortBy('sort_order')
+            ->values()
+            ->map(static fn ($key) => [
+                'id' => $key->id,
+                'key_id' => $key->id,
+                'key' => $key->key,
+                'name_ar' => $key->name_ar,
+                'name_en' => $key->name_en,
+                'field_type' => $key->field_type,
+                'options' => $key->options,
+                'value' => $valuesByKeyId[$key->id] ?? null,
+            ])
+            ->all();
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // Mobile helpers — delegate to the linked EmployeeTaskRequest
     // ──────────────────────────────────────────────────────────────────────────
@@ -2709,9 +2752,15 @@ class ProjectNotificationService
         ];
 
         return [
-            'items'    => $items,
-            'summary'  => $summary,
-            'timezone' => $timezone,
+            'items'                 => $items,
+            'summary'               => $summary,
+            'timezone'              => $timezone,
+            'site_status_type'      => $notification->siteStatusType ? [
+                'id' => $notification->siteStatusType->id,
+                'name_ar' => $notification->siteStatusType->name_ar,
+                'name_en' => $notification->siteStatusType->name_en,
+            ] : null,
+            'notification_values'   => $this->resolveSiteStatusNotificationValues($notification),
         ];
     }
 
@@ -2775,13 +2824,19 @@ class ProjectNotificationService
         }
 
         return [
-            'items'    => $items,
-            'summary'  => [
+            'items'                 => $items,
+            'summary'               => [
                 'total'    => count($items),
                 'approved' => count($items),
                 'pending'  => 0,
             ],
-            'timezone' => $timezone,
+            'timezone'              => $timezone,
+            'site_status_type'      => $notification->siteStatusType ? [
+                'id' => $notification->siteStatusType->id,
+                'name_ar' => $notification->siteStatusType->name_ar,
+                'name_en' => $notification->siteStatusType->name_en,
+            ] : null,
+            'notification_values'   => $this->resolveSiteStatusNotificationValues($notification),
         ];
     }
 

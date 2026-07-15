@@ -50,6 +50,8 @@ class ProjectNotificationRepository
                 'employeeTask.fines.media',
                 'employeeTask.workStoppageReports.media',
                 'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
+                'siteStatusType',
+                'siteStatusValues.key',
             ])
             ->find($id);
 
@@ -76,6 +78,8 @@ class ProjectNotificationRepository
                 'employeeTask.createProjectNotificationTaskProcedureSetting',
                 'siteStatusUpdates' => fn ($q) => $q->latest('created_at')->limit(1),
                 'notificationNotes' => fn ($q) => $q->with('user')->latest('created_at')->limit(1),
+                'siteStatusType',
+                'siteStatusValues.key',
             ]);
 
         $this->applyDraftExclusion($query, $filters);
