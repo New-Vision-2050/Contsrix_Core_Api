@@ -2528,10 +2528,10 @@ class ProjectNotificationService
         // Sort all items by created_at descending.
         usort($items, fn ($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
 
-        // Include any site-status files still staged on the notification that belong
-        // to a completed workflow. These can be left behind when the file move in
-        // the workflow listener fails. Map each staged file to its originating
-        // process so attachments appear on the correct site status update.
+        // Include any site-status files still staged on the notification that were
+        // not moved to their update record. Try to map them by originating process
+        // first, then fall back to the update whose creation time is closest to the
+        // file upload time so attachments appear on the correct site status update.
         $stagedMedia = $notification->getMedia('site_status_update_attachments');
         if ($stagedMedia->isNotEmpty() && $items !== []) {
             $processes = \Modules\Process\Models\Process::query()
@@ -2550,29 +2550,74 @@ class ProjectNotificationService
             }
 
             $stagedByProcess = [];
+            $unmappedMedia = [];
             foreach ($stagedMedia as $media) {
                 $processId = $fileToProcess[(int) $media->id] ?? null;
-                if ($processId === null) {
-                    continue;
+                if ($processId !== null) {
+                    $stagedByProcess[$processId][] = $media;
+                } else {
+                    $unmappedMedia[] = $media;
                 }
-                $stagedByProcess[$processId][] = $media;
             }
 
-            foreach ($items as $index => $item) {
-                $processId = $item['process']['id'] ?? null;
-                if ($processId === null || ! isset($stagedByProcess[$processId])) {
-                    continue;
+            $remainingMedia = $unmappedMedia;
+            foreach ($stagedByProcess as $processId => $mediaList) {
+                $matched = false;
+                foreach ($items as $index => $item) {
+                    if (($item['process']['id'] ?? null) === $processId) {
+                        $items[$index]['attachments'] = array_merge(
+                            $items[$index]['attachments'],
+                            \Modules\Shared\Media\Presenters\MediaPresenter::collection(collect($mediaList)),
+                        );
+                        $matched = true;
+                    }
                 }
-
-                $items[$index]['attachments'] = array_merge(
-                    $items[$index]['attachments'],
-                    \Modules\Shared\Media\Presenters\MediaPresenter::collection($stagedByProcess[$processId]),
-                );
-                unset($stagedByProcess[$processId]);
+                if (! $matched) {
+                    $remainingMedia = array_merge($remainingMedia, $mediaList);
+                }
             }
 
-            // Any remaining staged files belong to pending/rejected workflows or are
-            // orphaned; do not attach them to any approved record.
+            // Fall back to creation-time matching for files without a process mapping.
+            if ($remainingMedia !== []) {
+                $itemDates = [];
+                foreach ($items as $index => $item) {
+                    $createdAt = $item['created_at'] ?? null;
+                    if ($createdAt !== null) {
+                        try {
+                            $itemDates[$index] = \Carbon\Carbon::parse($createdAt, $timezone)->setTimezone('UTC');
+                        } catch (\Throwable) {
+                            $itemDates[$index] = null;
+                        }
+                    }
+                }
+
+                $mediaByItem = [];
+                foreach ($remainingMedia as $media) {
+                    $bestIndex = null;
+                    $bestDiff = null;
+                    foreach ($itemDates as $index => $itemDate) {
+                        if ($itemDate === null || $media->created_at === null) {
+                            continue;
+                        }
+                        $diff = abs($media->created_at->diffInSeconds($itemDate));
+                        if ($diff <= 86400 && ($bestDiff === null || $diff < $bestDiff)) {
+                            $bestDiff = $diff;
+                            $bestIndex = $index;
+                        }
+                    }
+
+                    if ($bestIndex !== null) {
+                        $mediaByItem[$bestIndex][] = $media;
+                    }
+                }
+
+                foreach ($mediaByItem as $index => $mediaList) {
+                    $items[$index]['attachments'] = array_merge(
+                        $items[$index]['attachments'],
+                        \Modules\Shared\Media\Presenters\MediaPresenter::collection(collect($mediaList)),
+                    );
+                }
+            }
         }
 
         $summary = [
