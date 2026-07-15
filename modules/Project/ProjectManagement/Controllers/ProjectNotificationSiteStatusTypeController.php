@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationSiteStatusTypeKeyPresenter;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationSiteStatusTypePresenter;
 use Modules\Project\ProjectManagement\Requests\CreateProjectNotificationSiteStatusTypeKeyRequest;
@@ -26,11 +27,18 @@ class ProjectNotificationSiteStatusTypeController extends Controller
     /**
      * GET /projects/notifications/site-status-types
      *
-     * List active site status types for the dropdown.
+     * List active site status types for the dropdown. Optionally filtered by
+     * ?project_type_id= or ?project_id= (resolved to its project_type_id) so
+     * every project of the same type sees the same list.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $types = $this->typeService->list();
+        $projectTypeId = $this->typeService->resolveProjectTypeId(
+            $request->filled('project_type_id') ? (int) $request->query('project_type_id') : null,
+            $request->query('project_id'),
+        );
+
+        $types = $this->typeService->list($projectTypeId);
 
         return Json::items(
             ProjectNotificationSiteStatusTypePresenter::collection($types),
@@ -41,11 +49,17 @@ class ProjectNotificationSiteStatusTypeController extends Controller
     /**
      * GET /projects/notifications/site-status-types/with-keys
      *
-     * List active types with their active keys (admin view).
+     * List active types with their active keys (admin view). Optionally
+     * filtered by ?project_type_id= or ?project_id=.
      */
-    public function indexWithKeys(): JsonResponse
+    public function indexWithKeys(Request $request): JsonResponse
     {
-        $types = $this->typeService->listWithKeys();
+        $projectTypeId = $this->typeService->resolveProjectTypeId(
+            $request->filled('project_type_id') ? (int) $request->query('project_type_id') : null,
+            $request->query('project_id'),
+        );
+
+        $types = $this->typeService->listWithKeys($projectTypeId);
 
         return Json::items(
             ProjectNotificationSiteStatusTypePresenter::collectionWithKeys($types),

@@ -13,6 +13,7 @@ class ProjectNotificationSiteStatusTypePresenter
     {
         return [
             'id' => $type->id,
+            'project_type_id' => $type->project_type_id,
             'name_ar' => $type->name_ar,
             'name_en' => $type->name_en,
             'sort_order' => $type->sort_order,

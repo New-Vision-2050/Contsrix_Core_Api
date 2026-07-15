@@ -6,7 +6,9 @@ namespace Modules\Project\ProjectManagement\Models;
 
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Project\ProjectType\Models\ProjectType;
 
 class ProjectNotificationSiteStatusType extends Model
 {
@@ -19,6 +21,7 @@ class ProjectNotificationSiteStatusType extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'project_type_id',
         'name_ar',
         'name_en',
         'sort_order',
@@ -27,9 +30,15 @@ class ProjectNotificationSiteStatusType extends Model
 
     protected $casts = [
         'id' => 'string',
+        'project_type_id' => 'integer',
         'sort_order' => 'integer',
         'is_active' => 'boolean',
     ];
+
+    public function projectType(): BelongsTo
+    {
+        return $this->belongsTo(ProjectType::class, 'project_type_id')->withoutGlobalScopes();
+    }
 
     public function keys(): HasMany
     {

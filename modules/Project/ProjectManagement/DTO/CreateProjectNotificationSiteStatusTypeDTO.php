@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\DTO;
 final class CreateProjectNotificationSiteStatusTypeDTO
 {
     public function __construct(
+        public readonly int $projectTypeId,
         public readonly string $nameAr,
         public readonly ?string $nameEn = null,
         public readonly int $sortOrder = 0,
@@ -16,6 +17,7 @@ final class CreateProjectNotificationSiteStatusTypeDTO
     public function toArray(): array
     {
         return [
+            'project_type_id' => $this->projectTypeId,
             'name_ar' => $this->nameAr,
             'name_en' => $this->nameEn,
             'sort_order' => $this->sortOrder,

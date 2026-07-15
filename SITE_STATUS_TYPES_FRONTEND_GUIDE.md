@@ -10,7 +10,7 @@ A new independent lookup called **Site Status Types** (انواع حالة ال�
 
 ### Key concepts
 
-- **Site Status Type**: a category such as `كابل`, `محول`, `طول التوصيله`, etc.
+- **Site Status Type**: a category such as `كابل`, `محول`, `طول التوصيله`, etc. **Each type belongs to exactly one project type** (`project_type_id`) — e.g. types created under "الإشراف" are separate from types created under "الصيانة والطوارئ". Any project that has that project type sees the same list.
 - **Site Status Type Key**: one dynamic field inside a type (e.g. "طول التوصيله"). It has a display name, a machine `key`, a `field_type`, and a flag `show_in_site_status_updates`.
 - **Site Status Value**: the value stored for a specific notification + key.
 - **request-site-status-update**: unchanged; it does **not** save or edit these dynamic values. Values are only edited through the notification create/update forms.
@@ -19,13 +19,21 @@ A new independent lookup called **Site Status Types** (انواع حالة ال�
 
 ## 2. Admin UI — Maintenance & Emergency schema
 
-### 2.0 Placement
+### 2.0 Schema tab
 
-The site status types configuration UI is **not** a separate schema/tab. It is rendered inside the existing **الصيانة والطوارئ** (Maintenance & Emergency) tab — schema `12` — using the frontend's own mechanism.
+Site Status Types has its own dedicated schema/tab, seeded by `SchemaSeeder`:
 
-When the user opens the Maintenance & Emergency tab for a project type, show a section/button named **انواع حالة الموقع** (Site Status Types). The frontend decides where exactly to place it within that tab.
+- **Schema ID:** `15`
+- **Name:** `انواع حالة الموقع` (Site Status Types)
 
-The CRUD actions can be gated with the dedicated permissions listed in the permissions config:
+It is auto-attached (via `project_type_schemas`) to the following project types:
+
+- `الإشراف` (Supervision)
+- `الصيانة والطوارئ` (Maintenance & Emergency)
+
+Use the project type's schema list (e.g. `GET /project-types/{id}/schemas` or however the project type `show` endpoint exposes `is_have_schema`/`schemas`) to decide whether to render this tab for a given project type — the same mechanism already used for the other tabs (schema `12` for Maintenance & Emergency itself, `13` for Contractors, `14` for Work Orders).
+
+The CRUD actions can additionally be gated with the dedicated permissions listed in the permissions config:
 
 - `PROJECT_NOTIFICATION_SITE_STATUS_TYPE_LIST`
 - `PROJECT_NOTIFICATION_SITE_STATUS_TYPE_VIEW`
@@ -35,17 +43,21 @@ The CRUD actions can be gated with the dedicated permissions listed in the permi
 
 ### 2.1 Types list
 
-Fetch the list from:
+Types are scoped by project type. Fetch the list by passing **either** `project_type_id` **or** `project_id` (the backend resolves `project_id` → its `project_type_id` for you):
 
 ```text
-GET /projects/notifications/site-status-types
+GET /projects/notifications/site-status-types?project_type_id={project_type_id}
+GET /projects/notifications/site-status-types?project_id={project_id}
 ```
+
+Both query params are optional. If neither is passed, all types (across every project type) are returned — used for a global admin view, if needed. When managing types for a specific project type's Maintenance & Emergency tab, always pass `project_type_id`.
 
 Response (`items`):
 
 ```json
 {
   "id": "uuid",
+  "project_type_id": 3,
   "name_ar": "كابل",
   "name_en": "Cable",
   "sort_order": 1,
@@ -60,10 +72,11 @@ POST /projects/notifications/site-status-types
 PUT  /projects/notifications/site-status-types/{id}
 ```
 
-Body:
+Body (`project_type_id` is **required** on create, optional on update):
 
 ```json
 {
+  "project_type_id": 3,
   "name_ar": "كابل",
   "name_en": "Cable",
   "sort_order": 1,
@@ -154,7 +167,7 @@ Each key has a boolean `show_in_site_status_updates`. When `true`, the key and i
 In the **create** and **edit** project notification forms, add a new dropdown:
 
 - Label: **نوع حالة الموقع** (Site Status Type)
-- Data source: `GET /projects/notifications/site-status-types`
+- Data source: `GET /projects/notifications/site-status-types?project_id={project_id}` — **always pass the current `project_id`** so only the types belonging to that project's project type are listed.
 - Value: `id`
 - Display: `name_ar` (or `name_en` if locale is English)
 

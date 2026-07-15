@@ -20,19 +20,21 @@ class ProjectNotificationSiteStatusTypeRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function listActive(): Collection
+    public function listActive(?int $projectTypeId = null): Collection
     {
         return $this->model
             ->where('is_active', true)
+            ->when($projectTypeId, fn ($q) => $q->where('project_type_id', $projectTypeId))
             ->orderBy('sort_order')
             ->get();
     }
 
-    public function listWithActiveKeys(): Collection
+    public function listWithActiveKeys(?int $projectTypeId = null): Collection
     {
         return $this->model
             ->with(['activeKeys' => fn ($q) => $q->where('is_active', true)])
             ->where('is_active', true)
+            ->when($projectTypeId, fn ($q) => $q->where('project_type_id', $projectTypeId))
             ->orderBy('sort_order')
             ->get();
     }

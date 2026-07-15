@@ -22,10 +22,15 @@ class ValidateOtpRequest extends FormRequest
             'identifier' => [
                 'required',
                 function ($attribute, $value, $fail) {
+                    $userId = $this->route('id') ?? auth()->id();
+
                     $exists = User::query()->withoutTenancy()
                         ->where(function ($query) use ($value) {
                             $query->where('email', $value)
                                   ->orWhere('phone', $value);
+                        })
+                        ->when($userId, function ($query) use ($userId) {
+                            $query->where('id', '!=', $userId);
                         })
                         ->exists();
 

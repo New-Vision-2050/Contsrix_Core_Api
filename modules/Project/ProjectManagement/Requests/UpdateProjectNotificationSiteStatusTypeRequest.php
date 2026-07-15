@@ -18,6 +18,7 @@ class UpdateProjectNotificationSiteStatusTypeRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'project_type_id' => ['nullable', 'integer', 'exists:project_types,id'],
             'name_ar' => ['nullable', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -28,6 +29,7 @@ class UpdateProjectNotificationSiteStatusTypeRequest extends FormRequest
     public function toDTO(): UpdateProjectNotificationSiteStatusTypeDTO
     {
         return new UpdateProjectNotificationSiteStatusTypeDTO(
+            projectTypeId: $this->filled('project_type_id') ? (int) $this->input('project_type_id') : null,
             nameAr: $this->input('name_ar'),
             nameEn: $this->input('name_en'),
             sortOrder: $this->filled('sort_order') ? (int) $this->input('sort_order') : null,
