@@ -26,6 +26,8 @@ final class RequestProjectNotificationUpdateDTO
         public readonly ?string $notes = null,
         public readonly ?string $internalProcedureSettingId = null,
         public readonly ?array $files = null,
+        public readonly ?string $siteStatusTypeId = null,
+        public readonly ?array $siteStatusTypeValues = null,
     ) {}
 
     public function toArray(): array
@@ -43,6 +45,8 @@ final class RequestProjectNotificationUpdateDTO
             'permit_source'               => $this->permitSource,
             'permit_recipient'            => $this->permitRecipient,
             'notes'                       => $this->notes,
+            'site_status_type_id'         => $this->siteStatusTypeId,
+            'site_status_type_values'     => $this->siteStatusTypeValues,
         ], static fn ($value) => $value !== null);
     }
 }

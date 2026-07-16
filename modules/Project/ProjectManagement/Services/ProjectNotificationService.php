@@ -1189,8 +1189,13 @@ class ProjectNotificationService
 
         if ($procedureSetting === null) {
             // No procedure configured → apply immediately.
-            $this->repository->update($id, $this->enrichContractorData($dto->toArray()));
+            $updateData = $this->enrichContractorData($dto->toArray());
+            unset($updateData['site_status_type_values']);
+            $this->repository->update($id, $updateData);
             $this->attachUpdateFiles($notification, $dto->files);
+
+            $notification = $notification->fresh();
+            $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
             // Record the taken procedure with form data metadata.
             event(new WorkflowProcedureTaken(
@@ -1872,6 +1877,14 @@ class ProjectNotificationService
      * - If new values are supplied, they fully replace the existing values after
      *   verifying that each key belongs to the selected type.
      */
+    public function syncSiteStatusValuesPublic(
+        ProjectNotification $notification,
+        ?string $siteStatusTypeId,
+        ?array $values,
+    ): void {
+        $this->syncSiteStatusValues($notification, $siteStatusTypeId, $values);
+    }
+
     private function syncSiteStatusValues(
         ProjectNotification $notification,
         ?string $siteStatusTypeId,
