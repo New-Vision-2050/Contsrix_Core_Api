@@ -88,7 +88,7 @@ class ProjectNotificationSiteStatusTypeController extends Controller
         $type = $this->typeService->create($request->toDTO());
 
         return Json::item(
-            ProjectNotificationSiteStatusTypePresenter::single($type),
+            ProjectNotificationSiteStatusTypePresenter::withKeys($type),
             message: 'Site status type created successfully',
         );
     }
@@ -101,7 +101,7 @@ class ProjectNotificationSiteStatusTypeController extends Controller
         $type = $this->typeService->update($id, $request->toDTO());
 
         return Json::item(
-            ProjectNotificationSiteStatusTypePresenter::single($type),
+            ProjectNotificationSiteStatusTypePresenter::withKeys($type),
             message: 'Site status type updated successfully',
         );
     }
