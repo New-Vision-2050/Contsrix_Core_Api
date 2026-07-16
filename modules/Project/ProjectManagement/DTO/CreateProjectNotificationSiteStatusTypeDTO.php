@@ -6,12 +6,16 @@ namespace Modules\Project\ProjectManagement\DTO;
 
 final class CreateProjectNotificationSiteStatusTypeDTO
 {
+    /**
+     * @param array<int, array<string, mixed>>|null $keys
+     */
     public function __construct(
         public readonly int $projectTypeId,
         public readonly string $nameAr,
         public readonly ?string $nameEn = null,
         public readonly int $sortOrder = 0,
         public readonly bool $isActive = true,
+        public readonly ?array $keys = null,
     ) {}
 
     public function toArray(): array

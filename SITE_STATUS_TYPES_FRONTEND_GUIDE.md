@@ -65,12 +65,14 @@ Response (`items`):
 }
 ```
 
-### 2.2 Create / edit a type
+### 2.2 Create / edit a type (with nested keys)
 
 ```text
 POST /projects/notifications/site-status-types
 PUT  /projects/notifications/site-status-types/{id}
 ```
+
+You can create/update a type **and its keys in a single request** by passing a `keys` array. This is the recommended approach for the admin form — the user fills in the type name and a table of keys (name, field type, options, show-in-site-status-updates flag), and everything is saved in one call.
 
 Body (`project_type_id` is **required** on create, optional on update):
 
@@ -80,11 +82,82 @@ Body (`project_type_id` is **required** on create, optional on update):
   "name_ar": "كابل",
   "name_en": "Cable",
   "sort_order": 1,
-  "is_active": true
+  "is_active": true,
+  "keys": [
+    {
+      "name_ar": "طول التوصيله",
+      "name_en": "Cable length",
+      "field_type": "text",
+      "show_in_site_status_updates": true,
+      "sort_order": 1,
+      "is_active": true
+    },
+    {
+      "name_ar": "نوع الكابل",
+      "name_en": "Cable type",
+      "field_type": "select",
+      "options": ["نحاس", "ألمونيوم"],
+      "show_in_site_status_updates": false,
+      "sort_order": 2,
+      "is_active": true
+    }
+  ]
 }
 ```
 
-### 2.3 Manage keys inside a type
+**Key object fields inside the `keys` array:**
+
+| Field | Required | Description |
+|---|---|---|
+| `id` | optional (update only) | If provided and matches an existing key, that key is updated. If omitted, a new key is created. |
+| `name_ar` | **required** | Arabic display name |
+| `name_en` | optional | English display name |
+| `key` | optional | Machine key (`a-z`, `0-9`, `_`). Auto-generated from `name_ar` if omitted. |
+| `field_type` | **required** | One of: `text`, `number`, `date`, `select` |
+| `options` | optional | Array of strings — **required when `field_type` is `select`** |
+| `show_in_site_status_updates` | optional (default `false`) | If `true`, the key/value appears in the site status updates tab |
+| `sort_order` | optional (default `0`) | Display order |
+| `is_active` | optional (default `true`) | Soft-disable a key without deleting it |
+
+**Update behavior for keys:**
+
+- Keys with an `id` that exists → **updated**.
+- Keys without an `id` (or with an `id` that doesn't exist) → **created**.
+- Existing keys whose `id` is **not** in the array → **deleted**.
+- If `keys` is omitted entirely (or `null`), existing keys are left unchanged.
+
+**Response** (both create and update return the type with its active keys):
+
+```json
+{
+  "id": "uuid",
+  "project_type_id": 3,
+  "name_ar": "كابل",
+  "name_en": "Cable",
+  "sort_order": 1,
+  "is_active": true,
+  "keys": [
+    {
+      "id": "uuid",
+      "site_status_type_id": "uuid",
+      "name_ar": "طول التوصيله",
+      "name_en": "Cable length",
+      "key": "cable_length",
+      "field_type": "text",
+      "options": null,
+      "show_in_site_status_updates": true,
+      "sort_order": 1,
+      "is_active": true
+    }
+  ]
+}
+```
+
+> **Note:** `key` is optional. If omitted, the backend will auto-generate a Latin snake_case key from the Arabic name. If you want stable API keys, provide one explicitly (`a-z`, `0-9`, `_`).
+
+### 2.3 Manage keys individually (alternative)
+
+You can still manage keys one-by-one via these endpoints. This is useful for adding/removing a single key without re-sending the entire array.
 
 Open a type to see its keys. Fetch keys with:
 
@@ -293,9 +366,9 @@ GET /projects/notifications/{id}/site-status-updates/copied
 |---|---|---|
 | GET | `/projects/notifications/site-status-types` | List active types |
 | GET | `/projects/notifications/site-status-types/with-keys` | List active types with their active keys |
-| POST | `/projects/notifications/site-status-types` | Create a type |
+| POST | `/projects/notifications/site-status-types` | Create a type (with optional nested `keys` array) |
 | GET | `/projects/notifications/site-status-types/{id}` | Show a type with keys |
-| PUT | `/projects/notifications/site-status-types/{id}` | Update a type |
+| PUT | `/projects/notifications/site-status-types/{id}` | Update a type (with optional nested `keys` array — syncs keys) |
 | DELETE | `/projects/notifications/site-status-types/{id}` | Delete a type |
 | GET | `/projects/notifications/site-status-types/{id}/keys` | List keys of a type |
 | POST | `/projects/notifications/site-status-types/{id}/keys` | Create a key |
@@ -320,3 +393,5 @@ Changed existing endpoints:
 4. **Field types:** render text, number, date, and select inputs based on `field_type`.
 5. **Options:** only present for `field_type = select`. Use them as dropdown options.
 6. **Show in site status updates:** only keys with `show_in_site_status_updates = true` appear in `notification_values` of the site status updates response.
+7. **Nested keys on create/update:** You can send a `keys` array inside the type create/update body to create/sync keys in one call. On update, keys with an existing `id` are updated, keys without `id` are created, and existing keys not in the array are deleted. If `keys` is omitted, keys are left unchanged.
+8. **Admin form UI:** The admin form should present the type name as a simple input and the keys as a dynamic table where each row has: name, field type (dropdown: text/number/date/select), options (only for select), and a "show in site status updates" checkbox. The entire form is submitted as a single POST/PUT call.
