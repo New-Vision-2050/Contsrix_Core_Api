@@ -32,6 +32,10 @@ class RequestProjectNotificationUpdateRequest extends FormRequest
             'internal_procedure_setting_id' => ['nullable', 'uuid', 'exists:procedure_settings,id'],
             'files'                       => ['nullable', 'array'],
             'files.*'                     => ['file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'site_status_type_id'         => ['nullable', 'uuid', 'exists:project_notification_site_status_types,id'],
+            'site_status_type_values'     => ['nullable', 'array'],
+            'site_status_type_values.*.key_id' => ['required_with:site_status_type_values', 'uuid', 'exists:project_notification_site_status_type_keys,id'],
+            'site_status_type_values.*.value' => ['nullable', 'string'],
         ];
     }
 
@@ -52,6 +56,8 @@ class RequestProjectNotificationUpdateRequest extends FormRequest
             notes: $this->input('notes'),
             internalProcedureSettingId: $this->input('internal_procedure_setting_id'),
             files: $this->hasFile('files') ? $this->file('files') : null,
+            siteStatusTypeId: $this->input('site_status_type_id'),
+            siteStatusTypeValues: $this->input('site_status_type_values'),
         );
     }
 }
