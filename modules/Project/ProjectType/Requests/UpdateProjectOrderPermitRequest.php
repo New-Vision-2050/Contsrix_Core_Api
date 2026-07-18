@@ -17,6 +17,7 @@ class UpdateProjectOrderPermitRequest extends FormRequest
     {
         return [
             'project_management_id' => ['nullable', 'integer', 'exists:project_managements,id'],
+            'projects_district_id' => ['nullable', 'integer', 'exists:projects_districts,id'],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
             'assigned_date' => ['nullable', 'date'],

@@ -17,6 +17,7 @@ class ProjectOrderPermit extends Model
     protected $fillable = [
         'project_id',
         'project_management_id',
+        'projects_district_id',
         'order_permit_id',
         'order_permit_department_id',
         'contractor_id',
@@ -42,6 +43,11 @@ class ProjectOrderPermit extends Model
     public function projectManagement(): BelongsTo
     {
         return $this->belongsTo(ProjectManagement::class, 'project_management_id');
+    }
+
+    public function projectDistrict(): BelongsTo
+    {
+        return $this->belongsTo(ProjectDistrict::class, 'projects_district_id');
     }
 
     public function orderPermit(): BelongsTo

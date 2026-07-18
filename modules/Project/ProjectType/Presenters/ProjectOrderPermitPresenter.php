@@ -20,6 +20,8 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'project_id' => $this->model->project_id,
             'project_management_id' => $this->model->project_management_id,
             'project_management_name' => $this->model->projectManagement?->name,
+            'projects_district_id' => $this->model->projects_district_id,
+            'projects_district_name' => $this->model->projectDistrict?->name,
             'order_permit_id' => $this->model->order_permit_id,
             'order_permit_department_id' => $this->model->order_permit_department_id,
             'contractor_id' => $this->model->contractor_id,
