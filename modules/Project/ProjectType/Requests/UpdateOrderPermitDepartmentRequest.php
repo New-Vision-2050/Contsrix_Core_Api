@@ -16,9 +16,7 @@ class UpdateOrderPermitDepartmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_type_id' => ['sometimes', 'integer', 'exists:project_types,id'],
-            'code'            => ['sometimes', 'nullable', 'string', 'max:255'],
-            'description'     => ['sometimes', 'nullable', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
         ];
     }
 }

@@ -23,6 +23,7 @@ class OrderPermitTasksSettingPresenter extends AbstractPresenter
                 'code'        => $this->model->orderPermit->code,
                 'description' => $this->model->orderPermit->description,
                 'type'        => $this->model->orderPermit->type,
+                'uds_period'  => $this->model->orderPermit->uds_period,
             ] : null,
             'order_permit_task' => $this->model->task ? [
                 'id'   => $this->model->task->id,

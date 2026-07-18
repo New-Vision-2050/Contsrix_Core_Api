@@ -16,9 +16,7 @@ class CreateOrderPermitDepartmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_type_id' => ['required', 'integer', 'exists:project_types,id'],
-            'code'            => ['nullable', 'string', 'max:255'],
-            'description'     => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
         ];
     }
 }

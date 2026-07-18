@@ -16,10 +16,11 @@ class UpdateOrderPermitRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_type_id' => ['sometimes', 'integer', 'exists:project_types,id'],
-            'code'            => ['sometimes', 'nullable', 'string', 'max:255'],
-            'description'     => ['sometimes', 'nullable', 'string', 'max:255'],
-            'type'            => ['sometimes', 'nullable', 'string', 'max:255'],
+            'code'                        => ['sometimes', 'nullable', 'string', 'max:255'],
+            'description'                 => ['sometimes', 'nullable', 'string', 'max:255'],
+            'type'                        => ['sometimes', 'nullable', 'string', 'max:255'],
+            'uds_period'                  => ['sometimes', 'nullable', 'numeric'],
+            'order_permit_department_id'  => ['sometimes', 'nullable', 'integer', 'exists:order_permit_department,id'],
         ];
     }
 }

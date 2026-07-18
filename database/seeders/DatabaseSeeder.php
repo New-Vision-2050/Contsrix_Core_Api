@@ -9,6 +9,7 @@ use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
 use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
 use Modules\ProcedureSetting\Database\Seeders\ProjectNotificationProcedureSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ContractorSeeder;
+use Modules\Project\ProjectType\Database\Seeders\OrderPermitSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ContractualEngagementSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectNotificationEndTaskStatusSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectNotificationSiteStatusSeeder;
@@ -181,6 +182,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProjectNotificationWorkStoppageReasonSeeder::class);
         $this->call(ProjectNotificationTypeSeeder::class);
         $this->call(ContractorSeeder::class);
+        $this->call(OrderPermitSeeder::class);
         $this->call(ContractualEngagementSeeder::class);
 
 
