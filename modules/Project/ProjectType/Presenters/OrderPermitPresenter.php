@@ -26,6 +26,11 @@ class OrderPermitPresenter extends AbstractPresenter
                 'id'   => $this->model->department->id,
                 'name' => $this->model->department->name,
             ] : null,
+            'order_permit_type_id'        => $this->model->order_permit_type_id,
+            'order_permit_type'           => $this->model->orderPermitType ? [
+                'id'   => $this->model->orderPermitType->id,
+                'name' => $this->model->orderPermitType->name,
+            ] : null,
             'created_at'                  => $this->model->created_at?->toDateTimeString(),
             'updated_at'                  => $this->model->updated_at?->toDateTimeString(),
         ];

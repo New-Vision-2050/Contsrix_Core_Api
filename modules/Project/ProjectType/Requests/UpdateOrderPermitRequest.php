@@ -21,6 +21,7 @@ class UpdateOrderPermitRequest extends FormRequest
             'type'                        => ['sometimes', 'nullable', 'string', 'max:255'],
             'uds_period'                  => ['sometimes', 'nullable', 'numeric'],
             'order_permit_department_id'  => ['sometimes', 'nullable', 'integer', 'exists:order_permit_department,id'],
+            'order_permit_type_id'        => ['sometimes', 'nullable', 'integer', 'exists:order_permit_types,id'],
         ];
     }
 }
