@@ -19,9 +19,8 @@ class OrderPermitRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function listByProjectTypeId(): Collection
+    public function list(): Collection
     {
         return $this->model->get();
-
     }
 }

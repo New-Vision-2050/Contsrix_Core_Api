@@ -16,13 +16,18 @@ class OrderPermitPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-            'id'              => $this->model->id,
-            'project_type_id' => $this->model->project_type_id,
-            'code'            => $this->model->code,
-            'description'     => $this->model->description,
-            'type'            => $this->model->type,
-            'created_at'      => $this->model->created_at?->toDateTimeString(),
-            'updated_at'      => $this->model->updated_at?->toDateTimeString(),
+            'id'                          => $this->model->id,
+            'code'                        => $this->model->code,
+            'description'                 => $this->model->description,
+            'type'                        => $this->model->type,
+            'uds_period'                  => $this->model->uds_period,
+            'order_permit_department_id'  => $this->model->order_permit_department_id,
+            'department'                  => $this->model->department ? [
+                'id'   => $this->model->department->id,
+                'name' => $this->model->department->name,
+            ] : null,
+            'created_at'                  => $this->model->created_at?->toDateTimeString(),
+            'updated_at'                  => $this->model->updated_at?->toDateTimeString(),
         ];
     }
 }
