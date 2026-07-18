@@ -17,11 +17,17 @@ class OrderPermit extends Model
         'type',
         'uds_period',
         'order_permit_department_id',
+        'order_permit_type_id',
     ];
 
     public function department(): BelongsTo
     {
         return $this->belongsTo(OrderPermitDepartment::class, 'order_permit_department_id');
+    }
+
+    public function orderPermitType(): BelongsTo
+    {
+        return $this->belongsTo(OrderPermitType::class, 'order_permit_type_id');
     }
 
 }
