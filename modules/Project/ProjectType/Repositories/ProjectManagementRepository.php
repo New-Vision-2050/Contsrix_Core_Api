@@ -19,8 +19,14 @@ class ProjectManagementRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function list(): Collection
+    public function list(array $conditions = [], string $orderBy = 'id', string $sortBy = 'asc'): Collection
     {
-        return $this->model->orderBy('id')->get();
+        $query = $this->model->query();
+
+        foreach ($conditions as $column => $value) {
+            $query->where($column, $value);
+        }
+
+        return $query->orderBy($orderBy, $sortBy)->get();
     }
 }
