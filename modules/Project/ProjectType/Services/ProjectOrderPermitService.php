@@ -19,6 +19,7 @@ class ProjectOrderPermitService
         foreach (Arr::get($data, 'work_orders', []) as $workOrderData) {
             $items[] = ProjectOrderPermit::query()->create([
                 'project_id' => $projectId,
+                'project_management_id' => Arr::get($workOrderData, 'project_management_id'),
                 'order_permit_id' => Arr::get($workOrderData, 'order_permit_id'),
                 'order_permit_department_id' => Arr::get($workOrderData, 'order_permit_department_id'),
                 'contractor_id' => Arr::get($workOrderData, 'contractor_id'),
@@ -41,7 +42,7 @@ class ProjectOrderPermitService
 
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
-            ->with(['orderPermit', 'department', 'contractor', 'state'])
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -52,7 +53,7 @@ class ProjectOrderPermitService
 
         return ProjectOrderPermit::query()
             ->whereIn('project_id', $projectIds)
-            ->with(['orderPermit', 'department', 'contractor', 'state'])
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -65,7 +66,7 @@ class ProjectOrderPermitService
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->where('id', $id)
-            ->with(['orderPermit', 'department', 'contractor', 'state'])
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement'])
             ->firstOrFail();
     }
 
@@ -80,6 +81,7 @@ class ProjectOrderPermitService
             ->firstOrFail();
 
         $orderPermit->update([
+            'project_management_id' => Arr::get($data, 'project_management_id', $orderPermit->project_management_id),
             'order_permit_id' => Arr::get($data, 'order_permit_id', $orderPermit->order_permit_id),
             'order_permit_department_id' => Arr::get($data, 'order_permit_department_id', $orderPermit->order_permit_department_id),
             'contractor_id' => Arr::get($data, 'contractor_id', $orderPermit->contractor_id),
@@ -92,7 +94,7 @@ class ProjectOrderPermitService
             'price' => Arr::get($data, 'price', $orderPermit->price),
         ]);
 
-        return $orderPermit->fresh(['orderPermit', 'department', 'contractor', 'state']);
+        return $orderPermit->fresh(['orderPermit', 'department', 'contractor', 'state', 'projectManagement']);
     }
 
 
