@@ -18,6 +18,7 @@ class CreateProjectOrderPermitRequest extends FormRequest
         return [
             'project_id' => ['required', 'string', 'exists:projects,id'],
             'work_orders' => ['required', 'array', 'min:1'],
+            'work_orders.*.project_management_id' => ['nullable', 'integer', 'exists:project_managements,id'],
             'work_orders.*.name' => ['required', 'string', 'max:255'],
             'work_orders.*.type' => ['nullable', 'string', 'max:255'],
             'work_orders.*.assigned_date' => ['nullable', 'date'],

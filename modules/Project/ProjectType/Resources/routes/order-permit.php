@@ -7,6 +7,7 @@ use Modules\Project\ProjectType\Controllers\OrderPermitProcedureController;
 use Modules\Project\ProjectType\Controllers\OrderPermitTaskController;
 use Modules\Project\ProjectType\Controllers\ReportFormController;
 use Modules\Project\ProjectType\Controllers\OrderPermitTasksSettingController;
+use Modules\Project\ProjectType\Controllers\ProjectManagementController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -81,5 +82,17 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::put('/order-permit-tasks-setting/{id}', [OrderPermitTasksSettingController::class, 'update'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
     Route::delete('/order-permit-tasks-setting/{id}', [OrderPermitTasksSettingController::class, 'delete'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Project managements (project_managements table)
+    Route::get('/project-managements', [ProjectManagementController::class, 'index'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::post('/project-managements', [ProjectManagementController::class, 'store'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+    Route::get('/project-managements/{id}', [ProjectManagementController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/project-managements/{id}', [ProjectManagementController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+    Route::delete('/project-managements/{id}', [ProjectManagementController::class, 'delete'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 });
