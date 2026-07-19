@@ -22,7 +22,7 @@ class FilterProjectNotificationChartsRequest extends FormRequest
             'notification_type'          => ['nullable', 'string'],
             'work_type'                  => ['nullable', 'string'],
             'contractor_name'            => ['nullable', 'string'],
-            'contractor_id'              => ['nullable', 'uuid', 'exists:contractors,id'],
+            'contractor_id'              => ['nullable', 'uuid', 'exists:project_contractors,id'],
             'contractor_category'        => ['nullable', 'string'],
             'severity'                   => ['nullable', 'string'],
             'assigned_user_id'           => ['nullable', 'uuid'],

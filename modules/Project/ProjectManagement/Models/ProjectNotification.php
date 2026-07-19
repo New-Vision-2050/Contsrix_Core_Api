@@ -124,7 +124,7 @@ class ProjectNotification extends Model implements HasMedia
 
     public function contractor(): BelongsTo
     {
-        return $this->belongsTo(Contractor::class, 'contractor_id')->withoutGlobalScopes();
+        return $this->belongsTo(ProjectContractor::class, 'contractor_id')->withoutGlobalScopes();
     }
 
     public function employeeTask(): BelongsTo
