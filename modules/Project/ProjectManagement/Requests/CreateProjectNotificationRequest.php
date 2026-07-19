@@ -48,7 +48,7 @@ class CreateProjectNotificationRequest extends FormRequest
             'feeder_number'               => ['nullable', 'string', 'max:255'],
             'machine_number'              => ['nullable', 'string', 'max:255'],
             'work_description'            => ['nullable', 'string'],
-            'contractor_id'               => ['nullable', 'uuid', 'exists:project_contractors,id'],
+            'contractor_id'               => ['nullable', 'uuid', 'exists:contractors,id'],
             'contractor_name'             => ['nullable', 'string', 'max:255'],
             'contractor_number'           => ['nullable', 'string', 'max:255'],
             'contractor_technical_number' => ['nullable', 'string', 'max:255'],
