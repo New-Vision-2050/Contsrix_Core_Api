@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Project\ProjectType\Models\ProjectType;
 
@@ -49,5 +50,15 @@ class ProjectNotificationSiteStatusType extends Model
     public function activeKeys(): HasMany
     {
         return $this->keys()->where('is_active', true);
+    }
+
+    public function notificationTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ProjectNotificationType::class,
+            'project_notification_type_site_status_types',
+            'site_status_type_id',
+            'project_notification_type_id',
+        );
     }
 }

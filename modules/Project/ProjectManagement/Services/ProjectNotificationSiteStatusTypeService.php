@@ -21,14 +21,14 @@ class ProjectNotificationSiteStatusTypeService
         private readonly ProjectNotificationSiteStatusTypeKeyService $keyService,
     ) {}
 
-    public function list(?int $projectTypeId = null): Collection
+    public function list(?int $projectTypeId = null, ?string $notificationTypeId = null): Collection
     {
-        return $this->repository->listActive($projectTypeId);
+        return $this->repository->listActive($projectTypeId, $notificationTypeId);
     }
 
-    public function listWithKeys(?int $projectTypeId = null): Collection
+    public function listWithKeys(?int $projectTypeId = null, ?string $notificationTypeId = null): Collection
     {
-        return $this->repository->listWithActiveKeys($projectTypeId);
+        return $this->repository->listWithActiveKeys($projectTypeId, $notificationTypeId);
     }
 
     /**
@@ -61,11 +61,15 @@ class ProjectNotificationSiteStatusTypeService
         return DB::transaction(function () use ($dto) {
             $type = $this->repository->create($dto->toArray());
 
+            if (! empty($dto->notificationTypes)) {
+                $type->notificationTypes()->sync($dto->notificationTypes);
+            }
+
             foreach ($dto->keys ?? [] as $keyData) {
                 $this->keyService->create($this->makeKeyDTO($type->id, $keyData));
             }
 
-            return $type->fresh('activeKeys');
+            return $type->fresh(['activeKeys', 'notificationTypes']);
         });
     }
 
@@ -75,11 +79,15 @@ class ProjectNotificationSiteStatusTypeService
             $type = $this->repository->findOneOrFail($id);
             $type->update($dto->toArray());
 
+            if ($dto->notificationTypes !== null) {
+                $type->notificationTypes()->sync($dto->notificationTypes);
+            }
+
             if ($dto->keys !== null) {
                 $this->syncKeys($type, $dto->keys);
             }
 
-            return $type->fresh('activeKeys');
+            return $type->fresh(['activeKeys', 'notificationTypes']);
         });
     }
 
