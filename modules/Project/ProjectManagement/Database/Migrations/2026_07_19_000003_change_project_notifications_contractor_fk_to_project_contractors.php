@@ -21,8 +21,18 @@ return new class extends Migration
             foreach ($foreignKeys as $fkName) {
                 $table->dropForeign($fkName);
             }
+        });
 
-            // Add new FK referencing `project_contractors`
+        // Null out orphaned contractor_id values that don't exist in project_contractors
+        $validIds = DB::table('project_contractors')->pluck('id')->all();
+        DB::table('project_notifications')
+            ->whereNotNull('contractor_id')
+            ->when(! empty($validIds), fn ($q) => $q->whereNotIn('contractor_id', $validIds))
+            ->when(empty($validIds), fn ($q) => $q->whereNotNull('contractor_id'))
+            ->update(['contractor_id' => null]);
+
+        // Add new FK referencing `project_contractors`
+        Schema::table('project_notifications', function (Blueprint $table) {
             $table->foreign('contractor_id', 'pn_contractor_fk')
                 ->references('id')
                 ->on('project_contractors')
