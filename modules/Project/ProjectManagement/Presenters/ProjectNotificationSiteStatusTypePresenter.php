@@ -18,6 +18,13 @@ class ProjectNotificationSiteStatusTypePresenter
             'name_en' => $type->name_en,
             'sort_order' => $type->sort_order,
             'is_active' => $type->is_active,
+            'notification_types' => $type->relationLoaded('notificationTypes')
+                ? $type->notificationTypes->map(fn ($nt) => [
+                    'id' => $nt->id,
+                    'name_ar' => $nt->name_ar,
+                    'name_en' => $nt->name_en,
+                ])->all()
+                : [],
             'created_at' => $type->created_at,
             'updated_at' => $type->updated_at,
         ];

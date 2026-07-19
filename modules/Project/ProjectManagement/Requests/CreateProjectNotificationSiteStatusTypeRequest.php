@@ -23,6 +23,8 @@ class CreateProjectNotificationSiteStatusTypeRequest extends FormRequest
             'name_en' => ['nullable', 'string', 'max:255'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
+            'notification_types' => ['nullable', 'array'],
+            'notification_types.*' => ['uuid', 'exists:project_notification_types,id'],
             'keys' => ['nullable', 'array'],
             'keys.*.name_ar' => ['required', 'string', 'max:255'],
             'keys.*.name_en' => ['nullable', 'string', 'max:255'],
@@ -45,6 +47,7 @@ class CreateProjectNotificationSiteStatusTypeRequest extends FormRequest
             sortOrder: (int) $this->input('sort_order', 0),
             isActive: (bool) $this->input('is_active', true),
             keys: $this->input('keys', []),
+            notificationTypes: $this->input('notification_types'),
         );
     }
 }

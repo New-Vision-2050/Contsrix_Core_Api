@@ -20,21 +20,24 @@ class ProjectNotificationSiteStatusTypeRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function listActive(?int $projectTypeId = null): Collection
+    public function listActive(?int $projectTypeId = null, ?string $notificationTypeId = null): Collection
     {
         return $this->model
+            ->with('notificationTypes')
             ->where('is_active', true)
             ->when($projectTypeId, fn ($q) => $q->where('project_type_id', $projectTypeId))
+            ->when($notificationTypeId, fn ($q) => $q->whereHas('notificationTypes', fn ($q2) => $q2->where('project_notification_types.id', $notificationTypeId)))
             ->orderBy('sort_order')
             ->get();
     }
 
-    public function listWithActiveKeys(?int $projectTypeId = null): Collection
+    public function listWithActiveKeys(?int $projectTypeId = null, ?string $notificationTypeId = null): Collection
     {
         return $this->model
-            ->with(['activeKeys' => fn ($q) => $q->where('is_active', true)])
+            ->with(['activeKeys' => fn ($q) => $q->where('is_active', true), 'notificationTypes'])
             ->where('is_active', true)
             ->when($projectTypeId, fn ($q) => $q->where('project_type_id', $projectTypeId))
+            ->when($notificationTypeId, fn ($q) => $q->whereHas('notificationTypes', fn ($q2) => $q2->where('project_notification_types.id', $notificationTypeId)))
             ->orderBy('sort_order')
             ->get();
     }

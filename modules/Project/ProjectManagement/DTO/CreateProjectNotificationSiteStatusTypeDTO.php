@@ -8,6 +8,7 @@ final class CreateProjectNotificationSiteStatusTypeDTO
 {
     /**
      * @param array<int, array<string, mixed>>|null $keys
+     * @param array<int, string>|null $notificationTypes  Array of project_notification_type UUIDs
      */
     public function __construct(
         public readonly int $projectTypeId,
@@ -16,6 +17,7 @@ final class CreateProjectNotificationSiteStatusTypeDTO
         public readonly int $sortOrder = 0,
         public readonly bool $isActive = true,
         public readonly ?array $keys = null,
+        public readonly ?array $notificationTypes = null,
     ) {}
 
     public function toArray(): array
