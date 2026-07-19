@@ -357,9 +357,9 @@ class ProjectNotificationChartsService
     {
         $rows = $this->baseQuery($dto, 'contractor_id')
             ->whereNotNull('contractor_id')
-            ->leftJoin('contractors', 'contractors.id', '=', 'project_notifications.contractor_id')
-            ->select('contractors.id as contractor_id', 'contractors.name as contractor_name', DB::raw('count(*) as count'))
-            ->groupBy('contractors.id', 'contractors.name')
+            ->leftJoin('project_contractors', 'project_contractors.id', '=', 'project_notifications.contractor_id')
+            ->select('project_contractors.id as contractor_id', 'project_contractors.name as contractor_name', DB::raw('count(*) as count'))
+            ->groupBy('project_contractors.id', 'project_contractors.name')
             ->orderByDesc('count')
             ->get();
 
