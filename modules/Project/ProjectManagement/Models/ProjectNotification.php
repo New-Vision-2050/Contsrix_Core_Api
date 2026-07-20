@@ -46,8 +46,7 @@ class ProjectNotification extends Model implements HasMedia
         'contractor_id',
         'contractor_name',
         'contractor_number',
-        'contractor_technical_number',
-        'contractor_technical_name',
+        'contractor_representative_id',
         'contractor_category',
         'contractor_notes',
         'contractor_mobile',
@@ -125,6 +124,11 @@ class ProjectNotification extends Model implements HasMedia
     public function contractor(): BelongsTo
     {
         return $this->belongsTo(ProjectContractor::class, 'contractor_id')->withoutGlobalScopes();
+    }
+
+    public function contractorRepresentative(): BelongsTo
+    {
+        return $this->belongsTo(ProjectContractorRepresentative::class, 'contractor_representative_id')->withoutGlobalScopes();
     }
 
     public function employeeTask(): BelongsTo
