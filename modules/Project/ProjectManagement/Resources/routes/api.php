@@ -118,8 +118,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::post('/{id}/sync-permissions', [ProjectRoleController::class, 'syncPermissions']);
     });
 
-    // Project Procedures Routes
-    Route::prefix('{project}/procedures')->group(function () {
+    // Project Internal Procedures Routes
+    Route::prefix('{project}/internal-procedures')->group(function () {
         Route::get('/', [ProjectProcedureController::class, 'index'])
             ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
         Route::post('/', [ProjectProcedureController::class, 'store'])

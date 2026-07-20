@@ -37,7 +37,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $createResponse = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->postJson("/api/v1/projects/{$project->id}/procedures", [
+            ->postJson("/api/v1/projects/{$project->id}/internal-procedures", [
                 'name' => 'Document Approval',
                 'is_active' => true,
                 'receiver_company_id' => $lookups['receiver_company']->id,
@@ -103,7 +103,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson("/api/v1/projects/{$project->id}/procedures")
+            ->getJson("/api/v1/projects/{$project->id}/internal-procedures")
             ->assertOk()
             ->assertJsonPath('payload.0.id', $procedureId)
             ->assertJsonPath('payload.0.attachment_type.id', $lookups['attachment_type']->id)
@@ -118,7 +118,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->putJson("/api/v1/projects/{$project->id}/procedures/{$procedureId}", [
+            ->putJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}", [
                 'name' => 'Updated Document Approval',
                 'is_active' => false,
                 'receiver_company_id' => $updatedReceiverCompany->id,
@@ -153,14 +153,14 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson("/api/v1/projects/{$project->id}/procedures/{$procedureId}")
+            ->getJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}")
             ->assertOk()
             ->assertJsonPath('payload.id', $procedureId)
             ->assertJsonPath('payload.procedure_setting.type', ProjectProcedureService::PROCEDURE_TYPE);
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->deleteJson("/api/v1/projects/{$project->id}/procedures/{$procedureId}")
+            ->deleteJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}")
             ->assertNoContent();
 
         $this->assertDatabaseMissing('procedure_settings', [
