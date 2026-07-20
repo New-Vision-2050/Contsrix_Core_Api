@@ -38,7 +38,9 @@ class ProjectNotificationSiteStatusTypeController extends Controller
             $request->query('project_id'),
         );
 
-        $types = $this->typeService->list($projectTypeId);
+        $notificationTypeId = $request->query('notification_type_id');
+
+        $types = $this->typeService->list($projectTypeId, $notificationTypeId);
 
         return Json::items(
             ProjectNotificationSiteStatusTypePresenter::collection($types),
@@ -59,7 +61,9 @@ class ProjectNotificationSiteStatusTypeController extends Controller
             $request->query('project_id'),
         );
 
-        $types = $this->typeService->listWithKeys($projectTypeId);
+        $notificationTypeId = $request->query('notification_type_id');
+
+        $types = $this->typeService->listWithKeys($projectTypeId, $notificationTypeId);
 
         return Json::items(
             ProjectNotificationSiteStatusTypePresenter::collectionWithKeys($types),
@@ -73,6 +77,7 @@ class ProjectNotificationSiteStatusTypeController extends Controller
     public function show(string $id): JsonResponse
     {
         $type = $this->typeService->show($id);
+        $type->load('notificationTypes');
 
         return Json::item(
             ProjectNotificationSiteStatusTypePresenter::withKeys($type),
@@ -88,7 +93,7 @@ class ProjectNotificationSiteStatusTypeController extends Controller
         $type = $this->typeService->create($request->toDTO());
 
         return Json::item(
-            ProjectNotificationSiteStatusTypePresenter::single($type),
+            ProjectNotificationSiteStatusTypePresenter::withKeys($type),
             message: 'Site status type created successfully',
         );
     }
@@ -101,7 +106,7 @@ class ProjectNotificationSiteStatusTypeController extends Controller
         $type = $this->typeService->update($id, $request->toDTO());
 
         return Json::item(
-            ProjectNotificationSiteStatusTypePresenter::single($type),
+            ProjectNotificationSiteStatusTypePresenter::withKeys($type),
             message: 'Site status type updated successfully',
         );
     }

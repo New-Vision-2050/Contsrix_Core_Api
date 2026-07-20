@@ -23,6 +23,7 @@ use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReas
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason;
 use Modules\Project\ProjectManagement\Repositories\ProjectNotificationRepository;
+use Modules\Project\ProjectManagement\Services\ProjectNotificationService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
@@ -31,6 +32,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
     public function __construct(
         private readonly EmployeeTaskLifecycleService $lifecycleService,
         private readonly ProjectNotificationRepository $notificationRepository,
+        private readonly ProjectNotificationService $notificationService,
     ) {}
 
     public function handle(EmployeeTaskLifecycleProcessCompleted $event): void
@@ -178,8 +180,21 @@ final class ExecuteLifecycleActionOnProcessCompleted
             return;
         }
 
+        $siteStatusTypeId = $update['site_status_type_id'] ?? null;
+        $siteStatusTypeValues = $update['site_status_type_values'] ?? null;
+        unset($update['site_status_type_values']);
+
         $this->notificationRepository->update($notification->id, $update);
         $this->moveStagedFilesToAttachments($notification, $metadata['files'] ?? []);
+
+        if ($siteStatusTypeId !== null || $siteStatusTypeValues !== null) {
+            $notification = $notification->fresh();
+            $this->notificationService->syncSiteStatusValuesPublic(
+                $notification,
+                $siteStatusTypeId,
+                $siteStatusTypeValues,
+            );
+        }
     }
 
     private function applyProjectNotificationSiteStatusUpdate(

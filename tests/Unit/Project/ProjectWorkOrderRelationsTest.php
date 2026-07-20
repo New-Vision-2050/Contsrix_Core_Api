@@ -9,18 +9,18 @@ use Tests\TestCase;
 
 class ProjectOrderPermitRelationsTest extends TestCase
 {
-    public function test_order_permit_has_departments_relation(): void
+    public function test_order_permit_has_department_relation(): void
     {
         $model = new OrderPermit();
 
-        $this->assertTrue(method_exists($model, 'departments'));
+        $this->assertTrue(method_exists($model, 'department'));
     }
 
-    public function test_order_permit_department_belongs_to_order_permit_relation(): void
+    public function test_order_permit_department_has_order_permits_relation(): void
     {
         $model = new OrderPermitDepartment();
 
-        $this->assertTrue(method_exists($model, 'orderPermit'));
+        $this->assertTrue(method_exists($model, 'orderPermits'));
     }
 
     public function test_project_management_has_order_permits_relation(): void

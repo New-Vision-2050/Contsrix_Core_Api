@@ -6,7 +6,8 @@ namespace Modules\Project\ProjectType\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectContractor;
+use Modules\Project\ProjectManagement\Models\ProjectManagement as ProjectModel;
 use Modules\Country\Models\State;
 use Modules\Project\ProjectManagement\Models\Contractor;
 
@@ -16,6 +17,8 @@ class ProjectOrderPermit extends Model
 
     protected $fillable = [
         'project_id',
+        'project_management_id',
+        'projects_district_id',
         'order_permit_id',
         'order_permit_department_id',
         'contractor_id',
@@ -56,7 +59,17 @@ class ProjectOrderPermit extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(ProjectManagement::class, 'project_id');
+        return $this->belongsTo(ProjectModel::class, 'project_id');
+    }
+
+    public function projectManagement(): BelongsTo
+    {
+        return $this->belongsTo(ProjectManagement::class, 'project_management_id');
+    }
+
+    public function projectDistrict(): BelongsTo
+    {
+        return $this->belongsTo(ProjectDistrict::class, 'projects_district_id');
     }
 
     public function orderPermit(): BelongsTo
@@ -71,7 +84,7 @@ class ProjectOrderPermit extends Model
 
     public function contractor(): BelongsTo
     {
-        return $this->belongsTo(Contractor::class, 'contractor_id');
+        return $this->belongsTo(ProjectContractor::class, 'contractor_id');
     }
 
     public function state(): BelongsTo

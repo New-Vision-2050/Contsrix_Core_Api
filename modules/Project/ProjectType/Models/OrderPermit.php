@@ -6,26 +6,28 @@ namespace Modules\Project\ProjectType\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrderPermit extends Model
 {
     protected $table = 'order_permit';
 
     protected $fillable = [
-        'project_type_id',
         'code',
         'description',
         'type',
+        'uds_period',
+        'order_permit_department_id',
+        'order_permit_type_id',
     ];
 
-    public function projectType(): BelongsTo
+    public function department(): BelongsTo
     {
-        return $this->belongsTo(ProjectType::class, 'project_type_id');
+        return $this->belongsTo(OrderPermitDepartment::class, 'order_permit_department_id');
     }
 
-    public function departments(): HasMany
+    public function orderPermitType(): BelongsTo
     {
-        return $this->hasMany(OrderPermitDepartment::class, 'order_permit_id');
+        return $this->belongsTo(OrderPermitType::class, 'order_permit_type_id');
     }
+
 }

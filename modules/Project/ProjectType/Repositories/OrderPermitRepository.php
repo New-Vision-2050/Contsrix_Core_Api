@@ -19,9 +19,14 @@ class OrderPermitRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function listByProjectTypeId(): Collection
+    public function list(array $conditions = [], string $orderBy = 'id', string $sortBy = 'asc'): Collection
     {
-        return $this->model->get();
+        $query = $this->model->with(['department', 'orderPermitType']);
 
+        foreach ($conditions as $column => $value) {
+            $query->where($column, $value);
+        }
+
+        return $query->orderBy($orderBy, $sortBy)->get();
     }
 }

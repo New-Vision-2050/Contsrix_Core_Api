@@ -9,17 +9,21 @@ use Illuminate\Support\Facades\DB;
 
 class PhoneEmailConsistencyRule implements Rule
 {
-    private string $email;
+    private ?string $email;
 
-    public function __construct(string $email)
+    public function __construct(?string $email = null)
     {
         $this->email = $email;
     }
 
     public function passes($attribute, $value): bool
     {
+        if (!$value) {
+            return true;
+        }
+
         $phone = str_replace(" ", "", $value);
-        $userEmail = DB::table('company_users')->where('email', $this->email)->first();
+        $userEmail = $this->email ? DB::table('company_users')->where('email', $this->email)->first() : null;
         $userPhones = DB::table('users')->where('phone', $phone)->get();
 
         // If email is not found, phone should also not exist

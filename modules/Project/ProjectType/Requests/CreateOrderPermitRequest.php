@@ -16,10 +16,12 @@ class CreateOrderPermitRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_type_id' => ['required', 'integer', 'exists:project_types,id'],
-            'code'            => ['nullable', 'string', 'max:255'],
-            'description'     => ['nullable', 'string', 'max:255'],
-            'type'            => ['nullable', 'string', 'max:255'],
+            'code'                        => ['nullable', 'string', 'max:255'],
+            'description'                 => ['nullable', 'string', 'max:255'],
+            'type'                        => ['nullable', 'string', 'max:255'],
+            'uds_period'                  => ['nullable', 'numeric'],
+            'order_permit_department_id'  => ['nullable', 'integer', 'exists:order_permit_department,id'],
+            'order_permit_type_id'        => ['nullable', 'integer', 'exists:order_permit_types,id'],
         ];
     }
 }

@@ -1,0 +1,57 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Project\ProjectType\Controllers;
+
+use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Modules\Project\ProjectType\Presenters\ProjectDistrictPresenter;
+use Modules\Project\ProjectType\Requests\CreateProjectDistrictRequest;
+use Modules\Project\ProjectType\Requests\UpdateProjectDistrictRequest;
+use Modules\Project\ProjectType\Services\ProjectDistrictService;
+
+class ProjectDistrictController extends Controller
+{
+    public function __construct(
+        private readonly ProjectDistrictService $service
+    ) {
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $items = $this->service->list();
+
+        return Json::items(ProjectDistrictPresenter::collection($items));
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $item = $this->service->get($id);
+
+        return Json::item((new ProjectDistrictPresenter($item))->getData());
+    }
+
+    public function store(CreateProjectDistrictRequest $request): JsonResponse
+    {
+        $item = $this->service->create($request->validated());
+
+        return Json::item((new ProjectDistrictPresenter($item))->getData());
+    }
+
+    public function update(UpdateProjectDistrictRequest $request, int $id): JsonResponse
+    {
+        $item = $this->service->update($id, $request->validated());
+
+        return Json::item((new ProjectDistrictPresenter($item))->getData());
+    }
+
+    public function delete(int $id): JsonResponse
+    {
+        $this->service->delete($id);
+
+        return Json::deleted();
+    }
+}
