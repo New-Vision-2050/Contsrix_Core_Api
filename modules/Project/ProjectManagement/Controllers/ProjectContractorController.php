@@ -24,7 +24,7 @@ class ProjectContractorController extends Controller
     {
         $projectId = $request->route('project');
 
-        $query = ProjectContractor::query()->where('is_active', true);
+        $query = ProjectContractor::query()->with(['country', 'representatives'])->where('is_active', true);
 
         if ($projectId) {
             $query->where('project_id', $projectId);
