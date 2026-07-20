@@ -7,6 +7,7 @@ use Modules\Project\ProjectManagement\Controllers\ProjectEmployeeController;
 use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
 use Modules\Project\ProjectManagement\Controllers\ProjectProcedureController;
+use Modules\Project\ProjectManagement\Controllers\ProjectProcedureSettingController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
@@ -130,6 +131,15 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ->permission(Permission::PROJECT_MANAGEMENT_UPDATE());
         Route::delete('/{procedure}', [ProjectProcedureController::class, 'destroy'])
             ->permission(Permission::PROJECT_MANAGEMENT_UPDATE());
+    });
+
+    // Project-scoped Procedure Settings Routes
+    Route::prefix('{project_id}/procedure-settings')->group(function () {
+        Route::get('/', [ProjectProcedureSettingController::class, 'index']);
+        Route::post('/', [ProjectProcedureSettingController::class, 'store']);
+        Route::get('/{id}', [ProjectProcedureSettingController::class, 'show']);
+        Route::put('/{id}', [ProjectProcedureSettingController::class, 'update']);
+        Route::delete('/{id}', [ProjectProcedureSettingController::class, 'delete']);
     });
 
     // Project Notifications Routes
