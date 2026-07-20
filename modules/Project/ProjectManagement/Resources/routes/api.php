@@ -6,6 +6,7 @@ use Modules\Project\ProjectManagement\Controllers\ProjectShareController;
 use Modules\Project\ProjectManagement\Controllers\ProjectEmployeeController;
 use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
+use Modules\Project\ProjectManagement\Controllers\ProjectProcedureController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
@@ -115,6 +116,20 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::delete('/{id}', [ProjectRoleController::class, 'delete']);
         Route::post('/{id}/assign-permissions', [ProjectRoleController::class, 'assignPermissions']);
         Route::post('/{id}/sync-permissions', [ProjectRoleController::class, 'syncPermissions']);
+    });
+
+    // Project Procedures Routes
+    Route::prefix('{project}/procedures')->group(function () {
+        Route::get('/', [ProjectProcedureController::class, 'index'])
+            ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
+        Route::post('/', [ProjectProcedureController::class, 'store'])
+            ->permission(Permission::PROJECT_MANAGEMENT_UPDATE());
+        Route::get('/{procedure}', [ProjectProcedureController::class, 'show'])
+            ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
+        Route::put('/{procedure}', [ProjectProcedureController::class, 'update'])
+            ->permission(Permission::PROJECT_MANAGEMENT_UPDATE());
+        Route::delete('/{procedure}', [ProjectProcedureController::class, 'destroy'])
+            ->permission(Permission::PROJECT_MANAGEMENT_UPDATE());
     });
 
     // Project Notifications Routes

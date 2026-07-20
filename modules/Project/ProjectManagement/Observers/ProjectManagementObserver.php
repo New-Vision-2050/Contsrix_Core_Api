@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Observers;
 
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Models\ProjectRole;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectPermission;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ProjectManagementObserver
 {
@@ -50,6 +52,39 @@ class ProjectManagementObserver
         // Update the folder name if project name changed
         if ($project->wasChanged('name')) {
             $this->updateProjectFolder($project);
+        }
+    }
+
+    /**
+     * Handle the ProjectManagement "deleting" event.
+     */
+    public function deleting(ProjectManagement $project): void
+    {
+        if (! Schema::hasTable('project_procedure_settings') || ! Schema::hasTable('procedure_settings')) {
+            return;
+        }
+
+        $procedureSettingIds = DB::table('project_procedure_settings')
+            ->where('project_id', $project->id)
+            ->pluck('procedure_setting_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        foreach ($procedureSettingIds as $procedureSettingId) {
+            $linkedToAnotherProject = DB::table('project_procedure_settings')
+                ->where('procedure_setting_id', $procedureSettingId)
+                ->where('project_id', '!=', $project->id)
+                ->exists();
+
+            if ($linkedToAnotherProject) {
+                continue;
+            }
+
+            DB::table('procedure_settings')
+                ->where('id', $procedureSettingId)
+                ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
+                ->delete();
         }
     }
 
