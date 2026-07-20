@@ -26,11 +26,32 @@ class ProjectOrderPermit extends Model
         'lat',
         'long',
         'price',
+        'executing_entity',
+        'office',
+        'consultant_current_basket',
+        'consultant_assignment_date',
+        'consultant_last_procedure_code',
+        'consultant_last_procedure_date',
+        'consultant_column_155_entry_date',
+        'contractor_last_procedure_code',
+        'contractor_last_procedure_date',
+        'contractor_column_155_entry_date',
+        'material_balance_elec_contractor',
+        'contractor_work_order_status',
+        'contractor_basket',
+        'consultant_price',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'consultant_price' => 'decimal:2',
         'assigned_date' => 'date',
+        'consultant_assignment_date' => 'date',
+        'consultant_last_procedure_date' => 'date',
+        'consultant_column_155_entry_date' => 'date',
+        'contractor_last_procedure_date' => 'date',
+        'contractor_column_155_entry_date' => 'date',
+        'last_row_update_at' => 'datetime',
     ];
 
     public function project(): BelongsTo

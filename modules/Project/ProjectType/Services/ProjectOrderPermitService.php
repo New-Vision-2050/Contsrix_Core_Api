@@ -29,6 +29,20 @@ class ProjectOrderPermitService
                 'lat' => Arr::get($workOrderData, 'lat'),
                 'long' => Arr::get($workOrderData, 'long'),
                 'price' => Arr::get($workOrderData, 'price'),
+                'executing_entity' => Arr::get($workOrderData, 'executing_entity'),
+                'office' => Arr::get($workOrderData, 'office'),
+                'consultant_current_basket' => Arr::get($workOrderData, 'consultant_current_basket'),
+                'consultant_assignment_date' => Arr::get($workOrderData, 'consultant_assignment_date'),
+                'consultant_last_procedure_code' => Arr::get($workOrderData, 'consultant_last_procedure_code'),
+                'consultant_last_procedure_date' => Arr::get($workOrderData, 'consultant_last_procedure_date'),
+                'consultant_column_155_entry_date' => Arr::get($workOrderData, 'consultant_column_155_entry_date'),
+                'contractor_last_procedure_code' => Arr::get($workOrderData, 'contractor_last_procedure_code'),
+                'contractor_last_procedure_date' => Arr::get($workOrderData, 'contractor_last_procedure_date'),
+                'contractor_column_155_entry_date' => Arr::get($workOrderData, 'contractor_column_155_entry_date'),
+                'material_balance_elec_contractor' => Arr::get($workOrderData, 'material_balance_elec_contractor'),
+                'contractor_work_order_status' => Arr::get($workOrderData, 'contractor_work_order_status'),
+                'contractor_basket' => Arr::get($workOrderData, 'contractor_basket'),
+                'consultant_price' => Arr::get($workOrderData, 'consultant_price'),
             ]);
         }
 
@@ -90,8 +104,21 @@ class ProjectOrderPermitService
             'lat' => Arr::get($data, 'lat', $orderPermit->lat),
             'long' => Arr::get($data, 'long', $orderPermit->long),
             'price' => Arr::get($data, 'price', $orderPermit->price),
+            'executing_entity' => Arr::get($data, 'executing_entity', $orderPermit->executing_entity),
+            'office' => Arr::get($data, 'office', $orderPermit->office),
+            'consultant_current_basket' => Arr::get($data, 'consultant_current_basket', $orderPermit->consultant_current_basket),
+            'consultant_assignment_date' => Arr::get($data, 'consultant_assignment_date', $orderPermit->consultant_assignment_date),
+            'consultant_last_procedure_code' => Arr::get($data, 'consultant_last_procedure_code', $orderPermit->consultant_last_procedure_code),
+            'consultant_last_procedure_date' => Arr::get($data, 'consultant_last_procedure_date', $orderPermit->consultant_last_procedure_date),
+            'consultant_column_155_entry_date' => Arr::get($data, 'consultant_column_155_entry_date', $orderPermit->consultant_column_155_entry_date),
+            'contractor_last_procedure_code' => Arr::get($data, 'contractor_last_procedure_code', $orderPermit->contractor_last_procedure_code),
+            'contractor_last_procedure_date' => Arr::get($data, 'contractor_last_procedure_date', $orderPermit->contractor_last_procedure_date),
+            'contractor_column_155_entry_date' => Arr::get($data, 'contractor_column_155_entry_date', $orderPermit->contractor_column_155_entry_date),
+            'material_balance_elec_contractor' => Arr::get($data, 'material_balance_elec_contractor', $orderPermit->material_balance_elec_contractor),
+            'contractor_work_order_status' => Arr::get($data, 'contractor_work_order_status', $orderPermit->contractor_work_order_status),
+            'contractor_basket' => Arr::get($data, 'contractor_basket', $orderPermit->contractor_basket),
+            'consultant_price' => Arr::get($data, 'consultant_price', $orderPermit->consultant_price),
         ]);
-
         return $orderPermit->fresh(['orderPermit', 'department', 'contractor', 'state']);
     }
 
