@@ -9,8 +9,12 @@ use Illuminate\Support\Str;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureJobAttribute;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\RoleAndPermission\Enums\Permission;
@@ -53,9 +57,18 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             ->assertOk();
 
         $procedureId = $createResponse->json('payload.id');
+        $childProcedure = ProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->whereKey($procedureId)
+            ->firstOrFail();
+        $workFlowId = $childProcedure->work_flow_id;
+        $parentId = $childProcedure->parent_id;
 
         $this->assertNotEmpty($procedureId);
+        $this->assertNotEmpty($parentId);
+        $this->assertContains(ProjectProcedureService::PROCEDURE_TYPE, ProcedureSettingType::values());
         $this->assertSame('Document Approval', $createResponse->json('payload.name'));
+        $this->assertSame($parentId, $createResponse->json('payload.parent_id'));
         $this->assertSame($lookups['receiver_company']->id, $createResponse->json('payload.receiver_company.id'));
         $this->assertSame($lookups['attachment_type']->id, $createResponse->json('payload.attachment_type.id'));
         $this->assertSame($lookups['attachment_sub_type']->id, $createResponse->json('payload.attachment_sub_type.id'));
@@ -76,6 +89,23 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             'name' => 'Document Approval',
             'type' => ProjectProcedureService::PROCEDURE_TYPE,
             'is_active' => 1,
+            'work_flow_id' => $workFlowId,
+            'parent_id' => $parentId,
+        ]);
+
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $parentId,
+            'company_id' => $this->company->id,
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'work_flow_id' => $workFlowId,
+            'parent_id' => null,
+        ]);
+
+        $this->assertDatabaseHas('work_flows', [
+            'id' => $workFlowId,
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
         ]);
 
         $this->assertDatabaseHas('project_procedure_settings', [
@@ -106,8 +136,16 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             ->getJson("/api/v1/projects/{$project->id}/internal-procedures")
             ->assertOk()
             ->assertJsonPath('payload.0.id', $procedureId)
+            ->assertJsonPath('payload.0.parent_id', $parentId)
             ->assertJsonPath('payload.0.attachment_type.id', $lookups['attachment_type']->id)
             ->assertJsonPath('payload.0.receiver_company.id', $lookups['receiver_company']->id);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/procedure-settings/{$parentId}/internal-procedures")
+            ->assertOk()
+            ->assertJsonPath('payload.0.id', $procedureId)
+            ->assertJsonPath('payload.0.parent_id', $parentId);
 
         $updatedAttachmentType = $this->createFolder($project, 'Updated Project Docs');
         $updatedReceiverCompany = $this->createCompany([
@@ -156,6 +194,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             ->getJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}")
             ->assertOk()
             ->assertJsonPath('payload.id', $procedureId)
+            ->assertJsonPath('payload.parent_id', $parentId)
             ->assertJsonPath('payload.procedure_setting.type', ProjectProcedureService::PROCEDURE_TYPE);
 
         $this->actingAs($this->actor, 'api')
@@ -168,6 +207,119 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         ]);
 
         $this->assertDatabaseMissing('project_procedure_settings', [
+            'procedure_setting_id' => $procedureId,
+        ]);
+    }
+
+    public function test_project_internal_procedure_routes_ignore_metadata_linked_to_global_workflow(): void
+    {
+        $project = $this->createProject();
+
+        $globalWorkFlow = WorkFlow::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => null,
+            'name' => 'global_project_procedure_'.Str::lower(Str::random(6)),
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+        ]);
+
+        $globalParent = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Global Project Procedure Parent',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'work_flow_id' => $globalWorkFlow->id,
+            'sort_order' => 1,
+        ]);
+
+        $globalChild = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Global Linked Internal Procedure',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'work_flow_id' => $globalWorkFlow->id,
+            'parent_id' => $globalParent->id,
+            'sort_order' => 2,
+        ]);
+
+        ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'procedure_setting_id' => $globalChild->id,
+        ]);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/internal-procedures")
+            ->assertOk();
+
+        $ids = collect($response->json('payload'))->pluck('id')->all();
+        $this->assertNotContains($globalChild->id, $ids);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/internal-procedures/{$globalChild->id}")
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->putJson("/api/v1/projects/{$project->id}/internal-procedures/{$globalChild->id}", [
+                'name' => 'Should Not Update Global Linked Procedure',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->deleteJson("/api/v1/projects/{$project->id}/internal-procedures/{$globalChild->id}")
+            ->assertNotFound();
+
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $globalChild->id,
+            'name' => 'Global Linked Internal Procedure',
+            'work_flow_id' => $globalWorkFlow->id,
+            'parent_id' => $globalParent->id,
+        ]);
+    }
+
+    public function test_nested_project_internal_procedure_store_uses_parent_workflow(): void
+    {
+        $project = $this->createProject();
+
+        $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'name' => 'explicit_project_procedure_'.Str::lower(Str::random(6)),
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+        ]);
+
+        $parent = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Explicit Parent',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'work_flow_id' => $workFlow->id,
+            'sort_order' => 1,
+        ]);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/projects/{$project->id}/procedure-settings/{$parent->id}/internal-procedures", [
+                'name' => 'Nested Internal Procedure',
+                'is_active' => true,
+            ])
+            ->assertOk();
+
+        $procedureId = $response->json('payload.id');
+
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $procedureId,
+            'name' => 'Nested Internal Procedure',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => $parent->id,
+        ]);
+
+        $this->assertDatabaseHas('project_procedure_settings', [
+            'project_id' => $project->id,
             'procedure_setting_id' => $procedureId,
         ]);
     }

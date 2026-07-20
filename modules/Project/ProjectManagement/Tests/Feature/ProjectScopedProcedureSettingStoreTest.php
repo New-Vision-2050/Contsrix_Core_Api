@@ -56,6 +56,38 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
         ]);
     }
 
+    public function test_project_scoped_route_accepts_project_procedure_type(): void
+    {
+        $project = $this->createProject();
+        $type = ProcedureSettingType::ProjectProcedure->value;
+        $context = $this->createProcedureSettingContext($project, $type);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/projects/{$project->id}/procedure-settings", [
+                'name' => 'Project Procedure Approval',
+                'type' => $type,
+                'execute_type' => 'sequence',
+                'work_flow_id' => $context['work_flow']->id,
+                'parent_id' => $context['parent']->id,
+            ])
+            ->assertOk();
+
+        $procedureSettingId = $response->json('payload.id');
+
+        $this->assertDatabaseHas('work_flows', [
+            'id' => $context['work_flow']->id,
+            'project_id' => $project->id,
+            'type' => $type,
+        ]);
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $procedureSettingId,
+            'type' => $type,
+            'work_flow_id' => $context['work_flow']->id,
+            'parent_id' => $context['parent']->id,
+        ]);
+    }
+
     public function test_project_scoped_route_uses_route_project_work_flow_instead_of_body_project_id(): void
     {
         $routeProject = $this->createProject();
@@ -357,9 +389,9 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
     /**
      * @return array{work_flow: WorkFlow, parent: ProcedureSetting}
      */
-    private function createProcedureSettingContext(?ProjectManagement $project = null): array
+    private function createProcedureSettingContext(?ProjectManagement $project = null, ?string $type = null): array
     {
-        $type = ProcedureSettingType::ClientRequest->value;
+        $type ??= ProcedureSettingType::ClientRequest->value;
 
         $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
             'id' => (string) Str::uuid(),

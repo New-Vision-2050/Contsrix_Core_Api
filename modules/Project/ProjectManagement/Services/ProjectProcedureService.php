@@ -7,6 +7,8 @@ namespace Modules\Project\ProjectManagement\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\ProcedureSetting\Repositories\ProcedureSettingRepository;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
@@ -23,21 +25,39 @@ class ProjectProcedureService
         private readonly ProcedureSettingRepository $procedureSettingRepository,
     ) {}
 
-    public function list(string $projectId): Collection
+    public function list(string $projectId, ?string $parentProcedureSettingId = null): Collection
     {
         $project = $this->findOwnedProjectOrFail($projectId);
 
-        return $this->repository->listForProject($project->id, self::PROCEDURE_TYPE);
+        if ($parentProcedureSettingId !== null) {
+            $this->findProjectProcedureParentOrFail($project, $parentProcedureSettingId);
+        }
+
+        return $this->repository->listForProject($project->id, self::PROCEDURE_TYPE, $parentProcedureSettingId);
     }
 
-    public function get(string $projectId, string $procedureSettingId): ProjectProcedureSetting
+    public function get(
+        string $projectId,
+        string $procedureSettingId,
+        ?string $parentProcedureSettingId = null
+    ): ProjectProcedureSetting
     {
         $project = $this->findOwnedProjectOrFail($projectId);
 
-        return $this->repository->findForProject($project->id, $procedureSettingId, self::PROCEDURE_TYPE);
+        return $this->repository->findForProject(
+            $project->id,
+            $procedureSettingId,
+            self::PROCEDURE_TYPE,
+            $parentProcedureSettingId
+        );
     }
 
-    public function create(string $projectId, array $procedureData, array $metadata): ProjectProcedureSetting
+    public function create(
+        string $projectId,
+        array $procedureData,
+        array $metadata,
+        ?string $parentProcedureSettingId = null
+    ): ProjectProcedureSetting
     {
         $project = $this->findOwnedProjectOrFail($projectId);
         $receiverCompanyId = $metadata['receiver_company_id'] ?? null;
@@ -46,9 +66,26 @@ class ProjectProcedureService
             $this->assertReceiverCompanyIsSharedWithProject($project, (string) $receiverCompanyId);
         }
 
-        return DB::transaction(function () use ($project, $procedureData, $metadata): ProjectProcedureSetting {
+        return DB::transaction(function () use (
+            $project,
+            $procedureData,
+            $metadata,
+            $parentProcedureSettingId
+        ): ProjectProcedureSetting {
+            if ($parentProcedureSettingId !== null) {
+                $parent = $this->findProjectProcedureParentOrFail($project, $parentProcedureSettingId);
+                $workFlowId = $parent->work_flow_id;
+            } else {
+                $workFlow = $this->projectWorkFlow($project);
+                $parent = $this->projectProcedureParent($project, $workFlow);
+                $workFlowId = $workFlow->id;
+            }
+
             $procedureSetting = $this->procedureSettingRepository->createProcedureSetting(
-                $this->procedureSettingPayload($project, $procedureData)
+                array_merge($this->procedureSettingPayload($project, $procedureData), [
+                    'work_flow_id' => $workFlowId,
+                    'parent_id' => $parent->id,
+                ])
             );
 
             return $this->repository->createProjectProcedure(array_merge($metadata, [
@@ -63,10 +100,16 @@ class ProjectProcedureService
         string $projectId,
         string $procedureSettingId,
         array $procedureData,
-        array $metadata
+        array $metadata,
+        ?string $parentProcedureSettingId = null
     ): ProjectProcedureSetting {
         $project = $this->findOwnedProjectOrFail($projectId);
-        $projectProcedure = $this->repository->findForProject($project->id, $procedureSettingId, self::PROCEDURE_TYPE);
+        $projectProcedure = $this->repository->findForProject(
+            $project->id,
+            $procedureSettingId,
+            self::PROCEDURE_TYPE,
+            $parentProcedureSettingId
+        );
         $receiverCompanyId = $metadata['receiver_company_id'] ?? null;
 
         if ($receiverCompanyId) {
@@ -89,10 +132,19 @@ class ProjectProcedureService
         });
     }
 
-    public function delete(string $projectId, string $procedureSettingId): void
+    public function delete(
+        string $projectId,
+        string $procedureSettingId,
+        ?string $parentProcedureSettingId = null
+    ): void
     {
         $project = $this->findOwnedProjectOrFail($projectId);
-        $projectProcedure = $this->repository->findForProject($project->id, $procedureSettingId, self::PROCEDURE_TYPE);
+        $projectProcedure = $this->repository->findForProject(
+            $project->id,
+            $procedureSettingId,
+            self::PROCEDURE_TYPE,
+            $parentProcedureSettingId
+        );
 
         DB::transaction(function () use ($projectProcedure): void {
             $this->procedureSettingRepository->deleteProcedureSetting(
@@ -107,6 +159,88 @@ class ProjectProcedureService
             ->where('id', $projectId)
             ->where('company_id', tenant('id'))
             ->firstOrFail();
+    }
+
+    private function projectWorkFlow(ProjectManagement $project): WorkFlow
+    {
+        $query = WorkFlow::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', $project->company_id)
+            ->where('project_id', $project->id)
+            ->where('type', self::PROCEDURE_TYPE);
+
+        $existing = (clone $query)
+            ->where('name', $this->projectWorkFlowName($project))
+            ->first();
+
+        if ($existing instanceof WorkFlow) {
+            return $existing;
+        }
+
+        $existing = $query->orderBy('created_at')->orderBy('id')->first();
+
+        if ($existing instanceof WorkFlow) {
+            return $existing;
+        }
+
+        return WorkFlow::query()
+            ->withoutGlobalScopes()
+            ->create([
+                'company_id' => $project->company_id,
+                'project_id' => $project->id,
+                'name' => $this->projectWorkFlowName($project),
+                'type' => self::PROCEDURE_TYPE,
+            ]);
+    }
+
+    private function projectProcedureParent(ProjectManagement $project, WorkFlow $workFlow): ProcedureSetting
+    {
+        $existing = ProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', $project->company_id)
+            ->where('work_flow_id', $workFlow->id)
+            ->where('type', self::PROCEDURE_TYPE)
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->orderBy('created_at')
+            ->first();
+
+        if ($existing instanceof ProcedureSetting) {
+            return $existing;
+        }
+
+        return $this->procedureSettingRepository->createProcedureSetting([
+            'company_id' => $project->company_id,
+            'name' => 'Project Procedures',
+            'type' => self::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'is_active' => true,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => null,
+        ]);
+    }
+
+    private function findProjectProcedureParentOrFail(
+        ProjectManagement $project,
+        string $parentProcedureSettingId
+    ): ProcedureSetting {
+        return ProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->where('id', $parentProcedureSettingId)
+            ->where('company_id', $project->company_id)
+            ->where('type', self::PROCEDURE_TYPE)
+            ->whereNull('parent_id')
+            ->whereHas('workFlow', static function ($query) use ($project): void {
+                $query->where('company_id', $project->company_id)
+                    ->where('project_id', $project->id)
+                    ->where('type', self::PROCEDURE_TYPE);
+            })
+            ->firstOrFail();
+    }
+
+    private function projectWorkFlowName(ProjectManagement $project): string
+    {
+        return 'project_'.$project->id;
     }
 
     private function assertReceiverCompanyIsSharedWithProject(ProjectManagement $project, string $receiverCompanyId): void
