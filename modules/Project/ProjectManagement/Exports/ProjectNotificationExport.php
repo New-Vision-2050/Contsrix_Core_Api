@@ -17,7 +17,7 @@ class ProjectNotificationExport extends BaseExport
     public function collection()
     {
         $query = ProjectNotification::filter($this->filters)
-            ->with(['project']);
+            ->with(['project', 'contractorRepresentative']);
 
         $statusFilter = $this->filters['status'] ?? null;
         if (! is_string($statusFilter) || ! str_contains($statusFilter, 'draft')) {
@@ -51,7 +51,7 @@ class ProjectNotificationExport extends BaseExport
             'Contractor Name',
             'Contractor Number',
             'Feeder Number',
-            'Contractor Technical Name',
+            'Contractor Representative',
             'Assigned Engineer',
             'Project',
             'Status',
@@ -72,7 +72,7 @@ class ProjectNotificationExport extends BaseExport
             $row->contractor_name,
             $row->contractor_number,
             $row->feeder_number,
-            $row->contractor_technical_name,
+            $row->contractorRepresentative?->name,
             $row->assigned_user?->name,
             $row->project?->name,
             $row->status,
