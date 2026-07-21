@@ -98,7 +98,7 @@ class ProjectOrderPermitController extends Controller
     }
 
     public function importExcel(Request $request): JsonResponse
-    {dd($request);
+    {
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls,csv',
         ]);
