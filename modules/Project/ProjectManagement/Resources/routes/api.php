@@ -11,6 +11,7 @@ use Modules\Project\ProjectManagement\Controllers\ProjectProcedureSettingControl
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
+use Modules\Project\ProjectManagement\Controllers\ProjectProcedureSettingStepController;
 use Modules\Project\ProjectManagement\Controllers\ContractorController;
 use Modules\Project\ProjectManagement\Controllers\ProjectContractorController;
 use Modules\Project\ProjectType\Controllers\ProjectOrderPermitController;
@@ -140,6 +141,12 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::get('/{id}', [ProjectProcedureSettingController::class, 'show']);
         Route::put('/{id}', [ProjectProcedureSettingController::class, 'update']);
         Route::delete('/{id}', [ProjectProcedureSettingController::class, 'delete']);
+
+        Route::get('/{procedureSettingId}/steps', [ProjectProcedureSettingStepController::class, 'index']);
+        Route::post('/{procedureSettingId}/steps', [ProjectProcedureSettingStepController::class, 'store']);
+        Route::get('/{procedureSettingId}/steps/{stepId}', [ProjectProcedureSettingStepController::class, 'show']);
+        Route::put('/{procedureSettingId}/steps/{stepId}', [ProjectProcedureSettingStepController::class, 'update']);
+        Route::delete('/{procedureSettingId}/steps/{stepId}', [ProjectProcedureSettingStepController::class, 'delete']);
     });
 
     // Project Notifications Routes
