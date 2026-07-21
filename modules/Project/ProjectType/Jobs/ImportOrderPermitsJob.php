@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Project\ProjectManagement\Models\ProjectContractor;
-use Modules\Project\ProjectType\Models\OrderPermit;
+use Modules\Project\ProjectType\Models\OrderPermitDepartment;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Illuminate\Support\Facades\Storage;
 
@@ -67,14 +67,14 @@ class ImportOrderPermitsJob implements ShouldQueue
         }
         $workOrderNumbers = array_keys($workOrderNumbers);
 
+        // تحميل العلاقات المطلوبة: contractor, orderPermit, department
         $existingOrders = ProjectOrderPermit::whereIn('name', $workOrderNumbers)
-            ->with(['contractor', 'orderPermit'])
+            ->with(['contractor', 'orderPermit', 'department'])
             ->get()
             ->keyBy('name');
 
-        $contractorUpdates = []; // [contractor_id => name]
         $updates = [];
-        $logMessages = [];
+        $logMessages = []; // [orderId => [رسالة1, رسالة2]]
 
         foreach ($rows as $index => $row) {
             $workOrderNumber = trim((string)($row[34] ?? ''));
@@ -86,24 +86,6 @@ class ImportOrderPermitsJob implements ShouldQueue
             $order = $existingOrders[$workOrderNumber];
             $orderId = $order->id;
 
-            $akValue = $this->value($row, 36);
-            if ($akValue !== null) {
-                $contractor = $order->contractor;
-                if ($contractor) {
-                    $currentName = $contractor->name;
-                    if (empty($currentName)) {
-                        $contractorUpdates[$contractor->id] = $akValue;
-                    } elseif ($currentName !== $akValue) {
-                        $msg = "Contractor name mismatch: DB='{$currentName}', Excel='{$akValue}'";
-                        Log::warning("Order {$workOrderNumber}: {$msg}");
-                        $logMessages[$orderId][] = $msg;
-                    }
-                } else {
-                    $msg = "No contractor linked, cannot set name from Excel.";
-                    Log::warning("Order {$workOrderNumber}: {$msg}");
-                    $logMessages[$orderId][] = $msg;
-                }
-            }
 
             $orderPermit = $order->orderPermit;
             if (!$orderPermit) continue;
@@ -113,6 +95,62 @@ class ImportOrderPermitsJob implements ShouldQueue
             if (!$isContractor && !$isConsultant) continue;
 
             if (!isset($updates[$orderId])) $updates[$orderId] = [];
+
+                       if ($isContractor) {
+                $akValue = $this->value($row, 36);
+                $currentContractor = $order->contractor;
+
+                if ($akValue !== null) {
+                    if ($currentContractor) {
+                        $currentName = $currentContractor->name;
+                        if ($currentName !== $akValue) {
+                            $newContractor = ProjectContractor::where('name', $akValue)->first();
+                            if ($newContractor) {
+                                $updates[$orderId]['contractor_id'] = $newContractor->id;
+                                $updates[$orderId]['import_log'] = null;
+                                Log::info("Order {$workOrderNumber}: contractor changed to '{$akValue}'");
+                            } else {
+                                $msg = "[".Carbon::now()->toDateTimeString()."] Contractor name '{$akValue}' not found; kept '{$currentName}'.";
+                                Log::warning($msg);
+                                $logMessages[$orderId] = [$msg]; // استبدال القديم
+                            }
+                        }
+                    } else {
+                        $newContractor = ProjectContractor::where('name', $akValue)->first();
+                        if ($newContractor) {
+                            $updates[$orderId]['contractor_id'] = $newContractor->id;
+                            $updates[$orderId]['import_log'] = null;
+                            Log::info("Order {$workOrderNumber}: assigned contractor '{$akValue}'");
+                        } else {
+                            $msg = "[".Carbon::now()->toDateTimeString()."] No contractor with name '{$akValue}' found.";
+                            Log::warning($msg);
+                            $logMessages[$orderId] = [$msg];
+                        }
+                    }
+                }
+            }
+
+            $departmentName = $this->value($row, 37);
+            if ($departmentName !== null) {
+                $currentDepartment = $order->department;
+                $currentDeptName = $currentDepartment?->name;
+
+                if ($currentDeptName !== $departmentName) {
+                    $newDepartment = OrderPermitDepartment::where('name', $departmentName)->first();
+                    if ($newDepartment) {
+                        $updates[$orderId]['order_permit_department_id'] = $newDepartment->id;
+                        if (!array_key_exists('import_log', $updates[$orderId]) || $updates[$orderId]['import_log'] !== null) {
+                            $updates[$orderId]['import_log'] = null;
+                        }
+                        Log::info("Order {$workOrderNumber}: department updated to '{$departmentName}'");
+                    } else {
+                        $msg = "[".Carbon::now()->toDateTimeString()."] Department '{$departmentName}' not found; kept '{$currentDeptName}'.";
+                        Log::warning($msg);
+                        $logMessages[$orderId][] = $msg;
+                    }
+                }
+            }
+
 
             if ($isContractor) {
                 $updates[$orderId]['executing_entity'] = $this->value($row, 27);
@@ -125,10 +163,12 @@ class ImportOrderPermitsJob implements ShouldQueue
                 $updates[$orderId]['contractor_work_order_status'] = $this->value($row, 6);
             } else {
                 $updates[$orderId]['consultant_current_basket'] = $this->value($row, 16);
+                $updates[$orderId]['assigned_date'] = $this->parseDate($row, 25);
                 $updates[$orderId]['consultant_assignment_date'] = $this->parseDate($row, 25);
                 $updates[$orderId]['consultant_last_procedure_code'] = $this->value($row, 30);
                 $updates[$orderId]['consultant_last_procedure_date'] = $this->parseDate($row, 28);
                 $updates[$orderId]['consultant_column_155_entry_date'] = $this->parseDate($row, 24);
+                $updates[$orderId]['price'] = $this->parseFloat($row, 12);
                 $updates[$orderId]['consultant_price'] = $this->parseFloat($row, 12);
             }
 
@@ -143,22 +183,13 @@ class ImportOrderPermitsJob implements ShouldQueue
             }
         }
 
-        foreach ($contractorUpdates as $contractorId => $newName) {
-            ProjectContractor::where('id', $contractorId)->update(['name' => $newName]);
-            Log::info("Updated contractor name for ID {$contractorId} to '{$newName}'");
-        }
-
         $updatedCount = 0;
         foreach ($updates as $orderId => $fields) {
             if (empty($fields)) continue;
             $fields['last_row_update_at'] = Carbon::now();
 
-            if (isset($logMessages[$orderId])) {
-                $newLog = implode("\n", $logMessages[$orderId]);
-                $existingLog = ProjectOrderPermit::where('id', $orderId)->value('import_log');
-                $fields['import_log'] = $existingLog
-                    ? $existingLog . "\n" . $newLog
-                    : $newLog;
+            if (isset($logMessages[$orderId]) && !array_key_exists('import_log', $fields)) {
+                $fields['import_log'] = implode("\n", $logMessages[$orderId]);
             }
 
             ProjectOrderPermit::where('id', $orderId)->update($fields);
