@@ -248,6 +248,11 @@ class ProjectManagement extends Model
         return $this->hasMany(ProjectProcedureSetting::class, 'project_id')->withoutGlobalScopes();
     }
 
+    public function requirements(): HasMany
+    {
+        return $this->hasMany(ProjectRequirement::class, 'project_id')->withoutGlobalScopes();
+    }
+
     protected static function newFactory(): ProjectManagementFactory
     {
         return ProjectManagementFactory::new();

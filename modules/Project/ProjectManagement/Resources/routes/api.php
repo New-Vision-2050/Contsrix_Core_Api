@@ -8,6 +8,7 @@ use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
 use Modules\Project\ProjectManagement\Controllers\ProjectProcedureController;
 use Modules\Project\ProjectManagement\Controllers\ProjectProcedureSettingController;
+use Modules\Project\ProjectManagement\Controllers\ProjectRequirementController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
@@ -118,6 +119,20 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::delete('/{id}', [ProjectRoleController::class, 'delete']);
         Route::post('/{id}/assign-permissions', [ProjectRoleController::class, 'assignPermissions']);
         Route::post('/{id}/sync-permissions', [ProjectRoleController::class, 'syncPermissions']);
+    });
+
+    // Project Requirements Routes
+    Route::prefix('{project}/requirements')->group(function () {
+        Route::get('/', [ProjectRequirementController::class, 'index'])
+            ->permission(Permission::PROJECT_REQUIREMENT_LIST());
+        Route::post('/', [ProjectRequirementController::class, 'store'])
+            ->permission(Permission::PROJECT_REQUIREMENT_CREATE());
+        Route::get('/{requirement}', [ProjectRequirementController::class, 'show'])
+            ->permission(Permission::PROJECT_REQUIREMENT_VIEW());
+        Route::put('/{requirement}', [ProjectRequirementController::class, 'update'])
+            ->permission(Permission::PROJECT_REQUIREMENT_UPDATE());
+        Route::delete('/{requirement}', [ProjectRequirementController::class, 'destroy'])
+            ->permission(Permission::PROJECT_REQUIREMENT_DELETE());
     });
 
     // Project Internal Procedures Routes
