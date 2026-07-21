@@ -17,12 +17,12 @@ class NotificationCountService
         $companyId = tenant('id');
 
         // Count pending attachment requests (incoming)
-        $pendingAttachmentRequests = AttachmentRequest::where('receiver_company_id', $companyId)
+        $pendingAttachmentRequests = AttachmentRequest::forReceiverCompany($companyId)
             ->where('status', 'pending')
             ->count();
 
         // Count semi-approved attachment requests (partial approval)
-        $semiApprovedAttachmentRequests = AttachmentRequest::where('receiver_company_id', $companyId)
+        $semiApprovedAttachmentRequests = AttachmentRequest::forReceiverCompany($companyId)
             ->where('status', 'semi-approved')
             ->count();
 
@@ -60,9 +60,9 @@ class NotificationCountService
         $companyId = tenant('id');
 
         // Get pending attachment requests
-        $attachmentRequests = AttachmentRequest::where('receiver_company_id', $companyId)
+        $attachmentRequests = AttachmentRequest::forReceiverCompany($companyId)
             ->whereIn('status', ['pending', 'semi-approved'])
-            ->with(['senderCompany', 'project', 'createdByUser'])
+            ->with(['senderCompany', 'project', 'createdByUser', 'projectProcedureSetting.receiverCompany'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get()
