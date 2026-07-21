@@ -68,7 +68,7 @@ class ImportOrderPermitsJob implements ShouldQueue
         $workOrderNumbers = array_keys($workOrderNumbers);
 
         $existingOrders = ProjectOrderPermit::whereIn('name', $workOrderNumbers)
-            ->with(['contractor', 'orderPermit'])
+            ->with(['contractor', 'orderPermit.orderPermitType'])
             ->get()
             ->keyBy('name');
 

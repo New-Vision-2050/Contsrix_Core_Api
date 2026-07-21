@@ -57,7 +57,7 @@ class ProjectOrderPermitService
 
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
+            ->with(['orderPermit.orderPermitType', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -68,7 +68,7 @@ class ProjectOrderPermitService
 
         return ProjectOrderPermit::query()
             ->whereIn('project_id', $projectIds)
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
+            ->with(['orderPermit.orderPermitType', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -81,7 +81,7 @@ class ProjectOrderPermitService
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->where('id', $id)
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
+            ->with(['orderPermit.orderPermitType', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->firstOrFail();
     }
 
@@ -125,7 +125,7 @@ class ProjectOrderPermitService
         ]);
 
 
-        return $orderPermit->fresh(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict']);
+        return $orderPermit->fresh(['orderPermit.orderPermitType', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict']);
     }
 
 
