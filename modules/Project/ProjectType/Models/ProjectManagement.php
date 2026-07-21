@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectType\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Project\ProjectManagement\Models\ProjectManagement as ProjectModel;
 
 class ProjectManagement extends Model
@@ -22,7 +23,10 @@ class ProjectManagement extends Model
     {
         return $this->belongsTo(ProjectModel::class, 'project_id');
     }
-
+    public function udsExcelSheet(): HasOne
+    {
+        return $this->hasOne(UdsExcelSheet::class, 'project_id');
+    }
     public function projectOrderPermits(): HasMany
     {
         return $this->hasMany(ProjectOrderPermit::class, 'project_management_id');
