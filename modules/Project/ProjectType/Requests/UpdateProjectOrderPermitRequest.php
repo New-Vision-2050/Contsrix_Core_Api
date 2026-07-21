@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectType\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 
 class UpdateProjectOrderPermitRequest extends FormRequest
 {
@@ -21,7 +22,7 @@ class UpdateProjectOrderPermitRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
             'assigned_date' => ['nullable', 'date'],
-            'order_permit_id' => ['nullable', 'integer', 'exists:order_permit,id'],
+            'order_permit_id' => ['sometimes', 'required', 'integer', 'exists:order_permit,id'],
             'order_permit_department_id' => ['nullable', 'integer', 'exists:order_permit_department,id'],
             'contractor_id' => ['nullable', 'string', 'exists:project_contractors,id'],
             'state_id' => ['nullable', 'string', 'exists:states,id'],
@@ -43,5 +44,43 @@ class UpdateProjectOrderPermitRequest extends FormRequest
             'contractor_basket' => ['sometimes', 'nullable', 'string', 'max:255'],
             'consultant_price' => ['sometimes', 'nullable', 'numeric'],
         ];
+    }
+
+    /**
+     * تخصيص رسائل الخطأ.
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'رقم أمر العمل مطلوب.',
+            'order_permit_id.required' => 'نوع أمر العمل مطلوب.',
+            'order_permit_id.exists' => 'نوع أمر العمل غير موجود.',
+        ];
+    }
+
+    /**
+     * إضافة تحقق مخصص بعد التحقق الأساسي للتأكد من عدم تكرار name + order_permit_id
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $name = $this->input('name');
+            $orderPermitId = $this->input('order_permit_id');
+            $currentId = $this->route('id'); // لأن مسار التحديث هو {project}/order-permits/{id}
+
+            if ($name && $orderPermitId) {
+                $exists = ProjectOrderPermit::where('name', $name)
+                    ->where('order_permit_id', $orderPermitId)
+                    ->where('id', '!=', $currentId)
+                    ->exists();
+
+                if ($exists) {
+                    $validator->errors()->add(
+                        'name',
+                        "يوجد أمر عمل بنفس الرقم '{$name}' ونوع الأمر '{$orderPermitId}' بالفعل."
+                    );
+                }
+            }
+        });
     }
 }
