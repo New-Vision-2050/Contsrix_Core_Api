@@ -28,6 +28,20 @@ class UpdateProjectOrderPermitRequest extends FormRequest
             'lat' => ['nullable', 'numeric'],
             'long' => ['nullable', 'numeric'],
             'price' => ['nullable', 'numeric'],
+            'executing_entity' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'office' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'consultant_current_basket' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'consultant_assignment_date' => ['sometimes', 'nullable', 'date'],
+            'consultant_last_procedure_code' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'consultant_last_procedure_date' => ['sometimes', 'nullable', 'date'],
+            'consultant_column_155_entry_date' => ['sometimes', 'nullable', 'date'],
+            'contractor_last_procedure_code' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contractor_last_procedure_date' => ['sometimes', 'nullable', 'date'],
+            'contractor_column_155_entry_date' => ['sometimes', 'nullable', 'date'],
+            'material_balance_elec_contractor' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contractor_work_order_status' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contractor_basket' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'consultant_price' => ['sometimes', 'nullable', 'numeric'],
         ];
     }
 }

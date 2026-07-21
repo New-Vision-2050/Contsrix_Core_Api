@@ -30,6 +30,20 @@ class CreateProjectOrderPermitRequest extends FormRequest
             'work_orders.*.lat' => ['nullable', 'numeric'],
             'work_orders.*.long' => ['nullable', 'numeric'],
             'work_orders.*.price' => ['nullable', 'numeric'],
+            'work_orders.*.executing_entity' => ['nullable', 'string', 'max:255'],
+            'work_orders.*.office' => ['nullable', 'string', 'max:255'],
+            'work_orders.*.consultant_current_basket' => ['nullable', 'string', 'max:255'],
+            'work_orders.*.consultant_assignment_date' => ['nullable', 'date'],
+            'work_orders.*.consultant_last_procedure_code' => ['nullable', 'string', 'max:255'],
+            'work_orders.*.consultant_last_procedure_date' => ['nullable', 'date'],
+            'work_orders.*.consultant_column_155_entry_date' => ['nullable', 'date'],
+            'work_orders.*.contractor_last_procedure_code' => ['nullable', 'string', 'max:255'],
+            'work_orders.*.contractor_last_procedure_date' => ['nullable', 'date'],
+            'work_orders.*.contractor_column_155_entry_date' => ['nullable', 'date'],
+            'work_orders.*.material_balance_elec_contractor' => ['nullable', 'string', 'max:255'],
+            'work_orders.*.contractor_work_order_status' => ['nullable', 'string', 'max:255'],
+            'work_orders.*.contractor_basket' => ['nullable', 'string', 'max:255'],
+            'work_orders.*.consultant_price' => ['nullable', 'numeric'],
         ];
     }
 }
