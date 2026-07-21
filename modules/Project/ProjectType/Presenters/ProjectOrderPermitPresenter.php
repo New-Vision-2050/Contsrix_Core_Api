@@ -31,6 +31,8 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
                 'uds_period' => $this->model->orderPermit->uds_period,
                 'order_permit_department_id' => $this->model->orderPermit->order_permit_department_id,
                 'department_name' => $this->model->orderPermit->department?->name,
+                'order_permit_type_id' => $this->model->orderPermit->order_permit_type_id,
+                'order_permit_type_name' => $this->model->orderPermit->orderPermitType?->name,
             ] : null,
             'order_permit_department_id' => $this->model->order_permit_department_id,
             'department_name' => $this->model->department?->name,
