@@ -60,14 +60,6 @@ class ImportOrderPermitsJob implements ShouldQueue
             'total' => $totalRows,
         ], 600);
 
-        $orderPermits = OrderPermit::all(['id', 'code', 'type']);
-        $codeToId = [];
-        $typeToId = [];
-        foreach ($orderPermits as $op) {
-            if ($op->code !== null) $codeToId[(string)$op->code] = $op->id;
-            if ($op->type !== null) $typeToId[(string)$op->type] = $op->id;
-        }
-
         $workOrderNumbers = [];
         foreach ($rows as $row) {
             $num = trim((string)($row[34] ?? ''));
@@ -76,7 +68,7 @@ class ImportOrderPermitsJob implements ShouldQueue
         $workOrderNumbers = array_keys($workOrderNumbers);
 
         $existingOrders = ProjectOrderPermit::whereIn('name', $workOrderNumbers)
-            ->with('contractor')
+            ->with(['contractor', 'orderPermit'])
             ->get()
             ->keyBy('name');
 
@@ -113,8 +105,11 @@ class ImportOrderPermitsJob implements ShouldQueue
                 }
             }
 
-            $isContractor = isset($codeToId[$typeCode]);
-            $isConsultant = isset($typeToId[$typeCode]);
+            $orderPermit = $order->orderPermit;
+            if (!$orderPermit) continue;
+
+            $isContractor = $orderPermit->code !== null && (string)$orderPermit->code === $typeCode;
+            $isConsultant = $orderPermit->type !== null && (string)$orderPermit->type === $typeCode;
             if (!$isContractor && !$isConsultant) continue;
 
             if (!isset($updates[$orderId])) $updates[$orderId] = [];
