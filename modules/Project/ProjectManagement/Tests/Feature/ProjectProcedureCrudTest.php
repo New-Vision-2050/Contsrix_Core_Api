@@ -140,13 +140,6 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.0.attachment_type.id', $lookups['attachment_type']->id)
             ->assertJsonPath('payload.0.receiver_company.id', $lookups['receiver_company']->id);
 
-        $this->actingAs($this->actor, 'api')
-            ->withHeader('X-Tenant', $this->company->id)
-            ->getJson("/api/v1/projects/{$project->id}/procedure-settings/{$parentId}/internal-procedures")
-            ->assertOk()
-            ->assertJsonPath('payload.0.id', $procedureId)
-            ->assertJsonPath('payload.0.parent_id', $parentId);
-
         $updatedAttachmentType = $this->createFolder($project, 'Updated Project Docs');
         $updatedReceiverCompany = $this->createCompany([
             'name' => ['en' => 'Updated Receiver Company'],
@@ -280,7 +273,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         ]);
     }
 
-    public function test_nested_project_internal_procedure_store_uses_parent_workflow(): void
+    public function test_project_internal_procedure_store_uses_existing_project_parent_workflow(): void
     {
         $project = $this->createProject();
 
@@ -302,7 +295,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->postJson("/api/v1/projects/{$project->id}/procedure-settings/{$parent->id}/internal-procedures", [
+            ->postJson("/api/v1/projects/{$project->id}/internal-procedures", [
                 'name' => 'Nested Internal Procedure',
                 'is_active' => true,
             ])

@@ -6,6 +6,7 @@ namespace Modules\ProcedureSetting\Controllers;
 
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
@@ -95,15 +96,8 @@ class ProcedureSettingController extends Controller
             return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow, $filters) : null);
         }
 
-        if (isset($filters['type']) && isset($filters['parent_id']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
-            $workFlows = $this->procedureSettingService->listByWorkFlow($filters);
-            $workFlow = $workFlows->firstWhere('name', 'default') ?? $workFlows->first();
-
-            return Json::item($workFlow ? $this->presentWorkFlow($workFlow, $filters) : null);
-        }
-
         if (isset($filters['type']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
-            $defaultWorkFlow = $this->procedureSettingService->getDefaultWorkFlowByType((string) $filters['type']);
+            $defaultWorkFlow = $this->defaultWorkFlowForFilters($filters);
 
             return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow, $filters) : null);
         }
@@ -130,6 +124,13 @@ class ProcedureSettingController extends Controller
 
     public function store(CreateProcedureSettingRequest $request): JsonResponse
     {
+        $projectId = $this->projectIdFromRequest($request);
+
+        if ($projectId !== null) {
+            $this->assertWorkFlowBelongsToProject($projectId, $request->input('work_flow_id'));
+            $this->assertProcedureSettingBelongsToProject($projectId, $request->input('parent_id'));
+        }
+
         $createdItem = $this->procedureSettingService->create($request->createCreateProcedureSettingDTO());
 
         $presenter = new ProcedureSettingPresenter($createdItem);
@@ -181,6 +182,17 @@ class ProcedureSettingController extends Controller
         return Excel::download(new ProcedureSettingExport($this->procedureSettingService, $filters), $fileName);
     }
 
+    private function defaultWorkFlowForFilters(array $filters): ?WorkFlow
+    {
+        if (isset($filters['type']) && ! isset($filters['project_id']) && ! isset($filters['parent_id'])) {
+            return $this->procedureSettingService->getDefaultWorkFlowByType((string) $filters['type']);
+        }
+
+        $workFlows = $this->procedureSettingService->listByWorkFlow($filters);
+
+        return $workFlows->firstWhere('name', 'default') ?? $workFlows->first();
+    }
+
     private function presentWorkFlow(WorkFlow $workFlow, array $filters = []): array
     {
         $parentId = $filters['parent_id'] ?? null;
@@ -205,5 +217,39 @@ class ProcedureSettingController extends Controller
                 ->all(),
             'procedure-settings' => ProcedureSettingPresenter::collection($procedureSettings),
         ];
+    }
+
+    private function projectIdFromRequest(FormRequest $request): ?string
+    {
+        $projectId = $request->input('project_id');
+
+        return is_string($projectId) && $projectId !== '' ? $projectId : null;
+    }
+
+    private function assertWorkFlowBelongsToProject(string $projectId, mixed $workFlowId): void
+    {
+        if ($workFlowId === null || $workFlowId === '') {
+            return;
+        }
+
+        $query = WorkFlow::query()
+            ->where('id', (string) $workFlowId)
+            ->where('project_id', $projectId);
+
+        $tenantId = tenant('id');
+        if ($tenantId !== null && $tenantId !== '') {
+            $query->where('company_id', (string) $tenantId);
+        }
+
+        $query->firstOrFail(['id']);
+    }
+
+    private function assertProcedureSettingBelongsToProject(string $projectId, mixed $procedureSettingId): void
+    {
+        if ($procedureSettingId === null || $procedureSettingId === '') {
+            return;
+        }
+
+        $this->procedureSettingService->getForProject($projectId, Uuid::fromString((string) $procedureSettingId));
     }
 }

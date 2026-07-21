@@ -24,14 +24,15 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
         }
     }
 
-    public function test_project_scoped_route_stores_setting_under_route_project_work_flow(): void
+    public function test_canonical_route_stores_project_scoped_setting_under_project_work_flow(): void
     {
         $project = $this->createProject();
         $context = $this->createProcedureSettingContext($project);
 
         $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->postJson("/api/v1/projects/{$project->id}/procedure-settings", [
+            ->postJson('/api/v1/procedure-settings', [
+                'project_id' => $project->id,
                 'name' => 'Project Approval Procedure',
                 'type' => ProcedureSettingType::ClientRequest->value,
                 'execute_type' => 'sequence',
@@ -56,7 +57,7 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
         ]);
     }
 
-    public function test_project_scoped_route_accepts_project_procedure_type(): void
+    public function test_canonical_route_accepts_project_procedure_type(): void
     {
         $project = $this->createProject();
         $type = ProcedureSettingType::ProjectProcedure->value;
@@ -64,7 +65,8 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
 
         $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->postJson("/api/v1/projects/{$project->id}/procedure-settings", [
+            ->postJson('/api/v1/procedure-settings', [
+                'project_id' => $project->id,
                 'name' => 'Project Procedure Approval',
                 'type' => $type,
                 'execute_type' => 'sequence',
@@ -88,43 +90,32 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
         ]);
     }
 
-    public function test_project_scoped_route_uses_route_project_work_flow_instead_of_body_project_id(): void
+    public function test_canonical_route_rejects_project_id_that_does_not_match_work_flow(): void
     {
-        $routeProject = $this->createProject();
+        $workFlowProject = $this->createProject();
         $bodyProject = $this->createProject();
-        $context = $this->createProcedureSettingContext($routeProject);
+        $context = $this->createProcedureSettingContext($workFlowProject);
 
-        $response = $this->actingAs($this->actor, 'api')
+        $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->postJson("/api/v1/projects/{$routeProject->id}/procedure-settings", [
-                'name' => 'Route Project Procedure',
+            ->postJson('/api/v1/procedure-settings', [
+                'name' => 'Mismatched Project Procedure',
                 'type' => ProcedureSettingType::ClientRequest->value,
                 'execute_type' => 'parallel',
                 'project_id' => $bodyProject->id,
                 'work_flow_id' => $context['work_flow']->id,
                 'parent_id' => $context['parent']->id,
             ])
-            ->assertOk();
+            ->assertNotFound();
 
-        $procedureSettingId = $response->json('payload.id');
-
-        $this->assertDatabaseHas('procedure_settings', [
-            'id' => $procedureSettingId,
+        $this->assertDatabaseMissing('procedure_settings', [
+            'name' => 'Mismatched Project Procedure',
             'work_flow_id' => $context['work_flow']->id,
-        ]);
-        $this->assertDatabaseHas('work_flows', [
-            'id' => $context['work_flow']->id,
-            'project_id' => $routeProject->id,
-        ]);
-        $this->assertDatabaseMissing('work_flows', [
-            'id' => $context['work_flow']->id,
-            'project_id' => $bodyProject->id,
         ]);
     }
 
     public function test_existing_procedure_setting_store_route_keeps_global_work_flow_behavior(): void
     {
-        $project = $this->createProject();
         $context = $this->createProcedureSettingContext();
 
         $response = $this->actingAs($this->actor, 'api')
@@ -133,7 +124,6 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
                 'name' => 'Global Approval Procedure',
                 'type' => ProcedureSettingType::ClientRequest->value,
                 'execute_type' => 'sequence',
-                'project_id' => $project->id,
                 'work_flow_id' => $context['work_flow']->id,
                 'parent_id' => $context['parent']->id,
             ])
@@ -173,8 +163,9 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
         $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson(
-                "/api/v1/projects/{$project->id}/procedure-settings"
-                ."?type={$context['work_flow']->type}"
+                '/api/v1/procedure-settings'
+                ."?project_id={$project->id}"
+                ."&type={$context['work_flow']->type}"
                 ."&work_flow_id={$context['work_flow']->id}"
                 ."&parent_id={$context['parent']->id}"
             )
@@ -187,7 +178,7 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
         $this->assertNotContains($hiddenGlobal->id, $ids);
     }
 
-    public function test_project_scoped_show_returns_only_items_for_route_project(): void
+    public function test_show_uses_procedure_setting_id(): void
     {
         $project = $this->createProject();
         $otherProject = $this->createProject();
@@ -199,20 +190,20 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson("/api/v1/projects/{$project->id}/procedure-settings/{$visible->id}")
+            ->getJson("/api/v1/procedure-settings/{$visible->id}")
             ->assertOk()
             ->assertJsonPath('payload.id', $visible->id);
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson("/api/v1/projects/{$project->id}/procedure-settings/{$hidden->id}")
-            ->assertNotFound();
+            ->getJson("/api/v1/procedure-settings/{$hidden->id}")
+            ->assertOk()
+            ->assertJsonPath('payload.id', $hidden->id);
     }
 
-    public function test_project_scoped_update_keeps_route_project_work_flow_and_reuses_update_logic(): void
+    public function test_project_scoped_update_keeps_project_work_flow_and_reuses_update_logic(): void
     {
         $project = $this->createProject();
-        $bodyProject = $this->createProject();
         $context = $this->createProcedureSettingContext($project);
         $procedureSetting = $this->createProcedureSetting($context, [
             'name' => 'Before Update',
@@ -220,12 +211,11 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->putJson("/api/v1/projects/{$project->id}/procedure-settings/{$procedureSetting->id}", [
+            ->putJson("/api/v1/procedure-settings/{$procedureSetting->id}", [
                 'name' => 'After Update',
                 'type' => ProcedureSettingType::ClientRequest->value,
                 'execute_type' => 'parallel',
                 'percentage' => 75,
-                'project_id' => $bodyProject->id,
                 'work_flow_id' => $context['work_flow']->id,
                 'parent_id' => $context['parent']->id,
             ])
@@ -242,61 +232,7 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
         ]);
     }
 
-    public function test_project_scoped_update_returns_404_for_other_project_items(): void
-    {
-        $project = $this->createProject();
-        $otherProject = $this->createProject();
-        $context = $this->createProcedureSettingContext($project);
-        $otherContext = $this->createProcedureSettingContext($otherProject);
-        $hidden = $this->createProcedureSetting($otherContext);
-
-        $this->actingAs($this->actor, 'api')
-            ->withHeader('X-Tenant', $this->company->id)
-            ->putJson("/api/v1/projects/{$project->id}/procedure-settings/{$hidden->id}", [
-                'name' => 'Should Not Update',
-                'type' => ProcedureSettingType::ClientRequest->value,
-                'execute_type' => 'sequence',
-                'work_flow_id' => $context['work_flow']->id,
-                'parent_id' => $context['parent']->id,
-            ])
-            ->assertNotFound();
-
-        $this->assertDatabaseMissing('procedure_settings', [
-            'id' => $hidden->id,
-            'name' => 'Should Not Update',
-        ]);
-    }
-
-    public function test_project_scoped_update_returns_404_when_moving_to_other_project_work_flow(): void
-    {
-        $project = $this->createProject();
-        $otherProject = $this->createProject();
-        $context = $this->createProcedureSettingContext($project);
-        $otherContext = $this->createProcedureSettingContext($otherProject);
-        $procedureSetting = $this->createProcedureSetting($context);
-
-        $this->actingAs($this->actor, 'api')
-            ->withHeader('X-Tenant', $this->company->id)
-            ->putJson("/api/v1/projects/{$project->id}/procedure-settings/{$procedureSetting->id}", [
-                'name' => 'Move Attempt',
-                'type' => ProcedureSettingType::ClientRequest->value,
-                'execute_type' => 'sequence',
-                'work_flow_id' => $otherContext['work_flow']->id,
-                'parent_id' => $otherContext['parent']->id,
-            ])
-            ->assertNotFound();
-
-        $this->assertDatabaseHas('procedure_settings', [
-            'id' => $procedureSetting->id,
-            'work_flow_id' => $context['work_flow']->id,
-        ]);
-        $this->assertDatabaseMissing('procedure_settings', [
-            'id' => $procedureSetting->id,
-            'work_flow_id' => $otherContext['work_flow']->id,
-        ]);
-    }
-
-    public function test_project_scoped_delete_deletes_only_items_for_route_project(): void
+    public function test_delete_uses_procedure_setting_id(): void
     {
         $project = $this->createProject();
         $otherProject = $this->createProject();
@@ -308,21 +244,64 @@ class ProjectScopedProcedureSettingStoreTest extends BaseAttendanceReportTestCas
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->deleteJson("/api/v1/projects/{$project->id}/procedure-settings/{$hidden->id}")
-            ->assertNotFound();
+            ->deleteJson("/api/v1/procedure-settings/{$hidden->id}")
+            ->assertNoContent();
 
-        $this->assertDatabaseHas('procedure_settings', [
+        $this->assertDatabaseMissing('procedure_settings', [
             'id' => $hidden->id,
-            'work_flow_id' => $otherContext['work_flow']->id,
         ]);
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->deleteJson("/api/v1/projects/{$project->id}/procedure-settings/{$visible->id}")
+            ->deleteJson("/api/v1/procedure-settings/{$visible->id}")
             ->assertNoContent();
 
         $this->assertDatabaseMissing('procedure_settings', [
             'id' => $visible->id,
+        ]);
+    }
+
+    public function test_old_project_scoped_procedure_setting_routes_are_not_available(): void
+    {
+        $project = $this->createProject();
+        $context = $this->createProcedureSettingContext($project);
+        $procedureSetting = $this->createProcedureSetting($context);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/procedure-settings")
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/projects/{$project->id}/procedure-settings", [
+                'name' => 'Should Not Create',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/procedure-settings/{$procedureSetting->id}")
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->putJson("/api/v1/projects/{$project->id}/procedure-settings/{$procedureSetting->id}", [
+                'name' => 'Should Not Update',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->deleteJson("/api/v1/projects/{$project->id}/procedure-settings/{$procedureSetting->id}")
+            ->assertNotFound();
+
+        $this->assertDatabaseMissing('procedure_settings', [
+            'name' => 'Should Not Create',
+        ]);
+        $this->assertDatabaseMissing('procedure_settings', [
+            'id' => $procedureSetting->id,
+            'name' => 'Should Not Update',
         ]);
     }
 

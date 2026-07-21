@@ -31,16 +31,7 @@ class CreateProcedureSettingRequest extends FormRequest
             'parent_id' => 'required|uuid|exists:procedure_settings,id',
         ];
 
-        if ($this->route('project_id') !== null) {
-            $projectRule = Rule::exists('projects', 'id');
-            $tenantId = tenant('id');
-
-            if ($tenantId !== null && $tenantId !== '') {
-                $projectRule->where('company_id', (string) $tenantId);
-            }
-
-            $rules['project_id'] = ['required', 'uuid', $projectRule];
-        }
+        $rules['project_id'] = ['sometimes', 'uuid', $this->tenantOwnedProjectRule()];
 
         return $rules;
     }
@@ -102,5 +93,17 @@ class CreateProcedureSettingRequest extends FormRequest
             work_flow_id: isset($v['work_flow_id']) ? (string) $v['work_flow_id'] : null,
             parent_id: isset($v['parent_id']) ? (string) $v['parent_id'] : null,
         );
+    }
+
+    private function tenantOwnedProjectRule()
+    {
+        $rule = Rule::exists('projects', 'id');
+        $tenantId = tenant('id');
+
+        if ($tenantId !== null && $tenantId !== '') {
+            $rule->where('company_id', (string) $tenantId);
+        }
+
+        return $rule;
     }
 }
