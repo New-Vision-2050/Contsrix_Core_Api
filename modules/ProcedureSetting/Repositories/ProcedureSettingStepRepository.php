@@ -6,14 +6,15 @@ namespace Modules\ProcedureSetting\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
-use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Illuminate\Support\Facades\DB;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedManagementHierarchy;
 
 /**
  * @property ProcedureSettingStep $model
+ *
  * @method ProcedureSettingStep findOneOrFail($id)
  */
 class ProcedureSettingStepRepository extends BaseRepository
@@ -47,6 +48,15 @@ class ProcedureSettingStepRepository extends BaseRepository
         return $this->model->with(self::STEP_WITH)->findOrFail($id);
     }
 
+    public function getProcedureSettingStepForProcedureSetting(
+        string $procedureSettingId,
+        int $id
+    ): ProcedureSettingStep {
+        return $this->model->with(self::STEP_WITH)
+            ->where('procedure_setting_id', $procedureSettingId)
+            ->findOrFail($id);
+    }
+
     public function createProcedureSettingStep(array $data): ProcedureSettingStep
     {
         [$syncAction, $syncConcerned, $actionIds, $concernedIds, $payload] = $this->splitUserSyncPayload($data);
@@ -56,7 +66,7 @@ class ProcedureSettingStepRepository extends BaseRepository
                 $payload['project_id'] = $this->resolveProjectIdForProcedureSetting($payload['procedure_setting_id'] ?? null);
             }
 
-            if (empty($payload['step_order']) && !empty($payload['procedure_setting_id'])) {
+            if (empty($payload['step_order']) && ! empty($payload['procedure_setting_id'])) {
                 $payload['step_order'] = $this->getNextStepOrder((string) $payload['procedure_setting_id']);
             }
 
@@ -100,7 +110,7 @@ class ProcedureSettingStepRepository extends BaseRepository
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array{0: bool, 1: bool, 2: mixed, 3: mixed, 4: array<string, mixed>}
      */
     private function splitUserSyncPayload(array $data): array
@@ -124,8 +134,8 @@ class ProcedureSettingStepRepository extends BaseRepository
         foreach (array_unique(array_values(array_filter($userIds, static fn ($id) => is_string($id) && $id !== ''))) as $userId) {
             ProcedureSettingStepActionTaker::query()->create([
                 'procedure_setting_step_id' => $step->id,
-                'user_id'                   => $userId,
-                'company_id'                => $step->company_id,
+                'user_id' => $userId,
+                'company_id' => $step->company_id,
             ]);
         }
     }
@@ -139,12 +149,11 @@ class ProcedureSettingStepRepository extends BaseRepository
         foreach (array_unique(array_values(array_filter($managementHierarchyIds, static fn ($id) => is_int($id) && $id > 0))) as $mhId) {
             ProcedureSettingStepConcernedManagementHierarchy::query()->create([
                 'procedure_setting_step_id' => $step->id,
-                'management_hierarchy_id'   => $mhId,
-                'company_id'                => $step->company_id,
+                'management_hierarchy_id' => $mhId,
+                'company_id' => $step->company_id,
             ]);
         }
     }
-
 
     private function getNextStepOrder(string $procedureSettingId): int
     {

@@ -2,34 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Modules\Project\ProjectManagement\Requests;
+namespace Modules\ProcedureSetting\Requests\Concerns;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 
-class StoreProjectProcedureRequest extends FormRequest
+trait HandlesProjectProcedureRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    public function rules(): array
-    {
-        return array_merge($this->procedureRules(required: true), $this->metadataRules());
-    }
-
-    public function procedureData(): array
-    {
-        return Arr::only($this->validated(), $this->procedureKeys());
-    }
-
-    public function metadataData(): array
-    {
-        return Arr::only($this->validated(), $this->metadataKeys());
-    }
-
-    protected function prepareForValidation(): void
+    protected function prepareProjectProcedureAliases(): void
     {
         $merge = [];
 
@@ -46,11 +26,21 @@ class StoreProjectProcedureRequest extends FormRequest
         }
     }
 
-    protected function procedureRules(bool $required): array
+    protected function isProjectProcedureRequest(): bool
+    {
+        return $this->filled('project_id')
+            || $this->input('type') === ProjectProcedureSetting::PROCEDURE_TYPE;
+    }
+
+    protected function projectProcedureRules(bool $required): array
     {
         $nameRule = $required ? 'required' : 'sometimes';
 
         return [
+            'project_id' => ['required', 'uuid', $this->tenantOwnedProjectRule()],
+            'type' => ['sometimes', 'string', Rule::in([ProjectProcedureSetting::PROCEDURE_TYPE])],
+            'form' => [Rule::prohibitedIf($this->filled('form'))],
+            'parent_id' => ['sometimes', 'uuid', 'exists:procedure_settings,id'],
             'name' => [$nameRule, 'string', 'max:255'],
             'procedure_name' => ['sometimes', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
@@ -62,12 +52,6 @@ class StoreProjectProcedureRequest extends FormRequest
             'deadline_hours' => ['nullable', 'integer', 'min:0'],
             'escalation_management_hierarchy_id' => ['nullable', 'integer', 'exists:management_hierarchies,id'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
-        ];
-    }
-
-    protected function metadataRules(): array
-    {
-        return [
             'receiver_company_id' => ['nullable', 'uuid', 'exists:companies,id'],
             'attachment_type_id' => ['nullable', 'uuid', 'exists:folders,id'],
             'attachment_sub_type_id' => ['nullable', 'uuid', 'exists:folders,id'],
@@ -80,7 +64,43 @@ class StoreProjectProcedureRequest extends FormRequest
         ];
     }
 
-    protected function procedureKeys(): array
+    public function projectProcedureData(): array
+    {
+        return array_intersect_key($this->validated(), array_flip($this->projectProcedureKeys()));
+    }
+
+    public function projectProcedureMetadataData(): array
+    {
+        return array_intersect_key($this->validated(), array_flip($this->projectProcedureMetadataKeys()));
+    }
+
+    public function projectId(): ?string
+    {
+        $projectId = $this->validated('project_id') ?? $this->input('project_id');
+
+        return is_string($projectId) && $projectId !== '' ? $projectId : null;
+    }
+
+    public function parentProcedureSettingId(): ?string
+    {
+        $parentId = $this->validated('parent_id') ?? $this->input('parent_id');
+
+        return is_string($parentId) && $parentId !== '' ? $parentId : null;
+    }
+
+    protected function tenantOwnedProjectRule()
+    {
+        $rule = Rule::exists('projects', 'id');
+        $tenantId = tenant('id');
+
+        if ($tenantId !== null && $tenantId !== '') {
+            $rule->where('company_id', (string) $tenantId);
+        }
+
+        return $rule;
+    }
+
+    private function projectProcedureKeys(): array
     {
         return [
             'name',
@@ -95,7 +115,7 @@ class StoreProjectProcedureRequest extends FormRequest
         ];
     }
 
-    protected function metadataKeys(): array
+    private function projectProcedureMetadataKeys(): array
     {
         return [
             'receiver_company_id',

@@ -41,7 +41,8 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $createResponse = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->postJson("/api/v1/projects/{$project->id}/internal-procedures", [
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
                 'name' => 'Document Approval',
                 'is_active' => true,
                 'receiver_company_id' => $lookups['receiver_company']->id,
@@ -133,7 +134,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson("/api/v1/projects/{$project->id}/internal-procedures")
+            ->getJson("/api/v1/procedure-settings/internal-procedures?project_id={$project->id}")
             ->assertOk()
             ->assertJsonPath('payload.0.id', $procedureId)
             ->assertJsonPath('payload.0.parent_id', $parentId)
@@ -149,7 +150,8 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->putJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}", [
+            ->putJson("/api/v1/procedure-settings/{$procedureId}", [
+                'project_id' => $project->id,
                 'name' => 'Updated Document Approval',
                 'is_active' => false,
                 'receiver_company_id' => $updatedReceiverCompany->id,
@@ -184,7 +186,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}")
+            ->getJson("/api/v1/procedure-settings/{$procedureId}?project_id={$project->id}")
             ->assertOk()
             ->assertJsonPath('payload.id', $procedureId)
             ->assertJsonPath('payload.parent_id', $parentId)
@@ -192,7 +194,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->deleteJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}")
+            ->deleteJson("/api/v1/procedure-settings/{$procedureId}?project_id={$project->id}")
             ->assertNoContent();
 
         $this->assertDatabaseMissing('procedure_settings', [
@@ -242,7 +244,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson("/api/v1/projects/{$project->id}/internal-procedures")
+            ->getJson("/api/v1/procedure-settings/internal-procedures?project_id={$project->id}")
             ->assertOk();
 
         $ids = collect($response->json('payload'))->pluck('id')->all();
@@ -250,19 +252,20 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson("/api/v1/projects/{$project->id}/internal-procedures/{$globalChild->id}")
+            ->getJson("/api/v1/procedure-settings/{$globalChild->id}?project_id={$project->id}")
             ->assertNotFound();
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->putJson("/api/v1/projects/{$project->id}/internal-procedures/{$globalChild->id}", [
+            ->putJson("/api/v1/procedure-settings/{$globalChild->id}", [
+                'project_id' => $project->id,
                 'name' => 'Should Not Update Global Linked Procedure',
             ])
             ->assertNotFound();
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->deleteJson("/api/v1/projects/{$project->id}/internal-procedures/{$globalChild->id}")
+            ->deleteJson("/api/v1/procedure-settings/{$globalChild->id}?project_id={$project->id}")
             ->assertNotFound();
 
         $this->assertDatabaseHas('procedure_settings', [
@@ -270,6 +273,68 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             'name' => 'Global Linked Internal Procedure',
             'work_flow_id' => $globalWorkFlow->id,
             'parent_id' => $globalParent->id,
+        ]);
+    }
+
+    public function test_project_internal_procedure_project_routes_are_removed(): void
+    {
+        $project = $this->createProject();
+        $procedureId = (string) Str::uuid();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/internal-procedures")
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/projects/{$project->id}/internal-procedures", [
+                'name' => 'Removed Route Procedure',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}")
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->putJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}", [
+                'name' => 'Removed Route Procedure',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->deleteJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}")
+            ->assertNotFound();
+
+        $this->assertDatabaseMissing('procedure_settings', [
+            'name' => 'Removed Route Procedure',
+        ]);
+    }
+
+    public function test_project_internal_procedure_store_rejects_receiver_company_not_shared_with_project(): void
+    {
+        $project = $this->createProject();
+        $receiverCompany = $this->createCompany([
+            'name' => ['en' => 'Unshared Receiver Company'],
+            'serial_no' => 'PROC-REC-404',
+        ]);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'Rejected Receiver Procedure',
+                'receiver_company_id' => $receiverCompany->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('receiver_company_id');
+
+        $this->assertDatabaseMissing('procedure_settings', [
+            'name' => 'Rejected Receiver Procedure',
         ]);
     }
 
@@ -295,7 +360,8 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->postJson("/api/v1/projects/{$project->id}/internal-procedures", [
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
                 'name' => 'Nested Internal Procedure',
                 'is_active' => true,
             ])

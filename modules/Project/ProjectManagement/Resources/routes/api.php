@@ -1,22 +1,22 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Project\ProjectManagement\Controllers\ProjectManagementController;
-use Modules\Project\ProjectManagement\Controllers\ProjectShareController;
-use Modules\Project\ProjectManagement\Controllers\ProjectEmployeeController;
 use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
-use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
-use Modules\Project\ProjectManagement\Controllers\ProjectProcedureController;
-use Modules\Project\ProjectManagement\Controllers\ProjectRequirementController;
-use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
-use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
-use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
 use Modules\Project\ProjectManagement\Controllers\ContractorController;
 use Modules\Project\ProjectManagement\Controllers\ProjectContractorController;
+use Modules\Project\ProjectManagement\Controllers\ProjectEmployeeController;
+use Modules\Project\ProjectManagement\Controllers\ProjectManagementController;
+use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
+use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
+use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
+use Modules\Project\ProjectManagement\Controllers\ProjectRequirementController;
+use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
+use Modules\Project\ProjectManagement\Controllers\ProjectShareController;
 use Modules\Project\ProjectType\Controllers\ProjectOrderPermitController;
 use Modules\RoleAndPermission\Enums\Permission;
+use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
-Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
+Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [ProjectManagementController::class, 'index'])
         ->permission(Permission::PROJECT_MANAGEMENT_LIST());
     Route::post('/', [ProjectManagementController::class, 'store'])
@@ -131,20 +131,6 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
             ->permission(Permission::PROJECT_REQUIREMENT_UPDATE());
         Route::delete('/{requirement}', [ProjectRequirementController::class, 'destroy'])
             ->permission(Permission::PROJECT_REQUIREMENT_DELETE());
-    });
-
-    // Project Internal Procedures Routes
-    Route::prefix('{project}/internal-procedures')->group(function () {
-        Route::get('/', [ProjectProcedureController::class, 'index'])
-            ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
-        Route::post('/', [ProjectProcedureController::class, 'store'])
-            ->permission(Permission::PROJECT_MANAGEMENT_UPDATE());
-        Route::get('/{procedure}', [ProjectProcedureController::class, 'show'])
-            ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
-        Route::put('/{procedure}', [ProjectProcedureController::class, 'update'])
-            ->permission(Permission::PROJECT_MANAGEMENT_UPDATE());
-        Route::delete('/{procedure}', [ProjectProcedureController::class, 'destroy'])
-            ->permission(Permission::PROJECT_MANAGEMENT_UPDATE());
     });
 
     // Project Notifications Routes
