@@ -14,6 +14,7 @@ use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
 use Modules\Project\ProjectType\Services\OrderPermitExcelImportService;
 use Maatwebsite\Excel\Facades\Excel;
+use Modules\Project\ProjectType\Jobs\ImportOrderPermitsJob;
 
 class ProjectOrderPermitController extends Controller
 {
@@ -100,22 +101,44 @@ class ProjectOrderPermitController extends Controller
     public function importExcel(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv',
+            'file' => 'required|file|mimes:xlsx,xls|max:102400',
         ]);
 
         try {
-            $rows = Excel::toArray([], $request->file('file'))[0] ?? [];
+            $path = $request->file('file')->store('temp_imports', 'public');
 
-            $importService = new OrderPermitExcelImportService();
-            $updated = $importService->importFromExcelRows($rows);
+            $job = new ImportOrderPermitsJob($path);
+            // $progressKey = $job->getProgressKey();
+
+            dispatch($job);
 
             return response()->json([
-                'message' => 'تم تحديث أوامر العمل بنجاح',
-                'updated' => $updated,
-                'total_rows' => count($rows),
+                'message' => 'جاري تحديث البيانات في الخلفية',
+
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+    // public function importExcel(Request $request): JsonResponse
+    // {
+    //     $request->validate([
+    //         'file' => 'required|file|mimes:xlsx,xls,csv',
+    //     ]);
+
+    //     try {
+    //         $rows = Excel::toArray([], $request->file('file'))[0] ?? [];
+
+    //         $importService = new OrderPermitExcelImportService();
+    //         $updated = $importService->importFromExcelRows($rows);
+
+    //         return response()->json([
+    //             'message' => 'تم تحديث أوامر العمل بنجاح',
+    //             'updated' => $updated,
+    //             'total_rows' => count($rows),
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => $e->getMessage()], 500);
+    //     }
+    // }
 }

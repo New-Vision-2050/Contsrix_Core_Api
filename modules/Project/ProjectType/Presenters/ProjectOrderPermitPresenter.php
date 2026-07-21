@@ -32,6 +32,7 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'state_id' => $this->model->state_id,
             'state_name' => $this->model->state?->name,
             'lat' => $this->model->lat,
+            'import_log' => $this->model->import_log,
             'long' => $this->model->long,
             'price' => $this->model->price,
             'executing_entity' => $this->model->executing_entity,

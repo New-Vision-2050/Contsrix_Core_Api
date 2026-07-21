@@ -22,6 +22,7 @@ class ProjectOrderPermit extends Model
         'order_permit_id',
         'order_permit_department_id',
         'contractor_id',
+        'import_log',
         'name',
         'type',
         'assigned_date',
