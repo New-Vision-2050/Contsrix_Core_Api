@@ -45,6 +45,10 @@ class ProjectOrderPermitService
                 'type' => Arr::get($workOrderData, 'type'),
                 'assigned_date' => Arr::get($workOrderData, 'assigned_date'),
                 'state_id' => Arr::get($workOrderData, 'state_id'),
+                'project_completion_phase_id' => Arr::get($workOrderData, 'project_completion_phase_id'),
+                'project_phase_status_id' => Arr::get($workOrderData, 'project_phase_status_id'),
+                'connection_completion_phase_id' => Arr::get($workOrderData, 'connection_completion_phase_id'),
+                'connection_phase_status_id' => Arr::get($workOrderData, 'connection_phase_status_id'),
                 'lat' => Arr::get($workOrderData, 'lat'),
                 'long' => Arr::get($workOrderData, 'long'),
                 'price' => Arr::get($workOrderData, 'price'),
@@ -182,7 +186,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -194,7 +198,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->whereIn('project_id', $projectIds)
             ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -207,7 +211,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->where('id', $id)
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus'])
             ->firstOrFail();
     }
 
@@ -246,6 +250,10 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             'type' => Arr::get($data, 'type', $orderPermit->type),
             'assigned_date' => Arr::get($data, 'assigned_date', $orderPermit->assigned_date),
             'state_id' => Arr::get($data, 'state_id', $orderPermit->state_id),
+            'project_completion_phase_id' => Arr::get($data, 'project_completion_phase_id', $orderPermit->project_completion_phase_id),
+            'project_phase_status_id' => Arr::get($data, 'project_phase_status_id', $orderPermit->project_phase_status_id),
+            'connection_completion_phase_id' => Arr::get($data, 'connection_completion_phase_id', $orderPermit->connection_completion_phase_id),
+            'connection_phase_status_id' => Arr::get($data, 'connection_phase_status_id', $orderPermit->connection_phase_status_id),
             'lat' => Arr::get($data, 'lat', $orderPermit->lat),
             'long' => Arr::get($data, 'long', $orderPermit->long),
             'price' => Arr::get($data, 'price', $orderPermit->price),
@@ -265,7 +273,18 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             'consultant_price' => Arr::get($data, 'consultant_price', $orderPermit->consultant_price),
         ]);
 
-        return $orderPermit->fresh(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict']);
+        return $orderPermit->fresh([
+            'orderPermit',
+            'department',
+            'contractor',
+            'state',
+            'projectManagement',
+            'projectDistrict',
+            'projectCompletionPhase',
+            'projectPhaseStatus',
+            'connectionCompletionPhase',
+            'connectionPhaseStatus',
+        ]);
     }
 
 
