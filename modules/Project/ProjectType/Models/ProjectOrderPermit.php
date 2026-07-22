@@ -27,6 +27,10 @@ class ProjectOrderPermit extends Model
         'type',
         'assigned_date',
         'state_id',
+        'project_completion_phase_id',
+        'project_phase_status_id',
+        'connection_completion_phase_id',
+        'connection_phase_status_id',
         'lat',
         'long',
         'price',
@@ -91,5 +95,25 @@ class ProjectOrderPermit extends Model
     public function state(): BelongsTo
     {
         return $this->belongsTo(State::class, 'state_id');
+    }
+
+    public function projectCompletionPhase(): BelongsTo
+    {
+        return $this->belongsTo(ProjectCompletionPhase::class, 'project_completion_phase_id');
+    }
+
+    public function projectPhaseStatus(): BelongsTo
+    {
+        return $this->belongsTo(ProjectPhaseStatus::class, 'project_phase_status_id');
+    }
+
+    public function connectionCompletionPhase(): BelongsTo
+    {
+        return $this->belongsTo(ConnectionCompletionPhase::class, 'connection_completion_phase_id');
+    }
+
+    public function connectionPhaseStatus(): BelongsTo
+    {
+        return $this->belongsTo(ConnectionPhaseStatus::class, 'connection_phase_status_id');
     }
 }
