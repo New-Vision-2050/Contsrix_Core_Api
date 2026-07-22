@@ -237,6 +237,7 @@ return [
     "you-must-set-your-answers"=>"You must set your answers",
     "all-questions-are-required"=>"All questions are required",
     "invalid-token"=>"invalid token",
+    "imei-mismatch"=>"This device is not authorized for this account. Please login from the registered device.",
     "can-not-resend-otp"=>"can not resend otp",
     "action-took-before"=>"action took before",
     "lookups-value-not-correct"=>"lookups value not correct",
