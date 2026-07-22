@@ -46,7 +46,7 @@ class CompletionStatusService
         return $query->get();
     }
 
-    public function getCompletionDataForOrderPermit(int $orderPermitId): array
+    public function getCompletionDataForOrderPermit(string $orderPermitId): array
     {
         $orderPermit = ProjectOrderPermit::with('department')->findOrFail($orderPermitId);
         $departmentName = $orderPermit->department?->name;
