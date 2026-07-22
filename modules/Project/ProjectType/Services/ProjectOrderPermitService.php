@@ -181,7 +181,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
 
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
-            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->where('order_permit_department_id', $deptId))
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
             ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -193,7 +193,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
 
         return ProjectOrderPermit::query()
             ->whereIn('project_id', $projectIds)
-            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->where('order_permit_department_id', $deptId))
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
             ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
