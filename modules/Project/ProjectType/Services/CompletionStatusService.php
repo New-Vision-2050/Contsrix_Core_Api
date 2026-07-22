@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Collection;
 use Modules\Project\ProjectType\Models\ConnectionCompletionPhase;
 use Modules\Project\ProjectType\Models\ConnectionPhaseStatus;
 use Modules\Project\ProjectType\Models\ProjectCompletionPhase;
+use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Models\ProjectPhaseStatus;
+use Modules\Project\ProjectType\Presenters\CompletionStatusPresenter;
 
 class CompletionStatusService
 {
@@ -42,5 +44,28 @@ class CompletionStatusService
         }
 
         return $query->get();
+    }
+
+    public function getCompletionDataForOrderPermit(int $orderPermitId): array
+    {
+        $orderPermit = ProjectOrderPermit::with('department')->findOrFail($orderPermitId);
+        $departmentName = $orderPermit->department?->name;
+
+        if ($departmentName === 'مشاريع') {
+            $phases = ProjectCompletionPhase::with(['statuses', 'department'])->get();
+        } elseif ($departmentName === 'توصيلات') {
+            $phases = ConnectionCompletionPhase::with(['statuses', 'department'])->get();
+        } else {
+            $phases = collect();
+        }
+
+        return [
+            'order_permit' => [
+                'id' => $orderPermit->id,
+                'department_id' => $orderPermit->order_permit_department_id,
+                'department_name' => $departmentName,
+            ],
+            'completion_phases' => CompletionStatusPresenter::collection($phases),
+        ];
     }
 }

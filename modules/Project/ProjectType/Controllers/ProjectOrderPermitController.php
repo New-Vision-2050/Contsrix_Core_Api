@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitPresenter;
 use Modules\Project\ProjectType\Requests\CreateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
+use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitStatusRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
 use Modules\Project\ProjectType\Services\OrderPermitExcelImportService;
 use Maatwebsite\Excel\Facades\Excel;
@@ -95,6 +96,17 @@ class ProjectOrderPermitController extends Controller
             $this->service->delete($project, $id);
 
             return Json::deleted();
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    public function updateStatuses(UpdateProjectOrderPermitStatusRequest $request, string $project, string $id): JsonResponse
+    {
+        try {
+            $item = $this->service->updateStatuses($project, $id, $request->validated());
+
+            return Json::item((new ProjectOrderPermitPresenter($item))->getData());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }

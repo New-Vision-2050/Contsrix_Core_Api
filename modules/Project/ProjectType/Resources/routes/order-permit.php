@@ -111,6 +111,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 
     // Completion phases and statuses lookup
+    Route::get('/completion-data', [CompletionStatusController::class, 'completionData']);
+
     Route::get('/project-completion-phases', [CompletionStatusController::class, 'projectPhases'])
         ->permission(Permission::PROJECT_TYPE_VIEW());
     Route::get('/project-phase-statuses', [CompletionStatusController::class, 'projectStatuses'])
