@@ -28,7 +28,10 @@ class ProjectOrderPermitController extends Controller
     public function index(Request $request, string $project): JsonResponse
     {
         try {
-            $items = $this->service->list($project);
+            $items = $this->service->list(
+                $project,
+                $request->input('department_id')
+            );
 
             return Json::items(
                 $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()
@@ -52,18 +55,18 @@ class ProjectOrderPermitController extends Controller
     }
 
 
-    public function getByDepartment(Request $request, string $project, int $departmentId): JsonResponse
-    {
-        try {
-            $items = $this->service->listByDepartment($project, $departmentId);
+    // public function getByDepartment(Request $request, string $project, int $departmentId): JsonResponse
+    // {
+    //     try {
+    //         $items = $this->service->listByDepartment($project, $departmentId);
 
-            return Json::items(
-                $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()
-            );
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), 500);
-        }
-    }
+    //         return Json::items(
+    //             $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()
+    //         );
+    //     } catch (\Exception $e) {
+    //         return Json::error($e->getMessage(), 500);
+    //     }
+    // }
     public function store(CreateProjectOrderPermitRequest $request): JsonResponse
     {
         $items = $this->service->createMany($request->validated());

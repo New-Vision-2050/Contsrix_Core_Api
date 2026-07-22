@@ -156,28 +156,33 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
     }
 }
 
-    public function list(string $projectId): Collection
+    public function list(string $projectId, ?string $departmentId = null): Collection
     {
         $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
 
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-    }
-    public function listByDepartment(string $projectId, $departmentId): Collection
-    {
-
-        return ProjectOrderPermit::query()
-
-            ->whereHas('orderPermit', function ($query) use ($departmentId) {
-                $query->where('order_permit_department_id', $departmentId);
+            ->when($departmentId, function ($query) use ($departmentId) {
+                $query->whereHas('orderPermit', function ($query) use ($departmentId) {
+                    $query->where('order_permit_department_id', $departmentId);
+                });
             })
             ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
+    // public function listByDepartment(string $projectId, $departmentId): Collection
+    // {
+
+    //     return ProjectOrderPermit::query()
+
+    //         ->whereHas('orderPermit', function ($query) use ($departmentId) {
+    //             $query->where('order_permit_department_id', $departmentId);
+    //         })
+    //         ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
+    //         ->orderBy('created_at', 'desc')
+    //         ->get();
+    // }
     public function listAll(): Collection
     {
         $projectIds = ProjectManagement::query()->pluck('id');
