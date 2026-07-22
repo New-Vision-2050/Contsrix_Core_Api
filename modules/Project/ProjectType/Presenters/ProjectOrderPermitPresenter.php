@@ -61,7 +61,9 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'note_from_permit_to_departments' => $this->model->note_from_permit_to_departments,
             'is_taked_action' => $this->model->is_taked_action,
             'count_of_days_from_assigned_date' => $this->getCountOfDaysFromAssignedDate(),
-            'permit_status' => $this->getPermitStatus(),
+            'evaluation_permit_status' => $this->getPermitStatus(),
+            'permit_status_id' => $this->getPermitStatusId(),
+            'permit_status_name' => $this->getPermitStatusName(),
             'lat' => $this->model->lat,
             'import_log' => $this->model->import_log,
             'long' => $this->model->long,
@@ -155,6 +157,24 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
         }
 
         return null;
+    }
+
+    private function getPermitStatusId(): ?int
+    {
+        if ($this->getCompletionPhaseName() === 'التصاريح') {
+            return $this->getPhaseStatusId();
+        }
+
+        return null;
+    }
+
+    private function getPermitStatusName(): ?string
+    {
+        if ($this->getCompletionPhaseName() === 'التصاريح') {
+            return $this->getPhaseStatusName();
+        }
+
+        return 'تم اصدار التصريح';
     }
 
     private function getPermitStatus(): string

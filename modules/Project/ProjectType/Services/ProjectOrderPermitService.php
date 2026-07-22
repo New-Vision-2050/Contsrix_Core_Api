@@ -8,6 +8,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
+use Modules\Project\ProjectType\Models\ProjectPhaseStatus;
+use Modules\Project\ProjectType\Models\ConnectionPhaseStatus;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
@@ -244,6 +246,32 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             }
         }
 
+        $departmentName = $orderPermit->department?->name;
+        $phaseStatusId = Arr::get($data, 'phase_status_id');
+
+        $phaseUpdateData = [];
+
+        if ($phaseStatusId !== null) {
+            if ($departmentName === 'مشاريع') {
+                $status = ProjectPhaseStatus::find($phaseStatusId);
+                if ($status) {
+                    $phaseUpdateData['project_phase_status_id'] = $status->id;
+                    $phaseUpdateData['project_completion_phase_id'] = $status->project_completion_phase_id;
+                }
+            } elseif ($departmentName === 'توصيلات') {
+                $status = ConnectionPhaseStatus::find($phaseStatusId);
+                if ($status) {
+                    $phaseUpdateData['connection_phase_status_id'] = $status->id;
+                    $phaseUpdateData['connection_completion_phase_id'] = $status->connection_completion_phase_id;
+                }
+            }
+        } else {
+            $phaseUpdateData['project_completion_phase_id'] = Arr::get($data, 'project_completion_phase_id', $orderPermit->project_completion_phase_id);
+            $phaseUpdateData['project_phase_status_id'] = Arr::get($data, 'project_phase_status_id', $orderPermit->project_phase_status_id);
+            $phaseUpdateData['connection_completion_phase_id'] = Arr::get($data, 'connection_completion_phase_id', $orderPermit->connection_completion_phase_id);
+            $phaseUpdateData['connection_phase_status_id'] = Arr::get($data, 'connection_phase_status_id', $orderPermit->connection_phase_status_id);
+        }
+
         $orderPermit->update([
             'project_management_id' => Arr::get($data, 'project_management_id', $orderPermit->project_management_id),
             'projects_district_id' => Arr::get($data, 'projects_district_id', $orderPermit->projects_district_id),
@@ -254,10 +282,10 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             'type' => Arr::get($data, 'type', $orderPermit->type),
             'assigned_date' => Arr::get($data, 'assigned_date', $orderPermit->assigned_date),
             'state_id' => Arr::get($data, 'state_id', $orderPermit->state_id),
-            'project_completion_phase_id' => Arr::get($data, 'project_completion_phase_id', $orderPermit->project_completion_phase_id),
-            'project_phase_status_id' => Arr::get($data, 'project_phase_status_id', $orderPermit->project_phase_status_id),
-            'connection_completion_phase_id' => Arr::get($data, 'connection_completion_phase_id', $orderPermit->connection_completion_phase_id),
-            'connection_phase_status_id' => Arr::get($data, 'connection_phase_status_id', $orderPermit->connection_phase_status_id),
+            'project_completion_phase_id' => $phaseUpdateData['project_completion_phase_id'] ?? $orderPermit->project_completion_phase_id,
+            'project_phase_status_id' => $phaseUpdateData['project_phase_status_id'] ?? $orderPermit->project_phase_status_id,
+            'connection_completion_phase_id' => $phaseUpdateData['connection_completion_phase_id'] ?? $orderPermit->connection_completion_phase_id,
+            'connection_phase_status_id' => $phaseUpdateData['connection_phase_status_id'] ?? $orderPermit->connection_phase_status_id,
             'start_permit_date' => Arr::get($data, 'start_permit_date', $orderPermit->start_permit_date),
             'end_permit_date' => Arr::get($data, 'end_permit_date', $orderPermit->end_permit_date),
             'note_from_permit_to_departments' => Arr::get($data, 'note_from_permit_to_departments', $orderPermit->note_from_permit_to_departments),
@@ -318,24 +346,23 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             ->firstOrFail();
 
         $departmentName = $orderPermit->department?->name;
-        $completionPhaseId = Arr::get($data, 'completion_phase_id');
         $phaseStatusId = Arr::get($data, 'phase_status_id');
 
         $updateData = [];
 
-        if ($departmentName === 'مشاريع') {
-            if ($completionPhaseId !== null) {
-                $updateData['project_completion_phase_id'] = $completionPhaseId;
-            }
-            if ($phaseStatusId !== null) {
-                $updateData['project_phase_status_id'] = $phaseStatusId;
-            }
-        } elseif ($departmentName === 'توصيلات') {
-            if ($completionPhaseId !== null) {
-                $updateData['connection_completion_phase_id'] = $completionPhaseId;
-            }
-            if ($phaseStatusId !== null) {
-                $updateData['connection_phase_status_id'] = $phaseStatusId;
+        if ($phaseStatusId !== null) {
+            if ($departmentName === 'مشاريع') {
+                $status = ProjectPhaseStatus::find($phaseStatusId);
+                if ($status) {
+                    $updateData['project_phase_status_id'] = $status->id;
+                    $updateData['project_completion_phase_id'] = $status->project_completion_phase_id;
+                }
+            } elseif ($departmentName === 'توصيلات') {
+                $status = ConnectionPhaseStatus::find($phaseStatusId);
+                if ($status) {
+                    $updateData['connection_phase_status_id'] = $status->id;
+                    $updateData['connection_completion_phase_id'] = $status->connection_completion_phase_id;
+                }
             }
         }
 

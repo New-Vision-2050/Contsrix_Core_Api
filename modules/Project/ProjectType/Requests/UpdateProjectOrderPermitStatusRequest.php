@@ -16,8 +16,7 @@ class UpdateProjectOrderPermitStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'completion_phase_id' => ['nullable', 'integer'],
-            'phase_status_id' => ['nullable', 'integer'],
+            'phase_status_id' => ['required', 'integer'],
         ];
     }
 }

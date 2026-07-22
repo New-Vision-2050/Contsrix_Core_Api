@@ -26,6 +26,7 @@ class UpdateProjectOrderPermitRequest extends FormRequest
             'order_permit_department_id' => ['nullable', 'integer', 'exists:order_permit_department,id'],
             'contractor_id' => ['nullable', 'string', 'exists:project_contractors,id'],
             'state_id' => ['nullable', 'string', 'exists:states,id'],
+            'phase_status_id' => ['nullable', 'integer'],
             'project_completion_phase_id' => ['nullable', 'integer', 'exists:project_completion_phases,id'],
             'project_phase_status_id' => ['nullable', 'integer', 'exists:project_phase_statuses,id'],
             'connection_completion_phase_id' => ['nullable', 'integer', 'exists:connection_completion_phases,id'],
