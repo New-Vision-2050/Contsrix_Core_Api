@@ -131,6 +131,7 @@ class ProjectOrderPermitController extends Controller
 
             return response()->json([
                 'message' => 'جاري تحديث البيانات في الخلفية',
+                'uds_sheet'=>$udsSheet->withMedia('uds_sheets')->getData()
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
