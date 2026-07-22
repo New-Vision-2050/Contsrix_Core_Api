@@ -19,8 +19,12 @@ class OrderPermitDepartmentRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function list(): Collection
+    // public function list(): Collection
+    // {
+    //     return $this->model->orderBy('id')->get();
+    // }
+    public function list(array $conditions = [], string $orderBy = 'id', string $sortBy = 'asc'): Collection
     {
-        return $this->model->orderBy('id')->get();
+        return $this->model->orderBy($orderBy, $sortBy)->get();
     }
 }
