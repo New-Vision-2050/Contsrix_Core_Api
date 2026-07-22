@@ -97,14 +97,19 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
         return (int) $this->model->assigned_date->startOfDay()->diffInDays(Carbon::today()->startOfDay(), false);
     }
 
+    private function getDepartmentName(): ?string
+    {
+        return $this->model->department?->name ?? $this->model->orderPermit?->department?->name;
+    }
+
     private function isProjectDepartment(): bool
     {
-        return $this->model->department?->name === 'مشاريع';
+        return $this->getDepartmentName() === 'مشاريع';
     }
 
     private function isConnectionDepartment(): bool
     {
-        return $this->model->department?->name === 'توصيلات';
+        return $this->getDepartmentName() === 'توصيلات';
     }
 
     private function getCompletionPhaseId(): ?int
@@ -179,7 +184,7 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
 
     private function getPermitStatus(): string
     {
-        $departmentName = $this->model->department?->name;
+        $departmentName = $this->getDepartmentName();
         $days = $this->getCountOfDaysFromAssignedDate();
 
         if ($departmentName === 'مشاريع') {

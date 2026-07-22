@@ -192,7 +192,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus'])
+            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -204,7 +204,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->whereIn('project_id', $projectIds)
             ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus'])
+            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -217,7 +217,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->where('id', $id)
-            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus'])
+            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus'])
             ->firstOrFail();
     }
 
@@ -229,6 +229,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         $orderPermit = ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->where('id', $id)
+            ->with(['orderPermit.department'])
             ->firstOrFail();
 
         // التحقق من التفرد قبل التحديث
@@ -246,7 +247,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             }
         }
 
-        $departmentName = $orderPermit->department?->name;
+        $departmentName = $orderPermit->department?->name ?? $orderPermit->orderPermit?->department?->name;
         $phaseStatusId = Arr::get($data, 'phase_status_id');
 
         $phaseUpdateData = [];
@@ -310,7 +311,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         ]);
 
         return $orderPermit->fresh([
-            'orderPermit',
+            'orderPermit.department',
             'department',
             'contractor',
             'state',
@@ -343,9 +344,10 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         $orderPermit = ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->where('id', $id)
+            ->with(['orderPermit.department'])
             ->firstOrFail();
 
-        $departmentName = $orderPermit->department?->name;
+        $departmentName = $orderPermit->department?->name ?? $orderPermit->orderPermit?->department?->name;
         $phaseStatusId = Arr::get($data, 'phase_status_id');
 
         $updateData = [];
@@ -371,7 +373,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         }
 
         return $orderPermit->fresh([
-            'orderPermit',
+            'orderPermit.department',
             'department',
             'contractor',
             'state',

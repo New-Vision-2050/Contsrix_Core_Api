@@ -48,8 +48,8 @@ class CompletionStatusService
 
     public function getCompletionDataForOrderPermit(string $orderPermitId): array
     {
-        $orderPermit = ProjectOrderPermit::with('department')->findOrFail($orderPermitId);
-        $departmentName = $orderPermit->department?->name;
+        $orderPermit = ProjectOrderPermit::with(['department', 'orderPermit.department'])->findOrFail($orderPermitId);
+        $departmentName = $orderPermit->department?->name ?? $orderPermit->orderPermit?->department?->name;
 
         if ($departmentName === 'مشاريع') {
             $phases = ProjectCompletionPhase::with(['statuses', 'department'])->get();
