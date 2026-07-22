@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 use Modules\Project\ProjectType\Models\UdsExcelSheet;
-
+use Modules\Project\ProjectType\Models\OrderPermitDepartment;
 class ProjectOrderPermitService
 {
     public function createMany(array $data): array
@@ -166,7 +166,25 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             ->orderBy('created_at', 'desc')
             ->get();
     }
+    public function listByDepartment(string $projectId, $departmentId): Collection
+    {
+        $department = OrderPermitDepartment::with('orderPermits')->findOrFail($departmentId);
 
+        $orderPermitIds = $department->orderPermits->pluck('id');
+
+        if ($orderPermitIds->isEmpty()) {
+            return new Collection();
+        }
+
+        $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
+
+        return ProjectOrderPermit::query()
+            ->where('project_id', $project->id)
+            ->whereIn('order_permit_id', $orderPermitIds)
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
     public function listAll(): Collection
     {
         $projectIds = ProjectManagement::query()->pluck('id');
