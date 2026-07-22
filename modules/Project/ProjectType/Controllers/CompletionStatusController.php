@@ -45,4 +45,15 @@ class CompletionStatusController extends Controller
 
         return Json::items(CompletionPhaseStatusPresenter::collection($items));
     }
+
+    public function completionData(Request $request): JsonResponse
+    {
+        $request->validate([
+            'project_order_permit_id' => ['required', 'integer', 'exists:project_order_permit,id'],
+        ]);
+
+        $data = $this->service->getCompletionDataForOrderPermit($request->input('project_order_permit_id'));
+
+        return response()->json(['data' => $data]);
+    }
 }

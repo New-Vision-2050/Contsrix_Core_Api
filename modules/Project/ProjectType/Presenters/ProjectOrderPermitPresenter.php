@@ -52,6 +52,10 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'connection_completion_phase_name' => $this->model->connectionCompletionPhase?->name,
             'connection_phase_status_id' => $this->model->connection_phase_status_id,
             'connection_phase_status_name' => $this->model->connectionPhaseStatus?->name,
+            'completion_phase_id' => $this->getCompletionPhaseId(),
+            'completion_phase_name' => $this->getCompletionPhaseName(),
+            'phase_status_id' => $this->getPhaseStatusId(),
+            'phase_status_name' => $this->getPhaseStatusName(),
             'start_permit_date' => $this->model->start_permit_date?->toDateString(),
             'end_permit_date' => $this->model->end_permit_date?->toDateString(),
             'note_from_permit_to_departments' => $this->model->note_from_permit_to_departments,
@@ -89,6 +93,68 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
         }
 
         return (int) $this->model->assigned_date->startOfDay()->diffInDays(Carbon::today()->startOfDay(), false);
+    }
+
+    private function isProjectDepartment(): bool
+    {
+        return $this->model->department?->name === 'مشاريع';
+    }
+
+    private function isConnectionDepartment(): bool
+    {
+        return $this->model->department?->name === 'توصيلات';
+    }
+
+    private function getCompletionPhaseId(): ?int
+    {
+        if ($this->isProjectDepartment()) {
+            return $this->model->project_completion_phase_id;
+        }
+
+        if ($this->isConnectionDepartment()) {
+            return $this->model->connection_completion_phase_id;
+        }
+
+        return null;
+    }
+
+    private function getCompletionPhaseName(): ?string
+    {
+        if ($this->isProjectDepartment()) {
+            return $this->model->projectCompletionPhase?->name;
+        }
+
+        if ($this->isConnectionDepartment()) {
+            return $this->model->connectionCompletionPhase?->name;
+        }
+
+        return null;
+    }
+
+    private function getPhaseStatusId(): ?int
+    {
+        if ($this->isProjectDepartment()) {
+            return $this->model->project_phase_status_id;
+        }
+
+        if ($this->isConnectionDepartment()) {
+            return $this->model->connection_phase_status_id;
+        }
+
+        return null;
+    }
+
+    private function getPhaseStatusName(): ?string
+    {
+        if ($this->isProjectDepartment()) {
+            return $this->model->projectPhaseStatus?->name;
+        }
+
+        if ($this->isConnectionDepartment()) {
+            return $this->model->connectionPhaseStatus?->name;
+        }
+
+        return null;
     }
 
     private function getPermitStatus(): string

@@ -317,12 +317,31 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             ->where('id', $id)
             ->firstOrFail();
 
-        $orderPermit->update([
-            'project_completion_phase_id' => Arr::get($data, 'project_completion_phase_id', $orderPermit->project_completion_phase_id),
-            'project_phase_status_id' => Arr::get($data, 'project_phase_status_id', $orderPermit->project_phase_status_id),
-            'connection_completion_phase_id' => Arr::get($data, 'connection_completion_phase_id', $orderPermit->connection_completion_phase_id),
-            'connection_phase_status_id' => Arr::get($data, 'connection_phase_status_id', $orderPermit->connection_phase_status_id),
-        ]);
+        $departmentName = $orderPermit->department?->name;
+        $completionPhaseId = Arr::get($data, 'completion_phase_id');
+        $phaseStatusId = Arr::get($data, 'phase_status_id');
+
+        $updateData = [];
+
+        if ($departmentName === 'مشاريع') {
+            if ($completionPhaseId !== null) {
+                $updateData['project_completion_phase_id'] = $completionPhaseId;
+            }
+            if ($phaseStatusId !== null) {
+                $updateData['project_phase_status_id'] = $phaseStatusId;
+            }
+        } elseif ($departmentName === 'توصيلات') {
+            if ($completionPhaseId !== null) {
+                $updateData['connection_completion_phase_id'] = $completionPhaseId;
+            }
+            if ($phaseStatusId !== null) {
+                $updateData['connection_phase_status_id'] = $phaseStatusId;
+            }
+        }
+
+        if (! empty($updateData)) {
+            $orderPermit->update($updateData);
+        }
 
         return $orderPermit->fresh([
             'orderPermit',
