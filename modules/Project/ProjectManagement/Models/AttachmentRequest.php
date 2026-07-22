@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Models;
 
 use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\User\Models\User;
 
 class AttachmentRequest extends Model
@@ -26,11 +30,8 @@ class AttachmentRequest extends Model
         'name',
         'date',
         'project_id',
+        'procedure_setting_id',
         'sender_company_id',
-        'receiver_company_id',
-        'attachment_type_id',
-        'attachment_sub_type_id',
-        'attachment_sub_sub_type_id',
         'status',
         'created_by_user_id',
         'responded_by_user_id',
@@ -41,9 +42,7 @@ class AttachmentRequest extends Model
     protected $casts = [
         'date' => 'date',
         'responded_at' => 'datetime',
-        'attachment_type_id' => 'string',
-        'attachment_sub_type_id' => 'string',
-        'attachment_sub_sub_type_id' => 'string',
+        'procedure_setting_id' => 'string',
     ];
 
     /**
@@ -55,19 +54,95 @@ class AttachmentRequest extends Model
     }
 
     /**
+     * Get the project procedure selected for this request
+     */
+    public function procedureSetting(): BelongsTo
+    {
+        return $this->belongsTo(ProcedureSetting::class, 'procedure_setting_id')->withoutGlobalScopes();
+    }
+
+    /**
+     * Get the project-specific metadata for the selected procedure.
+     */
+    public function projectProcedureSetting(): HasOne
+    {
+        return $this->hasOne(ProjectProcedureSetting::class, 'procedure_setting_id', 'procedure_setting_id')
+            ->withoutGlobalScopes();
+    }
+
+    public function scopeForReceiverCompany(Builder $query, string $companyId): Builder
+    {
+        return $query->whereHas('projectProcedureSetting', static function (Builder $query) use ($companyId): void {
+            $query->where('receiver_company_id', $companyId);
+        });
+    }
+
+    public function getReceiverCompanyIdAttribute(): ?string
+    {
+        return $this->receiverCompanyId();
+    }
+
+    public function getAttachmentTypeIdAttribute(): ?string
+    {
+        return $this->attachmentTypeId();
+    }
+
+    public function getAttachmentSubTypeIdAttribute(): ?string
+    {
+        return $this->attachmentSubTypeId();
+    }
+
+    public function getAttachmentSubSubTypeIdAttribute(): ?string
+    {
+        return $this->attachmentSubSubTypeId();
+    }
+
+    public function getReceiverCompanyAttribute(): ?Company
+    {
+        return $this->projectProcedureSetting?->receiverCompany;
+    }
+
+    public function getAttachmentTypeAttribute(): ?Folder
+    {
+        return $this->projectProcedureSetting?->attachmentType;
+    }
+
+    public function getAttachmentSubTypeAttribute(): ?Folder
+    {
+        return $this->projectProcedureSetting?->attachmentSubType;
+    }
+
+    public function getAttachmentSubSubTypeAttribute(): ?Folder
+    {
+        return $this->projectProcedureSetting?->attachmentSubSubType;
+    }
+
+    public function receiverCompanyId(): ?string
+    {
+        return $this->projectProcedureSetting?->receiver_company_id;
+    }
+
+    public function attachmentTypeId(): ?string
+    {
+        return $this->projectProcedureSetting?->attachment_type_id;
+    }
+
+    public function attachmentSubTypeId(): ?string
+    {
+        return $this->projectProcedureSetting?->attachment_sub_type_id;
+    }
+
+    public function attachmentSubSubTypeId(): ?string
+    {
+        return $this->projectProcedureSetting?->attachment_sub_sub_type_id;
+    }
+
+    /**
      * Get the company that sent the request
      */
     public function senderCompany(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'sender_company_id')->withoutGlobalScopes();
-    }
-
-    /**
-     * Get the company that receives the request
-     */
-    public function receiverCompany(): BelongsTo
-    {
-        return $this->belongsTo(Company::class, 'receiver_company_id')->withoutGlobalScopes();
     }
 
     /**

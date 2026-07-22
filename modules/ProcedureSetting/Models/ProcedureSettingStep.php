@@ -12,6 +12,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 
 class ProcedureSettingStep extends Model
 {
@@ -31,6 +32,7 @@ class ProcedureSettingStep extends Model
         'forms',
         'procedure_setting_id',
         'company_id',
+        'project_id',
         'name',
         'branch_id',
         'management_id',
@@ -58,6 +60,7 @@ class ProcedureSettingStep extends Model
     protected $casts = [
         'is_accept'                       => 'boolean',
         'is_approve'                      => 'boolean',
+        'project_id'                      => 'string',
         'branch_id'                       => 'integer',
         'management_id'                   => 'integer',
         'is_view_only'                    => 'boolean',
@@ -105,6 +108,11 @@ class ProcedureSettingStep extends Model
     public function procedureSetting(): BelongsTo
     {
         return $this->belongsTo(ProcedureSetting::class, 'procedure_setting_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
 
     public function branch(): BelongsTo

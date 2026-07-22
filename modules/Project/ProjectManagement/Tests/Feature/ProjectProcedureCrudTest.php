@@ -1,0 +1,530 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Project\ProjectManagement\Tests\Feature;
+
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+use Modules\ArchiveLibrary\Folder\Models\Folder;
+use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\WorkFlow;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureJobAttribute;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
+use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
+use Modules\Project\ProjectType\Models\ProjectType;
+use Modules\RoleAndPermission\Enums\Permission;
+use Modules\Shared\ResourceShare\Models\ResourceShare;
+use Spatie\Permission\Models\Permission as SpatiePermission;
+
+class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! $this->projectProcedureTablesReady()) {
+            $this->markTestSkipped('Project procedure schema is not migrated.');
+        }
+
+        $this->grantProjectProcedurePermissions();
+    }
+
+    public function test_project_procedure_crud_stores_core_data_and_metadata_separately(): void
+    {
+        $project = $this->createProject();
+        $lookups = $this->createProcedureLookups($project);
+
+        $createResponse = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'Document Approval',
+                'is_active' => true,
+                'receiver_company_id' => $lookups['receiver_company']->id,
+                'attachment_type_id' => $lookups['attachment_type']->id,
+                'attachment_sub_type_id' => $lookups['attachment_sub_type']->id,
+                'attachment_sub_sub_type_id' => $lookups['attachment_sub_sub_type']->id,
+                'job_attribute_id' => $lookups['job_attribute']->id,
+                'used_in_document_cycle' => true,
+                'appears_in_archive_after_approval' => true,
+                'appears_in_attachments_library' => false,
+                'requires_asset_id' => true,
+            ])
+            ->assertOk();
+
+        $procedureId = $createResponse->json('payload.id');
+        $childProcedure = ProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->whereKey($procedureId)
+            ->firstOrFail();
+        $workFlowId = $childProcedure->work_flow_id;
+        $parentId = $childProcedure->parent_id;
+
+        $this->assertNotEmpty($procedureId);
+        $this->assertNotEmpty($parentId);
+        $this->assertContains(ProjectProcedureService::PROCEDURE_TYPE, ProcedureSettingType::values());
+        $this->assertSame('Document Approval', $createResponse->json('payload.name'));
+        $this->assertSame($parentId, $createResponse->json('payload.parent_id'));
+        $this->assertSame($lookups['receiver_company']->id, $createResponse->json('payload.receiver_company.id'));
+        $this->assertSame($lookups['attachment_type']->id, $createResponse->json('payload.attachment_type.id'));
+        $this->assertSame($lookups['attachment_sub_type']->id, $createResponse->json('payload.attachment_sub_type.id'));
+        $this->assertSame($lookups['attachment_sub_sub_type']->id, $createResponse->json('payload.attachment_sub_sub_type.id'));
+        $this->assertSame($lookups['job_attribute']->id, $createResponse->json('payload.job_attribute.id'));
+        $this->assertTrue($createResponse->json('payload.requires_asset_id'));
+        $this->assertArrayNotHasKey('classification', $createResponse->json('payload'));
+        $this->assertArrayNotHasKey('linked_folder', $createResponse->json('payload'));
+        $this->assertArrayNotHasKey('document_nature', $createResponse->json('payload'));
+        $this->assertArrayNotHasKey('classification_name', $createResponse->json('payload'));
+        $this->assertArrayNotHasKey('linked_folder_name', $createResponse->json('payload'));
+        $this->assertArrayNotHasKey('classification_code', $createResponse->json('payload'));
+        $this->assertArrayNotHasKey('receiver_companies', $createResponse->json('payload'));
+
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $procedureId,
+            'company_id' => $this->company->id,
+            'name' => 'Document Approval',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'is_active' => 1,
+            'work_flow_id' => $workFlowId,
+            'parent_id' => $parentId,
+        ]);
+
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $parentId,
+            'company_id' => $this->company->id,
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'work_flow_id' => $workFlowId,
+            'parent_id' => null,
+        ]);
+
+        $this->assertDatabaseHas('work_flows', [
+            'id' => $workFlowId,
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+        ]);
+
+        $this->assertDatabaseHas('project_procedure_settings', [
+            'project_id' => $project->id,
+            'procedure_setting_id' => $procedureId,
+            'receiver_company_id' => $lookups['receiver_company']->id,
+            'attachment_type_id' => $lookups['attachment_type']->id,
+            'attachment_sub_type_id' => $lookups['attachment_sub_type']->id,
+            'attachment_sub_sub_type_id' => $lookups['attachment_sub_sub_type']->id,
+            'job_attribute_id' => $lookups['job_attribute']->id,
+            'requires_asset_id' => 1,
+        ]);
+
+        $this->assertFalse(Schema::hasColumn('procedure_settings', 'classification_name'));
+        $this->assertTrue(Schema::hasColumn('project_procedure_settings', 'receiver_company_id'));
+        $this->assertFalse(Schema::hasTable('project_procedure_receiver_companies'));
+        $this->assertTrue(Schema::hasTable('project_procedure_job_attributes'));
+        $this->assertFalse(Schema::hasColumn('project_procedure_settings', 'classification_name'));
+        $this->assertFalse(Schema::hasColumn('project_procedure_settings', 'main_classification_id'));
+        $this->assertFalse(Schema::hasColumn('project_procedure_settings', 'sub_classification_id'));
+        $this->assertFalse(Schema::hasColumn('project_procedure_settings', 'sub_sub_classification_id'));
+        $this->assertFalse(Schema::hasColumn('project_procedure_settings', 'linked_folder_id'));
+        $this->assertFalse(Schema::hasColumn('project_procedure_settings', 'document_nature_id'));
+        $this->assertFalse(Schema::hasColumn('procedure_settings', 'requires_asset_id'));
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/procedure-settings/internal-procedures?project_id={$project->id}")
+            ->assertOk()
+            ->assertJsonPath('payload.0.id', $procedureId)
+            ->assertJsonPath('payload.0.parent_id', $parentId)
+            ->assertJsonPath('payload.0.attachment_type.id', $lookups['attachment_type']->id)
+            ->assertJsonPath('payload.0.receiver_company.id', $lookups['receiver_company']->id);
+
+        $updatedAttachmentType = $this->createFolder($project, 'Updated Project Docs');
+        $updatedReceiverCompany = $this->createCompany([
+            'name' => ['en' => 'Updated Receiver Company'],
+            'serial_no' => 'PROC-REC-003',
+        ]);
+        $this->createAcceptedShare($project, $this->company, $updatedReceiverCompany);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->putJson("/api/v1/procedure-settings/{$procedureId}", [
+                'project_id' => $project->id,
+                'name' => 'Updated Document Approval',
+                'is_active' => false,
+                'receiver_company_id' => $updatedReceiverCompany->id,
+                'attachment_type_id' => $updatedAttachmentType->id,
+                'attachment_sub_type_id' => null,
+                'attachment_sub_sub_type_id' => null,
+                'used_in_document_cycle' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.name', 'Updated Document Approval')
+            ->assertJsonPath('payload.is_active', false)
+            ->assertJsonPath('payload.attachment_type.id', $updatedAttachmentType->id)
+            ->assertJsonPath('payload.attachment_sub_type', null)
+            ->assertJsonPath('payload.attachment_sub_sub_type', null)
+            ->assertJsonPath('payload.receiver_company.id', $updatedReceiverCompany->id);
+
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $procedureId,
+            'name' => 'Updated Document Approval',
+            'is_active' => 0,
+        ]);
+
+        $this->assertDatabaseHas('project_procedure_settings', [
+            'project_id' => $project->id,
+            'procedure_setting_id' => $procedureId,
+            'receiver_company_id' => $updatedReceiverCompany->id,
+            'attachment_type_id' => $updatedAttachmentType->id,
+            'attachment_sub_type_id' => null,
+            'attachment_sub_sub_type_id' => null,
+            'used_in_document_cycle' => 0,
+        ]);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/procedure-settings/{$procedureId}?project_id={$project->id}")
+            ->assertOk()
+            ->assertJsonPath('payload.id', $procedureId)
+            ->assertJsonPath('payload.parent_id', $parentId)
+            ->assertJsonPath('payload.procedure_setting.type', ProjectProcedureService::PROCEDURE_TYPE);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->deleteJson("/api/v1/procedure-settings/{$procedureId}?project_id={$project->id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('procedure_settings', [
+            'id' => $procedureId,
+        ]);
+
+        $this->assertDatabaseMissing('project_procedure_settings', [
+            'procedure_setting_id' => $procedureId,
+        ]);
+    }
+
+    public function test_project_internal_procedure_routes_ignore_metadata_linked_to_global_workflow(): void
+    {
+        $project = $this->createProject();
+
+        $globalWorkFlow = WorkFlow::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => null,
+            'name' => 'global_project_procedure_'.Str::lower(Str::random(6)),
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+        ]);
+
+        $globalParent = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Global Project Procedure Parent',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'work_flow_id' => $globalWorkFlow->id,
+            'sort_order' => 1,
+        ]);
+
+        $globalChild = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Global Linked Internal Procedure',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'work_flow_id' => $globalWorkFlow->id,
+            'parent_id' => $globalParent->id,
+            'sort_order' => 2,
+        ]);
+
+        ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'procedure_setting_id' => $globalChild->id,
+        ]);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/procedure-settings/internal-procedures?project_id={$project->id}")
+            ->assertOk();
+
+        $ids = collect($response->json('payload'))->pluck('id')->all();
+        $this->assertNotContains($globalChild->id, $ids);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/procedure-settings/{$globalChild->id}?project_id={$project->id}")
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->putJson("/api/v1/procedure-settings/{$globalChild->id}", [
+                'project_id' => $project->id,
+                'name' => 'Should Not Update Global Linked Procedure',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->deleteJson("/api/v1/procedure-settings/{$globalChild->id}?project_id={$project->id}")
+            ->assertNotFound();
+
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $globalChild->id,
+            'name' => 'Global Linked Internal Procedure',
+            'work_flow_id' => $globalWorkFlow->id,
+            'parent_id' => $globalParent->id,
+        ]);
+    }
+
+    public function test_project_internal_procedure_project_routes_are_removed(): void
+    {
+        $project = $this->createProject();
+        $procedureId = (string) Str::uuid();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/internal-procedures")
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/projects/{$project->id}/internal-procedures", [
+                'name' => 'Removed Route Procedure',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}")
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->putJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}", [
+                'name' => 'Removed Route Procedure',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->deleteJson("/api/v1/projects/{$project->id}/internal-procedures/{$procedureId}")
+            ->assertNotFound();
+
+        $this->assertDatabaseMissing('procedure_settings', [
+            'name' => 'Removed Route Procedure',
+        ]);
+    }
+
+    public function test_project_internal_procedure_store_rejects_receiver_company_not_shared_with_project(): void
+    {
+        $project = $this->createProject();
+        $receiverCompany = $this->createCompany([
+            'name' => ['en' => 'Unshared Receiver Company'],
+            'serial_no' => 'PROC-REC-404',
+        ]);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'Rejected Receiver Procedure',
+                'receiver_company_id' => $receiverCompany->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('receiver_company_id');
+
+        $this->assertDatabaseMissing('procedure_settings', [
+            'name' => 'Rejected Receiver Procedure',
+        ]);
+    }
+
+    public function test_project_internal_procedure_store_uses_existing_project_parent_workflow(): void
+    {
+        $project = $this->createProject();
+
+        $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'name' => 'explicit_project_procedure_'.Str::lower(Str::random(6)),
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+        ]);
+
+        $parent = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Explicit Parent',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'work_flow_id' => $workFlow->id,
+            'sort_order' => 1,
+        ]);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'Nested Internal Procedure',
+                'is_active' => true,
+            ])
+            ->assertOk();
+
+        $procedureId = $response->json('payload.id');
+
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $procedureId,
+            'name' => 'Nested Internal Procedure',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => $parent->id,
+        ]);
+
+        $this->assertDatabaseHas('project_procedure_settings', [
+            'project_id' => $project->id,
+            'procedure_setting_id' => $procedureId,
+        ]);
+    }
+
+    private function projectProcedureTablesReady(): bool
+    {
+        return Schema::hasTable('project_procedure_settings')
+            && Schema::hasTable('project_procedure_job_attributes')
+            && Schema::hasTable('folders')
+            && Schema::hasTable('procedure_settings')
+            && Schema::hasTable('resource_shares')
+            && Schema::hasTable('work_flows');
+    }
+
+    private function createProject(): ProjectManagement
+    {
+        $projectTypeId = $this->projectTypeId();
+
+        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->withoutGlobalScopes()->forceCreate([
+            'id' => (string) Str::uuid(),
+            'project_type_id' => $projectTypeId,
+            'sub_project_type_id' => $projectTypeId,
+            'sub_sub_project_type_id' => $projectTypeId,
+            'name' => 'Project Procedure Test',
+            'company_id' => $this->company->id,
+            'status' => 1,
+            'serial_number' => 'PROC-'.Str::upper(Str::random(6)),
+        ]));
+    }
+
+    private function projectTypeId(): int
+    {
+        return (int) ProjectType::query()->withoutGlobalScopes()->firstOrCreate(
+            [
+                'name' => 'Project Procedure Test Type',
+                'company_id' => $this->company->id,
+            ],
+            [
+                'is_created' => true,
+                'is_have_schema' => false,
+                'is_active' => true,
+            ],
+        )->id;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function createProcedureLookups(ProjectManagement $project): array
+    {
+        $receiverCompany = $this->createCompany([
+            'name' => ['en' => 'Receiver Company'],
+            'serial_no' => 'PROC-REC-001',
+        ]);
+        $this->createAcceptedShare($project, $this->company, $receiverCompany);
+
+        $attachmentType = $this->createFolder($project, 'Project Docs');
+        $attachmentSubType = $this->createFolder($project, 'Design Docs', $attachmentType->id);
+        $attachmentSubSubType = $this->createFolder($project, 'Issued For Approval', $attachmentSubType->id);
+
+        $jobAttribute = ProjectProcedureJobAttribute::query()->firstOrCreate(
+            ['code' => 'engineer'],
+            [
+                'name' => 'Engineer',
+                'is_active' => true,
+            ],
+        );
+
+        return [
+            'receiver_company' => $receiverCompany,
+            'attachment_type' => $attachmentType,
+            'attachment_sub_type' => $attachmentSubType,
+            'attachment_sub_sub_type' => $attachmentSubSubType,
+            'job_attribute' => $jobAttribute,
+        ];
+    }
+
+    private function createFolder(ProjectManagement $project, string $name, ?string $parentId = null): Folder
+    {
+        return Folder::query()->withoutGlobalScopes()->create([
+            'name' => $name,
+            'parent_id' => $parentId,
+            'project_id' => $project->id,
+            'company_id' => $this->company->id,
+            'access_type' => 'private',
+            'status' => 1,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function createCompany(array $overrides = []): Company
+    {
+        return Company::withoutEvents(fn () => Company::query()->create(array_merge([
+            'id' => (string) Str::uuid(),
+            'name' => ['en' => 'Project Procedure Company'],
+            'user_name' => 'project_procedure_'.Str::lower(Str::random(6)),
+            'email' => 'procedure-company@example.test',
+            'phone' => '01000000000',
+            'country_id' => $this->country->id,
+            'company_type_id' => (string) Str::uuid(),
+            'company_field_id' => (string) Str::uuid(),
+            'registration_type_id' => (string) Str::uuid(),
+            'general_manager_id' => (string) Str::uuid(),
+            'is_active' => 1,
+            'complete_data' => 1,
+            'serial_no' => 'PROC-'.Str::upper(Str::random(6)),
+        ], $overrides)));
+    }
+
+    private function createAcceptedShare(
+        ProjectManagement $project,
+        Company $ownerCompany,
+        Company $receiverCompany
+    ): ResourceShare {
+        return ResourceShare::query()->create([
+            'id' => (string) Str::uuid(),
+            'shareable_type' => ProjectManagement::class,
+            'shareable_id' => $project->id,
+            'owner_company_id' => $ownerCompany->id,
+            'shared_with_company_id' => $receiverCompany->id,
+            'status' => 'accepted',
+            'schema_ids' => [1, 2],
+            'shared_by_user_id' => $this->actor->id,
+            'responded_by_user_id' => $this->actor->id,
+            'responded_at' => now(),
+        ]);
+    }
+
+    private function grantProjectProcedurePermissions(): void
+    {
+        setPermissionsTeamId($this->company->id);
+
+        $permissions = [
+            Permission::PROJECT_MANAGEMENT_VIEW(),
+            Permission::PROJECT_MANAGEMENT_UPDATE(),
+        ];
+
+        foreach ($permissions as $permission) {
+            SpatiePermission::firstOrCreate(
+                ['name' => $permission, 'guard_name' => 'api'],
+                ['name' => $permission, 'guard_name' => 'api', 'company_id' => $this->company->id],
+            );
+        }
+
+        $this->actor->givePermissionTo($permissions);
+    }
+}

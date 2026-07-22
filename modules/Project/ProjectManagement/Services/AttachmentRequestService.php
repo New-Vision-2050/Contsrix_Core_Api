@@ -17,11 +17,13 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Modules\Shared\Media\Services\FileUploadService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Ramsey\Uuid\Uuid;
 use Modules\Project\ProjectManagement\Events\AttachmentRequestCreated;
 use Modules\Project\ProjectManagement\Events\AttachmentRequestResponded;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\User\Models\User;
 
 class AttachmentRequestService
@@ -39,9 +41,19 @@ class AttachmentRequestService
     {
         // Verify project exists and is shared
         $project = ProjectManagement::findOrFail($data['project_id']);
+        $projectProcedure = $this->findProjectProcedureOrFail(
+            $project,
+            (string) $data['procedure_setting_id']
+        );
+
+        if (!$projectProcedure->receiver_company_id) {
+            throw ValidationException::withMessages([
+                'procedure_setting_id' => 'Selected procedure must define a receiver company.',
+            ]);
+        }
 
         // Verify companies are involved in project sharing
-        $this->verifyCompanyAccess($project, $data['receiver_company_id']);
+        $this->verifyCompanyAccess($project, $projectProcedure->receiver_company_id);
 
         // Use provided serial number or auto-generate
         $serialNumber = $data['serial_number'] ?? $this->repository->generateSerialNumber();
@@ -51,11 +63,8 @@ class AttachmentRequestService
             'name' => $data['name'],
             'date' => $data['date'],
             'project_id' => $data['project_id'],
+            'procedure_setting_id' => $projectProcedure->procedure_setting_id,
             'sender_company_id' => (string) tenant('id'),
-            'receiver_company_id' => $data['receiver_company_id'],
-            'attachment_type_id' => $data['attachment_type_id'] ?? null,
-            'attachment_sub_type_id' => $data['attachment_sub_type_id'] ?? null,
-            'attachment_sub_sub_type_id' => $data['attachment_sub_sub_type_id'] ?? null,
             'status' => 'pending',
             'created_by_user_id' => (string) Auth::id(),
             'notes' => $data['notes'] ?? null,
@@ -74,7 +83,8 @@ class AttachmentRequestService
             metadata: [
                 'request_name' => $request->name,
                 'total_attachments' => count($items),
-                'receiver_company' => $data['receiver_company_id'],
+                'receiver_company' => $projectProcedure->receiver_company_id,
+                'procedure_setting_id' => $projectProcedure->procedure_setting_id,
             ]
         );
 
@@ -128,7 +138,7 @@ class AttachmentRequestService
         }
 
         // Verify access
-        if ($request->sender_company_id !== tenant('id') && $request->receiver_company_id !== tenant('id')) {
+        if ($request->sender_company_id !== tenant('id') && $request->receiverCompanyId() !== tenant('id')) {
             throw new \Exception('Unauthorized access to this request');
         }
 
@@ -140,10 +150,10 @@ class AttachmentRequestService
      */
     public function respondToItem(string $itemId, string $action, ?string $notes = null)
     {
-        $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
+        $item = AttachmentRequestItem::with('attachmentRequest.projectProcedureSetting')->findOrFail($itemId);
 
         // Verify receiver company
-        if ($item->attachmentRequest->receiver_company_id !== tenant('id')) {
+        if ($item->attachmentRequest->receiverCompanyId() !== tenant('id')) {
             throw new \Exception('Unauthorized to respond to this item');
         }
 
@@ -209,7 +219,7 @@ class AttachmentRequestService
     {
         $request = $this->getRequest($requestId);
 
-        if ($request->receiver_company_id !== tenant('id')) {
+        if ($request->receiverCompanyId() !== tenant('id')) {
             throw new \Exception('Unauthorized to approve this request');
         }
 
@@ -230,6 +240,7 @@ class AttachmentRequestService
 
         foreach (
             AttachmentRequestItem::with('attachmentRequest')
+                ->with('attachmentRequest.projectProcedureSetting')
                 ->where('attachment_request_id', $request->id)
                 ->get() as $item
         ) {
@@ -248,7 +259,7 @@ class AttachmentRequestService
             ]
         );
 
-        $request = $request->fresh(['items', 'respondedByUser']);
+        $request = $request->fresh(['items', 'respondedByUser', 'projectProcedureSetting']);
 
         // Broadcast notification to sender company users
         $this->broadcastToSenderCompany($request, 'approved');
@@ -263,7 +274,7 @@ class AttachmentRequestService
     {
         $request = $this->getRequest($requestId);
 
-        if ($request->receiver_company_id !== tenant('id')) {
+        if ($request->receiverCompanyId() !== tenant('id')) {
             throw new \Exception('Unauthorized to decline this request');
         }
 
@@ -294,7 +305,7 @@ class AttachmentRequestService
             ]
         );
 
-        $request = $request->fresh(['items', 'respondedByUser']);
+        $request = $request->fresh(['items', 'respondedByUser', 'projectProcedureSetting']);
 
         // Broadcast notification to sender company users
         $this->broadcastToSenderCompany($request, 'declined');
@@ -338,6 +349,34 @@ class AttachmentRequestService
         if (!$hasAccess) {
             throw new \Exception('Receiver company does not have access to this project');
         }
+    }
+
+    private function findProjectProcedureOrFail(
+        ProjectManagement $project,
+        string $procedureSettingId
+    ): ProjectProcedureSetting {
+        $projectProcedure = ProjectProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', (string) tenant('id'))
+            ->where('project_id', $project->id)
+            ->where('procedure_setting_id', $procedureSettingId)
+            ->whereHas('procedureSetting', static function ($query) use ($project): void {
+                $query->where('company_id', (string) tenant('id'))
+                    ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
+                    ->whereHas('workFlow', static function ($query) use ($project): void {
+                        $query->where('project_id', $project->id)
+                            ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE);
+                    });
+            })
+            ->first();
+
+        if (!$projectProcedure) {
+            throw ValidationException::withMessages([
+                'procedure_setting_id' => 'Selected procedure must belong to the same project.',
+            ]);
+        }
+
+        return $projectProcedure;
     }
 
     /**
@@ -430,19 +469,19 @@ class AttachmentRequestService
 
         $currentFolderId = $projectFolder;
 
-        // attachment_type_id represents the first level folder
-        if ($request->attachment_type_id) {
-            $currentFolderId = $request->attachment_type_id;
+        // Project procedure attachment type represents the first level folder.
+        if ($request->attachmentTypeId()) {
+            $currentFolderId = $request->attachmentTypeId();
         }
 
-        // attachment_sub_type_id represents the second level (subfolder)
-        if ($request->attachment_sub_type_id) {
-            $currentFolderId = $request->attachment_sub_type_id;
+        // Project procedure attachment sub type represents the second level.
+        if ($request->attachmentSubTypeId()) {
+            $currentFolderId = $request->attachmentSubTypeId();
         }
 
-        // attachment_sub_sub_type_id represents the third level (sub-subfolder)
-        if ($request->attachment_sub_sub_type_id) {
-            $currentFolderId = $request->attachment_sub_sub_type_id;
+        // Project procedure attachment sub-sub type represents the third level.
+        if ($request->attachmentSubSubTypeId()) {
+            $currentFolderId = $request->attachmentSubSubTypeId();
         }
 
         // Create or get serial_number folder as the fourth level
@@ -533,12 +572,18 @@ class AttachmentRequestService
     private function broadcastToReceiverCompany(AttachmentRequest $request): void
     {
         // Get all users from receiver company
-        $receiverCompanyUsers = User::where('company_id', $request->receiver_company_id)
+        $receiverCompanyId = $request->receiverCompanyId();
+
+        if (!$receiverCompanyId) {
+            return;
+        }
+
+        $receiverCompanyUsers = User::where('company_id', $receiverCompanyId)
             ->whereNotNull('id')
             ->get();
 
         // Count pending incoming requests for receiver company (including the new one)
-        $pendingIncomingCount = AttachmentRequest::where('receiver_company_id', $request->receiver_company_id)
+        $pendingIncomingCount = AttachmentRequest::forReceiverCompany($receiverCompanyId)
             ->whereIn('status', ['pending', 'semi-approved'])
             ->count();
 

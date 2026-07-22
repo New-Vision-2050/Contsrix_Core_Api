@@ -26,7 +26,7 @@ class AttachmentRequestRepository extends BaseRepository
      *   project_id  – filter by project UUID
      *   type        – filter by status  (pending|approved|declined|semi-approved)
      *   direction   – 'outgoing' (sender) | 'incoming' (receiver)
-     *   receiver_id – filter by receiver_company_id
+     *   receiver_id – filter by selected procedure receiver_company_id
      *   name        – partial search on serial_number
      *   per_page    – items per page (default 15)
      *   page        – page number    (default 1)
@@ -35,8 +35,12 @@ class AttachmentRequestRepository extends BaseRepository
     {
         $query = $this->model->with([
             'project',
+            'procedureSetting',
+            'projectProcedureSetting.receiverCompany',
+            'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
+            'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
+            'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
             'senderCompany',
-            'receiverCompany',
             'createdByUser',
             'respondedByUser',
             'items.respondedByUser',
@@ -47,11 +51,11 @@ class AttachmentRequestRepository extends BaseRepository
         if ($direction === 'outgoing') {
             $query->where('sender_company_id', $companyId);
         } elseif ($direction === 'incoming') {
-            $query->where('receiver_company_id', $companyId);
+            $query->forReceiverCompany($companyId);
         } else {
             $query->where(function ($q) use ($companyId) {
                 $q->where('sender_company_id', $companyId)
-                  ->orWhere('receiver_company_id', $companyId);
+                  ->orWhere(fn ($query) => $query->forReceiverCompany($companyId));
             });
         }
 
@@ -70,7 +74,7 @@ class AttachmentRequestRepository extends BaseRepository
         }
 
         if (!empty($filters['receiver_id'])) {
-            $query->where('receiver_company_id', $filters['receiver_id']);
+            $query->forReceiverCompany($filters['receiver_id']);
         }
 
         if (!empty($filters['name'])) {
@@ -91,7 +95,11 @@ class AttachmentRequestRepository extends BaseRepository
             ->where('sender_company_id', $companyId)
             ->with([
                 'project',
-                'receiverCompany',
+                'procedureSetting',
+                'projectProcedureSetting.receiverCompany',
+                'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
                 'createdByUser',
                 'respondedByUser',
                 'items.respondedByUser'
@@ -110,9 +118,14 @@ class AttachmentRequestRepository extends BaseRepository
     public function getIncomingRequests(string $companyId, ?string $projectId = null): Collection
     {
         $query = $this->model
-            ->where('receiver_company_id', $companyId)
+            ->forReceiverCompany($companyId)
             ->with([
                 'project',
+                'procedureSetting',
+                'projectProcedureSetting.receiverCompany',
+                'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
                 'senderCompany',
                 'createdByUser',
                 'respondedByUser',
@@ -135,7 +148,11 @@ class AttachmentRequestRepository extends BaseRepository
             ->where('project_id', $projectId)
             ->with([
                 'senderCompany',
-                'receiverCompany',
+                'procedureSetting',
+                'projectProcedureSetting.receiverCompany',
+                'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
                 'createdByUser',
                 'respondedByUser',
                 'items.respondedByUser'
@@ -152,8 +169,12 @@ class AttachmentRequestRepository extends BaseRepository
         return $this->model
             ->with([
                 'project',
+                'procedureSetting',
+                'projectProcedureSetting.receiverCompany',
+                'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
                 'senderCompany',
-                'receiverCompany',
                 'createdByUser',
                 'respondedByUser',
                 'items.respondedByUser',
@@ -191,7 +212,7 @@ class AttachmentRequestRepository extends BaseRepository
             }
         }
 
-        return $request->load('items');
+        return $request->load(['items', 'procedureSetting']);
     }
 
     /**
@@ -200,10 +221,15 @@ class AttachmentRequestRepository extends BaseRepository
     public function getPendingIncoming(string $companyId, ?string $projectId = null): Collection
     {
         $query = $this->model
-            ->where('receiver_company_id', $companyId)
+            ->forReceiverCompany($companyId)
             ->whereIn('status', ['pending', 'semi-approved'])
             ->with([
                 'project',
+                'procedureSetting',
+                'projectProcedureSetting.receiverCompany',
+                'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
+                'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
                 'senderCompany',
                 'createdByUser',
                 'items.respondedByUser'
