@@ -168,19 +168,12 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
     }
     public function listByDepartment(string $projectId, $departmentId): Collection
     {
-        $department = OrderPermitDepartment::with('orderPermits')->findOrFail($departmentId);
-
-        $orderPermitIds = $department->orderPermits->pluck('id');
-
-        if ($orderPermitIds->isEmpty()) {
-            return new Collection();
-        }
-
-        $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
 
         return ProjectOrderPermit::query()
-            ->where('project_id', $project->id)
-            ->whereIn('order_permit_id', $orderPermitIds)
+
+            ->whereHas('orderPermit', function ($query) use ($departmentId) {
+                $query->where('order_permit_department_id', $departmentId);
+            })
             ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
