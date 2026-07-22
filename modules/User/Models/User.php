@@ -78,7 +78,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "management_hierarchy_id",
         "status",
         "message_address",
-        "fcm_token"
+        "fcm_token",
+        "imei",
     ];
 
     protected $casts = [

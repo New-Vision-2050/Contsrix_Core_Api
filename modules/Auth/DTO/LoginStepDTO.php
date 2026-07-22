@@ -10,7 +10,7 @@ class LoginStepDTO
         public string $identifier,
         public string $password,
         public string $token,
-
+        public ?string $imei = null,
     ) {
     }
 
@@ -36,6 +36,11 @@ class LoginStepDTO
     public function getToken()
     {
         return $this->token;
+    }
+
+    public function getImei(): ?string
+    {
+        return $this->imei;
     }
 
 

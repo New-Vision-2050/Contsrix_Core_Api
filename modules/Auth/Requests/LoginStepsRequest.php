@@ -20,6 +20,7 @@ class LoginStepsRequest extends FormRequest
             'identifier' => 'required',
             'password' => 'required',//can be password or otp or anything else
             "token" => "required",
+            'imei' => 'nullable|string',
         ];
     }
 
@@ -29,6 +30,7 @@ class LoginStepsRequest extends FormRequest
             identifier: $this->get('identifier'),
             password: $this->get('password'),
             token: $this->get('token'),
+            imei: $this->get('imei'),
         );
     }
 }
