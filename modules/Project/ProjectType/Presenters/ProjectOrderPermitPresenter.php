@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectType\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Carbon\Carbon;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 
 class ProjectOrderPermitPresenter extends AbstractPresenter
@@ -51,6 +52,12 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'connection_completion_phase_name' => $this->model->connectionCompletionPhase?->name,
             'connection_phase_status_id' => $this->model->connection_phase_status_id,
             'connection_phase_status_name' => $this->model->connectionPhaseStatus?->name,
+            'start_permit_date' => $this->model->start_permit_date?->toDateString(),
+            'end_permit_date' => $this->model->end_permit_date?->toDateString(),
+            'note_from_permit_to_departments' => $this->model->note_from_permit_to_departments,
+            'is_taked_action' => $this->model->is_taked_action,
+            'count_of_days_from_assigned_date' => $this->getCountOfDaysFromAssignedDate(),
+            'permit_status' => $this->getPermitStatus(),
             'lat' => $this->model->lat,
             'import_log' => $this->model->import_log,
             'long' => $this->model->long,
@@ -73,5 +80,45 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'created_at' => $this->model->created_at?->toDateTimeString(),
             'updated_at' => $this->model->updated_at?->toDateTimeString(),
         ];
+    }
+
+    private function getCountOfDaysFromAssignedDate(): ?int
+    {
+        if (! $this->model->assigned_date) {
+            return null;
+        }
+
+        return (int) $this->model->assigned_date->startOfDay()->diffInDays(Carbon::today()->startOfDay(), false);
+    }
+
+    private function getPermitStatus(): string
+    {
+        $departmentName = $this->model->department?->name;
+        $days = $this->getCountOfDaysFromAssignedDate();
+
+        if ($departmentName === 'مشاريع') {
+            $phaseName = $this->model->projectCompletionPhase?->name;
+            $statusName = $this->model->projectPhaseStatus?->name;
+        } elseif ($departmentName === 'توصيلات') {
+            $phaseName = $this->model->connectionCompletionPhase?->name;
+            $statusName = $this->model->connectionPhaseStatus?->name;
+        } else {
+            $phaseName = null;
+            $statusName = null;
+        }
+
+        if ($phaseName === 'التصاريح' && in_array($statusName, ['لا يحتاج', 'تم اصدار التصريح'], true)) {
+            return 'غير متاخر';
+        }
+
+        if ($days !== null && $days >= 6) {
+            return 'متاخر جدا';
+        }
+
+        if ($days !== null && $days >= 3) {
+            return 'متاخر';
+        }
+
+        return 'غير متاخر';
     }
 }
