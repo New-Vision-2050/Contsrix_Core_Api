@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitPresenter;
 use Modules\Project\ProjectType\Requests\CreateProjectOrderPermitRequest;
+use Modules\Project\ProjectType\Requests\FilterProjectOrderPermitsRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
 use Modules\Project\ProjectType\Services\OrderPermitExcelImportService;
@@ -25,13 +26,12 @@ class ProjectOrderPermitController extends Controller
     }
 
 
-    public function index(Request $request, string $project): JsonResponse
+    public function index(FilterProjectOrderPermitsRequest $request, string $project): JsonResponse
     {
         try {
-            $items = $this->service->list(
-                $project,
-                $request->input('department_id')
-            );
+            $filters = $request->validated();
+            $items = $this->service->list($project, $filters);
+
 
             return Json::items(
                 $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()

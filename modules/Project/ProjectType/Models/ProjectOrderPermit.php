@@ -10,9 +10,11 @@ use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Modules\Project\ProjectManagement\Models\ProjectManagement as ProjectModel;
 use Modules\Country\Models\State;
 use Modules\Project\ProjectManagement\Models\Contractor;
+use BasePackage\Shared\Traits\BaseFilterable;
 
 class ProjectOrderPermit extends Model
 {
+        use BaseFilterable;
     protected $table = 'project_order_permit';
 
     protected $fillable = [
