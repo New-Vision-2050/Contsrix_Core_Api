@@ -28,7 +28,7 @@ class ProjectOrderPermitController extends Controller
     public function index(Request $request, string $project): JsonResponse
     {
         try {
-            $items = $this->service->list($project);
+            $items = $this->service->list($project, $request->only('order_permit_department_id'));
 
             return Json::items(
                 $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()
@@ -41,7 +41,7 @@ class ProjectOrderPermitController extends Controller
     public function all(Request $request): JsonResponse
     {
         try {
-            $items = $this->service->listAll();
+            $items = $this->service->listAll($request->only('order_permit_department_id'));
 
             return Json::items(
                 $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()
@@ -131,6 +131,7 @@ class ProjectOrderPermitController extends Controller
 
             return response()->json([
                 'message' => 'جاري تحديث البيانات في الخلفية',
+                'uds_sheet'=>$udsSheet->withMedia('uds_sheets')->getData()
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

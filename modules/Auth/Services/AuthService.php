@@ -272,6 +272,17 @@ class AuthService
 
         $user = $this->userCRUDService->getUserByIdentifier($loginStepDTO->getIdentifier());
 
+        // IMEI check: if user has no imei, set it; if different imei, reject
+        $imei = $loginStepDTO->getImei();
+        if ($imei) {
+            if ($user->imei === null) {
+                $this->userRepository->updateUser($user->id, ['imei' => $imei]);
+                $user->imei = $imei;
+            } elseif ($user->imei !== $imei) {
+                throw new \ErrorException(__("validation.imei-mismatch"), 403);
+            }
+        }
+
         //current step
         [$step, $nextStep] = $this->getLoginStepAndNextStepFromToken($loginStepDTO->getToken());
 

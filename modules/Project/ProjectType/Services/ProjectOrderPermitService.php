@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectType\Services;
 
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Storage;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Illuminate\Support\Facades\Log;
@@ -82,9 +83,27 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         if (!$media) return;
 
         $fullPath = $media->getPath();
-        if (!file_exists($fullPath)) return;
+        $tempFile = null;
+
+        if (!file_exists($fullPath)) {
+            $disk = $media->disk;
+            if (!in_array($disk, ['public', 'local'], true)) {
+                $content = Storage::disk($disk)->get($media->getPathRelativeToRoot());
+                if ($content === false) return;
+                $tempFile = tempnam(sys_get_temp_dir(), 'uds_') . '.xlsx';
+                file_put_contents($tempFile, $content);
+                $fullPath = $tempFile;
+            } else {
+                return;
+            }
+        }
 
         $rows = Excel::toArray([], $fullPath)[0] ?? [];
+
+        if ($tempFile !== null && file_exists($tempFile)) {
+            unlink($tempFile);
+        }
+
         if (empty($rows)) return;
 
         $matchedRows = [];
@@ -156,23 +175,25 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
     }
 }
 
-    public function list(string $projectId): Collection
+    public function list(string $projectId, array $filters = []): Collection
     {
         $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
 
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->where('order_permit_department_id', $deptId))
             ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
 
-    public function listAll(): Collection
+    public function listAll(array $filters = []): Collection
     {
         $projectIds = ProjectManagement::query()->pluck('id');
 
         return ProjectOrderPermit::query()
             ->whereIn('project_id', $projectIds)
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->where('order_permit_department_id', $deptId))
             ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
