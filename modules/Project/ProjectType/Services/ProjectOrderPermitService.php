@@ -175,23 +175,25 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
     }
 }
 
-    public function list(string $projectId): Collection
+    public function list(string $projectId, array $filters = []): Collection
     {
         $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
 
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->where('order_permit_department_id', $deptId))
             ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
 
-    public function listAll(): Collection
+    public function listAll(array $filters = []): Collection
     {
         $projectIds = ProjectManagement::query()->pluck('id');
 
         return ProjectOrderPermit::query()
             ->whereIn('project_id', $projectIds)
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->where('order_permit_department_id', $deptId))
             ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
