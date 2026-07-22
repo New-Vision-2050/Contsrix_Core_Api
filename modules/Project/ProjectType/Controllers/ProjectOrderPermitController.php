@@ -55,18 +55,7 @@ class ProjectOrderPermitController extends Controller
     }
 
 
-    // public function getByDepartment(Request $request, string $project, int $departmentId): JsonResponse
-    // {
-    //     try {
-    //         $items = $this->service->listByDepartment($project, $departmentId);
 
-    //         return Json::items(
-    //             $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()
-    //         );
-    //     } catch (\Exception $e) {
-    //         return Json::error($e->getMessage(), 500);
-    //     }
-    // }
     public function store(CreateProjectOrderPermitRequest $request): JsonResponse
     {
         $items = $this->service->createMany($request->validated());

@@ -72,89 +72,89 @@ class ProjectOrderPermitService
     }
 
 
-private function autoFillFromUds(ProjectOrderPermit $order): void
-{
-    try {
-        $udsSheet = UdsExcelSheet::where('project_id', $order->project_id)->first();
-        if (!$udsSheet) return;
+    private function autoFillFromUds(ProjectOrderPermit $order): void
+    {
+        try {
+            $udsSheet = UdsExcelSheet::where('project_id', $order->project_id)->first();
+            if (!$udsSheet) return;
 
-        $media = $udsSheet->getFirstMedia('uds_sheets');
-        if (!$media) return;
+            $media = $udsSheet->getFirstMedia('uds_sheets');
+            if (!$media) return;
 
-        $fullPath = $media->getPath();
-        if (!file_exists($fullPath)) return;
+            $fullPath = $media->getPath();
+            if (!file_exists($fullPath)) return;
 
-        $rows = Excel::toArray([], $fullPath)[0] ?? [];
-        if (empty($rows)) return;
+            $rows = Excel::toArray([], $fullPath)[0] ?? [];
+            if (empty($rows)) return;
 
-        $matchedRows = [];
-        foreach ($rows as $row) {
-            if (trim((string)($row[34] ?? '')) === $order->name) {
-                $matchedRows[] = $row;
+            $matchedRows = [];
+            foreach ($rows as $row) {
+                if (trim((string)($row[34] ?? '')) === $order->name) {
+                    $matchedRows[] = $row;
+                }
             }
-        }
 
-        if (empty($matchedRows)) return;
+            if (empty($matchedRows)) return;
 
-        $orderPermit = $order->orderPermit()->first();
-        if (!$orderPermit) return;
+            $orderPermit = $order->orderPermit()->first();
+            if (!$orderPermit) return;
 
-        $value = function (array $row, int $index): ?string {
-            $val = trim((string)($row[$index] ?? ''));
-            return $val !== '' ? $val : null;
-        };
-        $parseDate = function (array $row, int $index) use ($value): ?string {
-            $val = $value($row, $index);
-            if ($val === null) return null;
-            try { return Carbon::parse($val)->format('Y-m-d'); } catch (\Exception $e) { return null; }
-        };
-        $parseFloat = function (array $row, int $index) use ($value): ?float {
-            $val = $value($row, $index);
-            return $val !== null ? (float) $val : null;
-        };
+            $value = function (array $row, int $index): ?string {
+                $val = trim((string)($row[$index] ?? ''));
+                return $val !== '' ? $val : null;
+            };
+            $parseDate = function (array $row, int $index) use ($value): ?string {
+                $val = $value($row, $index);
+                if ($val === null) return null;
+                try { return Carbon::parse($val)->format('Y-m-d'); } catch (\Exception $e) { return null; }
+            };
+            $parseFloat = function (array $row, int $index) use ($value): ?float {
+                $val = $value($row, $index);
+                return $val !== null ? (float) $val : null;
+            };
 
-        $updates = [];
+            $updates = [];
 
-        foreach ($matchedRows as $matchedRow) {
-            $typeCode = trim((string)($matchedRow[35] ?? ''));
-            if ($typeCode === '') continue;
+            foreach ($matchedRows as $matchedRow) {
+                $typeCode = trim((string)($matchedRow[35] ?? ''));
+                if ($typeCode === '') continue;
 
-            $isContractor = $orderPermit->code !== null && (string)$orderPermit->code === $typeCode;
-            $isConsultant = $orderPermit->type !== null && (string)$orderPermit->type === $typeCode;
+                $isContractor = $orderPermit->code !== null && (string)$orderPermit->code === $typeCode;
+                $isConsultant = $orderPermit->type !== null && (string)$orderPermit->type === $typeCode;
 
-            if (!$isContractor && !$isConsultant) continue;
+                if (!$isContractor && !$isConsultant) continue;
 
-            if ($isContractor) {
-                $updates['executing_entity'] = $value($matchedRow, 27);
-                $updates['office'] = $value($matchedRow, 37);
-                $updates['contractor_basket'] = $value($matchedRow, 16);
-                $updates['contractor_last_procedure_code'] = $value($matchedRow, 30);
-                $updates['contractor_last_procedure_date'] = $parseDate($matchedRow, 28);
-                $updates['contractor_column_155_entry_date'] = $parseDate($matchedRow, 24);
-                $updates['material_balance_elec_contractor'] = $value($matchedRow, 13);
-                $updates['contractor_work_order_status'] = $value($matchedRow, 6);
-            } else {
-                $updates['consultant_current_basket'] = $value($matchedRow, 16);
-                $updates['assigned_date'] = $parseDate($matchedRow, 25);
-                $updates['consultant_assignment_date'] = $parseDate($matchedRow, 25);
-                $updates['consultant_last_procedure_code'] = $value($matchedRow, 30);
-                $updates['consultant_last_procedure_date'] = $parseDate($matchedRow, 28);
-                $updates['consultant_column_155_entry_date'] = $parseDate($matchedRow, 24);
-                $updates['price'] = $parseFloat($matchedRow, 12);
-                $updates['consultant_price'] = $parseFloat($matchedRow, 12);
+                if ($isContractor) {
+                    $updates['executing_entity'] = $value($matchedRow, 27);
+                    $updates['office'] = $value($matchedRow, 37);
+                    $updates['contractor_basket'] = $value($matchedRow, 16);
+                    $updates['contractor_last_procedure_code'] = $value($matchedRow, 30);
+                    $updates['contractor_last_procedure_date'] = $parseDate($matchedRow, 28);
+                    $updates['contractor_column_155_entry_date'] = $parseDate($matchedRow, 24);
+                    $updates['material_balance_elec_contractor'] = $value($matchedRow, 13);
+                    $updates['contractor_work_order_status'] = $value($matchedRow, 6);
+                } else {
+                    $updates['consultant_current_basket'] = $value($matchedRow, 16);
+                    $updates['assigned_date'] = $parseDate($matchedRow, 25);
+                    $updates['consultant_assignment_date'] = $parseDate($matchedRow, 25);
+                    $updates['consultant_last_procedure_code'] = $value($matchedRow, 30);
+                    $updates['consultant_last_procedure_date'] = $parseDate($matchedRow, 28);
+                    $updates['consultant_column_155_entry_date'] = $parseDate($matchedRow, 24);
+                    $updates['price'] = $parseFloat($matchedRow, 12);
+                    $updates['consultant_price'] = $parseFloat($matchedRow, 12);
+                }
             }
-        }
 
-        $updates = array_filter($updates, fn($v) => $v !== null);
+            $updates = array_filter($updates, fn($v) => $v !== null);
 
-        if (!empty($updates)) {
-            $order->update($updates);
-            Log::info("Auto-filled order {$order->name} from UDS Excel.", ['fields' => array_keys($updates)]);
+            if (!empty($updates)) {
+                $order->update($updates);
+                Log::info("Auto-filled order {$order->name} from UDS Excel.", ['fields' => array_keys($updates)]);
+            }
+        } catch (\Exception $e) {
+            Log::error("Auto-fill failed for order {$order->name}: " . $e->getMessage());
         }
-    } catch (\Exception $e) {
-        Log::error("Auto-fill failed for order {$order->name}: " . $e->getMessage());
     }
-}
 
     public function list(string $projectId, array $filters = []): Collection
     {
@@ -181,18 +181,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return $query->orderBy('created_at', 'desc')->get();
 
     }
-    // public function listByDepartment(string $projectId, $departmentId): Collection
-    // {
 
-    //     return ProjectOrderPermit::query()
-
-    //         ->whereHas('orderPermit', function ($query) use ($departmentId) {
-    //             $query->where('order_permit_department_id', $departmentId);
-    //         })
-    //         ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
-    //         ->orderBy('created_at', 'desc')
-    //         ->get();
-    // }
     public function listAll(): Collection
     {
         $projectIds = ProjectManagement::query()->pluck('id');
