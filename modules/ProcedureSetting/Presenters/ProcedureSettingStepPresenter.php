@@ -20,6 +20,7 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
             'id'                   => $this->step->id,
             'procedure_setting_id' => $this->step->procedure_setting_id,
             'company_id'           => $this->step->company_id,
+            'project_id'           => $this->step->project_id,
             'name'                 => $this->step->name,
             'branch_id'            => $this->step->branch_id,
             'management_id'        => $this->step->management_id,

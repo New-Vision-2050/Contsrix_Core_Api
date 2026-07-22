@@ -67,4 +67,12 @@ class ProcedureSettingCRUDService
             id: $id,
         );
     }
+
+    public function getForProject(string $projectId, UuidInterface $id): ProcedureSetting
+    {
+        return $this->repository->getProcedureSettingForProject(
+            projectId: $projectId,
+            id: $id,
+        );
+    }
 }

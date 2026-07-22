@@ -69,7 +69,7 @@ class ImportOrderPermitsJob implements ShouldQueue
 
         // تحميل العلاقات المطلوبة: contractor, orderPermit, department
         $existingOrders = ProjectOrderPermit::whereIn('name', $workOrderNumbers)
-            ->with(['contractor', 'orderPermit', 'department'])
+            ->with(['contractor', 'orderPermit.orderPermitType','department'])
             ->get()
             ->keyBy('name');
 

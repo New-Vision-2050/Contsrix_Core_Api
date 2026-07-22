@@ -63,7 +63,11 @@ class ResourceSharePresenter
 
         $mainBranch = $company->relationLoaded('mainBranch')
             ? $company->mainBranch
-            : $company->mainBranch()->first();
+            : null;
+
+        if (! $mainBranch) {
+            $mainBranch = $company->mainBranch()->withoutGlobalScopes()->first();
+        }
 
         return [
             'id' => $company->id,

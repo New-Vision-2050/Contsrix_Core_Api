@@ -21,11 +21,9 @@ class AttachmentRequestPresenter extends AbstractPresenter
             'name' => $this->request->name,
             'date' => $this->request->date?->toDateString(),
             'project_id' => $this->request->project_id,
+            'procedure_setting_id' => $this->request->procedure_setting_id,
             'status' => $this->request->status,
             'type' => $this->request->sender_company_id === tenant('id') ? 'outgoing' : 'incoming',
-            'attachment_type_id' => $this->request->attachment_type_id,
-            'attachment_sub_type_id' => $this->request->attachment_sub_type_id,
-            'attachment_sub_sub_type_id' => $this->request->attachment_sub_sub_type_id,
             'notes' => $this->request->notes,
             'created_at' => $this->request->created_at?->toISOString(),
             'responded_at' => $this->request->responded_at?->toISOString(),
@@ -35,6 +33,25 @@ class AttachmentRequestPresenter extends AbstractPresenter
                 'id' => $this->request->project->id,
                 'name' => $this->request->project->name,
                 'serial_number' => $this->request->project->serial_number,
+            ] : null;
+
+            $projectProcedure = $this->request->projectProcedureSetting;
+
+            $data['procedure_setting'] = $this->request->procedureSetting ? [
+                'id' => $this->request->procedureSetting->id,
+                'name' => $this->request->procedureSetting->name,
+                'type' => $this->request->procedureSetting->type,
+                'execute_type' => $this->request->procedureSetting->execute_type,
+                'is_active' => (bool) $this->request->procedureSetting->is_active,
+                'project_procedure_setting_id' => $projectProcedure?->id,
+                'receiver_company' => $projectProcedure?->receiverCompany ? [
+                    'id' => $projectProcedure->receiverCompany->id,
+                    'name' => $projectProcedure->receiverCompany->name,
+                    'serial_number' => $projectProcedure->receiverCompany->serial_number,
+                ] : null,
+                'attachment_type' => $this->folderData($projectProcedure?->attachmentType),
+                'attachment_sub_type' => $this->folderData($projectProcedure?->attachmentSubType),
+                'attachment_sub_sub_type' => $this->folderData($projectProcedure?->attachmentSubSubType),
             ] : null;
 
             $data['sender_company'] = $this->request->senderCompany ? [
@@ -143,5 +160,19 @@ class AttachmentRequestPresenter extends AbstractPresenter
         }
 
         return round($size, 2) . ' ' . $units[$i];
+    }
+
+    private function folderData($folder): ?array
+    {
+        if (!$folder) {
+            return null;
+        }
+
+        return [
+            'id' => $folder->id,
+            'name' => $folder->name,
+            'parent_id' => $folder->parent_id,
+            'project_id' => $folder->project_id,
+        ];
     }
 }

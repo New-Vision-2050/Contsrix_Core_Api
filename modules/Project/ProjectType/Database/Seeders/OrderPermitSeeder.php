@@ -95,9 +95,10 @@ class OrderPermitSeeder extends Seeder
             ];
 
             $createdCount = 0;
+            $updatedCount = 0;
 
             foreach ($orderPermits as $data) {
-                $orderPermit = OrderPermit::firstOrCreate(
+                $orderPermit = OrderPermit::updateOrCreate(
                     [
                         'code' => $data['code'],
                         'description' => $data['description'],
@@ -112,11 +113,13 @@ class OrderPermitSeeder extends Seeder
 
                 if ($orderPermit->wasRecentlyCreated) {
                     $createdCount++;
+                } else {
+                    $updatedCount++;
                 }
             }
 
             $this->command->info('OrderPermit seeder completed successfully!');
-            $this->command->info("Created {$createdCount} order permits, " . count($departmentMap) . " departments, and " . count($typeMap) . " types.");
+            $this->command->info("Created {$createdCount} order permits, updated {$updatedCount} order permits, " . count($departmentMap) . " departments, and " . count($typeMap) . " types.");
         });
     }
 }

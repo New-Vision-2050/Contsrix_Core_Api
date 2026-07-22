@@ -9,6 +9,7 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Modules\Project\ProjectManagement\Services\AttachmentRequestService;
 use Modules\Project\ProjectManagement\Requests\CreateAttachmentRequestRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToAttachmentItemRequest;
@@ -39,6 +40,8 @@ class AttachmentRequestController extends Controller
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400);
         }
@@ -307,12 +310,12 @@ class AttachmentRequestController extends Controller
         try {
             // Get receiver company WITHOUT tenancy scope
             $receiverCompany = Company::withoutGlobalScopes()
-                ->find($attachmentRequest->receiver_company_id);
+                ->find($attachmentRequest->receiverCompanyId());
 
             if (!$receiverCompany) {
                 \Log::warning("Receiver company not found for attachment request", [
                     'request_id' => $attachmentRequest->id,
-                    'receiver_company_id' => $attachmentRequest->receiver_company_id,
+                    'receiver_company_id' => $attachmentRequest->receiverCompanyId(),
                 ]);
                 return;
             }
