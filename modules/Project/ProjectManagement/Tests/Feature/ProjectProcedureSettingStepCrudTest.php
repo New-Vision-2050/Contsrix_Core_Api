@@ -101,6 +101,35 @@ class ProjectProcedureSettingStepCrudTest extends BaseAttendanceReportTestCase
         $this->assertSame($projectEmployeeIds, $step->project_employee_ids);
     }
 
+    public function test_project_employee_ids_do_not_require_distinct_values(): void
+    {
+        $project = $this->createProject();
+        $projectEmployee = $this->createProjectEmployee($project);
+        $context = $this->createProcedureSettingContext($project);
+        $procedureSetting = $this->createProcedureSetting($context);
+
+        $projectEmployeeIds = [
+            $projectEmployee->id,
+            $projectEmployee->id,
+        ];
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
+                'name' => 'Duplicated project employee selected step',
+                'forms' => 'approve',
+                'is_approve' => true,
+                'project_employee_ids' => $projectEmployeeIds,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.project_employee_ids.0', $projectEmployee->id)
+            ->assertJsonCount(1, 'payload.project_employee_ids');
+
+        $step = ProcedureSettingStep::query()->findOrFail($response->json('payload.id'));
+
+        $this->assertSame($projectEmployeeIds, $step->project_employee_ids);
+    }
+
     public function test_project_user_can_show_step_for_project_procedure_setting_without_project_id(): void
     {
         $project = $this->createProject();

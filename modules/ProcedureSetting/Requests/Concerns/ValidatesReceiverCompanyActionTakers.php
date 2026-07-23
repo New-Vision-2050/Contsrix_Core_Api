@@ -35,14 +35,7 @@ trait ValidatesReceiverCompanyActionTakers
         $projectId = ProcedureSettingProjectResolver::projectIdForProcedureSetting(
             (string) $this->route('procedureSettingId')
         );
-        if ($projectId === null) {
-            $validator->errors()->add(
-                'receiver_company_ids',
-                'Receiver company action takers require a project procedure setting.'
-            );
-
-            return;
-        }
+  
 
         $project = DB::table('projects')
             ->where('id', $projectId)
