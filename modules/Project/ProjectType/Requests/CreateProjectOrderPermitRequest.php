@@ -53,6 +53,15 @@ class CreateProjectOrderPermitRequest extends FormRequest
             'work_orders.*.contractor_work_order_status' => ['nullable', 'string', 'max:255'],
             'work_orders.*.contractor_basket' => ['nullable', 'string', 'max:255'],
             'work_orders.*.consultant_price' => ['nullable', 'numeric'],
+            'work_orders.*.employee_id' => ['nullable', 'integer', 'exists:users,id'],
+            'work_orders.*.target_drilling' => ['nullable', 'numeric'],
+            'work_orders.*.achieved_drilling' => ['nullable', 'numeric'],
+            'work_orders.*.target_extention' => ['nullable', 'numeric'],
+            'work_orders.*.achieved_extention' => ['nullable', 'numeric'],
+            'work_orders.*.description_details' => ['nullable', 'string'],
+            'work_orders.*.consultant_statement' => ['nullable', 'string'],
+            'work_orders.*.last_date_consultant_statement' => ['nullable', 'date'],
+            'work_orders.*.consultnat_statement_status' => ['nullable', 'string', 'max:255'],
         ];
     }
 
