@@ -44,11 +44,6 @@ class AttachmentRequestPresenter extends AbstractPresenter
                 'execute_type' => $this->request->procedureSetting->execute_type,
                 'is_active' => (bool) $this->request->procedureSetting->is_active,
                 'project_procedure_setting_id' => $projectProcedure?->id,
-                'receiver_company' => $projectProcedure?->receiverCompany ? [
-                    'id' => $projectProcedure->receiverCompany->id,
-                    'name' => $projectProcedure->receiverCompany->name,
-                    'serial_number' => $projectProcedure->receiverCompany->serial_number,
-                ] : null,
                 'attachment_type' => $this->folderData($projectProcedure?->attachmentType),
                 'attachment_sub_type' => $this->folderData($projectProcedure?->attachmentSubType),
                 'attachment_sub_sub_type' => $this->folderData($projectProcedure?->attachmentSubSubType),

@@ -92,6 +92,18 @@ class InternalProcedureSettingController extends Controller
     }
 
     /**
+     * GET /procedure-settings/job-attributes
+     * Returns active job attributes used by project procedure metadata.
+     */
+    public function jobAttributes(): JsonResponse
+    {
+        return Json::items(
+            $this->projectProcedureService->listJobAttributes(),
+            message: 'Project procedure job attributes retrieved successfully',
+        );
+    }
+
+    /**
      * GET /procedure-settings/{id}/available-forms
      * Returns forms applicable to this parent's type, for admin dropdowns.
      */

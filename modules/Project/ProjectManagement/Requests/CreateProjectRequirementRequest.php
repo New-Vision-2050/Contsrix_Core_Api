@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementEvaluationStatus;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementRepetition;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectRequirement;
 
 class CreateProjectRequirementRequest extends FormRequest
@@ -25,7 +26,9 @@ class CreateProjectRequirementRequest extends FormRequest
             'requirements.*.requirement_code' => ['required', 'string', 'max:255'],
             'requirements.*.required_document_name' => ['required', 'string', 'max:255'],
             'requirements.*.document' => ['required', 'string', 'max:255'],
-            'requirements.*.document_type_id' => ['nullable', 'uuid', $this->tenantScopedDocumentTypeRule()],
+            'document_type_id' => ['prohibited'],
+            'requirements.*.document_type_id' => ['prohibited'],
+            'requirements.*.procedure_setting_id' => ['nullable', 'uuid', $this->projectProcedureSettingRule()],
             'requirements.*.document_type' => ['required', 'string', 'max:255'],
             'requirements.*.specialization_id' => ['nullable', 'uuid', Rule::exists('academic_specializations', 'id')],
             'requirements.*.specialization' => ['nullable', 'string', 'max:255'],
@@ -60,7 +63,7 @@ class CreateProjectRequirementRequest extends FormRequest
             'requirement_code',
             'required_document_name',
             'document',
-            'document_type_id',
+            'procedure_setting_id',
             'document_type',
             'specialization_id',
             'specialization',
@@ -92,22 +95,42 @@ class CreateProjectRequirementRequest extends FormRequest
         });
     }
 
-    protected function tenantScopedDocumentTypeRule()
+    protected function projectProcedureSettingRule()
     {
-        $tenantId = tenant('id');
+        $projectId = $this->routeProjectId();
+        $companyId = $this->projectOwnerCompanyId($projectId) ?? tenant('id');
 
-        return Rule::exists('document_types', 'id')->where(static function ($query) use ($tenantId) {
-            if ($tenantId !== null && $tenantId !== '') {
-                $query->where('company_id', (string) $tenantId);
-            }
+        return Rule::exists('project_procedure_settings', 'procedure_setting_id')
+            ->where(static function ($query) use ($projectId, $companyId) {
+                if ($projectId !== '') {
+                    $query->where('project_id', $projectId);
+                }
 
-            return $query->whereNull('deleted_at');
-        });
+                if ($companyId !== null && $companyId !== '') {
+                    $query->where('company_id', (string) $companyId);
+                }
+
+                return $query;
+            });
     }
 
     protected function routeProjectId(): string
     {
         return (string) ($this->route('project') ?? $this->route('project_id') ?? $this->input('project_id'));
+    }
+
+    private function projectOwnerCompanyId(string $projectId): ?string
+    {
+        if ($projectId === '') {
+            return null;
+        }
+
+        $companyId = ProjectManagement::query()
+            ->withoutGlobalScopes()
+            ->where('id', $projectId)
+            ->value('company_id');
+
+        return $companyId === null ? null : (string) $companyId;
     }
 
     private function validateSubmittedCodes(Validator $validator): void

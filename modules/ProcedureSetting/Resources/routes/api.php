@@ -17,6 +17,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
     // Condition definitions for frontend rendering
     Route::get('/forms-conditions', [InternalProcedureSettingController::class, 'formsConditions']);
+    Route::get('/job-attributes', [InternalProcedureSettingController::class, 'jobAttributes']);
 
     // Internal Procedure Settings (child procedure settings with form key)
     Route::get('/internal-procedures', [InternalProcedureSettingController::class, 'index']);

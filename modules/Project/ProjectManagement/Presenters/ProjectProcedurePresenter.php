@@ -6,7 +6,6 @@ namespace Modules\Project\ProjectManagement\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
-use Modules\Company\CompanyCore\Models\Company;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureJobAttribute;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 
@@ -35,7 +34,6 @@ class ProjectProcedurePresenter extends AbstractPresenter
             'sort_order' => $procedureSetting?->sort_order,
             'is_active' => (bool) ($procedureSetting?->is_active ?? false),
             'work_flow_id' => $procedureSetting?->work_flow_id,
-            'receiver_company' => $this->companyData($this->projectProcedure->receiverCompany),
             'attachment_type' => $this->folderData($this->projectProcedure->attachmentType),
             'attachment_sub_type' => $this->folderData($this->projectProcedure->attachmentSubType),
             'attachment_sub_sub_type' => $this->folderData($this->projectProcedure->attachmentSubSubType),
@@ -55,22 +53,6 @@ class ProjectProcedurePresenter extends AbstractPresenter
             ] : null,
             'created_at' => $this->projectProcedure->created_at?->toDateTimeString(),
             'updated_at' => $this->projectProcedure->updated_at?->toDateTimeString(),
-        ];
-    }
-
-    private function companyData(?Company $company): ?array
-    {
-        if (! $company) {
-            return null;
-        }
-
-        return [
-            'id' => $company->id,
-            'name' => $company->name,
-            'serial_no' => $company->serial_no,
-            'serial_number' => $company->serial_no,
-            'email' => $company->email,
-            'phone' => $company->phone,
         ];
     }
 

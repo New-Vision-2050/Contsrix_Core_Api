@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\DocumentType\Models\DocumentType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\Project\ProjectManagement\Database\factories\ProjectRequirementFactory;
 use Modules\Shared\AcademicSpecialization\Models\AcademicSpecialization;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
@@ -33,7 +33,7 @@ class ProjectRequirement extends Model
         'requirement_code',
         'required_document_name',
         'document',
-        'document_type_id',
+        'procedure_setting_id',
         'document_type',
         'specialization_id',
         'specialization',
@@ -54,7 +54,7 @@ class ProjectRequirement extends Model
         'id' => 'string',
         'company_id' => 'string',
         'project_id' => 'string',
-        'document_type_id' => 'string',
+        'procedure_setting_id' => 'string',
         'specialization_id' => 'string',
         'sending_entity_id' => 'string',
         'review_entity_id' => 'string',
@@ -82,9 +82,9 @@ class ProjectRequirement extends Model
         return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
 
-    public function documentType(): BelongsTo
+    public function procedureSetting(): BelongsTo
     {
-        return $this->belongsTo(DocumentType::class, 'document_type_id')->withoutGlobalScopes();
+        return $this->belongsTo(ProcedureSetting::class, 'procedure_setting_id')->withoutGlobalScopes();
     }
 
     public function specializationLookup(): BelongsTo

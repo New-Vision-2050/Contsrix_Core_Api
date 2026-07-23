@@ -45,15 +45,10 @@ class AttachmentRequestService
             $project,
             (string) $data['procedure_setting_id']
         );
-
-        if (!$projectProcedure->receiver_company_id) {
-            throw ValidationException::withMessages([
-                'procedure_setting_id' => 'Selected procedure must define a receiver company.',
-            ]);
-        }
+        $receiverCompanyId = (string) $data['receiver_company_id'];
 
         // Verify companies are involved in project sharing
-        $this->verifyCompanyAccess($project, $projectProcedure->receiver_company_id);
+        $this->verifyCompanyAccess($project, $receiverCompanyId);
 
         // Use provided serial number or auto-generate
         $serialNumber = $data['serial_number'] ?? $this->repository->generateSerialNumber();
@@ -65,6 +60,7 @@ class AttachmentRequestService
             'project_id' => $data['project_id'],
             'procedure_setting_id' => $projectProcedure->procedure_setting_id,
             'sender_company_id' => (string) tenant('id'),
+            'receiver_company_id' => $receiverCompanyId,
             'status' => 'pending',
             'created_by_user_id' => (string) Auth::id(),
             'notes' => $data['notes'] ?? null,
@@ -83,7 +79,7 @@ class AttachmentRequestService
             metadata: [
                 'request_name' => $request->name,
                 'total_attachments' => count($items),
-                'receiver_company' => $projectProcedure->receiver_company_id,
+                'receiver_company' => $receiverCompanyId,
                 'procedure_setting_id' => $projectProcedure->procedure_setting_id,
             ]
         );

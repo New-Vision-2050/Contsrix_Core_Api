@@ -32,6 +32,7 @@ class AttachmentRequest extends Model
         'project_id',
         'procedure_setting_id',
         'sender_company_id',
+        'receiver_company_id',
         'status',
         'created_by_user_id',
         'responded_by_user_id',
@@ -43,6 +44,7 @@ class AttachmentRequest extends Model
         'date' => 'date',
         'responded_at' => 'datetime',
         'procedure_setting_id' => 'string',
+        'receiver_company_id' => 'string',
     ];
 
     /**
@@ -72,14 +74,7 @@ class AttachmentRequest extends Model
 
     public function scopeForReceiverCompany(Builder $query, string $companyId): Builder
     {
-        return $query->whereHas('projectProcedureSetting', static function (Builder $query) use ($companyId): void {
-            $query->where('receiver_company_id', $companyId);
-        });
-    }
-
-    public function getReceiverCompanyIdAttribute(): ?string
-    {
-        return $this->receiverCompanyId();
+        return $query->where('receiver_company_id', $companyId);
     }
 
     public function getAttachmentTypeIdAttribute(): ?string
@@ -97,9 +92,9 @@ class AttachmentRequest extends Model
         return $this->attachmentSubSubTypeId();
     }
 
-    public function getReceiverCompanyAttribute(): ?Company
+    public function receiverCompany(): BelongsTo
     {
-        return $this->projectProcedureSetting?->receiverCompany;
+        return $this->belongsTo(Company::class, 'receiver_company_id')->withoutGlobalScopes();
     }
 
     public function getAttachmentTypeAttribute(): ?Folder
@@ -119,7 +114,7 @@ class AttachmentRequest extends Model
 
     public function receiverCompanyId(): ?string
     {
-        return $this->projectProcedureSetting?->receiver_company_id;
+        return $this->getAttribute('receiver_company_id');
     }
 
     public function attachmentTypeId(): ?string

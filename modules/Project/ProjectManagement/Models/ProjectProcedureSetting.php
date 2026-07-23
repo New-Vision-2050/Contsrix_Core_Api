@@ -29,7 +29,6 @@ class ProjectProcedureSetting extends Model
         'company_id',
         'project_id',
         'procedure_setting_id',
-        'receiver_company_id',
         'attachment_type_id',
         'attachment_sub_type_id',
         'attachment_sub_sub_type_id',
@@ -45,7 +44,6 @@ class ProjectProcedureSetting extends Model
         'company_id' => 'string',
         'project_id' => 'string',
         'procedure_setting_id' => 'string',
-        'receiver_company_id' => 'string',
         'attachment_type_id' => 'string',
         'attachment_sub_type_id' => 'string',
         'attachment_sub_sub_type_id' => 'string',
@@ -74,11 +72,6 @@ class ProjectProcedureSetting extends Model
     public function procedureSetting(): BelongsTo
     {
         return $this->belongsTo(ProcedureSetting::class, 'procedure_setting_id')->withoutGlobalScopes();
-    }
-
-    public function receiverCompany(): BelongsTo
-    {
-        return $this->belongsTo(Company::class, 'receiver_company_id')->withoutGlobalScopes();
     }
 
     public function attachmentType(): BelongsTo
