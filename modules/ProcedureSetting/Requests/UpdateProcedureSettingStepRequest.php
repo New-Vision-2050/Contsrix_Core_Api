@@ -10,12 +10,10 @@ use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\Validator;
 use Modules\ProcedureSetting\Commands\UpdateProcedureSettingStepCommand;
 use Modules\ProcedureSetting\Requests\Concerns\ValidatesProjectEmployeeSelections;
-use Modules\ProcedureSetting\Requests\Concerns\ValidatesReceiverCompanyActionTakers;
 use Modules\ProcedureSetting\Rules\ActionTakerUserIdsUniquePerProcedureSetting;
 
 class UpdateProcedureSettingStepRequest extends FormRequest
 {
-    use ValidatesReceiverCompanyActionTakers;
     use ValidatesProjectEmployeeSelections;
 
     /** Keys merged only for validation; never sent to the update handler. */
@@ -47,7 +45,6 @@ class UpdateProcedureSettingStepRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $this->validateReceiverCompanyActionTakers($validator);
             $this->validateProjectEmployeeSelections($validator);
         });
     }

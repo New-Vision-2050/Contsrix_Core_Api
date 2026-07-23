@@ -9,12 +9,10 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\ProcedureSetting\DTO\CreateProcedureSettingStepDTO;
 use Modules\ProcedureSetting\Requests\Concerns\ValidatesProjectEmployeeSelections;
-use Modules\ProcedureSetting\Requests\Concerns\ValidatesReceiverCompanyActionTakers;
 use Modules\ProcedureSetting\Rules\ActionTakerUserIdsUniquePerProcedureSetting;
 
 class CreateProcedureSettingStepRequest extends FormRequest
 {
-    use ValidatesReceiverCompanyActionTakers;
     use ValidatesProjectEmployeeSelections;
 
     protected function prepareForValidation(): void
@@ -170,7 +168,6 @@ class CreateProcedureSettingStepRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $this->validateReceiverCompanyActionTakers($validator);
             $this->validateProjectEmployeeSelections($validator);
         });
     }

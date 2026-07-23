@@ -493,7 +493,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         ]);
     }
 
-    public function test_receiver_company_action_taker_requires_accepted_shared_company(): void
+    public function test_receiver_company_action_taker_requires_receiver_company_ids_only(): void
     {
         $project = $this->createProject();
         $procedureSetting = $this->createProjectProcedure($project);
@@ -510,7 +510,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['receiver_company_ids']);
 
-        $this->actingAs($this->actor, 'api')
+        $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
                 'name' => 'Receiver company review',
@@ -519,8 +519,13 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
                 'action_taker_type' => 'receiver_company',
                 'receiver_company_ids' => [$receiverCompany->id],
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['receiver_company_ids']);
+            ->assertOk()
+            ->assertJsonPath('payload.receiver_company_ids.0', $receiverCompany->id);
+
+        $this->assertSame(
+            [$receiverCompany->id],
+            ProcedureSettingStep::query()->findOrFail($response->json('payload.id'))->receiver_company_ids,
+        );
 
         $step = ProcedureSettingStep::query()->create([
             'procedure_setting_id' => $procedureSetting->id,
