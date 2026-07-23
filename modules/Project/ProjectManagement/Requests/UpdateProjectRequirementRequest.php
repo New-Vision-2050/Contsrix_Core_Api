@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementEvaluationStatus;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementRepetition;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectRequirement;
 
 class UpdateProjectRequirementRequest extends FormRequest
@@ -24,7 +25,8 @@ class UpdateProjectRequirementRequest extends FormRequest
             'requirement_code' => ['sometimes', 'required', 'string', 'max:255'],
             'required_document_name' => ['sometimes', 'required', 'string', 'max:255'],
             'document' => ['sometimes', 'required', 'string', 'max:255'],
-            'document_type_id' => ['nullable', 'uuid', $this->tenantScopedDocumentTypeRule()],
+            'document_type_id' => ['prohibited'],
+            'procedure_setting_id' => ['nullable', 'uuid', $this->projectProcedureSettingRule()],
             'document_type' => ['sometimes', 'required', 'string', 'max:255'],
             'specialization_id' => ['nullable', 'uuid', Rule::exists('academic_specializations', 'id')],
             'specialization' => ['nullable', 'string', 'max:255'],
@@ -58,17 +60,37 @@ class UpdateProjectRequirementRequest extends FormRequest
         });
     }
 
-    private function tenantScopedDocumentTypeRule()
+    private function projectProcedureSettingRule()
     {
-        $tenantId = tenant('id');
+        $projectId = (string) $this->route('project');
+        $companyId = $this->projectOwnerCompanyId($projectId) ?? tenant('id');
 
-        return Rule::exists('document_types', 'id')->where(static function ($query) use ($tenantId) {
-            if ($tenantId !== null && $tenantId !== '') {
-                $query->where('company_id', (string) $tenantId);
-            }
+        return Rule::exists('project_procedure_settings', 'procedure_setting_id')
+            ->where(static function ($query) use ($projectId, $companyId) {
+                if ($projectId !== '') {
+                    $query->where('project_id', $projectId);
+                }
 
-            return $query->whereNull('deleted_at');
-        });
+                if ($companyId !== null && $companyId !== '') {
+                    $query->where('company_id', (string) $companyId);
+                }
+
+                return $query;
+            });
+    }
+
+    private function projectOwnerCompanyId(string $projectId): ?string
+    {
+        if ($projectId === '') {
+            return null;
+        }
+
+        $companyId = ProjectManagement::query()
+            ->withoutGlobalScopes()
+            ->where('id', $projectId)
+            ->value('company_id');
+
+        return $companyId === null ? null : (string) $companyId;
     }
 
     private function validateUniqueRequirementCode(Validator $validator): void

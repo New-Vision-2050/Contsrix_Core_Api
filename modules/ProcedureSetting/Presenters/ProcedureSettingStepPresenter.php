@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\ProcedureSetting\Presenters;
 
-use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 
 class ProcedureSettingStepPresenter extends AbstractPresenter
 {
@@ -58,6 +59,9 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
 
             // Convenience combined format for frontend: [{type,id}]
             'action_taker_specific_procedures' => $this->resolveSpecificProceduresCombined(),
+
+            'receiver_company_ids' => $this->receiverCompanyIds(),
+            'receiver_companies'   => $this->receiverCompaniesPayload(),
 
             'action_taker_hierarchy'             => $this->resolveActionTakerHierarchyPayload(),
         ];
@@ -118,6 +122,7 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
         return match ($this->step->action_taker_type?->value) {
             'management_hierarchy' => 'Management Hierarchy',
             'specific_procedures'  => 'Specific Procedures',
+            'receiver_company'     => 'Receiver Company',
             'himself'              => 'Himself',
             'assigned_user'        => 'Assigned User',
             default                => 'Specific User',
@@ -176,6 +181,50 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
         }
 
         return $combined;
+    }
+
+    private function receiverCompanyIds(): array
+    {
+        return collect($this->step->receiver_company_ids ?? [])
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->filter(static fn (string $id): bool => $id !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function receiverCompaniesPayload(): array
+    {
+        $ids = $this->receiverCompanyIds();
+        if ($ids === []) {
+            return [];
+        }
+
+        $companies = Company::query()
+            ->withoutGlobalScopes()
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        return collect($ids)
+            ->map(static function (string $id) use ($companies): ?array {
+                $company = $companies->get($id);
+                if ($company === null) {
+                    return null;
+                }
+
+                return [
+                    'id'            => $company->id,
+                    'name'          => $company->name,
+                    'serial_no'     => $company->serial_no,
+                    'serial_number' => $company->serial_no,
+                    'email'         => $company->email,
+                    'phone'         => $company->phone,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function resolveActionTakerHierarchyPayload(): ?array

@@ -6,14 +6,13 @@ namespace Modules\Project\ProjectManagement\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\ProcedureSetting\Repositories\ProcedureSettingRepository;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureJobAttribute;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Repositories\ProjectProcedureRepository;
-use Modules\Shared\ResourceShare\Models\ResourceShare;
 use Ramsey\Uuid\Uuid;
 
 class ProjectProcedureService
@@ -34,6 +33,25 @@ class ProjectProcedureService
         }
 
         return $this->repository->listForProject($project->id, self::PROCEDURE_TYPE, $parentProcedureSettingId);
+    }
+
+    /**
+     * @return array<int, array{id: string, name: string, code: string, is_active: bool}>
+     */
+    public function listJobAttributes(): array
+    {
+        return ProjectProcedureJobAttribute::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'code', 'is_active'])
+            ->map(static fn (ProjectProcedureJobAttribute $jobAttribute): array => [
+                'id' => $jobAttribute->id,
+                'name' => $jobAttribute->name,
+                'code' => $jobAttribute->code,
+                'is_active' => (bool) $jobAttribute->is_active,
+            ])
+            ->values()
+            ->all();
     }
 
     public function get(
@@ -60,11 +78,6 @@ class ProjectProcedureService
     ): ProjectProcedureSetting
     {
         $project = $this->findOwnedProjectOrFail($projectId);
-        $receiverCompanyId = $metadata['receiver_company_id'] ?? null;
-
-        if ($receiverCompanyId) {
-            $this->assertReceiverCompanyIsSharedWithProject($project, (string) $receiverCompanyId);
-        }
 
         return DB::transaction(function () use (
             $project,
@@ -110,11 +123,6 @@ class ProjectProcedureService
             self::PROCEDURE_TYPE,
             $parentProcedureSettingId
         );
-        $receiverCompanyId = $metadata['receiver_company_id'] ?? null;
-
-        if ($receiverCompanyId) {
-            $this->assertReceiverCompanyIsSharedWithProject($project, (string) $receiverCompanyId);
-        }
 
         return DB::transaction(function () use ($projectProcedure, $procedureData, $metadata): ProjectProcedureSetting {
             if ($procedureData !== []) {
@@ -241,23 +249,6 @@ class ProjectProcedureService
     private function projectWorkFlowName(ProjectManagement $project): string
     {
         return 'project_'.$project->id;
-    }
-
-    private function assertReceiverCompanyIsSharedWithProject(ProjectManagement $project, string $receiverCompanyId): void
-    {
-        $isAcceptedSharedCompany = ResourceShare::query()
-            ->where('shareable_type', ProjectManagement::class)
-            ->where('shareable_id', $project->id)
-            ->where('owner_company_id', $project->company_id)
-            ->where('status', 'accepted')
-            ->where('shared_with_company_id', $receiverCompanyId)
-            ->exists();
-
-        if (! $isAcceptedSharedCompany) {
-            throw ValidationException::withMessages([
-                'receiver_company_id' => 'Selected receiver company must be an accepted shared company for this project.',
-            ]);
-        }
     }
 
     private function procedureSettingPayload(ProjectManagement $project, array $data): array

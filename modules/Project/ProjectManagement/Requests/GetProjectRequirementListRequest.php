@@ -8,6 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementEvaluationStatus;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementRepetition;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 
 class GetProjectRequirementListRequest extends FormRequest
 {
@@ -20,7 +21,8 @@ class GetProjectRequirementListRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:255'],
-            'document_type_id' => ['nullable', 'uuid'],
+            'document_type_id' => ['prohibited'],
+            'procedure_setting_id' => ['nullable', 'uuid', $this->projectProcedureSettingRule()],
             'document_type' => ['nullable', 'string', 'max:255'],
             'specialization_id' => ['nullable', 'uuid'],
             'specialization' => ['nullable', 'string', 'max:255'],
@@ -42,7 +44,7 @@ class GetProjectRequirementListRequest extends FormRequest
         return array_filter(
             $this->safe()->only([
                 'search',
-                'document_type_id',
+                'procedure_setting_id',
                 'document_type',
                 'specialization_id',
                 'specialization',
@@ -67,5 +69,38 @@ class GetProjectRequirementListRequest extends FormRequest
     public function perPage(): int
     {
         return (int) $this->input('per_page', 15);
+    }
+
+    private function projectProcedureSettingRule()
+    {
+        $projectId = (string) $this->route('project');
+        $companyId = $this->projectOwnerCompanyId($projectId) ?? tenant('id');
+
+        return Rule::exists('project_procedure_settings', 'procedure_setting_id')
+            ->where(static function ($query) use ($projectId, $companyId) {
+                if ($projectId !== '') {
+                    $query->where('project_id', $projectId);
+                }
+
+                if ($companyId !== null && $companyId !== '') {
+                    $query->where('company_id', (string) $companyId);
+                }
+
+                return $query;
+            });
+    }
+
+    private function projectOwnerCompanyId(string $projectId): ?string
+    {
+        if ($projectId === '') {
+            return null;
+        }
+
+        $companyId = ProjectManagement::query()
+            ->withoutGlobalScopes()
+            ->where('id', $projectId)
+            ->value('company_id');
+
+        return $companyId === null ? null : (string) $companyId;
     }
 }

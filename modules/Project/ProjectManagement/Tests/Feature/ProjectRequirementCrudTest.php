@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\DocumentType\Models\DocumentType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementEvaluationStatus;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementRepetition;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Models\ProjectRequirement;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\RoleAndPermission\Enums\Permission;
@@ -70,10 +72,13 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
     {
         $project = $this->createProject();
         $receiverCompany = $this->createCompany();
+        $procedure = $this->createProjectProcedure($project, 'Document Approval');
+        $otherProcedure = $this->createProjectProcedure($project, 'Inspection Review');
         $matching = $this->createRequirement($project, [
             'requirement_code' => 'NTF-0001',
             'required_document_name' => 'Approved shop drawing',
             'document' => 'Shop drawing - lv panel',
+            'procedure_setting_id' => $procedure->procedure_setting_id,
             'document_type' => 'Technical Submittal',
             'specialization' => 'Electrical',
             'stage' => 'Owner',
@@ -83,6 +88,7 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
             'requirement_code' => 'NTF-0002',
             'required_document_name' => 'Mechanical inspection',
             'document' => 'Pump room report',
+            'procedure_setting_id' => $otherProcedure->procedure_setting_id,
             'document_type' => 'Inspection Report',
             'specialization' => 'Mechanical',
             'stage' => 'Contractor',
@@ -94,6 +100,7 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
         $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson('/api/v1/projects/'.$project->id.'/requirements?search=lv%20panel'
+                .'&procedure_setting_id='.$procedure->procedure_setting_id
                 .'&document_type=Technical%20Submittal'
                 .'&specialization=Electrical'
                 .'&stage=Owner'
@@ -107,7 +114,7 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
     public function test_user_can_create_single_project_requirement(): void
     {
         $project = $this->createProject();
-        $documentType = $this->createDocumentType('Technical Submittal');
+        $procedure = $this->createProjectProcedure($project, 'Document Approval');
 
         $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
@@ -115,7 +122,7 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
                 'requirement_code' => 'NTF-1001',
                 'required_document_name' => 'Stamped approval document',
                 'document' => 'Shop drawing - lv panel',
-                'document_type_id' => $documentType->id,
+                'procedure_setting_id' => $procedure->procedure_setting_id,
                 'document_type' => 'Technical Submittal',
                 'specialization' => 'Electrical',
                 'repetition' => ProjectRequirementRepetition::Daily->value,
@@ -124,15 +131,20 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
             ])
             ->assertOk()
             ->assertJsonPath('payload.requirement_code', 'NTF-1001')
-            ->assertJsonPath('payload.document_type_lookup.id', $documentType->id)
+            ->assertJsonPath('payload.procedure_setting_id', $procedure->procedure_setting_id)
+            ->assertJsonPath('payload.procedure_setting.id', $procedure->procedure_setting_id)
+            ->assertJsonPath('payload.procedure_setting.name', 'Document Approval')
             ->assertJsonPath('payload.evaluation_status', ProjectRequirementEvaluationStatus::default());
+
+        $this->assertArrayNotHasKey('document_type_id', $response->json('payload'));
+        $this->assertArrayNotHasKey('document_type_lookup', $response->json('payload'));
 
         $this->assertDatabaseHas('project_requirements', [
             'id' => $response->json('payload.id'),
             'company_id' => $this->company->id,
             'project_id' => $project->id,
             'requirement_code' => 'NTF-1001',
-            'document_type_id' => $documentType->id,
+            'procedure_setting_id' => $procedure->procedure_setting_id,
             'repetition' => ProjectRequirementRepetition::Daily->value,
         ]);
     }
@@ -386,8 +398,10 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
         $firstReceiverCompany = $this->createCompany();
         $secondReceiverCompany = $this->createCompany();
         $firstReceiverUser = User::factory()->create(['company_id' => $firstReceiverCompany->id]);
+        $procedure = $this->createProjectProcedure($project, 'Receiver Visible Procedure');
         $assignedRequirement = $this->createRequirement($project, [
             'requirement_code' => 'NTF-RECV-LIST-001',
+            'procedure_setting_id' => $procedure->procedure_setting_id,
         ]);
         $otherReceiverRequirement = $this->createRequirement($project, [
             'requirement_code' => 'NTF-RECV-LIST-002',
@@ -416,6 +430,13 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('pagination.result_count', 1)
             ->assertJsonPath('payload.0.id', $assignedRequirement->id)
             ->assertJsonPath('summary.total', 1);
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $firstReceiverCompany->id)
+            ->getJson("/api/v1/projects/{$project->id}/requirements?procedure_setting_id={$procedure->procedure_setting_id}")
+            ->assertOk()
+            ->assertJsonPath('pagination.result_count', 1)
+            ->assertJsonPath('payload.0.id', $assignedRequirement->id);
 
         $this->actingAs($firstReceiverUser, 'api')
             ->withHeader('X-Tenant', $firstReceiverCompany->id)
@@ -507,13 +528,69 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
             ->assertUnprocessable();
     }
 
+    public function test_project_requirement_rejects_legacy_document_type_id(): void
+    {
+        $project = $this->createProject();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/projects/{$project->id}/requirements", $this->requirementPayload('NTF-LEGACY-001', [
+                'document_type_id' => (string) Str::uuid(),
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['document_type_id']);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/{$project->id}/requirements?document_type_id=".(string) Str::uuid())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['document_type_id']);
+    }
+
+    public function test_project_requirement_validates_procedure_setting_project_and_tenant_scope(): void
+    {
+        $project = $this->createProject();
+        $otherProject = $this->createProject(['name' => 'Other Procedure Project']);
+        $otherProjectProcedure = $this->createProjectProcedure($otherProject, 'Other Project Procedure');
+        $otherTenantCompany = $this->createCompany(['serial_no' => 'REQ-OTHER-TENANT']);
+        $otherTenantProcedure = $this->createProjectProcedure($project, 'Other Tenant Procedure', $otherTenantCompany);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/projects/{$project->id}/requirements", $this->requirementPayload('NTF-BAD-PROC-001', [
+                'procedure_setting_id' => $otherProjectProcedure->procedure_setting_id,
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['requirements.0.procedure_setting_id']);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/projects/{$project->id}/requirements", $this->requirementPayload('NTF-BAD-PROC-002', [
+                'procedure_setting_id' => $otherTenantProcedure->procedure_setting_id,
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['requirements.0.procedure_setting_id']);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/projects/{$project->id}/requirements", $this->requirementPayload('NTF-NULL-PROC-001', [
+                'procedure_setting_id' => null,
+            ]))
+            ->assertOk()
+            ->assertJsonPath('payload.procedure_setting_id', null)
+            ->assertJsonPath('payload.procedure_setting', null);
+    }
+
     private function schemaReady(): bool
     {
         return Schema::hasTable('project_requirements')
+            && Schema::hasColumn('project_requirements', 'procedure_setting_id')
             && Schema::hasTable('project_requirement_receiver_companies')
             && Schema::hasTable('projects')
             && Schema::hasTable('project_types')
-            && Schema::hasTable('document_types')
+            && Schema::hasTable('procedure_settings')
+            && Schema::hasTable('project_procedure_settings')
+            && Schema::hasTable('work_flows')
             && Schema::hasTable('resource_shares');
     }
 
@@ -548,15 +625,6 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
         )->id;
     }
 
-    private function createDocumentType(string $name): DocumentType
-    {
-        return DocumentType::query()->withoutGlobalScopes()->create([
-            'name' => $name,
-            'company_id' => $this->company->id,
-            'is_active' => true,
-        ]);
-    }
-
     private function createCompany(array $overrides = []): Company
     {
         return Company::withoutEvents(fn () => Company::query()->create(array_merge([
@@ -574,6 +642,50 @@ class ProjectRequirementCrudTest extends BaseAttendanceReportTestCase
             'complete_data' => 1,
             'serial_no' => 'REQ-REC-'.Str::upper(Str::random(6)),
         ], $overrides)));
+    }
+
+    private function createProjectProcedure(
+        ProjectManagement $project,
+        string $name = 'Document Approval',
+        ?Company $company = null
+    ): ProjectProcedureSetting {
+        $company ??= $this->company;
+        $type = ProjectProcedureSetting::PROCEDURE_TYPE;
+
+        $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
+            'company_id' => $company->id,
+            'project_id' => $project->id,
+            'name' => 'project_'.$project->id.'_'.Str::lower(Str::random(6)),
+            'type' => $type,
+        ]);
+
+        $parent = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $company->id,
+            'name' => 'Project Procedures',
+            'type' => $type,
+            'execute_type' => 'sequence',
+            'is_active' => true,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => null,
+        ]);
+
+        $procedureSetting = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $company->id,
+            'name' => $name,
+            'type' => $type,
+            'execute_type' => 'sequence',
+            'is_active' => true,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => $parent->id,
+            'sort_order' => 1,
+        ]);
+
+        return ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $company->id,
+            'project_id' => $project->id,
+            'procedure_setting_id' => $procedureSetting->id,
+            'used_in_document_cycle' => true,
+        ]);
     }
 
     private function createRequirement(ProjectManagement $project, array $overrides = []): ProjectRequirement

@@ -199,6 +199,7 @@ return [
     "you-must-set-your-answers" => "يجب ادخال الاجابات الخاصة بك",
     "all-questions-are-required" => "جميع الاسئلة مطلوبة",
     "invalid-token" => "الرمز غير صحيح",
+    "imei-mismatch" => "هذا الجهاز غير مصرح به لهذا الحساب. يرجى تسجيل الدخول من الجهاز المسجل.",
     "can-not-resend-otp"=>"لا يمكن اعادة ارسال كلمه المرور المؤقتة",
     'company_name' => 'اسم الشركة غير صحيح',
     'company_name_unique' => 'اسم الشركة موجد مسبقا',

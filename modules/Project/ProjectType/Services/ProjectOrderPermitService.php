@@ -8,11 +8,9 @@ use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectType\Models\UdsProjectOrderPermit;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Facades\Excel;
-use Carbon\Carbon;
-use Modules\Project\ProjectType\Models\UdsExcelSheet;
-use Modules\Project\ProjectType\Models\OrderPermitDepartment;
+
 class ProjectOrderPermitService
 {
     public function createMany(array $data): array
@@ -21,18 +19,17 @@ class ProjectOrderPermitService
         $items = [];
 
         foreach (Arr::get($data, 'work_orders', []) as $workOrderData) {
+            $name = Arr::get($workOrderData, 'name');
+            $orderPermitId = Arr::get($workOrderData, 'order_permit_id');
 
+            $exists = ProjectOrderPermit::where('name', $name)
+                ->where('order_permit_id', $orderPermitId)
+                ->exists();
 
-        $name = Arr::get($workOrderData, 'name');
-        $orderPermitId = Arr::get($workOrderData, 'order_permit_id');
+            if ($exists) {
+                throw new \Exception("أمر العمل '{$name}' مع نوع الأمر '{$orderPermitId}' موجود مسبقاً.", 422);
+            }
 
-        $exists = ProjectOrderPermit::where('name', $name)
-            ->where('order_permit_id', $orderPermitId)
-            ->exists();
-
-        if ($exists) {
-            throw new \Exception("أمر العمل '{$name}' مع نوع الأمر '{$orderPermitId}' موجود مسبقاً.", 422);
-        }
             $item = ProjectOrderPermit::query()->create([
                 'project_id' => $projectId,
                 'project_management_id' => Arr::get($workOrderData, 'project_management_id'),
@@ -40,7 +37,7 @@ class ProjectOrderPermitService
                 'order_permit_id' => Arr::get($workOrderData, 'order_permit_id'),
                 'order_permit_department_id' => Arr::get($workOrderData, 'order_permit_department_id'),
                 'contractor_id' => Arr::get($workOrderData, 'contractor_id'),
-                'name' => Arr::get($workOrderData, 'name'),
+                'name' => $name,
                 'type' => Arr::get($workOrderData, 'type'),
                 'assigned_date' => Arr::get($workOrderData, 'assigned_date'),
                 'state_id' => Arr::get($workOrderData, 'state_id'),
@@ -71,10 +68,9 @@ class ProjectOrderPermitService
         return $items;
     }
 
-
     private function autoFillFromUds(ProjectOrderPermit $order): void
     {
-        $udsRecords = \Modules\Project\ProjectType\Models\UdsProjectOrderPermit::where('project_id', $order->project_id)
+        $udsRecords = UdsProjectOrderPermit::where('project_id', $order->project_id)
             ->where('name', $order->name)
             ->get();
 
@@ -119,43 +115,34 @@ class ProjectOrderPermitService
             Log::info("Auto-filled order {$order->name} from UDS table.");
         }
     }
+
     public function list(string $projectId, array $filters = []): Collection
     {
         $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
 
-    $query = ProjectOrderPermit::query()
-        ->where('project_id', $project->id)
-        ->with([
-            'orderPermit',
-            'department',
-            'contractor',
-            'state',
-            'projectManagement',
-            'projectDistrict',
-        ]);
-            if (!empty($filters)) {
-                $query->filter($filters);
-            }
-            if (!empty($filters['department_id'])) {
-                $departmentId = (int) $filters['department_id'];
-                $query->whereHas('orderPermit', function ($q) use ($departmentId) {
-                    $q->where('order_permit_department_id', $departmentId);
-            });}
-        return $query->orderBy('created_at', 'desc')->get();
-
-    }
-
-    public function listAll(): Collection
-    {
-        $projectIds = ProjectManagement::query()->pluck('id');
-
         return ProjectOrderPermit::query()
-            ->whereIn('project_id', $projectIds)
+            ->where('project_id', $project->id)
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) =>
+                $q->whereHas('orderPermit', fn ($q2) => $q2->where('order_permit_department_id', $deptId))
+            )
             ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
 
+    public function listAll(array $filters = []): Collection
+    {
+        $projectIds = ProjectManagement::query()->pluck('id');
+
+        return ProjectOrderPermit::query()
+            ->whereIn('project_id', $projectIds)
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) =>
+                $q->whereHas('orderPermit', fn ($q2) => $q2->where('order_permit_department_id', $deptId))
+            )
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
 
     public function show(string $projectId, string $id): ProjectOrderPermit
     {
@@ -168,7 +155,6 @@ class ProjectOrderPermitService
             ->firstOrFail();
     }
 
-
     public function update(string $projectId, string $id, array $data): ProjectOrderPermit
     {
         $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
@@ -178,7 +164,6 @@ class ProjectOrderPermitService
             ->where('id', $id)
             ->firstOrFail();
 
-        // التحقق من التفرد قبل التحديث
         $newName = Arr::get($data, 'name', $orderPermit->name);
         $newOrderPermitId = Arr::get($data, 'order_permit_id', $orderPermit->order_permit_id);
 
@@ -224,7 +209,6 @@ class ProjectOrderPermitService
 
         return $orderPermit->fresh(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict']);
     }
-
 
     public function delete(string $projectId, string $id): bool
     {

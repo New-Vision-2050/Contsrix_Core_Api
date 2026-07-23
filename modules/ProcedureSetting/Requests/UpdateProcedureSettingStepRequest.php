@@ -7,11 +7,15 @@ namespace Modules\ProcedureSetting\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
+use Illuminate\Validation\Validator;
 use Modules\ProcedureSetting\Commands\UpdateProcedureSettingStepCommand;
+use Modules\ProcedureSetting\Requests\Concerns\ValidatesReceiverCompanyActionTakers;
 use Modules\ProcedureSetting\Rules\ActionTakerUserIdsUniquePerProcedureSetting;
 
 class UpdateProcedureSettingStepRequest extends FormRequest
 {
+    use ValidatesReceiverCompanyActionTakers;
+
     /** Keys merged only for validation; never sent to the update handler. */
     private const INTERNAL_RULE_KEYS = [
         'procedure_setting_route_id',
@@ -36,6 +40,11 @@ class UpdateProcedureSettingStepRequest extends FormRequest
             'procedure_setting_route_id'      => 'procedure setting',
             'procedure_setting_step_route_id' => 'procedure setting step',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(fn (Validator $validator) => $this->validateReceiverCompanyActionTakers($validator));
     }
 
     public function createUpdateProcedureSettingStepCommand(): UpdateProcedureSettingStepCommand
@@ -129,7 +138,7 @@ class UpdateProcedureSettingStepRequest extends FormRequest
 
             'step_order' => 'sometimes|nullable|integer|min:0',
 
-            'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy,specific_procedures,himself,assigned_user',
+            'action_taker_type' => 'sometimes|nullable|string|in:specific_user,management_hierarchy,specific_procedures,receiver_company,himself,assigned_user',
 
             // ── Deprecated (legacy) ──────────────────────────────────────────
             // Replaced by action_taker_management_hierarchies array of objects.
@@ -192,6 +201,15 @@ class UpdateProcedureSettingStepRequest extends FormRequest
                 'prohibited_unless:action_taker_type,specific_procedures',
             ],
             'action_taker_specific_procedure_id.*' => 'string',
+
+            'receiver_company_ids' => [
+                'nullable',
+                'array',
+                'min:1',
+                'required_if:action_taker_type,receiver_company',
+                'prohibited_unless:action_taker_type,receiver_company',
+            ],
+            'receiver_company_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('companies', 'id')],
 
             'action_taker_user_ids'   => [
                 'sometimes',

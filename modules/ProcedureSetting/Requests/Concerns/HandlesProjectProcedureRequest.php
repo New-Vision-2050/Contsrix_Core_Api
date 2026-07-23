@@ -52,7 +52,6 @@ trait HandlesProjectProcedureRequest
             'deadline_hours' => ['nullable', 'integer', 'min:0'],
             'escalation_management_hierarchy_id' => ['nullable', 'integer', 'exists:management_hierarchies,id'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
-            'receiver_company_id' => ['nullable', 'uuid', 'exists:companies,id'],
             'attachment_type_id' => ['nullable', 'uuid', 'exists:folders,id'],
             'attachment_sub_type_id' => ['nullable', 'uuid', 'exists:folders,id'],
             'attachment_sub_sub_type_id' => ['nullable', 'uuid', 'exists:folders,id'],
@@ -118,7 +117,6 @@ trait HandlesProjectProcedureRequest
     private function projectProcedureMetadataKeys(): array
     {
         return [
-            'receiver_company_id',
             'attachment_type_id',
             'attachment_sub_type_id',
             'attachment_sub_sub_type_id',

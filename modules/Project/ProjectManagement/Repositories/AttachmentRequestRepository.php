@@ -26,7 +26,7 @@ class AttachmentRequestRepository extends BaseRepository
      *   project_id  – filter by project UUID
      *   type        – filter by status  (pending|approved|declined|semi-approved)
      *   direction   – 'outgoing' (sender) | 'incoming' (receiver)
-     *   receiver_id – filter by selected procedure receiver_company_id
+     *   receiver_id – filter by receiver_company_id
      *   name        – partial search on serial_number
      *   per_page    – items per page (default 15)
      *   page        – page number    (default 1)
@@ -36,7 +36,7 @@ class AttachmentRequestRepository extends BaseRepository
         $query = $this->model->with([
             'project',
             'procedureSetting',
-            'projectProcedureSetting.receiverCompany',
+            'receiverCompany',
             'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
             'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
             'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
@@ -96,7 +96,7 @@ class AttachmentRequestRepository extends BaseRepository
             ->with([
                 'project',
                 'procedureSetting',
-                'projectProcedureSetting.receiverCompany',
+                'receiverCompany',
                 'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
@@ -122,7 +122,7 @@ class AttachmentRequestRepository extends BaseRepository
             ->with([
                 'project',
                 'procedureSetting',
-                'projectProcedureSetting.receiverCompany',
+                'receiverCompany',
                 'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
@@ -149,7 +149,7 @@ class AttachmentRequestRepository extends BaseRepository
             ->with([
                 'senderCompany',
                 'procedureSetting',
-                'projectProcedureSetting.receiverCompany',
+                'receiverCompany',
                 'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
@@ -170,7 +170,7 @@ class AttachmentRequestRepository extends BaseRepository
             ->with([
                 'project',
                 'procedureSetting',
-                'projectProcedureSetting.receiverCompany',
+                'receiverCompany',
                 'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
@@ -226,7 +226,7 @@ class AttachmentRequestRepository extends BaseRepository
             ->with([
                 'project',
                 'procedureSetting',
-                'projectProcedureSetting.receiverCompany',
+                'receiverCompany',
                 'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
                 'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',

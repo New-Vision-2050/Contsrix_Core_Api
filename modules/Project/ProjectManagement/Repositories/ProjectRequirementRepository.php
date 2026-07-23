@@ -147,7 +147,7 @@ class ProjectRequirementRepository extends BaseRepository
     private function applyExactFilters(Builder $query, array $filters): void
     {
         foreach ([
-            'document_type_id',
+            'procedure_setting_id',
             'document_type',
             'specialization_id',
             'specialization',
@@ -182,7 +182,7 @@ class ProjectRequirementRepository extends BaseRepository
     {
         return [
             'project:id,name,company_id,serial_number',
-            'documentType:id,name,company_id,is_active',
+            'procedureSetting:id,name,type,execute_type,is_active,work_flow_id,parent_id',
             'specializationLookup:id,code,academic_qualification_id',
             'sendingEntityCompany:id,name,serial_no,email,phone',
             'reviewEntityCompany:id,name,serial_no,email,phone',

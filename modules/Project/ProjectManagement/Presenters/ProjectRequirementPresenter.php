@@ -6,7 +6,7 @@ namespace Modules\Project\ProjectManagement\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\DocumentType\Models\DocumentType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\Project\ProjectManagement\Models\ProjectRequirement;
 use Modules\Shared\AcademicSpecialization\Models\AcademicSpecialization;
 
@@ -23,9 +23,9 @@ class ProjectRequirementPresenter extends AbstractPresenter
             'requirement_code' => $this->requirement->requirement_code,
             'required_document_name' => $this->requirement->required_document_name,
             'document' => $this->requirement->document,
-            'document_type_id' => $this->requirement->document_type_id,
+            'procedure_setting_id' => $this->requirement->procedure_setting_id,
             'document_type' => $this->requirement->document_type,
-            'document_type_lookup' => $this->documentTypeData($this->requirement->documentType),
+            'procedure_setting' => $this->procedureSettingData($this->requirement->procedureSetting),
             'specialization_id' => $this->requirement->specialization_id,
             'specialization' => $this->requirement->specialization,
             'specialization_lookup' => $this->specializationData($this->requirement->specializationLookup),
@@ -55,16 +55,20 @@ class ProjectRequirementPresenter extends AbstractPresenter
         ];
     }
 
-    private function documentTypeData(?DocumentType $documentType): ?array
+    private function procedureSettingData(?ProcedureSetting $procedureSetting): ?array
     {
-        if (! $documentType) {
+        if (! $procedureSetting) {
             return null;
         }
 
         return [
-            'id' => $documentType->id,
-            'name' => $documentType->name,
-            'is_active' => (bool) $documentType->is_active,
+            'id' => $procedureSetting->id,
+            'name' => $procedureSetting->name,
+            'type' => $procedureSetting->type,
+            'execute_type' => $procedureSetting->execute_type,
+            'is_active' => (bool) $procedureSetting->is_active,
+            'work_flow_id' => $procedureSetting->work_flow_id,
+            'parent_id' => $procedureSetting->parent_id,
         ];
     }
 
