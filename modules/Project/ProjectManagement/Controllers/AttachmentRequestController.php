@@ -8,16 +8,12 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Modules\Project\ProjectManagement\Services\AttachmentRequestService;
 use Modules\Project\ProjectManagement\Requests\CreateAttachmentRequestRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToAttachmentItemRequest;
 use Modules\Project\ProjectManagement\Requests\ReplaceMediaRequest;
 use Modules\Project\ProjectManagement\Presenters\AttachmentRequestPresenter;
-use Modules\Project\ProjectManagement\Mail\AttachmentRequestMail;
-use Modules\Company\CompanyCore\Models\Company;
-use Modules\User\Models\User;
 
 class AttachmentRequestController extends Controller
 {
@@ -34,16 +30,13 @@ class AttachmentRequestController extends Controller
         try {
             $attachmentRequest = $this->service->createRequest($request->validated());
 
-            // Send email notification to receiver company owner
-            $this->sendAttachmentRequestEmail($attachmentRequest);
-
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), 400);
+            return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
     }
 
@@ -54,7 +47,6 @@ class AttachmentRequestController extends Controller
      *   project_id  – filter by project
      *   type        – filter by status (pending|approved|declined|semi-approved)
      *   direction   – outgoing | incoming
-     *   receiver_id – filter by receiver company UUID
      *   name        – search by serial number (partial match)
      *   page        – page number (default 1)
      *   per_page    – items per page (default 15)
@@ -67,7 +59,6 @@ class AttachmentRequestController extends Controller
                 'contractual_engagement_key' => $request->query('contractual_engagement_key'),
                 'type'                       => $request->query('type'),
                 'direction'                  => $request->query('direction'),
-                'receiver_id'                => $request->query('receiver_id'),
                 'name'                       => $request->query('name'),
                 'per_page'                   => $request->query('per_page', 15),
             ], fn ($v) => $v !== null && $v !== '');
@@ -229,7 +220,7 @@ class AttachmentRequestController extends Controller
 
             return Json::item($data);
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), 400);
+            return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
     }
 
@@ -251,7 +242,7 @@ class AttachmentRequestController extends Controller
 
             return Json::item($data);
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), 400);
+            return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
     }
 
@@ -302,102 +293,4 @@ class AttachmentRequestController extends Controller
         }
     }
 
-    /**
-     * Send email notification to receiver company owner
-     */
-    private function sendAttachmentRequestEmail($attachmentRequest): void
-    {
-        try {
-            // Get receiver company WITHOUT tenancy scope
-            $receiverCompany = Company::withoutGlobalScopes()
-                ->find($attachmentRequest->receiverCompanyId());
-
-            if (!$receiverCompany) {
-                \Log::warning("Receiver company not found for attachment request", [
-                    'request_id' => $attachmentRequest->id,
-                    'receiver_company_id' => $attachmentRequest->receiverCompanyId(),
-                ]);
-                return;
-            }
-
-            // Get the owner of the receiver company WITHOUT tenancy scope
-            $recipient = User::withoutGlobalScopes()
-                ->where('company_id', $receiverCompany->id)
-                ->where('is_owner', 1)
-                ->first();
-
-            if (!$recipient || !$recipient->email) {
-                \Log::warning("No owner found for attachment request notification", [
-                    'request_id' => $attachmentRequest->id,
-                    'company_id' => $receiverCompany->id,
-                    'company_name' => $receiverCompany->name,
-                ]);
-                return;
-            }
-
-            // Get project
-            $project = $attachmentRequest->project;
-            if (!$project) {
-                \Log::warning("Project not found for attachment request", [
-                    'request_id' => $attachmentRequest->id,
-                ]);
-                return;
-            }
-
-            // Get sender name
-            $currentUser = auth()->user();
-            $senderName = $currentUser ? $currentUser->name : 'مدير النظام';
-
-            // Build action URL
-            $actionUrl = $this->buildActionUrlForAttachment($receiverCompany, $attachmentRequest);
-
-            // Send the email with extra error protection
-            try {
-                Mail::to($recipient->email)->send(
-                    new AttachmentRequestMail(
-                        attachmentRequest: $attachmentRequest,
-                        project: $project,
-                        recipientName: $recipient->name,
-                        senderName: $senderName,
-                        actionUrl: $actionUrl
-                    )
-                );
-
-                \Log::info("Attachment request email sent successfully", [
-                    'recipient_email' => $recipient->email,
-                    'recipient_name' => $recipient->name,
-                    'request_id' => $attachmentRequest->id,
-                    'company_id' => $receiverCompany->id,
-                ]);
-            } catch (\Exception $mailException) {
-                \Log::error("Mail sending failed for attachment request", [
-                    'request_id' => $attachmentRequest->id,
-                    'recipient_email' => $recipient->email,
-                    'error' => $mailException->getMessage(),
-                ]);
-            }
-        } catch (\Exception $e) {
-            \Log::error("Failed to send attachment request email", [
-                'request_id' => $attachmentRequest->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * Build action URL for attachment request
-     */
-    private function buildActionUrlForAttachment($company, $attachmentRequest): string
-    {
-        // Get the first domain for the company
-        $domain = $company->domains()->first();
-
-        if ($domain && $domain->domain) {
-            return "https://{$domain->domain}/ar/projects/{$attachmentRequest->project_id}";
-        }
-
-        // Fallback to configured frontend URL
-        $frontendUrl = config('app.frontend_url', 'https://constrix.com');
-        return "{$frontendUrl}/ar/projects/{$attachmentRequest->project_id}";
-    }
 }

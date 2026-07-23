@@ -101,8 +101,6 @@ final class AttachmentRequestWorkflowService
     {
         return [
             'project_id' => $request->project_id,
-            'receiver_company_id' => $request->receiverCompanyId(),
-            'receiver_company_ids' => array_values(array_filter([(string) $request->receiverCompanyId()])),
         ];
     }
 
@@ -113,7 +111,6 @@ final class AttachmentRequestWorkflowService
     {
         return [
             'project_id' => $request->project_id,
-            'receiver_company_id' => $request->receiverCompanyId(),
             'procedure_setting_id' => $request->procedure_setting_id,
         ];
     }
