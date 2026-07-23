@@ -8,16 +8,37 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasColumn('project_order_permit', 'employee_id')) {
+            Schema::table('project_order_permit', function (Blueprint $table) {
+                $table->foreignId('employee_id')->nullable()->constrained('users')->nullOnDelete()->after('consultant_price');
+            });
+        }
+
         Schema::table('project_order_permit', function (Blueprint $table) {
-            $table->foreignId('employee_id')->nullable()->constrained('users')->nullOnDelete()->after('consultant_price');
-            $table->decimal('target_drilling', 10, 2)->nullable()->after('employee_id');
-            $table->decimal('achieved_drilling', 10, 2)->nullable()->after('target_drilling');
-            $table->decimal('target_extention', 10, 2)->nullable()->after('achieved_drilling');
-            $table->decimal('achieved_extention', 10, 2)->nullable()->after('target_extention');
-            $table->text('description_details')->nullable()->after('achieved_extention');
-            $table->text('consultant_statement')->nullable()->after('description_details');
-            $table->date('last_date_consultant_statement')->nullable()->after('consultant_statement');
-            $table->string('consultnat_statement_status')->nullable()->after('last_date_consultant_statement');
+            if (! Schema::hasColumn('project_order_permit', 'target_drilling')) {
+                $table->decimal('target_drilling', 10, 2)->nullable()->after('employee_id');
+            }
+            if (! Schema::hasColumn('project_order_permit', 'achieved_drilling')) {
+                $table->decimal('achieved_drilling', 10, 2)->nullable()->after('target_drilling');
+            }
+            if (! Schema::hasColumn('project_order_permit', 'target_extention')) {
+                $table->decimal('target_extention', 10, 2)->nullable()->after('achieved_drilling');
+            }
+            if (! Schema::hasColumn('project_order_permit', 'achieved_extention')) {
+                $table->decimal('achieved_extention', 10, 2)->nullable()->after('target_extention');
+            }
+            if (! Schema::hasColumn('project_order_permit', 'description_details')) {
+                $table->text('description_details')->nullable()->after('achieved_extention');
+            }
+            if (! Schema::hasColumn('project_order_permit', 'consultant_statement')) {
+                $table->text('consultant_statement')->nullable()->after('description_details');
+            }
+            if (! Schema::hasColumn('project_order_permit', 'last_date_consultant_statement')) {
+                $table->date('last_date_consultant_statement')->nullable()->after('consultant_statement');
+            }
+            if (! Schema::hasColumn('project_order_permit', 'consultnat_statement_status')) {
+                $table->string('consultnat_statement_status')->nullable()->after('last_date_consultant_statement');
+            }
         });
     }
 
