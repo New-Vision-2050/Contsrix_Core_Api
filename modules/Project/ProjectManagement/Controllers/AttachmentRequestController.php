@@ -207,7 +207,7 @@ class AttachmentRequestController extends Controller
 
             return Json::item($data);
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), 400);
+            return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
     }
 

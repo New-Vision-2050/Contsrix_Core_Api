@@ -12,7 +12,12 @@ use Illuminate\Support\Str;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
+use Modules\Process\Models\Process;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
 use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
@@ -20,6 +25,7 @@ use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\Shared\ResourceShare\Models\ResourceShare;
+use Modules\User\Models\User;
 
 class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 {
@@ -112,6 +118,25 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonValidationErrors(['procedure_setting_id']);
     }
 
+    public function test_attachment_request_list_does_not_expose_receiver_company_id(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $this->createAcceptedShare($project, $receiverCompany);
+
+        $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+            ->assertOk();
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id)
+            ->assertOk()
+            ->assertJsonPath('data.0.receiver_company.id', $receiverCompany->id);
+
+        $this->assertArrayNotHasKey('receiver_company_id', $response->json('data.0'));
+    }
+
     public function test_create_attachment_request_requires_receiver_company(): void
     {
         $project = $this->createProject();
@@ -132,6 +157,246 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonValidationErrors(['receiver_company_id']);
     }
 
+    public function test_create_attachment_request_starts_sequence_project_procedure_workflow(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+        $this->createProcedureStep($procedure, $receiverUser, 2);
+
+        $response = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+            ->assertOk()
+            ->assertJsonPath('payload.process.status', ProcessStatus::InProgress->value)
+            ->assertJsonCount(1, 'payload.process_steps');
+
+        $requestId = $response->json('payload.id');
+
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $requestId,
+            'processable_type' => AttachmentRequest::PROCESSABLE_TYPE,
+            'status' => ProcessStatus::InProgress->value,
+        ]);
+
+        $this->assertDatabaseHas('process_steps', [
+            'assigned_user_id' => $receiverUser->id,
+            'template_step_order' => 1,
+            'status' => ProcessStepStatus::Pending->value,
+        ]);
+    }
+
+    public function test_create_attachment_request_starts_parallel_project_procedure_workflow(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+
+        ProcedureSetting::query()
+            ->whereKey($procedure->procedure_setting_id)
+            ->update(['execute_type' => 'parallel']);
+
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $response = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+            ->assertOk()
+            ->assertJsonPath('payload.process.execute_type', 'parallel')
+            ->assertJsonCount(2, 'payload.process_steps');
+
+        $process = Process::query()
+            ->where('processable_id', $response->json('payload.id'))
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+
+        $this->assertSame(2, $process->steps()->where('status', ProcessStepStatus::Pending->value)->count());
+    }
+
+    public function test_receiver_company_workflow_step_uses_attachment_request_context(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createReceiverCompanyProcedureStep($procedure, 1);
+
+        $response = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+            ->assertOk()
+            ->assertJsonPath('payload.process.status', ProcessStatus::InProgress->value)
+            ->assertJsonCount(1, 'payload.process_steps');
+
+        $process = Process::query()
+            ->where('processable_id', $response->json('payload.id'))
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+
+        $step = $process->steps()->firstOrFail();
+        $this->assertContains((string) $receiverUser->id, $step->authorized_user_ids);
+    }
+
+    public function test_workflow_approve_advances_steps_before_final_attachment_approval(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_PENDING)
+            ->assertJsonCount(2, 'payload.process_steps');
+
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $requestId,
+            'status' => AttachmentRequest::STATUS_PENDING,
+        ]);
+        $this->assertDatabaseHas('attachment_request_items', [
+            'attachment_request_id' => $requestId,
+            'status' => AttachmentRequest::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($secondReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
+
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $requestId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+        $this->assertDatabaseHas('attachment_request_items', [
+            'attachment_request_id' => $requestId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+    }
+
+    public function test_workflow_approval_uses_pending_step_actor_not_legacy_receiver_company_gate(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $this->actor, 1);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
+
+        $this->assertDatabaseHas('process_steps', [
+            'assigned_user_id' => $this->actor->id,
+            'status' => ProcessStepStatus::Approved->value,
+        ]);
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $requestId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+    }
+
+    public function test_workflow_reject_declines_attachment_request(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/decline", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_DECLINED);
+
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $requestId,
+            'processable_type' => AttachmentRequest::PROCESSABLE_TYPE,
+            'status' => ProcessStatus::Failed->value,
+        ]);
+        $this->assertDatabaseHas('attachment_request_items', [
+            'attachment_request_id' => $requestId,
+            'status' => AttachmentRequest::STATUS_DECLINED,
+        ]);
+    }
+
+    public function test_item_level_approval_is_blocked_while_workflow_is_active(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $response = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+            ->assertOk();
+
+        $itemId = $response->json('payload.items.0.id');
+
+        $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertStatus(400);
+
+        $this->assertDatabaseHas('attachment_request_items', [
+            'id' => $itemId,
+            'status' => AttachmentRequest::STATUS_PENDING,
+        ]);
+    }
+
+    public function test_approval_without_resolvable_workflow_steps_uses_legacy_approval(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+            ->assertOk()
+            ->assertJsonPath('payload.process', null)
+            ->json('payload.id');
+
+        $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
+
+        $this->assertDatabaseHas('attachment_request_items', [
+            'attachment_request_id' => $requestId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+    }
+
     private function schemaReady(): bool
     {
         return Schema::hasTable('attachment_requests')
@@ -144,6 +409,10 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             && Schema::hasTable('project_procedure_settings')
             && Schema::hasTable('folders')
             && Schema::hasTable('procedure_settings')
+            && Schema::hasTable('procedure_setting_steps')
+            && Schema::hasTable('procedure_setting_step_action_takers')
+            && Schema::hasTable('processes')
+            && Schema::hasTable('process_steps')
             && Schema::hasTable('resource_shares')
             && Schema::hasTable('work_flows')
             && Schema::hasTable('media');
@@ -269,6 +538,66 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'shared_by_user_id' => $this->actor->id,
             'responded_by_user_id' => $this->actor->id,
             'responded_at' => now(),
+        ]);
+    }
+
+    private function postAttachmentRequest(
+        ProjectManagement $project,
+        ProjectProcedureSetting $procedure,
+        Company $receiverCompany
+    ) {
+        return $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests', [
+                'name' => 'Workflow Attachment Files',
+                'date' => '2026-07-21',
+                'project_id' => $project->id,
+                'procedure_setting_id' => $procedure->procedure_setting_id,
+                'receiver_company_id' => $receiverCompany->id,
+                'attachments' => [
+                    UploadedFile::fake()->create('workflow-file.pdf', 12, 'application/pdf'),
+                ],
+            ], ['Accept' => 'application/json']);
+    }
+
+    private function createProcedureStep(
+        ProjectProcedureSetting $procedure,
+        User $user,
+        int $order
+    ): ProcedureSettingStep {
+        $step = ProcedureSettingStep::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'procedure_setting_id' => $procedure->procedure_setting_id,
+            'project_id' => $procedure->project_id,
+            'name' => 'Attachment Workflow Step '.$order,
+            'forms' => 'approve',
+            'is_approve' => true,
+            'step_order' => $order,
+            'action_taker_type' => 'specific_user',
+        ]);
+
+        ProcedureSettingStepActionTaker::query()->create([
+            'procedure_setting_step_id' => $step->id,
+            'user_id' => $user->id,
+            'company_id' => $this->company->id,
+        ]);
+
+        return $step;
+    }
+
+    private function createReceiverCompanyProcedureStep(
+        ProjectProcedureSetting $procedure,
+        int $order
+    ): ProcedureSettingStep {
+        return ProcedureSettingStep::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'procedure_setting_id' => $procedure->procedure_setting_id,
+            'project_id' => $procedure->project_id,
+            'name' => 'Receiver Company Workflow Step '.$order,
+            'forms' => 'approve',
+            'is_approve' => true,
+            'step_order' => $order,
+            'action_taker_type' => 'receiver_company',
         ]);
     }
 }
