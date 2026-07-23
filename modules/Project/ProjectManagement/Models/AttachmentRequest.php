@@ -13,11 +13,18 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\Process\Models\Process;
 use Modules\User\Models\User;
 
 class AttachmentRequest extends Model
 {
     use UuidTrait;
+
+    public const PROCESSABLE_TYPE = 'attachment_request';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_SEMI_APPROVED = 'semi-approved';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_DECLINED = 'declined';
 
     protected $table = 'attachment_requests';
 
@@ -173,12 +180,24 @@ class AttachmentRequest extends Model
             ->orderBy('created_at', 'asc');
     }
 
+    public function processes(): HasMany
+    {
+        return $this->hasMany(Process::class, 'processable_id')
+            ->where('processable_type', self::PROCESSABLE_TYPE);
+    }
+
+    public function attachmentRequestProcess(): HasOne
+    {
+        return $this->hasOne(Process::class, 'processable_id')
+            ->where('processable_type', self::PROCESSABLE_TYPE);
+    }
+
     /**
      * Check if request is pending
      */
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === self::STATUS_PENDING;
     }
 
     /**
@@ -186,7 +205,7 @@ class AttachmentRequest extends Model
      */
     public function isApproved(): bool
     {
-        return $this->status === 'approved';
+        return $this->status === self::STATUS_APPROVED;
     }
 
     /**
@@ -194,7 +213,7 @@ class AttachmentRequest extends Model
      */
     public function isDeclined(): bool
     {
-        return $this->status === 'declined';
+        return $this->status === self::STATUS_DECLINED;
     }
 
     /**
@@ -202,7 +221,7 @@ class AttachmentRequest extends Model
      */
     public function isSemiApproved(): bool
     {
-        return $this->status === 'semi-approved';
+        return $this->status === self::STATUS_SEMI_APPROVED;
     }
 
     /**
@@ -221,29 +240,29 @@ class AttachmentRequest extends Model
         $totalCount = $items->count();
 
         if ($approvedCount === $totalCount) {
-            $this->update(['status' => 'approved']);
+            $this->update(['status' => self::STATUS_APPROVED]);
         } elseif ($declinedCount === $totalCount) {
-            $this->update(['status' => 'declined']);
+            $this->update(['status' => self::STATUS_DECLINED]);
         } elseif ($approvedCount > 0 || $declinedCount > 0) {
-            $this->update(['status' => 'semi-approved']);
+            $this->update(['status' => self::STATUS_SEMI_APPROVED]);
         } else {
-            $this->update(['status' => 'pending']);
+            $this->update(['status' => self::STATUS_PENDING]);
         }
     }
 
     /**
      * Approve entire request and all items
      */
-    public function approveAll(string $userId): bool
+    public function approveAll(?string $userId): bool
     {
         $this->items()->update([
-            'status' => 'approved',
+            'status' => self::STATUS_APPROVED,
             'responded_by_user_id' => $userId,
             'responded_at' => now(),
         ]);
 
         return $this->update([
-            'status' => 'approved',
+            'status' => self::STATUS_APPROVED,
             'responded_by_user_id' => $userId,
             'responded_at' => now(),
         ]);
@@ -252,16 +271,16 @@ class AttachmentRequest extends Model
     /**
      * Decline entire request and all items
      */
-    public function declineAll(string $userId): bool
+    public function declineAll(?string $userId): bool
     {
         $this->items()->update([
-            'status' => 'declined',
+            'status' => self::STATUS_DECLINED,
             'responded_by_user_id' => $userId,
             'responded_at' => now(),
         ]);
 
         return $this->update([
-            'status' => 'declined',
+            'status' => self::STATUS_DECLINED,
             'responded_by_user_id' => $userId,
             'responded_at' => now(),
         ]);

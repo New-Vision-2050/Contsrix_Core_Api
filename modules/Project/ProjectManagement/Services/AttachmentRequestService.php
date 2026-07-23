@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\Process\Enums\ProcessStatus;
 use Modules\Shared\Media\Services\FileUploadService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Ramsey\Uuid\Uuid;
@@ -31,6 +32,7 @@ class AttachmentRequestService
     public function __construct(
         private AttachmentRequestRepository $repository,
         private FileUploadService $fileUploadService,
+        private AttachmentRequestWorkflowService $workflowService,
     ) {
     }
 
@@ -84,10 +86,15 @@ class AttachmentRequestService
             ]
         );
 
+        $projectProcedure->loadMissing('procedureSetting');
+        if ($projectProcedure->procedureSetting !== null) {
+            $this->workflowService->startForAttachmentRequest($request, $projectProcedure->procedureSetting);
+        }
+
         // Broadcast notification to receiver company users
         $this->broadcastToReceiverCompany($request);
 
-        return $request;
+        return $this->repository->getWithItems($request->id) ?? $request;
     }
 
     /**
@@ -153,6 +160,13 @@ class AttachmentRequestService
             throw new \Exception('Unauthorized to respond to this item');
         }
 
+        if (
+            in_array($action, ['approve', 'decline'], true)
+            && $this->workflowService->hasActiveWorkflow($item->attachmentRequest)
+        ) {
+            throw new \Exception('Cannot approve or decline individual attachments while approval workflow is active');
+        }
+
         $userId = (string) Auth::id();
 
         $actionDescriptions = [
@@ -215,11 +229,34 @@ class AttachmentRequestService
     {
         $request = $this->getRequest($requestId);
 
+        if ($this->workflowService->hasActiveWorkflow($request)) {
+            $process = $this->workflowService->actOnPendingStepForCurrentUser($request, 'approve');
+
+            if ($process->status === ProcessStatus::Completed && ! $this->workflowService->hasActiveWorkflow($request)) {
+                return $this->completeWorkflowApproval($request);
+            }
+
+            return $this->repository->getWithItems($request->id) ?? $request->fresh();
+        }
+
+        // Legacy path: without an active process, whole-request approval stays receiver-only.
         if ($request->receiverCompanyId() !== tenant('id')) {
             throw new \Exception('Unauthorized to approve this request');
         }
 
-        $userId = (string) Auth::id();
+        return $this->completeWorkflowApproval($request);
+    }
+
+    public function completeWorkflowApproval(AttachmentRequest $request, ?string $userId = null): AttachmentRequest
+    {
+        $request = $this->repository->getWithItems($request->id) ?? $request;
+
+        if ($request->isApproved()) {
+            return $request;
+        }
+
+        $userId ??= Auth::check() ? (string) Auth::id() : null;
+        $request->loadMissing(['items', 'projectProcedureSetting']);
 
         // Get all file details before approving
         $filesApproved = $request->items->map(function ($item) {
@@ -255,7 +292,8 @@ class AttachmentRequestService
             ]
         );
 
-        $request = $request->fresh(['items', 'respondedByUser', 'projectProcedureSetting']);
+        $request = $this->repository->getWithItems($request->id)
+            ?? $request->fresh(['items', 'respondedByUser', 'projectProcedureSetting']);
 
         // Broadcast notification to sender company users
         $this->broadcastToSenderCompany($request, 'approved');
@@ -270,11 +308,38 @@ class AttachmentRequestService
     {
         $request = $this->getRequest($requestId);
 
+        if ($this->workflowService->hasActiveWorkflow($request)) {
+            $process = $this->workflowService->actOnPendingStepForCurrentUser($request, 'reject');
+
+            if ($process->status === ProcessStatus::Failed) {
+                return $this->completeWorkflowDecline($request);
+            }
+
+            if ($process->status === ProcessStatus::Completed && ! $this->workflowService->hasActiveWorkflow($request)) {
+                return $this->completeWorkflowApproval($request);
+            }
+
+            return $this->repository->getWithItems($request->id) ?? $request->fresh();
+        }
+
+        // Legacy path: without an active process, whole-request decline stays receiver-only.
         if ($request->receiverCompanyId() !== tenant('id')) {
             throw new \Exception('Unauthorized to decline this request');
         }
 
-        $userId = (string) Auth::id();
+        return $this->completeWorkflowDecline($request);
+    }
+
+    public function completeWorkflowDecline(AttachmentRequest $request, ?string $userId = null): AttachmentRequest
+    {
+        $request = $this->repository->getWithItems($request->id) ?? $request;
+
+        if ($request->isDeclined()) {
+            return $request;
+        }
+
+        $userId ??= Auth::check() ? (string) Auth::id() : null;
+        $request->loadMissing('items');
 
         // Get all file details before declining
         $filesDeclined = $request->items->map(function ($item) {
@@ -301,7 +366,8 @@ class AttachmentRequestService
             ]
         );
 
-        $request = $request->fresh(['items', 'respondedByUser', 'projectProcedureSetting']);
+        $request = $this->repository->getWithItems($request->id)
+            ?? $request->fresh(['items', 'respondedByUser', 'projectProcedureSetting']);
 
         // Broadcast notification to sender company users
         $this->broadcastToSenderCompany($request, 'declined');

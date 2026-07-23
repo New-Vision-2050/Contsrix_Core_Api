@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectManagement\Presenters;
 
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Process\Models\ProcessStep;
 
 class AttachmentRequestPresenter extends AbstractPresenter
 {
@@ -131,6 +132,49 @@ class AttachmentRequestPresenter extends AbstractPresenter
                         'metadata' => $historyEntry->metadata,
                     ];
                 })->toArray();
+
+            $data['process'] = null;
+            $data['process_steps'] = [];
+            $data['workflow'] = null;
+            if ($this->request->relationLoaded('attachmentRequestProcess')) {
+                $process = $this->request->attachmentRequestProcess;
+                if ($process !== null) {
+                    $steps = $process->relationLoaded('steps') ? $process->steps : collect();
+                    $processPayload = [
+                        'id' => $process->id,
+                        'status' => $process->status->value,
+                        'execute_type' => $process->execute_type,
+                        'type' => $process->processable_type,
+                        'attachment_request_id' => $process->processable_id,
+                        'created_at' => $process->created_at?->toIso8601String(),
+                        'updated_at' => $process->updated_at?->toIso8601String(),
+                    ];
+
+                    $stepsPayload = $steps->map(static function (ProcessStep $step) {
+                        return [
+                            'id' => $step->id,
+                            'process_id' => $step->process_id,
+                            'step_id' => $step->step_id,
+                            'template_step_order' => $step->template_step_order,
+                            'assigned_user_id' => $step->assigned_user_id,
+                            'authorized_user_ids' => $step->authorized_user_ids,
+                            'escalation_management_hierarchy_id' => $step->escalation_management_hierarchy_id,
+                            'status' => $step->status->value,
+                            'action_by' => $step->action_by,
+                            'acted_at' => $step->acted_at?->toIso8601String(),
+                            'created_at' => $step->created_at?->toIso8601String(),
+                            'updated_at' => $step->updated_at?->toIso8601String(),
+                        ];
+                    })->values()->all();
+
+                    $data['process'] = $processPayload;
+                    $data['process_steps'] = $stepsPayload;
+                    $data['workflow'] = [
+                        'process' => $processPayload,
+                        'process_steps' => $stepsPayload,
+                    ];
+                }
+            }
 
 
         return $data;

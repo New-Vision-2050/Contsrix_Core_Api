@@ -44,6 +44,7 @@ class AttachmentRequestRepository extends BaseRepository
             'createdByUser',
             'respondedByUser',
             'items.respondedByUser',
+            'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
         ]);
 
         $direction = $filters['direction'] ?? null;
@@ -102,7 +103,8 @@ class AttachmentRequestRepository extends BaseRepository
                 'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
                 'createdByUser',
                 'respondedByUser',
-                'items.respondedByUser'
+                'items.respondedByUser',
+                'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
             ]);
 
         if ($projectId) {
@@ -129,7 +131,8 @@ class AttachmentRequestRepository extends BaseRepository
                 'senderCompany',
                 'createdByUser',
                 'respondedByUser',
-                'items.respondedByUser'
+                'items.respondedByUser',
+                'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
             ]);
 
         if ($projectId) {
@@ -155,7 +158,8 @@ class AttachmentRequestRepository extends BaseRepository
                 'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
                 'createdByUser',
                 'respondedByUser',
-                'items.respondedByUser'
+                'items.respondedByUser',
+                'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
             ])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -178,7 +182,8 @@ class AttachmentRequestRepository extends BaseRepository
                 'createdByUser',
                 'respondedByUser',
                 'items.respondedByUser',
-                'history.user'
+                'history.user',
+                'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
             ])
             ->find($requestId);
     }
@@ -212,7 +217,11 @@ class AttachmentRequestRepository extends BaseRepository
             }
         }
 
-        return $request->load(['items', 'procedureSetting']);
+        return $request->load([
+            'items',
+            'procedureSetting',
+            'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
+        ]);
     }
 
     /**
@@ -232,7 +241,8 @@ class AttachmentRequestRepository extends BaseRepository
                 'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
                 'senderCompany',
                 'createdByUser',
-                'items.respondedByUser'
+                'items.respondedByUser',
+                'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
             ]);
 
         if ($projectId) {
@@ -263,5 +273,12 @@ class AttachmentRequestRepository extends BaseRepository
         }
 
         return $prefix . '-' . $date . '-' . $newNumber;
+    }
+
+    private function orderProcessSteps($query)
+    {
+        return $query->orderByRaw('(template_step_order IS NULL) ASC')
+            ->orderBy('template_step_order')
+            ->orderBy('created_at');
     }
 }

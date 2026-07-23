@@ -27,7 +27,7 @@ class ActionTakerResolver
         return match ($actionTakerType) {
             'management_hierarchy' => $this->resolveManagementHierarchyUsers($step, $createdByUserId, $context),
             'specific_procedures'  => $this->resolveSpecificProcedureUsers($step, $createdByUserId, $context),
-            'receiver_company'     => $this->resolveReceiverCompanyUsers($step),
+            'receiver_company'     => $this->resolveReceiverCompanyUsers($step, $context),
 
             // The submitter themselves is the action taker.
             'himself' => $createdByUserId !== null ? [$createdByUserId] : [],
@@ -375,7 +375,7 @@ class ActionTakerResolver
     /**
      * @return list<string>
      */
-    private function resolveReceiverCompanyUsers(ProcedureSettingStep $step): array
+    private function resolveReceiverCompanyUsers(ProcedureSettingStep $step, array $context = []): array
     {
         $receiverCompanyIds = collect($step->receiver_company_ids ?? [])
             ->map(static fn (mixed $id): string => (string) $id)
@@ -383,6 +383,16 @@ class ActionTakerResolver
             ->unique()
             ->values()
             ->all();
+
+        if ($receiverCompanyIds === []) {
+            $receiverCompanyIds = collect($context['receiver_company_ids'] ?? [])
+                ->push($context['receiver_company_id'] ?? null)
+                ->map(static fn (mixed $id): string => (string) $id)
+                ->filter(static fn (string $id): bool => $id !== '')
+                ->unique()
+                ->values()
+                ->all();
+        }
 
         if ($receiverCompanyIds === []) {
             return [];
