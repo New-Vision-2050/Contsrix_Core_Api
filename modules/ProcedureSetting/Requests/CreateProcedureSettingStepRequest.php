@@ -8,12 +8,14 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\ProcedureSetting\DTO\CreateProcedureSettingStepDTO;
+use Modules\ProcedureSetting\Requests\Concerns\ValidatesProjectEmployeeSelections;
 use Modules\ProcedureSetting\Requests\Concerns\ValidatesReceiverCompanyActionTakers;
 use Modules\ProcedureSetting\Rules\ActionTakerUserIdsUniquePerProcedureSetting;
 
 class CreateProcedureSettingStepRequest extends FormRequest
 {
     use ValidatesReceiverCompanyActionTakers;
+    use ValidatesProjectEmployeeSelections;
 
     protected function prepareForValidation(): void
     {
@@ -150,6 +152,9 @@ class CreateProcedureSettingStepRequest extends FormRequest
             ],
             'receiver_company_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('companies', 'id')],
 
+            'project_employee_ids' => ['nullable', 'array'],
+            'project_employee_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('project_employees', 'id')],
+
             'action_taker_user_ids'   => [
                 'nullable',
                 'array',
@@ -164,7 +169,10 @@ class CreateProcedureSettingStepRequest extends FormRequest
 
     public function withValidator(Validator $validator): void
     {
-        $validator->after(fn (Validator $validator) => $this->validateReceiverCompanyActionTakers($validator));
+        $validator->after(function (Validator $validator): void {
+            $this->validateReceiverCompanyActionTakers($validator);
+            $this->validateProjectEmployeeSelections($validator);
+        });
     }
 
     public function attributes(): array
@@ -208,6 +216,7 @@ class CreateProcedureSettingStepRequest extends FormRequest
             action_taker_user_ids: $v['action_taker_user_ids'] ?? null,
             concerned_management_hierarchy_ids: $v['concerned_management_hierarchy_ids'] ?? null,
             receiver_company_ids: isset($v['receiver_company_ids']) ? (array) $v['receiver_company_ids'] : null,
+            project_employee_ids: isset($v['project_employee_ids']) ? (array) $v['project_employee_ids'] : null,
         );
     }
 }

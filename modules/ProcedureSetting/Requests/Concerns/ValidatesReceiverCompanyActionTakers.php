@@ -6,6 +6,7 @@ namespace Modules\ProcedureSetting\Requests\Concerns;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
+use Modules\ProcedureSetting\Support\ProcedureSettingProjectResolver;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 
 trait ValidatesReceiverCompanyActionTakers
@@ -31,7 +32,9 @@ trait ValidatesReceiverCompanyActionTakers
             return;
         }
 
-        $projectId = $this->projectIdForProcedureSetting((string) $this->route('procedureSettingId'));
+        $projectId = ProcedureSettingProjectResolver::projectIdForProcedureSetting(
+            (string) $this->route('procedureSettingId')
+        );
         if ($projectId === null) {
             $validator->errors()->add(
                 'receiver_company_ids',
@@ -69,19 +72,5 @@ trait ValidatesReceiverCompanyActionTakers
             'receiver_company_ids',
             'Selected receiver companies must be accepted shared companies for this project.'
         );
-    }
-
-    private function projectIdForProcedureSetting(string $procedureSettingId): ?string
-    {
-        if ($procedureSettingId === '') {
-            return null;
-        }
-
-        $projectId = DB::table('procedure_settings')
-            ->join('work_flows', 'work_flows.id', '=', 'procedure_settings.work_flow_id')
-            ->where('procedure_settings.id', $procedureSettingId)
-            ->value('work_flows.project_id');
-
-        return is_string($projectId) && $projectId !== '' ? $projectId : null;
     }
 }

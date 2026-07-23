@@ -62,6 +62,7 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
 
             'receiver_company_ids' => $this->receiverCompanyIds(),
             'receiver_companies'   => $this->receiverCompaniesPayload(),
+            'project_employee_ids' => $this->projectEmployeeIds(),
 
             'action_taker_hierarchy'             => $this->resolveActionTakerHierarchyPayload(),
         ];
@@ -186,6 +187,16 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
     private function receiverCompanyIds(): array
     {
         return collect($this->step->receiver_company_ids ?? [])
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->filter(static fn (string $id): bool => $id !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function projectEmployeeIds(): array
+    {
+        return collect($this->step->project_employee_ids ?? [])
             ->map(static fn (mixed $id): string => (string) $id)
             ->filter(static fn (string $id): bool => $id !== '')
             ->unique()

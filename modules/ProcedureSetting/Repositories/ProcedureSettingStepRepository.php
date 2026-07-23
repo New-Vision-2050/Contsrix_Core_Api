@@ -7,10 +7,10 @@ namespace Modules\ProcedureSetting\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedManagementHierarchy;
+use Modules\ProcedureSetting\Support\ProcedureSettingProjectResolver;
 
 /**
  * @property ProcedureSettingStep $model
@@ -63,7 +63,9 @@ class ProcedureSettingStepRepository extends BaseRepository
 
         return DB::transaction(function () use ($syncAction, $syncConcerned, $actionIds, $concernedIds, $payload) {
             if (! array_key_exists('project_id', $payload)) {
-                $payload['project_id'] = $this->resolveProjectIdForProcedureSetting($payload['procedure_setting_id'] ?? null);
+                $payload['project_id'] = ProcedureSettingProjectResolver::projectIdForProcedureSetting(
+                    $payload['procedure_setting_id'] ?? null
+                );
             }
 
             if (empty($payload['step_order']) && ! empty($payload['procedure_setting_id'])) {
@@ -162,20 +164,5 @@ class ProcedureSettingStepRepository extends BaseRepository
             ->max('step_order');
 
         return $max + 1;
-    }
-
-    private function resolveProjectIdForProcedureSetting(mixed $procedureSettingId): ?string
-    {
-        if (! is_string($procedureSettingId) || $procedureSettingId === '') {
-            return null;
-        }
-
-        $projectId = ProcedureSetting::query()
-            ->withoutGlobalScopes()
-            ->join('work_flows', 'work_flows.id', '=', 'procedure_settings.work_flow_id')
-            ->where('procedure_settings.id', $procedureSettingId)
-            ->value('work_flows.project_id');
-
-        return is_string($projectId) && $projectId !== '' ? $projectId : null;
     }
 }
