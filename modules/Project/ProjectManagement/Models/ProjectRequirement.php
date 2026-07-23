@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\Project\ProjectManagement\Database\factories\ProjectRequirementFactory;
@@ -110,5 +111,10 @@ class ProjectRequirement extends Model
             'project_requirement_id',
             'company_id'
         )->withoutGlobalScopes()->withTimestamps();
+    }
+
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(ProjectRequirementSubmission::class, 'project_requirement_id');
     }
 }

@@ -50,6 +50,7 @@ class ProjectRequirementPresenter extends AbstractPresenter
             'evaluation_status' => $this->requirement->evaluation_status,
             'resulting_document' => $this->requirement->resulting_document,
             'completion_percentage' => $this->requirement->completion_percentage,
+            'upload_status' => $this->requirement->getAttribute('upload_status'),
             'created_at' => $this->requirement->created_at?->toDateTimeString(),
             'updated_at' => $this->requirement->updated_at?->toDateTimeString(),
         ];

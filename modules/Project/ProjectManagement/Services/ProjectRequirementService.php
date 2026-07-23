@@ -19,7 +19,10 @@ use Modules\Shared\ResourceShare\Models\ResourceShare;
 
 class ProjectRequirementService
 {
-    public function __construct(private readonly ProjectRequirementRepository $repository) {}
+    public function __construct(
+        private readonly ProjectRequirementRepository $repository,
+        private readonly ProjectRequirementUploadStatusService $uploadStatusService,
+    ) {}
 
     public function list(string $projectId, array $filters, int $page, int $perPage): array
     {
@@ -38,8 +41,11 @@ class ProjectRequirementService
             $isOwner,
         );
 
+        $data = $paginator->getCollection();
+        $this->uploadStatusService->attach($data);
+
         return [
-            'data' => $paginator->getCollection(),
+            'data' => $data,
             'summary' => $this->repository->summaryForProject($project->id, $filters, $readerCompanyId, $isOwner),
             'pagination' => [
                 'page' => $paginator->currentPage(),
@@ -55,12 +61,16 @@ class ProjectRequirementService
         $project = $this->findReadableProjectOrFail($projectId);
         $readerCompanyId = (string) tenant('id');
 
-        return $this->repository->findForProject(
+        $requirement = $this->repository->findForProject(
             $project->id,
             $requirementId,
             $readerCompanyId,
             $project->company_id === $readerCompanyId,
         );
+
+        $this->uploadStatusService->attach([$requirement]);
+
+        return $requirement;
     }
 
     public function createMany(string $projectId, array $rows): Collection
@@ -85,6 +95,8 @@ class ProjectRequirementService
 
                 $created->push($this->repository->loadRelations($requirement->refresh()));
             }
+
+            $this->uploadStatusService->attach($created);
 
             return $created;
         });
@@ -116,7 +128,10 @@ class ProjectRequirementService
                 $requirement->receiverCompanies()->sync($receiverCompanyIds);
             }
 
-            return $this->repository->loadRelations($requirement->refresh());
+            $requirement = $this->repository->loadRelations($requirement->refresh());
+            $this->uploadStatusService->attach([$requirement]);
+
+            return $requirement;
         });
     }
 
