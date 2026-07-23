@@ -434,6 +434,37 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         );
     }
 
+    public function test_receiver_company_ids_do_not_require_distinct_values(): void
+    {
+        $project = $this->createProject();
+        $procedureSetting = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createReceiverCompany();
+
+        $this->createAcceptedShare($project, $receiverCompany);
+
+        $receiverCompanyIds = [
+            $receiverCompany->id,
+            $receiverCompany->id,
+        ];
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
+                'name' => 'Duplicated receiver company review',
+                'forms' => 'approve',
+                'is_approve' => true,
+                'action_taker_type' => 'receiver_company',
+                'receiver_company_ids' => $receiverCompanyIds,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.receiver_company_ids.0', $receiverCompany->id)
+            ->assertJsonCount(1, 'payload.receiver_company_ids');
+
+        $step = ProcedureSettingStep::query()->findOrFail($response->json('payload.id'));
+
+        $this->assertSame($receiverCompanyIds, $step->receiver_company_ids);
+    }
+
     public function test_receiver_company_step_resolves_project_from_project_procedure_link(): void
     {
         $project = $this->createProject();
