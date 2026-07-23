@@ -104,41 +104,28 @@ class ProjectOrderPermitController extends Controller
         }
     }
 
-    public function importExcel(Request $request): JsonResponse
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls|max:102400',
+public function importExcel(Request $request): JsonResponse
+{
+    $request->validate([
+        'file' => 'required|file|mimes:xlsx,xls|max:102400',
+    ]);
+
+    try {
+        $file = $request->file('file');
+        $projectId = $request->route('project');
+        $companyId = tenant('id');
+
+        $path = $file->store('temp_imports', 'public');
+
+        $job = new ImportOrderPermitsJob($path, $projectId, $companyId);
+        dispatch($job);
+
+        return response()->json([
+            'message' => 'جاري تحديث البيانات في الخلفية',
         ]);
-
-        try {
-            $file = $request->file('file');
-            $projectId = $request->route('project');
-            $companyId = tenant('id');
-
-            $path = $file->store('temp_imports', 'public');
-            $job = new ImportOrderPermitsJob($path);
-            dispatch($job);
-
-            $udsSheet = UdsExcelSheet::firstOrCreate([
-                'project_id' => $projectId,
-                'company_id' => $companyId,
-            ]);
-
-            $udsSheet->clearMediaCollection('uds_sheets');
-            app(FileUploadService::class)->uploadFile(
-                $udsSheet,
-                $file,
-                'temp_imports',
-                'uds_sheets',
-                'public'
-            );
-
-            return response()->json([
-                'message' => 'جاري تحديث البيانات في الخلفية',
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
 
 }

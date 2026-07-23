@@ -74,88 +74,51 @@ class ProjectOrderPermitService
 
     private function autoFillFromUds(ProjectOrderPermit $order): void
     {
-        try {
-            $udsSheet = UdsExcelSheet::where('project_id', $order->project_id)->first();
-            if (!$udsSheet) return;
+        $udsRecords = \Modules\Project\ProjectType\Models\UdsProjectOrderPermit::where('project_id', $order->project_id)
+            ->where('name', $order->name)
+            ->get();
 
-            $media = $udsSheet->getFirstMedia('uds_sheets');
-            if (!$media) return;
+        if ($udsRecords->isEmpty()) return;
 
-            $fullPath = $media->getPath();
-            if (!file_exists($fullPath)) return;
+        $orderPermit = $order->orderPermit()->first();
+        if (!$orderPermit) return;
 
-            $rows = Excel::toArray([], $fullPath)[0] ?? [];
-            if (empty($rows)) return;
+        $updates = [];
 
-            $matchedRows = [];
-            foreach ($rows as $row) {
-                if (trim((string)($row[34] ?? '')) === $order->name) {
-                    $matchedRows[] = $row;
-                }
+        foreach ($udsRecords as $uds) {
+            $typeCode = $uds->type_code;
+            $isContractor = $orderPermit->code !== null && (string)$orderPermit->code === $typeCode;
+            $isConsultant = $orderPermit->type !== null && (string)$orderPermit->type === $typeCode;
+
+            if (!$isContractor && !$isConsultant) continue;
+
+            if ($isContractor) {
+                $updates['executing_entity'] = $uds->executing_entity;
+                $updates['office'] = $uds->office;
+                $updates['contractor_basket'] = $uds->contractor_basket;
+                $updates['contractor_last_procedure_code'] = $uds->contractor_last_procedure_code;
+                $updates['contractor_last_procedure_date'] = $uds->contractor_last_procedure_date;
+                $updates['contractor_column_155_entry_date'] = $uds->contractor_column_155_entry_date;
+                $updates['material_balance_elec_contractor'] = $uds->material_balance_elec_contractor;
+                $updates['contractor_work_order_status'] = $uds->contractor_work_order_status;
+            } else {
+                $updates['consultant_current_basket'] = $uds->consultant_current_basket;
+                $updates['assigned_date'] = $uds->assigned_date;
+                $updates['consultant_assignment_date'] = $uds->consultant_assignment_date;
+                $updates['consultant_last_procedure_code'] = $uds->consultant_last_procedure_code;
+                $updates['consultant_last_procedure_date'] = $uds->consultant_last_procedure_date;
+                $updates['consultant_column_155_entry_date'] = $uds->consultant_column_155_entry_date;
+                $updates['price'] = $uds->price;
+                $updates['consultant_price'] = $uds->consultant_price;
             }
+        }
 
-            if (empty($matchedRows)) return;
-
-            $orderPermit = $order->orderPermit()->first();
-            if (!$orderPermit) return;
-
-            $value = function (array $row, int $index): ?string {
-                $val = trim((string)($row[$index] ?? ''));
-                return $val !== '' ? $val : null;
-            };
-            $parseDate = function (array $row, int $index) use ($value): ?string {
-                $val = $value($row, $index);
-                if ($val === null) return null;
-                try { return Carbon::parse($val)->format('Y-m-d'); } catch (\Exception $e) { return null; }
-            };
-            $parseFloat = function (array $row, int $index) use ($value): ?float {
-                $val = $value($row, $index);
-                return $val !== null ? (float) $val : null;
-            };
-
-            $updates = [];
-
-            foreach ($matchedRows as $matchedRow) {
-                $typeCode = trim((string)($matchedRow[35] ?? ''));
-                if ($typeCode === '') continue;
-
-                $isContractor = $orderPermit->code !== null && (string)$orderPermit->code === $typeCode;
-                $isConsultant = $orderPermit->type !== null && (string)$orderPermit->type === $typeCode;
-
-                if (!$isContractor && !$isConsultant) continue;
-
-                if ($isContractor) {
-                    $updates['executing_entity'] = $value($matchedRow, 27);
-                    $updates['office'] = $value($matchedRow, 37);
-                    $updates['contractor_basket'] = $value($matchedRow, 16);
-                    $updates['contractor_last_procedure_code'] = $value($matchedRow, 30);
-                    $updates['contractor_last_procedure_date'] = $parseDate($matchedRow, 28);
-                    $updates['contractor_column_155_entry_date'] = $parseDate($matchedRow, 24);
-                    $updates['material_balance_elec_contractor'] = $value($matchedRow, 13);
-                    $updates['contractor_work_order_status'] = $value($matchedRow, 6);
-                } else {
-                    $updates['consultant_current_basket'] = $value($matchedRow, 16);
-                    $updates['assigned_date'] = $parseDate($matchedRow, 25);
-                    $updates['consultant_assignment_date'] = $parseDate($matchedRow, 25);
-                    $updates['consultant_last_procedure_code'] = $value($matchedRow, 30);
-                    $updates['consultant_last_procedure_date'] = $parseDate($matchedRow, 28);
-                    $updates['consultant_column_155_entry_date'] = $parseDate($matchedRow, 24);
-                    $updates['price'] = $parseFloat($matchedRow, 12);
-                    $updates['consultant_price'] = $parseFloat($matchedRow, 12);
-                }
-            }
-
-            $updates = array_filter($updates, fn($v) => $v !== null);
-
-            if (!empty($updates)) {
-                $order->update($updates);
-                Log::info("Auto-filled order {$order->name} from UDS Excel.", ['fields' => array_keys($updates)]);
-            }
-        } catch (\Exception $e) {
-            Log::error("Auto-fill failed for order {$order->name}: " . $e->getMessage());
+        $updates = array_filter($updates, fn($v) => $v !== null);
+        if (!empty($updates)) {
+            $order->update($updates);
+            Log::info("Auto-filled order {$order->name} from UDS table.");
         }
     }
-
     public function list(string $projectId, array $filters = []): Collection
     {
         $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
