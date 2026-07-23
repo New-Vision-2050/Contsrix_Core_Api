@@ -150,10 +150,10 @@ class CreateProcedureSettingStepRequest extends FormRequest
                 'required_if:action_taker_type,receiver_company',
                 'prohibited_unless:action_taker_type,receiver_company',
             ],
-            'receiver_company_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('companies', 'id')],
+            'receiver_company_ids.*' => ['required', 'uuid'],
 
             'project_employee_ids' => ['nullable', 'array'],
-            'project_employee_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('project_employees', 'id')],
+            'project_employee_ids.*' => ['required', 'uuid'],
 
             'action_taker_user_ids'   => [
                 'nullable',
