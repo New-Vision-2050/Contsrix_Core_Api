@@ -56,6 +56,7 @@ class ProcedureSettingStep extends Model
         'action_taker_specific_procedure_id',
         'action_taker_management_hierarchies',
         'receiver_company_ids',
+        'project_employee_ids',
     ];
 
     protected $casts = [
@@ -97,6 +98,9 @@ class ProcedureSettingStep extends Model
 
         // Receiver companies selected when action_taker_type is receiver_company.
         'receiver_company_ids'                 => 'array',
+
+        // Project employee selections persisted for project-scoped procedure steps.
+        'project_employee_ids'                 => 'array',
     ];
 
     public function getRelationshipToPrimaryModel(): string

@@ -434,6 +434,34 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         );
     }
 
+    public function test_receiver_company_step_resolves_project_from_project_procedure_link(): void
+    {
+        $project = $this->createProject();
+        $procedureSetting = $this->createProjectProcedureWithGlobalWorkflow($project);
+        $receiverCompany = $this->createReceiverCompany();
+
+        $this->createAcceptedShare($project, $receiverCompany);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
+                'name' => 'Receiver company review',
+                'forms' => 'approve',
+                'is_approve' => true,
+                'action_taker_type' => 'receiver_company',
+                'receiver_company_ids' => [$receiverCompany->id],
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.project_id', $project->id)
+            ->assertJsonPath('payload.receiver_company_ids.0', $receiverCompany->id);
+
+        $this->assertDatabaseHas('procedure_setting_steps', [
+            'id' => $response->json('payload.id'),
+            'procedure_setting_id' => $procedureSetting->id,
+            'project_id' => $project->id,
+        ]);
+    }
+
     public function test_receiver_company_action_taker_requires_accepted_shared_company(): void
     {
         $project = $this->createProject();
@@ -583,6 +611,46 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         $procedureSetting = ProcedureSetting::query()->withoutGlobalScopes()->create([
             'company_id' => $this->company->id,
             'name' => 'Receiver Company Procedure',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'is_active' => true,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => $parent->id,
+            'sort_order' => 1,
+        ]);
+
+        ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'procedure_setting_id' => $procedureSetting->id,
+        ]);
+
+        return $procedureSetting;
+    }
+
+    private function createProjectProcedureWithGlobalWorkflow(ProjectManagement $project): ProcedureSetting
+    {
+        $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => null,
+            'name' => 'receiver_company_global_workflow_'.Str::lower(Str::random(6)),
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+        ]);
+
+        $parent = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Receiver Company Global Parent',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'is_active' => true,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => null,
+            'sort_order' => 1,
+        ]);
+
+        $procedureSetting = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Receiver Company Global Procedure',
             'type' => ProjectProcedureService::PROCEDURE_TYPE,
             'execute_type' => 'sequence',
             'is_active' => true,

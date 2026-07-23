@@ -11,9 +11,11 @@ use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Models\WorkFlow;
+use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
+use Modules\User\Models\User;
 
 class ProjectProcedureSettingStepCrudTest extends BaseAttendanceReportTestCase
 {
@@ -69,6 +71,36 @@ class ProjectProcedureSettingStepCrudTest extends BaseAttendanceReportTestCase
         ]);
     }
 
+    public function test_project_user_can_create_step_with_project_employee_ids(): void
+    {
+        $project = $this->createProject();
+        $firstProjectEmployee = $this->createProjectEmployee($project);
+        $secondProjectEmployee = $this->createProjectEmployee($project);
+        $context = $this->createProcedureSettingContext($project);
+        $procedureSetting = $this->createProcedureSetting($context);
+
+        $projectEmployeeIds = [
+            $firstProjectEmployee->id,
+            $secondProjectEmployee->id,
+        ];
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
+                'name' => 'Project employee selected step',
+                'forms' => 'approve',
+                'is_approve' => true,
+                'project_employee_ids' => $projectEmployeeIds,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.project_employee_ids.0', $firstProjectEmployee->id)
+            ->assertJsonPath('payload.project_employee_ids.1', $secondProjectEmployee->id);
+
+        $step = ProcedureSettingStep::query()->findOrFail($response->json('payload.id'));
+
+        $this->assertSame($projectEmployeeIds, $step->project_employee_ids);
+    }
+
     public function test_project_user_can_show_step_for_project_procedure_setting_without_project_id(): void
     {
         $project = $this->createProject();
@@ -112,6 +144,90 @@ class ProjectProcedureSettingStepCrudTest extends BaseAttendanceReportTestCase
             'name' => 'After Update',
             'step_order' => 7,
         ]);
+    }
+
+    public function test_project_user_can_update_and_clear_project_employee_ids(): void
+    {
+        $project = $this->createProject();
+        $firstProjectEmployee = $this->createProjectEmployee($project);
+        $secondProjectEmployee = $this->createProjectEmployee($project);
+        $thirdProjectEmployee = $this->createProjectEmployee($project);
+        $context = $this->createProcedureSettingContext($project);
+        $procedureSetting = $this->createProcedureSetting($context);
+        $step = $this->createStep($procedureSetting, [
+            'project_employee_ids' => [$firstProjectEmployee->id],
+        ]);
+
+        $replacementIds = [
+            $secondProjectEmployee->id,
+            $thirdProjectEmployee->id,
+        ];
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps/{$step->id}", [
+                'project_employee_ids' => $replacementIds,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.project_employee_ids.0', $secondProjectEmployee->id)
+            ->assertJsonPath('payload.project_employee_ids.1', $thirdProjectEmployee->id);
+
+        $this->assertSame(
+            $replacementIds,
+            ProcedureSettingStep::query()->findOrFail($step->id)->project_employee_ids,
+        );
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps/{$step->id}", [
+                'project_employee_ids' => [],
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.project_employee_ids', []);
+
+        $this->assertSame(
+            [],
+            ProcedureSettingStep::query()->findOrFail($step->id)->project_employee_ids,
+        );
+    }
+
+    public function test_project_employee_ids_must_belong_to_the_procedure_setting_project(): void
+    {
+        $project = $this->createProject();
+        $otherProject = $this->createProject();
+        $otherProjectEmployee = $this->createProjectEmployee($otherProject);
+        $context = $this->createProcedureSettingContext($project);
+        $procedureSetting = $this->createProcedureSetting($context);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
+                'name' => 'Invalid project employee step',
+                'forms' => 'approve',
+                'is_approve' => true,
+                'project_employee_ids' => [$otherProjectEmployee->id],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['project_employee_ids']);
+    }
+
+    public function test_global_procedure_setting_rejects_non_empty_project_employee_ids(): void
+    {
+        $project = $this->createProject();
+        $projectEmployee = $this->createProjectEmployee($project);
+        $context = $this->createProcedureSettingContext();
+        $procedureSetting = $this->createProcedureSetting($context);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
+                'name' => 'Global project employee step',
+                'forms' => 'approve',
+                'is_approve' => true,
+                'project_employee_ids' => [$projectEmployee->id],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['project_employee_ids']);
     }
 
     public function test_project_user_can_delete_step_for_project_procedure_setting_without_project_id(): void
@@ -283,6 +399,8 @@ class ProjectProcedureSettingStepCrudTest extends BaseAttendanceReportTestCase
             && Schema::hasTable('procedure_settings')
             && Schema::hasTable('procedure_setting_steps')
             && Schema::hasColumn('procedure_setting_steps', 'project_id')
+            && Schema::hasColumn('procedure_setting_steps', 'project_employee_ids')
+            && Schema::hasTable('project_employees')
             && Schema::hasTable('work_flows')
             && Schema::hasColumn('work_flows', 'project_id');
     }
@@ -301,6 +419,19 @@ class ProjectProcedureSettingStepCrudTest extends BaseAttendanceReportTestCase
             'status' => 1,
             'serial_number' => 'PSS-'.Str::upper(Str::random(6)),
         ]));
+    }
+
+    private function createProjectEmployee(ProjectManagement $project): ProjectEmployee
+    {
+        $user = User::factory()->create([
+            'company_id' => $this->company->id,
+        ]);
+
+        return ProjectEmployee::query()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'company_id' => $this->company->id,
+        ]);
     }
 
     /**

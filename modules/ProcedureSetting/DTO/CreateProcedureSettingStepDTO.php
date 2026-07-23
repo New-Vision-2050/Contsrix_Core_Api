@@ -14,6 +14,7 @@ class CreateProcedureSettingStepDTO
      * @param list<string>|null                                      $action_taker_specific_procedure_id
      * @param list<array{action_taker_management_hierarchy_type: string, is_Deputy_Director: bool}>|null $action_taker_management_hierarchies
      * @param list<string>|null                                      $receiver_company_ids
+     * @param list<string>|null                                      $project_employee_ids
      */
     public function __construct(
         public readonly string $procedure_setting_id,
@@ -54,6 +55,9 @@ class CreateProcedureSettingStepDTO
 
         /** Receiver companies used when action_taker_type is receiver_company. */
         public readonly ?array $receiver_company_ids = null,
+
+        /** Project employees selected for project-scoped procedure steps. */
+        public readonly ?array $project_employee_ids = null,
     ) {
     }
 
@@ -90,6 +94,7 @@ class CreateProcedureSettingStepDTO
             'action_taker_specific_procedure_id'   => $this->action_taker_specific_procedure_id,
             'action_taker_management_hierarchies'  => $this->action_taker_management_hierarchies,
             'receiver_company_ids'                 => $this->receiver_company_ids,
+            'project_employee_ids'                 => $this->project_employee_ids,
         ];
 
         if ($this->action_taker_user_ids !== null) {

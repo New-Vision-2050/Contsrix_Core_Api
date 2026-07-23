@@ -36,10 +36,7 @@ class ProjectRequirementPresenter extends AbstractPresenter
             'review_entity_id' => $this->requirement->review_entity_id,
             'review_entity' => $this->requirement->review_entity,
             'review_entity_company' => $this->companyData($this->requirement->reviewEntityCompany),
-            'receiver_company_ids' => $this->requirement->receiverCompanies
-                ->pluck('id')
-                ->values()
-                ->all(),
+            'receiver_company_ids' => $this->requirement->receiver_company_ids,
             'receiver_companies' => $this->requirement->receiverCompanies
                 ->map(fn (Company $company): array => $this->companyData($company) ?? [])
                 ->values()

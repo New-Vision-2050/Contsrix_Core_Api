@@ -113,6 +113,17 @@ class ProjectRequirement extends Model
         )->withoutGlobalScopes()->withTimestamps();
     }
 
+    public function getReceiverCompanyIdsAttribute(): array
+    {
+        $this->loadMissing('receiverCompanies');
+
+        return $this->receiverCompanies
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
     public function submissions(): HasMany
     {
         return $this->hasMany(ProjectRequirementSubmission::class, 'project_requirement_id');

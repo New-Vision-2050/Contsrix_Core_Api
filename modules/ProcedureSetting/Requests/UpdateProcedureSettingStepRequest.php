@@ -9,12 +9,14 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\Validator;
 use Modules\ProcedureSetting\Commands\UpdateProcedureSettingStepCommand;
+use Modules\ProcedureSetting\Requests\Concerns\ValidatesProjectEmployeeSelections;
 use Modules\ProcedureSetting\Requests\Concerns\ValidatesReceiverCompanyActionTakers;
 use Modules\ProcedureSetting\Rules\ActionTakerUserIdsUniquePerProcedureSetting;
 
 class UpdateProcedureSettingStepRequest extends FormRequest
 {
     use ValidatesReceiverCompanyActionTakers;
+    use ValidatesProjectEmployeeSelections;
 
     /** Keys merged only for validation; never sent to the update handler. */
     private const INTERNAL_RULE_KEYS = [
@@ -44,7 +46,10 @@ class UpdateProcedureSettingStepRequest extends FormRequest
 
     public function withValidator(Validator $validator): void
     {
-        $validator->after(fn (Validator $validator) => $this->validateReceiverCompanyActionTakers($validator));
+        $validator->after(function (Validator $validator): void {
+            $this->validateReceiverCompanyActionTakers($validator);
+            $this->validateProjectEmployeeSelections($validator);
+        });
     }
 
     public function createUpdateProcedureSettingStepCommand(): UpdateProcedureSettingStepCommand
@@ -210,6 +215,9 @@ class UpdateProcedureSettingStepRequest extends FormRequest
                 'prohibited_unless:action_taker_type,receiver_company',
             ],
             'receiver_company_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('companies', 'id')],
+
+            'project_employee_ids' => ['sometimes', 'nullable', 'array'],
+            'project_employee_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('project_employees', 'id')],
 
             'action_taker_user_ids'   => [
                 'sometimes',
