@@ -16,6 +16,7 @@ class CreateAttachmentRequestRequest extends FormRequest
             'date' => 'required|date',
             'project_id' => 'required|string|exists:projects,id',
             'procedure_setting_id' => 'required|string|uuid|exists:procedure_settings,id',
+            'receiver_company_id' => 'required|string|uuid|exists:companies,id',
             'attachments' => 'required|array|min:1',
             'attachments.*' => 'required|file', // 10MB max
             'notes' => 'nullable|string',
@@ -33,6 +34,9 @@ class CreateAttachmentRequestRequest extends FormRequest
             'procedure_setting_id.required' => 'Procedure setting ID is required',
             'procedure_setting_id.uuid' => 'Procedure setting ID must be a valid UUID',
             'procedure_setting_id.exists' => 'Procedure setting does not exist',
+            'receiver_company_id.required' => 'Receiver company ID is required',
+            'receiver_company_id.uuid' => 'Receiver company ID must be a valid UUID',
+            'receiver_company_id.exists' => 'Receiver company does not exist',
             'attachments.required' => 'At least one attachment is required',
             'attachments.array' => 'Attachments must be an array',
             'attachments.min' => 'At least one attachment is required',

@@ -9,7 +9,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\DocumentType\Models\DocumentType;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementEvaluationStatus;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementRepetition;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
@@ -201,7 +200,7 @@ class ProjectRequirementService
             $payload[$key] = is_string($value) ? trim($value) : $value;
         }
 
-        $this->hydrateLookupNames($project, $payload, $existing);
+        $this->hydrateLookupNames($payload);
 
         if (array_key_exists('repetition', $payload)) {
             $payload['repetition_interval_type'] = $payload['repetition_interval_type']
@@ -218,19 +217,8 @@ class ProjectRequirementService
         return $payload;
     }
 
-    private function hydrateLookupNames(ProjectManagement $project, array &$payload, ?ProjectRequirement $existing): void
+    private function hydrateLookupNames(array &$payload): void
     {
-        if (array_key_exists('document_type_id', $payload) && $payload['document_type_id'] !== null) {
-            $documentType = DocumentType::query()
-                ->withoutGlobalScopes()
-                ->where('company_id', $project->company_id)
-                ->find($payload['document_type_id']);
-
-            if ($documentType instanceof DocumentType && empty($payload['document_type'])) {
-                $payload['document_type'] = $documentType->name;
-            }
-        }
-
         if (array_key_exists('specialization_id', $payload) && $payload['specialization_id'] !== null) {
             $specialization = AcademicSpecialization::query()
                 ->withoutGlobalScopes()
@@ -258,10 +246,6 @@ class ProjectRequirementService
                     ? ($company->name['ar'] ?? $company->name['en'] ?? reset($company->name))
                     : $company->name;
             }
-        }
-
-        if ($existing !== null && array_key_exists('document_type_id', $payload) && $payload['document_type_id'] === null) {
-            $payload['document_type'] = $payload['document_type'] ?? $existing->document_type;
         }
     }
 }

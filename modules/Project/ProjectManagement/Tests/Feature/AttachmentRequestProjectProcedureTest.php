@@ -35,11 +35,12 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         Mail::fake();
     }
 
-    public function test_create_attachment_request_derives_receiver_and_folder_data_from_selected_project_procedure(): void
+    public function test_create_attachment_request_uses_request_receiver_and_derives_folder_data_from_selected_project_procedure(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
-        $ignoredReceiverCompanyId = (string) Str::uuid();
+        $receiverCompany = $this->createCompany();
+        $this->createAcceptedShare($project, $receiverCompany);
         $ignoredAttachmentTypeId = (string) Str::uuid();
 
         $response = $this->actingAs($this->actor, 'api')
@@ -49,7 +50,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 'date' => '2026-07-21',
                 'project_id' => $project->id,
                 'procedure_setting_id' => $procedure->procedure_setting_id,
-                'receiver_company_id' => $ignoredReceiverCompanyId,
+                'receiver_company_id' => $receiverCompany->id,
                 'attachment_type_id' => $ignoredAttachmentTypeId,
                 'attachments' => [
                     UploadedFile::fake()->create('shop-drawing.pdf', 12, 'application/pdf'),
@@ -59,12 +60,13 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertOk()
             ->assertJsonPath('payload.procedure_setting_id', $procedure->procedure_setting_id)
             ->assertJsonPath('payload.procedure_setting.id', $procedure->procedure_setting_id)
-            ->assertJsonPath('payload.procedure_setting.receiver_company.id', $procedure->receiver_company_id)
+            ->assertJsonPath('payload.receiver_company.id', $receiverCompany->id)
             ->assertJsonPath('payload.procedure_setting.attachment_type.id', $procedure->attachment_type_id)
             ->assertJsonPath('payload.procedure_setting.attachment_sub_type.id', $procedure->attachment_sub_type_id)
             ->assertJsonPath('payload.procedure_setting.attachment_sub_sub_type.id', $procedure->attachment_sub_sub_type_id);
 
         $this->assertNotEmpty($response->json('payload.serial_number'));
+        $this->assertArrayNotHasKey('receiver_company', $response->json('payload.procedure_setting'));
         $this->assertArrayNotHasKey('attachment_type_id', $response->json('payload'));
         $this->assertArrayNotHasKey('attachment_sub_type_id', $response->json('payload'));
         $this->assertArrayNotHasKey('attachment_sub_sub_type_id', $response->json('payload'));
@@ -74,12 +76,13 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'id' => $response->json('payload.id'),
             'project_id' => $project->id,
             'procedure_setting_id' => $procedure->procedure_setting_id,
+            'receiver_company_id' => $receiverCompany->id,
             'notes' => 'Created from selected project procedure',
         ]);
 
         $this->assertTrue(
             AttachmentRequest::query()
-                ->forReceiverCompany($procedure->receiver_company_id)
+                ->forReceiverCompany($receiverCompany->id)
                 ->whereKey($response->json('payload.id'))
                 ->exists()
         );
@@ -90,6 +93,8 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $project = $this->createProject();
         $otherProject = $this->createProject();
         $otherProcedure = $this->createProjectProcedure($otherProject);
+        $receiverCompany = $this->createCompany();
+        $this->createAcceptedShare($project, $receiverCompany);
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
@@ -98,6 +103,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 'date' => '2026-07-21',
                 'project_id' => $project->id,
                 'procedure_setting_id' => $otherProcedure->procedure_setting_id,
+                'receiver_company_id' => $receiverCompany->id,
                 'attachments' => [
                     UploadedFile::fake()->create('wrong-project.pdf', 12, 'application/pdf'),
                 ],
@@ -106,10 +112,10 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonValidationErrors(['procedure_setting_id']);
     }
 
-    public function test_create_attachment_request_rejects_project_procedure_without_receiver_company(): void
+    public function test_create_attachment_request_requires_receiver_company(): void
     {
         $project = $this->createProject();
-        $procedure = $this->createProjectProcedure($project, withReceiverCompany: false);
+        $procedure = $this->createProjectProcedure($project);
 
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
@@ -123,14 +129,14 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 ],
             ], ['Accept' => 'application/json'])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['procedure_setting_id']);
+            ->assertJsonValidationErrors(['receiver_company_id']);
     }
 
     private function schemaReady(): bool
     {
         return Schema::hasTable('attachment_requests')
             && Schema::hasColumn('attachment_requests', 'procedure_setting_id')
-            && ! Schema::hasColumn('attachment_requests', 'receiver_company_id')
+            && Schema::hasColumn('attachment_requests', 'receiver_company_id')
             && ! Schema::hasColumn('attachment_requests', 'attachment_type_id')
             && ! Schema::hasColumn('attachment_requests', 'attachment_sub_type_id')
             && ! Schema::hasColumn('attachment_requests', 'attachment_sub_sub_type_id')
@@ -174,10 +180,8 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         )->id;
     }
 
-    private function createProjectProcedure(
-        ProjectManagement $project,
-        bool $withReceiverCompany = true
-    ): ProjectProcedureSetting {
+    private function createProjectProcedure(ProjectManagement $project): ProjectProcedureSetting
+    {
         $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
             'company_id' => $this->company->id,
             'project_id' => $project->id,
@@ -206,11 +210,6 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'sort_order' => 1,
         ]);
 
-        $receiverCompany = $withReceiverCompany ? $this->createCompany() : null;
-        if ($receiverCompany) {
-            $this->createAcceptedShare($project, $receiverCompany);
-        }
-
         $attachmentType = $this->createFolder($project, 'Project Docs');
         $attachmentSubType = $this->createFolder($project, 'Design Docs', $attachmentType->id);
         $attachmentSubSubType = $this->createFolder($project, 'Issued For Approval', $attachmentSubType->id);
@@ -219,7 +218,6 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'company_id' => $this->company->id,
             'project_id' => $project->id,
             'procedure_setting_id' => $procedureSetting->id,
-            'receiver_company_id' => $receiverCompany?->id,
             'attachment_type_id' => $attachmentType->id,
             'attachment_sub_type_id' => $attachmentSubType->id,
             'attachment_sub_sub_type_id' => $attachmentSubSubType->id,
