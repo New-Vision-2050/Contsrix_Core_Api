@@ -82,6 +82,21 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'contractor_work_order_status' => $this->model->contractor_work_order_status,
             'contractor_basket' => $this->model->contractor_basket,
             'consultant_price' => $this->model->consultant_price,
+            'employee_id' => $this->model->employee_id,
+            'employee_name' => $this->model->employee?->name,
+            'target_drilling' => $this->model->target_drilling !== null ? (float) $this->model->target_drilling : null,
+            'achieved_drilling' => $this->model->achieved_drilling !== null ? (float) $this->model->achieved_drilling : null,
+            'target_extention' => $this->model->target_extention !== null ? (float) $this->model->target_extention : null,
+            'achieved_extention' => $this->model->achieved_extention !== null ? (float) $this->model->achieved_extention : null,
+            'description_details' => $this->model->description_details,
+            'consultant_statement' => $this->model->consultant_statement,
+            'last_date_consultant_statement' => $this->model->last_date_consultant_statement?->toDateString(),
+            'consultnat_statement_status' => $this->getConsultnatStatementStatus(),
+            'official_project_hours' => $this->getOfficialProjectHours(),
+            'number_of_days_to_achieve_column_155' => $this->getNumberOfDaysToAchieveColumn155(),
+            'percentage_time' => $this->getPercentageTime(),
+            'percentage_achieve_drilling' => $this->getPercentageAchieveDrilling(),
+            'percentage_achieve_extention' => $this->getPercentageAchieveExtention(),
             'last_row_update_at' => $this->model->last_row_update_at?->toDateTimeString(),
             'created_at' => $this->model->created_at?->toDateTimeString(),
             'updated_at' => $this->model->updated_at?->toDateTimeString(),
@@ -180,6 +195,82 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
         }
 
         return 'تم اصدار التصريح';
+    }
+
+    private function getConsultnatStatementStatus(): ?string
+    {
+        if (! $this->model->last_date_consultant_statement) {
+            return null;
+        }
+
+        $days = (int) $this->model->last_date_consultant_statement->startOfDay()->diffInDays(Carbon::today()->startOfDay(), false);
+
+        if ($days < 3) {
+            return 'جديدة';
+        }
+        if ($days < 6) {
+            return 'إفادة قديمة';
+        }
+        if ($days < 10) {
+            return 'إفادة قديمة جدًا';
+        }
+        if ($days < 15) {
+            return 'إهمال بالمتابعة';
+        }
+
+        return 'إهمال شديد بالمتابعة';
+    }
+
+    private function getOfficialProjectHours(): ?float
+    {
+        return $this->model->orderPermit?->uds_period !== null ? (float) $this->model->orderPermit->uds_period : null;
+    }
+
+    private function getNumberOfDaysToAchieveColumn155(): ?int
+    {
+        if (! $this->model->consultant_column_155_entry_date) {
+            return null;
+        }
+
+        return (int) $this->model->consultant_column_155_entry_date->startOfDay()->diffInDays(Carbon::today()->startOfDay(), false);
+    }
+
+    private function getPercentageTime(): ?float
+    {
+        $officialHours = $this->getOfficialProjectHours();
+        $days = $this->getNumberOfDaysToAchieveColumn155();
+
+        if ($officialHours === null || $officialHours == 0 || $days === null || $days == 0) {
+            return null;
+        }
+
+        return round(($days / $officialHours) * 100, 2);
+    }
+
+    private function getPercentageAchieveDrilling(): ?string
+    {
+        $target = $this->model->target_drilling !== null ? (float) $this->model->target_drilling : null;
+
+        if ($target === null || $target == 0) {
+            return 'لا يحتاج';
+        }
+
+        $achieved = $this->model->achieved_drilling !== null ? (float) $this->model->achieved_drilling : 0;
+
+        return (string) round(($achieved / $target) * 100, 2);
+    }
+
+    private function getPercentageAchieveExtention(): ?string
+    {
+        $target = $this->model->target_extention !== null ? (float) $this->model->target_extention : null;
+
+        if ($target === null || $target == 0) {
+            return 'لا يحتاج';
+        }
+
+        $achieved = $this->model->achieved_extention !== null ? (float) $this->model->achieved_extention : 0;
+
+        return (string) round(($achieved / $target) * 100, 2);
     }
 
     private function getPermitStatus(): string

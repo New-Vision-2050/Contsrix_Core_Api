@@ -52,6 +52,15 @@ class UpdateProjectOrderPermitRequest extends FormRequest
             'contractor_work_order_status' => ['sometimes', 'nullable', 'string', 'max:255'],
             'contractor_basket' => ['sometimes', 'nullable', 'string', 'max:255'],
             'consultant_price' => ['sometimes', 'nullable', 'numeric'],
+            'employee_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
+            'target_drilling' => ['sometimes', 'nullable', 'numeric'],
+            'achieved_drilling' => ['sometimes', 'nullable', 'numeric'],
+            'target_extention' => ['sometimes', 'nullable', 'numeric'],
+            'achieved_extention' => ['sometimes', 'nullable', 'numeric'],
+            'description_details' => ['sometimes', 'nullable', 'string'],
+            'consultant_statement' => ['sometimes', 'nullable', 'string'],
+            'last_date_consultant_statement' => ['sometimes', 'nullable', 'date'],
+            'consultnat_statement_status' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 

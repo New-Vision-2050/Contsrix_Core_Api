@@ -52,6 +52,15 @@ class ProjectOrderPermit extends Model
         'contractor_work_order_status',
         'contractor_basket',
         'consultant_price',
+        'employee_id',
+        'target_drilling',
+        'achieved_drilling',
+        'target_extention',
+        'achieved_extention',
+        'description_details',
+        'consultant_statement',
+        'last_date_consultant_statement',
+        'consultnat_statement_status',
     ];
 
     protected $casts = [
@@ -67,6 +76,11 @@ class ProjectOrderPermit extends Model
         'contractor_last_procedure_date' => 'date',
         'contractor_column_155_entry_date' => 'date',
         'last_row_update_at' => 'datetime',
+        'target_drilling' => 'decimal:2',
+        'achieved_drilling' => 'decimal:2',
+        'target_extention' => 'decimal:2',
+        'achieved_extention' => 'decimal:2',
+        'last_date_consultant_statement' => 'date',
     ];
 
     public function project(): BelongsTo
@@ -122,5 +136,10 @@ class ProjectOrderPermit extends Model
     public function connectionPhaseStatus(): BelongsTo
     {
         return $this->belongsTo(ConnectionPhaseStatus::class, 'connection_phase_status_id');
+    }
+
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\User\Models\User::class, 'employee_id');
     }
 }
