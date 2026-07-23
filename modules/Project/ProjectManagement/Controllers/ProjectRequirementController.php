@@ -8,14 +8,20 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectManagement\Presenters\ProjectRequirementPresenter;
+use Modules\Project\ProjectManagement\Presenters\ProjectRequirementSubmissionPresenter;
 use Modules\Project\ProjectManagement\Requests\CreateProjectRequirementRequest;
+use Modules\Project\ProjectManagement\Requests\CreateProjectRequirementSubmissionRequest;
 use Modules\Project\ProjectManagement\Requests\GetProjectRequirementListRequest;
 use Modules\Project\ProjectManagement\Requests\UpdateProjectRequirementRequest;
 use Modules\Project\ProjectManagement\Services\ProjectRequirementService;
+use Modules\Project\ProjectManagement\Services\ProjectRequirementSubmissionService;
 
 class ProjectRequirementController extends Controller
 {
-    public function __construct(private readonly ProjectRequirementService $service) {}
+    public function __construct(
+        private readonly ProjectRequirementService $service,
+        private readonly ProjectRequirementSubmissionService $submissionService,
+    ) {}
 
     public function index(GetProjectRequirementListRequest $request, string $project): JsonResponse
     {
@@ -66,5 +72,22 @@ class ProjectRequirementController extends Controller
         $this->service->delete($project, $requirement);
 
         return Json::deleted();
+    }
+
+    public function storeSubmission(
+        CreateProjectRequirementSubmissionRequest $request,
+        string $project,
+        string $requirement
+    ): JsonResponse {
+        $submission = $this->submissionService->create($project, $requirement, $request->validatedData());
+
+        return Json::item((new ProjectRequirementSubmissionPresenter($submission))->getData());
+    }
+
+    public function submissions(string $project, string $requirement): JsonResponse
+    {
+        $submissions = $this->submissionService->list($project, $requirement);
+
+        return Json::items(ProjectRequirementSubmissionPresenter::collection($submissions));
     }
 }

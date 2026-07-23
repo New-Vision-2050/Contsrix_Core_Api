@@ -125,6 +125,8 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
             ->permission(Permission::PROJECT_REQUIREMENT_LIST());
         Route::post('/', [ProjectRequirementController::class, 'store'])
             ->permission(Permission::PROJECT_REQUIREMENT_CREATE());
+        Route::get('/{requirement}/submissions', [ProjectRequirementController::class, 'submissions']);
+        Route::post('/{requirement}/submissions', [ProjectRequirementController::class, 'storeSubmission']);
         Route::get('/{requirement}', [ProjectRequirementController::class, 'show'])
             ->permission(Permission::PROJECT_REQUIREMENT_VIEW());
         Route::put('/{requirement}', [ProjectRequirementController::class, 'update'])
