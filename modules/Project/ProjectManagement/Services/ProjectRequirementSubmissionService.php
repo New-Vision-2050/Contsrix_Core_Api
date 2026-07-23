@@ -18,6 +18,7 @@ class ProjectRequirementSubmissionService
 {
     public function __construct(
         private readonly ProjectRequirementUploadStatusService $uploadStatusService,
+        private readonly ProjectRequirementSubmissionWorkflowService $workflowService,
     ) {}
 
     public function create(string $projectId, string $requirementId, array $data): ProjectRequirementSubmission
@@ -49,7 +50,13 @@ class ProjectRequirementSubmissionService
                 $submission->addMedia($file)->toMediaCollection('files');
             }
 
-            return $submission->load('media');
+            $submission->load('media');
+
+            $this->workflowService->startForSubmission($submission, $requirement);
+
+            return $submission->load([
+                'projectRequirementSubmissionProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
+            ]);
         });
     }
 
@@ -57,11 +64,15 @@ class ProjectRequirementSubmissionService
     {
         $requirement = $this->findAccessibleRequirement($projectId, $requirementId);
 
-        return ProjectRequirementSubmission::query()
+        $submissions = ProjectRequirementSubmission::query()
             ->with('media')
             ->where('project_requirement_id', $requirement->id)
             ->orderByDesc('created_at')
             ->get();
+
+        return $submissions->load([
+            'projectRequirementSubmissionProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
+        ]);
     }
 
     private function findAccessibleRequirement(
@@ -131,5 +142,12 @@ class ProjectRequirementSubmissionService
             ->where('shared_with_company_id', $companyId)
             ->where('status', 'accepted')
             ->exists();
+    }
+
+    private function orderProcessSteps($query)
+    {
+        return $query->orderByRaw('(template_step_order IS NULL) ASC')
+            ->orderBy('template_step_order')
+            ->orderBy('created_at');
     }
 }

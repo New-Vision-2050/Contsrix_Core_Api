@@ -10,9 +10,17 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
+use Modules\Process\Models\Process;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementEvaluationStatus;
 use Modules\Project\ProjectManagement\Enums\ProjectRequirementRepetition;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Models\ProjectRequirement;
 use Modules\Project\ProjectManagement\Models\ProjectRequirementSubmission;
 use Modules\Project\ProjectType\Models\ProjectType;
@@ -263,6 +271,119 @@ class ProjectRequirementSubmissionTest extends BaseAttendanceReportTestCase
             ->assertJsonValidationErrors(['requirement']);
     }
 
+    public function test_submission_starts_sequence_project_procedure_workflow(): void
+    {
+        [$project, $requirement, $receiverCompany] = $this->projectRequirementWithReceiver();
+        $procedure = $this->createProjectProcedure($project);
+        $this->attachProcedureToRequirement($requirement, $procedure);
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createProcedureStep($project, $procedure, $receiverUser, 1);
+        $this->createProcedureStep($project, $procedure, $receiverUser, 2);
+
+        $response = $this->postSubmission($project, $requirement)
+            ->assertOk()
+            ->assertJsonPath('payload.process.status', ProcessStatus::InProgress->value)
+            ->assertJsonCount(1, 'payload.process_steps');
+
+        $submissionId = $response->json('payload.id');
+
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $submissionId,
+            'processable_type' => ProjectRequirementSubmission::PROCESSABLE_TYPE,
+            'status' => ProcessStatus::InProgress->value,
+        ]);
+
+        $this->assertDatabaseHas('process_steps', [
+            'assigned_user_id' => $receiverUser->id,
+            'template_step_order' => 1,
+            'status' => ProcessStepStatus::Pending->value,
+        ]);
+    }
+
+    public function test_submission_starts_parallel_project_procedure_workflow(): void
+    {
+        [$project, $requirement, $receiverCompany] = $this->projectRequirementWithReceiver();
+        $procedure = $this->createProjectProcedure($project, ['execute_type' => 'parallel']);
+        $this->attachProcedureToRequirement($requirement, $procedure);
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createProcedureStep($project, $procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($project, $procedure, $secondReceiverUser, 2);
+
+        $response = $this->postSubmission($project, $requirement)
+            ->assertOk()
+            ->assertJsonPath('payload.process.execute_type', 'parallel')
+            ->assertJsonCount(2, 'payload.process_steps');
+
+        $process = Process::query()
+            ->where('processable_id', $response->json('payload.id'))
+            ->where('processable_type', ProjectRequirementSubmission::PROCESSABLE_TYPE)
+            ->firstOrFail();
+
+        $this->assertSame(2, $process->steps()->where('status', ProcessStepStatus::Pending->value)->count());
+    }
+
+    public function test_submission_receiver_company_workflow_step_uses_requirement_context(): void
+    {
+        [$project, $requirement, $receiverCompany] = $this->projectRequirementWithReceiver();
+        $procedure = $this->createProjectProcedure($project);
+        $this->attachProcedureToRequirement($requirement, $procedure);
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createReceiverCompanyProcedureStep($project, $procedure, 1);
+
+        $response = $this->postSubmission($project, $requirement)
+            ->assertOk()
+            ->assertJsonPath('payload.process.status', ProcessStatus::InProgress->value)
+            ->assertJsonCount(1, 'payload.process_steps');
+
+        $process = Process::query()
+            ->where('processable_id', $response->json('payload.id'))
+            ->where('processable_type', ProjectRequirementSubmission::PROCESSABLE_TYPE)
+            ->firstOrFail();
+
+        $step = $process->steps()->firstOrFail();
+        $this->assertContains((string) $receiverUser->id, $step->authorized_user_ids);
+    }
+
+    public function test_submission_without_resolvable_workflow_steps_keeps_upload_flow_unchanged(): void
+    {
+        [$project, $requirement] = $this->projectRequirementWithReceiver();
+        $procedure = $this->createProjectProcedure($project);
+        $this->attachProcedureToRequirement($requirement, $procedure);
+
+        $response = $this->postSubmission($project, $requirement)
+            ->assertOk()
+            ->assertJsonPath('payload.process', null)
+            ->assertJsonPath('payload.workflow', null)
+            ->assertJsonPath('payload.files.0.file_name', 'requirement-file.pdf');
+
+        $this->assertDatabaseMissing('processes', [
+            'processable_id' => $response->json('payload.id'),
+            'processable_type' => ProjectRequirementSubmission::PROCESSABLE_TYPE,
+        ]);
+    }
+
+    public function test_submission_history_returns_workflow_fields(): void
+    {
+        [$project, $requirement, $receiverCompany] = $this->projectRequirementWithReceiver();
+        $procedure = $this->createProjectProcedure($project);
+        $this->attachProcedureToRequirement($requirement, $procedure);
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createProcedureStep($project, $procedure, $receiverUser, 1);
+
+        $submissionId = $this->postSubmission($project, $requirement)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson($this->submissionUrl($project, $requirement))
+            ->assertOk()
+            ->assertJsonPath('payload.0.id', $submissionId)
+            ->assertJsonPath('payload.0.process.status', ProcessStatus::InProgress->value)
+            ->assertJsonCount(1, 'payload.0.process_steps');
+    }
+
     public function test_submission_history_returns_file_preview(): void
     {
         $this->travelTo('2026-07-20 10:00:00');
@@ -289,7 +410,14 @@ class ProjectRequirementSubmissionTest extends BaseAttendanceReportTestCase
             && Schema::hasTable('media')
             && Schema::hasTable('projects')
             && Schema::hasTable('project_types')
-            && Schema::hasTable('resource_shares');
+            && Schema::hasTable('resource_shares')
+            && Schema::hasTable('procedure_settings')
+            && Schema::hasTable('procedure_setting_steps')
+            && Schema::hasTable('procedure_setting_step_action_takers')
+            && Schema::hasTable('project_procedure_settings')
+            && Schema::hasTable('work_flows')
+            && Schema::hasTable('processes')
+            && Schema::hasTable('process_steps');
     }
 
     /**
@@ -384,6 +512,98 @@ class ProjectRequirementSubmissionTest extends BaseAttendanceReportTestCase
             'resulting_document' => 'KDC-VD-SDR-15',
             'completion_percentage' => 70,
         ], $overrides));
+    }
+
+    private function createProjectProcedure(ProjectManagement $project, array $overrides = []): ProcedureSetting
+    {
+        $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'name' => 'project_requirement_submission_'.$project->id,
+            'type' => ProjectProcedureSetting::PROCEDURE_TYPE,
+        ]);
+
+        $parent = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Project Requirement Submission Procedures',
+            'type' => ProjectProcedureSetting::PROCEDURE_TYPE,
+            'execute_type' => $overrides['execute_type'] ?? 'sequence',
+            'is_active' => true,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => null,
+        ]);
+
+        $procedure = ProcedureSetting::query()->withoutGlobalScopes()->create(array_merge([
+            'company_id' => $this->company->id,
+            'name' => 'Requirement Submission Approval',
+            'type' => ProjectProcedureSetting::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'is_active' => true,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => $parent->id,
+            'sort_order' => 1,
+        ], $overrides));
+
+        ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'procedure_setting_id' => $procedure->id,
+            'used_in_document_cycle' => true,
+        ]);
+
+        return $procedure;
+    }
+
+    private function attachProcedureToRequirement(
+        ProjectRequirement $requirement,
+        ProcedureSetting $procedure
+    ): ProjectRequirement {
+        $requirement->forceFill(['procedure_setting_id' => $procedure->id])->save();
+
+        return $requirement->refresh()->load(['receiverCompanies', 'procedureSetting']);
+    }
+
+    private function createProcedureStep(
+        ProjectManagement $project,
+        ProcedureSetting $procedure,
+        User $user,
+        int $order
+    ): ProcedureSettingStep {
+        $step = ProcedureSettingStep::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'procedure_setting_id' => $procedure->id,
+            'project_id' => $project->id,
+            'name' => 'Requirement Submission Workflow Step '.$order,
+            'forms' => 'approve',
+            'is_approve' => true,
+            'step_order' => $order,
+            'action_taker_type' => 'specific_user',
+        ]);
+
+        ProcedureSettingStepActionTaker::query()->create([
+            'procedure_setting_step_id' => $step->id,
+            'user_id' => $user->id,
+            'company_id' => $this->company->id,
+        ]);
+
+        return $step;
+    }
+
+    private function createReceiverCompanyProcedureStep(
+        ProjectManagement $project,
+        ProcedureSetting $procedure,
+        int $order
+    ): ProcedureSettingStep {
+        return ProcedureSettingStep::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'procedure_setting_id' => $procedure->id,
+            'project_id' => $project->id,
+            'name' => 'Requirement Receiver Company Workflow Step '.$order,
+            'forms' => 'approve',
+            'is_approve' => true,
+            'step_order' => $order,
+            'action_taker_type' => 'receiver_company',
+        ]);
     }
 
     private function createCompany(array $overrides = []): Company
