@@ -8,8 +8,10 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureJobAttribute;
@@ -17,6 +19,7 @@ use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\RoleAndPermission\Enums\Permission;
+use Modules\Shared\ResourceShare\Models\ResourceShare;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
 class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
@@ -385,12 +388,106 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         ]);
     }
 
+    public function test_project_procedure_step_can_use_receiver_company_action_takers(): void
+    {
+        $project = $this->createProject();
+        $procedureSetting = $this->createProjectProcedure($project);
+        $firstReceiverCompany = $this->createReceiverCompany(['serial_no' => 'PROC-REC-A']);
+        $secondReceiverCompany = $this->createReceiverCompany(['serial_no' => 'PROC-REC-B']);
+
+        $this->createAcceptedShare($project, $firstReceiverCompany);
+        $this->createAcceptedShare($project, $secondReceiverCompany);
+
+        $createResponse = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
+                'name' => 'Receiver company review',
+                'forms' => 'approve',
+                'is_approve' => true,
+                'action_taker_type' => 'receiver_company',
+                'receiver_company_ids' => [$firstReceiverCompany->id],
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.action_taker_type', 'receiver_company')
+            ->assertJsonPath('payload.action_taker_type_label', 'Receiver Company')
+            ->assertJsonPath('payload.receiver_company_ids.0', $firstReceiverCompany->id)
+            ->assertJsonPath('payload.receiver_companies.0.id', $firstReceiverCompany->id);
+
+        $stepId = $createResponse->json('payload.id');
+        $step = ProcedureSettingStep::query()->findOrFail($stepId);
+        $this->assertSame([$firstReceiverCompany->id], $step->receiver_company_ids);
+
+        $updateResponse = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps/{$stepId}", [
+                'action_taker_type' => 'receiver_company',
+                'receiver_company_ids' => [$secondReceiverCompany->id],
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.receiver_company_ids.0', $secondReceiverCompany->id)
+            ->assertJsonPath('payload.receiver_companies.0.id', $secondReceiverCompany->id);
+
+        $this->assertCount(1, $updateResponse->json('payload.receiver_companies'));
+        $this->assertSame(
+            [$secondReceiverCompany->id],
+            ProcedureSettingStep::query()->findOrFail($stepId)->receiver_company_ids,
+        );
+    }
+
+    public function test_receiver_company_action_taker_requires_accepted_shared_company(): void
+    {
+        $project = $this->createProject();
+        $procedureSetting = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createReceiverCompany();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
+                'name' => 'Receiver company review',
+                'forms' => 'approve',
+                'is_approve' => true,
+                'action_taker_type' => 'receiver_company',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['receiver_company_ids']);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps", [
+                'name' => 'Receiver company review',
+                'forms' => 'approve',
+                'is_approve' => true,
+                'action_taker_type' => 'receiver_company',
+                'receiver_company_ids' => [$receiverCompany->id],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['receiver_company_ids']);
+
+        $step = ProcedureSettingStep::query()->create([
+            'procedure_setting_id' => $procedureSetting->id,
+            'company_id' => $this->company->id,
+            'name' => 'Existing specific user review',
+            'forms' => 'approve',
+            'is_approve' => true,
+            'action_taker_type' => 'specific_user',
+        ]);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$procedureSetting->id}/steps/{$step->id}", [
+                'action_taker_type' => 'receiver_company',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['receiver_company_ids']);
+    }
+
     private function projectProcedureTablesReady(): bool
     {
         return Schema::hasTable('project_procedure_settings')
             && Schema::hasTable('project_procedure_job_attributes')
             && Schema::hasTable('folders')
             && Schema::hasTable('procedure_settings')
+            && Schema::hasTable('procedure_setting_steps')
             && Schema::hasTable('resource_shares')
             && Schema::hasTable('work_flows');
     }
@@ -460,6 +557,81 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             'company_id' => $this->company->id,
             'access_type' => 'private',
             'status' => 1,
+        ]);
+    }
+
+    private function createProjectProcedure(ProjectManagement $project): ProcedureSetting
+    {
+        $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'name' => 'receiver_company_workflow_'.Str::lower(Str::random(6)),
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+        ]);
+
+        $parent = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Receiver Company Parent',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'is_active' => true,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => null,
+            'sort_order' => 1,
+        ]);
+
+        $procedureSetting = ProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'Receiver Company Procedure',
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+            'execute_type' => 'sequence',
+            'is_active' => true,
+            'work_flow_id' => $workFlow->id,
+            'parent_id' => $parent->id,
+            'sort_order' => 1,
+        ]);
+
+        ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'procedure_setting_id' => $procedureSetting->id,
+        ]);
+
+        return $procedureSetting;
+    }
+
+    private function createReceiverCompany(array $overrides = []): Company
+    {
+        return Company::withoutEvents(fn () => Company::query()->create(array_merge([
+            'id' => (string) Str::uuid(),
+            'name' => ['en' => 'Procedure Receiver Company'],
+            'user_name' => 'procedure_receiver_'.Str::lower(Str::random(6)),
+            'email' => 'procedure-receiver-'.Str::lower(Str::random(6)).'@example.test',
+            'phone' => '01000000000',
+            'country_id' => $this->country->id,
+            'company_type_id' => (string) Str::uuid(),
+            'company_field_id' => (string) Str::uuid(),
+            'registration_type_id' => (string) Str::uuid(),
+            'general_manager_id' => (string) Str::uuid(),
+            'is_active' => 1,
+            'complete_data' => 1,
+            'serial_no' => 'PROC-REC-'.Str::upper(Str::random(6)),
+        ], $overrides)));
+    }
+
+    private function createAcceptedShare(ProjectManagement $project, Company $receiverCompany): ResourceShare
+    {
+        return ResourceShare::query()->create([
+            'id' => (string) Str::uuid(),
+            'shareable_type' => ProjectManagement::class,
+            'shareable_id' => $project->id,
+            'owner_company_id' => $this->company->id,
+            'shared_with_company_id' => $receiverCompany->id,
+            'status' => 'accepted',
+            'schema_ids' => [1, 2],
+            'shared_by_user_id' => $this->actor->id,
+            'responded_by_user_id' => $this->actor->id,
+            'responded_at' => now(),
         ]);
     }
 
