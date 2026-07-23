@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Models;
 
 use BasePackage\Shared\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,7 +38,6 @@ class AttachmentRequest extends Model
         'project_id',
         'procedure_setting_id',
         'sender_company_id',
-        'receiver_company_id',
         'status',
         'created_by_user_id',
         'responded_by_user_id',
@@ -51,7 +49,6 @@ class AttachmentRequest extends Model
         'date' => 'date',
         'responded_at' => 'datetime',
         'procedure_setting_id' => 'string',
-        'receiver_company_id' => 'string',
     ];
 
     /**
@@ -79,11 +76,6 @@ class AttachmentRequest extends Model
             ->withoutGlobalScopes();
     }
 
-    public function scopeForReceiverCompany(Builder $query, string $companyId): Builder
-    {
-        return $query->where('receiver_company_id', $companyId);
-    }
-
     public function getAttachmentTypeIdAttribute(): ?string
     {
         return $this->attachmentTypeId();
@@ -99,11 +91,6 @@ class AttachmentRequest extends Model
         return $this->attachmentSubSubTypeId();
     }
 
-    public function receiverCompany(): BelongsTo
-    {
-        return $this->belongsTo(Company::class, 'receiver_company_id')->withoutGlobalScopes();
-    }
-
     public function getAttachmentTypeAttribute(): ?Folder
     {
         return $this->projectProcedureSetting?->attachmentType;
@@ -117,11 +104,6 @@ class AttachmentRequest extends Model
     public function getAttachmentSubSubTypeAttribute(): ?Folder
     {
         return $this->projectProcedureSetting?->attachmentSubSubType;
-    }
-
-    public function receiverCompanyId(): ?string
-    {
-        return $this->getAttribute('receiver_company_id');
     }
 
     public function attachmentTypeId(): ?string

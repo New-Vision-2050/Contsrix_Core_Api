@@ -41,12 +41,10 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         Mail::fake();
     }
 
-    public function test_create_attachment_request_uses_request_receiver_and_derives_folder_data_from_selected_project_procedure(): void
+    public function test_create_attachment_request_derives_folder_data_from_selected_project_procedure_without_receiver_company(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
-        $receiverCompany = $this->createCompany();
-        $this->createAcceptedShare($project, $receiverCompany);
         $ignoredAttachmentTypeId = (string) Str::uuid();
 
         $response = $this->actingAs($this->actor, 'api')
@@ -56,7 +54,6 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 'date' => '2026-07-21',
                 'project_id' => $project->id,
                 'procedure_setting_id' => $procedure->procedure_setting_id,
-                'receiver_company_id' => $receiverCompany->id,
                 'attachment_type_id' => $ignoredAttachmentTypeId,
                 'attachments' => [
                     UploadedFile::fake()->create('shop-drawing.pdf', 12, 'application/pdf'),
@@ -66,7 +63,6 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertOk()
             ->assertJsonPath('payload.procedure_setting_id', $procedure->procedure_setting_id)
             ->assertJsonPath('payload.procedure_setting.id', $procedure->procedure_setting_id)
-            ->assertJsonPath('payload.receiver_company.id', $receiverCompany->id)
             ->assertJsonPath('payload.procedure_setting.attachment_type.id', $procedure->attachment_type_id)
             ->assertJsonPath('payload.procedure_setting.attachment_sub_type.id', $procedure->attachment_sub_type_id)
             ->assertJsonPath('payload.procedure_setting.attachment_sub_sub_type.id', $procedure->attachment_sub_sub_type_id);
@@ -82,16 +78,8 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'id' => $response->json('payload.id'),
             'project_id' => $project->id,
             'procedure_setting_id' => $procedure->procedure_setting_id,
-            'receiver_company_id' => $receiverCompany->id,
             'notes' => 'Created from selected project procedure',
         ]);
-
-        $this->assertTrue(
-            AttachmentRequest::query()
-                ->forReceiverCompany($receiverCompany->id)
-                ->whereKey($response->json('payload.id'))
-                ->exists()
-        );
     }
 
     public function test_create_attachment_request_rejects_procedure_from_another_project(): void
@@ -99,9 +87,6 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $project = $this->createProject();
         $otherProject = $this->createProject();
         $otherProcedure = $this->createProjectProcedure($otherProject);
-        $receiverCompany = $this->createCompany();
-        $this->createAcceptedShare($project, $receiverCompany);
-
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->post('/api/v1/projects/attachment-requests', [
@@ -109,7 +94,6 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 'date' => '2026-07-21',
                 'project_id' => $project->id,
                 'procedure_setting_id' => $otherProcedure->procedure_setting_id,
-                'receiver_company_id' => $receiverCompany->id,
                 'attachments' => [
                     UploadedFile::fake()->create('wrong-project.pdf', 12, 'application/pdf'),
                 ],
@@ -122,39 +106,41 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
-        $receiverCompany = $this->createCompany();
-        $this->createAcceptedShare($project, $receiverCompany);
 
-        $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+        $this->postAttachmentRequest($project, $procedure)
             ->assertOk();
 
         $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id)
-            ->assertOk()
-            ->assertJsonPath('data.0.receiver_company.id', $receiverCompany->id);
+            ->assertOk();
 
         $this->assertArrayNotHasKey('receiver_company_id', $response->json('data.0'));
+        $this->assertArrayNotHasKey('receiver_company', $response->json('data.0'));
     }
 
-    public function test_create_attachment_request_requires_receiver_company(): void
+    public function test_create_attachment_request_ignores_extra_receiver_company(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
 
-        $this->actingAs($this->actor, 'api')
+        $response = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->post('/api/v1/projects/attachment-requests', [
-                'name' => 'Missing Receiver',
+                'name' => 'Ignored Receiver',
                 'date' => '2026-07-21',
                 'project_id' => $project->id,
                 'procedure_setting_id' => $procedure->procedure_setting_id,
+                'receiver_company_id' => $receiverCompany->id,
                 'attachments' => [
-                    UploadedFile::fake()->create('missing-receiver.pdf', 12, 'application/pdf'),
+                    UploadedFile::fake()->create('ignored-receiver.pdf', 12, 'application/pdf'),
                 ],
             ], ['Accept' => 'application/json'])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['receiver_company_id']);
+            ->assertOk();
+
+        $this->assertArrayNotHasKey('receiver_company_id', $response->json('payload'));
+        $this->assertArrayNotHasKey('receiver_company', $response->json('payload'));
     }
 
     public function test_create_attachment_request_starts_sequence_project_procedure_workflow(): void
@@ -167,7 +153,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->createProcedureStep($procedure, $receiverUser, 1);
         $this->createProcedureStep($procedure, $receiverUser, 2);
 
-        $response = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+        $response = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
             ->assertJsonPath('payload.process.status', ProcessStatus::InProgress->value)
             ->assertJsonCount(1, 'payload.process_steps');
@@ -203,7 +189,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->createProcedureStep($procedure, $firstReceiverUser, 1);
         $this->createProcedureStep($procedure, $secondReceiverUser, 2);
 
-        $response = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+        $response = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
             ->assertJsonPath('payload.process.execute_type', 'parallel')
             ->assertJsonCount(2, 'payload.process_steps');
@@ -216,16 +202,16 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame(2, $process->steps()->where('status', ProcessStepStatus::Pending->value)->count());
     }
 
-    public function test_receiver_company_workflow_step_uses_attachment_request_context(): void
+    public function test_receiver_company_workflow_step_uses_step_receiver_company_ids(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
         $receiverCompany = $this->createCompany();
         $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
         $this->createAcceptedShare($project, $receiverCompany);
-        $this->createReceiverCompanyProcedureStep($procedure, 1);
+        $this->createReceiverCompanyProcedureStep($procedure, 1, [$receiverCompany->id]);
 
-        $response = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+        $response = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
             ->assertJsonPath('payload.process.status', ProcessStatus::InProgress->value)
             ->assertJsonCount(1, 'payload.process_steps');
@@ -250,7 +236,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->createProcedureStep($procedure, $firstReceiverUser, 1);
         $this->createProcedureStep($procedure, $secondReceiverUser, 2);
 
-        $requestId = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+        $requestId = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
             ->json('payload.id');
 
@@ -294,7 +280,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->createAcceptedShare($project, $receiverCompany);
         $this->createProcedureStep($procedure, $this->actor, 1);
 
-        $requestId = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+        $requestId = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
             ->json('payload.id');
 
@@ -323,7 +309,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->createAcceptedShare($project, $receiverCompany);
         $this->createProcedureStep($procedure, $receiverUser, 1);
 
-        $requestId = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+        $requestId = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
             ->json('payload.id');
 
@@ -353,7 +339,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->createAcceptedShare($project, $receiverCompany);
         $this->createProcedureStep($procedure, $receiverUser, 1);
 
-        $response = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+        $response = $this->postAttachmentRequest($project, $procedure)
             ->assertOk();
 
         $itemId = $response->json('payload.items.0.id');
@@ -372,7 +358,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         ]);
     }
 
-    public function test_approval_without_resolvable_workflow_steps_uses_legacy_approval(): void
+    public function test_approval_without_resolvable_workflow_steps_does_not_use_legacy_receiver_company(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
@@ -380,7 +366,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
         $this->createAcceptedShare($project, $receiverCompany);
 
-        $requestId = $this->postAttachmentRequest($project, $procedure, $receiverCompany)
+        $requestId = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
             ->assertJsonPath('payload.process', null)
             ->json('payload.id');
@@ -388,12 +374,11 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->actingAs($receiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
-            ->assertOk()
-            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
+            ->assertStatus(400);
 
         $this->assertDatabaseHas('attachment_request_items', [
             'attachment_request_id' => $requestId,
-            'status' => AttachmentRequest::STATUS_APPROVED,
+            'status' => AttachmentRequest::STATUS_PENDING,
         ]);
     }
 
@@ -401,7 +386,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
     {
         return Schema::hasTable('attachment_requests')
             && Schema::hasColumn('attachment_requests', 'procedure_setting_id')
-            && Schema::hasColumn('attachment_requests', 'receiver_company_id')
+            && ! Schema::hasColumn('attachment_requests', 'receiver_company_id')
             && ! Schema::hasColumn('attachment_requests', 'attachment_type_id')
             && ! Schema::hasColumn('attachment_requests', 'attachment_sub_type_id')
             && ! Schema::hasColumn('attachment_requests', 'attachment_sub_sub_type_id')
@@ -543,8 +528,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
     private function postAttachmentRequest(
         ProjectManagement $project,
-        ProjectProcedureSetting $procedure,
-        Company $receiverCompany
+        ProjectProcedureSetting $procedure
     ) {
         return $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
@@ -553,7 +537,6 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 'date' => '2026-07-21',
                 'project_id' => $project->id,
                 'procedure_setting_id' => $procedure->procedure_setting_id,
-                'receiver_company_id' => $receiverCompany->id,
                 'attachments' => [
                     UploadedFile::fake()->create('workflow-file.pdf', 12, 'application/pdf'),
                 ],
@@ -587,7 +570,8 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
     private function createReceiverCompanyProcedureStep(
         ProjectProcedureSetting $procedure,
-        int $order
+        int $order,
+        array $receiverCompanyIds
     ): ProcedureSettingStep {
         return ProcedureSettingStep::query()->withoutGlobalScopes()->create([
             'company_id' => $this->company->id,
@@ -598,6 +582,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'is_approve' => true,
             'step_order' => $order,
             'action_taker_type' => 'receiver_company',
+            'receiver_company_ids' => $receiverCompanyIds,
         ]);
     }
 }

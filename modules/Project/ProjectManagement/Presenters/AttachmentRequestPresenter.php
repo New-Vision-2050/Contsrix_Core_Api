@@ -60,16 +60,6 @@ class AttachmentRequestPresenter extends AbstractPresenter
                 ? $this->request->senderCompany->name
                 : null;
 
-            $data['receiver_company'] = $this->request->receiverCompany ? [
-                'id' => $this->request->receiverCompany->id,
-                'name' => $this->request->receiverCompany->name,
-                'serial_number' => $this->request->receiverCompany->serial_number,
-            ] : null;
-
-            $data['receiver_company_name'] = $this->request->receiverCompany
-                ? $this->request->receiverCompany->name
-                : null;
-
             $data['created_by'] = $this->request->createdByUser ? [
                 'id' => $this->request->createdByUser->id,
                 'name' => $this->request->createdByUser->name,
