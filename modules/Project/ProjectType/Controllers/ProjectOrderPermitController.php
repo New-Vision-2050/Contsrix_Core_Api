@@ -11,20 +11,14 @@ use Illuminate\Http\Request;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitPresenter;
 use Modules\Project\ProjectType\Requests\CreateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
-use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitStatusRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
-use Modules\Project\ProjectType\Services\OrderPermitExcelImportService;
-use Maatwebsite\Excel\Facades\Excel;
 use Modules\Project\ProjectType\Jobs\ImportOrderPermitsJob;
-use Modules\Project\ProjectType\Models\UdsExcelSheet;
-use Modules\Shared\Media\Services\FileUploadService;
 
 class ProjectOrderPermitController extends Controller
 {
     public function __construct(private readonly ProjectOrderPermitService $service)
     {
     }
-
 
     public function index(Request $request, string $project): JsonResponse
     {
@@ -52,7 +46,6 @@ class ProjectOrderPermitController extends Controller
         }
     }
 
-
     public function store(CreateProjectOrderPermitRequest $request): JsonResponse
     {
         $items = $this->service->createMany($request->validated());
@@ -65,7 +58,6 @@ class ProjectOrderPermitController extends Controller
         );
     }
 
-
     public function show(string $project, string $id): JsonResponse
     {
         try {
@@ -76,7 +68,6 @@ class ProjectOrderPermitController extends Controller
             return Json::error($e->getMessage(), 500);
         }
     }
-
 
     public function update(UpdateProjectOrderPermitRequest $request, string $project, string $id): JsonResponse
     {
@@ -89,24 +80,12 @@ class ProjectOrderPermitController extends Controller
         }
     }
 
-
     public function destroy(string $project, string $id): JsonResponse
     {
         try {
             $this->service->delete($project, $id);
 
             return Json::deleted();
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), 500);
-        }
-    }
-
-    public function updateStatuses(UpdateProjectOrderPermitStatusRequest $request, string $project, string $id): JsonResponse
-    {
-        try {
-            $item = $this->service->updateStatuses($project, $id, $request->validated());
-
-            return Json::item((new ProjectOrderPermitPresenter($item))->getData());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }
@@ -124,30 +103,15 @@ class ProjectOrderPermitController extends Controller
             $companyId = tenant('id');
 
             $path = $file->store('temp_imports', 'public');
-            $job = new ImportOrderPermitsJob($path);
+
+            $job = new ImportOrderPermitsJob($path, $projectId, $companyId);
             dispatch($job);
-
-            $udsSheet = UdsExcelSheet::firstOrCreate([
-                'project_id' => $projectId,
-                'company_id' => $companyId,
-            ]);
-
-            $udsSheet->clearMediaCollection('uds_sheets');
-            app(FileUploadService::class)->uploadFile(
-                $udsSheet,
-                $file,
-                'temp_imports',
-                'uds_sheets',
-                'public'
-            );
 
             return response()->json([
                 'message' => 'جاري تحديث البيانات في الخلفية',
-                'uds_sheet'=>$udsSheet->withMedia('uds_sheets')->getData()
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
 }

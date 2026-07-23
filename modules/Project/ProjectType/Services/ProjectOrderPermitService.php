@@ -6,15 +6,10 @@ namespace Modules\Project\ProjectType\Services;
 
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Storage;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
-use Modules\Project\ProjectType\Models\ProjectPhaseStatus;
-use Modules\Project\ProjectType\Models\ConnectionPhaseStatus;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectType\Models\UdsProjectOrderPermit;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Facades\Excel;
-use Carbon\Carbon;
-use Modules\Project\ProjectType\Models\UdsExcelSheet;
 
 class ProjectOrderPermitService
 {
@@ -24,18 +19,17 @@ class ProjectOrderPermitService
         $items = [];
 
         foreach (Arr::get($data, 'work_orders', []) as $workOrderData) {
+            $name = Arr::get($workOrderData, 'name');
+            $orderPermitId = Arr::get($workOrderData, 'order_permit_id');
 
+            $exists = ProjectOrderPermit::where('name', $name)
+                ->where('order_permit_id', $orderPermitId)
+                ->exists();
 
-        $name = Arr::get($workOrderData, 'name');
-        $orderPermitId = Arr::get($workOrderData, 'order_permit_id');
+            if ($exists) {
+                throw new \Exception("أمر العمل '{$name}' مع نوع الأمر '{$orderPermitId}' موجود مسبقاً.", 422);
+            }
 
-        $exists = ProjectOrderPermit::where('name', $name)
-            ->where('order_permit_id', $orderPermitId)
-            ->exists();
-
-        if ($exists) {
-            throw new \Exception("أمر العمل '{$name}' مع نوع الأمر '{$orderPermitId}' موجود مسبقاً.", 422);
-        }
             $item = ProjectOrderPermit::query()->create([
                 'project_id' => $projectId,
                 'project_management_id' => Arr::get($workOrderData, 'project_management_id'),
@@ -43,18 +37,10 @@ class ProjectOrderPermitService
                 'order_permit_id' => Arr::get($workOrderData, 'order_permit_id'),
                 'order_permit_department_id' => Arr::get($workOrderData, 'order_permit_department_id'),
                 'contractor_id' => Arr::get($workOrderData, 'contractor_id'),
-                'name' => Arr::get($workOrderData, 'name'),
+                'name' => $name,
                 'type' => Arr::get($workOrderData, 'type'),
                 'assigned_date' => Arr::get($workOrderData, 'assigned_date'),
                 'state_id' => Arr::get($workOrderData, 'state_id'),
-                'project_completion_phase_id' => Arr::get($workOrderData, 'project_completion_phase_id'),
-                'project_phase_status_id' => Arr::get($workOrderData, 'project_phase_status_id'),
-                'connection_completion_phase_id' => Arr::get($workOrderData, 'connection_completion_phase_id'),
-                'connection_phase_status_id' => Arr::get($workOrderData, 'connection_phase_status_id'),
-                'start_permit_date' => Arr::get($workOrderData, 'start_permit_date'),
-                'end_permit_date' => Arr::get($workOrderData, 'end_permit_date'),
-                'note_from_permit_to_departments' => Arr::get($workOrderData, 'note_from_permit_to_departments'),
-                'is_taked_action' => Arr::get($workOrderData, 'is_taked_action', false),
                 'lat' => Arr::get($workOrderData, 'lat'),
                 'long' => Arr::get($workOrderData, 'long'),
                 'price' => Arr::get($workOrderData, 'price'),
@@ -72,15 +58,6 @@ class ProjectOrderPermitService
                 'contractor_work_order_status' => Arr::get($workOrderData, 'contractor_work_order_status'),
                 'contractor_basket' => Arr::get($workOrderData, 'contractor_basket'),
                 'consultant_price' => Arr::get($workOrderData, 'consultant_price'),
-                'employee_id' => Arr::get($workOrderData, 'employee_id'),
-                'target_drilling' => Arr::get($workOrderData, 'target_drilling'),
-                'achieved_drilling' => Arr::get($workOrderData, 'achieved_drilling'),
-                'target_extention' => Arr::get($workOrderData, 'target_extention'),
-                'achieved_extention' => Arr::get($workOrderData, 'achieved_extention'),
-                'description_details' => Arr::get($workOrderData, 'description_details'),
-                'consultant_statement' => Arr::get($workOrderData, 'consultant_statement'),
-                'last_date_consultant_statement' => Arr::get($workOrderData, 'last_date_consultant_statement'),
-                'consultnat_statement_status' => Arr::get($workOrderData, 'consultnat_statement_status'),
             ]);
 
             $this->autoFillFromUds($item);
@@ -91,108 +68,53 @@ class ProjectOrderPermitService
         return $items;
     }
 
+    private function autoFillFromUds(ProjectOrderPermit $order): void
+    {
+        $udsRecords = UdsProjectOrderPermit::where('project_id', $order->project_id)
+            ->where('name', $order->name)
+            ->get();
 
-private function autoFillFromUds(ProjectOrderPermit $order): void
-{
-    try {
-        $udsSheet = UdsExcelSheet::where('project_id', $order->project_id)->first();
-        if (!$udsSheet) return;
-
-        $media = $udsSheet->getFirstMedia('uds_sheets');
-        if (!$media) return;
-
-        $fullPath = $media->getPath();
-        $tempFile = null;
-
-        if (!file_exists($fullPath)) {
-            $disk = $media->disk;
-            if (!in_array($disk, ['public', 'local'], true)) {
-                $content = Storage::disk($disk)->get($media->getPathRelativeToRoot());
-                if ($content === false) return;
-                $tempFile = tempnam(sys_get_temp_dir(), 'uds_') . '.xlsx';
-                file_put_contents($tempFile, $content);
-                $fullPath = $tempFile;
-            } else {
-                return;
-            }
-        }
-
-        $rows = Excel::toArray([], $fullPath)[0] ?? [];
-
-        if ($tempFile !== null && file_exists($tempFile)) {
-            unlink($tempFile);
-        }
-
-        if (empty($rows)) return;
-
-        $matchedRows = [];
-        foreach ($rows as $row) {
-            if (trim((string)($row[34] ?? '')) === $order->name) {
-                $matchedRows[] = $row;
-            }
-        }
-
-        if (empty($matchedRows)) return;
+        if ($udsRecords->isEmpty()) return;
 
         $orderPermit = $order->orderPermit()->first();
         if (!$orderPermit) return;
 
-        $value = function (array $row, int $index): ?string {
-            $val = trim((string)($row[$index] ?? ''));
-            return $val !== '' ? $val : null;
-        };
-        $parseDate = function (array $row, int $index) use ($value): ?string {
-            $val = $value($row, $index);
-            if ($val === null) return null;
-            try { return Carbon::parse($val)->format('Y-m-d'); } catch (\Exception $e) { return null; }
-        };
-        $parseFloat = function (array $row, int $index) use ($value): ?float {
-            $val = $value($row, $index);
-            return $val !== null ? (float) $val : null;
-        };
-
         $updates = [];
 
-        foreach ($matchedRows as $matchedRow) {
-            $typeCode = trim((string)($matchedRow[35] ?? ''));
-            if ($typeCode === '') continue;
-
+        foreach ($udsRecords as $uds) {
+            $typeCode = $uds->type_code;
             $isContractor = $orderPermit->code !== null && (string)$orderPermit->code === $typeCode;
             $isConsultant = $orderPermit->type !== null && (string)$orderPermit->type === $typeCode;
 
             if (!$isContractor && !$isConsultant) continue;
 
             if ($isContractor) {
-                $updates['executing_entity'] = $value($matchedRow, 27);
-                $updates['office'] = $value($matchedRow, 37);
-                $updates['contractor_basket'] = $value($matchedRow, 16);
-                $updates['contractor_last_procedure_code'] = $value($matchedRow, 30);
-                $updates['contractor_last_procedure_date'] = $parseDate($matchedRow, 28);
-                $updates['contractor_column_155_entry_date'] = $parseDate($matchedRow, 24);
-                $updates['material_balance_elec_contractor'] = $value($matchedRow, 13);
-                $updates['contractor_work_order_status'] = $value($matchedRow, 6);
+                $updates['executing_entity'] = $uds->executing_entity;
+                $updates['office'] = $uds->office;
+                $updates['contractor_basket'] = $uds->contractor_basket;
+                $updates['contractor_last_procedure_code'] = $uds->contractor_last_procedure_code;
+                $updates['contractor_last_procedure_date'] = $uds->contractor_last_procedure_date;
+                $updates['contractor_column_155_entry_date'] = $uds->contractor_column_155_entry_date;
+                $updates['material_balance_elec_contractor'] = $uds->material_balance_elec_contractor;
+                $updates['contractor_work_order_status'] = $uds->contractor_work_order_status;
             } else {
-                $updates['consultant_current_basket'] = $value($matchedRow, 16);
-                $updates['assigned_date'] = $parseDate($matchedRow, 25);
-                $updates['consultant_assignment_date'] = $parseDate($matchedRow, 25);
-                $updates['consultant_last_procedure_code'] = $value($matchedRow, 30);
-                $updates['consultant_last_procedure_date'] = $parseDate($matchedRow, 28);
-                $updates['consultant_column_155_entry_date'] = $parseDate($matchedRow, 24);
-                $updates['price'] = $parseFloat($matchedRow, 12);
-                $updates['consultant_price'] = $parseFloat($matchedRow, 12);
+                $updates['consultant_current_basket'] = $uds->consultant_current_basket;
+                $updates['assigned_date'] = $uds->assigned_date;
+                $updates['consultant_assignment_date'] = $uds->consultant_assignment_date;
+                $updates['consultant_last_procedure_code'] = $uds->consultant_last_procedure_code;
+                $updates['consultant_last_procedure_date'] = $uds->consultant_last_procedure_date;
+                $updates['consultant_column_155_entry_date'] = $uds->consultant_column_155_entry_date;
+                $updates['price'] = $uds->price;
+                $updates['consultant_price'] = $uds->consultant_price;
             }
         }
 
         $updates = array_filter($updates, fn($v) => $v !== null);
-
         if (!empty($updates)) {
             $order->update($updates);
-            Log::info("Auto-filled order {$order->name} from UDS Excel.", ['fields' => array_keys($updates)]);
+            Log::info("Auto-filled order {$order->name} from UDS table.");
         }
-    } catch (\Exception $e) {
-        Log::error("Auto-fill failed for order {$order->name}: " . $e->getMessage());
     }
-}
 
     public function list(string $projectId, array $filters = []): Collection
     {
@@ -200,8 +122,10 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
 
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
-            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
-            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus', 'employee'])
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) =>
+                $q->whereHas('orderPermit', fn ($q2) => $q2->where('order_permit_department_id', $deptId))
+            )
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -212,12 +136,13 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
 
         return ProjectOrderPermit::query()
             ->whereIn('project_id', $projectIds)
-            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
-            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus', 'employee'])
+            ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) =>
+                $q->whereHas('orderPermit', fn ($q2) => $q2->where('order_permit_department_id', $deptId))
+            )
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
-
 
     public function show(string $projectId, string $id): ProjectOrderPermit
     {
@@ -226,10 +151,9 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->where('id', $id)
-            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus', 'employee'])
+            ->with(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict'])
             ->firstOrFail();
     }
-
 
     public function update(string $projectId, string $id, array $data): ProjectOrderPermit
     {
@@ -238,10 +162,8 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         $orderPermit = ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->where('id', $id)
-            ->with(['orderPermit.department'])
             ->firstOrFail();
 
-        // التحقق من التفرد قبل التحديث
         $newName = Arr::get($data, 'name', $orderPermit->name);
         $newOrderPermitId = Arr::get($data, 'order_permit_id', $orderPermit->order_permit_id);
 
@@ -256,32 +178,6 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             }
         }
 
-        $departmentName = $orderPermit->department?->name ?? $orderPermit->orderPermit?->department?->name;
-        $phaseStatusId = Arr::get($data, 'phase_status_id');
-
-        $phaseUpdateData = [];
-
-        if ($phaseStatusId !== null) {
-            if ($departmentName === 'مشاريع') {
-                $status = ProjectPhaseStatus::find($phaseStatusId);
-                if ($status) {
-                    $phaseUpdateData['project_phase_status_id'] = $status->id;
-                    $phaseUpdateData['project_completion_phase_id'] = $status->project_completion_phase_id;
-                }
-            } elseif ($departmentName === 'توصيلات') {
-                $status = ConnectionPhaseStatus::find($phaseStatusId);
-                if ($status) {
-                    $phaseUpdateData['connection_phase_status_id'] = $status->id;
-                    $phaseUpdateData['connection_completion_phase_id'] = $status->connection_completion_phase_id;
-                }
-            }
-        } else {
-            $phaseUpdateData['project_completion_phase_id'] = Arr::get($data, 'project_completion_phase_id', $orderPermit->project_completion_phase_id);
-            $phaseUpdateData['project_phase_status_id'] = Arr::get($data, 'project_phase_status_id', $orderPermit->project_phase_status_id);
-            $phaseUpdateData['connection_completion_phase_id'] = Arr::get($data, 'connection_completion_phase_id', $orderPermit->connection_completion_phase_id);
-            $phaseUpdateData['connection_phase_status_id'] = Arr::get($data, 'connection_phase_status_id', $orderPermit->connection_phase_status_id);
-        }
-
         $orderPermit->update([
             'project_management_id' => Arr::get($data, 'project_management_id', $orderPermit->project_management_id),
             'projects_district_id' => Arr::get($data, 'projects_district_id', $orderPermit->projects_district_id),
@@ -292,14 +188,6 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             'type' => Arr::get($data, 'type', $orderPermit->type),
             'assigned_date' => Arr::get($data, 'assigned_date', $orderPermit->assigned_date),
             'state_id' => Arr::get($data, 'state_id', $orderPermit->state_id),
-            'project_completion_phase_id' => $phaseUpdateData['project_completion_phase_id'] ?? $orderPermit->project_completion_phase_id,
-            'project_phase_status_id' => $phaseUpdateData['project_phase_status_id'] ?? $orderPermit->project_phase_status_id,
-            'connection_completion_phase_id' => $phaseUpdateData['connection_completion_phase_id'] ?? $orderPermit->connection_completion_phase_id,
-            'connection_phase_status_id' => $phaseUpdateData['connection_phase_status_id'] ?? $orderPermit->connection_phase_status_id,
-            'start_permit_date' => Arr::get($data, 'start_permit_date', $orderPermit->start_permit_date),
-            'end_permit_date' => Arr::get($data, 'end_permit_date', $orderPermit->end_permit_date),
-            'note_from_permit_to_departments' => Arr::get($data, 'note_from_permit_to_departments', $orderPermit->note_from_permit_to_departments),
-            'is_taked_action' => Arr::get($data, 'is_taked_action', $orderPermit->is_taked_action),
             'lat' => Arr::get($data, 'lat', $orderPermit->lat),
             'long' => Arr::get($data, 'long', $orderPermit->long),
             'price' => Arr::get($data, 'price', $orderPermit->price),
@@ -317,32 +205,10 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             'contractor_work_order_status' => Arr::get($data, 'contractor_work_order_status', $orderPermit->contractor_work_order_status),
             'contractor_basket' => Arr::get($data, 'contractor_basket', $orderPermit->contractor_basket),
             'consultant_price' => Arr::get($data, 'consultant_price', $orderPermit->consultant_price),
-            'employee_id' => Arr::get($data, 'employee_id', $orderPermit->employee_id),
-            'target_drilling' => Arr::get($data, 'target_drilling', $orderPermit->target_drilling),
-            'achieved_drilling' => Arr::get($data, 'achieved_drilling', $orderPermit->achieved_drilling),
-            'target_extention' => Arr::get($data, 'target_extention', $orderPermit->target_extention),
-            'achieved_extention' => Arr::get($data, 'achieved_extention', $orderPermit->achieved_extention),
-            'description_details' => Arr::get($data, 'description_details', $orderPermit->description_details),
-            'consultant_statement' => Arr::get($data, 'consultant_statement', $orderPermit->consultant_statement),
-            'last_date_consultant_statement' => Arr::get($data, 'last_date_consultant_statement', $orderPermit->last_date_consultant_statement),
-            'consultnat_statement_status' => Arr::get($data, 'consultnat_statement_status', $orderPermit->consultnat_statement_status),
         ]);
 
-        return $orderPermit->fresh([
-            'orderPermit.department',
-            'department',
-            'contractor',
-            'state',
-            'projectManagement',
-            'projectDistrict',
-            'projectCompletionPhase',
-            'projectPhaseStatus',
-            'connectionCompletionPhase',
-            'connectionPhaseStatus',
-            'employee',
-        ]);
+        return $orderPermit->fresh(['orderPermit', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict']);
     }
-
 
     public function delete(string $projectId, string $id): bool
     {
@@ -354,55 +220,5 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             ->firstOrFail();
 
         return (bool) $orderPermit->delete();
-    }
-
-    public function updateStatuses(string $projectId, string $id, array $data): ProjectOrderPermit
-    {
-        $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
-
-        $orderPermit = ProjectOrderPermit::query()
-            ->where('project_id', $project->id)
-            ->where('id', $id)
-            ->with(['orderPermit.department'])
-            ->firstOrFail();
-
-        $departmentName = $orderPermit->department?->name ?? $orderPermit->orderPermit?->department?->name;
-        $phaseStatusId = Arr::get($data, 'phase_status_id');
-
-        $updateData = [];
-
-        if ($phaseStatusId !== null) {
-            if ($departmentName === 'مشاريع') {
-                $status = ProjectPhaseStatus::find($phaseStatusId);
-                if ($status) {
-                    $updateData['project_phase_status_id'] = $status->id;
-                    $updateData['project_completion_phase_id'] = $status->project_completion_phase_id;
-                }
-            } elseif ($departmentName === 'توصيلات') {
-                $status = ConnectionPhaseStatus::find($phaseStatusId);
-                if ($status) {
-                    $updateData['connection_phase_status_id'] = $status->id;
-                    $updateData['connection_completion_phase_id'] = $status->connection_completion_phase_id;
-                }
-            }
-        }
-
-        if (! empty($updateData)) {
-            $orderPermit->update($updateData);
-        }
-
-        return $orderPermit->fresh([
-            'orderPermit.department',
-            'department',
-            'contractor',
-            'state',
-            'projectManagement',
-            'projectDistrict',
-            'projectCompletionPhase',
-            'projectPhaseStatus',
-            'connectionCompletionPhase',
-            'connectionPhaseStatus',
-            'employee',
-        ]);
     }
 }
