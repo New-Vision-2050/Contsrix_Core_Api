@@ -19,7 +19,7 @@ class CompletionStatusPresenter extends AbstractPresenter
             'name' => $this->model->name,
             'order_permit_department_id' => $this->model->order_permit_department_id,
             'department_name' => $this->model->department?->name,
-            'statuses' => $isListing ? null : $this->model->statuses->map(fn ($status) => [
+            'statuses' => $this->model->statuses->map(fn ($status) => [
                 'id' => $status->id,
                 'name' => $status->name,
             ])->toArray(),
