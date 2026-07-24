@@ -33,7 +33,7 @@ class Violation extends Model
             'violation_id',
             'safety_record_id'
         )
-        ->withPivot('weight')
+        ->withPivot('weight', 'status')
         ->withTimestamps();
     }
 }

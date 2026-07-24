@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\User\Models\User;
 
 class SafetyRecord extends Model
 {
@@ -25,13 +26,14 @@ class SafetyRecord extends Model
         'order_type',
         'date',
         'time',
-        'status',
         'required_score',
         'earned_score',
         'percentage',
         'consultant_engineer',
         'consultant',
         'contractor_id',
+        'assigned_user_id',
+        'status',
     ];
 
     protected $casts = [
@@ -52,6 +54,11 @@ class SafetyRecord extends Model
         return $this->belongsTo(ProjectContractor::class, 'contractor_id')->withoutGlobalScopes();
     }
 
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id')->withoutGlobalScopes();
+    }
+
     public function morphable(): MorphTo
     {
         return $this->morphTo();
@@ -65,7 +72,7 @@ class SafetyRecord extends Model
             'safety_record_id',
             'violation_id'
         )
-        ->withPivot('weight')
+        ->withPivot('weight', 'status')
         ->withTimestamps();
     }
 }

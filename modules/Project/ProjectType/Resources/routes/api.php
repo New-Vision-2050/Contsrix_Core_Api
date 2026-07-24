@@ -82,6 +82,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::post('/', [SafetyRecordController::class, 'store']);
         Route::get('/{id}', [SafetyRecordController::class, 'show']);
         Route::put('/{id}', [SafetyRecordController::class, 'update']);
+        Route::post('/{id}/violations', [SafetyRecordController::class, 'evaluateViolations']);
         Route::delete('/{id}', [SafetyRecordController::class, 'destroy']);
     });
     // Employee Contract Settings routes
