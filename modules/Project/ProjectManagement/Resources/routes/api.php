@@ -83,6 +83,10 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         // Replace media in attachment item
         Route::post('/items/replace-media', [AttachmentRequestController::class, 'replaceMedia']);
 
+        // Act on a requirement submission from the unified inbox (workflow step)
+        Route::post('/submissions/{submission}/approve', [AttachmentRequestController::class, 'approveSubmission']);
+        Route::post('/submissions/{submission}/decline', [AttachmentRequestController::class, 'declineSubmission']);
+
         // Approve entire request
         Route::post('/{id}/approve', [AttachmentRequestController::class, 'approveRequest']);
 

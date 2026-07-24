@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectManagement\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
+use Modules\Project\ProjectManagement\Models\ProjectRequirementSubmission;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -32,6 +33,27 @@ class AttachmentRequestRepository extends BaseRepository
      *   page        – page number    (default 1)
      */
     public function getAllRequests(string $companyId, array $filters = []): LengthAwarePaginator
+    {
+        $perPage = (int) ($filters['per_page'] ?? 15);
+
+        return $this->buildAllRequestsQuery($companyId, $filters)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Same filtering as getAllRequests(), but returns the full collection so the
+     * service can merge attachment requests with requirement submissions before
+     * paginating the unified inbox.
+     */
+    public function getAllRequestsCollection(string $companyId, array $filters = []): Collection
+    {
+        return $this->buildAllRequestsQuery($companyId, $filters)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    private function buildAllRequestsQuery(string $companyId, array $filters = [])
     {
         $query = $this->model->with([
             'project',
@@ -80,9 +102,51 @@ class AttachmentRequestRepository extends BaseRepository
             $query->where('serial_number', 'like', '%' . $filters['name'] . '%');
         }
 
-        $perPage = (int) ($filters['per_page'] ?? 15);
+        return $query;
+    }
 
-        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    /**
+     * Requirement submissions that belong in this company's unified inbox.
+     * Mirrors the attachment-request directions:
+     *   outgoing  – my company uploaded the submission (process metadata),
+     *   incoming  – my company is a workflow action-taker on the submission,
+     *   default   – both.
+     */
+    public function getRequirementSubmissionsInbox(
+        string $companyId,
+        array $filters = [],
+        ?string $direction = null,
+    ): Collection {
+        $companyUserIds = $this->companyUserIds($companyId);
+
+        $query = ProjectRequirementSubmission::query()
+            ->withoutGlobalScopes()
+            ->with([
+                'project',
+                'requirement.procedureSetting',
+                'media',
+                'projectRequirementSubmissionProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
+            ]);
+
+        if ($direction === 'outgoing') {
+            $this->applyUploaderScope($query, $companyId);
+        } elseif ($direction === 'incoming') {
+            $this->applyActionTakerScope($query, $companyUserIds);
+        } else {
+            $query->where(function ($q) use ($companyId, $companyUserIds): void {
+                $q->where(function ($q) use ($companyId): void {
+                    $this->applyUploaderScope($q, $companyId);
+                })->orWhere(function ($q) use ($companyUserIds): void {
+                    $this->applyActionTakerScope($q, $companyUserIds);
+                });
+            });
+        }
+
+        if (!empty($filters['project_id'])) {
+            $query->where('project_id', $filters['project_id']);
+        }
+
+        return $query->orderBy('created_at', 'desc')->get();
     }
 
     /**
@@ -262,13 +326,31 @@ class AttachmentRequestRepository extends BaseRepository
      */
     private function applyIncomingScope($query, string $companyId): void
     {
-        $companyUserIds = User::query()
+        $this->applyActionTakerScope($query, $this->companyUserIds($companyId));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function companyUserIds(string $companyId): array
+    {
+        return User::query()
             ->withoutGlobalScopes()
             ->where('company_id', $companyId)
             ->pluck('id')
             ->map(static fn ($id): string => (string) $id)
             ->all();
+    }
 
+    /**
+     * Restrict a query (whose model exposes a `processes` relation pre-scoped to a
+     * single processable_type) to rows where one of the given users is a workflow
+     * action-taker (assigned_user_id or authorized_user_ids).
+     *
+     * @param  list<string>  $companyUserIds
+     */
+    private function applyActionTakerScope($query, array $companyUserIds): void
+    {
         if ($companyUserIds === []) {
             $query->whereRaw('1 = 0');
 
@@ -276,15 +358,25 @@ class AttachmentRequestRepository extends BaseRepository
         }
 
         $query->whereHas('processes', function ($q) use ($companyUserIds): void {
-            $q->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
-                ->whereHas('steps', function ($q) use ($companyUserIds): void {
-                    $q->where(function ($q) use ($companyUserIds): void {
-                        $q->whereIn('assigned_user_id', $companyUserIds);
-                        foreach ($companyUserIds as $uid) {
-                            $q->orWhereJsonContains('authorized_user_ids', $uid);
-                        }
-                    });
+            $q->whereHas('steps', function ($q) use ($companyUserIds): void {
+                $q->where(function ($q) use ($companyUserIds): void {
+                    $q->whereIn('assigned_user_id', $companyUserIds);
+                    foreach ($companyUserIds as $uid) {
+                        $q->orWhereJsonContains('authorized_user_ids', $uid);
+                    }
                 });
+            });
+        });
+    }
+
+    /**
+     * Restrict a query (whose model exposes a `processes` relation) to rows the
+     * given company uploaded, identified by the workflow process metadata.
+     */
+    private function applyUploaderScope($query, string $companyId): void
+    {
+        $query->whereHas('processes', function ($q) use ($companyId): void {
+            $q->where('metadata->uploader_company_id', $companyId);
         });
     }
 

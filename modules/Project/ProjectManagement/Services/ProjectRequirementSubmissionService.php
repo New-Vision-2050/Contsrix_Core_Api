@@ -113,6 +113,43 @@ class ProjectRequirementSubmissionService
         return $this->reloadSubmission($submission);
     }
 
+    /**
+     * Approve a submission's current workflow step by submission id only
+     * (used by the unified /attachment-requests inbox). Authorization is enforced
+     * by the workflow: only the pending step's action-taker may act.
+     */
+    public function approveById(string $submissionId): ProjectRequirementSubmission
+    {
+        return $this->actById($submissionId, 'approve');
+    }
+
+    public function declineById(string $submissionId): ProjectRequirementSubmission
+    {
+        return $this->actById($submissionId, 'reject');
+    }
+
+    private function actById(string $submissionId, string $action): ProjectRequirementSubmission
+    {
+        $submission = ProjectRequirementSubmission::query()
+            ->withoutGlobalScopes()
+            ->with(['media', 'requirement'])
+            ->find($submissionId);
+
+        if (! $submission instanceof ProjectRequirementSubmission) {
+            abort(404);
+        }
+
+        if (! $this->workflowService->hasActiveWorkflow($submission)) {
+            throw ValidationException::withMessages([
+                'submission' => 'No active process found for this requirement submission.',
+            ]);
+        }
+
+        $this->workflowService->actOnPendingStepForCurrentUser($submission, $action);
+
+        return $this->reloadSubmission($submission);
+    }
+
     private function findAccessibleSubmission(
         string $projectId,
         string $requirementId,

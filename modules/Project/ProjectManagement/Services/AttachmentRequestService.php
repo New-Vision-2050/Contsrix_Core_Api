@@ -10,9 +10,11 @@ use Modules\Project\ProjectManagement\Models\AttachmentRequestItem;
 use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Modules\Project\ProjectManagement\Models\ProjectRequirementSubmission;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -98,11 +100,66 @@ class AttachmentRequestService
     }
 
     /**
-     * Get all requests (incoming and outgoing) for current company
+     * Unified inbox: attachment requests AND requirement submissions where the
+     * current company is either the sender/uploader (outgoing) or a workflow
+     * action-taker (incoming). Both types share the same procedure workflow, so
+     * they are merged into one date-sorted, manually paginated feed.
      */
-    public function getAllRequests(array $filters = []): LengthAwarePaginator
+    public function getAllRequests(array $filters = []): LengthAwarePaginatorContract
     {
-        return $this->repository->getAllRequests(tenant('id'), $filters);
+        $companyId = (string) tenant('id');
+        $direction = $filters['direction'] ?? null;
+        $perPage = max(1, (int) ($filters['per_page'] ?? 15));
+        $page = max(1, (int) request()->query('page', 1));
+
+        $attachmentRequests = $this->repository->getAllRequestsCollection($companyId, $filters);
+
+        // A serial-number search targets attachment requests only; submissions
+        // have no serial number, so skip them when `name` is present.
+        $submissions = empty($filters['name'])
+            ? $this->repository->getRequirementSubmissionsInbox($companyId, $filters, $direction)
+            : new Collection();
+
+        if (! empty($filters['type'])) {
+            $submissions = $submissions->filter(
+                fn (ProjectRequirementSubmission $submission): bool =>
+                    $this->submissionInboxStatus($submission) === $filters['type']
+            )->values();
+        }
+
+        $merged = collect($attachmentRequests->all())
+            ->concat($submissions->all())
+            ->sortByDesc(static fn ($model) => $model->created_at?->getTimestamp() ?? 0)
+            ->values();
+
+        $total = $merged->count();
+        $items = $merged->slice(($page - 1) * $perPage, $perPage)->values();
+
+        return new LengthAwarePaginator($items, $total, $perPage, $page, [
+            'path' => LengthAwarePaginator::resolveCurrentPath(),
+            'pageName' => 'page',
+        ]);
+    }
+
+    /**
+     * Derive a request-style status for a requirement submission from its
+     * workflow process, so the unified inbox can be filtered consistently.
+     */
+    public function submissionInboxStatus(ProjectRequirementSubmission $submission): string
+    {
+        $process = $submission->relationLoaded('projectRequirementSubmissionProcess')
+            ? $submission->projectRequirementSubmissionProcess
+            : $submission->projectRequirementSubmissionProcess()->first();
+
+        if ($process === null) {
+            return 'approved';
+        }
+
+        return match ($process->status) {
+            ProcessStatus::Completed => 'approved',
+            ProcessStatus::Failed => 'declined',
+            default => 'pending',
+        };
     }
 
     /**

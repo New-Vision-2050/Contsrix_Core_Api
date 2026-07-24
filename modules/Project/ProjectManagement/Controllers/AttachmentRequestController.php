@@ -9,17 +9,22 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Modules\Project\ProjectManagement\Services\AttachmentRequestService;
+use Modules\Project\ProjectManagement\Services\ProjectRequirementSubmissionService;
 use Modules\Project\ProjectManagement\Requests\CreateAttachmentRequestRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToAttachmentItemRequest;
 use Modules\Project\ProjectManagement\Requests\ReplaceMediaRequest;
 use Modules\Project\ProjectManagement\Presenters\AttachmentRequestPresenter;
+use Modules\Project\ProjectManagement\Presenters\ProjectRequirementSubmissionPresenter;
+use Modules\Project\ProjectManagement\Presenters\RequirementSubmissionInboxPresenter;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class AttachmentRequestController extends Controller
 {
     public function __construct(
-        private AttachmentRequestService $service
+        private AttachmentRequestService $service,
+        private ProjectRequirementSubmissionService $submissionService,
     ) {
     }
 
@@ -66,8 +71,18 @@ class AttachmentRequestController extends Controller
 
             $paginated = $this->service->getAllRequests($filters);
 
-            $data = collect($paginated->items())->map(function ($req) {
-                return (new AttachmentRequestPresenter($req))->getData(true);
+            $data = collect($paginated->items())->map(function ($item) {
+                if ($item instanceof AttachmentRequest) {
+                    $payload = (new AttachmentRequestPresenter($item))->getData(true);
+                    $payload['item_type'] = 'attachment_request';
+
+                    return $payload;
+                }
+
+                $payload = (new RequirementSubmissionInboxPresenter($item))->getData(true);
+                $payload['item_type'] = 'requirement_submission';
+
+                return $payload;
             });
 
             return response()->json([
@@ -261,6 +276,38 @@ class AttachmentRequestController extends Controller
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 400, httpStatus: 400);
+        }
+    }
+
+    /**
+     * Approve a requirement submission from the unified inbox (workflow step action).
+     */
+    public function approveSubmission(string $submission): JsonResponse
+    {
+        try {
+            $item = $this->submissionService->approveById($submission);
+
+            return Json::item((new ProjectRequirementSubmissionPresenter($item))->getData());
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 400, httpStatus: 400);
+        }
+    }
+
+    /**
+     * Decline a requirement submission from the unified inbox (workflow step action).
+     */
+    public function declineSubmission(string $submission): JsonResponse
+    {
+        try {
+            $item = $this->submissionService->declineById($submission);
+
+            return Json::item((new ProjectRequirementSubmissionPresenter($item))->getData());
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
