@@ -9,6 +9,7 @@ use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Shared\Media\Services\FileUploadService;
+use Modules\User\Models\User;
 
 class AttachmentRequestRepository extends BaseRepository
 {
@@ -50,9 +51,15 @@ class AttachmentRequestRepository extends BaseRepository
         if ($direction === 'outgoing') {
             $query->where('sender_company_id', $companyId);
         } elseif ($direction === 'incoming') {
-            $query->whereRaw('1 = 0');
+            $this->applyIncomingScope($query, $companyId);
         } else {
-            $query->where('sender_company_id', $companyId);
+            // Default: both outgoing (sent by me) and incoming (I am an action-taker).
+            $query->where(function ($q) use ($companyId): void {
+                $q->where('sender_company_id', $companyId)
+                    ->orWhere(function ($q) use ($companyId): void {
+                        $this->applyIncomingScope($q, $companyId);
+                    });
+            });
         }
 
         if (!empty($filters['project_id'])) {
@@ -109,20 +116,20 @@ class AttachmentRequestRepository extends BaseRepository
      */
     public function getIncomingRequests(string $companyId, ?string $projectId = null): Collection
     {
-        $query = $this->model
-            ->whereRaw('1 = 0')
-            ->with([
-                'project',
-                'procedureSetting',
-                'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
-                'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
-                'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
-                'senderCompany',
-                'createdByUser',
-                'respondedByUser',
-                'items.respondedByUser',
-                'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
-            ]);
+        $query = $this->model->newQuery()->with([
+            'project',
+            'procedureSetting',
+            'projectProcedureSetting.attachmentType:id,name,parent_id,project_id,company_id',
+            'projectProcedureSetting.attachmentSubType:id,name,parent_id,project_id,company_id',
+            'projectProcedureSetting.attachmentSubSubType:id,name,parent_id,project_id,company_id',
+            'senderCompany',
+            'createdByUser',
+            'respondedByUser',
+            'items.respondedByUser',
+            'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
+        ]);
+
+        $this->applyIncomingScope($query, $companyId);
 
         if ($projectId) {
             $query->where('project_id', $projectId);
@@ -217,7 +224,7 @@ class AttachmentRequestRepository extends BaseRepository
     public function getPendingIncoming(string $companyId, ?string $projectId = null): Collection
     {
         $query = $this->model
-            ->whereRaw('1 = 0')
+            ->newQuery()
             ->whereIn('status', ['pending', 'semi-approved'])
             ->with([
                 'project',
@@ -231,11 +238,54 @@ class AttachmentRequestRepository extends BaseRepository
                 'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
             ]);
 
+        $this->applyIncomingScope($query, $companyId);
+
         if ($projectId) {
             $query->where('project_id', $projectId);
         }
 
         return $query->orderBy('created_at', 'desc')->get();
+    }
+
+    public function companyParticipatesInWorkflow(string $requestId, string $companyId): bool
+    {
+        $query = $this->model->newQuery()->whereKey($requestId);
+        $this->applyIncomingScope($query, $companyId);
+
+        return $query->exists();
+    }
+
+    /**
+     * Restrict a query to attachment requests that are "incoming" for a company:
+     * requests whose workflow has at least one step whose action-taker is a user
+     * of that company (assigned_user_id or authorized_user_ids).
+     */
+    private function applyIncomingScope($query, string $companyId): void
+    {
+        $companyUserIds = User::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->pluck('id')
+            ->map(static fn ($id): string => (string) $id)
+            ->all();
+
+        if ($companyUserIds === []) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->whereHas('processes', function ($q) use ($companyUserIds): void {
+            $q->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+                ->whereHas('steps', function ($q) use ($companyUserIds): void {
+                    $q->where(function ($q) use ($companyUserIds): void {
+                        $q->whereIn('assigned_user_id', $companyUserIds);
+                        foreach ($companyUserIds as $uid) {
+                            $q->orWhereJsonContains('authorized_user_ids', $uid);
+                        }
+                    });
+                });
+        });
     }
 
     /**

@@ -56,6 +56,9 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         // Get folder children for attachment type selection
         Route::get('/folders/children', [AttachmentRequestController::class, 'getFolderChildren']);
 
+        // List selectable procedures for the create form
+        Route::get('/procedures', [AttachmentRequestController::class, 'getProcedures']);
+
         // Create new request (outgoing)
         Route::post('/', [AttachmentRequestController::class, 'createRequest']);
 
@@ -127,6 +130,8 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
             ->permission(Permission::PROJECT_REQUIREMENT_CREATE());
         Route::get('/{requirement}/submissions', [ProjectRequirementController::class, 'submissions']);
         Route::post('/{requirement}/submissions', [ProjectRequirementController::class, 'storeSubmission']);
+        Route::post('/{requirement}/submissions/{submission}/approve', [ProjectRequirementController::class, 'approveSubmission']);
+        Route::post('/{requirement}/submissions/{submission}/decline', [ProjectRequirementController::class, 'declineSubmission']);
         Route::get('/{requirement}', [ProjectRequirementController::class, 'show'])
             ->permission(Permission::PROJECT_REQUIREMENT_VIEW());
         Route::put('/{requirement}', [ProjectRequirementController::class, 'update'])

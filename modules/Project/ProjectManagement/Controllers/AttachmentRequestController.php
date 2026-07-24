@@ -14,6 +14,7 @@ use Modules\Project\ProjectManagement\Requests\CreateAttachmentRequestRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToAttachmentItemRequest;
 use Modules\Project\ProjectManagement\Requests\ReplaceMediaRequest;
 use Modules\Project\ProjectManagement\Presenters\AttachmentRequestPresenter;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class AttachmentRequestController extends Controller
 {
@@ -76,6 +77,23 @@ class AttachmentRequestController extends Controller
                 'total'        => $paginated->total(),
                 'last_page'    => $paginated->lastPage(),
             ]);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * List selectable project procedures for the create-form dropdown.
+     */
+    public function getProcedures(Request $request): JsonResponse
+    {
+        try {
+            $projectId = $request->query('project_id');
+            if (! $projectId) {
+                return Json::error('project_id is required', 400);
+            }
+
+            return Json::items($this->service->getSelectableProcedures($projectId));
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }
@@ -197,6 +215,8 @@ class AttachmentRequestController extends Controller
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400, httpStatus: 400);
         }

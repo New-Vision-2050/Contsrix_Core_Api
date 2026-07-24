@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Process\Models\Process;
+use Modules\Project\ProjectManagement\Services\ProjectRequirementSubmissionWorkflowService;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -62,5 +63,15 @@ class ProjectRequirementSubmission extends Model implements HasMedia
     {
         return $this->hasOne(Process::class, 'processable_id')
             ->where('processable_type', self::PROCESSABLE_TYPE);
+    }
+
+    /**
+     * Called by ProcessWorkflowService when the last process for this submission completes.
+     * Decision D5: deliver submission media into ArchiveLibrary.
+     */
+    public function onAllProcessesCompleted(Process $process): void
+    {
+        app(ProjectRequirementSubmissionWorkflowService::class)
+            ->deliverToArchive($this, $process);
     }
 }

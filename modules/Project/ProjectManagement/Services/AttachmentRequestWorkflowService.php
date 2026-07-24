@@ -94,6 +94,27 @@ final class AttachmentRequestWorkflowService
             ->findOrFail($process->id);
     }
 
+    public function assertCurrentUserOwnsPendingStep(AttachmentRequest $request): void
+    {
+        if (! Auth::check()) {
+            abort(403);
+        }
+
+        $process = Process::query()
+            ->where('processable_id', $request->id)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->where('status', ProcessStatus::InProgress)
+            ->first();
+
+        if ($process === null) {
+            return;
+        }
+
+        if ($this->findPendingStepForActor($process, (string) Auth::id()) === null) {
+            abort(422, 'No pending process step assigned to you for this attachment request.');
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */

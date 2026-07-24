@@ -90,4 +90,18 @@ class ProjectRequirementController extends Controller
 
         return Json::items(ProjectRequirementSubmissionPresenter::collection($submissions));
     }
+
+    public function approveSubmission(string $project, string $requirement, string $submission): JsonResponse
+    {
+        $item = $this->submissionService->approve($project, $requirement, $submission);
+
+        return Json::item((new ProjectRequirementSubmissionPresenter($item))->getData());
+    }
+
+    public function declineSubmission(string $project, string $requirement, string $submission): JsonResponse
+    {
+        $item = $this->submissionService->decline($project, $requirement, $submission);
+
+        return Json::item((new ProjectRequirementSubmissionPresenter($item))->getData());
+    }
 }

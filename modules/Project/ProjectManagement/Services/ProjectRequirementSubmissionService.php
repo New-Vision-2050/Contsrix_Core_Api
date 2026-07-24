@@ -52,7 +52,12 @@ class ProjectRequirementSubmissionService
 
             $submission->load('media');
 
-            $this->workflowService->startForSubmission($submission, $requirement);
+            $activeProcess = $this->workflowService->startForSubmission($submission, $requirement);
+
+            // Decision D4/D5: no resolvable steps → deliver to archive immediately.
+            if ($activeProcess === null || ! $this->workflowService->hasActiveWorkflow($submission)) {
+                $this->workflowService->deliverToArchive($submission);
+            }
 
             return $submission->load([
                 'projectRequirementSubmissionProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
@@ -73,6 +78,67 @@ class ProjectRequirementSubmissionService
         return $submissions->load([
             'projectRequirementSubmissionProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
         ]);
+    }
+
+    public function approve(string $projectId, string $requirementId, string $submissionId): ProjectRequirementSubmission
+    {
+        $submission = $this->findAccessibleSubmission($projectId, $requirementId, $submissionId);
+
+        if (! $this->workflowService->hasActiveWorkflow($submission)) {
+            throw ValidationException::withMessages([
+                'submission' => 'No active process found for this requirement submission.',
+            ]);
+        }
+
+        $this->workflowService->actOnPendingStepForCurrentUser($submission, 'approve');
+
+        // Archive delivery runs via ProjectRequirementSubmission::onAllProcessesCompleted
+        // when the final process step completes.
+
+        return $this->reloadSubmission($submission);
+    }
+
+    public function decline(string $projectId, string $requirementId, string $submissionId): ProjectRequirementSubmission
+    {
+        $submission = $this->findAccessibleSubmission($projectId, $requirementId, $submissionId);
+
+        if (! $this->workflowService->hasActiveWorkflow($submission)) {
+            throw ValidationException::withMessages([
+                'submission' => 'No active process found for this requirement submission.',
+            ]);
+        }
+
+        $this->workflowService->actOnPendingStepForCurrentUser($submission, 'reject');
+
+        return $this->reloadSubmission($submission);
+    }
+
+    private function findAccessibleSubmission(
+        string $projectId,
+        string $requirementId,
+        string $submissionId,
+    ): ProjectRequirementSubmission {
+        $requirement = $this->findAccessibleRequirement($projectId, $requirementId);
+
+        $submission = ProjectRequirementSubmission::query()
+            ->with(['media', 'requirement'])
+            ->where('project_requirement_id', $requirement->id)
+            ->where('id', $submissionId)
+            ->first();
+
+        if (! $submission instanceof ProjectRequirementSubmission) {
+            abort(404);
+        }
+
+        return $submission;
+    }
+
+    private function reloadSubmission(ProjectRequirementSubmission $submission): ProjectRequirementSubmission
+    {
+        return $submission->fresh([
+            'media',
+            'projectRequirementSubmissionProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
+        ]) ?? $submission;
     }
 
     private function findAccessibleRequirement(

@@ -15,12 +15,35 @@ final class ProcedureSettingProjectResolver
             return null;
         }
 
-        $projectId = self::projectIdFromWorkFlow($procedureSettingId);
-        if ($projectId !== null) {
-            return $projectId;
+        // Walk up the parent chain: a child project procedure inherits its
+        // project link from an ancestor. Only the root project procedure carries
+        // the project_id on its work flow / project_procedure_settings row.
+        $visited = [];
+        $currentId = $procedureSettingId;
+
+        while (is_string($currentId) && $currentId !== '' && ! isset($visited[$currentId])) {
+            $visited[$currentId] = true;
+
+            $projectId = self::projectIdFromWorkFlow($currentId)
+                ?? self::projectIdFromProjectProcedureSetting($currentId);
+
+            if ($projectId !== null) {
+                return $projectId;
+            }
+
+            $currentId = self::parentIdFor($currentId);
         }
 
-        return self::projectIdFromProjectProcedureSetting($procedureSettingId);
+        return null;
+    }
+
+    private static function parentIdFor(string $procedureSettingId): ?string
+    {
+        $parentId = DB::table('procedure_settings')
+            ->where('id', $procedureSettingId)
+            ->value('parent_id');
+
+        return is_string($parentId) && $parentId !== '' ? $parentId : null;
     }
 
     private static function projectIdFromWorkFlow(string $procedureSettingId): ?string

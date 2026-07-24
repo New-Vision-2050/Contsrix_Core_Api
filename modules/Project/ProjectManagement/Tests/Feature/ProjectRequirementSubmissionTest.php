@@ -363,6 +363,31 @@ class ProjectRequirementSubmissionTest extends BaseAttendanceReportTestCase
         ]);
     }
 
+    public function test_submission_workflow_approve_delivers_to_archive_library(): void
+    {
+        [$project, $requirement, $receiverCompany] = $this->projectRequirementWithReceiver();
+        $procedure = $this->createProjectProcedure($project);
+        $this->attachProcedureToRequirement($requirement, $procedure);
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createProcedureStep($project, $procedure, $receiverUser, 1);
+
+        $submissionId = $this->postSubmission($project, $requirement)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->postJson("/api/v1/projects/{$project->id}/requirements/{$requirement->id}/submissions/{$submissionId}/approve")
+            ->assertOk()
+            ->assertJsonPath('payload.process.status', ProcessStatus::Completed->value);
+
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $submissionId,
+            'processable_type' => ProjectRequirementSubmission::PROCESSABLE_TYPE,
+            'status' => ProcessStatus::Completed->value,
+        ]);
+    }
+
     public function test_submission_history_returns_workflow_fields(): void
     {
         [$project, $requirement, $receiverCompany] = $this->projectRequirementWithReceiver();

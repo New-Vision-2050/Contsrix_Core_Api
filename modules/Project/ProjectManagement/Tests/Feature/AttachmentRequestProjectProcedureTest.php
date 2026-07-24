@@ -330,12 +330,13 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         ]);
     }
 
-    public function test_item_level_approval_is_blocked_while_workflow_is_active(): void
+    public function test_item_level_response_allowed_for_pending_step_owner(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
         $receiverCompany = $this->createCompany();
         $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $outsider = User::factory()->create(['company_id' => $receiverCompany->id]);
         $this->createAcceptedShare($project, $receiverCompany);
         $this->createProcedureStep($procedure, $receiverUser, 1);
 
@@ -344,42 +345,72 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $itemId = $response->json('payload.items.0.id');
 
+        $this->actingAs($outsider, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertStatus(422);
+
         $this->actingAs($receiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post('/api/v1/projects/attachment-requests/items/respond', [
                 'item_id' => $itemId,
                 'action' => 'approve',
             ], ['Accept' => 'application/json'])
-            ->assertStatus(400);
+            ->assertOk();
 
         $this->assertDatabaseHas('attachment_request_items', [
             'id' => $itemId,
-            'status' => AttachmentRequest::STATUS_PENDING,
+            'status' => AttachmentRequest::STATUS_APPROVED,
         ]);
     }
 
-    public function test_approval_without_resolvable_workflow_steps_does_not_use_legacy_receiver_company(): void
+    public function test_approval_without_resolvable_workflow_steps_auto_approves(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+
+        $response = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
+
+        $this->assertDatabaseHas('attachment_request_items', [
+            'attachment_request_id' => $response->json('payload.id'),
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+    }
+
+    public function test_incoming_requests_are_visible_to_workflow_action_taker(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
         $receiverCompany = $this->createCompany();
         $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
         $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
 
-        $requestId = $this->postAttachmentRequest($project, $procedure)
-            ->assertOk()
-            ->assertJsonPath('payload.process', null)
-            ->json('payload.id');
+        $this->postAttachmentRequest($project, $procedure)->assertOk();
 
-        $this->actingAs($receiverUser, 'api')
+        $response = $this->actingAs($receiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
-            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
-            ->assertStatus(400);
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&direction=incoming')
+            ->assertOk();
 
-        $this->assertDatabaseHas('attachment_request_items', [
-            'attachment_request_id' => $requestId,
-            'status' => AttachmentRequest::STATUS_PENDING,
-        ]);
+        $this->assertNotEmpty($response->json('data'));
+    }
+
+    public function test_selectable_procedures_endpoint_returns_project_procedures(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests/procedures?project_id='.$project->id)
+            ->assertOk()
+            ->assertJsonPath('payload.0.procedure_setting_id', $procedure->procedure_setting_id);
     }
 
     private function schemaReady(): bool
