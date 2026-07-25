@@ -54,9 +54,7 @@ class SafetyRecordController extends Controller
         return Json::item((new SafetyRecordPresenter($record))->getData());
     }
 
-    /**
-     * تقييم المخالفات لمهمة سلامة.
-     */
+
     public function evaluateViolations(EvaluateViolationsRequest $request, string $project, string $id): JsonResponse
     {
         $record = $this->service->evaluateViolations($id, $request->input('violations', []));

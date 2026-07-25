@@ -54,9 +54,7 @@ class SafetyService
         return $record;
     }
 
-    /**
-     * إنشاء سجل سلامة واحد أو عدة سجلات (إذا أُرسلت assigned_user_ids مصفوفة).
-     */
+
     public function create(array $data): array
     {
         $assignedUserIds = Arr::get($data, 'assigned_user_ids', [Arr::get($data, 'assigned_user_id')]);
@@ -107,9 +105,7 @@ class SafetyService
         return $records;
     }
 
-    /**
-     * تحديث بيانات السجل الأساسية (بدون المخالفات).
-     */
+
     public function update(string $id, array $data): SafetyRecord
     {
         $record = $this->repository->findOneOrFail($id);
@@ -126,9 +122,7 @@ class SafetyService
         return $this->show($record->id);
     }
 
-    /**
-     * تقييم المخالفات (خاص بالموظف).
-     */
+
     public function evaluateViolations(string $id, array $violations): SafetyRecord
     {
         $record = $this->repository->findOneOrFail($id);

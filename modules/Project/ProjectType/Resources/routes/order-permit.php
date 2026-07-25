@@ -11,8 +11,6 @@ use Modules\Project\ProjectType\Controllers\ProjectManagementController;
 use Modules\Project\ProjectType\Controllers\ProjectDistrictController;
 use Modules\Project\ProjectType\Controllers\CompletionStatusController;
 use Modules\RoleAndPermission\Enums\Permission;
-use Modules\Project\ProjectType\Controllers\ViolationController;
-use Modules\Project\ProjectType\Controllers\SafetyRecordController;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
 
@@ -28,17 +26,6 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::delete('/order-permits/{id}', [OrderPermitController::class, 'delete'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 
-        //safety && violations
-    Route::get('/violations', [ViolationController::class, 'index']);
-
-    Route::prefix('{project}/safety')->group(function () {
-        Route::get('/', [SafetyRecordController::class, 'index']);
-        Route::post('/', [SafetyRecordController::class, 'store']);
-        Route::get('/{id}', [SafetyRecordController::class, 'show']);
-        Route::put('/{id}', [SafetyRecordController::class, 'update']);
-        Route::post('/{id}/violations', [SafetyRecordController::class, 'evaluateViolations']);
-        Route::delete('/{id}', [SafetyRecordController::class, 'destroy']);
-    });
 
     // Order permit departments
     Route::get('/order-permit-departments', [OrderPermitDepartmentController::class, 'index'])
