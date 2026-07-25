@@ -3,9 +3,11 @@
 namespace Modules\Project\ProjectType\Services;
 
 use App\Exceptions\CustomException;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectType\Events\SafetyTaskAssigned as SafetyTaskAssignedEvent;
@@ -21,7 +23,7 @@ class SafetyService
 {
     public function __construct(private SafetyRecordRepository $repository) {}
 
-    public function list(string $projectId): Collection
+    public function list(string $projectId): EloquentCollection
     {
         $records = SafetyRecord::query()
             ->where('project_id', $projectId)
@@ -32,7 +34,7 @@ class SafetyService
         return $this->attachAllViolations($records);
     }
 
-    public function inbox(string $userId): Collection
+    public function inbox(string $userId): EloquentCollection
     {
         $records = SafetyRecord::query()
             ->where('assigned_user_id', $userId)
@@ -111,9 +113,23 @@ class SafetyService
                 $record->setRelation('all_violations', $this->buildAllViolations($record, $allViolations));
 
                 $user = User::withoutGlobalScopes()->find($userId);
-                if ($user) {
-                    $user->notify(new SafetyTaskAssignedNotification($record));
+                if (! $user) {
+                    throw SafetyException::notProjectEmployee((string) $userId);
+                }
+
+                $dispatch = function () use ($user, $record) {
+                    if (Schema::hasTable('notifications')) {
+                        $user->notify(new SafetyTaskAssignedNotification($record));
+                    }
                     event(new SafetyTaskAssignedEvent($record));
+                };
+
+                // afterCommit is skipped under PHPUnit because DatabaseTransactions
+                // never reaches transaction level 0 (it rolls back).
+                if (app()->runningUnitTests()) {
+                    $dispatch();
+                } else {
+                    DB::afterCommit($dispatch);
                 }
 
                 $records[] = $record;
@@ -209,7 +225,7 @@ class SafetyService
         }
     }
 
-    private function attachAllViolations(Collection $records): Collection
+    private function attachAllViolations(EloquentCollection $records): EloquentCollection
     {
         if ($records->isEmpty()) {
             return $records;
@@ -230,7 +246,7 @@ class SafetyService
         return $record;
     }
 
-    private function buildAllViolations(SafetyRecord $record, Collection $allViolations): Collection
+    private function buildAllViolations(SafetyRecord $record, EloquentCollection $allViolations): Collection
     {
         $attached = $record->relationLoaded('violations')
             ? $record->violations->keyBy('id')

@@ -10,7 +10,12 @@ class SafetyTaskAssigned extends Notification
 {
     use Queueable;
 
-    public function __construct(private SafetyRecord $record) {}
+    public function __construct(private SafetyRecord $record)
+    {
+        // Queueable already defines $afterCommit. Enable it outside PHPUnit so
+        // notifications wait for DB commit; DatabaseTransactions never commits.
+        $this->afterCommit = ! app()->runningUnitTests();
+    }
 
     public function via($notifiable): array
     {
