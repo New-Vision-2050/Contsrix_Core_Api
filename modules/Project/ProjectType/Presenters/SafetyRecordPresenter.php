@@ -11,18 +11,26 @@ class SafetyRecordPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $time = $this->model->time;
+        if (is_string($time) && strlen($time) >= 5) {
+            $time = substr($time, 0, 5);
+        }
+
         $data = [
             'id' => $this->model->id,
+            'project_id' => $this->model->project_id,
             'morphable' => $this->model->relationLoaded('morphable')
                 ? [
                     'type' => $this->model->morphable_type,
-                    'id'   => $this->model->morphable_id,
-                    'display' => $this->model->morphable?->name ?? $this->model->morphable?->notification_number ?? null,
+                    'id' => $this->model->morphable_id,
+                    'display' => $this->model->morphable?->name
+                        ?? $this->model->morphable?->notification_number
+                        ?? null,
                 ]
                 : null,
             'order_type' => $this->model->order_type,
             'date' => $this->model->date?->toDateString(),
-            'time' => $this->model->time?->format('H:i'),
+            'time' => $time,
             'required_score' => $this->model->required_score,
             'earned_score' => $this->model->earned_score,
             'percentage' => $this->model->percentage,
@@ -30,7 +38,10 @@ class SafetyRecordPresenter extends AbstractPresenter
             'consultant' => $this->model->consultant,
             'contractor_id' => $this->model->contractor_id,
             'assigned_user' => $this->model->relationLoaded('assignedUser') && $this->model->assignedUser
-                ? ['id' => $this->model->assignedUser->id, 'name' => $this->model->assignedUser->name]
+                ? [
+                    'id' => $this->model->assignedUser->id,
+                    'name' => $this->model->assignedUser->name,
+                ]
                 : null,
             'status' => $this->model->status,
         ];

@@ -11,7 +11,9 @@ class Violation extends Model
     use UuidTrait;
 
     protected $table = 'violations';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -33,7 +35,8 @@ class Violation extends Model
             'violation_id',
             'safety_record_id'
         )
-        ->withPivot('weight', 'status')
-        ->withTimestamps();
+            ->using(SafetyRecordViolation::class)
+            ->withPivot('id', 'weight', 'status')
+            ->withTimestamps();
     }
 }

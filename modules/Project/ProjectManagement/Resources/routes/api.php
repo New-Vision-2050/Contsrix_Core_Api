@@ -28,8 +28,9 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/contractual-engagements', [ProjectManagementController::class, 'contractualEngagements']);
 
 
-        //safety && violations
+        // Safety & Violations — static routes MUST come before {project}/safety/{id}
         Route::get('/violations', [ViolationController::class, 'index']);
+        Route::get('/safety/inbox', [SafetyRecordController::class, 'inbox']);
 
         Route::prefix('{project}/safety')->group(function () {
             Route::get('/', [SafetyRecordController::class, 'index']);
