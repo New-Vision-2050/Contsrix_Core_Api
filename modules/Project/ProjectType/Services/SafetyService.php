@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
@@ -18,6 +19,7 @@ use Modules\Project\ProjectType\Models\Violation;
 use Modules\Project\ProjectType\Notifications\SafetyTaskAssigned as SafetyTaskAssignedNotification;
 use Modules\Project\ProjectType\Repositories\SafetyRecordRepository;
 use Modules\User\Models\User;
+use Throwable;
 
 class SafetyService
 {
@@ -179,6 +181,152 @@ class SafetyService
         $record->update(['status' => 'completed']);
 
         return $this->show($projectId, $record->id);
+    }
+
+    /**
+     * Auto-create a pending SafetyRecord for each assigned user of a
+     * ProjectNotification, one per user. Users that already have a record for
+     * this notification are skipped, so publishing and updating only ever
+     * produce tasks for users who don't have one yet.
+     *
+     * Called from ProjectNotificationService::publishNotification and
+     * publishDraft, and for newly assigned users in updatePublished.
+     */
+    public function createFromNotification(ProjectNotification $notification): void
+    {
+        $this->createForNotificationUsers(
+            $notification,
+            $notification->assigned_user_ids ?? [],
+        );
+    }
+
+    /**
+     * Handle safety records when a notification task is reassigned:
+     * 1. Delete pending safety records for users no longer assigned.
+     * 2. Create a fresh safety record for every current target user.
+     */
+    public function reassignFromNotification(
+        ProjectNotification $notification,
+        array $newTargetUserIds,
+    ): void {
+        if (empty($newTargetUserIds)) {
+            return;
+        }
+
+        $newTargetUserIds = array_values(array_unique(array_map('strval', $newTargetUserIds)));
+
+        // Users dropped from the assignment should no longer see the task in
+        // their inbox. Their completed records are kept as an audit trail.
+        try {
+            SafetyRecord::query()
+                ->where('morphable_type', 'project_notification')
+                ->where('morphable_id', (string) $notification->id)
+                ->where('status', 'pending')
+                ->whereNotIn('assigned_user_id', $newTargetUserIds)
+                ->delete();
+        } catch (Throwable $e) {
+            Log::warning('Failed to prune safety records for reassigned project notification.', [
+                'project_notification_id' => $notification->id,
+                'exception' => $e->getMessage(),
+            ]);
+        }
+
+        // A reassignment is a new work order, so every target user gets a new
+        // task even if they already hold one for this notification. Earlier
+        // records are left untouched so the full assignment history survives.
+        $this->createForNotificationUsers($notification, $newTargetUserIds, skipExisting: false);
+    }
+
+    /**
+     * Shared auto-creation path for notification-driven safety records.
+     *
+     * Safety records are a side effect of publishing/reassigning a
+     * notification, so this must never abort the caller: users that cannot
+     * legitimately receive a record are dropped, and anything unexpected is
+     * logged instead of thrown.
+     */
+    private function createForNotificationUsers(
+        ProjectNotification $notification,
+        array $userIds,
+        bool $skipExisting = true,
+    ): void {
+        $projectId = (string) ($notification->project_id ?? '');
+
+        if ($userIds === [] || $projectId === '') {
+            return;
+        }
+
+        $userIds = array_values(array_unique(array_map('strval', array_filter($userIds))));
+        $toCreate = $this->projectEmployeeIds($projectId, $userIds);
+
+        if ($skipExisting) {
+            $toCreate = array_values(array_diff(
+                $toCreate,
+                $this->userIdsWithRecord($notification, $userIds),
+            ));
+        }
+
+        if ($toCreate === []) {
+            return;
+        }
+
+        try {
+            $this->create([
+                'project_id' => $projectId,
+                'morphable_type' => 'project_notification',
+                'morphable_id' => (string) $notification->id,
+                'assigned_user_ids' => $toCreate,
+                'date' => $notification->task_date?->toDateString(),
+                'time' => $notification->task_time?->format('H:i'),
+            ]);
+        } catch (Throwable $e) {
+            Log::warning('Failed to auto-create safety records for project notification.', [
+                'project_notification_id' => $notification->id,
+                'assigned_user_ids' => $toCreate,
+                'exception' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Which of the given users already hold a safety record for this
+     * notification, in any status. Completed records count, so a user who
+     * finished their evaluation is not handed the same task twice.
+     *
+     * @return list<string>
+     */
+    private function userIdsWithRecord(ProjectNotification $notification, array $userIds): array
+    {
+        return SafetyRecord::query()
+            ->where('morphable_type', 'project_notification')
+            ->where('morphable_id', (string) $notification->id)
+            ->whereIn('assigned_user_id', $userIds)
+            ->pluck('assigned_user_id')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Narrow a set of user ids down to those actually assigned to the project.
+     *
+     * Notification assignment only requires the user to exist, while a safety
+     * record requires project membership, so the difference is dropped rather
+     * than rejected.
+     *
+     * @return list<string>
+     */
+    private function projectEmployeeIds(string $projectId, array $userIds): array
+    {
+        return ProjectEmployee::query()
+            ->where('project_id', $projectId)
+            ->whereIn('user_id', $userIds)
+            ->pluck('user_id')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public function delete(string $projectId, string $id): bool
