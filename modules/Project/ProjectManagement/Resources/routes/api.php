@@ -14,6 +14,8 @@ use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\Project\ProjectManagement\Controllers\ProjectShareController;
 use Modules\Project\ProjectType\Controllers\ProjectOrderPermitController;
 use Modules\RoleAndPermission\Enums\Permission;
+use Modules\Project\ProjectType\Controllers\ViolationController;
+use Modules\Project\ProjectType\Controllers\SafetyRecordController;
 use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
 Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class]], function () {
@@ -26,6 +28,23 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
     Route::get('/widgets', [ProjectManagementController::class, 'widgets'])
         ->permission(Permission::PROJECT_MANAGEMENT_LIST());
     Route::get('/contractual-engagements', [ProjectManagementController::class, 'contractualEngagements']);
+
+
+        // Safety & Violations — static routes MUST come before {project}/safety/{id}
+        Route::get('/violations', [ViolationController::class, 'index']);
+        Route::get('/safety/inbox', [SafetyRecordController::class, 'inbox']);
+
+        Route::prefix('{project}/safety')->group(function () {
+            Route::get('/', [SafetyRecordController::class, 'index']);
+            Route::post('/', [SafetyRecordController::class, 'store']);
+            Route::get('/{id}', [SafetyRecordController::class, 'show']);
+            Route::put('/{id}', [SafetyRecordController::class, 'update']);
+            Route::post('/{id}/violations', [SafetyRecordController::class, 'evaluateViolations']);
+            Route::delete('/{id}', [SafetyRecordController::class, 'destroy']);
+        });
+
+
+
 
     // Project Sharing Routes
     Route::prefix('sharing')->group(function () {
@@ -166,12 +185,19 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
 
     Route::prefix('{project}/order-permits')->group(function () {
         Route::get('/', [ProjectOrderPermitController::class, 'index']);
+        // Route::get('/department/{departmentId}', [ProjectOrderPermitController::class, 'getByDepartment']);
         Route::post('/', [ProjectOrderPermitController::class, 'store']);
         Route::post('/import', [ProjectOrderPermitController::class, 'importExcel']);
         Route::get('/{id}', [ProjectOrderPermitController::class, 'show']);
-        Route::put('/', [ProjectOrderPermitController::class, 'update']);
+        Route::put('/{id}', [ProjectOrderPermitController::class, 'update']);
+        Route::put('/{id}/statuses', [ProjectOrderPermitController::class, 'updateStatuses']);
         Route::delete('/', [ProjectOrderPermitController::class, 'destroy']);
     });
+
+
+
+
+
 
     Route::prefix('notifications')->group(function () {
         // Static routes MUST come before /{id} to avoid route conflicts

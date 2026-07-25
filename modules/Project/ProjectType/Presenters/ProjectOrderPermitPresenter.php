@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectType\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Carbon\Carbon;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 
 class ProjectOrderPermitPresenter extends AbstractPresenter
@@ -43,6 +44,26 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'assigned_date' => $this->model->assigned_date?->toDateString(),
             'state_id' => $this->model->state_id,
             'state_name' => $this->model->state?->name,
+            'project_completion_phase_id' => $this->model->project_completion_phase_id,
+            'project_completion_phase_name' => $this->model->projectCompletionPhase?->name,
+            'project_phase_status_id' => $this->model->project_phase_status_id,
+            'project_phase_status_name' => $this->model->projectPhaseStatus?->name,
+            'connection_completion_phase_id' => $this->model->connection_completion_phase_id,
+            'connection_completion_phase_name' => $this->model->connectionCompletionPhase?->name,
+            'connection_phase_status_id' => $this->model->connection_phase_status_id,
+            'connection_phase_status_name' => $this->model->connectionPhaseStatus?->name,
+            'completion_phase_id' => $this->getCompletionPhaseId(),
+            'completion_phase_name' => $this->getCompletionPhaseName(),
+            'phase_status_id' => $this->getPhaseStatusId(),
+            'phase_status_name' => $this->getPhaseStatusName(),
+            'start_permit_date' => $this->model->start_permit_date?->toDateString(),
+            'end_permit_date' => $this->model->end_permit_date?->toDateString(),
+            'note_from_permit_to_departments' => $this->model->note_from_permit_to_departments,
+            'is_taked_action' => $this->model->is_taked_action,
+            'count_of_days_from_assigned_date' => $this->getCountOfDaysFromAssignedDate(),
+            'evaluation_permit_status' => $this->getPermitStatus(),
+            'permit_status_id' => $this->getPermitStatusId(),
+            'permit_status_name' => $this->getPermitStatusName(),
             'lat' => $this->model->lat,
             'import_log' => $this->model->import_log,
             'long' => $this->model->long,
@@ -61,9 +82,225 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'contractor_work_order_status' => $this->model->contractor_work_order_status,
             'contractor_basket' => $this->model->contractor_basket,
             'consultant_price' => $this->model->consultant_price,
+            'employee_id' => $this->model->employee_id,
+            'employee_name' => $this->model->employee?->name,
+            'target_drilling' => $this->model->target_drilling !== null ? (float) $this->model->target_drilling : null,
+            'achieved_drilling' => $this->model->achieved_drilling !== null ? (float) $this->model->achieved_drilling : null,
+            'target_extention' => $this->model->target_extention !== null ? (float) $this->model->target_extention : null,
+            'achieved_extention' => $this->model->achieved_extention !== null ? (float) $this->model->achieved_extention : null,
+            'description_details' => $this->model->description_details,
+            'consultant_statement' => $this->model->consultant_statement,
+            'last_date_consultant_statement' => $this->model->last_date_consultant_statement?->toDateString(),
+            'consultnat_statement_status' => $this->getConsultnatStatementStatus(),
+            'official_project_hours' => $this->getOfficialProjectHours(),
+            'number_of_days_to_achieve_column_155' => $this->getNumberOfDaysToAchieveColumn155(),
+            'percentage_time' => $this->getPercentageTime(),
+            'percentage_achieve_drilling' => $this->getPercentageAchieveDrilling(),
+            'percentage_achieve_extention' => $this->getPercentageAchieveExtention(),
             'last_row_update_at' => $this->model->last_row_update_at?->toDateTimeString(),
             'created_at' => $this->model->created_at?->toDateTimeString(),
             'updated_at' => $this->model->updated_at?->toDateTimeString(),
         ];
+    }
+
+    private function getCountOfDaysFromAssignedDate(): ?int
+    {
+        if (! $this->model->assigned_date) {
+            return null;
+        }
+
+        return (int) $this->model->assigned_date->startOfDay()->diffInDays(Carbon::today()->startOfDay(), false);
+    }
+
+    private function getDepartmentName(): ?string
+    {
+        return $this->model->department?->name ?? $this->model->orderPermit?->department?->name;
+    }
+
+    private function isProjectDepartment(): bool
+    {
+        return $this->getDepartmentName() === 'مشاريع';
+    }
+
+    private function isConnectionDepartment(): bool
+    {
+        return $this->getDepartmentName() === 'توصيلات';
+    }
+
+    private function getCompletionPhaseId(): ?int
+    {
+        if ($this->isProjectDepartment()) {
+            return $this->model->project_completion_phase_id;
+        }
+
+        if ($this->isConnectionDepartment()) {
+            return $this->model->connection_completion_phase_id;
+        }
+
+        return null;
+    }
+
+    private function getCompletionPhaseName(): ?string
+    {
+        if ($this->isProjectDepartment()) {
+            return $this->model->projectCompletionPhase?->name;
+        }
+
+        if ($this->isConnectionDepartment()) {
+            return $this->model->connectionCompletionPhase?->name;
+        }
+
+        return null;
+    }
+
+    private function getPhaseStatusId(): ?int
+    {
+        if ($this->isProjectDepartment()) {
+            return $this->model->project_phase_status_id;
+        }
+
+        if ($this->isConnectionDepartment()) {
+            return $this->model->connection_phase_status_id;
+        }
+
+        return null;
+    }
+
+    private function getPhaseStatusName(): ?string
+    {
+        if ($this->isProjectDepartment()) {
+            return $this->model->projectPhaseStatus?->name;
+        }
+
+        if ($this->isConnectionDepartment()) {
+            return $this->model->connectionPhaseStatus?->name;
+        }
+
+        return null;
+    }
+
+    private function getPermitStatusId(): ?int
+    {
+        if ($this->getCompletionPhaseName() === 'التصاريح') {
+            return $this->getPhaseStatusId();
+        }
+
+        return null;
+    }
+
+    private function getPermitStatusName(): ?string
+    {
+        if ($this->getCompletionPhaseName() === 'التصاريح') {
+            return $this->getPhaseStatusName();
+        }
+
+        return 'تم اصدار التصريح';
+    }
+
+    private function getConsultnatStatementStatus(): ?string
+    {
+        if (! $this->model->last_date_consultant_statement) {
+            return null;
+        }
+
+        $days = (int) $this->model->last_date_consultant_statement->startOfDay()->diffInDays(Carbon::today()->startOfDay(), false);
+
+        if ($days < 3) {
+            return 'جديدة';
+        }
+        if ($days < 6) {
+            return 'إفادة قديمة';
+        }
+        if ($days < 10) {
+            return 'إفادة قديمة جدًا';
+        }
+        if ($days < 15) {
+            return 'إهمال بالمتابعة';
+        }
+
+        return 'إهمال شديد بالمتابعة';
+    }
+
+    private function getOfficialProjectHours(): ?float
+    {
+        return $this->model->orderPermit?->uds_period !== null ? (float) $this->model->orderPermit->uds_period : null;
+    }
+
+    private function getNumberOfDaysToAchieveColumn155(): ?int
+    {
+        if (! $this->model->consultant_column_155_entry_date) {
+            return null;
+        }
+
+        return (int) $this->model->consultant_column_155_entry_date->startOfDay()->diffInDays(Carbon::today()->startOfDay(), false);
+    }
+
+    private function getPercentageTime(): ?float
+    {
+        $officialHours = $this->getOfficialProjectHours();
+        $days = $this->getNumberOfDaysToAchieveColumn155();
+
+        if ($officialHours === null || $officialHours == 0 || $days === null || $days == 0) {
+            return null;
+        }
+
+        return round(($days / $officialHours) * 100, 2);
+    }
+
+    private function getPercentageAchieveDrilling(): ?string
+    {
+        $target = $this->model->target_drilling !== null ? (float) $this->model->target_drilling : null;
+
+        if ($target === null || $target == 0) {
+            return 'لا يحتاج';
+        }
+
+        $achieved = $this->model->achieved_drilling !== null ? (float) $this->model->achieved_drilling : 0;
+
+        return (string) round(($achieved / $target) * 100, 2);
+    }
+
+    private function getPercentageAchieveExtention(): ?string
+    {
+        $target = $this->model->target_extention !== null ? (float) $this->model->target_extention : null;
+
+        if ($target === null || $target == 0) {
+            return 'لا يحتاج';
+        }
+
+        $achieved = $this->model->achieved_extention !== null ? (float) $this->model->achieved_extention : 0;
+
+        return (string) round(($achieved / $target) * 100, 2);
+    }
+
+    private function getPermitStatus(): string
+    {
+        $departmentName = $this->getDepartmentName();
+        $days = $this->getCountOfDaysFromAssignedDate();
+
+        if ($departmentName === 'مشاريع') {
+            $phaseName = $this->model->projectCompletionPhase?->name;
+            $statusName = $this->model->projectPhaseStatus?->name;
+        } elseif ($departmentName === 'توصيلات') {
+            $phaseName = $this->model->connectionCompletionPhase?->name;
+            $statusName = $this->model->connectionPhaseStatus?->name;
+        } else {
+            $phaseName = null;
+            $statusName = null;
+        }
+
+        if ($phaseName === 'التصاريح' && in_array($statusName, ['لا يحتاج', 'تم اصدار التصريح'], true)) {
+            return 'غير متاخر';
+        }
+
+        if ($days !== null && $days >= 6) {
+            return 'متاخر جدا';
+        }
+
+        if ($days !== null && $days >= 3) {
+            return 'متاخر';
+        }
+
+        return 'غير متاخر';
     }
 }

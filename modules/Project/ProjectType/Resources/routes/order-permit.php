@@ -9,6 +9,7 @@ use Modules\Project\ProjectType\Controllers\ReportFormController;
 use Modules\Project\ProjectType\Controllers\OrderPermitTasksSettingController;
 use Modules\Project\ProjectType\Controllers\ProjectManagementController;
 use Modules\Project\ProjectType\Controllers\ProjectDistrictController;
+use Modules\Project\ProjectType\Controllers\CompletionStatusController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -24,6 +25,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         ->permission(Permission::PROJECT_TYPE_UPDATE());
     Route::delete('/order-permits/{id}', [OrderPermitController::class, 'delete'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
+
 
     // Order permit departments
     Route::get('/order-permit-departments', [OrderPermitDepartmentController::class, 'index'])
@@ -108,4 +110,16 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         ->permission(Permission::PROJECT_TYPE_UPDATE());
     Route::delete('/projects-districts/{id}', [ProjectDistrictController::class, 'delete'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Completion phases and statuses lookup
+    Route::get('/completion-data', [CompletionStatusController::class, 'completionData']);
+
+    Route::get('/project-completion-phases', [CompletionStatusController::class, 'projectPhases'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::get('/project-phase-statuses', [CompletionStatusController::class, 'projectStatuses'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::get('/connection-completion-phases', [CompletionStatusController::class, 'connectionPhases'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::get('/connection-phase-statuses', [CompletionStatusController::class, 'connectionStatuses'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
 });
