@@ -26,6 +26,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::delete('/order-permits/{id}', [OrderPermitController::class, 'delete'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 
+
     // Order permit departments
     Route::get('/order-permit-departments', [OrderPermitDepartmentController::class, 'index'])
         ->permission(Permission::PROJECT_TYPE_VIEW());

@@ -17,6 +17,11 @@ Broadcast::channel('employee-task.notification.{userId}', function ($user, $user
     return (string) $user->id === (string) $userId;
 });
 
+// Safety task assignment — one private channel per assigned user
+Broadcast::channel('safety.notification.{userId}', function ($user, $userId) {
+    return (string) $user->id === (string) $userId;
+});
+
 //// Allow users to listen to their company's channel
 //Broadcast::channel('company.{companyId}', function ($user, $companyId) {
 //    return (string) $user->company_id === (string) $companyId;
