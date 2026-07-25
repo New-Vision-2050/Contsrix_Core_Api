@@ -13,6 +13,8 @@ use Modules\EmployeeTask\DTO\StartTaskDTO;
 use Modules\EmployeeTask\Events\EmployeeTaskNotification;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationTaskPostponement;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkResumption;
+use Modules\ArchiveLibrary\Folder\Models\Folder;
+use Modules\ArchiveLibrary\File\Models\File as ArchiveFile;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
@@ -1278,7 +1280,7 @@ class ProjectNotificationService
             'form' => InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
             'update' => $dto->toArray(),
             'update_site_status_id' => $updateSiteStatusId,
-            'files' => $this->stageSiteStatusUpdateFiles($notification, $dto->files),
+            'files' => $this->stageSiteStatusUpdateFiles($notification, $dto, $dto->files),
             'user_id' => $userId,
         ];
 
@@ -3226,21 +3228,40 @@ class ProjectNotificationService
      * @param array<int, \Illuminate\Http\UploadedFile>|null $files
      * @return list<int>
      */
-    private function stageSiteStatusUpdateFiles(ProjectNotification $notification, ?array $files): array
+    private function stageSiteStatusUpdateFiles(ProjectNotification $notification, RequestProjectNotificationSiteStatusUpdateDTO $dto, ?array $files): array
     {
         if (empty($files)) {
             return [];
         }
 
-        $media = $this->fileUploadService->uploadFile(
-            model: $notification,
-            file: $files,
-            filePath: 'project-notifications/site-status-updates',
-            collectionName: 'site_status_update_attachments',
-            visibility: 'public',
+        $folderName = $this->buildSiteStatusUpdateFolderName(
+            null,
+            null,
+            $dto->description,
         );
+        $notificationNumber = $notification->notification_number ?? 'unknown';
 
-        return $media->pluck('id')->all();
+        return DB::transaction(function () use ($notification, $files, $folderName, $notificationNumber) {
+            $archiveFolder = $this->findOrCreateSiteStatusUpdateFolder(
+                $notification,
+                $notificationNumber,
+                $folderName,
+            );
+
+            $fileIds = $this->createArchiveFileRecords($archiveFolder, $notification, $files);
+
+            $media = $this->fileUploadService->uploadFile(
+                model: $notification,
+                file: $files,
+                filePath: "project-notifications/site-status-updates/{$notificationNumber}/{$folderName}",
+                collectionName: 'site_status_update_attachments',
+                visibility: 'public',
+                folderId: $archiveFolder->id,
+                fileId: $fileIds,
+            );
+
+            return $media->pluck('id')->all();
+        });
     }
 
     /**
@@ -3252,13 +3273,198 @@ class ProjectNotificationService
             return;
         }
 
-        $this->fileUploadService->uploadFile(
-            model: $update,
-            file: $files,
-            filePath: 'project-notifications/site-status-updates',
-            collectionName: 'attachments',
-            visibility: 'public',
+        $notification = $update->projectNotification;
+        $notificationNumber = $notification?->notification_number ?? 'unknown';
+        $folderName = $this->buildSiteStatusUpdateFolderName(
+            $update->update_date,
+            $update->update_time,
+            $update->description,
         );
+
+        DB::transaction(function () use ($update, $notification, $files, $folderName, $notificationNumber) {
+            $archiveFolder = $this->findOrCreateSiteStatusUpdateFolder(
+                $notification,
+                $notificationNumber,
+                $folderName,
+            );
+
+            $fileIds = $this->createArchiveFileRecords($archiveFolder, $notification, $files);
+
+            $this->fileUploadService->uploadFile(
+                model: $update,
+                file: $files,
+                filePath: "project-notifications/site-status-updates/{$notificationNumber}/{$folderName}",
+                collectionName: 'attachments',
+                visibility: 'public',
+                folderId: $archiveFolder->id,
+                fileId: $fileIds,
+            );
+        });
+    }
+
+    /**
+     * Build a folder name for a site status update from its date, time and
+     * a slugified portion of the description.
+     */
+    private function buildSiteStatusUpdateFolderName(?string $date, ?string $time, ?string $description): string
+    {
+        $datePart = $date ?? now()->format('Y-m-d');
+        $timePart = $time ?? now()->format('H-i-s');
+
+        $descSlug = '';
+        if (! empty($description)) {
+            $descSlug = preg_replace('/[^A-Za-z0-9\x{0600}-\x{06FF}\s_-]/u', '', $description);
+            $descSlug = preg_replace('/[\s_-]+/', '_', $descSlug);
+            $descSlug = mb_substr(trim($descSlug, '_'), 0, 30);
+        }
+
+        return $descSlug !== ''
+            ? "{$datePart}_{$timePart}_{$descSlug}"
+            : "{$datePart}_{$timePart}";
+    }
+
+    /**
+     * Find or create the ArchiveLibrary folder hierarchy for site status update files:
+     *   Project folder → "اوامر عمل الطوارئ" → {notificationNumber} → {updateFolderName}
+     *
+     * Returns the innermost folder where files should be stored.
+     */
+    private function findOrCreateSiteStatusUpdateFolder(
+        ?ProjectNotification $notification,
+        string $notificationNumber,
+        string $updateFolderName,
+    ): Folder {
+        $companyId = $notification?->company_id ?? (string) tenant('id');
+        $projectId = $notification?->project_id;
+
+        // 1. Find the project folder (created by ProjectManagementObserver).
+        $projectFolder = null;
+        if ($projectId) {
+            $projectFolder = Folder::query()
+                ->withoutTenancy()
+                ->where('project_id', $projectId)
+                ->where('company_id', $companyId)
+                ->first();
+        }
+
+        // 2. Find or create "اوامر عمل الطوارئ" inside the project folder.
+        $emergencyFolder = $this->findOrCreateSubfolder(
+            name: 'اوامر عمل الطوارئ',
+            parentId: $projectFolder?->id,
+            companyId: $companyId,
+            projectId: $projectId,
+        );
+
+        // 3. Find or create folder for the notification number.
+        $notificationFolder = $this->findOrCreateSubfolder(
+            name: $notificationNumber,
+            parentId: $emergencyFolder->id,
+            companyId: $companyId,
+            projectId: $projectId,
+        );
+
+        // 4. Find or create folder for this specific update.
+        $updateFolder = $this->findOrCreateSubfolder(
+            name: $updateFolderName,
+            parentId: $notificationFolder->id,
+            companyId: $companyId,
+            projectId: $projectId,
+        );
+
+        return $updateFolder;
+    }
+
+    /**
+     * Find or create a subfolder by name under a given parent folder.
+     *
+     * Filters by project_id (in addition to name/parent/company) so that
+     * projects lacking a root folder never collide on a shared root-level
+     * folder. Must be called within a DB::transaction(); uses lockForUpdate()
+     * to reduce (not eliminate, since there is no unique DB constraint) the
+     * chance of concurrent requests creating duplicate folders.
+     */
+    private function findOrCreateSubfolder(
+        string $name,
+        ?string $parentId,
+        string $companyId,
+        ?string $projectId = null,
+    ): Folder {
+        $query = Folder::query()
+            ->withoutTenancy()
+            ->where('name', $name)
+            ->where('company_id', $companyId)
+            ->lockForUpdate();
+
+        if ($parentId) {
+            $query->where('parent_id', $parentId);
+        } else {
+            $query->whereNull('parent_id');
+        }
+
+        if ($projectId !== null) {
+            $query->where('project_id', $projectId);
+        } else {
+            $query->whereNull('project_id');
+        }
+
+        $folder = $query->first();
+
+        if ($folder) {
+            return $folder;
+        }
+
+        return Folder::create([
+            'name' => $name,
+            'parent_id' => $parentId,
+            'project_id' => $projectId,
+            'company_id' => $companyId,
+            'access_type' => 'public',
+            'status' => 1,
+        ]);
+    }
+
+    /**
+     * Create ArchiveLibrary File records for each uploaded file in the given folder.
+     * Returns file IDs keyed by the SAME array key as the input $files array, so
+     * FileUploadService can reliably map each media item to its File record even
+     * when $files contains non-file entries or non-sequential keys.
+     *
+     * @param array<int, \Illuminate\Http\UploadedFile>|null $files
+     * @return array<int|string, string>
+     */
+    private function createArchiveFileRecords(Folder $folder, ?ProjectNotification $notification, ?array $files): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+
+        $total = count(array_filter($files, static fn ($file) => $file instanceof \Illuminate\Http\UploadedFile));
+
+        $fileIds = [];
+        $position = 0;
+
+        foreach ($files as $key => $file) {
+            if (! $file instanceof \Illuminate\Http\UploadedFile) {
+                continue;
+            }
+
+            $position++;
+            $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $name = $total > 1 ? "{$baseName} ({$position})" : $baseName;
+
+            $archiveFile = ArchiveFile::create([
+                'name' => $name,
+                'folder_id' => $folder->id,
+                'project_id' => $notification?->project_id,
+                'access_type' => 'public',
+                'status' => 1,
+                'company_id' => $notification?->company_id ?? $folder->company_id,
+            ]);
+
+            $fileIds[$key] = $archiveFile->id;
+        }
+
+        return $fileIds;
     }
 
     /**

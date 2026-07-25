@@ -30,7 +30,7 @@ class FileUploadService
         string $collectionName = 'upload',
         string $visibility = 'public',
         ?string $folderId = null,
-        ?string $fileId = null,
+        string|array|null $fileId = null,
 
     ) {
         $disk = $this->resolveStorageDisk($visibility);
@@ -41,13 +41,19 @@ class FileUploadService
         // Normalize to array
         $files = is_array($file) ? $file : [$file];
 
+        // Normalize file IDs: accept a single ID or an array of IDs keyed by the
+        // same keys as $file, so mapping stays correct even with non-sequential
+        // or sparse keys (e.g. when some entries were filtered out upstream).
+        $fileIds = is_array($fileId) ? $fileId : ($fileId !== null ? [$fileId] : []);
 
         $allMedia = collect();
 
-        foreach ($files as $singleFile) {
+        foreach ($files as $index => $singleFile) {
             if (!$singleFile instanceof UploadedFile) {
                 continue;
             }
+
+            $currentFileId = $fileIds[$index] ?? null;
 
             $fileName = sprintf(
                 '%s_%s.%s',
@@ -61,13 +67,13 @@ class FileUploadService
                 ->storingConversionsOnDisk($disk)
                 ->withCustomProperties([
                     'folder_id' => $folderId,
-                    'file_id'=>$fileId,
+                    'file_id'=>$currentFileId,
                     'file_path' => $filePath,
                     'disk' => $disk,
                 ])
                 ->preservingOriginal()
                 ->toMediaCollection($collectionName, $disk);
-            $media->file_id = $fileId;
+            $media->file_id = $currentFileId;
             $media->save();
 
             $allMedia->push($media);
