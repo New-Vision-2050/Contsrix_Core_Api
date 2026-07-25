@@ -10,28 +10,31 @@ class SafetyTaskAssigned extends Notification
 {
     use Queueable;
 
-    private SafetyRecord $record;
+    public function __construct(private SafetyRecord $record) {}
 
-    public function __construct(SafetyRecord $record)
+    public function via($notifiable): array
     {
-        $this->record = $record;
+        // Database only — realtime delivery is handled by SafetyTaskAssigned Event
+        return ['database'];
     }
 
-    public function via($notifiable)
-    {
-        return ['database', 'broadcast'];
-    }
-
-    public function toArray($notifiable)
+    public function toDatabase($notifiable): array
     {
         return [
             'title' => 'مهمة سلامة جديدة',
             'body' => 'تم تعيين مهمة سلامة لك',
             'safety_record_id' => $this->record->id,
+            'project_id' => $this->record->project_id,
             'morphable' => [
                 'type' => $this->record->morphable_type,
                 'id' => $this->record->morphable_id,
             ],
+            'status' => $this->record->status,
         ];
+    }
+
+    public function toArray($notifiable): array
+    {
+        return $this->toDatabase($notifiable);
     }
 }

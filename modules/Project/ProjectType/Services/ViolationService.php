@@ -3,12 +3,14 @@
 namespace Modules\Project\ProjectType\Services;
 
 use Illuminate\Database\Eloquent\Collection;
-use Modules\Project\ProjectType\Models\Violation;
+use Modules\Project\ProjectType\Repositories\ViolationRepository;
 
 class ViolationService
 {
+    public function __construct(private ViolationRepository $repository) {}
+
     public function listAll(): Collection
     {
-        return Violation::orderBy('code')->get();
+        return $this->repository->listOrderedByCode();
     }
 }

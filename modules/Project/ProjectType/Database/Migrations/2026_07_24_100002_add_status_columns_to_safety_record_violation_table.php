@@ -8,21 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasColumn('safety_record_violation', 'employee_id')) {
+        if (! Schema::hasColumn('safety_record_violation', 'status')) {
             Schema::table('safety_record_violation', function (Blueprint $table) {
-                $table->string('status', 30)->nullable()->default('not_applicable'); // violation_found, no_violation, not_applicable
+                $table->string('status', 30)->nullable()->default('not_applicable')->after('weight');
             });
         }
-
     }
 
     public function down(): void
     {
-        Schema::table('safety_record_violation', function (Blueprint $table) {
-            $table->dropColumn([
-                'status',
-
-            ]);
-        });
+        if (Schema::hasColumn('safety_record_violation', 'status')) {
+            Schema::table('safety_record_violation', function (Blueprint $table) {
+                $table->dropColumn('status');
+            });
+        }
     }
 };

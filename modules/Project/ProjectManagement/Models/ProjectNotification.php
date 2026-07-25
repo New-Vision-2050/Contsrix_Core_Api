@@ -10,7 +10,9 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Project\ProjectType\Models\SafetyRecord;
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
@@ -224,5 +226,10 @@ class ProjectNotification extends Model implements HasMedia
     public function notificationNotes(): HasMany
     {
         return $this->hasMany(ProjectNotificationNote::class, 'project_notification_id')->orderByDesc('created_at');
+    }
+
+    public function safetyRecords(): MorphMany
+    {
+        return $this->morphMany(SafetyRecord::class, 'morphable');
     }
 }

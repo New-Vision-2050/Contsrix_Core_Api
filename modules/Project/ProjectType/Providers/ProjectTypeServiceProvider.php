@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectType\Providers;
 
-use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Route;
+use Modules\Project\ProjectManagement\Models\ProjectNotification;
+use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\Project\ProjectType\Observers\ProjectTypeObserver;
 
@@ -21,9 +24,14 @@ class ProjectTypeServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
-        
+
         // Register observer
         ProjectType::observe(ProjectTypeObserver::class);
+
+        Relation::morphMap([
+            'project_notification' => ProjectNotification::class,
+            'project_order_permit' => ProjectOrderPermit::class,
+        ]);
     }
 
     public function register(): void

@@ -14,9 +14,14 @@ class ViolationController extends Controller
 
     public function index(): JsonResponse
     {
-        $violations = $this->service->listAll();
-        return Json::items(
-            $violations->map(fn($v) => (new ViolationPresenter($v))->getData(true))->toArray()
-        );
+        try {
+            $violations = $this->service->listAll();
+
+            return Json::items(
+                $violations->map(fn ($v) => (new ViolationPresenter($v))->getData(true))->toArray()
+            );
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500);
+        }
     }
 }
