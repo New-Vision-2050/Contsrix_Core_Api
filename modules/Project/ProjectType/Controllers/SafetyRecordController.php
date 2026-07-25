@@ -10,6 +10,7 @@ use Modules\Project\ProjectType\Requests\EvaluateViolationsRequest;
 use Modules\Project\ProjectType\Requests\StoreSafetyRecordRequest;
 use Modules\Project\ProjectType\Requests\UpdateSafetyRecordRequest;
 use Modules\Project\ProjectType\Services\SafetyService;
+use Throwable;
 
 class SafetyRecordController extends Controller
 {
@@ -23,8 +24,8 @@ class SafetyRecordController extends Controller
             return Json::items(
                 $records->map(fn ($r) => (new SafetyRecordPresenter($r))->getData())->toArray()
             );
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500);
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
         }
     }
 
@@ -36,8 +37,8 @@ class SafetyRecordController extends Controller
             return Json::items(
                 $records->map(fn ($r) => (new SafetyRecordPresenter($r))->getData())->toArray()
             );
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500);
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
         }
     }
 
@@ -51,8 +52,8 @@ class SafetyRecordController extends Controller
             return Json::items(
                 array_map(fn ($r) => (new SafetyRecordPresenter($r))->getData(), $records)
             );
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500);
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
         }
     }
 
@@ -62,8 +63,8 @@ class SafetyRecordController extends Controller
             $record = $this->service->show($project, $id);
 
             return Json::item((new SafetyRecordPresenter($record))->getData());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500);
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
         }
     }
 
@@ -73,8 +74,8 @@ class SafetyRecordController extends Controller
             $record = $this->service->update($project, $id, $request->validated());
 
             return Json::item((new SafetyRecordPresenter($record))->getData());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500);
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
         }
     }
 
@@ -89,8 +90,8 @@ class SafetyRecordController extends Controller
             );
 
             return Json::item((new SafetyRecordPresenter($record))->getData());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500);
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
         }
     }
 
@@ -100,8 +101,16 @@ class SafetyRecordController extends Controller
             $this->service->delete($project, $id);
 
             return Json::deleted();
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500);
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
         }
+    }
+
+    private function errorResponse(Throwable $e): JsonResponse
+    {
+        $httpStatus = method_exists($e, 'getStatusCode') ? (int) $e->getStatusCode() : 500;
+
+        // Json::error($description, $code, $name, $data, $httpStatus)
+        return Json::error($e->getMessage(), $httpStatus, null, [], $httpStatus);
     }
 }
