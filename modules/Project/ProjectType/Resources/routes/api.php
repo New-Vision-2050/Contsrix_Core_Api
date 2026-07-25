@@ -73,6 +73,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::put('/{projectTypeId}/contractor-contract-settings', [ContractorContractSettingController::class, 'update'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 
+
     // Employee Contract Settings routes
     Route::get('/{projectTypeId}/employee-contract-settings', [EmployeeContractSettingController::class, 'show'])
         ->permission(Permission::PROJECT_TYPE_VIEW());

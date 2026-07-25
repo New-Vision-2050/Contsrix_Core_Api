@@ -64,6 +64,7 @@ use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageRepo
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason;
 use Modules\Project\ProjectManagement\Notifications\SiteStatusUpdateRequiredVoiceNotification;
 use Modules\Project\ProjectManagement\Repositories\ProjectNotificationRepository;
+use Modules\Project\ProjectType\Services\SafetyService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
@@ -78,6 +79,7 @@ class ProjectNotificationService
         private readonly EmployeeTaskFormConditionService $conditionService,
         private readonly FileUploadService $fileUploadService,
         private readonly WorkflowEngine $engine,
+        private readonly SafetyService $safetyService,
     ) {}
 
     public function create(CreateProjectNotificationDTO $dto): ProjectNotification
@@ -266,6 +268,9 @@ class ProjectNotificationService
         // 7. Persist dynamic site-status-type values.
         $notification = $notification->fresh();
         $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
+
+        // 8. Auto-create safety records for each assigned user.
+        $this->safetyService->createFromNotification($notification);
 
         return $this->repository->findById($notification->id) ?? $notification->fresh();
     }
@@ -1053,6 +1058,8 @@ class ProjectNotificationService
         $notification = $notification->fresh();
         $this->syncSiteStatusValues($notification, $dto->siteStatusTypeId, $dto->siteStatusTypeValues);
 
+        $this->safetyService->createFromNotification($notification);
+
         return $this->get($notification->id);
     }
 
@@ -1139,6 +1146,9 @@ class ProjectNotificationService
                     $this->injectAssignedUsersIntoWorkflow($task, $notification);
                 }
             }
+
+            // Auto-create safety records for newly assigned users.
+            $this->safetyService->createFromNotification($notification);
         }
 
         return $this->get($notification->id);
@@ -2273,6 +2283,10 @@ class ProjectNotificationService
                 }
             }
         }
+
+        // Sync safety records: remove pending for unassigned users, create
+        // for newly assigned users.
+        $this->safetyService->reassignFromNotification($notification->fresh(), $targetUserIds);
 
         return $this->get($notificationId);
     }

@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectType\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Modules\Project\ProjectManagement\Models\ProjectManagement as ProjectModel;
 use Modules\Country\Models\State;
@@ -141,5 +142,10 @@ class ProjectOrderPermit extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(\Modules\User\Models\User::class, 'employee_id');
+    }
+
+    public function safetyRecords(): MorphMany
+    {
+        return $this->morphMany(SafetyRecord::class, 'morphable');
     }
 }
