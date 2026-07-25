@@ -51,7 +51,9 @@ class Process extends Model
         parent::boot();
 
         Relation::morphMap([
-            'client_request'        => \Modules\ClientRequest\Models\ClientRequest::class,
+            'client_request' => \Modules\ClientRequest\Models\ClientRequest::class,
+            'attachment_request' => \Modules\Project\ProjectManagement\Models\AttachmentRequest::class,
+            'project_requirement_submission' => \Modules\Project\ProjectManagement\Models\ProjectRequirementSubmission::class,
             'employee_task' => \Modules\EmployeeTask\Models\EmployeeTaskRequest::class,
             'project_notification_task' => \Modules\EmployeeTask\Models\EmployeeTaskRequest::class,
         ]);

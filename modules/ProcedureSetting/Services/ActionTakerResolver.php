@@ -27,6 +27,7 @@ class ActionTakerResolver
         return match ($actionTakerType) {
             'management_hierarchy' => $this->resolveManagementHierarchyUsers($step, $createdByUserId, $context),
             'specific_procedures'  => $this->resolveSpecificProcedureUsers($step, $createdByUserId, $context),
+            'receiver_company'     => $this->resolveReceiverCompanyUsers($step, $context),
 
             // The submitter themselves is the action taker.
             'himself' => $createdByUserId !== null ? [$createdByUserId] : [],
@@ -361,6 +362,53 @@ class ActionTakerResolver
 
             foreach ($resolved as $uid) {
                 $userIds[$uid] = $uid;
+            }
+        }
+
+        return array_values($userIds);
+    }
+
+    // -------------------------------------------------------------------------
+    // Receiver-company resolution
+    // -------------------------------------------------------------------------
+
+    /**
+     * @return list<string>
+     */
+    private function resolveReceiverCompanyUsers(ProcedureSettingStep $step, array $context = []): array
+    {
+        $receiverCompanyIds = collect($step->receiver_company_ids ?? [])
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->filter(static fn (string $id): bool => $id !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($receiverCompanyIds === []) {
+            $receiverCompanyIds = collect($context['receiver_company_ids'] ?? [])
+                ->push($context['receiver_company_id'] ?? null)
+                ->map(static fn (mixed $id): string => (string) $id)
+                ->filter(static fn (string $id): bool => $id !== '')
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        if ($receiverCompanyIds === []) {
+            return [];
+        }
+
+        $users = User::query()
+            ->withoutGlobalScopes()
+            ->whereIn('company_id', $receiverCompanyIds)
+            ->orderBy('id')
+            ->get(['id', 'company_id'])
+            ->groupBy(static fn (User $user): string => (string) $user->company_id);
+
+        $userIds = [];
+        foreach ($receiverCompanyIds as $companyId) {
+            foreach ($users->get($companyId, collect()) as $user) {
+                $userIds[(string) $user->id] = (string) $user->id;
             }
         }
 
