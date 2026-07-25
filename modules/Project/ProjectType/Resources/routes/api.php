@@ -17,8 +17,6 @@ use Modules\Project\ProjectType\Controllers\ContractorSettingController;
 use Modules\Project\ProjectType\Controllers\OrderPermitSettingController;
 use Modules\Project\ProjectType\Controllers\SchemaController;
 use Modules\RoleAndPermission\Enums\Permission;
-use Modules\Project\ProjectType\Controllers\ViolationController;
-use Modules\Project\ProjectType\Controllers\SafetyRecordController;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [ProjectTypeController::class, 'index'])
@@ -75,16 +73,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::put('/{projectTypeId}/contractor-contract-settings', [ContractorContractSettingController::class, 'update'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 
-    Route::get('violations', [ViolationController::class, 'index']);
 
-    Route::prefix('{project}/safety')->group(function () {
-        Route::get('/', [SafetyRecordController::class, 'index']);
-        Route::post('/', [SafetyRecordController::class, 'store']);
-        Route::get('/{id}', [SafetyRecordController::class, 'show']);
-        Route::put('/{id}', [SafetyRecordController::class, 'update']);
-        Route::post('/{id}/violations', [SafetyRecordController::class, 'evaluateViolations']);
-        Route::delete('/{id}', [SafetyRecordController::class, 'destroy']);
-    });
     // Employee Contract Settings routes
     Route::get('/{projectTypeId}/employee-contract-settings', [EmployeeContractSettingController::class, 'show'])
         ->permission(Permission::PROJECT_TYPE_VIEW());
