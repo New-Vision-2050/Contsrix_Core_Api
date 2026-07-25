@@ -161,7 +161,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::post('/', [ProjectOrderPermitController::class, 'store']);
         Route::post('/import', [ProjectOrderPermitController::class, 'importExcel']);
         Route::get('/{id}', [ProjectOrderPermitController::class, 'show']);
-        Route::put('/', [ProjectOrderPermitController::class, 'update']);
+        Route::put('/{id}', [ProjectOrderPermitController::class, 'update']);
+        Route::put('/{id}/statuses', [ProjectOrderPermitController::class, 'updateStatuses']);
         Route::delete('/', [ProjectOrderPermitController::class, 'destroy']);
     });
 
