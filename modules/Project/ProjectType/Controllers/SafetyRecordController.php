@@ -43,6 +43,7 @@ class SafetyRecordController extends Controller
             return $this->errorResponse($e);
         }
     }
+    // }
 
     public function inbox(FilterSafetyRecordsRequest $request): JsonResponse
     {

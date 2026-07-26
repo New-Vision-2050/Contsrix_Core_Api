@@ -102,4 +102,5 @@ class SafetyRecord extends Model implements HasMedia
             ->withPivot('id', 'weight', 'status')
             ->withTimestamps();
     }
+    // }
 }

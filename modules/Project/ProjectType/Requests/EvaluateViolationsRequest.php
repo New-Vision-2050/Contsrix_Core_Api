@@ -26,13 +26,7 @@ class EvaluateViolationsRequest extends FormRequest
         ];
     }
 
-    /**
-     * Violations payload with uploaded files merged under each item's `images` key.
-     *
-     * Multipart fields arrive as violations[n][images][] and are not included in input().
-     *
-     * @return array<int, array<string, mixed>>
-     */
+
     public function violationsWithImages(): array
     {
         $violations = $this->input('violations', []);
