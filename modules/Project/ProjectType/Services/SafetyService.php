@@ -29,7 +29,7 @@ class SafetyService
     {
         $records = SafetyRecord::query()
             ->where('project_id', $projectId)
-            ->with(['violations', 'morphable', 'assignedUser'])
+            ->with(['violations', 'morphable', 'assignedUser', 'contractor'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -40,18 +40,61 @@ class SafetyService
     {
         $records = SafetyRecord::query()
             ->where('assigned_user_id', $userId)
-            ->where('status', 'pending')
-            ->with(['violations', 'morphable', 'assignedUser', 'project'])
+            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'project'])
             ->orderByDesc('created_at')
             ->get();
 
         return $this->attachAllViolations($records);
     }
 
+
+    public function report(string $projectId): Collection
+    {
+        $records = SafetyRecord::query()
+            ->where('project_id', $projectId)
+            ->with(['morphable', 'contractor'])
+            ->get();
+
+        return $records
+            ->groupBy(fn (SafetyRecord $r) => $r->morphable_type.'|'.$r->morphable_id)
+            ->map(function (Collection $group) {
+                /** @var SafetyRecord $first */
+                $first = $group->first();
+                $total = $group->count();
+                $completed = $group->where('status', 'completed')->count();
+                $pending = $group->where('status', 'pending')->count();
+
+                if ($completed === 0) {
+                    $status = 'متأخر';
+                } elseif ($completed >= $total) {
+                    $status = 'مكتمل';
+                } else {
+                    $status = 'جارية';
+                }
+
+                return [
+                    'morphable_type' => $first->morphable_type,
+                    'morphable_id' => $first->morphable_id,
+                    'morphable_display' => $first->morphable?->name
+                        ?? $first->morphable?->notification_number
+                        ?? null,
+                    'contractor_id' => $first->contractor_id,
+                    'contractor_name' => $first->contractor?->name,
+                    'consultant_engineer' => $first->consultant_engineer,
+                    'consultant' => $first->consultant,
+                    'total_assignments' => $total,
+                    'completed_count' => $completed,
+                    'pending_count' => $pending,
+                    'status' => $status,
+                ];
+            })
+            ->values();
+    }
+
     public function show(string $projectId, string $id): SafetyRecord
     {
         $record = $this->findForProject($projectId, $id);
-        $record->load(['violations', 'morphable', 'assignedUser']);
+        $record->load(['violations', 'morphable', 'assignedUser', 'contractor']);
 
         return $this->attachAllViolationsToRecord($record);
     }
@@ -111,7 +154,7 @@ class SafetyService
                 ]);
 
                 $this->syncViolations($record, Arr::get($data, 'violations', []));
-                $record->load(['violations', 'morphable', 'assignedUser']);
+                $record->load(['violations', 'morphable', 'assignedUser', 'contractor']);
                 $record->setRelation('all_violations', $this->buildAllViolations($record, $allViolations));
 
                 $user = User::withoutGlobalScopes()->find($userId);

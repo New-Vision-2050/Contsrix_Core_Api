@@ -37,6 +37,9 @@ class SafetyRecordPresenter extends AbstractPresenter
             'consultant_engineer' => $this->model->consultant_engineer,
             'consultant' => $this->model->consultant,
             'contractor_id' => $this->model->contractor_id,
+            'contractor_name' => $this->model->relationLoaded('contractor')
+                ? ($this->model->contractor?->name ?? null)
+                : null,
             'assigned_user' => $this->model->relationLoaded('assignedUser') && $this->model->assignedUser
                 ? [
                     'id' => $this->model->assignedUser->id,

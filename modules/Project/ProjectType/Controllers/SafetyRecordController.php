@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectType\Presenters\SafetyRecordPresenter;
+use Modules\Project\ProjectType\Presenters\SafetyReportPresenter;
 use Modules\Project\ProjectType\Requests\EvaluateViolationsRequest;
 use Modules\Project\ProjectType\Requests\StoreSafetyRecordRequest;
 use Modules\Project\ProjectType\Requests\UpdateSafetyRecordRequest;
@@ -23,6 +24,19 @@ class SafetyRecordController extends Controller
 
             return Json::items(
                 $records->map(fn ($r) => (new SafetyRecordPresenter($r))->getData())->toArray()
+            );
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
+        }
+    }
+
+    public function report(string $project): JsonResponse
+    {
+        try {
+            $items = $this->service->report($project);
+
+            return Json::items(
+                $items->map(fn ($item) => (new SafetyReportPresenter($item))->getData())->toArray()
             );
         } catch (Throwable $e) {
             return $this->errorResponse($e);
