@@ -42,6 +42,8 @@ class Folder extends Model implements HasMedia ,Auditable
         'project_id',
         'access_type',
         'status',
+        'type',
+        'employee_global_id',
         "password",
         "company_id"
     ];

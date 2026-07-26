@@ -203,6 +203,14 @@ class FileObserver
      */
     private function getFileSizeInMB(File $file)
     {
+        if (function_exists('request') && request()->attributes->has('archive_file_upload_size')) {
+            $sizeInBytes = (int) request()->attributes->get('archive_file_upload_size', 0);
+
+            if ($sizeInBytes > 0) {
+                return round($sizeInBytes / (1024 * 1024), 2);
+            }
+        }
+
         // Try to get from Spatie media first (direct uploads)
         $media = $file->getFirstMedia("upload");
         if ($media && $media->size) {

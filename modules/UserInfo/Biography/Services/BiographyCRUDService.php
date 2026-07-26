@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\UserInfo\Biography\Services;
 
 use Illuminate\Support\Collection;
+use Modules\ArchiveLibrary\File\Services\EmployeeArchiveFileService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -20,6 +21,7 @@ class BiographyCRUDService
         private BiographyRepository $repository,
         private CompanyUserRepository $companyUserRepository,
         private FileUploadService  $fileUploadService,
+        private EmployeeArchiveFileService $employeeArchiveFileService,
     ) {
     }
 
@@ -37,12 +39,22 @@ class BiographyCRUDService
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
-            $this->fileUploadService->uploadFile(
+            $media = $this->fileUploadService->uploadFile(
                 $user,
                 $file,
                 $path,
                 'upload_biography',
                 $visibility
+            );
+            $this->employeeArchiveFileService->archiveUploadedFiles(
+                companyId: (string) $company_id,
+                employeeGlobalId: (string) $global_id,
+                employeeName: (string) $user->name,
+                files: $file,
+                mainSection: EmployeeArchiveFileService::SECTION_ACADEMIC,
+                subSection: EmployeeArchiveFileService::SUB_CV,
+                sourceModel: $user,
+                sourceMedia: $media,
             );
         }
 
