@@ -19,6 +19,8 @@ class EvaluateViolationsRequest extends FormRequest
             'violations.*.violation_id' => ['required', 'uuid', 'exists:violations,id'],
             'violations.*.weight' => ['nullable', 'numeric'],
             'violations.*.status' => ['required', Rule::in(['violation_found', 'no_violation', 'not_applicable'])],
+            'images' => ['nullable', 'array', 'max:3'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }

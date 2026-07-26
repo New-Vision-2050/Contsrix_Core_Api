@@ -37,6 +37,9 @@ class SafetyRecordPresenter extends AbstractPresenter
             'consultant_engineer' => $this->model->consultant_engineer,
             'consultant' => $this->model->consultant,
             'contractor_id' => $this->model->contractor_id,
+            'contractor_name' => $this->model->relationLoaded('contractor')
+                ? ($this->model->contractor?->name ?? null)
+                : null,
             'assigned_user' => $this->model->relationLoaded('assignedUser') && $this->model->assignedUser
                 ? [
                     'id' => $this->model->assignedUser->id,
@@ -44,6 +47,19 @@ class SafetyRecordPresenter extends AbstractPresenter
                 ]
                 : null,
             'status' => $this->model->status,
+            'evidence' => $this->model->relationLoaded('media')
+                ? $this->model->getMedia('violation_evidence')
+                    ->map(fn ($media) => [
+                        'id' => $media->id,
+                        'name' => $media->name,
+                        'file_name' => $media->file_name,
+                        'mime_type' => $media->mime_type,
+                        'size' => $media->size,
+                        'url' => $media->getFullUrl(),
+                    ])
+                    ->values()
+                    ->all()
+                : [],
         ];
 
         if ($this->model->relationLoaded('all_violations')) {

@@ -12,11 +12,14 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class SafetyRecord extends Model
+class SafetyRecord extends Model implements HasMedia
 {
     use UuidTrait;
     use CustomBelongsToTenant;
+    use InteractsWithMedia;
 
     protected $table = 'safety_records';
 
@@ -53,6 +56,11 @@ class SafetyRecord extends Model
     public function getTenantIdColumn(): string
     {
         return 'company_id';
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('violation_evidence');
     }
 
     public function company(): BelongsTo
