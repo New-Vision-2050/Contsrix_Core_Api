@@ -208,6 +208,7 @@ class FolderRepository extends BaseRepository
     {
         $isEmployeeLibrary = $searchType === 'employee';
         $effectiveSearchType = $isEmployeeLibrary ? 'all' : $searchType;
+        $hasParent = $parentId !== null && $parentId !== '';
 
         $folderQuery = $withoutTenancy
             ? $this->model->query()->withoutTenancy()
@@ -253,7 +254,7 @@ class FolderRepository extends BaseRepository
         }
 
         // Check password first if parent folder is provided
-        if ($parentId !== null) {
+        if ($hasParent) {
             $folder = (clone $folderQuery)->where('id', $parentId)->first();
             if ($folder && $folder->password != null && (!request()->has("password") || !Hash::check(request()->get("password"), $folder->password))) {
                 throw new CustomException(__("validation.access-denied"));
@@ -290,7 +291,7 @@ class FolderRepository extends BaseRepository
                 },
             ]);
 
-            if ($parentId != null) {
+            if ($hasParent) {
                 $foldersQuery->where('parent_id', $parentId);
             }
             else{
@@ -325,9 +326,9 @@ class FolderRepository extends BaseRepository
         // Query files based on parent_id (folder_id)
         $filesQuery = (clone $fileQueryBase)->with('company');
 
-        if ($parentId != null) {
+        if ($hasParent) {
             $filesQuery->where('folder_id', $parentId);
-        }elseif ($parentId==null &&!$hasFileFilters && ! $isEmployeeLibrary)
+        }elseif ($isEmployeeLibrary || !$hasFileFilters)
         {
             $filesQuery->whereNull('folder_id');
 
