@@ -226,6 +226,11 @@ final class SafetyLifecycleTest extends TestCase
         $response->assertOk();
         $this->assertSame('completed', $response->json('payload.status'));
 
+        // violation_found(-7) + no_violation(+2) = earned -5; abs total 9 → -55.56%
+        $this->assertEquals(-5.0, (float) $response->json('payload.earned_score'));
+        $this->assertEquals(9.0, (float) $response->json('payload.required_score'));
+        $this->assertEquals(-55.56, (float) $response->json('payload.percentage'));
+
         $this->assertDatabaseHas('safety_records', [
             'id' => $record->id,
             'status' => 'completed',
@@ -234,7 +239,7 @@ final class SafetyLifecycleTest extends TestCase
         $this->assertDatabaseHas('safety_record_violation', [
             'safety_record_id' => $record->id,
             'violation_id' => $this->violationOne->id,
-            'weight' => 7,
+            'weight' => -7,
             'status' => 'violation_found',
         ]);
 

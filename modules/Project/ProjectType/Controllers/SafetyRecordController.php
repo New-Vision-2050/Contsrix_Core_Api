@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectType\Presenters\SafetyRecordPresenter;
+use Modules\Project\ProjectType\Presenters\SafetyReportPresenter;
 use Modules\Project\ProjectType\Requests\EvaluateViolationsRequest;
+use Modules\Project\ProjectType\Requests\FilterSafetyRecordsRequest;
 use Modules\Project\ProjectType\Requests\StoreSafetyRecordRequest;
 use Modules\Project\ProjectType\Requests\UpdateSafetyRecordRequest;
 use Modules\Project\ProjectType\Services\SafetyService;
@@ -16,10 +18,10 @@ class SafetyRecordController extends Controller
 {
     public function __construct(private SafetyService $service) {}
 
-    public function index(string $project): JsonResponse
+    public function index(FilterSafetyRecordsRequest $request, string $project): JsonResponse
     {
         try {
-            $records = $this->service->list($project);
+            $records = $this->service->list($project, $request->filters());
 
             return Json::items(
                 $records->map(fn ($r) => (new SafetyRecordPresenter($r))->getData())->toArray()
@@ -29,10 +31,23 @@ class SafetyRecordController extends Controller
         }
     }
 
-    public function inbox(): JsonResponse
+    public function report(FilterSafetyRecordsRequest $request, string $project): JsonResponse
     {
         try {
-            $records = $this->service->inbox((string) auth()->id());
+            $items = $this->service->report($project, $request->filters());
+
+            return Json::items(
+                $items->map(fn ($item) => (new SafetyReportPresenter($item))->getData())->toArray()
+            );
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
+        }
+    }
+
+    public function inbox(FilterSafetyRecordsRequest $request): JsonResponse
+    {
+        try {
+            $records = $this->service->inbox((string) auth()->id(), $request->filters());
 
             return Json::items(
                 $records->map(fn ($r) => (new SafetyRecordPresenter($r))->getData())->toArray()
@@ -85,7 +100,7 @@ class SafetyRecordController extends Controller
             $record = $this->service->evaluateViolations(
                 $project,
                 $id,
-                $request->input('violations', []),
+                $request->violationsWithImages(),
                 (string) auth()->id()
             );
 

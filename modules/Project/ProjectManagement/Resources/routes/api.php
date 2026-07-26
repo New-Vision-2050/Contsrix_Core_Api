@@ -16,6 +16,7 @@ use Modules\Project\ProjectType\Controllers\ProjectOrderPermitController;
 use Modules\RoleAndPermission\Enums\Permission;
 use Modules\Project\ProjectType\Controllers\ViolationController;
 use Modules\Project\ProjectType\Controllers\SafetyRecordController;
+use Modules\Project\ProjectType\Controllers\SafetyAnalyticsController;
 use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
 Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class]], function () {
@@ -33,10 +34,20 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         // Safety & Violations — static routes MUST come before {project}/safety/{id}
         Route::get('/violations', [ViolationController::class, 'index']);
         Route::get('/safety/inbox', [SafetyRecordController::class, 'inbox']);
+        Route::get('/safety/analytics/top-violations', [SafetyAnalyticsController::class, 'topViolations']);
 
         Route::prefix('{project}/safety')->group(function () {
             Route::get('/', [SafetyRecordController::class, 'index']);
             Route::post('/', [SafetyRecordController::class, 'store']);
+
+            Route::prefix('analytics')->group(function () {
+                Route::get('/overall', [SafetyAnalyticsController::class, 'overall']);
+                Route::get('/compliant', [SafetyAnalyticsController::class, 'compliant']);
+                Route::get('/frequent-violations', [SafetyAnalyticsController::class, 'frequentViolations']);
+                Route::get('/violation-performance', [SafetyAnalyticsController::class, 'violationPerformance']);
+                Route::get('/by-contractor-consultant', [SafetyAnalyticsController::class, 'byContractorConsultant']);
+            });
+
             Route::get('/{id}', [SafetyRecordController::class, 'show']);
             Route::put('/{id}', [SafetyRecordController::class, 'update']);
             Route::post('/{id}/violations', [SafetyRecordController::class, 'evaluateViolations']);
