@@ -16,6 +16,8 @@ class SafetyRecordPresenter extends AbstractPresenter
             $time = substr($time, 0, 5);
         }
 
+        $evidenceByViolation = $this->evidenceGroupedByViolationId();
+
         $data = [
             'id' => $this->model->id,
             'project_id' => $this->model->project_id,
@@ -63,9 +65,47 @@ class SafetyRecordPresenter extends AbstractPresenter
         ];
 
         if ($this->model->relationLoaded('all_violations')) {
-            $data['all_violations'] = $this->model->all_violations->toArray();
+            $data['all_violations'] = $this->model->all_violations
+                ->map(function (array $violation) use ($evidenceByViolation) {
+                    $violationId = (string) ($violation['id'] ?? '');
+                    $violation['evidence'] = $evidenceByViolation[$violationId] ?? [];
+
+                    return $violation;
+                })
+                ->values()
+                ->all();
         }
 
         return $data;
+    }
+
+    /**
+     * @return array<string, list<array{id: mixed, name: mixed, file_name: mixed, mime_type: mixed, size: mixed, url: string}>>
+     */
+    private function evidenceGroupedByViolationId(): array
+    {
+        if (! $this->model->relationLoaded('media')) {
+            return [];
+        }
+
+        $grouped = [];
+
+        foreach ($this->model->getMedia('violation_evidence') as $media) {
+            $violationId = (string) ($media->getCustomProperty('violation_id') ?? '');
+            if ($violationId === '') {
+                continue;
+            }
+
+            $grouped[$violationId][] = [
+                'id' => $media->id,
+                'name' => $media->name,
+                'file_name' => $media->file_name,
+                'mime_type' => $media->mime_type,
+                'size' => $media->size,
+                'url' => $media->getFullUrl(),
+            ];
+        }
+
+        return $grouped;
     }
 }

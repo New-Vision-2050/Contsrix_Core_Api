@@ -3,6 +3,7 @@
 namespace Modules\Project\ProjectType\Models;
 
 use App\Traits\CustomBelongsToTenant;
+use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,7 @@ class SafetyRecord extends Model implements HasMedia
 {
     use UuidTrait;
     use CustomBelongsToTenant;
+    use BaseFilterable;
     use InteractsWithMedia;
 
     protected $table = 'safety_records';
@@ -100,4 +102,5 @@ class SafetyRecord extends Model implements HasMedia
             ->withPivot('id', 'weight', 'status')
             ->withTimestamps();
     }
+    // }
 }

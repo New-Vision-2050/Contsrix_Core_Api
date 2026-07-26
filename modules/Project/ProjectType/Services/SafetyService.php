@@ -30,35 +30,41 @@ class SafetyService
         private FileUploadService $fileUploadService,
     ) {}
 
-    public function list(string $projectId): EloquentCollection
+    public function list(string $projectId, array $filters = []): EloquentCollection
     {
         $records = SafetyRecord::query()
             ->where('project_id', $projectId)
             ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'media'])
+            ->filter($filters)
             ->orderByDesc('created_at')
             ->get();
 
         return $this->attachAllViolations($records);
     }
 
-    public function inbox(string $userId): EloquentCollection
+    public function inbox(string $userId, array $filters = []): EloquentCollection
     {
+        // Inbox is always scoped to the authenticated user; don't let
+        // assigned_user_id override that constraint.
+        unset($filters['assigned_user_id']);
+
         $records = SafetyRecord::query()
             ->where('assigned_user_id', $userId)
             ->where('status', 'pending')
             ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'project', 'media'])
+            ->filter($filters)
             ->orderByDesc('created_at')
             ->get();
 
         return $this->attachAllViolations($records);
     }
 
-
-    public function report(string $projectId): Collection
+    public function report(string $projectId, array $filters = []): Collection
     {
         $records = SafetyRecord::query()
             ->where('project_id', $projectId)
             ->with(['morphable', 'contractor'])
+            ->filter($filters)
             ->get();
 
         return $records
@@ -214,9 +220,9 @@ class SafetyService
     }
 
     /**
-     * @param  UploadedFile[]  $images  up to 3 evidence images
+     * @param  array<int, array{violation_id: string, weight?: mixed, status?: string, images?: UploadedFile[]}>  $violations
      */
-    public function evaluateViolations(string $projectId, string $id, array $violations, ?string $actorUserId = null, array $images = []): SafetyRecord
+    public function evaluateViolations(string $projectId, string $id, array $violations, ?string $actorUserId = null): SafetyRecord
     {
         $record = $this->findForProject($projectId, $id);
 
@@ -230,17 +236,8 @@ class SafetyService
         }
 
         $this->syncViolations($record, $violations);
-
-        if ($images !== []) {
-            $this->fileUploadService->uploadFile(
-                $record,
-                $images,
-                filePath: 'safety/violation-evidence',
-                collectionName: 'violation_evidence',
-            );
-        }
-
-        $record->update(['status' => 'completed']);
+        $this->uploadViolationEvidence($record, $violations);
+        $this->calculateAndStoreScores($record);
 
         return $this->show($projectId, $record->id);
     }
@@ -481,18 +478,107 @@ class SafetyService
     private function syncViolations(SafetyRecord $record, array $violations): void
     {
         $syncData = [];
+        $defaults = Violation::query()
+            ->whereIn('id', collect($violations)->pluck('violation_id')->filter()->all())
+            ->pluck('default_weight', 'id');
 
         foreach ($violations as $violation) {
             if (! isset($violation['violation_id'])) {
                 continue;
             }
 
-            $syncData[$violation['violation_id']] = [
-                'weight' => $violation['weight'] ?? null,
-                'status' => $violation['status'] ?? null,
+            $violationId = (string) $violation['violation_id'];
+            $status = (string) ($violation['status'] ?? '');
+            $baseWeight = abs((float) ($violation['weight'] ?? $defaults[$violationId] ?? 0));
+
+            $syncData[$violationId] = [
+                'weight' => $this->signedWeight($baseWeight, $status),
+                'status' => $status,
             ];
         }
 
         $record->violations()->sync($syncData);
     }
+
+    /**
+     * Persist earned_score, required_score, and percentage from pivot weights.
+     *
+     * earned_score    = sum of signed pivot weights (N/A stored as 0)
+     * required_score  = sum of ABS(weights) for non-N/A (max if all were no_violation)
+     * percentage      = earned_score / required_score * 100 (100 when required_score = 0)
+     */
+    private function calculateAndStoreScores(SafetyRecord $record): void
+    {
+        $record->load('violations');
+
+        $earnedScore = 0.0;
+        $requiredScore = 0.0;
+
+        foreach ($record->violations as $violation) {
+            $status = (string) ($violation->pivot->status ?? '');
+            $weight = (float) ($violation->pivot->weight ?? 0);
+
+            if ($status === 'not_applicable') {
+                continue;
+            }
+
+            $earnedScore += $weight;
+            $requiredScore += abs($weight);
+        }
+
+        $percentage = $requiredScore == 0.0
+            ? 100.0
+            : round(($earnedScore / $requiredScore) * 100, 2);
+
+        $record->update([
+            'status' => 'completed',
+            'earned_score' => round($earnedScore, 2),
+            'required_score' => round($requiredScore, 2),
+            'percentage' => $percentage,
+        ]);
+    }
+
+    private function signedWeight(float $baseWeight, string $status): float
+    {
+        return match ($status) {
+            'violation_found' => -1 * $baseWeight,
+            'no_violation' => $baseWeight,
+            'not_applicable' => 0.0,
+            default => 0.0,
+        };
+    }
+
+    /**
+     * Upload up to 3 evidence images per violation into the shared
+     * `violation_evidence` collection, tagged with the violation_id custom property.
+     *
+     * @param  array<int, array{violation_id?: string, images?: UploadedFile[]}>  $violations
+     */
+    private function uploadViolationEvidence(SafetyRecord $record, array $violations): void
+    {
+        foreach ($violations as $violation) {
+            $violationId = $violation['violation_id'] ?? null;
+            $images = array_values(array_filter(
+                Arr::wrap($violation['images'] ?? []),
+                fn ($file) => $file instanceof UploadedFile
+            ));
+
+            if (! $violationId || $images === []) {
+                continue;
+            }
+
+            $mediaItems = $this->fileUploadService->uploadFile(
+                $record,
+                $images,
+                filePath: 'safety/violation-evidence/'.$violationId,
+                collectionName: 'violation_evidence',
+            );
+
+            foreach ($mediaItems as $media) {
+                $media->setCustomProperty('violation_id', (string) $violationId);
+                $media->save();
+            }
+        }
+    }
+    // }
 }
