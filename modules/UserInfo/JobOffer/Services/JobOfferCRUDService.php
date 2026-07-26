@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\UserInfo\JobOffer\Services;
 
 use Illuminate\Support\Collection;
+use Modules\ArchiveLibrary\File\Services\EmployeeArchiveFileService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\Shared\Media\Services\FileDeletedService;
@@ -21,7 +22,8 @@ class JobOfferCRUDService
         private JobOfferRepository $repository,
         private CompanyUserRepository $companyUserRepository,
         private FileUploadService  $fileUploadService,
-        private FileDeletedService $fileDeletedService
+        private FileDeletedService $fileDeletedService,
+        private EmployeeArchiveFileService $employeeArchiveFileService
     ) {
     }
 
@@ -52,12 +54,22 @@ class JobOfferCRUDService
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
-            $this->fileUploadService->uploadFile(
+            $media = $this->fileUploadService->uploadFile(
                 $jobOffer,
                 $file,
                 $path,
                 'upload_offerjob',
                 $visibility
+            );
+            $this->employeeArchiveFileService->archiveUploadedFiles(
+                companyId: (string) $company_id,
+                employeeGlobalId: (string) $global_id,
+                employeeName: (string) $user->name,
+                files: $file,
+                mainSection: EmployeeArchiveFileService::SECTION_EMPLOYMENT,
+                subSection: EmployeeArchiveFileService::SUB_JOB_OFFER,
+                sourceModel: $jobOffer,
+                sourceMedia: $media,
             );
         }
 

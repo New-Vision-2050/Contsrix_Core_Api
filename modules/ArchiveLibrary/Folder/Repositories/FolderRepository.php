@@ -59,6 +59,47 @@ class FolderRepository extends BaseRepository
             ->paginate($perPage, ['*'], 'page', $page);
     }
 
+    public function findOrCreateEmployeeFolder(
+        string $name,
+        ?string $parentId,
+        string $companyId,
+        string $employeeGlobalId,
+        bool $matchByName = true
+    ): Folder {
+        $attributes = [
+            'company_id' => $companyId,
+            'type' => 'employee',
+            'employee_global_id' => $employeeGlobalId,
+            'parent_id' => $parentId,
+        ];
+
+        if ($matchByName) {
+            $attributes['name'] = $name;
+        }
+
+        $folder = $this->model->newQuery()
+            ->withoutTenancy()
+            ->where($attributes)
+            ->first();
+
+        if ($folder) {
+            if (! $matchByName && $folder->name !== $name) {
+                $folder->update(['name' => $name]);
+            }
+
+            return $folder->fresh();
+        }
+
+        return $this->model->newQuery()
+            ->withoutTenancy()
+            ->create($attributes + [
+                'name' => $name,
+                'project_id' => null,
+                'access_type' => 'public',
+                'status' => 1,
+            ]);
+    }
+
     public function createFolder(array $data, array $userIds, ?UploadedFile $file = null): Folder
     {
         try {
@@ -165,9 +206,21 @@ class FolderRepository extends BaseRepository
         ?string $contractualEngagementKey = null
     )
     {
+        $isEmployeeLibrary = $searchType === 'employee';
+        $effectiveSearchType = $isEmployeeLibrary ? 'all' : $searchType;
+
         $folderQuery = $withoutTenancy
             ? $this->model->query()->withoutTenancy()
             : $this->model->query();
+
+        if ($isEmployeeLibrary) {
+            $folderQuery->where('type', 'employee');
+        } else {
+            $folderQuery->where(function ($query) {
+                $query->whereNull('type')
+                    ->orWhere('type', '!=', 'employee');
+            });
+        }
 
 
         $folderQuery = $folderQuery->when(!request()->has("project_id") && !request()->has("is_project") && !request()->has("contractual_engagement_key")
@@ -189,6 +242,15 @@ class FolderRepository extends BaseRepository
         $fileQueryBase = $withoutTenancy
             ? File::query()->withoutTenancy()
             : File::query();
+
+        if ($isEmployeeLibrary) {
+            $fileQueryBase->where('type', 'employee');
+        } else {
+            $fileQueryBase->where(function ($query) {
+                $query->whereNull('type')
+                    ->orWhere('type', '!=', 'employee');
+            });
+        }
 
         // Check password first if parent folder is provided
         if ($parentId !== null) {
@@ -212,9 +274,18 @@ class FolderRepository extends BaseRepository
         } else {
             // Query folders based on parent_id
             $foldersQuery = (clone $folderQuery)->with('company')->withCount([
-                'files' => function ($q) use ($withoutTenancy) {
+                'files' => function ($q) use ($withoutTenancy, $isEmployeeLibrary) {
                     if ($withoutTenancy) {
                         $q->withoutTenancy();
+                    }
+
+                    if ($isEmployeeLibrary) {
+                        $q->where('type', 'employee');
+                    } else {
+                        $q->where(function ($query) {
+                            $query->whereNull('type')
+                                ->orWhere('type', '!=', 'employee');
+                        });
                     }
                 },
             ]);
@@ -256,7 +327,7 @@ class FolderRepository extends BaseRepository
 
         if ($parentId != null) {
             $filesQuery->where('folder_id', $parentId);
-        }elseif ($parentId==null &&!$hasFileFilters )
+        }elseif ($parentId==null &&!$hasFileFilters && ! $isEmployeeLibrary)
         {
             $filesQuery->whereNull('folder_id');
 
@@ -319,18 +390,13 @@ class FolderRepository extends BaseRepository
 
         // Apply search filter based on search type
         if ($search !== null && $search !== '') {
-            $filesQuery->where(function ($query) use ($search, $searchType) {
-                if ($searchType === 'name') {
+            $filesQuery->where(function ($query) use ($search, $effectiveSearchType) {
+                if ($effectiveSearchType === 'name') {
                     // Search only in name
                     $query->where('name', 'LIKE', '%' . $search . '%');
-                } elseif ($searchType === 'reference_number') {
+                } elseif ($effectiveSearchType === 'reference_number') {
                     // Search only in reference_number
                     $query->where('reference_number', 'LIKE', '%' . $search . '%');
-                } elseif ($searchType=="employee")
-                {
-                    $query->where('type', "employee");
-
-
                 }
                 else {
                     // Search in both name and reference_number (type = 'all')
