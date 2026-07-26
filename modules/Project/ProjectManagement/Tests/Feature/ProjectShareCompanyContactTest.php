@@ -9,7 +9,6 @@ use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
-use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\Shared\ResourceShare\Models\ResourceShare;
 use Modules\Shared\ResourceShare\Presenters\ResourceSharePresenter;
 
@@ -103,60 +102,14 @@ class ProjectShareCompanyContactTest extends BaseAttendanceReportTestCase
         $this->assertSame('PRS-001', $payload['shared_with_company']['serial_number']);
     }
 
-    public function test_project_shares_response_does_not_include_flat_project_procedure_metadata(): void
-    {
-        $receiverCompany = $this->createCompany([
-            'serial_no' => 'REC-META',
-        ]);
-        $project = $this->createProject($this->company);
-
-        $this->createAcceptedShare($project, $this->company, $receiverCompany);
-
-        $response = $this->actingAs($this->actor, 'api')
-            ->withHeader('X-Tenant', $this->company->id)
-            ->getJson('/api/v1/projects/sharing/projects/'.$project->id.'/shares?project_id='.$project->id)
-            ->assertOk();
-
-        $payload = $response->json('payload.0');
-
-        $this->assertIsArray($payload);
-        $this->assertArrayHasKey('shareable', $payload);
-        $this->assertArrayNotHasKey('classification_name', $payload);
-        $this->assertArrayNotHasKey('linked_folder_name', $payload);
-        $this->assertArrayNotHasKey('classification_code', $payload);
-        $this->assertArrayNotHasKey('document_nature', $payload);
-        $this->assertArrayNotHasKey('job_attribute', $payload);
-    }
-
     private function createProject(Company $company): ProjectManagement
     {
-        $projectTypeId = $this->projectTypeId($company);
-
-        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->withoutGlobalScopes()->forceCreate([
+        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->withoutGlobalScopes()->create([
             'id' => (string) Str::uuid(),
-            'project_type_id' => $projectTypeId,
-            'sub_project_type_id' => $projectTypeId,
-            'sub_sub_project_type_id' => $projectTypeId,
             'name' => 'Shared Contact Project',
             'company_id' => $company->id,
             'status' => 1,
-            'serial_number' => 'SHARE-'.Str::upper(Str::random(6)),
         ]));
-    }
-
-    private function projectTypeId(Company $company): int
-    {
-        return (int) ProjectType::query()->withoutGlobalScopes()->firstOrCreate(
-            [
-                'name' => 'Shared Contact Test Type',
-                'company_id' => $company->id,
-            ],
-            [
-                'is_created' => true,
-                'is_have_schema' => false,
-                'is_active' => true,
-            ],
-        )->id;
     }
 
     /**

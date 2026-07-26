@@ -12,7 +12,6 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 
 class ProcedureSetting extends Model
 {
@@ -112,11 +111,6 @@ class ProcedureSetting extends Model
     public function isInternalProcedure(): bool
     {
         return $this->parent_id !== null && $this->form !== null;
-    }
-
-    public function projectProcedureSettings()
-    {
-        return $this->hasMany(ProjectProcedureSetting::class, 'procedure_setting_id');
     }
 
     protected static function newFactory(): ProcedureSettingFactory

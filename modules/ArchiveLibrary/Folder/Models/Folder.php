@@ -31,13 +31,6 @@ class Folder extends Model implements HasMedia ,Auditable
 
     //public array $translatable = [];
 
-    /**
-     * Folders created and owned by the application itself. They mirror a
-     * business record (e.g. an emergency work order) so their name and
-     * position in the tree must stay in sync with that record.
-     */
-    public const TYPE_SYSTEM = 'system';
-
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -49,7 +42,6 @@ class Folder extends Model implements HasMedia ,Auditable
         'project_id',
         'access_type',
         'status',
-        'type',
         "password",
         "company_id"
     ];
@@ -64,16 +56,6 @@ class Folder extends Model implements HasMedia ,Auditable
 //    ];
 
 
-
-    /**
-     * Whether the folder is managed by the application and must not be
-     * renamed, moved or deleted by users.
-     */
-    public function isSystemManaged(): bool
-    {
-        return $this->type === self::TYPE_SYSTEM
-            || $this->name === config('folder.official_documents_name', 'المستندات الرسمية');
-    }
 
     public function getMediaUrlsAttribute()
     {

@@ -11,7 +11,6 @@ use Illuminate\Support\Str;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class WorkFlow extends Model
@@ -27,7 +26,6 @@ class WorkFlow extends Model
 
     protected $fillable = [
         'company_id',
-        'project_id',
         'name',
         'type',
     ];
@@ -35,7 +33,6 @@ class WorkFlow extends Model
     protected $casts = [
         'id'         => 'string',
         'company_id' => 'string',
-        'project_id' => 'string',
         'type'       => 'string',
     ];
 
@@ -47,11 +44,6 @@ class WorkFlow extends Model
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
-    }
-
-    public function project()
-    {
-        return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
 
     public function managementHierarchies()
@@ -83,7 +75,6 @@ class WorkFlow extends Model
     {
         $workFlow = static::withoutGlobalScopes()
             ->where('company_id', $companyId)
-            ->whereNull('project_id')
             ->where('name', 'default')
             ->where('type', $type)
             ->first();
@@ -98,7 +89,6 @@ class WorkFlow extends Model
         DB::table('work_flows')->insertOrIgnore([
             'id'         => $id,
             'company_id' => $companyId,
-            'project_id' => null,
             'name'       => 'default',
             'type'       => $type,
             'created_at' => $now,
@@ -107,7 +97,6 @@ class WorkFlow extends Model
 
         $workFlow = static::withoutGlobalScopes()
             ->where('company_id', $companyId)
-            ->whereNull('project_id')
             ->where('name', 'default')
             ->where('type', $type)
             ->first();

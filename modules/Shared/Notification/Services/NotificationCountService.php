@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Shared\Notification\Services;
 
+use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Modules\Shared\ResourceShare\Models\ResourceShare;
 
 class NotificationCountService
@@ -15,8 +16,15 @@ class NotificationCountService
     {
         $companyId = tenant('id');
 
-        $pendingAttachmentRequests = 0;
-        $semiApprovedAttachmentRequests = 0;
+        // Count pending attachment requests (incoming)
+        $pendingAttachmentRequests = AttachmentRequest::where('receiver_company_id', $companyId)
+            ->where('status', 'pending')
+            ->count();
+
+        // Count semi-approved attachment requests (partial approval)
+        $semiApprovedAttachmentRequests = AttachmentRequest::where('receiver_company_id', $companyId)
+            ->where('status', 'semi-approved')
+            ->count();
 
         // Count pending resource shares (incoming)
         $pendingResourceShares = ResourceShare::where('shared_with_company_id', $companyId)
@@ -51,7 +59,26 @@ class NotificationCountService
     {
         $companyId = tenant('id');
 
-        $attachmentRequests = collect();
+        // Get pending attachment requests
+        $attachmentRequests = AttachmentRequest::where('receiver_company_id', $companyId)
+            ->whereIn('status', ['pending', 'semi-approved'])
+            ->with(['senderCompany', 'project', 'createdByUser'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($request) {
+                return [
+                    'id' => $request->id,
+                    'type' => 'attachment_request',
+                    'serial_number' => $request->serial_number,
+                    'name' => $request->name,
+                    'status' => $request->status,
+                    'sender_company' => $request->senderCompany?->name,
+                    'project' => $request->project?->name,
+                    'created_by' => $request->createdByUser?->name,
+                    'created_at' => $request->created_at?->toISOString(),
+                ];
+            });
 
         // Get pending resource shares
         $resourceShares = ResourceShare::where('shared_with_company_id', $companyId)

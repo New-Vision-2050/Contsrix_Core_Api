@@ -253,14 +253,13 @@ final class WorkflowEngine
 
         // Dynamic types: resolve all users via ActionTakerResolver (handles deputy_manager
         // multi-user, specific_procedures arrays, himself, and assigned_user).
-        $dynamicTypes = ['management_hierarchy', 'specific_procedures', 'receiver_company', 'himself', 'assigned_user'];
+        $dynamicTypes = ['management_hierarchy', 'specific_procedures', 'himself', 'assigned_user'];
 
         if (in_array($actionTakerType, $dynamicTypes, true)) {
             $resolvedUserIds = $this->resolver->resolveUsersForStep($firstStep, $createdByUserId, $context);
 
             if ($resolvedUserIds !== []) {
                 $users = User::query()
-                    ->withoutGlobalScopes()
                     ->whereIn('id', $resolvedUserIds)
                     ->with(['companyUser', 'companyUser.jobTitle'])
                     ->get(['id', 'name']);

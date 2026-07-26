@@ -151,8 +151,6 @@ SQL;
 
     protected function present(bool $isListing = false): array
     {
-        $isSystemManaged = $this->folder->isSystemManaged();
-
         return [
             'id' => $this->folder->id,
             'name' => $this->folder->name,
@@ -163,9 +161,8 @@ SQL;
             "is_file"=>0,
             'file' => $this->folder->getFirstMedia("upload") ? (new MediaPresenter($this->folder->getFirstMedia('upload')))->getData(): null,
             'files_count' => $this->folder->files_count ?? $this->folder->files()->count(),
-            "is_system"=>$isSystemManaged?1:0,
-            "can_delete"=>$isSystemManaged?0:1,
-            "can_update"=>$isSystemManaged?0:1,
+            "can_delete"=>$this->folder->name  == "المستندات الرسمية"?0:1,
+            "can_update"=>$this->folder->name  == "المستندات الرسمية"?0:1,
             'size' => $this->getFolderSize(),
             "created_at"=>$this->folder->created_at,
             "updated_at"=>$this->folder->updated_at,

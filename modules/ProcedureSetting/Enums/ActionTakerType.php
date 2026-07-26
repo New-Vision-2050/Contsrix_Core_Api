@@ -9,7 +9,6 @@ enum ActionTakerType: string
     case SpecificUser = 'specific_user';
     case ManagementHierarchy = 'management_hierarchy';
     case SpecificProcedures = 'specific_procedures';
-    case ReceiverCompany = 'receiver_company';
 
     /**
      * When the action taker is the request submitter (himself/نفسه).

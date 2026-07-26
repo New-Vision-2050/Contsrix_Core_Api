@@ -189,7 +189,7 @@ final class ProcedureWorkflowService
         $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
 
         // Dynamic types: resolve all authorized users and check membership.
-        if (in_array($actionTakerType, ['management_hierarchy', 'specific_procedures', 'receiver_company', 'himself'], true)) {
+        if (in_array($actionTakerType, ['management_hierarchy', 'specific_procedures', 'himself'], true)) {
             $resolvedUserIds = $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
 
             return in_array($userId, $resolvedUserIds, true);
@@ -377,9 +377,8 @@ final class ProcedureWorkflowService
         // For all dynamic types, resolve the full authorized-user list and check membership.
         // - management_hierarchy: single manager OR manager+deputies (deputy_manager type)
         // - specific_procedures:  array of branch/management/job_title/job_role targets
-        // - receiver_company:     every user in selected receiver companies
         // - himself:              the original submitter only
-        if (in_array($actionTakerType, ['management_hierarchy', 'specific_procedures', 'receiver_company', 'himself'], true)) {
+        if (in_array($actionTakerType, ['management_hierarchy', 'specific_procedures', 'himself'], true)) {
             $resolvedUserIds = $this->resolver->resolveUsersForStep($step, $createdByUserId, $context);
 
             if (in_array($userId, $resolvedUserIds, true)) {

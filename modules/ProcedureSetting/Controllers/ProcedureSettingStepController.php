@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\ProcedureSetting\Controllers;
 
-use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\ProcedureSetting\Handlers\DeleteProcedureSettingStepHandler;
 use Modules\ProcedureSetting\Handlers\UpdateProcedureSettingStepHandler;
@@ -22,7 +22,8 @@ class ProcedureSettingStepController extends Controller
         private ProcedureSettingStepCRUDService $stepService,
         private UpdateProcedureSettingStepHandler $updateHandler,
         private DeleteProcedureSettingStepHandler $deleteHandler,
-    ) {}
+    ) {
+    }
 
     public function index(GetProcedureSettingStepRequest $request): JsonResponse
     {
@@ -35,10 +36,7 @@ class ProcedureSettingStepController extends Controller
 
     public function show(GetProcedureSettingStepRequest $request): JsonResponse
     {
-        $step = $this->stepService->getForProcedureSetting(
-            (string) $request->route('procedureSettingId'),
-            (int) $request->route('stepId'),
-        );
+        $step = $this->stepService->get((int) $request->route('stepId'));
 
         $presenter = new ProcedureSettingStepPresenter($step);
 
@@ -68,11 +66,6 @@ class ProcedureSettingStepController extends Controller
 
     public function delete(DeleteProcedureSettingStepRequest $request): JsonResponse
     {
-        $this->stepService->getForProcedureSetting(
-            (string) $request->route('procedureSettingId'),
-            (int) $request->route('stepId'),
-        );
-
         $this->deleteHandler->handle((int) $request->route('stepId'));
 
         return Json::deleted();

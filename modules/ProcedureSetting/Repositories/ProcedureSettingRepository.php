@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace Modules\ProcedureSetting\Repositories;
 
-use App\Traits\HasExport;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Ramsey\Uuid\UuidInterface;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\WorkFlow;
-use Ramsey\Uuid\UuidInterface;
+use App\Traits\HasExport;
 
 /**
  * @property ProcedureSetting $model
- *
  * @method ProcedureSetting findOneOrFail($id)
  * @method ProcedureSetting findOneByOrFail(array $data)
  */
@@ -32,24 +30,10 @@ class ProcedureSettingRepository extends BaseRepository
 
     public function getProcedureSettingList(?int $page, ?int $perPage = 10): Collection
     {
-        return $this->paginatedList([], $page, $perPage, 'sort_order', 'asc');
+        return $this->paginatedList([], $page, $perPage,'sort_order','asc');
     }
 
     public function getProcedureSetting(UuidInterface $id): ProcedureSetting
-    {
-        return $this->procedureSettingDetailsQuery()->findOrFail($id->toString());
-    }
-
-    public function getProcedureSettingForProject(string $projectId, UuidInterface $id): ProcedureSetting
-    {
-        return $this->procedureSettingDetailsQuery()
-            ->whereHas('workFlow', function ($q) use ($projectId): void {
-                $q->where('project_id', $projectId);
-            })
-            ->findOrFail($id->toString());
-    }
-
-    private function procedureSettingDetailsQuery()
     {
         return $this->model->with([
             'steps' => function ($q) {
@@ -61,8 +45,8 @@ class ProcedureSettingRepository extends BaseRepository
             'steps.actionTakers.user',
             'steps.concernedManagementHierarchies.managementHierarchy',
             'escalationManagementHierarchy:id,name,type,company_id',
-            'workFlow:id,name,company_id,project_id',
-        ]);
+            'workFlow:id,name,company_id',
+        ])->findOrFail($id->toString());
     }
 
     public function createProcedureSetting(array $data): ProcedureSetting
@@ -74,7 +58,7 @@ class ProcedureSettingRepository extends BaseRepository
             && $data['work_flow_id'] !== '';
 
         return DB::transaction(function () use ($data, $companyId, $procedureType, $hasExplicitWorkFlow) {
-            if (! $hasExplicitWorkFlow && $companyId !== null && $companyId !== '') {
+            if (!$hasExplicitWorkFlow && $companyId !== null && $companyId !== '') {
                 $data['work_flow_id'] = WorkFlow::defaultForCompany((string) $companyId, $procedureType)->id;
             }
 
@@ -83,20 +67,20 @@ class ProcedureSettingRepository extends BaseRepository
             }
 
             $model = $this->create($data);
-            $model->load(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,project_id']);
+            $model->load(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name']);
 
             return $model;
         });
     }
 
     /**
-     * @param  array<string, mixed>  $conditions
+     * @param array<string, mixed> $conditions
      */
     public function list(array $conditions = [], string $orderBy = 'sort_order', string $sortBy = 'asc'): Collection
     {
         return $this->model->newQuery()
             ->where($conditions)
-            ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,project_id'])
+            ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name'])
             ->orderBy($orderBy, $sortBy)
             ->get();
     }
@@ -109,8 +93,6 @@ class ProcedureSettingRepository extends BaseRepository
         }
 
         $parentId = $filters['parent_id'] ?? null;
-        $hasProjectFilter = array_key_exists('project_id', $filters);
-        $projectId = $filters['project_id'] ?? null;
 
         $query = WorkFlow::query()
             ->with([
@@ -122,19 +104,9 @@ class ProcedureSettingRepository extends BaseRepository
                         $q->whereNull('parent_id');
                     }
                     $q->orderBy('sort_order')
-                        ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id,project_id']);
+                      ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ]);
-
-        if ($hasProjectFilter) {
-            if ($projectId === null || $projectId === '') {
-                $query->whereNull('project_id');
-            } else {
-                $query->where('project_id', (string) $projectId);
-            }
-        } else {
-            $query->whereNull('project_id');
-        }
 
         if (! empty($filters['type'])) {
             $query->where('type', (string) $filters['type']);
@@ -180,11 +152,10 @@ class ProcedureSettingRepository extends BaseRepository
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
                     $q->whereNull('parent_id')
-                        ->orderBy('sort_order')
-                        ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id,project_id']);
+                      ->orderBy('sort_order')
+                      ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
-            ->whereNull('project_id')
             ->where('type', ProcedureSettingType::ClientRequest->value);
 
         if ($companyId !== null && $companyId !== '') {
@@ -207,11 +178,10 @@ class ProcedureSettingRepository extends BaseRepository
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
                     $q->whereNull('parent_id')
-                        ->orderBy('sort_order')
-                        ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id,project_id']);
+                      ->orderBy('sort_order')
+                      ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
-            ->whereNull('project_id')
             ->where('type', $type)
             ->where('name', 'default');
 
@@ -235,7 +205,6 @@ class ProcedureSettingRepository extends BaseRepository
 
             $workflowIdsForType = WorkFlow::query()
                 ->where('company_id', $companyId)
-                ->whereNull('project_id')
                 ->where('type', $type)
                 ->pluck('id')
                 ->all();
@@ -252,9 +221,9 @@ class ProcedureSettingRepository extends BaseRepository
 
                 DB::table('management_hierarchy_work_flow')->insertOrIgnore([
                     'management_hierarchy_id' => (int) $branch->id,
-                    'work_flow_id' => $default->id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'work_flow_id'            => $default->id,
+                    'created_at'              => now(),
+                    'updated_at'              => now(),
                 ]);
 
                 return;
@@ -263,18 +232,17 @@ class ProcedureSettingRepository extends BaseRepository
             $branchSpecific = WorkFlow::query()->firstOrCreate(
                 [
                     'company_id' => $companyId,
-                    'project_id' => null,
-                    'type' => $type,
-                    'name' => 'branch_'.$branch->id,
+                    'type'       => $type,
+                    'name'       => 'branch_' . $branch->id,
                 ],
-                ['id' => (string) Str::uuid()]
+                ['id' => (string) \Illuminate\Support\Str::uuid()]
             );
 
             DB::table('management_hierarchy_work_flow')->insertOrIgnore([
                 'management_hierarchy_id' => (int) $branch->id,
-                'work_flow_id' => $branchSpecific->id,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'work_flow_id'            => $branchSpecific->id,
+                'created_at'              => now(),
+                'updated_at'              => now(),
             ]);
         });
 
@@ -286,11 +254,10 @@ class ProcedureSettingRepository extends BaseRepository
                     'managementHierarchies:id,name,type,company_id',
                     'procedureSettings' => function ($q) {
                         $q->orderBy('sort_order')
-                            ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id,project_id']);
+                          ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                     },
                 ])
                 ->where('company_id', $companyId)
-                ->whereNull('project_id')
                 ->where('type', $type)
                 ->where('name', 'default')
                 ->whereHas('managementHierarchies', function ($q) use ($branch): void {
@@ -305,14 +272,13 @@ class ProcedureSettingRepository extends BaseRepository
                 'managementHierarchies:id,name,type,company_id',
                 'procedureSettings' => function ($q) {
                     $q->whereNull('parent_id')
-                        ->orderBy('sort_order')
-                        ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id,project_id']);
+                      ->orderBy('sort_order')
+                      ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id']);
                 },
             ])
             ->where('company_id', $companyId)
-            ->whereNull('project_id')
             ->where('type', $type)
-            ->where('name', 'branch_'.$branch->id)
+            ->where('name', 'branch_' . $branch->id)
             ->whereHas('managementHierarchies', function ($q) use ($branch): void {
                 $q->where('management_hierarchies.id', (int) $branch->id);
             })
@@ -329,6 +295,7 @@ class ProcedureSettingRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
 
     private function getNextSortOrder(): int
     {

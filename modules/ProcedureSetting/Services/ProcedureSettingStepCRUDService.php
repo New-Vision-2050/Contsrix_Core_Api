@@ -13,7 +13,8 @@ class ProcedureSettingStepCRUDService
 {
     public function __construct(
         private ProcedureSettingStepRepository $repository,
-    ) {}
+    ) {
+    }
 
     public function create(CreateProcedureSettingStepDTO $dto): ProcedureSettingStep
     {
@@ -23,11 +24,6 @@ class ProcedureSettingStepCRUDService
     public function get(int $id): ProcedureSettingStep
     {
         return $this->repository->getProcedureSettingStep($id);
-    }
-
-    public function getForProcedureSetting(string $procedureSettingId, int $id): ProcedureSettingStep
-    {
-        return $this->repository->getProcedureSettingStepForProcedureSetting($procedureSettingId, $id);
     }
 
     public function getByProcedureSettingId(string $procedureSettingId): Collection
