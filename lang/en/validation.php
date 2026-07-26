@@ -248,6 +248,7 @@ return [
     "phone-exists"=>"phone exists",
     "phone_email_consistency-error"=>"phone and email consistency error",
     "can-not-delete-has-children"=>"can not delete has children",
+    "system-folder-not-editable"=>"this folder is managed by the system and can not be modified or deleted",
     "client-already-exist-in-thies-branches"=>'client already exists in this branches',
     "employee-already-exist"=>'employee already exists in this branches',
     "broker-already-exist-in-thies-branches"=>'broker already exists in this branches',

@@ -150,7 +150,10 @@ class ProjectManagementObserver
     private function updateProjectFolder(ProjectManagement $project): void
     {
         try {
-            $folder = Folder::where('project_id', $project->id)->first();
+            // Subfolders of the project also carry project_id, so the root
+            // folder has to be matched on its id / null parent_id.
+            $folder = Folder::where('id', $project->id)->whereNull('parent_id')->first()
+                ?? Folder::where('project_id', $project->id)->whereNull('parent_id')->first();
 
             if ($folder) {
                 $folder->update([
