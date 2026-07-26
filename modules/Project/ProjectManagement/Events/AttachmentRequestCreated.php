@@ -29,7 +29,7 @@ class AttachmentRequestCreated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('company.' . $this->attachmentRequest->receiver_company_id),
+            new Channel('company.' . $this->attachmentRequest->sender_company_id),
         ];
     }
 
@@ -52,8 +52,6 @@ class AttachmentRequestCreated implements ShouldBroadcast
             'name' => $this->attachmentRequest->name,
             'sender_company_id' => $this->attachmentRequest->sender_company_id,
             'sender_company_name' => $this->attachmentRequest->senderCompany?->name,
-            'receiver_company_id' => $this->attachmentRequest->receiver_company_id,
-            'receiver_company_name' => $this->attachmentRequest->receiverCompany?->name,
             'project_id' => $this->attachmentRequest->project_id,
             'project_name' => $this->attachmentRequest->project?->name,
             'total_items' => $this->attachmentRequest->items->count(),

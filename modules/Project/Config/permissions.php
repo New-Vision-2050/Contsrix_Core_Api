@@ -10,6 +10,13 @@ return [
         'PROJECT_MANAGEMENT_DELETE' => 'work-panel.project-management*project-management.delete',
         'PROJECT_MANAGEMENT_EXPORT' => 'work-panel.project-management*project-management.export',
 
+        // Project Requirements
+        'PROJECT_REQUIREMENT_LIST' => 'work-panel.project-management*project-requirement.list',
+        'PROJECT_REQUIREMENT_VIEW' => 'work-panel.project-management*project-requirement.view',
+        'PROJECT_REQUIREMENT_CREATE' => 'work-panel.project-management*project-requirement.create',
+        'PROJECT_REQUIREMENT_UPDATE' => 'work-panel.project-management*project-requirement.update',
+        'PROJECT_REQUIREMENT_DELETE' => 'work-panel.project-management*project-requirement.delete',
+
         // Project Type
         'PROJECT_TYPE_LIST' => 'work-panel.project-settings*project-type.list',
         'PROJECT_TYPE_VIEW' => 'work-panel.project-settings*project-type.view',

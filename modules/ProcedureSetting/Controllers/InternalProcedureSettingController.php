@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\PermissionMiddleware;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,9 @@ use Modules\ProcedureSetting\Requests\GetInternalProcedureSettingListRequest;
 use Modules\ProcedureSetting\Requests\SetStatusInternalProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\UpdateInternalProcedureSettingRequest;
 use Modules\ProcedureSetting\Services\InternalProcedureSettingService;
+use Modules\Project\ProjectManagement\Presenters\ProjectProcedurePresenter;
+use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
+use Modules\RoleAndPermission\Enums\Permission;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
@@ -21,6 +25,8 @@ class InternalProcedureSettingController extends Controller
 {
     public function __construct(
         private readonly InternalProcedureSettingService $service,
+        private readonly ProjectProcedureService $projectProcedureService,
+        private readonly PermissionMiddleware $permissionMiddleware,
     ) {}
 
     /**
@@ -29,6 +35,17 @@ class InternalProcedureSettingController extends Controller
      */
     public function index(GetInternalProcedureSettingListRequest $request): JsonResponse
     {
+        if ($request->projectId() !== null) {
+            $this->authorizeProjectProcedure(Permission::PROJECT_MANAGEMENT_VIEW());
+
+            $items = $this->projectProcedureService->list(
+                $request->projectId(),
+                $request->parentProcedureSettingId(),
+            );
+
+            return Json::items(ProjectProcedurePresenter::collection($items));
+        }
+
         $items = $this->service->listAll($request->getType());
 
         return Json::items(InternalProcedureSettingPresenter::collection($items));
@@ -60,7 +77,7 @@ class InternalProcedureSettingController extends Controller
     public function formsConditions(Request $request): JsonResponse
     {
         $formKey = (string) $request->query('type', '');
-        $form    = InternalProcessForm::tryFrom($formKey);
+        $form = InternalProcessForm::tryFrom($formKey);
 
         if ($form === null) {
             return Json::error('Invalid or missing form type. Pass ?type=startTask', 422);
@@ -72,6 +89,18 @@ class InternalProcedureSettingController extends Controller
         );
 
         return Json::items($definitions, message: 'Form conditions retrieved successfully');
+    }
+
+    /**
+     * GET /procedure-settings/job-attributes
+     * Returns active job attributes used by project procedure metadata.
+     */
+    public function jobAttributes(): JsonResponse
+    {
+        return Json::items(
+            $this->projectProcedureService->listJobAttributes(),
+            message: 'Project procedure job attributes retrieved successfully',
+        );
     }
 
     /**
@@ -91,6 +120,19 @@ class InternalProcedureSettingController extends Controller
      */
     public function store(CreateInternalProcedureSettingRequest $request): JsonResponse
     {
+        if ($request->projectId() !== null) {
+            $this->authorizeProjectProcedure(Permission::PROJECT_MANAGEMENT_UPDATE());
+
+            $setting = $this->projectProcedureService->create(
+                $request->projectId(),
+                $request->projectProcedureData(),
+                $request->projectProcedureMetadataData(),
+                $request->parentProcedureSettingId(),
+            );
+
+            return Json::item((new ProjectProcedurePresenter($setting))->getData());
+        }
+
         $data = $request->toData();
         $parent = $this->service->findParentByType(
             $data['type'] ?? '',
@@ -143,5 +185,14 @@ class InternalProcedureSettingController extends Controller
         $this->service->delete($id, $internalProcedureId);
 
         return Json::deleted('Internal procedure setting deleted successfully');
+    }
+
+    private function authorizeProjectProcedure(string $permission): void
+    {
+        $this->permissionMiddleware->handle(
+            request(),
+            static fn ($request) => null,
+            $permission,
+        );
     }
 }

@@ -6,11 +6,15 @@ namespace Modules\ProcedureSetting\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\ProcedureSetting\DTO\CreateProcedureSettingStepDTO;
+use Modules\ProcedureSetting\Requests\Concerns\ValidatesProjectEmployeeSelections;
 use Modules\ProcedureSetting\Rules\ActionTakerUserIdsUniquePerProcedureSetting;
 
 class CreateProcedureSettingStepRequest extends FormRequest
 {
+    use ValidatesProjectEmployeeSelections;
+
     protected function prepareForValidation(): void
     {
         if ($this->has('approval_within_s') && ! $this->has('approval_within_hours')) {
@@ -78,7 +82,7 @@ class CreateProcedureSettingStepRequest extends FormRequest
 
             'step_order' => 'nullable|integer|min:0',
 
-            'action_taker_type' => 'nullable|string|in:specific_user,management_hierarchy,specific_procedures,himself,assigned_user',
+            'action_taker_type' => 'nullable|string|in:specific_user,management_hierarchy,specific_procedures,receiver_company,himself,assigned_user',
 
             // ── Deprecated (legacy) ──────────────────────────────────────────
             // Replaced by action_taker_management_hierarchies array of objects.
@@ -137,6 +141,18 @@ class CreateProcedureSettingStepRequest extends FormRequest
             ],
             'action_taker_specific_procedure_id.*' => 'string',
 
+            'receiver_company_ids' => [
+                'nullable',
+                'array',
+                'min:1',
+                'required_if:action_taker_type,receiver_company',
+                'prohibited_unless:action_taker_type,receiver_company',
+            ],
+            'receiver_company_ids.*' => ['required', 'uuid'],
+
+            'project_employee_ids' => ['nullable', 'array'],
+            'project_employee_ids.*' => ['required', 'uuid'],
+
             'action_taker_user_ids'   => [
                 'nullable',
                 'array',
@@ -147,6 +163,13 @@ class CreateProcedureSettingStepRequest extends FormRequest
             'concerned_management_hierarchy_ids'  => 'nullable|array',
             'concerned_management_hierarchy_ids.*' => 'integer|exists:management_hierarchies,id',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $this->validateProjectEmployeeSelections($validator);
+        });
     }
 
     public function attributes(): array
@@ -189,6 +212,8 @@ class CreateProcedureSettingStepRequest extends FormRequest
             action_taker_specific_procedure_id: isset($v['action_taker_specific_procedure_id']) ? (array) $v['action_taker_specific_procedure_id'] : null,
             action_taker_user_ids: $v['action_taker_user_ids'] ?? null,
             concerned_management_hierarchy_ids: $v['concerned_management_hierarchy_ids'] ?? null,
+            receiver_company_ids: isset($v['receiver_company_ids']) ? (array) $v['receiver_company_ids'] : null,
+            project_employee_ids: isset($v['project_employee_ids']) ? (array) $v['project_employee_ids'] : null,
         );
     }
 }

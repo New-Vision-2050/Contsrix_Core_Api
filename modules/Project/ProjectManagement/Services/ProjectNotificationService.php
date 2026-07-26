@@ -70,6 +70,11 @@ use Modules\User\Models\User;
 
 class ProjectNotificationService
 {
+    /**
+     * Archive folder that groups every emergency work order of a project.
+     */
+    public const MAINTENANCE_EMERGENCY_FOLDER_NAME = 'الصيانه و الطوارئ';
+
     public function __construct(
         private readonly ProjectNotificationRepository $repository,
         private readonly EmployeeTaskRequestService $employeeTaskRequestService,
@@ -3339,7 +3344,7 @@ class ProjectNotificationService
 
     /**
      * Find or create the ArchiveLibrary folder hierarchy for site status update files:
-     *   Project folder → "اوامر عمل الطوارئ" → {notificationNumber} → {updateFolderName}
+     *   Project folder → "الصيانه و الطوارئ" → {notificationNumber} → {updateFolderName}
      *
      * Returns the innermost folder where files should be stored.
      */
@@ -3351,19 +3356,11 @@ class ProjectNotificationService
         $companyId = $notification?->company_id ?? (string) tenant('id');
         $projectId = $notification?->project_id;
 
-        // 1. Find the project folder (created by ProjectManagementObserver).
-        $projectFolder = null;
-        if ($projectId) {
-            $projectFolder = Folder::query()
-                ->withoutTenancy()
-                ->where('project_id', $projectId)
-                ->where('company_id', $companyId)
-                ->first();
-        }
+        $projectFolder = $this->findProjectRootFolder($projectId, $companyId);
 
-        // 2. Find or create "اوامر عمل الطوارئ" inside the project folder.
+        // 2. Find or create "الصيانه و الطوارئ" inside the project folder.
         $emergencyFolder = $this->findOrCreateSubfolder(
-            name: 'اوامر عمل الطوارئ',
+            name: self::MAINTENANCE_EMERGENCY_FOLDER_NAME,
             parentId: $projectFolder?->id,
             companyId: $companyId,
             projectId: $projectId,
@@ -3386,6 +3383,35 @@ class ProjectNotificationService
         );
 
         return $updateFolder;
+    }
+
+    /**
+     * Resolve the root folder of a project (created by ProjectManagementObserver,
+     * which reuses the project id as the folder id).
+     *
+     * Every folder in the emergency hierarchy also carries the same project_id,
+     * so the lookup must be anchored on the folder id / a null parent_id.
+     * Matching on project_id alone would return an arbitrary descendant and
+     * nest a new hierarchy inside the previous one.
+     */
+    private function findProjectRootFolder(?string $projectId, string $companyId): ?Folder
+    {
+        if (! $projectId) {
+            return null;
+        }
+
+        return Folder::query()
+            ->withoutTenancy()
+            ->where('id', $projectId)
+            ->whereNull('parent_id')
+            ->first()
+            ?? Folder::query()
+                ->withoutTenancy()
+                ->where('project_id', $projectId)
+                ->where('company_id', $companyId)
+                ->whereNull('parent_id')
+                ->orderBy('created_at')
+                ->first();
     }
 
     /**
@@ -3424,6 +3450,10 @@ class ProjectNotificationService
         $folder = $query->first();
 
         if ($folder) {
+            if ($folder->type !== Folder::TYPE_SYSTEM) {
+                $folder->forceFill(['type' => Folder::TYPE_SYSTEM])->save();
+            }
+
             return $folder;
         }
 
@@ -3434,6 +3464,7 @@ class ProjectNotificationService
             'company_id' => $companyId,
             'access_type' => 'public',
             'status' => 1,
+            'type' => Folder::TYPE_SYSTEM,
         ]);
     }
 

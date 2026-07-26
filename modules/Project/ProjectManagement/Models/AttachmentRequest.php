@@ -8,12 +8,22 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\Process\Models\Process;
 use Modules\User\Models\User;
 
 class AttachmentRequest extends Model
 {
     use UuidTrait;
+
+    public const PROCESSABLE_TYPE = 'attachment_request';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_SEMI_APPROVED = 'semi-approved';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_DECLINED = 'declined';
 
     protected $table = 'attachment_requests';
 
@@ -26,11 +36,8 @@ class AttachmentRequest extends Model
         'name',
         'date',
         'project_id',
+        'procedure_setting_id',
         'sender_company_id',
-        'receiver_company_id',
-        'attachment_type_id',
-        'attachment_sub_type_id',
-        'attachment_sub_sub_type_id',
         'status',
         'created_by_user_id',
         'responded_by_user_id',
@@ -41,9 +48,7 @@ class AttachmentRequest extends Model
     protected $casts = [
         'date' => 'date',
         'responded_at' => 'datetime',
-        'attachment_type_id' => 'string',
-        'attachment_sub_type_id' => 'string',
-        'attachment_sub_sub_type_id' => 'string',
+        'procedure_setting_id' => 'string',
     ];
 
     /**
@@ -55,19 +60,73 @@ class AttachmentRequest extends Model
     }
 
     /**
+     * Get the project procedure selected for this request
+     */
+    public function procedureSetting(): BelongsTo
+    {
+        return $this->belongsTo(ProcedureSetting::class, 'procedure_setting_id')->withoutGlobalScopes();
+    }
+
+    /**
+     * Get the project-specific metadata for the selected procedure.
+     */
+    public function projectProcedureSetting(): HasOne
+    {
+        return $this->hasOne(ProjectProcedureSetting::class, 'procedure_setting_id', 'procedure_setting_id')
+            ->withoutGlobalScopes();
+    }
+
+    public function getAttachmentTypeIdAttribute(): ?string
+    {
+        return $this->attachmentTypeId();
+    }
+
+    public function getAttachmentSubTypeIdAttribute(): ?string
+    {
+        return $this->attachmentSubTypeId();
+    }
+
+    public function getAttachmentSubSubTypeIdAttribute(): ?string
+    {
+        return $this->attachmentSubSubTypeId();
+    }
+
+    public function getAttachmentTypeAttribute(): ?Folder
+    {
+        return $this->projectProcedureSetting?->attachmentType;
+    }
+
+    public function getAttachmentSubTypeAttribute(): ?Folder
+    {
+        return $this->projectProcedureSetting?->attachmentSubType;
+    }
+
+    public function getAttachmentSubSubTypeAttribute(): ?Folder
+    {
+        return $this->projectProcedureSetting?->attachmentSubSubType;
+    }
+
+    public function attachmentTypeId(): ?string
+    {
+        return $this->projectProcedureSetting?->attachment_type_id;
+    }
+
+    public function attachmentSubTypeId(): ?string
+    {
+        return $this->projectProcedureSetting?->attachment_sub_type_id;
+    }
+
+    public function attachmentSubSubTypeId(): ?string
+    {
+        return $this->projectProcedureSetting?->attachment_sub_sub_type_id;
+    }
+
+    /**
      * Get the company that sent the request
      */
     public function senderCompany(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'sender_company_id')->withoutGlobalScopes();
-    }
-
-    /**
-     * Get the company that receives the request
-     */
-    public function receiverCompany(): BelongsTo
-    {
-        return $this->belongsTo(Company::class, 'receiver_company_id')->withoutGlobalScopes();
     }
 
     /**
@@ -103,12 +162,24 @@ class AttachmentRequest extends Model
             ->orderBy('created_at', 'asc');
     }
 
+    public function processes(): HasMany
+    {
+        return $this->hasMany(Process::class, 'processable_id')
+            ->where('processable_type', self::PROCESSABLE_TYPE);
+    }
+
+    public function attachmentRequestProcess(): HasOne
+    {
+        return $this->hasOne(Process::class, 'processable_id')
+            ->where('processable_type', self::PROCESSABLE_TYPE);
+    }
+
     /**
      * Check if request is pending
      */
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === self::STATUS_PENDING;
     }
 
     /**
@@ -116,7 +187,7 @@ class AttachmentRequest extends Model
      */
     public function isApproved(): bool
     {
-        return $this->status === 'approved';
+        return $this->status === self::STATUS_APPROVED;
     }
 
     /**
@@ -124,7 +195,7 @@ class AttachmentRequest extends Model
      */
     public function isDeclined(): bool
     {
-        return $this->status === 'declined';
+        return $this->status === self::STATUS_DECLINED;
     }
 
     /**
@@ -132,7 +203,7 @@ class AttachmentRequest extends Model
      */
     public function isSemiApproved(): bool
     {
-        return $this->status === 'semi-approved';
+        return $this->status === self::STATUS_SEMI_APPROVED;
     }
 
     /**
@@ -151,29 +222,29 @@ class AttachmentRequest extends Model
         $totalCount = $items->count();
 
         if ($approvedCount === $totalCount) {
-            $this->update(['status' => 'approved']);
+            $this->update(['status' => self::STATUS_APPROVED]);
         } elseif ($declinedCount === $totalCount) {
-            $this->update(['status' => 'declined']);
+            $this->update(['status' => self::STATUS_DECLINED]);
         } elseif ($approvedCount > 0 || $declinedCount > 0) {
-            $this->update(['status' => 'semi-approved']);
+            $this->update(['status' => self::STATUS_SEMI_APPROVED]);
         } else {
-            $this->update(['status' => 'pending']);
+            $this->update(['status' => self::STATUS_PENDING]);
         }
     }
 
     /**
      * Approve entire request and all items
      */
-    public function approveAll(string $userId): bool
+    public function approveAll(?string $userId): bool
     {
         $this->items()->update([
-            'status' => 'approved',
+            'status' => self::STATUS_APPROVED,
             'responded_by_user_id' => $userId,
             'responded_at' => now(),
         ]);
 
         return $this->update([
-            'status' => 'approved',
+            'status' => self::STATUS_APPROVED,
             'responded_by_user_id' => $userId,
             'responded_at' => now(),
         ]);
@@ -182,16 +253,16 @@ class AttachmentRequest extends Model
     /**
      * Decline entire request and all items
      */
-    public function declineAll(string $userId): bool
+    public function declineAll(?string $userId): bool
     {
         $this->items()->update([
-            'status' => 'declined',
+            'status' => self::STATUS_DECLINED,
             'responded_by_user_id' => $userId,
             'responded_at' => now(),
         ]);
 
         return $this->update([
-            'status' => 'declined',
+            'status' => self::STATUS_DECLINED,
             'responded_by_user_id' => $userId,
             'responded_at' => now(),
         ]);

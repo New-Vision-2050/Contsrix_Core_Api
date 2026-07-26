@@ -221,6 +221,7 @@ return [
     "phone-exists"=>"رقم الهاتف موجود بالفعل",
     "phone_email_consistency-error"=>"الرقم مسجل لدي مستخدم اخر ",
     "can-not-delete-has-children"=>"لا يمكن مسح اذا متفرع منه او مستخدم في جدوال اخري ",
+    "system-folder-not-editable"=>"هذا المجلد يديره النظام ولا يمكن تعديله أو حذفه",
 
 
 
