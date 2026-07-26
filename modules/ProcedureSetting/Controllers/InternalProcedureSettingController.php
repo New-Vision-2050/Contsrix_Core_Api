@@ -156,6 +156,20 @@ class InternalProcedureSettingController extends Controller
      */
     public function update(UpdateInternalProcedureSettingRequest $request, string $id, string $internalProcedureId): JsonResponse
     {
+        if ($request->projectId() !== null) {
+            $this->authorizeProjectProcedure(Permission::PROJECT_MANAGEMENT_UPDATE());
+
+            $setting = $this->projectProcedureService->update(
+                $request->projectId(),
+                $internalProcedureId,
+                $request->projectProcedureData(),
+                $request->projectProcedureMetadataData(),
+                $request->parentProcedureSettingId(),
+            );
+
+            return Json::item((new ProjectProcedurePresenter($setting))->getData());
+        }
+
         $setting = $this->service->update($id, $internalProcedureId, $request->toData());
 
         return Json::item(
