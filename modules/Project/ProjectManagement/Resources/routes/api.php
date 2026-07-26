@@ -94,6 +94,9 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         // Get pending incoming requests
         Route::get('/incoming/pending', [AttachmentRequestController::class, 'getPendingIncoming']);
 
+        // Get attachment request and requirement submission charts
+        Route::get('/charts', [AttachmentRequestController::class, 'charts']);
+
         // Get specific request details
         Route::get('/{id}', [AttachmentRequestController::class, 'getRequest']);
 

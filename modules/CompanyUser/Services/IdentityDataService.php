@@ -6,6 +6,7 @@ namespace Modules\CompanyUser\Services;
 
 use Ichtrojan\Otp\Otp;
 use Modules\Auth\DTO\ValidateOtpDTO;
+use Modules\ArchiveLibrary\File\Services\EmployeeArchiveFileService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Commands\UpdateIdentityDataCommand;
 use Modules\CompanyUser\Models\CompanyUser;
@@ -18,6 +19,7 @@ class IdentityDataService
 {
     public function __construct(
         private FileUploadService $fileUploadService,
+        private EmployeeArchiveFileService $employeeArchiveFileService,
         private CompanyUserRepository $repository,
 
     )
@@ -28,7 +30,8 @@ class IdentityDataService
     {
         $visibility = 'public';
         $companyUser = $this->repository->getCompanyUserGlobalId($globalId);
-        $path = Company::find(auth()->user()->company_id)->name . '/' . $companyUser->name;
+        $companyId = (string) auth()->user()->company_id;
+        $path = Company::find($companyId)->name . '/' . $companyUser->name;
 
         $uploadedFiles = [];
 
@@ -72,8 +75,19 @@ class IdentityDataService
 
             if ($hasNewFiles) {
                 foreach ($request->file($field) as $file) {
-                    $uploadedFiles[$field][] = $this->fileUploadService->uploadFile(
+                    $media = $this->fileUploadService->uploadFile(
                         $companyUser, $file, $path, $field, $visibility
+                    );
+                    $uploadedFiles[$field][] = $media;
+                    $this->employeeArchiveFileService->archiveUploadedFiles(
+                        companyId: $companyId,
+                        employeeGlobalId: (string) $companyUser->global_id,
+                        employeeName: (string) $companyUser->name,
+                        files: $file,
+                        mainSection: EmployeeArchiveFileService::SECTION_PERSONAL,
+                        subSection: EmployeeArchiveFileService::SUB_RESIDENCE_INFO,
+                        sourceModel: $companyUser,
+                        sourceMedia: $media,
                     );
                 }
             }

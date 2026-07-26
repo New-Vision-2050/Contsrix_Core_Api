@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\UserInfo\EmploymentContract\Services;
 
 use Illuminate\Support\Collection;
+use Modules\ArchiveLibrary\File\Services\EmployeeArchiveFileService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\Shared\Media\Services\FileDeletedService;
@@ -20,7 +21,8 @@ class EmploymentContractCRUDService
         private EmploymentContractRepository $repository,
         private CompanyUserRepository $companyUserRepository,
         private FileUploadService  $fileUploadService,
-        private FileDeletedService $fileDeletedService
+        private FileDeletedService $fileDeletedService,
+        private EmployeeArchiveFileService $employeeArchiveFileService
     ) {
     }
 
@@ -52,12 +54,22 @@ class EmploymentContractCRUDService
             $employmentContract->clearMediaCollection('upload_employment_contracts');
 
 
-            $this->fileUploadService->uploadFile(
+            $media = $this->fileUploadService->uploadFile(
                 $employmentContract,
                 $file,
                 $path,
                 'upload_employment_contracts',
                 $visibility
+            );
+            $this->employeeArchiveFileService->archiveUploadedFiles(
+                companyId: (string) $company_id,
+                employeeGlobalId: (string) $global_id,
+                employeeName: (string) $user->name,
+                files: $file,
+                mainSection: EmployeeArchiveFileService::SECTION_EMPLOYMENT,
+                subSection: EmployeeArchiveFileService::SUB_EMPLOYMENT_CONTRACT,
+                sourceModel: $employmentContract,
+                sourceMedia: $media,
             );
         }
 

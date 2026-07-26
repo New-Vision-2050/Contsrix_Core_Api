@@ -11,10 +11,13 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Modules\Project\ProjectManagement\Services\AttachmentRequestService;
+use Modules\Project\ProjectManagement\Services\AttachmentRequestChartsService;
 use Modules\Project\ProjectManagement\Services\ProjectRequirementSubmissionService;
 use Modules\Project\ProjectManagement\Requests\CreateAttachmentRequestRequest;
+use Modules\Project\ProjectManagement\Requests\FilterAttachmentRequestChartsRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToAttachmentItemRequest;
 use Modules\Project\ProjectManagement\Requests\ReplaceMediaRequest;
+use Modules\Project\ProjectManagement\Presenters\AttachmentRequestChartsPresenter;
 use Modules\Project\ProjectManagement\Presenters\AttachmentRequestPresenter;
 use Modules\Project\ProjectManagement\Presenters\ProjectRequirementSubmissionPresenter;
 use Modules\Project\ProjectManagement\Presenters\RequirementSubmissionInboxPresenter;
@@ -25,6 +28,7 @@ class AttachmentRequestController extends Controller
     public function __construct(
         private AttachmentRequestService $service,
         private ProjectRequirementSubmissionService $submissionService,
+        private AttachmentRequestChartsService $chartsService,
     ) {
     }
 
@@ -44,6 +48,13 @@ class AttachmentRequestController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
+    }
+
+    public function charts(FilterAttachmentRequestChartsRequest $request): JsonResponse
+    {
+        $chartsData = $this->chartsService->getChartsData($request->toDTO());
+
+        return Json::item(AttachmentRequestChartsPresenter::presentCharts($chartsData));
     }
 
     /**

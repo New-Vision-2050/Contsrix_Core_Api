@@ -52,13 +52,16 @@ class FileRepository extends BaseRepository
         try {
             DB::beginTransaction();
 
+            request()->attributes->set('archive_file_upload_size', $file->getSize());
             $fileModel = $this->create($data);
+            request()->attributes->remove('archive_file_upload_size');
             $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
 
             DB::commit();
 
         } catch (\Exception $exception) {
             DB::rollBack();
+            request()->attributes->remove('archive_file_upload_size');
             throw new CustomException($exception->getMessage());
         }
         return $fileModel;
