@@ -17,19 +17,24 @@ use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Models\SafetyRecord;
 use Modules\Project\ProjectType\Models\Violation;
 use Modules\Project\ProjectType\Notifications\SafetyTaskAssigned as SafetyTaskAssignedNotification;
+use Illuminate\Http\UploadedFile;
 use Modules\Project\ProjectType\Repositories\SafetyRecordRepository;
+use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
 use Throwable;
 
 class SafetyService
 {
-    public function __construct(private SafetyRecordRepository $repository) {}
+    public function __construct(
+        private SafetyRecordRepository $repository,
+        private FileUploadService $fileUploadService,
+    ) {}
 
     public function list(string $projectId): EloquentCollection
     {
         $records = SafetyRecord::query()
             ->where('project_id', $projectId)
-            ->with(['violations', 'morphable', 'assignedUser', 'contractor'])
+            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'media'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -40,7 +45,8 @@ class SafetyService
     {
         $records = SafetyRecord::query()
             ->where('assigned_user_id', $userId)
-            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'project'])
+            ->where('status', 'pending')
+            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'project', 'media'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -94,7 +100,7 @@ class SafetyService
     public function show(string $projectId, string $id): SafetyRecord
     {
         $record = $this->findForProject($projectId, $id);
-        $record->load(['violations', 'morphable', 'assignedUser', 'contractor']);
+        $record->load(['violations', 'morphable', 'assignedUser', 'contractor', 'media']);
 
         return $this->attachAllViolationsToRecord($record);
     }
@@ -154,7 +160,7 @@ class SafetyService
                 ]);
 
                 $this->syncViolations($record, Arr::get($data, 'violations', []));
-                $record->load(['violations', 'morphable', 'assignedUser', 'contractor']);
+                $record->load(['violations', 'morphable', 'assignedUser', 'contractor', 'media']);
                 $record->setRelation('all_violations', $this->buildAllViolations($record, $allViolations));
 
                 $user = User::withoutGlobalScopes()->find($userId);
@@ -207,7 +213,10 @@ class SafetyService
         return $this->show($projectId, $record->id);
     }
 
-    public function evaluateViolations(string $projectId, string $id, array $violations, ?string $actorUserId = null): SafetyRecord
+    /**
+     * @param  UploadedFile[]  $images  up to 3 evidence images
+     */
+    public function evaluateViolations(string $projectId, string $id, array $violations, ?string $actorUserId = null, array $images = []): SafetyRecord
     {
         $record = $this->findForProject($projectId, $id);
 
@@ -221,6 +230,16 @@ class SafetyService
         }
 
         $this->syncViolations($record, $violations);
+
+        if ($images !== []) {
+            $this->fileUploadService->uploadFile(
+                $record,
+                $images,
+                filePath: 'safety/violation-evidence',
+                collectionName: 'violation_evidence',
+            );
+        }
+
         $record->update(['status' => 'completed']);
 
         return $this->show($projectId, $record->id);

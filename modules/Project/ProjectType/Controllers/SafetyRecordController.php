@@ -100,7 +100,8 @@ class SafetyRecordController extends Controller
                 $project,
                 $id,
                 $request->input('violations', []),
-                (string) auth()->id()
+                (string) auth()->id(),
+                $request->file('images', [])
             );
 
             return Json::item((new SafetyRecordPresenter($record))->getData());
