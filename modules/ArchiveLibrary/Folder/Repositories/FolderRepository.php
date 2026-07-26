@@ -117,9 +117,13 @@ class FolderRepository extends BaseRepository
 
     public function updateFolder(UuidInterface $id, array $data, array $userIds = [], ?UploadedFile $file = null): bool
     {
-        try {
-            $folder = $this->getFolder($id);
+        $folder = $this->getFolder($id);
 
+        if ($folder->isSystemManaged()) {
+            throw new CustomException(__("validation.system-folder-not-editable"));
+        }
+
+        try {
             // Update folder attributes
             $updated = $this->update($id, $data);
 
@@ -141,6 +145,8 @@ class FolderRepository extends BaseRepository
     public function deleteFolder(UuidInterface $id): bool
     {
         $folder = $this->getFolder($id);
+        if ($folder->isSystemManaged())
+            throw new CustomException(__("validation.system-folder-not-editable"));
         if (count($folder->children) != 0)
             throw new CustomException(__("validation.can-not-delete-has-children"));
         if (count($folder->files) != 0)

@@ -36,6 +36,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
 
         Route::prefix('{project}/safety')->group(function () {
             Route::get('/', [SafetyRecordController::class, 'index']);
+            Route::get('/report', [SafetyRecordController::class, 'report']);
             Route::post('/', [SafetyRecordController::class, 'store']);
             Route::get('/{id}', [SafetyRecordController::class, 'show']);
             Route::put('/{id}', [SafetyRecordController::class, 'update']);
