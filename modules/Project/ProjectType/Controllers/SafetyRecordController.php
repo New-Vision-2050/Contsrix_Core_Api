@@ -125,7 +125,6 @@ class SafetyRecordController extends Controller
     {
         $httpStatus = method_exists($e, 'getStatusCode') ? (int) $e->getStatusCode() : 500;
 
-        // Json::error($description, $code, $name, $data, $httpStatus)
         return Json::error($e->getMessage(), $httpStatus, null, [], $httpStatus);
     }
 }

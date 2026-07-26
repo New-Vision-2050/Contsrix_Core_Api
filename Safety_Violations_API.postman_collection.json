@@ -1,0 +1,885 @@
+{
+  "info": {
+    "_postman_id": "safety-violations-api-collection",
+    "name": "Safety & Violations API",
+    "description": "Complete API collection for the Safety & Violations system (Project / ProjectType module).\n\nBase path: {{base_url}}/api/v1/projects\n\nAuto-Creation:\n- When a ProjectNotification is published (POST /api/v1/projects/notifications or PUT to publish a draft), a pending SafetyRecord is automatically created for each user in assigned_user_ids.\n- When a published notification is updated with new assigned users, SafetyRecords are created for the new users only (idempotent).\n- When a notification task is reassigned (reassignTask), pending SafetyRecords for removed users are deleted and new ones are created for newly assigned users. Completed records are preserved.\n\nManual Workflow:\n1. GET /violations — load the violations catalog\n2. POST /{project_id}/safety — manually create a safety task (one SafetyRecord per assigned user)\n3. GET /safety/inbox — assigned user sees pending tasks\n4. GET /{project_id}/safety/{safety_id} — view task + all_violations\n5. POST /{project_id}/safety/{safety_id}/violations — evaluate violations (marks completed)\n6. PUT /{project_id}/safety/{safety_id} — update metadata (blocked when completed)\n7. DELETE /{project_id}/safety/{safety_id} — delete pending task (blocked when completed)\n\nRequired headers on every request:\n- Accept: application/json\n- Authorization: Bearer {{token}}\n- X-Tenant: {{tenant_id}}",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-bearer-token-here",
+      "type": "string"
+    },
+    {
+      "key": "tenant_id",
+      "value": "your-tenant-company-uuid-here",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "type": "string"
+    },
+    {
+      "key": "safety_id",
+      "value": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "type": "string"
+    },
+    {
+      "key": "user_id_2",
+      "value": "d4e5f6a7-b8c9-0123-def0-234567890123",
+      "type": "string"
+    },
+    {
+      "key": "contractor_id",
+      "value": "e5f6a7b8-c9d0-1234-ef01-345678901234",
+      "type": "string"
+    },
+    {
+      "key": "morphable_id",
+      "value": "f6a7b8c9-d0e1-2345-f012-456789012345",
+      "type": "string",
+      "description": "UUID of ProjectNotification (or set to integer id when morphable_type=project_order_permit)"
+    },
+    {
+      "key": "order_permit_id",
+      "value": "42",
+      "type": "string",
+      "description": "Integer primary key of project_order_permit"
+    },
+    {
+      "key": "violation_id_1",
+      "value": "11111111-1111-1111-1111-111111111111",
+      "type": "string"
+    },
+    {
+      "key": "violation_id_2",
+      "value": "22222222-2222-2222-2222-222222222222",
+      "type": "string"
+    },
+    {
+      "key": "violation_id_3",
+      "value": "33333333-3333-3333-3333-333333333333",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Violations Catalog",
+      "description": "Global violations lookup used when creating/evaluating safety records.",
+      "item": [
+        {
+          "name": "List Violations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Tenant",
+                "value": "{{tenant_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/violations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "projects", "violations"]
+            },
+            "description": "GET /api/v1/projects/violations\n\nReturns the full violations catalog ordered by code.\nUse violation `id` values when creating or evaluating safety records."
+          },
+          "response": [
+            {
+              "name": "Success — Violations List",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/violations",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "violations"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": null,\n  \"payload\": [\n    {\n      \"id\": \"11111111-1111-1111-1111-111111111111\",\n      \"code\": \"1-19-2-1\",\n      \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n      \"category\": \"A\",\n      \"weight\": \"7.00\"\n    },\n    {\n      \"id\": \"22222222-2222-2222-2222-222222222222\",\n      \"code\": \"2-19-2-1\",\n      \"description\": \"مخالفة عدم تأهيل سائق معدات\",\n      \"category\": \"B\",\n      \"weight\": \"2.00\"\n    },\n    {\n      \"id\": \"33333333-3333-3333-3333-333333333333\",\n      \"code\": \"7-19-2-1\",\n      \"description\": \"العمل من دون تصريح عمل\",\n      \"category\": \"A\",\n      \"weight\": \"7.00\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Safety Inbox",
+      "description": "Assigned-user inbox. Returns pending safety tasks for the authenticated user.",
+      "item": [
+        {
+          "name": "Get Safety Inbox",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Tenant",
+                "value": "{{tenant_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/safety/inbox",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "projects", "safety", "inbox"]
+            },
+            "description": "GET /api/v1/projects/safety/inbox\n\nReturns pending safety records assigned to the authenticated user (`status = pending`).\nMust be registered before `/{project}/safety/{id}` to avoid UUID route conflicts."
+          },
+          "response": [
+            {
+              "name": "Success — Pending Inbox",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/safety/inbox",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "safety", "inbox"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": null,\n  \"payload\": [\n    {\n      \"id\": \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n      \"project_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"morphable\": {\n        \"type\": \"project_notification\",\n        \"id\": \"f6a7b8c9-d0e1-2345-f012-456789012345\",\n        \"display\": \"NTF-2026-00058\"\n      },\n      \"order_type\": \"صيانة\",\n      \"date\": \"2026-07-25\",\n      \"time\": \"09:30\",\n      \"required_score\": \"100.00\",\n      \"earned_score\": null,\n      \"percentage\": null,\n      \"consultant_engineer\": \"م. أحمد السعيد\",\n      \"consultant\": \"مكتب الاستشارات الهندسية\",\n      \"contractor_id\": \"e5f6a7b8-c9d0-1234-ef01-345678901234\",\n      \"assigned_user\": {\n        \"id\": \"c3d4e5f6-a7b8-9012-cdef-123456789012\",\n        \"name\": \"خالد العتيبي\"\n      },\n      \"status\": \"pending\",\n      \"all_violations\": [\n        {\n          \"id\": \"11111111-1111-1111-1111-111111111111\",\n          \"code\": \"1-19-2-1\",\n          \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n          \"category\": \"A\",\n          \"is_attached\": true,\n          \"weight\": \"7.00\",\n          \"status\": null\n        },\n        {\n          \"id\": \"22222222-2222-2222-2222-222222222222\",\n          \"code\": \"2-19-2-1\",\n          \"description\": \"مخالفة عدم تأهيل سائق معدات\",\n          \"category\": \"B\",\n          \"is_attached\": false,\n          \"weight\": null,\n          \"status\": null\n        }\n      ]\n    }\n  ]\n}"
+            },
+            {
+              "name": "Success — Empty Inbox",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/safety/inbox",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "safety", "inbox"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": null,\n  \"payload\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Safety Records",
+      "description": "Project-scoped safety record CRUD and violation evaluation.\n\nPath prefix: /api/v1/projects/{{project_id}}/safety",
+      "item": [
+        {
+          "name": "List Safety Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Tenant",
+                "value": "{{tenant_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}", "safety"]
+            },
+            "description": "GET /api/v1/projects/{project}/safety\n\nLists all safety records for the given project (newest first), including `all_violations`."
+          },
+          "response": [
+            {
+              "name": "Success — Safety Records List",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": null,\n  \"payload\": [\n    {\n      \"id\": \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n      \"project_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"morphable\": {\n        \"type\": \"project_notification\",\n        \"id\": \"f6a7b8c9-d0e1-2345-f012-456789012345\",\n        \"display\": \"NTF-2026-00058\"\n      },\n      \"order_type\": \"صيانة\",\n      \"date\": \"2026-07-25\",\n      \"time\": \"09:30\",\n      \"required_score\": \"100.00\",\n      \"earned_score\": null,\n      \"percentage\": null,\n      \"consultant_engineer\": \"م. أحمد السعيد\",\n      \"consultant\": \"مكتب الاستشارات الهندسية\",\n      \"contractor_id\": \"e5f6a7b8-c9d0-1234-ef01-345678901234\",\n      \"assigned_user\": {\n        \"id\": \"c3d4e5f6-a7b8-9012-cdef-123456789012\",\n        \"name\": \"خالد العتيبي\"\n      },\n      \"status\": \"pending\",\n      \"all_violations\": [\n        {\n          \"id\": \"11111111-1111-1111-1111-111111111111\",\n          \"code\": \"1-19-2-1\",\n          \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n          \"category\": \"A\",\n          \"is_attached\": true,\n          \"weight\": \"7.00\",\n          \"status\": null\n        },\n        {\n          \"id\": \"22222222-2222-2222-2222-222222222222\",\n          \"code\": \"2-19-2-1\",\n          \"description\": \"مخالفة عدم تأهيل سائق معدات\",\n          \"category\": \"B\",\n          \"is_attached\": false,\n          \"weight\": null,\n          \"status\": null\n        }\n      ]\n    },\n    {\n      \"id\": \"aa11bb22-cc33-dd44-ee55-ff6677889900\",\n      \"project_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"morphable\": {\n        \"type\": \"project_order_permit\",\n        \"id\": \"42\",\n        \"display\": \"WO-2026-001\"\n      },\n      \"order_type\": \"أعمال حفر\",\n      \"date\": \"2026-07-20\",\n      \"time\": \"14:00\",\n      \"required_score\": \"100.00\",\n      \"earned_score\": \"86.00\",\n      \"percentage\": \"86.00\",\n      \"consultant_engineer\": \"م. سارة المطيري\",\n      \"consultant\": \"مكتب النخبة\",\n      \"contractor_id\": \"e5f6a7b8-c9d0-1234-ef01-345678901234\",\n      \"assigned_user\": {\n        \"id\": \"d4e5f6a7-b8c9-0123-def0-234567890123\",\n        \"name\": \"فهد الشمري\"\n      },\n      \"status\": \"completed\",\n      \"all_violations\": [\n        {\n          \"id\": \"11111111-1111-1111-1111-111111111111\",\n          \"code\": \"1-19-2-1\",\n          \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n          \"category\": \"A\",\n          \"is_attached\": true,\n          \"weight\": \"7.00\",\n          \"status\": \"no_violation\"\n        },\n        {\n          \"id\": \"33333333-3333-3333-3333-333333333333\",\n          \"code\": \"7-19-2-1\",\n          \"description\": \"العمل من دون تصريح عمل\",\n          \"category\": \"A\",\n          \"is_attached\": true,\n          \"weight\": \"7.00\",\n          \"status\": \"violation_found\"\n        }\n      ]\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Safety Record (Project Notification)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const json = pm.response.json();",
+                  "  if (json && json.payload && Array.isArray(json.payload) && json.payload.length > 0) {",
+                  "    pm.collectionVariables.set('safety_id', json.payload[0].id);",
+                  "  }",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Tenant",
+                "value": "{{tenant_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"morphable_type\": \"project_notification\",\n  \"morphable_id\": \"{{morphable_id}}\",\n  \"assigned_user_ids\": [\n    \"{{user_id}}\",\n    \"{{user_id_2}}\"\n  ],\n  \"order_type\": \"صيانة\",\n  \"date\": \"2026-07-25\",\n  \"time\": \"09:30\",\n  \"required_score\": 100,\n  \"consultant_engineer\": \"م. أحمد السعيد\",\n  \"consultant\": \"مكتب الاستشارات الهندسية\",\n  \"contractor_id\": \"{{contractor_id}}\",\n  \"violations\": [\n    {\n      \"violation_id\": \"{{violation_id_1}}\",\n      \"weight\": 7,\n      \"status\": \"not_applicable\"\n    },\n    {\n      \"violation_id\": \"{{violation_id_3}}\",\n      \"weight\": 7,\n      \"status\": \"not_applicable\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}", "safety"]
+            },
+            "description": "POST /api/v1/projects/{project}/safety\n\nCreates one SafetyRecord per user in `assigned_user_ids`.\nEach assigned user must be a project employee.\nSends database notification + realtime private broadcast (`safety.notification.{userId}`).\n\nmorphable_type: project_notification\nmorphable_id: UUID of ProjectNotification belonging to this project"
+          },
+          "response": [
+            {
+              "name": "Success — Created (one record per assignee)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"morphable_type\": \"project_notification\",\n  \"morphable_id\": \"{{morphable_id}}\",\n  \"assigned_user_ids\": [\"{{user_id}}\", \"{{user_id_2}}\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": null,\n  \"payload\": [\n    {\n      \"id\": \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n      \"project_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"morphable\": {\n        \"type\": \"project_notification\",\n        \"id\": \"f6a7b8c9-d0e1-2345-f012-456789012345\",\n        \"display\": \"NTF-2026-00058\"\n      },\n      \"order_type\": \"صيانة\",\n      \"date\": \"2026-07-25\",\n      \"time\": \"09:30\",\n      \"required_score\": \"100.00\",\n      \"earned_score\": null,\n      \"percentage\": null,\n      \"consultant_engineer\": \"م. أحمد السعيد\",\n      \"consultant\": \"مكتب الاستشارات الهندسية\",\n      \"contractor_id\": \"e5f6a7b8-c9d0-1234-ef01-345678901234\",\n      \"assigned_user\": {\n        \"id\": \"c3d4e5f6-a7b8-9012-cdef-123456789012\",\n        \"name\": \"خالد العتيبي\"\n      },\n      \"status\": \"pending\",\n      \"all_violations\": [\n        {\n          \"id\": \"11111111-1111-1111-1111-111111111111\",\n          \"code\": \"1-19-2-1\",\n          \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n          \"category\": \"A\",\n          \"is_attached\": true,\n          \"weight\": \"7.00\",\n          \"status\": \"not_applicable\"\n        },\n        {\n          \"id\": \"22222222-2222-2222-2222-222222222222\",\n          \"code\": \"2-19-2-1\",\n          \"description\": \"مخالفة عدم تأهيل سائق معدات\",\n          \"category\": \"B\",\n          \"is_attached\": false,\n          \"weight\": null,\n          \"status\": null\n        },\n        {\n          \"id\": \"33333333-3333-3333-3333-333333333333\",\n          \"code\": \"7-19-2-1\",\n          \"description\": \"العمل من دون تصريح عمل\",\n          \"category\": \"A\",\n          \"is_attached\": true,\n          \"weight\": \"7.00\",\n          \"status\": \"not_applicable\"\n        }\n      ]\n    },\n    {\n      \"id\": \"cc33dd44-ee55-ff66-aa77-bb8899001122\",\n      \"project_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"morphable\": {\n        \"type\": \"project_notification\",\n        \"id\": \"f6a7b8c9-d0e1-2345-f012-456789012345\",\n        \"display\": \"NTF-2026-00058\"\n      },\n      \"order_type\": \"صيانة\",\n      \"date\": \"2026-07-25\",\n      \"time\": \"09:30\",\n      \"required_score\": \"100.00\",\n      \"earned_score\": null,\n      \"percentage\": null,\n      \"consultant_engineer\": \"م. أحمد السعيد\",\n      \"consultant\": \"مكتب الاستشارات الهندسية\",\n      \"contractor_id\": \"e5f6a7b8-c9d0-1234-ef01-345678901234\",\n      \"assigned_user\": {\n        \"id\": \"d4e5f6a7-b8c9-0123-def0-234567890123\",\n        \"name\": \"فهد الشمري\"\n      },\n      \"status\": \"pending\",\n      \"all_violations\": [\n        {\n          \"id\": \"11111111-1111-1111-1111-111111111111\",\n          \"code\": \"1-19-2-1\",\n          \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n          \"category\": \"A\",\n          \"is_attached\": true,\n          \"weight\": \"7.00\",\n          \"status\": \"not_applicable\"\n        },\n        {\n          \"id\": \"33333333-3333-3333-3333-333333333333\",\n          \"code\": \"7-19-2-1\",\n          \"description\": \"العمل من دون تصريح عمل\",\n          \"category\": \"A\",\n          \"is_attached\": true,\n          \"weight\": \"7.00\",\n          \"status\": \"not_applicable\"\n        }\n      ]\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error — User Not Project Employee",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"morphable_type\": \"project_notification\",\n  \"morphable_id\": \"{{morphable_id}}\",\n  \"assigned_user_ids\": [\"00000000-0000-0000-0000-000000000099\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety"]
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"المستخدم 00000000-0000-0000-0000-000000000099 ليس موظفاً في هذا المشروع.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Safety Record (Order Permit)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Tenant",
+                "value": "{{tenant_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"morphable_type\": \"project_order_permit\",\n  \"morphable_id\": \"{{order_permit_id}}\",\n  \"assigned_user_ids\": [\n    \"{{user_id}}\"\n  ],\n  \"order_type\": \"أعمال حفر\",\n  \"date\": \"2026-07-25\",\n  \"time\": \"11:00\",\n  \"required_score\": 100,\n  \"consultant_engineer\": \"م. سارة المطيري\",\n  \"consultant\": \"مكتب النخبة\",\n  \"contractor_id\": \"{{contractor_id}}\",\n  \"violations\": [\n    {\n      \"violation_id\": \"{{violation_id_1}}\",\n      \"weight\": 7\n    },\n    {\n      \"violation_id\": \"{{violation_id_2}}\",\n      \"weight\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}", "safety"]
+            },
+            "description": "POST /api/v1/projects/{project}/safety\n\nSame endpoint, linked to a ProjectOrderPermit.\n\nmorphable_type: project_order_permit\nmorphable_id: integer id (not UUID) of project_order_permit belonging to this project"
+          },
+          "response": [
+            {
+              "name": "Success — Created for Order Permit",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"morphable_type\": \"project_order_permit\",\n  \"morphable_id\": \"{{order_permit_id}}\",\n  \"assigned_user_ids\": [\"{{user_id}}\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": null,\n  \"payload\": [\n    {\n      \"id\": \"dd44ee55-ff66-aa77-bb88-cc9900112233\",\n      \"project_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"morphable\": {\n        \"type\": \"project_order_permit\",\n        \"id\": \"42\",\n        \"display\": \"WO-2026-001\"\n      },\n      \"order_type\": \"أعمال حفر\",\n      \"date\": \"2026-07-25\",\n      \"time\": \"11:00\",\n      \"required_score\": \"100.00\",\n      \"earned_score\": null,\n      \"percentage\": null,\n      \"consultant_engineer\": \"م. سارة المطيري\",\n      \"consultant\": \"مكتب النخبة\",\n      \"contractor_id\": \"e5f6a7b8-c9d0-1234-ef01-345678901234\",\n      \"assigned_user\": {\n        \"id\": \"c3d4e5f6-a7b8-9012-cdef-123456789012\",\n        \"name\": \"خالد العتيبي\"\n      },\n      \"status\": \"pending\",\n      \"all_violations\": [\n        {\n          \"id\": \"11111111-1111-1111-1111-111111111111\",\n          \"code\": \"1-19-2-1\",\n          \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n          \"category\": \"A\",\n          \"is_attached\": true,\n          \"weight\": \"7.00\",\n          \"status\": null\n        },\n        {\n          \"id\": \"22222222-2222-2222-2222-222222222222\",\n          \"code\": \"2-19-2-1\",\n          \"description\": \"مخالفة عدم تأهيل سائق معدات\",\n          \"category\": \"B\",\n          \"is_attached\": true,\n          \"weight\": \"2.00\",\n          \"status\": null\n        }\n      ]\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Show Safety Record",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Tenant",
+                "value": "{{tenant_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}"]
+            },
+            "description": "GET /api/v1/projects/{project}/safety/{id}\n\nReturns a single safety record scoped to the project, including `all_violations`."
+          },
+          "response": [
+            {
+              "name": "Success — Safety Record Detail",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": null,\n  \"payload\": {\n    \"id\": \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n    \"project_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"morphable\": {\n      \"type\": \"project_notification\",\n      \"id\": \"f6a7b8c9-d0e1-2345-f012-456789012345\",\n      \"display\": \"NTF-2026-00058\"\n    },\n    \"order_type\": \"صيانة\",\n    \"date\": \"2026-07-25\",\n    \"time\": \"09:30\",\n    \"required_score\": \"100.00\",\n    \"earned_score\": null,\n    \"percentage\": null,\n    \"consultant_engineer\": \"م. أحمد السعيد\",\n    \"consultant\": \"مكتب الاستشارات الهندسية\",\n    \"contractor_id\": \"e5f6a7b8-c9d0-1234-ef01-345678901234\",\n    \"assigned_user\": {\n      \"id\": \"c3d4e5f6-a7b8-9012-cdef-123456789012\",\n      \"name\": \"خالد العتيبي\"\n    },\n    \"status\": \"pending\",\n    \"all_violations\": [\n      {\n        \"id\": \"11111111-1111-1111-1111-111111111111\",\n        \"code\": \"1-19-2-1\",\n        \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n        \"category\": \"A\",\n        \"is_attached\": true,\n        \"weight\": \"7.00\",\n        \"status\": \"not_applicable\"\n      },\n      {\n        \"id\": \"22222222-2222-2222-2222-222222222222\",\n        \"code\": \"2-19-2-1\",\n        \"description\": \"مخالفة عدم تأهيل سائق معدات\",\n        \"category\": \"B\",\n        \"is_attached\": false,\n        \"weight\": null,\n        \"status\": null\n      },\n      {\n        \"id\": \"33333333-3333-3333-3333-333333333333\",\n        \"code\": \"7-19-2-1\",\n        \"description\": \"العمل من دون تصريح عمل\",\n        \"category\": \"A\",\n        \"is_attached\": true,\n        \"weight\": \"7.00\",\n        \"status\": \"not_applicable\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Error — Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/00000000-0000-0000-0000-000000000000",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety", "00000000-0000-0000-0000-000000000000"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"مهمة السلامة غير موجودة.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Safety Record",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Tenant",
+                "value": "{{tenant_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_type\": \"صيانة عاجلة\",\n  \"date\": \"2026-07-26\",\n  \"time\": \"10:15\",\n  \"required_score\": 100,\n  \"earned_score\": 90,\n  \"percentage\": 90,\n  \"consultant_engineer\": \"م. أحمد السعيد\",\n  \"consultant\": \"مكتب الاستشارات الهندسية\",\n  \"contractor_id\": \"{{contractor_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}"]
+            },
+            "description": "PUT /api/v1/projects/{project}/safety/{id}\n\nUpdates metadata fields only.\nBlocked when status is `completed`."
+          },
+          "response": [
+            {
+              "name": "Success — Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"order_type\": \"صيانة عاجلة\",\n  \"date\": \"2026-07-26\",\n  \"time\": \"10:15\",\n  \"required_score\": 100,\n  \"earned_score\": 90,\n  \"percentage\": 90\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": null,\n  \"payload\": {\n    \"id\": \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n    \"project_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"morphable\": {\n      \"type\": \"project_notification\",\n      \"id\": \"f6a7b8c9-d0e1-2345-f012-456789012345\",\n      \"display\": \"NTF-2026-00058\"\n    },\n    \"order_type\": \"صيانة عاجلة\",\n    \"date\": \"2026-07-26\",\n    \"time\": \"10:15\",\n    \"required_score\": \"100.00\",\n    \"earned_score\": \"90.00\",\n    \"percentage\": \"90.00\",\n    \"consultant_engineer\": \"م. أحمد السعيد\",\n    \"consultant\": \"مكتب الاستشارات الهندسية\",\n    \"contractor_id\": \"e5f6a7b8-c9d0-1234-ef01-345678901234\",\n    \"assigned_user\": {\n      \"id\": \"c3d4e5f6-a7b8-9012-cdef-123456789012\",\n      \"name\": \"خالد العتيبي\"\n    },\n    \"status\": \"pending\",\n    \"all_violations\": [\n      {\n        \"id\": \"11111111-1111-1111-1111-111111111111\",\n        \"code\": \"1-19-2-1\",\n        \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n        \"category\": \"A\",\n        \"is_attached\": true,\n        \"weight\": \"7.00\",\n        \"status\": \"not_applicable\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Error — Cannot Modify Completed",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"order_type\": \"صيانة عاجلة\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}"]
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"لا يمكن تعديل مهمة مكتملة.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Evaluate Violations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Tenant",
+                "value": "{{tenant_id}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "violations[0][violation_id]", "value": "{{violation_id_1}}", "type": "text" },
+                { "key": "violations[0][weight]", "value": "7", "type": "text" },
+                { "key": "violations[0][status]", "value": "no_violation", "type": "text" },
+                { "key": "violations[1][violation_id]", "value": "{{violation_id_2}}", "type": "text" },
+                { "key": "violations[1][weight]", "value": "2", "type": "text" },
+                { "key": "violations[1][status]", "value": "violation_found", "type": "text" },
+                { "key": "violations[2][violation_id]", "value": "{{violation_id_3}}", "type": "text" },
+                { "key": "violations[2][weight]", "value": "7", "type": "text" },
+                { "key": "violations[2][status]", "value": "not_applicable", "type": "text" },
+                { "key": "images[]", "type": "file", "src": [], "description": "Optional evidence image 1 (jpg, jpeg, png, webp — max 5MB)" },
+                { "key": "images[]", "type": "file", "src": [], "description": "Optional evidence image 2" },
+                { "key": "images[]", "type": "file", "src": [], "description": "Optional evidence image 3" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}/violations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}", "violations"]
+            },
+            "description": "POST /api/v1/projects/{project}/safety/{id}/violations\n\nAssigned user evaluates violations.\nSyncs pivot (`weight`, `status`) and sets record status to `completed`.\n\nSend as multipart/form-data. Optionally attach up to 3 evidence images via `images[]` (jpg, jpeg, png, webp — max 5MB each). Uploaded images are stored in the `violation_evidence` media collection and returned in the `evidence` array of the response.\n\nAllowed status values:\n- violation_found\n- no_violation\n- not_applicable\n\nOnly the assigned user may call this endpoint."
+          },
+          "response": [
+            {
+              "name": "Success — Evaluated & Completed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"violations\": [\n    {\n      \"violation_id\": \"{{violation_id_1}}\",\n      \"weight\": 7,\n      \"status\": \"no_violation\"\n    },\n    {\n      \"violation_id\": \"{{violation_id_2}}\",\n      \"weight\": 2,\n      \"status\": \"violation_found\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}/violations",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}", "violations"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": null,\n  \"payload\": {\n    \"id\": \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\n    \"project_id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"morphable\": {\n      \"type\": \"project_notification\",\n      \"id\": \"f6a7b8c9-d0e1-2345-f012-456789012345\",\n      \"display\": \"NTF-2026-00058\"\n    },\n    \"order_type\": \"صيانة\",\n    \"date\": \"2026-07-25\",\n    \"time\": \"09:30\",\n    \"required_score\": \"100.00\",\n    \"earned_score\": null,\n    \"percentage\": null,\n    \"consultant_engineer\": \"م. أحمد السعيد\",\n    \"consultant\": \"مكتب الاستشارات الهندسية\",\n    \"contractor_id\": \"e5f6a7b8-c9d0-1234-ef01-345678901234\",\n    \"assigned_user\": {\n      \"id\": \"c3d4e5f6-a7b8-9012-cdef-123456789012\",\n      \"name\": \"خالد العتيبي\"\n    },\n    \"status\": \"completed\",\n    \"evidence\": [\n      {\n        \"id\": 501,\n        \"name\": \"site_photo_1\",\n        \"file_name\": \"site_photo_1_6884f1a2b3c4d.jpg\",\n        \"mime_type\": \"image/jpeg\",\n        \"size\": 245812,\n        \"url\": \"https://cdn.example.com/media/501/site_photo_1_6884f1a2b3c4d.jpg\"\n      }\n    ],\n    \"all_violations\": [\n      {\n        \"id\": \"11111111-1111-1111-1111-111111111111\",\n        \"code\": \"1-19-2-1\",\n        \"description\": \"عدم حمل بطاقة التعميد والتأهيل في موقع العمل\",\n        \"category\": \"A\",\n        \"is_attached\": true,\n        \"weight\": \"7.00\",\n        \"status\": \"no_violation\"\n      },\n      {\n        \"id\": \"22222222-2222-2222-2222-222222222222\",\n        \"code\": \"2-19-2-1\",\n        \"description\": \"مخالفة عدم تأهيل سائق معدات\",\n        \"category\": \"B\",\n        \"is_attached\": true,\n        \"weight\": \"2.00\",\n        \"status\": \"violation_found\"\n      },\n      {\n        \"id\": \"33333333-3333-3333-3333-333333333333\",\n        \"code\": \"7-19-2-1\",\n        \"description\": \"العمل من دون تصريح عمل\",\n        \"category\": \"A\",\n        \"is_attached\": true,\n        \"weight\": \"7.00\",\n        \"status\": \"not_applicable\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Error — Not Authorized To Evaluate",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"violations\": [\n    {\n      \"violation_id\": \"{{violation_id_1}}\",\n      \"weight\": 7,\n      \"status\": \"no_violation\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}/violations",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}", "violations"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"غير مصرح لك بتقييم هذه المهمة.\"\n}"
+            },
+            {
+              "name": "Error — Already Completed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"violations\": [\n    {\n      \"violation_id\": \"{{violation_id_1}}\",\n      \"weight\": 7,\n      \"status\": \"no_violation\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}/violations",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}", "violations"]
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"لا يمكن تقييم مهمة مكتملة.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Safety Record",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Tenant",
+                "value": "{{tenant_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}"]
+            },
+            "description": "DELETE /api/v1/projects/{project}/safety/{id}\n\nDeletes a pending safety record scoped to the project.\nBlocked when status is `completed`."
+          },
+          "response": [
+            {
+              "name": "Success — Deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_DELETED\",\n  \"message\": \"Deleted successfully\"\n}"
+            },
+            {
+              "name": "Error — Cannot Delete Completed",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Accept", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" },
+                  { "key": "X-Tenant", "value": "{{tenant_id}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/projects/{{project_id}}/safety/{{safety_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "projects", "{{project_id}}", "safety", "{{safety_id}}"]
+                }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"لا يمكن حذف مهمة مكتملة.\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

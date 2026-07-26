@@ -38,6 +38,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
 
         Route::prefix('{project}/safety')->group(function () {
             Route::get('/', [SafetyRecordController::class, 'index']);
+            Route::get('/report', [SafetyRecordController::class, 'report']);
             Route::post('/', [SafetyRecordController::class, 'store']);
 
             Route::prefix('analytics')->group(function () {
@@ -103,6 +104,9 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
 
         // Get pending incoming requests
         Route::get('/incoming/pending', [AttachmentRequestController::class, 'getPendingIncoming']);
+
+        // Get attachment request and requirement submission charts
+        Route::get('/charts', [AttachmentRequestController::class, 'charts']);
 
         // Get specific request details
         Route::get('/{id}', [AttachmentRequestController::class, 'getRequest']);
