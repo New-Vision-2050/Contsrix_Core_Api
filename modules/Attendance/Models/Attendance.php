@@ -76,6 +76,7 @@ class Attendance extends Model implements Auditable
         'total_break_hours',
         'overtime_hours',
         'max_over_time',
+        'max_working_hours',
         'is_late',
         'is_absent',
         'is_holiday',
@@ -115,6 +116,7 @@ class Attendance extends Model implements Auditable
         'total_break_hours' => 'decimal:2',
         'overtime_hours' => 'decimal:2',
         'max_over_time' => 'decimal:1',
+        'max_working_hours' => 'decimal:2',
         'late_minutes' => 'integer',
         'early_departure_minutes' => 'integer',
         'is_late' => 'boolean',
@@ -517,6 +519,48 @@ class Attendance extends Model implements Auditable
         $minutes = $totalMinutes % 60;
 
         return "{$hours}h {$minutes}m";
+    }
+
+    /**
+     * NET minutes already worked in the SAME scheduled period (same user + same
+     * start_time/end_time) by OTHER completed attendance rows. Used to know how much of the
+     * regular max_working_hours quota was already consumed by earlier rows / re-clock-ins.
+     */
+    public function priorPeriodNetMinutes(): int
+    {
+        if (!$this->start_time || !$this->end_time) {
+            return 0;
+        }
+
+        $hours = (float) self::query()
+            ->where('user_id', $this->user_id)
+            ->where('start_time', $this->start_time)
+            ->where('end_time', $this->end_time)
+            ->where('id', '!=', $this->id)
+            ->whereNotNull('clock_out_time')
+            ->sum('total_work_hours');
+
+        return (int) round($hours * 60);
+    }
+
+    /**
+     * Overtime minutes already recorded in the SAME scheduled period by OTHER completed rows.
+     */
+    public function priorPeriodOvertimeMinutes(): int
+    {
+        if (!$this->start_time || !$this->end_time) {
+            return 0;
+        }
+
+        $hours = (float) self::query()
+            ->where('user_id', $this->user_id)
+            ->where('start_time', $this->start_time)
+            ->where('end_time', $this->end_time)
+            ->where('id', '!=', $this->id)
+            ->whereNotNull('clock_out_time')
+            ->sum('overtime_hours');
+
+        return (int) round($hours * 60);
     }
 
     public function appliedAttendanceConstraint()

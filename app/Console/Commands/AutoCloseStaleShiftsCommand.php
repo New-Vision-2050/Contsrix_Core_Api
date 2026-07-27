@@ -16,9 +16,12 @@ class AutoCloseStaleShiftsCommand extends Command
     protected $signature = 'attendance:auto-close-stale-shifts
                             {--dry-run : Show which shifts would be closed without writing to DB}';
 
-    protected $description = 'Auto clock-out shifts whose deadline (end_time + max_over_time) has passed. '
-        . 'Runs every 5 minutes. clock_out_time is set to the exact deadline, not now(), so overtime '
-        . 'is capped deterministically regardless of cron jitter.';
+    protected $description = 'Auto clock-out shifts that have reached their close moment. '
+        . 'Runs every 5 minutes. Closes a shift once the user has worked max_working_hours of '
+        . 'NET time (regular), or once overtime reaches max_over_time / the shift window ends '
+        . '(overtime re-clock-in sessions). clock_out_time is set to the exact deterministic '
+        . 'moment, not now(), so hours are capped regardless of cron jitter. Falls back to '
+        . 'end_time + max_over_time for constraints without max_working_hours.';
 
     public function handle(AutoCloseAttendanceService $autoCloseService): int
     {
@@ -31,11 +34,11 @@ class AutoCloseStaleShiftsCommand extends Command
         $activeAttendances = Attendance::query()
             ->whereNotNull('clock_in_time')
             ->whereNull('clock_out_time')
-            ->whereNotNull('end_time')
+            ->where('status', Attendance::STATUS_ACTIVE)
             ->with('user')
             ->get();
 
-        $this->line("Found {$activeAttendances->count()} active shifts with an end_time.");
+        $this->line("Found {$activeAttendances->count()} active shifts.");
 
         $closed  = 0;
         $skipped = 0;
@@ -50,40 +53,34 @@ class AutoCloseStaleShiftsCommand extends Command
             }
 
             $timezone = $attendance->timezone ?? config('app.timezone');
+            $now      = CarbonImmutable::now($timezone);
 
-            $endTimeRaw = $attendance->end_time instanceof \DateTimeInterface
-                ? $attendance->end_time->format('Y-m-d H:i:s')
-                : (string) $attendance->end_time;
-
-            // end_time is stored in branch TZ; max_over_time is HOURS (decimal).
-            $endTime         = Carbon::parse($endTimeRaw, $timezone);
-            $maxOverTimeHours = (float) ($attendance->max_over_time ?? 0);
-            $triggerAt        = $endTime->copy()->addMinutes((int) round($maxOverTimeHours * 60));
-            $now              = Carbon::now($timezone);
-
-            if (! $now->gte($triggerAt)) {
+            $decision = $autoCloseService->resolveAutoCloseMoment($attendance, $now);
+            if ($decision === null) {
                 continue;
             }
 
+            [$closeAt, $reason] = $decision;
+
             if ($isDryRun) {
                 $this->line("  WOULD CLOSE attendance {$attendance->id} (user: {$user->name})"
-                    . " — deadline: {$triggerAt->toDateTimeString()} TZ={$timezone}");
+                    . " — closeAt: {$closeAt->toDateTimeString()} reason: {$reason} TZ={$timezone}");
                 $closed++;
                 continue;
             }
 
-            $closeAt   = CarbonImmutable::parse($endTime->toDateTimeString(), $timezone);
-            $didClose  = $autoCloseService->closeIfExpired($attendance, $closeAt, 'auto_max_ot');
+            $didClose = $autoCloseService->closeIfExpired($attendance, $closeAt, $reason);
 
             if ($didClose) {
                 $closed++;
                 Log::info('Auto close stale shift', [
                     'attendance_id'  => $attendance->id,
                     'user_id'        => $user->id,
-                    'clock_out_time' => $endTime->format('Y-m-d H:i:s'),
+                    'clock_out_time' => $closeAt->format('Y-m-d H:i:s'),
+                    'reason'         => $reason,
                     'timezone'       => $timezone,
                 ]);
-                $this->line("  closed attendance {$attendance->id} (user: {$user->name})");
+                $this->line("  closed attendance {$attendance->id} (user: {$user->name}) — {$reason}");
             } else {
                 $skipped++;
                 $this->line("  skip attendance {$attendance->id} — already closed by another process");
