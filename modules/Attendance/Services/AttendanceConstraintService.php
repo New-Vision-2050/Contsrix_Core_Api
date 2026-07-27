@@ -574,7 +574,6 @@ class AttendanceConstraintService
                 'early_clock_in_rules' => null,
                 'location_work' => null,
                 'max_over_time' => null,
-                'max_working_hours' => null,
                 'source_constraint_ids' => ['time' => null, 'location' => null],
             ];
         }
@@ -635,7 +634,6 @@ class AttendanceConstraintService
             'location_work'           => $locationRulesResult,
             'additional_locations'    => $additionalLocations,
             'max_over_time'           => $timeConstraint?->max_over_time,
-            'max_working_hours'       => $timeConstraint?->max_working_hours,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
                 'location' => $locationConstraint?->id,
