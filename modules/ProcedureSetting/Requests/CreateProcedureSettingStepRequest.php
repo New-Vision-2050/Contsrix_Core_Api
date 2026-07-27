@@ -76,7 +76,7 @@ class CreateProcedureSettingStepRequest extends FormRequest
             'notify_by_sms'      => 'nullable|boolean',
             'notify_by_push'     => 'nullable|boolean',
             'notify_by_voice'    => 'nullable|boolean',
-            'skipping_period'    => 'nullable|integer|min:0',
+            'skipping_period'    => 'nullable|numeric|min:0',
 
             'escalation_management_hierarchy_id' => 'nullable|integer|exists:management_hierarchies,id',
 
@@ -201,7 +201,7 @@ class CreateProcedureSettingStepRequest extends FormRequest
             notify_by_sms:        (bool) ($v['notify_by_sms'] ?? false),
             notify_by_push:       (bool) ($v['notify_by_push'] ?? false),
             notify_by_voice:      (bool) ($v['notify_by_voice'] ?? false),
-            skipping_period:      isset($v['skipping_period']) ? (int) $v['skipping_period'] : null,
+            skipping_period:      isset($v['skipping_period']) ? (float) $v['skipping_period'] : null,
             escalation_management_hierarchy_id: isset($v['escalation_management_hierarchy_id']) ? (int) $v['escalation_management_hierarchy_id'] : null,
             step_order:            isset($v['step_order']) ? (int) $v['step_order'] : null,
             action_taker_type:     $v['action_taker_type'] ?? null,

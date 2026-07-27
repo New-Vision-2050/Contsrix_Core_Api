@@ -70,7 +70,7 @@ class ProcedureSettingStep extends Model
         'requires_approval_within_period' => 'boolean',
         'approval_within_days'            => 'integer',
         'approval_within_hours'           => 'integer',
-        'skipping_period'                 => 'integer',
+        'skipping_period'                 => 'float',
         'notify_by_email'                 => 'boolean',
         'notify_by_whatsapp'              => 'boolean',
         'notify_by_sms'                   => 'boolean',

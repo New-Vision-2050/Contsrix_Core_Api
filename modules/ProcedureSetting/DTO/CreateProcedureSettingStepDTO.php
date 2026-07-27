@@ -29,7 +29,7 @@ class CreateProcedureSettingStepDTO
         public readonly bool $requires_approval_within_period = false,
         public readonly ?int $approval_within_days = null,
         public readonly ?int $approval_within_hours = null,
-        public readonly ?int $skipping_period = null,
+        public readonly ?float $skipping_period = null,
         public readonly bool $notify_by_email = false,
         public readonly bool $notify_by_whatsapp = false,
         public readonly bool $notify_by_sms = false,
