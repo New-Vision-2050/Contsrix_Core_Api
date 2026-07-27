@@ -212,7 +212,7 @@ class AttachmentRequest extends Model
     public function updateStatusBasedOnItems(): void
     {
         $items = $this->items;
-        
+
         if ($items->isEmpty()) {
             return;
         }
@@ -248,6 +248,18 @@ class AttachmentRequest extends Model
             'responded_by_user_id' => $userId,
             'responded_at' => now(),
         ]);
+    }
+
+    /**
+     * Called by ProcessWorkflowService when the last process step for this
+     * request completes (whether via manual approve or the skipping_period
+     * auto-approve job). Finalizes the request the same way a manual final
+     * approval does, since there is no further step left to act on.
+     */
+    public function onAllProcessesCompleted(Process $process): void
+    {
+        app(\Modules\Project\ProjectManagement\Services\AttachmentRequestService::class)
+            ->completeWorkflowApproval($this, null);
     }
 
     /**
