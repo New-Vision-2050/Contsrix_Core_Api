@@ -51,14 +51,17 @@ class AutoCloseStaleShiftsCommand extends Command
 
             $timezone = $attendance->timezone ?? config('app.timezone');
 
-            $endTimeRaw = $attendance->end_time instanceof \DateTimeInterface
-                ? $attendance->end_time->format('Y-m-d H:i:s')
-                : (string) $attendance->end_time;
+            // Rules V2: close at expected_clock_out_time (when the required hours complete).
+            // Rows predating V2 fall back to the scheduled end_time.
+            $closeAtRaw = $attendance->expected_clock_out_time ?? $attendance->end_time;
+            $closeAtRaw = $closeAtRaw instanceof \DateTimeInterface
+                ? $closeAtRaw->format('Y-m-d H:i:s')
+                : (string) $closeAtRaw;
 
-            // end_time is stored in branch TZ; max_over_time is HOURS (decimal).
-            $endTime         = Carbon::parse($endTimeRaw, $timezone);
+            // Stored as branch-TZ wall clock; max_over_time is HOURS (decimal).
+            $closeAtCarbon    = Carbon::parse($closeAtRaw, $timezone);
             $maxOverTimeHours = (float) ($attendance->max_over_time ?? 0);
-            $triggerAt        = $endTime->copy()->addMinutes((int) round($maxOverTimeHours * 60));
+            $triggerAt        = $closeAtCarbon->copy()->addMinutes((int) round($maxOverTimeHours * 60));
             $now              = Carbon::now($timezone);
 
             if (! $now->gte($triggerAt)) {
@@ -72,7 +75,7 @@ class AutoCloseStaleShiftsCommand extends Command
                 continue;
             }
 
-            $closeAt   = CarbonImmutable::parse($endTime->toDateTimeString(), $timezone);
+            $closeAt   = CarbonImmutable::parse($closeAtCarbon->toDateTimeString(), $timezone);
             $didClose  = $autoCloseService->closeIfExpired($attendance, $closeAt, 'auto_max_ot');
 
             if ($didClose) {
@@ -80,7 +83,7 @@ class AutoCloseStaleShiftsCommand extends Command
                 Log::info('Auto close stale shift', [
                     'attendance_id'  => $attendance->id,
                     'user_id'        => $user->id,
-                    'clock_out_time' => $endTime->format('Y-m-d H:i:s'),
+                    'clock_out_time' => $closeAtCarbon->format('Y-m-d H:i:s'),
                     'timezone'       => $timezone,
                 ]);
                 $this->line("  closed attendance {$attendance->id} (user: {$user->name})");

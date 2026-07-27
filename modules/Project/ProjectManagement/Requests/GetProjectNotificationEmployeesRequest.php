@@ -20,6 +20,9 @@ class GetProjectNotificationEmployeesRequest extends FormRequest
             'latitude'   => ['required', 'numeric', 'between:-90,90'],
             'longitude'  => ['required', 'numeric', 'between:-180,180'],
             'radius'     => ['nullable', 'integer', 'min:1'],
+            'include_unavailable' => ['nullable', 'boolean'],
+            'statuses'   => ['nullable', 'array'],
+            'statuses.*' => ['string', 'in:available,busy,offline,no_location,out,absent,not_connected,available_far'],
         ];
     }
 }
