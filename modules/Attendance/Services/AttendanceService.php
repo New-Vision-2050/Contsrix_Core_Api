@@ -93,30 +93,17 @@ class AttendanceService
     }
 
     /**
-     * Dispatch AutoCloseAttendanceJob at the earliest possible auto-close moment.
-     *
-     * When the constraint has max_working_hours, that moment is clock_in + max_working_hours
-     * (the point at which the user would reach the required NET regular hours if they take no
-     * breaks). Breaks taken later push the real moment forward, so the job re-resolves the exact
-     * moment at run time via AutoCloseAttendanceService::autoCloseIfDue and the every-5-minute
-     * command is the safety net.
-     *
-     * Falls back to end_time + max_over_time for constraints without max_working_hours.
+     * Dispatch AutoCloseAttendanceJob at end_time + max_over_time_hours * 60 min (the deadline).
+     * The recorded clock_out_time is the shift's scheduled end_time (NOT the deadline) so an
+     * employee who never clocks out is capped at scheduled hours with zero overtime — the same
+     * behaviour as the AutoCloseStaleShiftsCommand fallback.
      */
     private function scheduleAutoCloseAtMaxOvertime(
         Attendance $attendance,
         Carbon $endDateTime,
         float $maxOverTimeHours,
     ): void {
-        $timezone = $attendance->timezone ?: config('app.timezone');
-        $maxWorkingHours = (float) ($attendance->max_working_hours ?? 0.0);
-
-        if ($maxWorkingHours > 0 && $attendance->clock_in_time) {
-            $clockIn = Carbon::parse($attendance->clock_in_time, $timezone);
-            $deadline = $clockIn->copy()->addMinutes((int) round($maxWorkingHours * 60));
-        } else {
-            $deadline = $endDateTime->copy()->addMinutes((int) round($maxOverTimeHours * 60));
-        }
+        $deadline = $endDateTime->copy()->addMinutes((int) round($maxOverTimeHours * 60));
 
         if (!$deadline->isFuture()) {
             return;
@@ -125,7 +112,7 @@ class AttendanceService
         AutoCloseAttendanceJob::dispatch(
             (string) $attendance->id,
             (string) $attendance->company_id,
-            $deadline->toIso8601String(),
+            $endDateTime->toIso8601String(),
         )->delay($deadline);
     }
 
@@ -208,7 +195,6 @@ class AttendanceService
             'day_status' => 'in_location',
             'timezone' => $timezone,
             'max_over_time' => $constraints['max_over_time'] ?? null,
-            'max_working_hours' => $constraints['max_working_hours'] ?? null,
             'business_date' => $startDateTime->toDateString(),
         ];
     }
@@ -381,16 +367,14 @@ class AttendanceService
         };
 
         return new CalculatorInput(
-            scheduledStart:      $scheduledStart,
-            scheduledEnd:        $scheduledEnd,
-            clockIn:             $clockIn,
-            clockOut:            $clockOut,
-            totalBreakMinutes:   $totalBreakMinutes,
-            gracePeriodMinutes:  max(0, $graceMinutes),
-            maxOverTimeHours:    (float) ($attendance->max_over_time ?? 0.0),
-            timezone:            $timezone,
-            maxWorkingHours:     (float) ($attendance->max_working_hours ?? 0.0),
-            priorPeriodNetMinutes: $attendance->priorPeriodNetMinutes(),
+            scheduledStart:     $scheduledStart,
+            scheduledEnd:       $scheduledEnd,
+            clockIn:            $clockIn,
+            clockOut:           $clockOut,
+            totalBreakMinutes:  $totalBreakMinutes,
+            gracePeriodMinutes: max(0, $graceMinutes),
+            maxOverTimeHours:   (float) ($attendance->max_over_time ?? 0.0),
+            timezone:           $timezone,
         );
     }
 
