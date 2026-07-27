@@ -395,8 +395,20 @@ class ProcessWorkflowService
                 ->where('status', ProcessStatus::Pending)
                 ->exists();
 
-            if (! $hasPending && method_exists($currentProcess->processable, 'onAllProcessesCompleted')) {
-                $currentProcess->processable->onAllProcessesCompleted($currentProcess);
+            $processable = $currentProcess->processable;
+
+            \Log::info('ProcessWorkflowService::moveToNextProcessOrFinalize', [
+                'process_id' => $currentProcess->id,
+                'processable_type' => $currentProcess->processable_type,
+                'processable_id' => $currentProcess->processable_id,
+                'has_pending' => $hasPending,
+                'processable_class' => $processable ? get_class($processable) : null,
+                'processable_is_null' => $processable === null,
+                'method_exists' => $processable ? method_exists($processable, 'onAllProcessesCompleted') : false,
+            ]);
+
+            if (! $hasPending && $processable && method_exists($processable, 'onAllProcessesCompleted')) {
+                $processable->onAllProcessesCompleted($currentProcess);
             }
         }
     }

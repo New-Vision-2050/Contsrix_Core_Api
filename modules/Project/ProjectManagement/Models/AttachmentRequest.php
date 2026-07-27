@@ -258,8 +258,23 @@ class AttachmentRequest extends Model
      */
     public function onAllProcessesCompleted(Process $process): void
     {
-        app(\Modules\Project\ProjectManagement\Services\AttachmentRequestService::class)
-            ->completeWorkflowApproval($this, null);
+        \Log::info('AttachmentRequest::onAllProcessesCompleted called', [
+            'attachment_request_id' => $this->id,
+            'process_id' => $process->id,
+        ]);
+
+        try {
+            app(\Modules\Project\ProjectManagement\Services\AttachmentRequestService::class)
+                ->completeWorkflowApproval($this, null);
+        } catch (\Throwable $e) {
+            \Log::error('AttachmentRequest::onAllProcessesCompleted failed', [
+                'attachment_request_id' => $this->id,
+                'process_id' => $process->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
     }
 
     /**
