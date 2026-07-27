@@ -50,7 +50,6 @@ class SafetyService
 
         $records = SafetyRecord::query()
             ->where('assigned_user_id', $userId)
-            ->where('status', 'pending')
             ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'project', 'media'])
             ->filter($filters)
             ->orderByDesc('created_at')
