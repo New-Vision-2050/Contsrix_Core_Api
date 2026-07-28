@@ -10,18 +10,18 @@ use Modules\Project\ProjectManagement\Models\AttachmentRequestItem;
 use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
-use Modules\ArchiveLibrary\File\Models\File;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Modules\Project\ProjectManagement\Models\ProjectRequirementSubmission;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Modules\Process\Enums\ProcessStatus;
 use Modules\Shared\Media\Services\FileUploadService;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Ramsey\Uuid\Uuid;
-use Modules\Project\ProjectManagement\Events\AttachmentRequestCreated;
 use Modules\Project\ProjectManagement\Events\AttachmentRequestResponded;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\User\Models\User;
 
 class AttachmentRequestService
@@ -29,6 +29,8 @@ class AttachmentRequestService
     public function __construct(
         private AttachmentRequestRepository $repository,
         private FileUploadService $fileUploadService,
+        private AttachmentRequestWorkflowService $workflowService,
+        private AttachmentArchiveDeliveryService $archiveDeliveryService,
     ) {
     }
 
@@ -39,9 +41,10 @@ class AttachmentRequestService
     {
         // Verify project exists and is shared
         $project = ProjectManagement::findOrFail($data['project_id']);
-
-        // Verify companies are involved in project sharing
-        $this->verifyCompanyAccess($project, $data['receiver_company_id']);
+        $projectProcedure = $this->findProjectProcedureOrFail(
+            $project,
+            (string) $data['procedure_setting_id']
+        );
 
         // Use provided serial number or auto-generate
         $serialNumber = $data['serial_number'] ?? $this->repository->generateSerialNumber();
@@ -51,11 +54,8 @@ class AttachmentRequestService
             'name' => $data['name'],
             'date' => $data['date'],
             'project_id' => $data['project_id'],
+            'procedure_setting_id' => $projectProcedure->procedure_setting_id,
             'sender_company_id' => (string) tenant('id'),
-            'receiver_company_id' => $data['receiver_company_id'],
-            'attachment_type_id' => $data['attachment_type_id'] ?? null,
-            'attachment_sub_type_id' => $data['attachment_sub_type_id'] ?? null,
-            'attachment_sub_sub_type_id' => $data['attachment_sub_sub_type_id'] ?? null,
             'status' => 'pending',
             'created_by_user_id' => (string) Auth::id(),
             'notes' => $data['notes'] ?? null,
@@ -74,22 +74,92 @@ class AttachmentRequestService
             metadata: [
                 'request_name' => $request->name,
                 'total_attachments' => count($items),
-                'receiver_company' => $data['receiver_company_id'],
+                'procedure_setting_id' => $projectProcedure->procedure_setting_id,
             ]
         );
 
-        // Broadcast notification to receiver company users
-        $this->broadcastToReceiverCompany($request);
+        $projectProcedure->loadMissing('procedureSetting');
+
+        $activeProcess = null;
+        if ($projectProcedure->procedureSetting !== null) {
+            $activeProcess = $this->workflowService->startForAttachmentRequest(
+                $request,
+                $projectProcedure->procedureSetting
+            );
+        }
+
+        $request = $this->repository->getWithItems($request->id) ?? $request;
+
+        // Decision D4: a procedure with no resolvable steps has no active workflow.
+        // Auto-approve and deliver immediately so the request never gets stuck in pending.
+        if ($activeProcess === null || ! $this->workflowService->hasActiveWorkflow($request)) {
+            return $this->completeWorkflowApproval($request);
+        }
 
         return $request;
     }
 
     /**
-     * Get all requests (incoming and outgoing) for current company
+     * Unified inbox: attachment requests AND requirement submissions where the
+     * current company is either the sender/uploader (outgoing) or a workflow
+     * action-taker (incoming). Both types share the same procedure workflow, so
+     * they are merged into one date-sorted, manually paginated feed.
      */
-    public function getAllRequests(array $filters = []): LengthAwarePaginator
+    public function getAllRequests(array $filters = []): LengthAwarePaginatorContract
     {
-        return $this->repository->getAllRequests(tenant('id'), $filters);
+        $companyId = (string) tenant('id');
+        $direction = $filters['direction'] ?? null;
+        $perPage = max(1, (int) ($filters['per_page'] ?? 15));
+        $page = max(1, (int) request()->query('page', 1));
+
+        $attachmentRequests = $this->repository->getAllRequestsCollection($companyId, $filters);
+
+        // A serial-number search targets attachment requests only; submissions
+        // have no serial number, so skip them when `name` is present.
+        $submissions = empty($filters['name'])
+            ? $this->repository->getRequirementSubmissionsInbox($companyId, $filters, $direction)
+            : new Collection();
+
+        if (! empty($filters['type'])) {
+            $submissions = $submissions->filter(
+                fn (ProjectRequirementSubmission $submission): bool =>
+                    $this->submissionInboxStatus($submission) === $filters['type']
+            )->values();
+        }
+
+        $merged = collect($attachmentRequests->all())
+            ->concat($submissions->all())
+            ->sortByDesc(static fn ($model) => $model->created_at?->getTimestamp() ?? 0)
+            ->values();
+
+        $total = $merged->count();
+        $items = $merged->slice(($page - 1) * $perPage, $perPage)->values();
+
+        return new LengthAwarePaginator($items, $total, $perPage, $page, [
+            'path' => LengthAwarePaginator::resolveCurrentPath(),
+            'pageName' => 'page',
+        ]);
+    }
+
+    /**
+     * Derive a request-style status for a requirement submission from its
+     * workflow process, so the unified inbox can be filtered consistently.
+     */
+    public function submissionInboxStatus(ProjectRequirementSubmission $submission): string
+    {
+        $process = $submission->relationLoaded('projectRequirementSubmissionProcess')
+            ? $submission->projectRequirementSubmissionProcess
+            : $submission->projectRequirementSubmissionProcess()->first();
+
+        if ($process === null) {
+            return 'approved';
+        }
+
+        return match ($process->status) {
+            ProcessStatus::Completed => 'approved',
+            ProcessStatus::Failed => 'declined',
+            default => 'pending',
+        };
     }
 
     /**
@@ -127,8 +197,11 @@ class AttachmentRequestService
             throw new \Exception('Attachment request not found');
         }
 
-        // Verify access
-        if ($request->sender_company_id !== tenant('id') && $request->receiver_company_id !== tenant('id')) {
+        $companyId = (string) tenant('id');
+        if (
+            $request->sender_company_id !== $companyId
+            && ! $this->repository->companyParticipatesInWorkflow($request->id, $companyId)
+        ) {
             throw new \Exception('Unauthorized access to this request');
         }
 
@@ -136,18 +209,68 @@ class AttachmentRequestService
     }
 
     /**
+     * List the project_procedure procedure settings linked to a project,
+     * for the attachment-request create-form dropdown.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getSelectableProcedures(string $projectId): array
+    {
+        return ProjectProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', (string) tenant('id'))
+            ->where('project_id', $projectId)
+            ->with([
+                'procedureSetting',
+                'attachmentType:id,name,parent_id,project_id,company_id',
+                'attachmentSubType:id,name,parent_id,project_id,company_id',
+                'attachmentSubSubType:id,name,parent_id,project_id,company_id',
+            ])
+            ->get()
+            ->filter(static fn ($pp) => $pp->procedureSetting !== null
+                && (bool) $pp->procedureSetting->is_active)
+            ->map(static fn ($pp) => [
+                'procedure_setting_id' => $pp->procedure_setting_id,
+                'name' => $pp->procedureSetting->name,
+                'execute_type' => $pp->procedureSetting->execute_type,
+                'used_in_document_cycle' => (bool) $pp->used_in_document_cycle,
+                'attachment_type' => $pp->attachmentType?->only(['id', 'name']),
+                'attachment_sub_type' => $pp->attachmentSubType?->only(['id', 'name']),
+                'attachment_sub_sub_type' => $pp->attachmentSubSubType?->only(['id', 'name']),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Respond to individual attachment item
      */
     public function respondToItem(string $itemId, string $action, ?string $notes = null)
     {
-        $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
+        $item = AttachmentRequestItem::with('attachmentRequest.projectProcedureSetting')->findOrFail($itemId);
 
-        // Verify receiver company
-        if ($item->attachmentRequest->receiver_company_id !== tenant('id')) {
-            throw new \Exception('Unauthorized to respond to this item');
+        if (! in_array($action, ['approve', 'decline', 'request_update'], true)) {
+            throw new \Exception('Invalid action');
         }
 
         $userId = (string) Auth::id();
+
+        // Decision D6: per-file actions are allowed. When a workflow is active,
+        // only a user who owns the current pending step may respond to items.
+        // When no workflow is active, restrict to companies related to the request.
+        if ($this->workflowService->hasActiveWorkflow($item->attachmentRequest)) {
+            $this->workflowService->assertCurrentUserOwnsPendingStep($item->attachmentRequest);
+        } else {
+            $companyId = (string) tenant('id');
+            $relatedRequest = $item->attachmentRequest;
+
+            if (
+                $relatedRequest->sender_company_id !== $companyId
+                && ! $this->repository->companyParticipatesInWorkflow($relatedRequest->id, $companyId)
+            ) {
+                abort(403, 'You are not authorized to respond to this attachment request.');
+            }
+        }
 
         $actionDescriptions = [
             'approve' => 'Attachment approved',
@@ -161,7 +284,6 @@ class AttachmentRequestService
             'request_update' => 'attachment_update_requested',
         ];
 
-
         switch ($action) {
             case 'approve':
                 $item->approve($userId, $notes);
@@ -174,8 +296,6 @@ class AttachmentRequestService
             case 'request_update':
                 $item->requestUpdate($userId, $notes);
                 break;
-            default:
-                throw new \Exception('Invalid action');
         }
 
         // Log history with detailed file information
@@ -207,13 +327,31 @@ class AttachmentRequestService
      */
     public function approveRequest(string $requestId): AttachmentRequest
     {
-        $request = $this->getRequest($requestId);
+        $request = $this->findRequestOrFail($requestId);
 
-        if ($request->receiver_company_id !== tenant('id')) {
-            throw new \Exception('Unauthorized to approve this request');
+        if ($this->workflowService->hasActiveWorkflow($request)) {
+            $process = $this->workflowService->actOnPendingStepForCurrentUser($request, 'approve');
+
+            if ($process->status === ProcessStatus::Completed && ! $this->workflowService->hasActiveWorkflow($request)) {
+                return $this->completeWorkflowApproval($request);
+            }
+
+            return $this->repository->getWithItems($request->id) ?? $request->fresh();
         }
 
-        $userId = (string) Auth::id();
+        throw new \Exception('No active process found for this attachment request.');
+    }
+
+    public function completeWorkflowApproval(AttachmentRequest $request, ?string $userId = null): AttachmentRequest
+    {
+        $request = $this->repository->getWithItems($request->id) ?? $request;
+
+        if ($request->isApproved()) {
+            return $request;
+        }
+
+        $userId ??= Auth::check() ? (string) Auth::id() : null;
+        $request->loadMissing(['items', 'projectProcedureSetting']);
 
         // Get all file details before approving
         $filesApproved = $request->items->map(function ($item) {
@@ -230,6 +368,7 @@ class AttachmentRequestService
 
         foreach (
             AttachmentRequestItem::with('attachmentRequest')
+                ->with('attachmentRequest.projectProcedureSetting')
                 ->where('attachment_request_id', $request->id)
                 ->get() as $item
         ) {
@@ -248,7 +387,8 @@ class AttachmentRequestService
             ]
         );
 
-        $request = $request->fresh(['items', 'respondedByUser']);
+        $request = $this->repository->getWithItems($request->id)
+            ?? $request->fresh(['items', 'respondedByUser', 'projectProcedureSetting']);
 
         // Broadcast notification to sender company users
         $this->broadcastToSenderCompany($request, 'approved');
@@ -261,13 +401,35 @@ class AttachmentRequestService
      */
     public function declineRequest(string $requestId): AttachmentRequest
     {
-        $request = $this->getRequest($requestId);
+        $request = $this->findRequestOrFail($requestId);
 
-        if ($request->receiver_company_id !== tenant('id')) {
-            throw new \Exception('Unauthorized to decline this request');
+        if ($this->workflowService->hasActiveWorkflow($request)) {
+            $process = $this->workflowService->actOnPendingStepForCurrentUser($request, 'reject');
+
+            if ($process->status === ProcessStatus::Failed) {
+                return $this->completeWorkflowDecline($request);
+            }
+
+            if ($process->status === ProcessStatus::Completed && ! $this->workflowService->hasActiveWorkflow($request)) {
+                return $this->completeWorkflowApproval($request);
+            }
+
+            return $this->repository->getWithItems($request->id) ?? $request->fresh();
         }
 
-        $userId = (string) Auth::id();
+        throw new \Exception('No active process found for this attachment request.');
+    }
+
+    public function completeWorkflowDecline(AttachmentRequest $request, ?string $userId = null): AttachmentRequest
+    {
+        $request = $this->repository->getWithItems($request->id) ?? $request;
+
+        if ($request->isDeclined()) {
+            return $request;
+        }
+
+        $userId ??= Auth::check() ? (string) Auth::id() : null;
+        $request->loadMissing('items');
 
         // Get all file details before declining
         $filesDeclined = $request->items->map(function ($item) {
@@ -294,7 +456,8 @@ class AttachmentRequestService
             ]
         );
 
-        $request = $request->fresh(['items', 'respondedByUser']);
+        $request = $this->repository->getWithItems($request->id)
+            ?? $request->fresh(['items', 'respondedByUser', 'projectProcedureSetting']);
 
         // Broadcast notification to sender company users
         $this->broadcastToSenderCompany($request, 'declined');
@@ -323,166 +486,51 @@ class AttachmentRequestService
         return $items;
     }
 
-    /**
-     * Verify company has access to project
-     */
-    private function verifyCompanyAccess(ProjectManagement $project, string $companyId): void
-    {
-        // Check if project is owned or shared with the company
-        $hasAccess = $project->company_id === $companyId ||
-                     $project->shares()
-                         ->where('shared_with_company_id', $companyId)
-                         ->where('status', 'accepted')
-                         ->exists();
+    private function findProjectProcedureOrFail(
+        ProjectManagement $project,
+        string $procedureSettingId
+    ): ProjectProcedureSetting {
+        $projectProcedure = ProjectProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', (string) tenant('id'))
+            ->where('project_id', $project->id)
+            ->where('procedure_setting_id', $procedureSettingId)
+            ->whereHas('procedureSetting', static function ($query) use ($project): void {
+                $query->where('company_id', (string) tenant('id'))
+                    ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
+                    ->whereHas('workFlow', static function ($query) use ($project): void {
+                        $query->where('project_id', $project->id)
+                            ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE);
+                    });
+            })
+            ->first();
 
-        if (!$hasAccess) {
-            throw new \Exception('Receiver company does not have access to this project');
+        if (!$projectProcedure) {
+            throw ValidationException::withMessages([
+                'procedure_setting_id' => 'Selected procedure must belong to the same project.',
+            ]);
         }
+
+        return $projectProcedure;
+    }
+
+    private function findRequestOrFail(string $requestId): AttachmentRequest
+    {
+        $request = $this->repository->getWithItems($requestId);
+
+        if (! $request) {
+            throw new \Exception('Attachment request not found');
+        }
+
+        return $request;
     }
 
     /**
      * Save approved attachment to ArchiveLibrary folder
      */
-    private function saveAttachmentToFolder(AttachmentRequestItem $item)
+    private function saveAttachmentToFolder(AttachmentRequestItem $item): void
     {
-        $request = $item->attachmentRequest;
-
-        // Get or create folder structure
-        $folderId = $this->getOrCreateFolderPath($request);
-
-        if (!$folderId) {
-            // If no folder structure, save to project root folder
-            $folderId = $this->getProjectRootFolder($request->project_id);
-        }
-
-        // Get media items from the attachment request item
-        $receiverTenantId = (string) tenant('id');
-        $senderTenantId = (string) $request->sender_company_id;
-
-        // Switch to sender tenant to get media
-        $mediaItems = $this->getMediaFromSenderTenant($item, $senderTenantId, $receiverTenantId);
-
-        if ($mediaItems->isEmpty()) {
-            return;
-        }
-
-        // Create file record in receiver tenant
-        $file = File::create([
-            'name' => pathinfo($item->file_name, PATHINFO_FILENAME),
-            'folder_id' => $folderId,
-            'project_id' => $request->project_id,
-            'company_id' => $receiverTenantId,
-            'access_type' => 'public',
-            'status' => 1,
-        ]);
-
-        // Replicate media items to the file (like legal data pattern)
-        foreach ($mediaItems as $mediaItem) {
-            $replicatedMedia = $mediaItem->replicate(['id', 'uuid']);
-            $replicatedMedia->model_id = $file->id;
-            $replicatedMedia->model_type = File::class;
-            $replicatedMedia->collection_name= "upload";
-            $replicatedMedia->save();
-        }
-    }
-
-    /**
-     * Get media items from sender tenant for the attachment request item
-     */
-    private function getMediaFromSenderTenant(
-        AttachmentRequestItem $item,
-        string $senderTenantId,
-        string $receiverTenantId
-    ): \Illuminate\Support\Collection {
-        if ($senderTenantId === $receiverTenantId) {
-            // Same tenant - get media directly
-            return Media::where('model_id', Uuid::fromString($item->id))
-                ->where('model_type', AttachmentRequestItem::class)
-                ->get();
-        }
-
-        // Different tenant - switch context to get media
-        tenancy()->end();
-        tenancy()->initialize($senderTenantId);
-
-        try {
-            $mediaItems = Media::where('model_id', Uuid::fromString($item->id))
-                ->where('model_type', AttachmentRequestItem::class)
-                ->get();
-        } finally {
-            tenancy()->end();
-            tenancy()->initialize($receiverTenantId);
-        }
-
-        return $mediaItems;
-    }
-
-    /**
-     * Get or create folder path based on attachment types
-     */
-    private function getOrCreateFolderPath(AttachmentRequest $request): ?string
-    {
-        $projectFolder = $this->getProjectRootFolder($request->project_id);
-
-        if (!$projectFolder) {
-            return null;
-        }
-
-        $currentFolderId = $projectFolder;
-
-        // attachment_type_id represents the first level folder
-        if ($request->attachment_type_id) {
-            $currentFolderId = $request->attachment_type_id;
-        }
-
-        // attachment_sub_type_id represents the second level (subfolder)
-        if ($request->attachment_sub_type_id) {
-            $currentFolderId = $request->attachment_sub_type_id;
-        }
-
-        // attachment_sub_sub_type_id represents the third level (sub-subfolder)
-        if ($request->attachment_sub_sub_type_id) {
-            $currentFolderId = $request->attachment_sub_sub_type_id;
-        }
-
-        // Create or get serial_number folder as the fourth level
-//        if ($request->serial_number) {
-//            $serialNumberFolder = Folder::withoutTenancy()
-//                ->where('parent_id', $currentFolderId)
-//                ->where('name', $request->serial_number)
-//                ->first();
-//
-//            if (!$serialNumberFolder) {
-//                // Create the serial_number folder
-//                $serialNumberFolder = Folder::create([
-//                    'name' => $request->serial_number,
-//                    'parent_id' => $currentFolderId,
-//                    'project_id' => $request->project_id,
-//                    'company_id' => tenant('id'),
-//                    'access_type' => 'public',
-//                    'status' => 1,
-//                ]);
-//            }
-//
-//            $currentFolderId = $serialNumberFolder->id;
-//        }
-
-        // Verify folder exists
-        $folder = Folder::where("id",$currentFolderId)->withoutTenancy()->first();
-
-        return $folder ? $folder->id : $projectFolder;
-    }
-
-    /**
-     * Get project root folder (folder_id = project_id)
-     */
-    private function getProjectRootFolder(string $projectId): ?string
-    {
-        $folder = Folder::where('id', $projectId)->withoutTenancy()
-            ->whereNull('parent_id')
-            ->first();
-
-        return $folder?->id;
+        $this->archiveDeliveryService->deliverAttachmentRequestItem($item);
     }
 
     /**
@@ -525,26 +573,6 @@ class AttachmentRequestService
         }
 
         return round($size, 2) . ' ' . $units[$i];
-    }
-
-    /**
-     * Broadcast notification to receiver company users when new request is created
-     */
-    private function broadcastToReceiverCompany(AttachmentRequest $request): void
-    {
-        // Get all users from receiver company
-        $receiverCompanyUsers = User::where('company_id', $request->receiver_company_id)
-            ->whereNotNull('id')
-            ->get();
-
-        // Count pending incoming requests for receiver company (including the new one)
-        $pendingIncomingCount = AttachmentRequest::where('receiver_company_id', $request->receiver_company_id)
-            ->whereIn('status', ['pending', 'semi-approved'])
-            ->count();
-
-        foreach ($receiverCompanyUsers as $user) {
-            event(new AttachmentRequestCreated($request, $pendingIncomingCount));
-        }
     }
 
     /**

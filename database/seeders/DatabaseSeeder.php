@@ -18,6 +18,7 @@ use Modules\Project\ProjectManagement\Database\Seeders\ProjectNotificationSiteSt
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectNotificationTypeSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectNotificationUpdateSiteStatusSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectNotificationWorkStoppageReasonSeeder;
+use Modules\Project\ProjectManagement\Database\Seeders\ProjectProcedureJobAttributeSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ProjectPermissionsSeeder;
 use Modules\Project\TermServices\Database\Seeders\TermServicesSeeder;
 use Modules\ClientRequest\Database\Seeders\ClientRequestSeeder;
@@ -174,6 +175,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ClientRequestSeeder::class);
         $this->call(ProfessionalDegreesSeeder::class);
         $this->call(ProjectPermissionsSeeder::class);
+        $this->call(ProjectProcedureJobAttributeSeeder::class);
         $this->call(ProjectShareTypeSeeder::class);
         $this->call(InternalProcedureSettingsSeeder::class);
         $this->call(StakeholderSeeder::class);

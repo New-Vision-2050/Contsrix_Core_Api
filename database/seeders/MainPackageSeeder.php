@@ -177,18 +177,29 @@ class MainPackageSeeder extends Seeder
 
             Log::info("MainPackageSeeder: Excluded {$excludedCount} permissions, assigning {$permissions->count()} permissions to Main Package");
 
+            // Get existing limits from the pivot table to preserve custom values set via API
+            $existingPivotLimits = DB::table('package_permission')
+                ->where('package_id', $package->id)
+                ->whereNotNull('limit')
+                ->pluck('limit', 'permission_id');
+
             // Build sync array with specific limits for archive-library permissions
             $syncData = [];
             foreach ($permissions as $permission) {
                 $limit = null; // Default limit is null
-                
+
                 // Set specific limits for archive-library permissions
                 if ($permission->name === 'archive-library.archive-library*file.create') {
                     $limit = 1000;
                 } elseif ($permission->name === 'archive-library.archive-library*folder.create') {
                     $limit = 100;
                 }
-                
+
+                // Preserve existing custom limit if one was already set (e.g., via API)
+                if (isset($existingPivotLimits[$permission->id])) {
+                    $limit = $existingPivotLimits[$permission->id];
+                }
+
                 $syncData[$permission->id] = ['limit' => $limit];
             }
 

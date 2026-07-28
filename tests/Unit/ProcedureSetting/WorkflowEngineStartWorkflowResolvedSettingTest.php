@@ -41,6 +41,7 @@ class WorkflowEngineStartWorkflowResolvedSettingTest extends TestCase
                 null,
                 [],
                 null,
+                null,
             )
             ->andReturnNull();
 

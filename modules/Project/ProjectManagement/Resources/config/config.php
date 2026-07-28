@@ -3,6 +3,14 @@
 return [
     'name' => 'ProjectManagement',
 
+    'notifications' => [
+        /*
+         * Minutes since an employee's last GPS update before they are reported as
+         * `not_connected` by the employees-with-locations endpoint.
+         */
+        'location_stale_minutes' => env('PROJECT_NOTIFICATION_LOCATION_STALE_MINUTES', 15),
+    ],
+
     'permissions' => [
         // ================================================================================================
         // PROJECT MANAGEMENT MODULE PERMISSIONS

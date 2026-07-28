@@ -3,6 +3,8 @@
 namespace Modules\Project\ProjectType\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
 class EvaluateViolationsRequest extends FormRequest
@@ -19,6 +21,25 @@ class EvaluateViolationsRequest extends FormRequest
             'violations.*.violation_id' => ['required', 'uuid', 'exists:violations,id'],
             'violations.*.weight' => ['nullable', 'numeric'],
             'violations.*.status' => ['required', Rule::in(['violation_found', 'no_violation', 'not_applicable'])],
+            'violations.*.images' => ['nullable', 'array', 'max:3'],
+            'violations.*.images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
+    }
+
+
+    public function violationsWithImages(): array
+    {
+        $violations = $this->input('violations', []);
+        $files = $this->file('violations', []) ?: [];
+
+        foreach ($violations as $index => $violation) {
+            $images = Arr::wrap($files[$index]['images'] ?? []);
+            $violations[$index]['images'] = array_values(array_filter(
+                $images,
+                fn ($file) => $file instanceof UploadedFile && $file->isValid()
+            ));
+        }
+
+        return $violations;
     }
 }

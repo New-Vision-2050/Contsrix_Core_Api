@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\UserInfo\Qualification\Services;
 
 use Illuminate\Support\Collection;
+use Modules\ArchiveLibrary\File\Services\EmployeeArchiveFileService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -20,6 +21,7 @@ class QualificationCRUDService
         private QualificationRepository $repository,
         private CompanyUserRepository $companyUserRepository,
         private FileUploadService $fileUploadService,
+        private EmployeeArchiveFileService $employeeArchiveFileService,
 
     ) {
     }
@@ -67,6 +69,16 @@ class QualificationCRUDService
 
                 $media = $this->fileUploadService->uploadFile($qualification, $file, $path, 'upload_Qualification', $visibility);
                 $uploadedFiles[] = $media;
+                $this->employeeArchiveFileService->archiveUploadedFiles(
+                    companyId: (string) $qualification->company_id,
+                    employeeGlobalId: (string) $qualification->global_id,
+                    employeeName: (string) $user->name,
+                    files: $file,
+                    mainSection: EmployeeArchiveFileService::SECTION_ACADEMIC,
+                    subSection: EmployeeArchiveFileService::SUB_QUALIFICATION,
+                    sourceModel: $qualification,
+                    sourceMedia: $media,
+                );
             }
         }
 

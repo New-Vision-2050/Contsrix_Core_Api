@@ -6,6 +6,7 @@ namespace Modules\UserInfo\UserEducationalCourse\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\ArchiveLibrary\File\Services\EmployeeArchiveFileService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -23,7 +24,8 @@ class UserEducationalCourseRepository extends BaseRepository
     public function __construct(
         UserEducationalCourse     $model,
         private FileUploadService $fileUploadService,
-        private CompanyUserRepository $companyUserRepository
+        private CompanyUserRepository $companyUserRepository,
+        private EmployeeArchiveFileService $employeeArchiveFileService
 
     )
     {
@@ -55,12 +57,22 @@ class UserEducationalCourseRepository extends BaseRepository
             $companyName = Company::find($data['company_id'])?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
-            $this->fileUploadService->uploadFile(
+            $media = $this->fileUploadService->uploadFile(
                 $educationalCourse,
                 $file,
                 $path,
                 'upload',
                 "public"
+            );
+            $this->employeeArchiveFileService->archiveUploadedFiles(
+                companyId: (string) $data['company_id'],
+                employeeGlobalId: (string) $data['global_id'],
+                employeeName: (string) $user->name,
+                files: $file,
+                mainSection: EmployeeArchiveFileService::SECTION_ACADEMIC,
+                subSection: EmployeeArchiveFileService::SUB_COURSES,
+                sourceModel: $educationalCourse,
+                sourceMedia: $media,
             );
         }
 
@@ -77,12 +89,22 @@ class UserEducationalCourseRepository extends BaseRepository
             $companyName = Company::find($educationalCourse->company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
-            $this->fileUploadService->uploadFile(
+            $media = $this->fileUploadService->uploadFile(
                 $educationalCourse,
                 $file,
                 $path,
                 'upload',
                 "public"
+            );
+            $this->employeeArchiveFileService->archiveUploadedFiles(
+                companyId: (string) $educationalCourse->company_id,
+                employeeGlobalId: (string) $educationalCourse->global_id,
+                employeeName: (string) $user->name,
+                files: $file,
+                mainSection: EmployeeArchiveFileService::SECTION_ACADEMIC,
+                subSection: EmployeeArchiveFileService::SUB_COURSES,
+                sourceModel: $educationalCourse,
+                sourceMedia: $media,
             );
         }
 

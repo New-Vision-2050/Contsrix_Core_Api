@@ -505,6 +505,8 @@ class ProjectNotificationController extends Controller
             (float) $request->input('latitude'),
             (float) $request->input('longitude'),
             $request->filled('radius') ? (float) $request->input('radius') : null,
+            $request->boolean('include_unavailable'),
+            array_values(array_filter((array) $request->input('statuses', []))),
         );
 
         return Json::items(

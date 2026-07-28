@@ -17,41 +17,96 @@ use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Models\SafetyRecord;
 use Modules\Project\ProjectType\Models\Violation;
 use Modules\Project\ProjectType\Notifications\SafetyTaskAssigned as SafetyTaskAssignedNotification;
+use Illuminate\Http\UploadedFile;
 use Modules\Project\ProjectType\Repositories\SafetyRecordRepository;
+use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
 use Throwable;
 
 class SafetyService
 {
-    public function __construct(private SafetyRecordRepository $repository) {}
+    public function __construct(
+        private SafetyRecordRepository $repository,
+        private FileUploadService $fileUploadService,
+    ) {}
 
-    public function list(string $projectId): EloquentCollection
+    public function list(string $projectId, array $filters = []): EloquentCollection
     {
         $records = SafetyRecord::query()
             ->where('project_id', $projectId)
-            ->with(['violations', 'morphable', 'assignedUser'])
+            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'media'])
+            ->filter($filters)
             ->orderByDesc('created_at')
             ->get();
 
         return $this->attachAllViolations($records);
     }
 
-    public function inbox(string $userId): EloquentCollection
+    public function inbox(string $userId, array $filters = []): EloquentCollection
     {
+        // Inbox is always scoped to the authenticated user; don't let
+        // assigned_user_id override that constraint.
+        unset($filters['assigned_user_id']);
+
         $records = SafetyRecord::query()
             ->where('assigned_user_id', $userId)
             ->where('status', 'pending')
-            ->with(['violations', 'morphable', 'assignedUser', 'project'])
+            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'project', 'media'])
+            ->filter($filters)
             ->orderByDesc('created_at')
             ->get();
 
         return $this->attachAllViolations($records);
+    }
+
+    public function report(string $projectId, array $filters = []): Collection
+    {
+        $records = SafetyRecord::query()
+            ->where('project_id', $projectId)
+            ->with(['morphable', 'contractor'])
+            ->filter($filters)
+            ->get();
+
+        return $records
+            ->groupBy(fn (SafetyRecord $r) => $r->morphable_type.'|'.$r->morphable_id)
+            ->map(function (Collection $group) {
+                /** @var SafetyRecord $first */
+                $first = $group->first();
+                $total = $group->count();
+                $completed = $group->where('status', 'completed')->count();
+                $pending = $group->where('status', 'pending')->count();
+
+                if ($completed === 0) {
+                    $status = 'متأخر';
+                } elseif ($completed >= $total) {
+                    $status = 'مكتمل';
+                } else {
+                    $status = 'جارية';
+                }
+
+                return [
+                    'morphable_type' => $first->morphable_type,
+                    'morphable_id' => $first->morphable_id,
+                    'morphable_display' => $first->morphable?->name
+                        ?? $first->morphable?->notification_number
+                        ?? null,
+                    'contractor_id' => $first->contractor_id,
+                    'contractor_name' => $first->contractor?->name,
+                    'consultant_engineer' => $first->consultant_engineer,
+                    'consultant' => $first->consultant,
+                    'total_assignments' => $total,
+                    'completed_count' => $completed,
+                    'pending_count' => $pending,
+                    'status' => $status,
+                ];
+            })
+            ->values();
     }
 
     public function show(string $projectId, string $id): SafetyRecord
     {
         $record = $this->findForProject($projectId, $id);
-        $record->load(['violations', 'morphable', 'assignedUser']);
+        $record->load(['violations', 'morphable', 'assignedUser', 'contractor', 'media']);
 
         return $this->attachAllViolationsToRecord($record);
     }
@@ -111,7 +166,7 @@ class SafetyService
                 ]);
 
                 $this->syncViolations($record, Arr::get($data, 'violations', []));
-                $record->load(['violations', 'morphable', 'assignedUser']);
+                $record->load(['violations', 'morphable', 'assignedUser', 'contractor', 'media']);
                 $record->setRelation('all_violations', $this->buildAllViolations($record, $allViolations));
 
                 $user = User::withoutGlobalScopes()->find($userId);
@@ -164,6 +219,9 @@ class SafetyService
         return $this->show($projectId, $record->id);
     }
 
+    /**
+     * @param  array<int, array{violation_id: string, weight?: mixed, status?: string, images?: UploadedFile[]}>  $violations
+     */
     public function evaluateViolations(string $projectId, string $id, array $violations, ?string $actorUserId = null): SafetyRecord
     {
         $record = $this->findForProject($projectId, $id);
@@ -178,7 +236,8 @@ class SafetyService
         }
 
         $this->syncViolations($record, $violations);
-        $record->update(['status' => 'completed']);
+        $this->uploadViolationEvidence($record, $violations);
+        $this->calculateAndStoreScores($record);
 
         return $this->show($projectId, $record->id);
     }
@@ -419,18 +478,107 @@ class SafetyService
     private function syncViolations(SafetyRecord $record, array $violations): void
     {
         $syncData = [];
+        $defaults = Violation::query()
+            ->whereIn('id', collect($violations)->pluck('violation_id')->filter()->all())
+            ->pluck('default_weight', 'id');
 
         foreach ($violations as $violation) {
             if (! isset($violation['violation_id'])) {
                 continue;
             }
 
-            $syncData[$violation['violation_id']] = [
-                'weight' => $violation['weight'] ?? null,
-                'status' => $violation['status'] ?? null,
+            $violationId = (string) $violation['violation_id'];
+            $status = (string) ($violation['status'] ?? '');
+            $baseWeight = abs((float) ($violation['weight'] ?? $defaults[$violationId] ?? 0));
+
+            $syncData[$violationId] = [
+                'weight' => $this->signedWeight($baseWeight, $status),
+                'status' => $status,
             ];
         }
 
         $record->violations()->sync($syncData);
     }
+
+    /**
+     * Persist earned_score, required_score, and percentage from pivot weights.
+     *
+     * earned_score    = sum of signed pivot weights (N/A stored as 0)
+     * required_score  = sum of ABS(weights) for non-N/A (max if all were no_violation)
+     * percentage      = earned_score / required_score * 100 (100 when required_score = 0)
+     */
+    private function calculateAndStoreScores(SafetyRecord $record): void
+    {
+        $record->load('violations');
+
+        $earnedScore = 0.0;
+        $requiredScore = 0.0;
+
+        foreach ($record->violations as $violation) {
+            $status = (string) ($violation->pivot->status ?? '');
+            $weight = (float) ($violation->pivot->weight ?? 0);
+
+            if ($status === 'not_applicable') {
+                continue;
+            }
+
+            $earnedScore += $weight;
+            $requiredScore += abs($weight);
+        }
+
+        $percentage = $requiredScore == 0.0
+            ? 100.0
+            : round(($earnedScore / $requiredScore) * 100, 2);
+
+        $record->update([
+            'status' => 'completed',
+            'earned_score' => round($earnedScore, 2),
+            'required_score' => round($requiredScore, 2),
+            'percentage' => $percentage,
+        ]);
+    }
+
+    private function signedWeight(float $baseWeight, string $status): float
+    {
+        return match ($status) {
+            'violation_found' => -1 * $baseWeight,
+            'no_violation' => $baseWeight,
+            'not_applicable' => 0.0,
+            default => 0.0,
+        };
+    }
+
+    /**
+     * Upload up to 3 evidence images per violation into the shared
+     * `violation_evidence` collection, tagged with the violation_id custom property.
+     *
+     * @param  array<int, array{violation_id?: string, images?: UploadedFile[]}>  $violations
+     */
+    private function uploadViolationEvidence(SafetyRecord $record, array $violations): void
+    {
+        foreach ($violations as $violation) {
+            $violationId = $violation['violation_id'] ?? null;
+            $images = array_values(array_filter(
+                Arr::wrap($violation['images'] ?? []),
+                fn ($file) => $file instanceof UploadedFile
+            ));
+
+            if (! $violationId || $images === []) {
+                continue;
+            }
+
+            $mediaItems = $this->fileUploadService->uploadFile(
+                $record,
+                $images,
+                filePath: 'safety/violation-evidence/'.$violationId,
+                collectionName: 'violation_evidence',
+            );
+
+            foreach ($mediaItems as $media) {
+                $media->setCustomProperty('violation_id', (string) $violationId);
+                $media->save();
+            }
+        }
+    }
+    // }
 }

@@ -54,6 +54,13 @@ class File extends Model implements HasMedia , Auditable
         'project_id',
         'access_type',
         'status',
+        'type',
+        'employee_global_id',
+        'employee_section',
+        'employee_sub_section',
+        'source_model_type',
+        'source_model_id',
+        'source_media_id',
         "management_hierarchy_id",
         "company_id"
     ];

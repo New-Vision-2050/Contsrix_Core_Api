@@ -8,13 +8,18 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Requests\Concerns\HandlesProjectProcedureRequest;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessCondition;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
 class UpdateInternalProcedureSettingRequest extends FormRequest
 {
+    use HandlesProjectProcedureRequest;
+
     protected function prepareForValidation(): void
     {
+        $this->prepareProjectProcedureAliases();
+
         $map = [
             'appears_before_ids' => 'appears_before_id',
             'appears_after_ids'  => 'appears_after_id',
@@ -34,6 +39,10 @@ class UpdateInternalProcedureSettingRequest extends FormRequest
 
     public function rules(): array
     {
+        if ($this->isProjectProcedureRequest()) {
+            return $this->projectProcedureRules(required: false);
+        }
+
         $formKey = $this->resolveFormKey();
 
         return array_merge([

@@ -12,6 +12,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 
 class ProcedureSettingStep extends Model
 {
@@ -31,6 +32,7 @@ class ProcedureSettingStep extends Model
         'forms',
         'procedure_setting_id',
         'company_id',
+        'project_id',
         'name',
         'branch_id',
         'management_id',
@@ -53,11 +55,14 @@ class ProcedureSettingStep extends Model
         'action_taker_specific_procedure_type',
         'action_taker_specific_procedure_id',
         'action_taker_management_hierarchies',
+        'receiver_company_ids',
+        'project_employee_ids',
     ];
 
     protected $casts = [
         'is_accept'                       => 'boolean',
         'is_approve'                      => 'boolean',
+        'project_id'                      => 'string',
         'branch_id'                       => 'integer',
         'management_id'                   => 'integer',
         'is_view_only'                    => 'boolean',
@@ -65,7 +70,7 @@ class ProcedureSettingStep extends Model
         'requires_approval_within_period' => 'boolean',
         'approval_within_days'            => 'integer',
         'approval_within_hours'           => 'integer',
-        'skipping_period'                 => 'integer',
+        'skipping_period'                 => 'float',
         'notify_by_email'                 => 'boolean',
         'notify_by_whatsapp'              => 'boolean',
         'notify_by_sms'                   => 'boolean',
@@ -90,6 +95,12 @@ class ProcedureSettingStep extends Model
 
         // Array of {action_taker_management_hierarchy_type, is_Deputy_Director} objects.
         'action_taker_management_hierarchies'  => 'array',
+
+        // Receiver companies selected when action_taker_type is receiver_company.
+        'receiver_company_ids'                 => 'array',
+
+        // Project employee selections persisted for project-scoped procedure steps.
+        'project_employee_ids'                 => 'array',
     ];
 
     public function getRelationshipToPrimaryModel(): string
@@ -105,6 +116,11 @@ class ProcedureSettingStep extends Model
     public function procedureSetting(): BelongsTo
     {
         return $this->belongsTo(ProcedureSetting::class, 'procedure_setting_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
 
     public function branch(): BelongsTo

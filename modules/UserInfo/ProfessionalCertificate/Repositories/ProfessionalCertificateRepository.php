@@ -6,6 +6,7 @@ namespace Modules\UserInfo\ProfessionalCertificate\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\ArchiveLibrary\File\Services\EmployeeArchiveFileService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -24,6 +25,7 @@ class ProfessionalCertificateRepository extends BaseRepository
         ProfessionalCertificate $model,
         private CompanyUserRepository $companyUserRepository,
         private FileUploadService $fileUploadService,
+        private EmployeeArchiveFileService $employeeArchiveFileService,
 
     )
     {
@@ -55,12 +57,22 @@ class ProfessionalCertificateRepository extends BaseRepository
             $companyName = Company::find($data['company_id'])?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
-            $this->fileUploadService->uploadFile(
+            $media = $this->fileUploadService->uploadFile(
                 $certificate,
                 $file,
                 $path,
                 'upload',
                 "public"
+            );
+            $this->employeeArchiveFileService->archiveUploadedFiles(
+                companyId: (string) $data['company_id'],
+                employeeGlobalId: (string) $data['global_id'],
+                employeeName: (string) $user->name,
+                files: $file,
+                mainSection: EmployeeArchiveFileService::SECTION_ACADEMIC,
+                subSection: EmployeeArchiveFileService::SUB_PROFESSIONAL_CERTIFICATES,
+                sourceModel: $certificate,
+                sourceMedia: $media,
             );
         }
 
@@ -77,12 +89,22 @@ class ProfessionalCertificateRepository extends BaseRepository
             $companyName = Company::find($certificate->company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
-            $this->fileUploadService->uploadFile(
+            $media = $this->fileUploadService->uploadFile(
                 $certificate,
                 $file,
                 $path,
                 'upload',
                 "public"
+            );
+            $this->employeeArchiveFileService->archiveUploadedFiles(
+                companyId: (string) $certificate->company_id,
+                employeeGlobalId: (string) $certificate->global_id,
+                employeeName: (string) $user->name,
+                files: $file,
+                mainSection: EmployeeArchiveFileService::SECTION_ACADEMIC,
+                subSection: EmployeeArchiveFileService::SUB_PROFESSIONAL_CERTIFICATES,
+                sourceModel: $certificate,
+                sourceMedia: $media,
             );
         }
 

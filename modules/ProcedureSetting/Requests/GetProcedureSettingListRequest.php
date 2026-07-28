@@ -7,6 +7,7 @@ namespace Modules\ProcedureSetting\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 
 class GetProcedureSettingListRequest extends FormRequest
 {
@@ -15,11 +16,12 @@ class GetProcedureSettingListRequest extends FormRequest
         return [
             'per_page'    => 'integer',
             'page'        => 'integer',
-            'type'        => ['sometimes', 'string', Rule::in(ProcedureSettingType::values())],
+            'type'        => ['sometimes', 'string', Rule::in(array_merge(ProcedureSettingType::values(), [ProjectProcedureSetting::PROCEDURE_TYPE]))],
             'execute_type'=> ['sometimes', 'string', Rule::in(ProcedureSettingType::values())],
             'work_flow_id'=> 'sometimes|uuid|exists:work_flows,id',
             'branch_id'   => ['sometimes', 'integer', Rule::exists('management_hierarchies', 'id')->where('type', 'branch')],
             'parent_id'   => 'sometimes|uuid|exists:procedure_settings,id',
+            'project_id'  => ['sometimes', 'uuid', $this->tenantOwnedProjectRule()],
         ];
     }
 
@@ -41,7 +43,22 @@ class GetProcedureSettingListRequest extends FormRequest
         if ($this->filled('parent_id')) {
             $filters['parent_id'] = (string) $this->get('parent_id');
         }
+        if ($this->filled('project_id')) {
+            $filters['project_id'] = (string) $this->get('project_id');
+        }
 
         return $filters;
+    }
+
+    private function tenantOwnedProjectRule()
+    {
+        $rule = Rule::exists('projects', 'id');
+        $tenantId = tenant('id');
+
+        if ($tenantId !== null && $tenantId !== '') {
+            $rule->where('company_id', (string) $tenantId);
+        }
+
+        return $rule;
     }
 }

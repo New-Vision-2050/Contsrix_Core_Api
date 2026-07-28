@@ -28,6 +28,7 @@ use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
 use Modules\EmployeeTask\Services\EmployeeTaskReportService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
+use Modules\EmployeeTask\Services\EmployeeTaskTemporaryLocationProvider;
 use Modules\EmployeeTask\Services\EmployeeTaskWorkflowNotifier;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\Process\Services\WorkflowNotifierRegistry;
@@ -73,6 +74,12 @@ class EmployeeTaskServiceProvider extends ServiceProvider
         $this->app->singleton(EmployeeTaskEndRequestService::class);
         $this->app->singleton(EmployeeTaskFormConditionService::class);
         $this->app->singleton(EmployeeTaskAvailableActionsService::class);
+
+        // Attendance Rules V2 (Feature 6): expose active task geofences to the
+        // Attendance module through a tagged contract, keeping the dependency
+        // direction EmployeeTask -> Attendance. Concrete and auto-resolvable,
+        // so no explicit bind is needed.
+        $this->app->tag([EmployeeTaskTemporaryLocationProvider::class], 'attendance.temporary_location_providers');
 
         // ── Condition evaluators ───────────────────────────────────────────
         // Each evaluator is tagged so the registry can collect them all.
