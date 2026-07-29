@@ -1236,15 +1236,25 @@ class AttendanceConstraintController extends Controller
         $existingConfig   = $constraint->constraint_config ?? [];
         $existingSchedule = $existingConfig['time_rules']['weekly_schedule'] ?? [];
 
-        // Initialise all 7 days as disabled
+        // Initialise all 7 days as disabled — preserving every per-day rule key.
+        // (Previously only lateness/early were preserved; extension_rules,
+        // clock_in_deadline_rules and total_work_hours were silently wiped on re-assign.)
         $weeklySchedule = [];
         foreach ($allDays as $day) {
-            $weeklySchedule[$day] = [
+            $dayData = [
                 'enabled'             => false,
                 'periods'             => [],
                 'lateness_rules'      => $existingSchedule[$day]['lateness_rules']  ?? $defaultLatenessRules,
                 'early_clock_in_rules' => $existingSchedule[$day]['early_clock_in_rules'] ?? $defaultEarlyRules,
             ];
+
+            foreach (['extension_rules', 'clock_in_deadline_rules', 'total_work_hours'] as $ruleKey) {
+                if (array_key_exists($ruleKey, $existingSchedule[$day] ?? [])) {
+                    $dayData[$ruleKey] = $existingSchedule[$day][$ruleKey];
+                }
+            }
+
+            $weeklySchedule[$day] = $dayData;
         }
 
         $formatPeriods = fn(array $periods) => array_values(array_map(fn($p) => [

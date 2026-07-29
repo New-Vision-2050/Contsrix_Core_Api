@@ -632,6 +632,14 @@ class AttendanceConstraintService
             'active_or_next_period'   => $timeRulesResult['active_or_next_period'],
             'lateness_rules'          => $timeRulesResult['lateness_rules'],
             'early_clock_in_rules'    => $timeRulesResult['early_clock_in_rules'],
+            // Rules V2 — must be forwarded explicitly (this return is a whitelist);
+            // without them every window/deadline/overtime consumer computes defaults.
+            'extension_rules'             => $timeRulesResult['extension_rules'] ?? null,
+            'clock_in_deadline_rules'     => $timeRulesResult['clock_in_deadline_rules'] ?? null,
+            'overtime_rules'              => $timeRulesResult['overtime_rules'] ?? [],
+            'early_clock_in_minutes'      => $timeRulesResult['early_clock_in_minutes'] ?? 0,
+            'extension_minutes'           => $timeRulesResult['extension_minutes'] ?? 0,
+            'can_clock_in_before_minutes' => $timeRulesResult['can_clock_in_before_minutes'] ?? null,
             'location_work'           => $locationRulesResult,
             'additional_locations'    => $additionalLocations,
             'max_over_time'           => $timeConstraint?->max_over_time,
