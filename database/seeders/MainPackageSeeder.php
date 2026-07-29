@@ -133,6 +133,7 @@ class MainPackageSeeder extends Seeder
             Log::info("MainPackageSeeder: Assigned " . count($programsData) . " programs and " . count($subEntitiesData) . " sub-entities to Main Access Program (extracted from permissions)");
 
             // 2. Create Main Package
+            $mainPackageWasRecentlyCreated = false;
             $package = Package::firstOrCreate([
                 'name' => 'Main Package',
                 'company_access_program_id' => $accessProgram->id,
@@ -146,6 +147,7 @@ class MainPackageSeeder extends Seeder
                 'is_active' => true,
                 'is_main_package' =>1
             ]);
+            $mainPackageWasRecentlyCreated = $package->wasRecentlyCreated;
 
 
 
@@ -210,9 +212,11 @@ class MainPackageSeeder extends Seeder
 
             $package->companyFields()->sync($companyFields);
 
-            //main package assigned to many companies to effect any change in sub companies
-
-            app(PackageAssignmentService::class)->recalculate($package);
+            // Only recalculate company limits on first package creation.
+            // On subsequent deploys, skip recalculate to preserve custom limits set via API.
+            if ($mainPackageWasRecentlyCreated) {
+                app(PackageAssignmentService::class)->recalculate($package);
+            }
 
             // 4. Assign the package to the first company
 //            $company =tenant("id")? Company::find(tenant("id")): Company::first();
