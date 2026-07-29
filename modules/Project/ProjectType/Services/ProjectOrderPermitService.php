@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 use Modules\Project\ProjectType\Models\UdsExcelSheet;
+use Modules\Project\ProjectType\Models\ProjectOrderPermitNoteLog;
 
 class ProjectOrderPermitService
 {
@@ -54,6 +55,7 @@ class ProjectOrderPermitService
                 'start_permit_date' => Arr::get($workOrderData, 'start_permit_date'),
                 'end_permit_date' => Arr::get($workOrderData, 'end_permit_date'),
                 'note_from_permit_to_departments' => Arr::get($workOrderData, 'note_from_permit_to_departments'),
+                'note_from_departments_to_permit' => Arr::get($workOrderData, 'note_from_departments_to_permit'),
                 'is_taked_action' => Arr::get($workOrderData, 'is_taked_action', false),
                 'lat' => Arr::get($workOrderData, 'lat'),
                 'long' => Arr::get($workOrderData, 'long'),
@@ -84,6 +86,9 @@ class ProjectOrderPermitService
             ]);
 
             $this->autoFillFromUds($item);
+
+            $this->createNoteLog($item, Arr::get($workOrderData, 'note_from_permit_to_departments'), ProjectOrderPermitNoteLog::TYPE_PERMIT_TO_DEPARTMENTS);
+            $this->createNoteLog($item, Arr::get($workOrderData, 'note_from_departments_to_permit'), ProjectOrderPermitNoteLog::TYPE_DEPARTMENTS_TO_PERMIT);
 
             $items[] = $item;
         }
@@ -201,7 +206,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
-            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus', 'employee'])
+            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus', 'employee', 'noteLogs.user'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -213,7 +218,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->whereIn('project_id', $projectIds)
             ->when(Arr::get($filters, 'order_permit_department_id'), fn ($q, $deptId) => $q->whereHas('orderPermit', fn ($subQuery) => $subQuery->where('order_permit_department_id', $deptId)))
-            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus', 'employee'])
+            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus', 'employee', 'noteLogs.user'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -226,7 +231,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
         return ProjectOrderPermit::query()
             ->where('project_id', $project->id)
             ->where('id', $id)
-            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus', 'employee'])
+            ->with(['orderPermit.department', 'department', 'contractor', 'state', 'projectManagement', 'projectDistrict', 'projectCompletionPhase', 'projectPhaseStatus', 'connectionCompletionPhase', 'connectionPhaseStatus', 'employee', 'noteLogs.user'])
             ->firstOrFail();
     }
 
@@ -299,6 +304,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             'start_permit_date' => Arr::get($data, 'start_permit_date', $orderPermit->start_permit_date),
             'end_permit_date' => Arr::get($data, 'end_permit_date', $orderPermit->end_permit_date),
             'note_from_permit_to_departments' => Arr::get($data, 'note_from_permit_to_departments', $orderPermit->note_from_permit_to_departments),
+            'note_from_departments_to_permit' => Arr::get($data, 'note_from_departments_to_permit', $orderPermit->note_from_departments_to_permit),
             'is_taked_action' => Arr::get($data, 'is_taked_action', $orderPermit->is_taked_action),
             'lat' => Arr::get($data, 'lat', $orderPermit->lat),
             'long' => Arr::get($data, 'long', $orderPermit->long),
@@ -328,6 +334,9 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             'consultnat_statement_status' => Arr::get($data, 'consultnat_statement_status', $orderPermit->consultnat_statement_status),
         ]);
 
+        $this->createNoteLog($orderPermit, Arr::get($data, 'note_from_permit_to_departments'), ProjectOrderPermitNoteLog::TYPE_PERMIT_TO_DEPARTMENTS);
+        $this->createNoteLog($orderPermit, Arr::get($data, 'note_from_departments_to_permit'), ProjectOrderPermitNoteLog::TYPE_DEPARTMENTS_TO_PERMIT);
+
         return $orderPermit->fresh([
             'orderPermit.department',
             'department',
@@ -340,6 +349,7 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             'connectionCompletionPhase',
             'connectionPhaseStatus',
             'employee',
+            'noteLogs.user',
         ]);
     }
 
@@ -354,6 +364,37 @@ private function autoFillFromUds(ProjectOrderPermit $order): void
             ->firstOrFail();
 
         return (bool) $orderPermit->delete();
+    }
+
+    private function createNoteLog(ProjectOrderPermit $orderPermit, ?string $note, string $type = ProjectOrderPermitNoteLog::TYPE_PERMIT_TO_DEPARTMENTS): void
+    {
+        if ($note === null || trim($note) === '') {
+            return;
+        }
+
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
+        $user = auth()->user();
+
+        ProjectOrderPermitNoteLog::create([
+            'project_order_permit_id' => $orderPermit->id,
+            'user_id' => $user?->id,
+            'note' => $note,
+            'type' => $type,
+            'timezone' => $timezone,
+            'created_by_name' => $user?->name,
+        ]);
+    }
+
+    public function getNoteLogs(string $projectId, string $id): Collection
+    {
+        $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
+
+        $orderPermit = ProjectOrderPermit::query()
+            ->where('project_id', $project->id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        return $orderPermit->noteLogs()->with('user')->orderBy('created_at', 'desc')->get();
     }
 
     public function updateStatuses(string $projectId, string $id, array $data): ProjectOrderPermit

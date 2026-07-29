@@ -206,6 +206,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         Route::get('/{id}', [ProjectOrderPermitController::class, 'show']);
         Route::put('/{id}', [ProjectOrderPermitController::class, 'update']);
         Route::put('/{id}/statuses', [ProjectOrderPermitController::class, 'updateStatuses']);
+        Route::get('/{id}/note-logs', [ProjectOrderPermitController::class, 'noteLogs']);
         Route::delete('/', [ProjectOrderPermitController::class, 'destroy']);
     });
 

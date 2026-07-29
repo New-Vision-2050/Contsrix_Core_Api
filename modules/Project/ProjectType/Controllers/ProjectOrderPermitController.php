@@ -9,6 +9,7 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitPresenter;
+use Modules\Project\ProjectType\Presenters\ProjectOrderPermitNoteLogPresenter;
 use Modules\Project\ProjectType\Requests\CreateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitStatusRequest;
@@ -107,6 +108,19 @@ class ProjectOrderPermitController extends Controller
             $item = $this->service->updateStatuses($project, $id, $request->validated());
 
             return Json::item((new ProjectOrderPermitPresenter($item))->getData());
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    public function noteLogs(string $project, string $id): JsonResponse
+    {
+        try {
+            $logs = $this->service->getNoteLogs($project, $id);
+
+            return Json::items(
+                $logs->map(fn ($log) => (new ProjectOrderPermitNoteLogPresenter($log))->getData())->toArray()
+            );
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }

@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectType\Presenters;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Carbon\Carbon;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
+use Modules\Project\ProjectType\Presenters\ProjectOrderPermitNoteLogPresenter;
 
 class ProjectOrderPermitPresenter extends AbstractPresenter
 {
@@ -59,6 +60,7 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'start_permit_date' => $this->model->start_permit_date?->toDateString(),
             'end_permit_date' => $this->model->end_permit_date?->toDateString(),
             'note_from_permit_to_departments' => $this->model->note_from_permit_to_departments,
+            'note_from_departments_to_permit' => $this->model->note_from_departments_to_permit,
             'is_taked_action' => $this->model->is_taked_action,
             'count_of_days_from_assigned_date' => $this->getCountOfDaysFromAssignedDate(),
             'evaluation_permit_status' => $this->getPermitStatus(),
@@ -100,7 +102,19 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
             'last_row_update_at' => $this->model->last_row_update_at?->toDateTimeString(),
             'created_at' => $this->model->created_at?->toDateTimeString(),
             'updated_at' => $this->model->updated_at?->toDateTimeString(),
+            'note_logs' => $this->getNoteLogs(),
         ];
+    }
+
+    private function getNoteLogs(): array
+    {
+        $logs = $this->model->noteLogs;
+
+        if ($logs === null || $logs->isEmpty()) {
+            return [];
+        }
+
+        return $logs->map(fn ($log) => (new ProjectOrderPermitNoteLogPresenter($log))->getData())->toArray();
     }
 
     private function getCountOfDaysFromAssignedDate(): ?int
@@ -191,10 +205,10 @@ class ProjectOrderPermitPresenter extends AbstractPresenter
     private function getPermitStatusName(): ?string
     {
         if ($this->getCompletionPhaseName() === 'التصاريح') {
-            return $this->getPhaseStatusName();
+            return $this->getPhaseStatusName() ?? 'لم ينشآ';
         }
 
-        return 'تم اصدار التصريح';
+        return 'لم ينشآ';
     }
 
     private function getConsultnatStatementStatus(): ?string

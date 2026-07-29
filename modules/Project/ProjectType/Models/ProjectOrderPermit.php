@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectType\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Modules\Project\ProjectManagement\Models\ProjectManagement as ProjectModel;
@@ -35,6 +36,7 @@ class ProjectOrderPermit extends Model
         'start_permit_date',
         'end_permit_date',
         'note_from_permit_to_departments',
+        'note_from_departments_to_permit',
         'is_taked_action',
         'lat',
         'long',
@@ -147,5 +149,10 @@ class ProjectOrderPermit extends Model
     public function safetyRecords(): MorphMany
     {
         return $this->morphMany(SafetyRecord::class, 'morphable');
+    }
+
+    public function noteLogs(): HasMany
+    {
+        return $this->hasMany(ProjectOrderPermitNoteLog::class, 'project_order_permit_id');
     }
 }

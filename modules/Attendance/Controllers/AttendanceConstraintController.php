@@ -1310,6 +1310,7 @@ class AttendanceConstraintController extends Controller
         $latenessMinutes      = null;
         $earlyClockInMinutes  = null;
         $workingHours         = null;
+        $canClockInBefore     = null;
 
         foreach ($allDays as $day) {
             $dayData = $schedule[$day] ?? [];
@@ -1329,7 +1330,11 @@ class AttendanceConstraintController extends Controller
                 $workingHours = (float) $dayData['total_work_hours'];
             }
 
-            if ($latenessMinutes !== null && $earlyClockInMinutes !== null && $workingHours !== null) {
+            if ($canClockInBefore === null && isset($dayData['clock_in_deadline_rules']['can_clock_in_before_minutes'])) {
+                $canClockInBefore = (int) $dayData['clock_in_deadline_rules']['can_clock_in_before_minutes'];
+            }
+
+            if ($latenessMinutes !== null && $earlyClockInMinutes !== null && $workingHours !== null && $canClockInBefore !== null) {
                 break;
             }
         }
@@ -1343,6 +1348,7 @@ class AttendanceConstraintController extends Controller
             'lateness_minutes'       => $latenessMinutes,
             'early_clock_in_minutes' => $earlyClockInMinutes,
             'working_hours'          => $workingHours,
+            'can_clock_in_before'    => $canClockInBefore,
         ], message: 'Constraint rules retrieved successfully');
     }
 
@@ -1362,6 +1368,7 @@ class AttendanceConstraintController extends Controller
         $request->validate([
             'lateness_minutes'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
             'early_clock_in_minutes'                      => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
+            'can_clock_in_before'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1440'],
             'max_over_time'                               => ['sometimes', 'nullable', 'integer', 'min:0'],
             'working_hours'                               => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:24'],
             'out_zone_minutes'                             => ['sometimes', 'nullable', 'integer', 'min:0'],
@@ -1391,6 +1398,7 @@ class AttendanceConstraintController extends Controller
         $hasConfigUpdate = $request->hasAny([
             'lateness_minutes',
             'early_clock_in_minutes',
+            'can_clock_in_before',
             'working_hours',
             'out_zone_rules',
             'out_zone_minutes',
@@ -1411,6 +1419,13 @@ class AttendanceConstraintController extends Controller
                     $min = $request->input('early_clock_in_minutes');
                     $config['time_rules']['weekly_schedule'][$day]['early_clock_in_rules'] = $min !== null
                         ? ['allowed_minutes_before' => (int) $min]
+                        : null;
+                }
+
+                if ($request->has('can_clock_in_before')) {
+                    $min = $request->input('can_clock_in_before');
+                    $config['time_rules']['weekly_schedule'][$day]['clock_in_deadline_rules'] = $min !== null
+                        ? ['can_clock_in_before_minutes' => (int) $min]
                         : null;
                 }
 
@@ -1453,6 +1468,7 @@ class AttendanceConstraintController extends Controller
             'out_zone_rules'         => $fresh->out_zone_rules,
             'lateness_minutes'       => $request->has('lateness_minutes')       ? $request->input('lateness_minutes')       : null,
             'early_clock_in_minutes' => $request->has('early_clock_in_minutes') ? $request->input('early_clock_in_minutes') : null,
+            'can_clock_in_before'    => $request->has('can_clock_in_before')    ? $request->input('can_clock_in_before')    : null,
             'working_hours'          => $request->has('working_hours')          ? $request->input('working_hours')          : null,
         ], message: 'Constraint rules updated successfully');
     }
