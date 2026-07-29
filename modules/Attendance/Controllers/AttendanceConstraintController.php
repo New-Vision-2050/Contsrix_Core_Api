@@ -1325,13 +1325,12 @@ class AttendanceConstraintController extends Controller
                 $latenessMinutes = (int) $dayData['lateness_rules']['lateness_period'];
             }
 
-            if ($earlyClockInMinutes === null) {
-                $early = \Modules\Attendance\Support\EarlyClockInRules::minutes(
-                    is_array($dayData['early_clock_in_rules'] ?? null) ? $dayData['early_clock_in_rules'] : null
+            if ($earlyClockInMinutes === null && isset($dayData['early_clock_in_rules'])) {
+                // minutes() returns 0 for a configured zero — keep the 0-vs-null distinction
+                // (key present → numeric, key absent → null).
+                $earlyClockInMinutes = \Modules\Attendance\Support\EarlyClockInRules::minutes(
+                    is_array($dayData['early_clock_in_rules']) ? $dayData['early_clock_in_rules'] : null
                 );
-                if ($early > 0) {
-                    $earlyClockInMinutes = $early;
-                }
             }
 
             if ($workingHours === null && isset($dayData['total_work_hours'])) {

@@ -252,8 +252,9 @@ class AttendanceService
     /**
      * Net working minutes already credited in previous rows for the same scheduled period,
      * so a re-clock-in inside the extension only owes the remaining hours.
+     * Public: reused by MockAttendanceService so violation payloads carry accurate boundaries.
      */
-    private function workedMinutesInScheduledPeriod(string $userId, string $startTime, string $endTime): int
+    public function workedMinutesInScheduledPeriod(string $userId, string $startTime, string $endTime): int
     {
         return (int) round((float) Attendance::query()
                 ->where('user_id', $userId)

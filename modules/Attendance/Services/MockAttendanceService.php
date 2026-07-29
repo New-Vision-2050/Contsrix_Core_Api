@@ -89,7 +89,7 @@ class MockAttendanceService
                     $end->addDay();
                 }
 
-                $window = $this->computeWindowForPeriod($period, $start, $end, $clockInCarbon, $workRules, $timezone);
+                $window = $this->computeWindowForPeriod($period, $start, $end, $clockInCarbon, $workRules, $timezone, (string) $user->id);
                 $hasAnyClockIn = $this->periodHasAnyClockIn($period);
                 $isFirstClockIn = !$hasAnyClockIn && !$hasActiveAttendance;
 
@@ -116,12 +116,17 @@ class MockAttendanceService
                     continue;
                 }
 
-                if (!$hasActiveAttendance) {
-                    $canClockIn = true;
-                    $activePeriod = $period;
-                    $rejection = null;
+                // Inside the window but already clocked in — keep the specific outcome
+                // (pre-V2 behaviour) instead of falling through to a generic message.
+                if ($hasActiveAttendance) {
+                    $rejection = ['type' => 'already_clocked_in', 'window' => $window];
                     break;
                 }
+
+                $canClockIn = true;
+                $activePeriod = $period;
+                $rejection = null;
+                break;
             }
         }
 
@@ -159,7 +164,8 @@ class MockAttendanceService
         Carbon $periodEnd,
         Carbon $clockIn,
         array $workRules,
-        string $timezone
+        string $timezone,
+        string $userId
     ): ShiftWindow {
         $earlyMinutes = (int) ($period['early_clock_in_minutes'] ?? $workRules['early_clock_in_minutes'] ?? 0);
         $extensionMinutes = (int) ($period['extension_minutes'] ?? $workRules['extension_minutes'] ?? 0);
@@ -174,6 +180,11 @@ class MockAttendanceService
             extensionMinutes: $extensionMinutes,
             canClockInBeforeMinutes: $canClockInBefore !== null ? (int) $canClockInBefore : null,
             maxOverTimeHours: (float) ($workRules['max_over_time'] ?? 0.0),
+            alreadyWorkedMinutesInPeriod: $this->attendanceService->workedMinutesInScheduledPeriod(
+                $userId,
+                $periodStart->format('Y-m-d H:i:s'),
+                $periodEnd->format('Y-m-d H:i:s'),
+            ),
             overtimeFlags: $flags,
             timezone: $timezone,
         ));
@@ -213,6 +224,7 @@ class MockAttendanceService
             $type = $rejection['type'];
             $window = $rejection['window'];
             $reason = match ($rejection['type']) {
+                'already_clocked_in' => 'You are already clocked in.',
                 'clock_in_too_early' => 'Clock-in is too early. You can clock in from '
                     . $window->earliestClockIn->format('H:i') . '.',
                 'clock_in_deadline_passed' => 'Clock-in deadline passed at '
