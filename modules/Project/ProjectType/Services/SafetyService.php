@@ -3,6 +3,7 @@
 namespace Modules\Project\ProjectType\Services;
 
 use App\Exceptions\CustomException;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -30,33 +31,28 @@ class SafetyService
         private FileUploadService $fileUploadService,
     ) {}
 
-    public function list(string $projectId, array $filters = []): EloquentCollection
-    {
-        $records = SafetyRecord::query()
-            ->where('project_id', $projectId)
-            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'media'])
-            ->filter($filters)
-            ->orderByDesc('created_at')
-            ->get();
+    public function list(
+        string $projectId,
+        array $filters = [],
+        int $perPage = 15,
+        ?string $sort = null,
+    ): LengthAwarePaginator {
+        $paginator = $this->repository->paginateForProject($projectId, $filters, $perPage, $sort);
+        $this->attachAllViolations(EloquentCollection::make($paginator->items()));
 
-        return $this->attachAllViolations($records);
+        return $paginator;
     }
 
-    public function inbox(string $userId, array $filters = []): EloquentCollection
-    {
-        // Inbox is always scoped to the authenticated user; don't let
-        // assigned_user_id override that constraint.
-        unset($filters['assigned_user_id']);
+    public function inbox(
+        string $userId,
+        array $filters = [],
+        int $perPage = 15,
+        ?string $sort = null,
+    ): LengthAwarePaginator {
+        $paginator = $this->repository->paginateForInbox($userId, $filters, $perPage, $sort);
+        $this->attachAllViolations(EloquentCollection::make($paginator->items()));
 
-        $records = SafetyRecord::query()
-            ->where('assigned_user_id', $userId)
-            ->where('status', 'pending')
-            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'project', 'media'])
-            ->filter($filters)
-            ->orderByDesc('created_at')
-            ->get();
-
-        return $this->attachAllViolations($records);
+        return $paginator;
     }
 
     public function report(string $projectId, array $filters = []): Collection
@@ -471,6 +467,7 @@ class SafetyService
                 'is_attached' => $isAttached,
                 'weight' => $pivot?->weight,
                 'status' => $pivot?->status,
+                'action' => $pivot?->action,
             ];
         });
     }
@@ -494,6 +491,9 @@ class SafetyService
             $syncData[$violationId] = [
                 'weight' => $this->signedWeight($baseWeight, $status),
                 'status' => $status,
+                'action' => $status === 'violation_found'
+                    ? ($violation['action'] ?? null)
+                    : null,
             ];
         }
 
