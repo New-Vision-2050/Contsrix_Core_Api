@@ -99,8 +99,7 @@ class SafetyRecord extends Model implements HasMedia
             'violation_id'
         )
             ->using(SafetyRecordViolation::class)
-            ->withPivot('id', 'weight', 'status')
+            ->withPivot('id', 'weight', 'status', 'action')
             ->withTimestamps();
     }
-    // }
 }
