@@ -47,6 +47,11 @@ class SafetyRecordFilter extends SearchModelFilter
         return $this->where('contractor_id', $contractorId);
     }
 
+    public function status($status)
+    {
+        return $this->where('status', $status);
+    }
+
     public function assignedUserId($assignedUserId)
     {
         return $this->where('assigned_user_id', $assignedUserId);

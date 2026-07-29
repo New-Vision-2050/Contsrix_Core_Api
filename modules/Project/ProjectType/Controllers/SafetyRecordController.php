@@ -21,10 +21,24 @@ class SafetyRecordController extends Controller
     public function index(FilterSafetyRecordsRequest $request, string $project): JsonResponse
     {
         try {
-            $records = $this->service->list($project, $request->filters());
+            $paginator = $this->service->list(
+                $project,
+                $request->filters(),
+                $request->perPage(),
+                $request->sort()
+            );
 
             return Json::items(
-                $records->map(fn ($r) => (new SafetyRecordPresenter($r))->getData())->toArray()
+                mainItems: collect($paginator->items())
+                    ->map(fn ($r) => (new SafetyRecordPresenter($r))->getData())
+                    ->values()
+                    ->all(),
+                paginationSettings: [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                ],
             );
         } catch (Throwable $e) {
             return $this->errorResponse($e);
@@ -43,15 +57,28 @@ class SafetyRecordController extends Controller
             return $this->errorResponse($e);
         }
     }
-    // }
 
     public function inbox(FilterSafetyRecordsRequest $request): JsonResponse
     {
         try {
-            $records = $this->service->inbox((string) auth()->id(), $request->filters());
+            $paginator = $this->service->inbox(
+                (string) auth()->id(),
+                $request->filters(),
+                $request->perPage(),
+                $request->sort()
+            );
 
             return Json::items(
-                $records->map(fn ($r) => (new SafetyRecordPresenter($r))->getData())->toArray()
+                mainItems: collect($paginator->items())
+                    ->map(fn ($r) => (new SafetyRecordPresenter($r))->getData())
+                    ->values()
+                    ->all(),
+                paginationSettings: [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                ],
             );
         } catch (Throwable $e) {
             return $this->errorResponse($e);

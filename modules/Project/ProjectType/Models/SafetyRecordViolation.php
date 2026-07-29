@@ -20,6 +20,7 @@ class SafetyRecordViolation extends Pivot
         'violation_id',
         'weight',
         'status',
+        'action',
     ];
 
     protected $casts = [

@@ -188,13 +188,13 @@ final class SafetyLifecycleTest extends TestCase
             ->firstWhere('id', $record->id)['status']);
     }
 
-    public function test_completed_task_does_not_appear_in_inbox(): void
+    public function test_completed_task_does_not_appear_when_filtering_pending_inbox(): void
     {
         $record = $this->createSafetyRecord($this->assignee, ['status' => 'completed']);
 
         $response = $this->actingAs($this->assignee, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson('/api/v1/projects/safety/inbox');
+            ->getJson('/api/v1/projects/safety/inbox?status=pending');
 
         $response->assertOk();
 
@@ -214,6 +214,7 @@ final class SafetyLifecycleTest extends TestCase
                         'violation_id' => $this->violationOne->id,
                         'weight' => 7,
                         'status' => 'violation_found',
+                        'action' => 'stop_work',
                     ],
                     [
                         'violation_id' => $this->violationTwo->id,
@@ -231,6 +232,14 @@ final class SafetyLifecycleTest extends TestCase
         $this->assertEquals(9.0, (float) $response->json('payload.required_score'));
         $this->assertEquals(-55.56, (float) $response->json('payload.percentage'));
 
+        $violationOnePayload = collect($response->json('payload.all_violations'))
+            ->firstWhere('id', $this->violationOne->id);
+        $violationTwoPayload = collect($response->json('payload.all_violations'))
+            ->firstWhere('id', $this->violationTwo->id);
+
+        $this->assertSame('stop_work', $violationOnePayload['action']);
+        $this->assertNull($violationTwoPayload['action']);
+
         $this->assertDatabaseHas('safety_records', [
             'id' => $record->id,
             'status' => 'completed',
@@ -241,6 +250,7 @@ final class SafetyLifecycleTest extends TestCase
             'violation_id' => $this->violationOne->id,
             'weight' => -7,
             'status' => 'violation_found',
+            'action' => 'stop_work',
         ]);
 
         $this->assertDatabaseHas('safety_record_violation', [
@@ -248,6 +258,108 @@ final class SafetyLifecycleTest extends TestCase
             'violation_id' => $this->violationTwo->id,
             'weight' => 2,
             'status' => 'no_violation',
+            'action' => null,
+        ]);
+    }
+
+    public function test_evaluating_violation_found_without_action_fails_validation(): void
+    {
+        $record = $this->createSafetyRecord($this->assignee);
+
+        $response = $this->actingAs($this->assignee, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/projects/'.$this->project->id.'/safety/'.$record->id.'/violations', [
+                'violations' => [
+                    [
+                        'violation_id' => $this->violationOne->id,
+                        'weight' => 7,
+                        'status' => 'violation_found',
+                    ],
+                ],
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseHas('safety_records', [
+            'id' => $record->id,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_no_violation_and_not_applicable_do_not_require_action(): void
+    {
+        $record = $this->createSafetyRecord($this->assignee);
+        $violationThree = Violation::query()->create([
+            'id' => (string) Str::uuid(),
+            'code' => 'SAFE-C-'.Str::upper(Str::random(4)),
+            'description' => 'Test violation C',
+            'category' => 'C',
+            'default_weight' => 0.5,
+        ]);
+
+        $response = $this->actingAs($this->assignee, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/projects/'.$this->project->id.'/safety/'.$record->id.'/violations', [
+                'violations' => [
+                    [
+                        'violation_id' => $this->violationOne->id,
+                        'weight' => 7,
+                        'status' => 'no_violation',
+                    ],
+                    [
+                        'violation_id' => $violationThree->id,
+                        'status' => 'not_applicable',
+                    ],
+                ],
+            ]);
+
+        $response->assertOk();
+
+        $payload = collect($response->json('payload.all_violations'));
+        $this->assertNull($payload->firstWhere('id', $this->violationOne->id)['action']);
+        $this->assertNull($payload->firstWhere('id', $violationThree->id)['action']);
+
+        $this->assertDatabaseHas('safety_record_violation', [
+            'safety_record_id' => $record->id,
+            'violation_id' => $this->violationOne->id,
+            'status' => 'no_violation',
+            'action' => null,
+        ]);
+        $this->assertDatabaseHas('safety_record_violation', [
+            'safety_record_id' => $record->id,
+            'violation_id' => $violationThree->id,
+            'status' => 'not_applicable',
+            'action' => null,
+        ]);
+    }
+
+    public function test_evaluating_violation_found_with_exclude_equipment_action_succeeds(): void
+    {
+        $record = $this->createSafetyRecord($this->assignee);
+
+        $response = $this->actingAs($this->assignee, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/projects/'.$this->project->id.'/safety/'.$record->id.'/violations', [
+                'violations' => [
+                    [
+                        'violation_id' => $this->violationOne->id,
+                        'weight' => 7,
+                        'status' => 'violation_found',
+                        'action' => 'exclude_equipment',
+                    ],
+                ],
+            ]);
+
+        $response->assertOk();
+
+        $violationPayload = collect($response->json('payload.all_violations'))
+            ->firstWhere('id', $this->violationOne->id);
+        $this->assertSame('exclude_equipment', $violationPayload['action']);
+
+        $this->assertDatabaseHas('safety_record_violation', [
+            'safety_record_id' => $record->id,
+            'violation_id' => $this->violationOne->id,
+            'status' => 'violation_found',
+            'action' => 'exclude_equipment',
         ]);
     }
 
@@ -329,6 +441,7 @@ final class SafetyLifecycleTest extends TestCase
                         'violation_id' => $this->violationTwo->id,
                         'weight' => 2,
                         'status' => 'violation_found',
+                        'action' => 'stop_work',
                     ],
                 ],
             ]);
