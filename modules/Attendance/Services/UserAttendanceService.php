@@ -262,7 +262,15 @@ class UserAttendanceService
             $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
 
-            $window = $this->computePeriodWindow($periodStart, $periodEnd, $now, $workRules, $timezone);
+            // Net minutes already credited in this scheduled period (in-memory — rows were
+            // already loaded), so window boundaries account for completed attendances.
+            $alreadyWorked = (int) round($attendances
+                ->filter(fn ($a) => !empty($a->clock_in_time)
+                    && $a->start_time === $periodStart->format('Y-m-d H:i:s')
+                    && $a->end_time === $periodEnd->format('Y-m-d H:i:s'))
+                ->sum(fn ($a) => (float) $a->total_work_hours) * 60);
+
+            $window = $this->computePeriodWindow($periodStart, $periodEnd, $now, $workRules, $timezone, $alreadyWorked);
             $hasAnyClockIn = collect($periodAttendances)->contains(fn ($att) => !empty($att['clock_in_time']));
             $hasActiveAttendance = collect($periodAttendances)->contains(fn ($att) => ($att['status'] ?? null) === 'active');
             $periodIsAbsent = collect($periodAttendances)->contains(fn ($att) => ($att['status'] ?? null) === 'absent')
@@ -509,7 +517,8 @@ class UserAttendanceService
         Carbon $periodEnd,
         Carbon $now,
         array $workRules,
-        string $timezone
+        string $timezone,
+        int $alreadyWorkedMinutesInPeriod = 0
     ): \Modules\Attendance\Domain\Time\ShiftWindow {
         return (new \Modules\Attendance\Domain\Time\ShiftWindowCalculator())->compute(
             new \Modules\Attendance\Domain\Time\ShiftWindowInput(
@@ -522,6 +531,7 @@ class UserAttendanceService
                     ? (int) $workRules['can_clock_in_before_minutes']
                     : null,
                 maxOverTimeHours: (float) ($workRules['max_over_time'] ?? 0.0),
+                alreadyWorkedMinutesInPeriod: $alreadyWorkedMinutesInPeriod,
                 overtimeFlags: \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($workRules['overtime_rules'] ?? null),
                 timezone: $timezone,
             )
