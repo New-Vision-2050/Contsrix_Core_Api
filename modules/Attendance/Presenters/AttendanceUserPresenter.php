@@ -145,6 +145,12 @@ class AttendanceUserPresenter extends AbstractPresenter
             'overtime_hours' => HoursFormatter::fromDecimalString($this->attendance->overtime_hours),
             'break_hours' => HoursFormatter::fromDecimalString($this->attendance->total_break_hours),
 
+            // Rules V2 — zone breakdown (HH:MM, INV-16)
+            'pre_shift_hours' => HoursFormatter::fromDecimalString($this->attendance->pre_shift_hours ?? 0),
+            'in_shift_hours' => HoursFormatter::fromDecimalString($this->attendance->in_shift_hours ?? 0),
+            'post_shift_hours' => HoursFormatter::fromDecimalString($this->attendance->post_shift_hours ?? 0),
+            'outside_window_hours' => HoursFormatter::fromDecimalString($this->attendance->outside_window_hours ?? 0),
+
             // Late / Early departure
             'is_late' => $this->attendance->is_late ? 'Yes' : 'No',
             'late_minutes' => HoursFormatter::fromMinutes((int)$this->attendance->late_minutes),

@@ -59,9 +59,12 @@ class DefaultConstraintService
                             'enabled' => true,
                             "total_work_hours"=>9,
                             'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
+                            // Rules V2 (D4): strict lateness — grace is 0, any minute past
+                            // shift start is recorded as lateness.
                             'lateness_rules' => [
                                 'prevent_lateness' => true,
-                                'grace_period_minutes' => 30,
+                                'lateness_period' => 0,
+                                'grace_period_minutes' => 0,
                                 "unit"=>"minute"//hour, minute, day
                                 ],
                                 'early_departure_rules' => [
@@ -73,7 +76,8 @@ class DefaultConstraintService
                             'monday'    => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
                                 'lateness_rules' => [
                                     'prevent_lateness' => true,
-                                    'grace_period_minutes' => 30,
+                                    'lateness_period' => 0,
+                                    'grace_period_minutes' => 0,
                                     "unit"=>"minute"//hour, minute, day
                                 ],
                                     'early_departure_rules' => [
@@ -85,7 +89,8 @@ class DefaultConstraintService
                             'tuesday'   => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
                                 'lateness_rules' => [
                                     'prevent_lateness' => true,
-                                    'grace_period_minutes' => 30,
+                                    'lateness_period' => 0,
+                                    'grace_period_minutes' => 0,
                                     "unit"=>"minute"//hour, minute, day
                                 ],
                                     'early_departure_rules' => [
@@ -97,7 +102,8 @@ class DefaultConstraintService
                             'wednesday' => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
                                 'lateness_rules' => [
                                     'prevent_lateness' => true,
-                                    'grace_period_minutes' => 30,
+                                    'lateness_period' => 0,
+                                    'grace_period_minutes' => 0,
                                     "unit"=>"minute"//hour, minute, day
                                 ],
                                     'early_departure_rules' => [
@@ -109,7 +115,8 @@ class DefaultConstraintService
                             'thursday'  => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
                                 'lateness_rules' => [
                                     'prevent_lateness' => true,
-                                    'grace_period_minutes' => 30,
+                                    'lateness_period' => 0,
+                                    'grace_period_minutes' => 0,
                                     "unit"=>"minute"//hour, minute, day
                                 ],
                                     'early_departure_rules' => [

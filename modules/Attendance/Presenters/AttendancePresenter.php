@@ -67,6 +67,21 @@ class AttendancePresenter extends AbstractPresenter
             'total_break_hours' => HoursFormatter::fromHours($this->computeLiveBreakHours()),
             'overtime_hours' => HoursFormatter::fromDecimalString($this->attendance->overtime_hours),
 
+            // Rules V2 — zone breakdown + computed boundaries. HH:MM strings (INV-16).
+            'pre_shift_hours' => HoursFormatter::fromDecimalString($this->attendance->pre_shift_hours ?? 0),
+            'in_shift_hours' => HoursFormatter::fromDecimalString($this->attendance->in_shift_hours ?? 0),
+            'post_shift_hours' => HoursFormatter::fromDecimalString($this->attendance->post_shift_hours ?? 0),
+            'outside_window_hours' => HoursFormatter::fromDecimalString($this->attendance->outside_window_hours ?? 0),
+            'expected_clock_out_time' => $this->attendance->expected_clock_out_time
+                ? \Carbon\Carbon::parse($this->attendance->expected_clock_out_time)->format('Y-m-d H:i:s')
+                : null,
+            'required_work_minutes' => $this->attendance->required_work_minutes !== null
+                ? (int) $this->attendance->required_work_minutes
+                : null,
+            'absent_at' => $this->attendance->absent_at
+                ? \Carbon\Carbon::parse($this->attendance->absent_at)->format('Y-m-d H:i:s')
+                : null,
+
             // Status flags
             'is_late' => (int)$this->attendance->is_late,
             'is_absent' => (int)$this->attendance->is_absent,

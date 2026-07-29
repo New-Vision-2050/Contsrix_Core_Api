@@ -68,7 +68,6 @@ class AttendanceCalculatorTest extends TestCase
             clockIn:           $clockIn  ? CarbonImmutable::parse($clockIn, $tz)  : null,
             clockOut:          $clockOut ? CarbonImmutable::parse($clockOut, $tz) : null,
             totalBreakMinutes: $breakMinutes,
-            gracePeriodMinutes: $gracePeriodMinutes,
             maxOverTimeHours:  $maxOverTimeHours,
             timezone:          $tz,
         );
@@ -143,44 +142,43 @@ class AttendanceCalculatorTest extends TestCase
     // Lateness
     // -------------------------------------------------------------------------
 
-    public function test_late_within_grace_is_not_late(): void
+    public function test_late_by_one_minute_is_late_strict(): void
     {
+        // Rules V2 (D4): strict lateness — any minute past scheduledStart is late.
+        // The former grace period no longer suppresses is_late.
         $result = $this->calculator->calculate($this->input(
             schedStart: '2024-01-15 09:00',
             schedEnd:   '2024-01-15 17:00',
-            clockIn:    '2024-01-15 09:08',
+            clockIn:    '2024-01-15 09:01',
             clockOut:   '2024-01-15 17:00',
-            gracePeriodMinutes: 10,
             maxOverTimeHours: 1.0,
         ));
 
-        $this->assertFalse($result->isLate);
-        $this->assertSame(0, $result->lateMinutes);
+        $this->assertTrue($result->isLate);
+        $this->assertSame(1, $result->lateMinutes);
     }
 
-    public function test_late_exactly_at_grace_boundary_is_not_late(): void
+    public function test_late_past_start_records_minutes_from_start(): void
     {
         $result = $this->calculator->calculate($this->input(
             schedStart: '2024-01-15 09:00',
             schedEnd:   '2024-01-15 17:00',
             clockIn:    '2024-01-15 09:10',
             clockOut:   '2024-01-15 17:00',
-            gracePeriodMinutes: 10,
         ));
 
-        $this->assertFalse($result->isLate);
+        $this->assertTrue($result->isLate);
+        $this->assertSame(10, $result->lateMinutes);
     }
 
-    public function test_late_past_grace_records_full_minutes_from_scheduled_start(): void
+    public function test_late_records_full_minutes_from_scheduled_start(): void
     {
-        // Business rule: late_minutes = full diff from scheduledStart (NOT from grace boundary).
-        // Grace=10, clockIn=09:20 → late_minutes = 20 (not 10).
+        // Business rule: late_minutes = full diff from scheduledStart.
         $result = $this->calculator->calculate($this->input(
             schedStart: '2024-01-15 09:00',
             schedEnd:   '2024-01-15 17:00',
             clockIn:    '2024-01-15 09:20',
             clockOut:   '2024-01-15 17:00',
-            gracePeriodMinutes: 10,
             maxOverTimeHours: 1.0,
         ));
 
@@ -190,18 +188,18 @@ class AttendanceCalculatorTest extends TestCase
         $this->assertFalse($result->isEarlyDeparture);
     }
 
-    public function test_zero_grace_any_lateness_is_recorded(): void
+    public function test_early_clock_in_is_not_late(): void
     {
+        // Early clock-in is never late (clock_in <= scheduledStart).
         $result = $this->calculator->calculate($this->input(
             schedStart: '2024-01-15 09:00',
             schedEnd:   '2024-01-15 17:00',
-            clockIn:    '2024-01-15 09:01',
+            clockIn:    '2024-01-15 08:30',
             clockOut:   '2024-01-15 17:00',
-            gracePeriodMinutes: 0,
         ));
 
-        $this->assertTrue($result->isLate);
-        $this->assertSame(1, $result->lateMinutes);
+        $this->assertFalse($result->isLate);
+        $this->assertSame(0, $result->lateMinutes);
     }
 
     // -------------------------------------------------------------------------
@@ -339,7 +337,8 @@ class AttendanceCalculatorTest extends TestCase
             maxOverTimeHours: 2.0,
         ));
 
-        $this->assertSame(9.5, $result->totalWorkHours, 'Work hours include early 30 min');
+        // V2: total_work_hours excludes overtime → 9.5h gross − 1.0h OT = 8.5h.
+        $this->assertSame(8.5, $result->totalWorkHours, 'Work hours exclude overtime (V2)');
         $this->assertSame(1.0, $result->overtimeHours, 'Overtime = 1h (only post-shift), not 1.5h');
     }
 
@@ -428,7 +427,6 @@ class AttendanceCalculatorTest extends TestCase
             clockIn:           CarbonImmutable::parse('2024-01-15 22:00', $tz),
             clockOut:          CarbonImmutable::parse('2024-01-16 06:00', $tz),
             totalBreakMinutes: 0,
-            gracePeriodMinutes: 10,
             maxOverTimeHours:  0.0,
             timezone:          $tz,
         );
@@ -481,7 +479,8 @@ class AttendanceCalculatorTest extends TestCase
             maxOverTimeHours: 1.0,
         ));
 
-        $this->assertSame(8.5, $result->totalWorkHours);
+        // V2: total_work_hours excludes overtime → 8.5h gross − 0.5h OT = 8.0h.
+        $this->assertSame(8.0, $result->totalWorkHours);
         $this->assertSame(1.0, $result->totalBreakHours);
         $this->assertSame(0.5, $result->overtimeHours);
         $this->assertFalse($result->isLate);
