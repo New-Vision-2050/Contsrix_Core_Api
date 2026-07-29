@@ -13,10 +13,12 @@ use Modules\Attendance\Domain\Calculator\AttendanceCalculator;
 use Modules\Attendance\Domain\Calculator\EarlyDeparturePolicy;
 use Modules\Attendance\Domain\Calculator\LatenessPolicy;
 use Modules\Attendance\Domain\Calculator\OvertimePolicy;
+use Modules\Attendance\Domain\Calculator\SegmentedOvertimePolicy;
 use Modules\Attendance\Domain\Calculator\StandardEarlyDeparturePolicy;
 use Modules\Attendance\Domain\Calculator\StandardLatenessPolicy;
 use Modules\Attendance\Domain\Calculator\StandardOvertimePolicy;
 use Modules\Attendance\Domain\Time\Clock;
+use Modules\Attendance\Domain\Time\ShiftWindowCalculator;
 use Modules\Attendance\Domain\Time\SystemClock;
 use Modules\Attendance\Domain\Time\TimezoneResolver;
 use Modules\Attendance\Events\AttendanceClockedIn;
@@ -68,8 +70,17 @@ class AttendanceServiceProvider extends ServiceProvider
         $this->app->singleton(AutoBreakComputer::class);
 
         $this->app->singleton(LatenessPolicy::class, StandardLatenessPolicy::class);
-        $this->app->singleton(OvertimePolicy::class, StandardOvertimePolicy::class);
+
+        // Rules V2: 'segmented' (default) keeps V1 numbers when all overtime flags are off;
+        // 'standard' is the one-release rollback switch (config attendance.overtime_policy).
+        $this->app->singleton(OvertimePolicy::class, function ($app) {
+            return $app['config']->get('attendance.overtime_policy', 'segmented') === 'standard'
+                ? new StandardOvertimePolicy()
+                : new SegmentedOvertimePolicy();
+        });
+
         $this->app->singleton(EarlyDeparturePolicy::class, StandardEarlyDeparturePolicy::class);
+        $this->app->singleton(ShiftWindowCalculator::class);
 
         $this->app->singleton(AttendanceCalculator::class, function ($app) {
             return new AttendanceCalculator(

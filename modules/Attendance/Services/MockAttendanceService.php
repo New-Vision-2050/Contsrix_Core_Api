@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Modules\Attendance\Services;
 
 use Illuminate\Support\Facades\Auth;
+use Modules\Attendance\Domain\Calculator\OvertimeFlags;
+use Modules\Attendance\Domain\Time\ShiftWindow;
+use Modules\Attendance\Domain\Time\ShiftWindowCalculator;
+use Modules\Attendance\Domain\Time\ShiftWindowInput;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\DTO\ClockInDTO;
 use Modules\Attendance\Events\AttendanceClockedIn;
@@ -12,6 +16,7 @@ use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\User\Models\User;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 /**
  * A service dedicated to creating non-persisted (mock) Attendance models
@@ -22,8 +27,11 @@ class MockAttendanceService
     public function __construct(
         private AttendanceConstraintService $constraintService,
         private AttendanceService $attendanceService,
-        private UserAttendanceService $userAttendanceService
-    ) {}
+        private UserAttendanceService $userAttendanceService,
+        private ?ShiftWindowCalculator $windowCalculator = null
+    ) {
+        $this->windowCalculator ??= new ShiftWindowCalculator();
+    }
     /**
      * Persist clock-in: create attendance record and dispatch event.
      */
@@ -44,22 +52,23 @@ class MockAttendanceService
         $user = auth()->user();
         // Get user's timezone from request
         $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
-        
+
         // Parse clock-in time (already in correct timezone from request)
         $clockInCarbon = Carbon::parse($clockInDTO->getClockInTime());
-        
+
         // Get constraints for the clock-in date in user's timezone
         $userConstraints = $this->userAttendanceService->getUserConstraints((string) $user->id, $clockInCarbon->format('Y-m-d'));
-        
+
         $canClockIn = false;
         $activePeriod = null;
-        $matchedPeriod = null;
-        $matchedPeriodHasActiveAttendance = false;
+        $rejection = null;
         $clockInCarbon = Carbon::parse($clockInCarbon->format('Y-m-d H:i:s'), $timezone);
 
-        if (isset($userConstraints['work_rules']['all_work_periods'])) {
+        $workRules = $userConstraints['work_rules'] ?? [];
+
+        if (isset($workRules['all_work_periods'])) {
             $periodDateStr = $clockInCarbon->format('Y-m-d');
-            foreach ($userConstraints['work_rules']['all_work_periods'] as $period) {
+            foreach ($workRules['all_work_periods'] as $period) {
                 $hasActiveAttendance = false;
                 if (!empty($period['attendance']) && is_array($period['attendance'])) {
                     foreach ($period['attendance'] as $att) {
@@ -80,31 +89,46 @@ class MockAttendanceService
                     $end->addDay();
                 }
 
-                // Apply early clock-in window: allow clock-in from (start - early_period) to end
-                $effectiveStart = $this->applyEarlyClockInWindow($start, $period);
-                if ($effectiveStart !== null) {
-                    $start = $effectiveStart;
+                $window = $this->computeWindowForPeriod($period, $start, $end, $clockInCarbon, $workRules, $timezone);
+                $hasAnyClockIn = $this->periodHasAnyClockIn($period);
+                $isFirstClockIn = !$hasAnyClockIn && !$hasActiveAttendance;
+
+                $latestAllowed = $isFirstClockIn
+                    ? ($window->firstClockInDeadline ?? $window->lastClockInAt)
+                    : $window->lastClockInAt;
+
+                $tooEarly = $clockInCarbon->lt($window->earliestClockIn);
+                $tooLate  = $clockInCarbon->gt($latestAllowed);
+
+                // A different period may still match, so only remember the *closest*
+                // rejection — prefer "too late" (window passed) over "too early" (upcoming).
+                if ($tooEarly || $tooLate) {
+                    if ($rejection === null || $tooLate) {
+                        $rejection = [
+                            'type' => $tooEarly
+                                ? 'clock_in_too_early'
+                                : ($isFirstClockIn && $window->firstClockInDeadline !== null
+                                    ? 'clock_in_deadline_passed'
+                                    : 'clock_in_window_closed'),
+                            'window' => $window,
+                        ];
+                    }
+                    continue;
                 }
 
-                if ($clockInCarbon->between($start, $end, true)) {
-                    $matchedPeriod = $period;
-                    $matchedPeriodHasActiveAttendance = $hasActiveAttendance;
-
-                    if (!$hasActiveAttendance) {
-                        $canClockIn = true;
-                        $activePeriod = $period;
-                    }
+                if (!$hasActiveAttendance) {
+                    $canClockIn = true;
+                    $activePeriod = $period;
+                    $rejection = null;
                     break;
                 }
             }
         }
-        
+
         if (!$canClockIn) {
             return [$this->buildClockInNotAllowedViolation(
                 $userConstraints,
-                $matchedPeriod,
-                $matchedPeriodHasActiveAttendance,
-                $activePeriod
+                $rejection
             )];
         }
 
@@ -121,58 +145,95 @@ class MockAttendanceService
 
         $mockAttendance->setRelation('user', $user);
 
-        // Check lateness at clock-in time for the mock attendance
-        //$mockAttendance->checkLateness();
-
         return $this->constraintService->validateAttendance($mockAttendance, $rawRequestData, true);
     }
 
     /**
-     * If period has early_clock_in_rules, return period start minus early window; otherwise null.
+     * Build the shift window for one period. Rules resolve per-period first (injected into
+     * work periods by UserAttendanceService), then fall back to the day-level values emitted
+     * by AttendanceConstraintService.
      */
-    private function applyEarlyClockInWindow(Carbon $periodStart, array $period): ?Carbon
+    private function computeWindowForPeriod(
+        array $period,
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        Carbon $clockIn,
+        array $workRules,
+        string $timezone
+    ): ShiftWindow {
+        $earlyMinutes = (int) ($period['early_clock_in_minutes'] ?? $workRules['early_clock_in_minutes'] ?? 0);
+        $extensionMinutes = (int) ($period['extension_minutes'] ?? $workRules['extension_minutes'] ?? 0);
+        $canClockInBefore = $period['can_clock_in_before_minutes'] ?? $workRules['can_clock_in_before_minutes'] ?? null;
+        $flags = OvertimeFlags::fromArray($period['overtime_rules'] ?? $workRules['overtime_rules'] ?? null);
+
+        return $this->windowCalculator->compute(new ShiftWindowInput(
+            scheduledStart: CarbonImmutable::parse($periodStart->format('Y-m-d H:i:s'), $timezone),
+            scheduledEnd: CarbonImmutable::parse($periodEnd->format('Y-m-d H:i:s'), $timezone),
+            clockIn: CarbonImmutable::parse($clockIn->format('Y-m-d H:i:s'), $timezone),
+            earlyWindowMinutes: $earlyMinutes,
+            extensionMinutes: $extensionMinutes,
+            canClockInBeforeMinutes: $canClockInBefore !== null ? (int) $canClockInBefore : null,
+            maxOverTimeHours: (float) ($workRules['max_over_time'] ?? 0.0),
+            overtimeFlags: $flags,
+            timezone: $timezone,
+        ));
+    }
+
+    /**
+     * Whether any attendance row in this period has an actual clock-in
+     * (period['attendance'] entries are pre-formatted by UserAttendanceService).
+     */
+    private function periodHasAnyClockIn(array $period): bool
     {
-        $rules = $period['early_clock_in_rules'] ?? null;
-        if (!is_array($rules)) {
-            return null;
+        if (empty($period['attendance']) || !is_array($period['attendance'])) {
+            return false;
         }
-        $earlyPeriod = (int) ($rules['early_period'] ?? 0);
-        if ($earlyPeriod <= 0) {
-            return null;
+
+        foreach ($period['attendance'] as $att) {
+            if (!empty($att['clock_in_time'])) {
+                return true;
+            }
         }
-        $earlyUnit = (string) ($rules['early_unit'] ?? 'minutes');
-        if ($earlyUnit === '') {
-            return null;
-        }
-        if (strtolower($earlyUnit) === 'minute') {
-            $earlyUnit = 'minutes';
-        }
-        return $periodStart->copy()->sub($earlyPeriod, $earlyUnit);
+
+        return false;
     }
 
     private function buildClockInNotAllowedViolation(
         array $userConstraints,
-        ?array $matchedPeriod,
-        bool $matchedPeriodHasActiveAttendance,
-        ?array $activePeriod
+        ?array $rejection = null
     ): array {
+        $workRules = $userConstraints['work_rules'] ?? [];
         $reason = 'Cannot clock in at this time.';
-        $dayStatus = $userConstraints['work_rules']['day_status'] ?? null;
+        $type = 'clock_in_not_allowed';
+        $dayStatus = $workRules['day_status'] ?? null;
 
         if ($dayStatus !== null && $dayStatus !== 'work_day') {
             $reason = 'Cannot clock in on non-working day.';
-        } elseif ($matchedPeriod !== null && $matchedPeriodHasActiveAttendance) {
-            $reason = 'You are already clocked in.';
-        } elseif ($activePeriod === null) {
+        } elseif ($rejection !== null) {
+            $type = $rejection['type'];
+            $window = $rejection['window'];
+            $reason = match ($rejection['type']) {
+                'clock_in_too_early' => 'Clock-in is too early. You can clock in from '
+                    . $window->earliestClockIn->format('H:i') . '.',
+                'clock_in_deadline_passed' => 'Clock-in deadline passed at '
+                    . ($window->firstClockInDeadline?->format('H:i') ?? '') . '.',
+                default => 'The shift clock-in window has closed.',
+            };
+        } elseif (empty($workRules['all_work_periods'])) {
             $reason = 'No active work period available for clock in.';
         }
 
         $details = [
             'day_status' => $dayStatus,
-            'is_holiday' => $userConstraints['work_rules']['is_holiday'] ?? false,
+            'is_holiday' => $workRules['is_holiday'] ?? false,
         ];
+
+        if ($rejection !== null) {
+            $details['window'] = $rejection['window']->toResponseArray();
+        }
+
         // Include work periods with early_clock_in_rules so client can show "Clock in from HH:mm (early)"
-        $periods = $userConstraints['work_rules']['all_work_periods'] ?? [];
+        $periods = $workRules['all_work_periods'] ?? [];
         if (!empty($periods)) {
             $details['work_periods'] = array_map(function (array $p) {
                 $out = [
@@ -182,12 +243,17 @@ class MockAttendanceService
                 if (!empty($p['early_clock_in_rules'])) {
                     $out['early_clock_in_rules'] = $p['early_clock_in_rules'];
                 }
+                foreach (['can_clock_in_from', 'can_clock_in_until', 'can_clock_out_until', 'absent_at'] as $key) {
+                    if (array_key_exists($key, $p)) {
+                        $out[$key] = $p[$key];
+                    }
+                }
                 return $out;
             }, $periods);
         }
 
         return [
-            'type' => 'clock_in_not_allowed',
+            'type' => $type,
             'severity' => 'blocking',
             'message' => $reason,
             'details' => $details,

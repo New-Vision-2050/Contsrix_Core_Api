@@ -1228,8 +1228,10 @@ class AttendanceConstraintController extends Controller
 
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
 
-        $defaultLatenessRules = ['lateness_period' => 30, 'lateness_unit' => 'minute'];
-        $defaultEarlyRules    = ['allowed_minutes_before' => 30];
+        // Rules V2 (D4): strict lateness — the grace period defaults to 0 and no longer
+        // suppresses is_late. Early rules go through the normaliser so every key shape exists.
+        $defaultLatenessRules = ['lateness_period' => 0, 'lateness_unit' => 'minute', 'grace_period_minutes' => 0];
+        $defaultEarlyRules    = \Modules\Attendance\Support\EarlyClockInRules::toStorage(30);
 
         $existingConfig   = $constraint->constraint_config ?? [];
         $existingSchedule = $existingConfig['time_rules']['weekly_schedule'] ?? [];
@@ -1311,6 +1313,7 @@ class AttendanceConstraintController extends Controller
         $earlyClockInMinutes  = null;
         $workingHours         = null;
         $canClockInBefore     = null;
+        $extensionHoursShift  = null;
 
         foreach ($allDays as $day) {
             $dayData = $schedule[$day] ?? [];
@@ -1322,8 +1325,13 @@ class AttendanceConstraintController extends Controller
                 $latenessMinutes = (int) $dayData['lateness_rules']['lateness_period'];
             }
 
-            if ($earlyClockInMinutes === null && isset($dayData['early_clock_in_rules']['allowed_minutes_before'])) {
-                $earlyClockInMinutes = (int) $dayData['early_clock_in_rules']['allowed_minutes_before'];
+            if ($earlyClockInMinutes === null) {
+                $early = \Modules\Attendance\Support\EarlyClockInRules::minutes(
+                    is_array($dayData['early_clock_in_rules'] ?? null) ? $dayData['early_clock_in_rules'] : null
+                );
+                if ($early > 0) {
+                    $earlyClockInMinutes = $early;
+                }
             }
 
             if ($workingHours === null && isset($dayData['total_work_hours'])) {
@@ -1334,10 +1342,17 @@ class AttendanceConstraintController extends Controller
                 $canClockInBefore = (int) $dayData['clock_in_deadline_rules']['can_clock_in_before_minutes'];
             }
 
-            if ($latenessMinutes !== null && $earlyClockInMinutes !== null && $workingHours !== null && $canClockInBefore !== null) {
+            if ($extensionHoursShift === null && isset($dayData['extension_rules']['extension_hours'])) {
+                $extensionHoursShift = (float) $dayData['extension_rules']['extension_hours'];
+            }
+
+            if ($latenessMinutes !== null && $earlyClockInMinutes !== null && $workingHours !== null
+                && $canClockInBefore !== null && $extensionHoursShift !== null) {
                 break;
             }
         }
+
+        $overtimeRules = $config['time_rules']['overtime_rules'] ?? [];
 
         return Json::item([
             'constraint_id'          => $constraint->id,
@@ -1349,6 +1364,8 @@ class AttendanceConstraintController extends Controller
             'early_clock_in_minutes' => $earlyClockInMinutes,
             'working_hours'          => $workingHours,
             'can_clock_in_before'    => $canClockInBefore,
+            'extension_hours_shift'  => $extensionHoursShift,
+            'overtime_rules'         => \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($overtimeRules)->toArray(),
         ], message: 'Constraint rules retrieved successfully');
     }
 
@@ -1366,6 +1383,8 @@ class AttendanceConstraintController extends Controller
     public function updateRules(Request $request, string $constraintId): JsonResponse
     {
         $request->validate([
+            // Rules V2 (D4): lateness is strict. lateness_minutes is accepted for backward
+            // compatibility but always stored as 0 — the grace period is dead.
             'lateness_minutes'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
             'early_clock_in_minutes'                      => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
             'can_clock_in_before'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1440'],
@@ -1377,6 +1396,13 @@ class AttendanceConstraintController extends Controller
             'out_zone_rules.requires_approval'            => ['sometimes', 'boolean'],
             'out_zone_rules.approval_threshold_minutes'   => ['sometimes', 'integer', 'min:0'],
             'out_zone_rules.unit'                         => ['sometimes', 'string', 'in:minute,hour,day'],
+            'extension_hours_shift'                       => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:12'],
+            'extention_hours_shift'                       => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:12'],
+            'overtime_rules'                              => ['sometimes', 'nullable', 'array'],
+            'overtime_rules.is_overtime_before_early_clock_in'            => ['sometimes', 'boolean'],
+            'overtime_rules.is_overtime_after_extension_hours_shift'      => ['sometimes', 'boolean'],
+            'overtime_rules.is_overtime_after_extention_hours_shift'      => ['sometimes', 'boolean'],
+            'overtime_rules.is_after_finish_working_hours'                => ['sometimes', 'boolean'],
         ]);
 
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
@@ -1402,6 +1428,9 @@ class AttendanceConstraintController extends Controller
             'working_hours',
             'out_zone_rules',
             'out_zone_minutes',
+            'extension_hours_shift',
+            'extention_hours_shift',
+            'overtime_rules',
         ]);
 
         if ($hasConfigUpdate) {
@@ -1409,17 +1438,15 @@ class AttendanceConstraintController extends Controller
 
             foreach ($allDays as $day) {
                 if ($request->has('lateness_minutes')) {
-                    $min = $request->input('lateness_minutes');
-                    $config['time_rules']['weekly_schedule'][$day]['lateness_rules'] = $min !== null
-                        ? ['lateness_period' => (int) $min, 'lateness_unit' => 'minute']
-                        : null;
+                    // Strict lateness: always stored as 0 regardless of the submitted value.
+                    $config['time_rules']['weekly_schedule'][$day]['lateness_rules'] =
+                        ['lateness_period' => 0, 'lateness_unit' => 'minute', 'grace_period_minutes' => 0];
                 }
 
                 if ($request->has('early_clock_in_minutes')) {
                     $min = $request->input('early_clock_in_minutes');
-                    $config['time_rules']['weekly_schedule'][$day]['early_clock_in_rules'] = $min !== null
-                        ? ['allowed_minutes_before' => (int) $min]
-                        : null;
+                    $config['time_rules']['weekly_schedule'][$day]['early_clock_in_rules'] =
+                        \Modules\Attendance\Support\EarlyClockInRules::toStorage($min !== null ? (int) $min : null);
                 }
 
                 if ($request->has('can_clock_in_before')) {
@@ -1437,6 +1464,19 @@ class AttendanceConstraintController extends Controller
                         unset($config['time_rules']['weekly_schedule'][$day]['total_work_hours']);
                     }
                 }
+
+                if ($request->has('extension_hours_shift') || $request->has('extention_hours_shift')) {
+                    $hours = $request->input('extension_hours_shift', $request->input('extention_hours_shift'));
+                    $config['time_rules']['weekly_schedule'][$day]['extension_rules'] = $hours !== null
+                        ? ['extension_hours' => (float) $hours]
+                        : null;
+                }
+            }
+
+            if ($request->has('overtime_rules')) {
+                // Normalise (also folds the legacy `extention` misspelling into the canonical key).
+                $config['time_rules']['overtime_rules'] =
+                    \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($request->input('overtime_rules'))->toArray();
             }
 
             if ($request->has('out_zone_rules') || $request->has('out_zone_minutes')) {
@@ -1470,6 +1510,12 @@ class AttendanceConstraintController extends Controller
             'early_clock_in_minutes' => $request->has('early_clock_in_minutes') ? $request->input('early_clock_in_minutes') : null,
             'can_clock_in_before'    => $request->has('can_clock_in_before')    ? $request->input('can_clock_in_before')    : null,
             'working_hours'          => $request->has('working_hours')          ? $request->input('working_hours')          : null,
+            'extension_hours_shift'  => $request->hasAny(['extension_hours_shift', 'extention_hours_shift'])
+                ? $request->input('extension_hours_shift', $request->input('extention_hours_shift'))
+                : null,
+            'overtime_rules'         => \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray(
+                $fresh->constraint_config['time_rules']['overtime_rules'] ?? []
+            )->toArray(),
         ], message: 'Constraint rules updated successfully');
     }
 

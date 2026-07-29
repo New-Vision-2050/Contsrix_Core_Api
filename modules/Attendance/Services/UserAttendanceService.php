@@ -116,7 +116,8 @@ class UserAttendanceService
                     $attendances,
                     $dateCarbon,
                     is_array($earlyClockInRules) ? $earlyClockInRules : [],
-                    $currentAttendance
+                    $currentAttendance,
+                    $workRules
                 );
             }
 
@@ -232,7 +233,8 @@ class UserAttendanceService
         Collection $attendances,
         Carbon $date,
         array $earlyClockInRules,
-        ?Attendance $currentAttendance = null
+        ?Attendance $currentAttendance = null,
+        array $workRules = []
     ): array {
         $timezone = $this->getTimezone();
         $now = Carbon::now($timezone);
@@ -260,8 +262,18 @@ class UserAttendanceService
             $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
 
-            // Clock-in / early window (unchanged) — drives can_clock_in per period
-            $isActiveByTime = $this->isPeriodActiveIncludingEarly($periodStart, $periodEnd, $now, $earlyClockInRules);
+            $window = $this->computePeriodWindow($periodStart, $periodEnd, $now, $workRules, $timezone);
+            $hasAnyClockIn = collect($periodAttendances)->contains(fn ($att) => !empty($att['clock_in_time']));
+            $hasActiveAttendance = collect($periodAttendances)->contains(fn ($att) => ($att['status'] ?? null) === 'active');
+            $periodIsAbsent = collect($periodAttendances)->contains(fn ($att) => ($att['status'] ?? null) === 'absent')
+                || ($window->absentAt->isPast() && !$hasAnyClockIn);
+
+            $isFirstClockIn = !$hasAnyClockIn && !$hasActiveAttendance;
+            $latestAllowed = $isFirstClockIn
+                ? ($window->firstClockInDeadline ?? $window->lastClockInAt)
+                : $window->lastClockInAt;
+
+            $isActiveByTime = $now->between($window->earliestClockIn, $latestAllowed, true);
             $isActiveForDisplay = $activePeriodIndex !== null && $idx === $activePeriodIndex;
 
             $out[] = $this->mergePeriodData(
@@ -271,7 +283,10 @@ class UserAttendanceService
                 $isActiveByTime,
                 $isActiveForDisplay,
                 $earlyClockInRules,
-                $currentAttendance
+                $currentAttendance,
+                $window,
+                $periodIsAbsent,
+                $workRules
             );
         }
 
@@ -439,7 +454,10 @@ class UserAttendanceService
         bool $isActiveByTime,
         bool $isActiveForDisplay,
         array $earlyClockInRules,
-        ?Attendance $currentAttendance = null
+        ?Attendance $currentAttendance = null,
+        ?\Modules\Attendance\Domain\Time\ShiftWindow $window = null,
+        bool $periodIsAbsent = false,
+        array $workRules = []
     ): array {
         $cleanedPeriod = $period;
         unset($cleanedPeriod['period_start_time_carbon'], $cleanedPeriod['period_end_time_carbon']);
@@ -453,7 +471,21 @@ class UserAttendanceService
             return $att['status'] === 'active';
         });
 
-        $canClockIn = $isActiveByTime && ! $hasActiveAttendance && $currentAttendance === null;
+        $canClockIn = $isActiveByTime && ! $hasActiveAttendance && $currentAttendance === null && ! $periodIsAbsent;
+
+        $extra = [];
+        if ($window !== null) {
+            $extra = [
+                'work_window_start' => $window->workWindowStart->toIso8601String(),
+                'work_window_end' => $window->workWindowEnd->toIso8601String(),
+                'can_clock_in_from' => $window->earliestClockIn->toIso8601String(),
+                'can_clock_in_until' => $window->firstClockInDeadline?->toIso8601String() ?? $window->lastClockInAt->toIso8601String(),
+                'can_clock_out_until' => $window->lastClockOutAt->toIso8601String(),
+                'absent_at' => $window->absentAt->toIso8601String(),
+                'required_work_minutes' => $window->requiredWorkMinutes,
+                'is_absent' => $periodIsAbsent,
+            ];
+        }
 
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
@@ -462,8 +494,38 @@ class UserAttendanceService
             'can_clock_in' => $canClockIn,
             'can_clock_out' => $currentAttendance !== null && $isActiveForDisplay,
             'early_clock_in_rules' => $this->buildEarlyClockInRulesForResponse($earlyClockInRules),
+            'extension_hours_shift' => isset($workRules['extension_minutes']) ? round(((int) $workRules['extension_minutes']) / 60, 2) : 0,
+            'can_clock_in_before' => $workRules['can_clock_in_before_minutes'] ?? null,
             'attendance' => $attendance,
-        ]);
+        ], $extra);
+    }
+
+    /**
+     * Compute the V2 shift window for one period from the day-level rules emitted by
+     * AttendanceConstraintService (early/extension/deadline/overtime flags).
+     */
+    private function computePeriodWindow(
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        Carbon $now,
+        array $workRules,
+        string $timezone
+    ): \Modules\Attendance\Domain\Time\ShiftWindow {
+        return (new \Modules\Attendance\Domain\Time\ShiftWindowCalculator())->compute(
+            new \Modules\Attendance\Domain\Time\ShiftWindowInput(
+                scheduledStart: \Carbon\CarbonImmutable::parse($periodStart->format('Y-m-d H:i:s'), $timezone),
+                scheduledEnd: \Carbon\CarbonImmutable::parse($periodEnd->format('Y-m-d H:i:s'), $timezone),
+                clockIn: \Carbon\CarbonImmutable::parse($now->format('Y-m-d H:i:s'), $timezone),
+                earlyWindowMinutes: (int) ($workRules['early_clock_in_minutes'] ?? 0),
+                extensionMinutes: (int) ($workRules['extension_minutes'] ?? 0),
+                canClockInBeforeMinutes: isset($workRules['can_clock_in_before_minutes'])
+                    ? (int) $workRules['can_clock_in_before_minutes']
+                    : null,
+                maxOverTimeHours: (float) ($workRules['max_over_time'] ?? 0.0),
+                overtimeFlags: \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($workRules['overtime_rules'] ?? null),
+                timezone: $timezone,
+            )
+        );
     }
 
     /**
@@ -473,8 +535,8 @@ class UserAttendanceService
     {
         return [
             'prevent_early_clock_in' => (bool) ($earlyClockInRules['prevent_early_clock_in'] ?? false),
-            'early_period' => (int) ($earlyClockInRules['early_period'] ?? 0),
-            'early_unit' => $earlyClockInRules['early_unit'] ?? 'minutes',
+            'early_period' => \Modules\Attendance\Support\EarlyClockInRules::minutes($earlyClockInRules),
+            'early_unit' => 'minutes',
         ];
     }
 
@@ -540,31 +602,16 @@ class UserAttendanceService
         Carbon $now,
         array $earlyClockInRules
     ): bool {
-        \Log::info('[DEBUG isPeriodActiveIncludingEarly]', [
-            'periodStart' => $periodStart->format('Y-m-d H:i:s T'),
-            'periodEnd' => $periodEnd->format('Y-m-d H:i:s T'),
-            'now' => $now->format('Y-m-d H:i:s T'),
-            'in_period' => $now->between($periodStart, $periodEnd, true),
-        ]);
-
         if ($now->between($periodStart, $periodEnd, true)) {
             return true;
         }
-        $earlyPeriod = (int) ($earlyClockInRules['early_period'] ?? 0);
-        $earlyUnit = (string) ($earlyClockInRules['early_unit'] ?? 'minutes');
-        if ($earlyPeriod <= 0 || $earlyUnit === '') {
+
+        $earlyMinutes = \Modules\Attendance\Support\EarlyClockInRules::minutes($earlyClockInRules);
+        if ($earlyMinutes <= 0) {
             return false;
         }
-        // Normalize "minute" to "minutes" for Carbon
-        if (strtolower($earlyUnit) === 'minute') {
-            $earlyUnit = 'minutes';
-        }
-        $earliestAllowed = $periodStart->copy()->sub($earlyPeriod, $earlyUnit);
 
-        \Log::info('[DEBUG isPeriodActiveIncludingEarly early window]', [
-            'earliestAllowed' => $earliestAllowed->format('Y-m-d H:i:s T'),
-            'in_early_window' => $now->between($earliestAllowed, $periodEnd, true),
-        ]);
+        $earliestAllowed = $periodStart->copy()->subMinutes($earlyMinutes);
 
         return $now->between($earliestAllowed, $periodEnd, true);
     }
