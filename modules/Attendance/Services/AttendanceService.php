@@ -21,11 +21,15 @@ use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Carbon\CarbonPeriod;
+use Modules\Attendance\Domain\Time\ShiftWindow;
+use Modules\Attendance\Domain\Time\ShiftWindowCalculator;
+use Modules\Attendance\Domain\Time\ShiftWindowInput;
 use Modules\Attendance\Jobs\AutoClockOutAtNextShiftStartJob;
 use Modules\Attendance\Jobs\AutoCloseAttendanceJob;
 use Modules\Attendance\Jobs\ProcessClockInAttendanceData;
 use Modules\Attendance\Presenters\AttendanceTeamPresenter;
 use Modules\Attendance\Services\AttendanceNotificationService;
+use Modules\Attendance\Support\ConstraintRuleReader;
 
 class AttendanceService
 {
@@ -33,7 +37,10 @@ class AttendanceService
         private AttendanceRepository $attendanceRepository,
         private AttendanceCalculator $calculator,
         private ?AttendanceNotificationService $notificationService = null,
-    ) {}
+        private ?ShiftWindowCalculator $windowCalculator = null,
+    ) {
+        $this->windowCalculator ??= new ShiftWindowCalculator();
+    }
 
     /**
      * Clock in the authenticated employee for their current work period.
@@ -61,14 +68,17 @@ class AttendanceService
 
         [$startDateTime, $endDateTime] = $this->resolveWorkPeriodBounds($constraints, $currentDate, $timezone);
 
-        $this->enforceEarlyClockInRule($clockInDTO, $startDateTime, $constraints, $timezone);
+        $window = $this->computeShiftWindow($constraints, $startDateTime, $endDateTime, $clockInDTO, $timezone);
+
+        $this->enforceClockInWindow($clockInDTO, $window, $timezone, $startDateTime, $endDateTime);
 
         $attendanceData = $this->buildClockInAttendanceData(
             $clockInDTO,
             $constraints,
             $startDateTime,
             $endDateTime,
-            $timezone
+            $timezone,
+            $window
         );
         $attendance = $this->persistClockInAttendance($clockInDTO->getUserId(), $startDateTime, $attendanceData);
 
@@ -81,7 +91,18 @@ class AttendanceService
         }
 
         $this->scheduleAutoClockOutWhenNextShiftStarts($attendance, $constraints, $endDateTime);
-        $this->scheduleAutoCloseAtMaxOvertime($attendance, $endDateTime, (float) ($attendanceData['max_over_time'] ?? 0.0));
+        $this->scheduleAutoClose($attendance, $window);
+
+        // Absence backstop: if the user never clocks out of *this* row, the row can still
+        // flip to absent at the deadline. Guarded by config so the behaviour change is
+        // deployable before absence marking is enabled per tenant (rollout phase 5).
+        if (config('attendance.absence_marking_enabled', true) && $window->absentAt->isFuture()) {
+            \Modules\Attendance\Jobs\MarkAbsentIfNoClockInJob::dispatch(
+                (string) $attendance->id,
+                (string) $attendance->company_id,
+                $window->absentAt->toIso8601String(),
+            )->delay($window->absentAt);
+        }
 
         if ($attendance->is_late && $this->notificationService) {
             try {
@@ -93,27 +114,22 @@ class AttendanceService
     }
 
     /**
-     * Dispatch AutoCloseAttendanceJob at end_time + max_over_time_hours * 60 min (the deadline).
-     * The recorded clock_out_time is the shift's scheduled end_time (NOT the deadline) so an
-     * employee who never clocks out is capped at scheduled hours with zero overtime — the same
-     * behaviour as the AutoCloseStaleShiftsCommand fallback.
+     * Dispatch AutoCloseAttendanceJob: fires at expectedClockOutAt + max_over_time and stores
+     * expectedClockOutAt as clock_out_time (INV-14 generalised — trigger time ≠ stored time).
+     * The stored time is the moment the required working hours complete, so an early clock-in
+     * produces an early auto clock-out (R1).
      */
-    private function scheduleAutoCloseAtMaxOvertime(
-        Attendance $attendance,
-        Carbon $endDateTime,
-        float $maxOverTimeHours,
-    ): void {
-        $deadline = $endDateTime->copy()->addMinutes((int) round($maxOverTimeHours * 60));
-
-        if (!$deadline->isFuture()) {
+    private function scheduleAutoClose(Attendance $attendance, ShiftWindow $window): void
+    {
+        if (!$window->autoCloseTriggerAt->isFuture()) {
             return;
         }
 
         AutoCloseAttendanceJob::dispatch(
             (string) $attendance->id,
             (string) $attendance->company_id,
-            $endDateTime->toIso8601String(),
-        )->delay($deadline);
+            $window->expectedClockOutAt->toIso8601String(),
+        )->delay($window->autoCloseTriggerAt);
     }
 
     private function ensureUserHasNoActiveClockIn( $userId): void
@@ -144,28 +160,117 @@ class AttendanceService
     }
 
     /**
-     * Reject a clock-in that arrives before the configured early-clock-in window
-     * (when the constraint has `prevent_early_clock_in` enabled).
+     * Compute the full shift window from the constraints array (emitted by
+     * AttendanceConstraintService::getTodaysWorkRulesForUser) for this clock-in.
      */
-    private function enforceEarlyClockInRule(
-        ClockInDTO $dto,
-        Carbon $scheduledStart,
+    private function computeShiftWindow(
         array $constraints,
-        string $timezone
+        Carbon $startDateTime,
+        Carbon $endDateTime,
+        ClockInDTO $dto,
+        string $timezone,
+    ): ShiftWindow {
+        $clockIn = CarbonImmutable::parse($dto->getClockInTime(), $timezone);
+
+        $flags = \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($constraints['overtime_rules'] ?? null);
+        $startTimeStr = $startDateTime->format('Y-m-d H:i:s');
+        $endTimeStr   = $endDateTime->format('Y-m-d H:i:s');
+
+        return $this->windowCalculator->compute(new ShiftWindowInput(
+            scheduledStart: CarbonImmutable::parse($startTimeStr, $timezone),
+            scheduledEnd: CarbonImmutable::parse($endTimeStr, $timezone),
+            clockIn: $clockIn,
+            earlyWindowMinutes: (int) ($constraints['early_clock_in_minutes'] ?? 0),
+            extensionMinutes: (int) ($constraints['extension_minutes'] ?? 0),
+            canClockInBeforeMinutes: isset($constraints['can_clock_in_before_minutes'])
+                ? (int) $constraints['can_clock_in_before_minutes']
+                : null,
+            maxOverTimeHours: (float) ($constraints['max_over_time'] ?? 0.0),
+            alreadyWorkedMinutesInPeriod: $this->workedMinutesInScheduledPeriod(
+                (string) $dto->getUserId(),
+                $startTimeStr,
+                $endTimeStr,
+            ),
+            overtimeFlags: $flags,
+            timezone: $timezone,
+        ));
+    }
+
+    /**
+     * Enforce the V2 clock-in window. MockAttendanceService performs the same checks
+     * pre-persist; this is the defense-in-depth pass at write time.
+     *
+     * @throws AttendanceException 422 with a machine-readable violation type
+     */
+    private function enforceClockInWindow(
+        ClockInDTO $dto,
+        ShiftWindow $window,
+        string $timezone,
+        Carbon $startDateTime,
+        Carbon $endDateTime
     ): void {
-        $rules = data_get($constraints, 'early_clock_in_rules');
-        if (!$rules || !($rules['prevent_early_clock_in'] ?? false)) {
-            return;
+        $clockInMoment = CarbonImmutable::parse($dto->getClockInTime(), $timezone);
+        $details = ['window' => $window->toResponseArray()];
+
+        if ($clockInMoment->lessThan($window->earliestClockIn)) {
+            throw AttendanceException::clockInBlocked([[
+                'type'     => 'clock_in_too_early',
+                'severity' => 'blocking',
+                'message'  => 'Clock-in is too early. You can clock in from '
+                    . $window->earliestClockIn->format('H:i') . '.',
+                'details'  => $details,
+            ]]);
         }
 
-        $earlyPeriod = (int) ($rules['early_period'] ?? 0);
-        $earlyUnit = $rules['early_unit'] ?? 'minutes';
-        $clockInMoment = Carbon::parse($dto->getClockInTime(), $timezone);
-        $earliestAllowed = $scheduledStart->copy()->sub($earlyPeriod, $earlyUnit);
+        $isFirstClockIn = !$this->hasAnyClockInForScheduledPeriod(
+            (string) $dto->getUserId(),
+            $startDateTime->format('Y-m-d H:i:s'),
+            $endDateTime->format('Y-m-d H:i:s'),
+        );
 
-        if ($clockInMoment->lt($earliestAllowed)) {
-            throw new \Exception("غير مسموح بتسجيل الحضور قبل {$earlyPeriod} {$earlyUnit} من بداية الفترة.");
+        $latestAllowed = $isFirstClockIn
+            ? ($window->firstClockInDeadline ?? $window->lastClockInAt)
+            : $window->lastClockInAt;
+
+        if ($clockInMoment->greaterThan($latestAllowed)) {
+            $type = $isFirstClockIn && $window->firstClockInDeadline !== null
+                ? 'clock_in_deadline_passed'
+                : 'clock_in_window_closed';
+            $message = $type === 'clock_in_deadline_passed'
+                ? 'Clock-in deadline passed at ' . $window->firstClockInDeadline->format('H:i') . '.'
+                : 'The shift clock-in window has closed.';
+
+            throw AttendanceException::clockInBlocked([[
+                'type'     => $type,
+                'severity' => 'blocking',
+                'message'  => $message,
+                'details'  => $details,
+            ]]);
         }
+    }
+
+    /**
+     * Net working minutes already credited in previous rows for the same scheduled period,
+     * so a re-clock-in inside the extension only owes the remaining hours.
+     */
+    private function workedMinutesInScheduledPeriod(string $userId, string $startTime, string $endTime): int
+    {
+        return (int) round((float) Attendance::query()
+                ->where('user_id', $userId)
+                ->where('start_time', $startTime)
+                ->where('end_time', $endTime)
+                ->whereNotNull('clock_in_time')
+                ->sum('total_work_hours') * 60);
+    }
+
+    private function hasAnyClockInForScheduledPeriod(string $userId, string $startTime, string $endTime): bool
+    {
+        return Attendance::query()
+            ->where('user_id', $userId)
+            ->where('start_time', $startTime)
+            ->where('end_time', $endTime)
+            ->whereNotNull('clock_in_time')
+            ->exists();
     }
 
     /**
@@ -176,8 +281,11 @@ class AttendanceService
         array $constraints,
         Carbon $startDateTime,
         Carbon $endDateTime,
-        string $timezone
+        string $timezone,
+        ShiftWindow $window
     ): array {
+        $flags = \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($constraints['overtime_rules'] ?? null);
+
         return [
             'user_id' => $dto->getUserId(),
             'company_id' => $dto->getCompanyId(),
@@ -196,6 +304,16 @@ class AttendanceService
             'timezone' => $timezone,
             'max_over_time' => $constraints['max_over_time'] ?? null,
             'business_date' => $startDateTime->toDateString(),
+            // Rules V2 — per-row snapshots (INV-23) and computed boundaries (branch-TZ wall clock).
+            'required_work_minutes' => $window->requiredWorkMinutes,
+            'early_clock_in_minutes' => (int) ($constraints['early_clock_in_minutes'] ?? 0),
+            'extension_minutes' => (int) ($constraints['extension_minutes'] ?? 0),
+            'can_clock_in_before_minutes' => isset($constraints['can_clock_in_before_minutes'])
+                ? (int) $constraints['can_clock_in_before_minutes']
+                : null,
+            'overtime_flags' => $flags->toArray(),
+            'expected_clock_out_time' => $window->expectedClockOutAt->format('Y-m-d H:i:s'),
+            'absent_at' => $window->absentAt->format('Y-m-d H:i:s'),
         ];
     }
 
@@ -317,6 +435,10 @@ class AttendanceService
             'late_minutes'            => $result->lateMinutes,
             'is_early_departure'      => $result->isEarlyDeparture,
             'early_departure_minutes' => $result->earlyDepartureMinutes,
+            'pre_shift_hours'         => $result->preShiftHours,
+            'in_shift_hours'          => $result->inShiftHours,
+            'post_shift_hours'        => $result->postShiftHours,
+            'outside_window_hours'    => $result->outsideWindowHours,
         ]);
 
         $attendance->refresh();
@@ -352,19 +474,7 @@ class AttendanceService
             ? CarbonImmutable::parse($attendance->clock_out_time, $timezone)
             : null;
 
-        $totalBreakMinutes = (int) $attendance->breaks()
-            ->whereNotNull('end_time')
-            ->sum('duration_minutes');
-
-        $snapshot       = $attendance->appliedAttendanceConstraint?->constraint_snapshot ?? [];
-        $latenessRules  = $snapshot['lateness_rules'] ?? [];
-        $graceValue     = (int) ($latenessRules['lateness_period'] ?? $latenessRules['grace_period_minutes'] ?? 0);
-        $graceUnit      = (string) ($latenessRules['lateness_unit'] ?? 'minute');
-        $graceMinutes   = match (strtolower($graceUnit)) {
-            'hour' => $graceValue * 60,
-            'day'  => $graceValue * 1440,
-            default => $graceValue,
-        };
+        [$totalBreakMinutes, $breakIntervals] = $this->breakSummary($attendance);
 
         return new CalculatorInput(
             scheduledStart:     $scheduledStart,
@@ -372,10 +482,41 @@ class AttendanceService
             clockIn:            $clockIn,
             clockOut:           $clockOut,
             totalBreakMinutes:  $totalBreakMinutes,
-            gracePeriodMinutes: max(0, $graceMinutes),
             maxOverTimeHours:   (float) ($attendance->max_over_time ?? 0.0),
             timezone:           $timezone,
+            breakIntervals:     $breakIntervals,
+            earlyWindowMinutes: (int) ($attendance->early_clock_in_minutes ?? 0),
+            extensionMinutes:   (int) ($attendance->extension_minutes ?? 0),
+            overtimeFlags:      \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($attendance->overtime_flags),
+            excludeOvertimeFromWorkHours: (bool) config('attendance.exclude_overtime_from_work_hours', true),
         );
+    }
+
+    /**
+     * Completed breaks as [totalMinutes, intervals] — intervals feed zone attribution so a
+     * break inside the shift never eats outer-zone (overtime) time.
+     *
+     * @return array{0: int, 1: list<array{start: CarbonImmutable, end: CarbonImmutable}>}
+     */
+    private function breakSummary(Attendance $attendance): array
+    {
+        $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
+
+        $breaks = $attendance->breaks()->whereNotNull('end_time')->get(['start_time', 'end_time', 'duration_minutes']);
+
+        $total = 0;
+        $intervals = [];
+        foreach ($breaks as $break) {
+            $total += (int) ($break->duration_minutes ?? 0);
+            if ($break->start_time && $break->end_time) {
+                $intervals[] = [
+                    'start' => CarbonImmutable::parse($break->start_time, $timezone),
+                    'end'   => CarbonImmutable::parse($break->end_time, $timezone),
+                ];
+            }
+        }
+
+        return [$total, $intervals];
     }
 
     /**
@@ -712,6 +853,10 @@ class AttendanceService
             'late_minutes'            => $result->lateMinutes,
             'is_early_departure'      => $result->isEarlyDeparture,
             'early_departure_minutes' => $result->earlyDepartureMinutes,
+            'pre_shift_hours'         => $result->preShiftHours,
+            'in_shift_hours'          => $result->inShiftHours,
+            'post_shift_hours'        => $result->postShiftHours,
+            'outside_window_hours'    => $result->outsideWindowHours,
         ]);
     }
 

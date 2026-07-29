@@ -96,58 +96,14 @@ class HandleAttendanceLateness
             }
         }
 
-        $graceMinutes = $this->resolveGraceMinutes($attendance);
-
         return new CalculatorInput(
             scheduledStart:     $scheduledStart,
             scheduledEnd:       $scheduledEnd,
             clockIn:            $clockIn,
             clockOut:           null,
             totalBreakMinutes:  0,
-            gracePeriodMinutes: $graceMinutes,
             maxOverTimeHours:   (float) ($attendance->max_over_time ?? 0.0),
             timezone:           $timezone,
         );
-    }
-
-    private function resolveGraceMinutes(Attendance $attendance): int
-    {
-        $constraint = $attendance->user?->professionalData?->attendanceConstraint;
-        if (! $constraint) {
-            return 0;
-        }
-
-        $timeRules = $constraint->constraint_config['time_rules'] ?? [];
-
-        // Lateness rules live per-day under weekly_schedule.{dayName}.lateness_rules
-        // for multi-period schedules. Resolve the day from the attendance's scheduled
-        // start (in branch TZ) so re-clock-in rows still pick the correct day, then
-        // fall back to legacy top-level time_rules.lateness_rules for older configs.
-        $rules = [];
-        $weeklySchedule = $timeRules['weekly_schedule'] ?? null;
-        if (is_array($weeklySchedule) && $attendance->start_time) {
-            $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
-            $dayName = strtolower(CarbonImmutable::parse($attendance->start_time, $timezone)->format('l'));
-            $rules = $weeklySchedule[$dayName]['lateness_rules'] ?? [];
-        }
-
-        if (empty($rules)) {
-            $rules = $timeRules['lateness_rules'] ?? [];
-        }
-
-        $graceValue = (int) ($rules['lateness_period'] ?? 0);
-        $graceUnit  = (string) ($rules['lateness_unit'] ?? 'minute');
-
-        $grace = match (strtolower($graceUnit)) {
-            'hour' => $graceValue * 60,
-            'day'  => $graceValue * 1440,
-            default => $graceValue,
-        };
-
-        if ($grace <= 0) {
-            $grace = (int) ($rules['grace_period_minutes'] ?? 0);
-        }
-
-        return max(0, $grace);
     }
 }

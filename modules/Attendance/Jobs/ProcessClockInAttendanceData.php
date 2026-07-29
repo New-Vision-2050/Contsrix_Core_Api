@@ -73,6 +73,10 @@ class ProcessClockInAttendanceData implements ShouldQueue
                 'late_minutes'            => $result->lateMinutes,
                 'is_early_departure'      => $result->isEarlyDeparture,
                 'early_departure_minutes' => $result->earlyDepartureMinutes,
+                'pre_shift_hours'         => $result->preShiftHours,
+                'in_shift_hours'          => $result->inShiftHours,
+                'post_shift_hours'        => $result->postShiftHours,
+                'outside_window_hours'    => $result->outsideWindowHours,
             ]);
 
             if (! $user) {
@@ -149,19 +153,18 @@ class ProcessClockInAttendanceData implements ShouldQueue
             ? CarbonImmutable::parse($attendance->clock_out_time, $timezone)
             : null;
 
-        $totalBreakMinutes = (int) $attendance->breaks()
-            ->whereNotNull('end_time')
-            ->sum('duration_minutes');
-
-        $snapshot      = $attendance->appliedAttendanceConstraint?->constraint_snapshot ?? [];
-        $latenessRules = $snapshot['lateness_rules'] ?? [];
-        $graceValue    = (int) ($latenessRules['lateness_period'] ?? $latenessRules['grace_period_minutes'] ?? 0);
-        $graceUnit     = (string) ($latenessRules['lateness_unit'] ?? 'minute');
-        $graceMinutes  = match (strtolower($graceUnit)) {
-            'hour' => $graceValue * 60,
-            'day'  => $graceValue * 1440,
-            default => $graceValue,
-        };
+        $breaks = $attendance->breaks()->whereNotNull('end_time')->get(['start_time', 'end_time', 'duration_minutes']);
+        $totalBreakMinutes = 0;
+        $breakIntervals = [];
+        foreach ($breaks as $break) {
+            $totalBreakMinutes += (int) ($break->duration_minutes ?? 0);
+            if ($break->start_time && $break->end_time) {
+                $breakIntervals[] = [
+                    'start' => CarbonImmutable::parse($break->start_time, $timezone),
+                    'end'   => CarbonImmutable::parse($break->end_time, $timezone),
+                ];
+            }
+        }
 
         return new CalculatorInput(
             scheduledStart:     $scheduledStart,
@@ -169,9 +172,13 @@ class ProcessClockInAttendanceData implements ShouldQueue
             clockIn:            $clockIn,
             clockOut:           $clockOut,
             totalBreakMinutes:  $totalBreakMinutes,
-            gracePeriodMinutes: max(0, $graceMinutes),
             maxOverTimeHours:   (float) ($attendance->max_over_time ?? 0.0),
             timezone:           $timezone,
+            breakIntervals:     $breakIntervals,
+            earlyWindowMinutes: (int) ($attendance->early_clock_in_minutes ?? 0),
+            extensionMinutes:   (int) ($attendance->extension_minutes ?? 0),
+            overtimeFlags:      \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($attendance->overtime_flags),
+            excludeOvertimeFromWorkHours: (bool) config('attendance.exclude_overtime_from_work_hours', true),
         );
     }
 }

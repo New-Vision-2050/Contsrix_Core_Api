@@ -20,6 +20,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Modules\Attendance\DataClasses\WeeklySchedule;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use InvalidArgumentException;
@@ -776,6 +777,11 @@ class AttendanceConstraintService
         $lateness_rules = $todaySchedule->lateness_rules ?? null;
         $early_clock_in_rules = $todaySchedule->early_clock_in_rules ?? null;
 
+        // Rules V2 — resolved through the single reader so per-day, constraint-level and
+        // legacy flat shapes all agree (INV-22).
+        $ruleReader = \Modules\Attendance\Support\ConstraintRuleReader::fromConstraint($constraint);
+        $todayRaw = $timeRulesData['weekly_schedule'][$dayOfWeek] ?? [];
+
         return [
             'day_status' => $workDayStatus,
             'reason' => $workDayReason,
@@ -787,7 +793,14 @@ class AttendanceConstraintService
             'second_next_period' => $periodDetails['second_next_period'],
             'active_or_next_period' => $periodDetails['current_period'] ?? $periodDetails['first_next_period'] ?? $periodDetails['fallback_period'],
             'lateness_rules' => $lateness_rules,
-            'early_clock_in_rules' => $early_clock_in_rules
+            'early_clock_in_rules' => $early_clock_in_rules,
+            // Rules V2
+            'extension_rules' => is_array($todayRaw['extension_rules'] ?? null) ? $todayRaw['extension_rules'] : null,
+            'clock_in_deadline_rules' => is_array($todayRaw['clock_in_deadline_rules'] ?? null) ? $todayRaw['clock_in_deadline_rules'] : null,
+            'overtime_rules' => is_array($timeRulesData['overtime_rules'] ?? null) ? $timeRulesData['overtime_rules'] : [],
+            'early_clock_in_minutes' => $ruleReader->earlyClockInMinutes($dayOfWeek),
+            'extension_minutes' => $ruleReader->extensionMinutes($dayOfWeek),
+            'can_clock_in_before_minutes' => $ruleReader->canClockInBeforeMinutes($dayOfWeek),
         ];
     }
 
@@ -951,10 +964,14 @@ class AttendanceConstraintService
             ->where('is_active', true)
             ->flatMap(fn ($c) => collect($c->branch_locations ?? []))
             ->map(fn ($loc) => [
-                'name'      => $loc['name'] ?? null,
-                'latitude'  => isset($loc['latitude'])  ? (float) $loc['latitude']  : null,
-                'longitude' => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
-                'radius'    => isset($loc['radius'])    ? (int)   $loc['radius']    : null,
+                'id'          => null,
+                'name'        => $loc['name'] ?? null,
+                'latitude'    => isset($loc['latitude'])  ? (float) $loc['latitude']  : null,
+                'longitude'   => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
+                'radius'      => isset($loc['radius'])    ? (int)   $loc['radius']    : null,
+                'source'      => 'branch',
+                'expires_at'  => null,
+                'reference_id' => null,
             ]);
 
         $tableLocations = $user->additionalAttendanceConstraints
@@ -966,10 +983,51 @@ class AttendanceConstraintService
                 'latitude'  => (float) $loc->latitude,
                 'longitude' => (float) $loc->longitude,
                 'radius'    => (int) $loc->radius,
+                'source'      => 'additional',
+                'expires_at'  => null,
+                'reference_id' => null,
             ])
-            ->merge($applicableTableLocations);
+            ->merge($applicableTableLocations->map(fn ($loc) => $loc + [
+                'source'      => 'additional',
+                'expires_at'  => null,
+                'reference_id' => null,
+            ]));
 
-        return $branchLocations->merge($tableLocations)->values()->all();
+        // Feature 6: temporary geofences from active employee tasks (valid only until the
+        // task time ends). Merged into BOTH this UI path and the clock-in validation path
+        // below — updating one without the other produces a location the user can see but
+        // cannot use (INV-26).
+        $temporaryLocations = collect($this->temporaryTaskLocationsFor($user));
+
+        return $branchLocations->merge($tableLocations)->merge($temporaryLocations)->values()->all();
+    }
+
+    /**
+     * Temporary attendance locations offered by registered providers (employee tasks, etc.).
+     * Empty when no provider is registered — the modules stay independently loadable.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function temporaryTaskLocationsFor(User $user): array
+    {
+        try {
+            $providers = app()->tagged('attendance.temporary_location_providers');
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $at = CarbonImmutable::now(getTimeZoneBranchByRequest() ?? config('app.timezone'));
+        $locations = [];
+
+        foreach ($providers as $provider) {
+            if ($provider instanceof \Modules\Attendance\Contracts\TemporaryLocationProvider) {
+                foreach ($provider->temporaryLocationsFor($user, $at) as $loc) {
+                    $locations[] = $loc;
+                }
+            }
+        }
+
+        return $locations;
     }
 
     /**
@@ -1266,6 +1324,12 @@ class AttendanceConstraintService
             ->all();
 
         $additionalLocations = array_merge($mainTableLocs, $applicableTableLocs, $branchLocs, $tableLocs);
+
+        // Feature 6: temporary geofences from active employee tasks must also be accepted
+        // at clock-in — merged here, not only into the UI payload (INV-26).
+        $temporaryLocations = $this->temporaryTaskLocationsFor($user);
+
+        $additionalLocations = array_merge($additionalLocations, $temporaryLocations);
 
         if (empty($additionalLocations)) {
             return $mainConstraint;

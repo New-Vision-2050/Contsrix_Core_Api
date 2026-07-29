@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('project_order_permit_note_logs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('project_order_permit_id');
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->uuid('user_id')->nullable();
             $table->text('note')->nullable();
             $table->string('timezone')->nullable();
             $table->string('created_by_name')->nullable();

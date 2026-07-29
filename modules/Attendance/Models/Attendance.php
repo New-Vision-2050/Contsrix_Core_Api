@@ -98,6 +98,17 @@ class Attendance extends Model implements Auditable
         'day_status',
         'business_date',
         'shift_end_method',
+        'required_work_minutes',
+        'early_clock_in_minutes',
+        'extension_minutes',
+        'can_clock_in_before_minutes',
+        'overtime_flags',
+        'expected_clock_out_time',
+        'absent_at',
+        'pre_shift_hours',
+        'in_shift_hours',
+        'post_shift_hours',
+        'outside_window_hours',
     ];
 
     protected $casts = [
@@ -119,6 +130,17 @@ class Attendance extends Model implements Auditable
         'early_departure_minutes' => 'integer',
         'is_late' => 'boolean',
         'is_early_departure' => 'boolean',
+        'required_work_minutes' => 'integer',
+        'early_clock_in_minutes' => 'integer',
+        'extension_minutes' => 'integer',
+        'can_clock_in_before_minutes' => 'integer',
+        'pre_shift_hours' => 'decimal:2',
+        'in_shift_hours' => 'decimal:2',
+        'post_shift_hours' => 'decimal:2',
+        'outside_window_hours' => 'decimal:2',
+        // expected_clock_out_time / absent_at are branch-TZ wall-clock strings like
+        // clock_in_time/start_time — never add a datetime cast (INV-28).
+        'overtime_flags' => 'array',
         'business_date' => 'date',
         'clock_in_location' => 'array',
         'clock_out_location' => 'array',

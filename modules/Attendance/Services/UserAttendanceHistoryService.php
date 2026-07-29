@@ -443,16 +443,13 @@ final class UserAttendanceHistoryService
             return true;
         }
 
-        $earlyPeriod = (int) ($earlyClockInRules['early_period'] ?? 0);
-        $earlyUnit   = (string) ($earlyClockInRules['early_unit'] ?? 'minutes');
-        if ($earlyPeriod <= 0 || $earlyUnit === '') {
+        // Normalised: reads allowed_minutes_before as well as early_period (BUG-1).
+        $earlyMinutes = \Modules\Attendance\Support\EarlyClockInRules::minutes($earlyClockInRules);
+        if ($earlyMinutes <= 0) {
             return false;
         }
-        if (strtolower($earlyUnit) === 'minute') {
-            $earlyUnit = 'minutes';
-        }
 
-        return $ci->between($periodStart->copy()->sub($earlyPeriod, $earlyUnit), $periodEnd, true);
+        return $ci->between($periodStart->copy()->subMinutes($earlyMinutes), $periodEnd, true);
     }
 
     /** @param array<int, array<string, mixed>> $scheduled */

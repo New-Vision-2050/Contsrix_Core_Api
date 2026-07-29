@@ -72,7 +72,6 @@ final class CalculatorRegressionTest extends TestCase
             clockIn:            $clockIn,
             clockOut:           $clockOut,
             totalBreakMinutes:  0,
-            gracePeriodMinutes: 0,
             maxOverTimeHours:   0.0,
             timezone:           $tz,
         );
@@ -104,7 +103,6 @@ final class CalculatorRegressionTest extends TestCase
             clockIn:            $clockIn,
             clockOut:           $clockOut,
             totalBreakMinutes:  0,
-            gracePeriodMinutes: 0,
             maxOverTimeHours:   0.0,
             timezone:           $tz,
         );
@@ -133,14 +131,16 @@ final class CalculatorRegressionTest extends TestCase
             clockIn:            CarbonImmutable::parse('2024-01-15 09:00:00', $tz),
             clockOut:           CarbonImmutable::parse('2024-01-15 16:00:00', $tz),
             totalBreakMinutes:  0,
-            gracePeriodMinutes: 0,
             maxOverTimeHours:   2.0, // cap at 2h, so 1h overtime is within cap
             timezone:           $tz,
         );
 
         $result = $this->calculator->calculate($input);
 
-        $this->assertSame(7.0, $result->totalWorkHours, 'D2: total work hours must be 7h (not capped to 6h)');
+        // V2: total_work_hours excludes overtime → 7h gross − 1h OT = 6h. Overtime itself
+        // is still computed from the real shift length (the D2 regression guard), NOT a
+        // hard-coded 8h baseline.
+        $this->assertSame(6.0, $result->totalWorkHours, 'D2: total work hours exclude overtime (V2)');
         $this->assertSame(1.0, $result->overtimeHours, 'D2: overtime must be 1h (shift=6h, worked=7h) — NOT 0h from hard-coded 8h baseline');
     }
 
@@ -159,7 +159,6 @@ final class CalculatorRegressionTest extends TestCase
             clockIn:            CarbonImmutable::parse('2024-01-15 07:00:00', $tz),
             clockOut:           CarbonImmutable::parse('2024-01-15 17:00:00', $tz),
             totalBreakMinutes:  0,
-            gracePeriodMinutes: 0,
             maxOverTimeHours:   2.0,
             timezone:           $tz,
         );
@@ -184,7 +183,6 @@ final class CalculatorRegressionTest extends TestCase
             clockIn:            CarbonImmutable::parse('2024-01-15 09:00:00', $tz),
             clockOut:           CarbonImmutable::parse('2024-01-15 12:00:00', $tz),
             totalBreakMinutes:  0,
-            gracePeriodMinutes: 0,
             maxOverTimeHours:   0.0,
             timezone:           $tz,
         );
@@ -215,7 +213,6 @@ final class CalculatorRegressionTest extends TestCase
             clockIn:            CarbonImmutable::parse('2024-01-15 09:00:00', $tz),
             clockOut:           CarbonImmutable::parse('2024-01-15 19:00:00', $tz), // +2h over
             totalBreakMinutes:  0,
-            gracePeriodMinutes: 0,
             maxOverTimeHours:   0.5, // 30 minutes cap
             timezone:           $tz,
         );

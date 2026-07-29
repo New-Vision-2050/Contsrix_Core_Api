@@ -83,6 +83,10 @@ final class AutoCloseAttendanceService
                 'late_minutes'            => $result->lateMinutes,
                 'is_early_departure'      => $result->isEarlyDeparture,
                 'early_departure_minutes' => $result->earlyDepartureMinutes,
+                'pre_shift_hours'         => $result->preShiftHours,
+                'in_shift_hours'          => $result->inShiftHours,
+                'post_shift_hours'        => $result->postShiftHours,
+                'outside_window_hours'    => $result->outsideWindowHours,
                 'notes'                   => trim(($fresh->notes ?? '') . "\n" . $noteLine),
             ]);
 
@@ -110,11 +114,18 @@ final class AutoCloseAttendanceService
             ? CarbonImmutable::parse($fresh->clock_in_time, $timezone)
             : null;
 
-        $totalBreakMinutes = (int) $fresh->breaks()
-            ->whereNotNull('end_time')
-            ->sum('duration_minutes');
-
-        [$gracePeriodMinutes, $maxOverTimeHours] = $this->resolveConstraintParams($fresh);
+        $breaks = $fresh->breaks()->whereNotNull('end_time')->get(['start_time', 'end_time', 'duration_minutes']);
+        $totalBreakMinutes = 0;
+        $breakIntervals = [];
+        foreach ($breaks as $break) {
+            $totalBreakMinutes += (int) ($break->duration_minutes ?? 0);
+            if ($break->start_time && $break->end_time) {
+                $breakIntervals[] = [
+                    'start' => CarbonImmutable::parse($break->start_time, $timezone),
+                    'end'   => CarbonImmutable::parse($break->end_time, $timezone),
+                ];
+            }
+        }
 
         return new CalculatorInput(
             scheduledStart:    $scheduledStart,
@@ -122,41 +133,15 @@ final class AutoCloseAttendanceService
             clockIn:           $clockIn,
             clockOut:          $closeAt->setTimezone($timezone),
             totalBreakMinutes: $totalBreakMinutes,
-            gracePeriodMinutes: $gracePeriodMinutes,
-            maxOverTimeHours:  $maxOverTimeHours,
+            // max_over_time on the attendance row is the snapshot at clock-in time (HOURS, decimal).
+            maxOverTimeHours:  (float) ($fresh->max_over_time ?? 0.0),
             timezone:          $timezone,
+            breakIntervals:    $breakIntervals,
+            earlyWindowMinutes: (int) ($fresh->early_clock_in_minutes ?? 0),
+            extensionMinutes:  (int) ($fresh->extension_minutes ?? 0),
+            overtimeFlags:     \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($fresh->overtime_flags),
+            excludeOvertimeFromWorkHours: (bool) config('attendance.exclude_overtime_from_work_hours', true),
         );
-    }
-
-    /**
-     * @return array{0: int, 1: float}  [$gracePeriodMinutes, $maxOverTimeHours]
-     */
-    private function resolveConstraintParams(Attendance $attendance): array
-    {
-        $snapshot = $attendance->appliedAttendanceConstraint?->constraint_snapshot ?? [];
-
-        $rules      = $snapshot['lateness_rules'] ?? [];
-        $graceValue = (int) ($rules['lateness_period'] ?? 0);
-        $graceUnit  = (string) ($rules['lateness_unit'] ?? 'minute');
-        $grace      = $this->toMinutes($graceValue, $graceUnit);
-
-        if ($grace <= 0) {
-            $grace = (int) ($rules['grace_period_minutes'] ?? 0);
-        }
-
-        // max_over_time on the attendance row is the snapshot at clock-in time (HOURS, decimal).
-        $maxOtHours = (float) ($attendance->max_over_time ?? 0.0);
-
-        return [max(0, $grace), $maxOtHours];
-    }
-
-    private function toMinutes(int $value, string $unit): int
-    {
-        return match (strtolower($unit)) {
-            'hour'  => $value * 60,
-            'day'   => $value * 1440,
-            default => $value,
-        };
     }
 
     private function resolveLastLocation(Attendance $attendance): mixed

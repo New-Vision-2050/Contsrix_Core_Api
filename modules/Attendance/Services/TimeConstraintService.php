@@ -575,10 +575,11 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             
             // If there's a next period, check early clock-in rule
             if ($nextPeriod && $nextPeriodStart) {
-                $earlyPeriod = $earlyClockInRules['early_period'] ?? 0;
-                $earlyUnit = $earlyClockInRules['early_unit'] ?? 'minutes';
-                
-                $earliestAllowedTime = $nextPeriodStart->copy()->sub($earlyPeriod, $earlyUnit);
+                // Normalised: reads allowed_minutes_before as well as early_period (BUG-1).
+                $earlyPeriod = \Modules\Attendance\Support\EarlyClockInRules::minutes($earlyClockInRules);
+                $earlyUnit = 'minutes';
+
+                $earliestAllowedTime = $nextPeriodStart->copy()->subMinutes($earlyPeriod);
                 
                 // If clock-in time is within the early window, allow it
                 if ($clockInTime->gte($earliestAllowedTime) && $clockInTime->lt($nextPeriodStart)) {
@@ -712,12 +713,8 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
-        // Calculate grace period based on early_period and early_unit
-        $earlyPeriod = (int)($rules['early_period'] ?? 0);
-        $earlyUnit = $rules['early_unit'] ?? 'minute';
-
-        // Convert the early period to minutes based on the unit
-        $gracePeriodMinutes = $this->convertToMinutes($earlyPeriod, $earlyUnit);
+        // Normalised: reads allowed_minutes_before as well as early_period (BUG-1).
+        $gracePeriodMinutes = \Modules\Attendance\Support\EarlyClockInRules::minutes($rules);
 
         // If no specific grace period is defined, fall back to grace_period_minutes
         if ($gracePeriodMinutes <= 0) {

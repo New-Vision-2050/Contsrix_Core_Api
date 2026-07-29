@@ -7,11 +7,11 @@ namespace Modules\Attendance\Domain\Calculator;
 final class StandardLatenessPolicy implements LatenessPolicy
 {
     /**
-     * Business rule (confirmed with stakeholder):
-     *   - If clock-in <= scheduledStart + grace → not late.
-     *   - If clock-in >  scheduledStart + grace → late.
-     *   - late_minutes = FULL minutes past scheduledStart (not past the grace window).
-     *     e.g. grace=15, user is 16 min late → late_minutes = 16 (not 1).
+     * Strict lateness (Rules V2):
+     *   - clock_in <= scheduledStart → not late (early clock-in is never late).
+     *   - clock_in >  scheduledStart → late, even by one minute.
+     *   - late_minutes = full minutes past scheduledStart.
+     *   - No grace period suppresses lateness.
      *
      * @return array{0: bool, 1: int}
      */
@@ -21,9 +21,7 @@ final class StandardLatenessPolicy implements LatenessPolicy
             return [false, 0];
         }
 
-        $threshold = $input->scheduledStart->addMinutes($input->gracePeriodMinutes);
-
-        if ($input->clockIn->lessThanOrEqualTo($threshold)) {
+        if ($input->clockIn->lessThanOrEqualTo($input->scheduledStart)) {
             return [false, 0];
         }
 
