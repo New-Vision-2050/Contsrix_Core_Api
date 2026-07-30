@@ -267,13 +267,13 @@ class FolderRepository extends BaseRepository
             }
         }
 
-        // Check if any file-specific filter is provided
+        // Check if any file-specific filter is provided (search is NOT file-specific — it applies to folders too)
         $hasFileFilters = $documentType !== null
             || $isFavourite !== null
             || $endDate !== null
             || $endDateFrom !== null
             || $endDateTo !== null
-            || ($search !== null && $search !== ''||$branchId!==null);
+            || $branchId !== null;
 
         // If file filters are provided, return empty folders array
         if ($hasFileFilters) {
@@ -302,6 +302,11 @@ class FolderRepository extends BaseRepository
             }
             else{
                 $foldersQuery->whereNull('parent_id');
+            }
+
+            // Apply search filter to folders by name
+            if ($search !== null && $search !== '') {
+                $foldersQuery->where('name', 'LIKE', '%' . $search . '%');
             }
 
             // Get all folders with files count
