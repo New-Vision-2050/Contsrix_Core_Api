@@ -15,6 +15,7 @@ use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Exports\ProcedureSettingExport;
 use Modules\ProcedureSetting\Handlers\DeleteProcedureSettingHandler;
 use Modules\ProcedureSetting\Handlers\UpdateProcedureSettingHandler;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\ProcedureSetting\Presenters\ProcedureSettingPresenter;
 use Modules\ProcedureSetting\Requests\CreateProcedureSettingRequest;
@@ -26,6 +27,7 @@ use Modules\ProcedureSetting\Requests\ToggleBranchWorkFlowRequest;
 use Modules\ProcedureSetting\Requests\UpdateProcedureSettingRequest;
 use Modules\ProcedureSetting\Services\ProcedureSettingCRUDService;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Presenters\ProjectProcedurePresenter;
 use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
 use Modules\RoleAndPermission\Enums\Permission;
@@ -280,6 +282,30 @@ class ProcedureSettingController extends Controller
     private function projectIdFromRequest(FormRequest $request): ?string
     {
         $projectId = $request->input('project_id');
+
+        if (is_string($projectId) && $projectId !== '') {
+            return $projectId;
+        }
+
+        $parentId = $request->input('parent_id');
+        if (! is_string($parentId) || $parentId === '') {
+            return null;
+        }
+
+        $parent = ProcedureSetting::withoutGlobalScopes()
+            ->where('id', $parentId)
+            ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
+            ->first(['work_flow_id']);
+
+        if ($parent === null) {
+            return null;
+        }
+
+        $workFlow = WorkFlow::withoutGlobalScopes()
+            ->where('id', $parent->work_flow_id)
+            ->first(['project_id']);
+
+        $projectId = $workFlow?->project_id;
 
         return is_string($projectId) && $projectId !== '' ? $projectId : null;
     }
