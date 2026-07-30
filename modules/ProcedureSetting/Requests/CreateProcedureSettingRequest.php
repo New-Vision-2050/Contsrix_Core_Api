@@ -104,15 +104,4 @@ class CreateProcedureSettingRequest extends FormRequest
         );
     }
 
-    private function tenantOwnedProjectRule()
-    {
-        $rule = Rule::exists('projects', 'id');
-        $tenantId = tenant('id');
-
-        if ($tenantId !== null && $tenantId !== '') {
-            $rule->where('company_id', (string) $tenantId);
-        }
-
-        return $rule;
-    }
 }
