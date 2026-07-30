@@ -6,6 +6,8 @@ namespace Modules\ProcedureSetting\Requests\Concerns;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 
@@ -79,7 +81,11 @@ trait HandlesProjectProcedureRequest
     {
         $projectId = $this->validated('project_id') ?? $this->input('project_id');
 
-        return is_string($projectId) && $projectId !== '' ? $projectId : null;
+        if (is_string($projectId) && $projectId !== '') {
+            return $projectId;
+        }
+
+        return $this->resolveProjectIdFromParent();
     }
 
     public function parentProcedureSettingId(): ?string
@@ -87,6 +93,32 @@ trait HandlesProjectProcedureRequest
         $parentId = $this->validated('parent_id') ?? $this->input('parent_id');
 
         return is_string($parentId) && $parentId !== '' ? $parentId : null;
+    }
+
+    protected function resolveProjectIdFromParent(): ?string
+    {
+        $parentId = $this->input('parent_id');
+
+        if (! is_string($parentId) || $parentId === '') {
+            return null;
+        }
+
+        $parent = ProcedureSetting::withoutGlobalScopes()
+            ->where('id', $parentId)
+            ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
+            ->first(['work_flow_id']);
+
+        if ($parent === null) {
+            return null;
+        }
+
+        $workFlow = WorkFlow::withoutGlobalScopes()
+            ->where('id', $parent->work_flow_id)
+            ->first(['project_id']);
+
+        $projectId = $workFlow?->project_id;
+
+        return is_string($projectId) && $projectId !== '' ? $projectId : null;
     }
 
     protected function tenantOwnedProjectRule()

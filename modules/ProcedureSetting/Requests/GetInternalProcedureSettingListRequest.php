@@ -17,7 +17,7 @@ class GetInternalProcedureSettingListRequest extends FormRequest
     public function rules(): array
     {
         $projectIdRule = $this->input('type') === ProjectProcedureSetting::PROCEDURE_TYPE
-            ? 'required'
+            ? ($this->filled('parent_id') ? 'nullable' : 'required')
             : 'sometimes';
 
         $typeValues = $this->filled('project_id')

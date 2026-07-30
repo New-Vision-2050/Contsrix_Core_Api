@@ -7,6 +7,8 @@ namespace Modules\ProcedureSetting\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 
 class GetProcedureSettingListRequest extends FormRequest
@@ -45,9 +47,34 @@ class GetProcedureSettingListRequest extends FormRequest
         }
         if ($this->filled('project_id')) {
             $filters['project_id'] = (string) $this->get('project_id');
+        } elseif (isset($filters['parent_id'])) {
+            $resolved = $this->resolveProjectIdFromParent($filters['parent_id']);
+            if ($resolved !== null) {
+                $filters['project_id'] = $resolved;
+            }
         }
 
         return $filters;
+    }
+
+    private function resolveProjectIdFromParent(string $parentId): ?string
+    {
+        $parent = ProcedureSetting::withoutGlobalScopes()
+            ->where('id', $parentId)
+            ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
+            ->first(['work_flow_id']);
+
+        if ($parent === null) {
+            return null;
+        }
+
+        $workFlow = WorkFlow::withoutGlobalScopes()
+            ->where('id', $parent->work_flow_id)
+            ->first(['project_id']);
+
+        $projectId = $workFlow?->project_id;
+
+        return is_string($projectId) && $projectId !== '' ? $projectId : null;
     }
 
     private function tenantOwnedProjectRule()
