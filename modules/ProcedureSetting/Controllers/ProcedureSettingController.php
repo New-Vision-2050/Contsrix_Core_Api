@@ -147,8 +147,16 @@ class ProcedureSettingController extends Controller
         $projectId = $this->projectIdFromRequest($request);
 
         if ($projectId !== null) {
-            $this->assertWorkFlowBelongsToProject($projectId, $request->input('work_flow_id'));
-            $this->assertProcedureSettingBelongsToProject($projectId, $request->input('parent_id'));
+            $this->authorizeProjectProcedure(Permission::PROJECT_MANAGEMENT_CREATE());
+
+            $item = $this->projectProcedureService->create(
+                $projectId,
+                $request->projectProcedureData(),
+                $request->projectProcedureMetadataData(),
+                $request->parentProcedureSettingId(),
+            );
+
+            return Json::item((new ProjectProcedurePresenter($item))->getData());
         }
 
         $createdItem = $this->procedureSettingService->create($request->createCreateProcedureSettingDTO());
