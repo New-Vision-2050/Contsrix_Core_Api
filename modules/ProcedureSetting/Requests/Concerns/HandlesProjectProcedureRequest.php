@@ -107,7 +107,7 @@ trait HandlesProjectProcedureRequest
 
             $exists = DB::table('projects')
                 ->where('id', $value)
-                ->where(function ($query) use ($tenantId, $morphType) {
+                ->where(function ($query) use ($tenantId, $morphType, $value) {
                     $query->where('company_id', $tenantId)
                         ->orWhereExists(function ($shareQuery) use ($tenantId, $morphType, $value) {
                             $shareQuery->select(DB::raw(1))
