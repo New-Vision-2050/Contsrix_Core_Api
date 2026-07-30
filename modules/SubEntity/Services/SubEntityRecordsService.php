@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Services;
 
-use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AttendanceStatusService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
@@ -114,35 +113,14 @@ class SubEntityRecordsService
                 return [(string) $companyUser->id => $user];
             });
 
-        $userIds = $tenantUsersByCompanyUserId
-            ->filter()
-            ->map(fn (User $user): string => (string) $user->id)
-            ->unique()
-            ->values();
-
-        $filters = [
-            'start_date' => $attendanceDate,
-            'end_date' => $attendanceDate,
-        ];
-
-        $attendanceByUserId = $this->attendanceStatusService->buildForUsers($userIds, $filters);
-        $usersOnTask = $this->attendanceStatusService->usersOnTask($userIds, $filters);
+        $attendanceByCompanyUserId = $this->attendanceStatusService->buildDailyListForUsersByKey(
+            $tenantUsersByCompanyUserId,
+            $attendanceDate
+        );
 
         return collect($presentedRows)
-            ->map(function (array $row) use ($tenantUsersByCompanyUserId, $attendanceByUserId, $usersOnTask, $attendanceDate): array {
-                /** @var User|null $user */
-                $user = $tenantUsersByCompanyUserId->get((string) ($row['id'] ?? ''));
-                $userId = $user?->id ? (string) $user->id : null;
-
-                $attendance = $userId !== null && $attendanceByUserId->has($userId)
-                    ? $attendanceByUserId->get($userId)
-                    : $this->attendanceStatusService->syntheticAbsent(
-                        $user,
-                        $attendanceDate,
-                        $userId !== null && in_array($userId, $usersOnTask, true)
-                    );
-
-                $row['attendance'] = $this->formatAttendanceForList($attendance);
+            ->map(function (array $row) use ($attendanceByCompanyUserId): array {
+                $row['attendance'] = $attendanceByCompanyUserId->get((string) ($row['id'] ?? ''));
 
                 return $row;
             })
@@ -166,53 +144,6 @@ class SubEntityRecordsService
         }
 
         return $companyUser->users->first();
-    }
-
-    private function formatAttendanceForList(array $attendance): array
-    {
-        [$code, $label] = $this->attendanceListDisplay($attendance);
-
-        return [
-            'id' => $attendance['id'] ?? null,
-            'code' => $code,
-            'label' => $label,
-            'employee_status' => $attendance['employee_status'] ?? null,
-            'status' => $attendance['status'] ?? null,
-            'is_absent' => (int) ($attendance['is_absent'] ?? 0),
-            'is_late' => (int) ($attendance['is_late'] ?? 0),
-            'is_holiday' => (int) ($attendance['is_holiday'] ?? 0),
-            'day_status' => $attendance['day_status'] ?? null,
-            'attendance_constraint_id' => $attendance['attendance_constraint_id'] ?? null,
-            'attendance_constraint' => $attendance['attendance_constraint'] ?? null,
-            'work_date' => $attendance['work_date'] ?? null,
-            'clock_in_time' => $attendance['clock_in_time'] ?? null,
-        ];
-    }
-
-    private function attendanceListDisplay(array $attendance): array
-    {
-        $status = $attendance['status'] ?? null;
-        $isAbsent = (int) ($attendance['is_absent'] ?? 0) === 1;
-        $isHoliday = (int) ($attendance['is_holiday'] ?? 0) === 1;
-        $clockInTime = $attendance['clock_in_time'] ?? null;
-
-        if ($status === 'on_task') {
-            return ['on_task', 'متواجد'];
-        }
-
-        if ($isHoliday || $status === Attendance::STATUS_HOLIDAY) {
-            return ['holiday', 'اجازه'];
-        }
-
-        if ($status === Attendance::STATUS_WAITING || ($status !== Attendance::STATUS_ABSENT && $clockInTime === null && ! $isAbsent)) {
-            return ['required_attendance', 'مطلوب للحضور'];
-        }
-
-        if ($isAbsent || $status === Attendance::STATUS_ABSENT) {
-            return ['absent', 'غائب'];
-        }
-
-        return ['present', 'حاضر'];
     }
 
     public function getWidgetsData(string $subEntityId, string $registrationFormId): array
