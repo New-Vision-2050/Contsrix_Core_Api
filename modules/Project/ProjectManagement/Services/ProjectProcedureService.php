@@ -30,6 +30,10 @@ class ProjectProcedureService
 
         if ($parentProcedureSettingId !== null) {
             $this->findProjectProcedureParentOrFail($project, $parentProcedureSettingId);
+        } else {
+            $workFlow = $this->projectWorkFlow($project);
+            $parent = $this->projectProcedureParent($project, $workFlow);
+            $parentProcedureSettingId = $parent->id;
         }
 
         return $this->repository->listForProject($project->id, self::PROCEDURE_TYPE, $parentProcedureSettingId);
