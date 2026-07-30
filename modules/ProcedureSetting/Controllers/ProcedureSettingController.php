@@ -288,26 +288,47 @@ class ProcedureSettingController extends Controller
         }
 
         $parentId = $request->input('parent_id');
-        if (! is_string($parentId) || $parentId === '') {
-            return null;
+        if (is_string($parentId) && $parentId !== '') {
+            $parent = ProcedureSetting::withoutGlobalScopes()
+                ->where('id', $parentId)
+                ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
+                ->first(['work_flow_id']);
+
+            if ($parent !== null) {
+                $workFlow = WorkFlow::withoutGlobalScopes()
+                    ->where('id', $parent->work_flow_id)
+                    ->first(['project_id']);
+
+                $projectId = $workFlow?->project_id;
+
+                if (is_string($projectId) && $projectId !== '') {
+                    return $projectId;
+                }
+            }
         }
 
-        $parent = ProcedureSetting::withoutGlobalScopes()
-            ->where('id', $parentId)
-            ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
-            ->first(['work_flow_id']);
+        // Fallback: resolve from the route model itself if it's a project procedure.
+        $routeId = $request->route('id');
+        if (is_string($routeId) && $routeId !== '') {
+            $setting = ProcedureSetting::withoutGlobalScopes()
+                ->where('id', $routeId)
+                ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
+                ->first(['work_flow_id']);
 
-        if ($parent === null) {
-            return null;
+            if ($setting !== null) {
+                $workFlow = WorkFlow::withoutGlobalScopes()
+                    ->where('id', $setting->work_flow_id)
+                    ->first(['project_id']);
+
+                $projectId = $workFlow?->project_id;
+
+                if (is_string($projectId) && $projectId !== '') {
+                    return $projectId;
+                }
+            }
         }
 
-        $workFlow = WorkFlow::withoutGlobalScopes()
-            ->where('id', $parent->work_flow_id)
-            ->first(['project_id']);
-
-        $projectId = $workFlow?->project_id;
-
-        return is_string($projectId) && $projectId !== '' ? $projectId : null;
+        return null;
     }
 
     private function authorizeProjectProcedure(string $permission): void
