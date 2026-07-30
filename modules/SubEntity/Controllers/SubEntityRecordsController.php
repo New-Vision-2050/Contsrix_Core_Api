@@ -32,15 +32,27 @@ class SubEntityRecordsController extends Controller
             $request->get('registration_form_id'),
             $request->get('branch_id'),
             (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            $this->subEntityRecordsService->resolvePerPage($request->get('per_page'))
         );
-        $registrationForm = $this->registrationFormCRUDService->getById( $request->get('registration_form_id'));
+        $registrationForm = $this->registrationFormCRUDService->getById($request->get('registration_form_id'));
         $role = $registrationForm->company_user_role_map;
 
         if ($role == CompanyUserRole::CLIENT->value) {
-            return Json::items(CompanyUserClientPresenter::collection($list["data"] ?? [], $role), paginationSettings: $list['pagination'] ?? []);
+            return Json::items(CompanyUserClientPresenter::collection($list['data'] ?? [], $role), paginationSettings: $list['pagination'] ?? []);
         }
-        return Json::items(CompanyUserPresenter::collection($list["data"] ?? [], $role), paginationSettings: $list['pagination'] ?? []);
+
+        $records = $list['data'] ?? [];
+        $presented = CompanyUserPresenter::collection($records, $role);
+
+        if ((int) $role === CompanyUserRole::EMPLOYEE->value) {
+            $presented = $this->subEntityRecordsService->attachAttendanceToEmployeeRows(
+                $records,
+                $presented,
+                $request->get('start_date') ?: now()->toDateString()
+            );
+        }
+
+        return Json::items($presented, paginationSettings: $list['pagination'] ?? []);
     }
 
     public function widgets(GetSubEntityRecordsRequest $request): JsonResponse

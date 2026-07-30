@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Services;
 
+use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Services\AttendanceStatusService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
+use Modules\CompanyUser\Models\CompanyUser;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Carbon\Carbon;
@@ -26,7 +29,8 @@ class SubEntityRecordsService
         protected SuperEntityService          $superEntityService,
         protected SubEntityCRUDService        $subEntityCRUDService,
         protected CompanyUserRepository       $companyUserRepository,
-        protected RegistrationFormCRUDService $registrationFormCRUDService
+        protected RegistrationFormCRUDService $registrationFormCRUDService,
+        protected AttendanceStatusService     $attendanceStatusService
     ) {}
 
 
@@ -57,32 +61,158 @@ class SubEntityRecordsService
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
-    protected function getMappedRecords($page = 1, $perPage = 10, $type, $branchId = null): array
+    public function resolvePerPage(mixed $perPage): int
     {
+        if ($perPage === null || $perPage === '') {
+            return 10;
+        }
+
+        return max(1, min(100, (int) $perPage));
+    }
+
+    protected function getMappedRecords($page, $perPage, $type, $branchId = null): array
+    {
+        $relations = [
+            'users.companyUserCompanies',
+            'bankAccount',
+            'userProfessionalData.jobTitle',
+            'jobOffer',
+            'employmentContract',
+            'userSalary',
+            'userAbout',
+            'contactInfo',
+            'qualifications.academicQualification',
+            'userExperiences',
+            'userEducationalCourses',
+            'professionalCertificates',
+            'userPrivileges.typePrivilege',
+            'userRelatives',
+            'contractualRelationships',
+        ];
+
+        if ((int) $type === CompanyUserRole::EMPLOYEE->value) {
+            $relations[] = 'users.userProfessionalData.attendanceConstraint';
+        }
+
         return $this->companyUserRepository->withRelationsFilterByType(
-            [
-                'users.companyUserCompanies',
-                'bankAccount',
-                'userProfessionalData.jobTitle',
-                'jobOffer',
-                'employmentContract',
-                'userSalary',
-                'userAbout',
-                'contactInfo',
-                'qualifications.academicQualification',
-                'userExperiences',
-                'userEducationalCourses',
-                'professionalCertificates',
-                'userPrivileges.typePrivilege',
-                'userRelatives',
-                'contractualRelationships',
-            ],
+            $relations,
             $page,
             $perPage,
             $type,
             null,
             $branchId
         );
+    }
+
+    public function attachAttendanceToEmployeeRows(iterable $records, array $presentedRows, string $attendanceDate): array
+    {
+        $companyUsers = collect($records)->values();
+        $tenantUsersByCompanyUserId = $companyUsers
+            ->mapWithKeys(function (CompanyUser $companyUser): array {
+                $user = $this->resolveTenantUser($companyUser);
+
+                return [(string) $companyUser->id => $user];
+            });
+
+        $userIds = $tenantUsersByCompanyUserId
+            ->filter()
+            ->map(fn (User $user): string => (string) $user->id)
+            ->unique()
+            ->values();
+
+        $filters = [
+            'start_date' => $attendanceDate,
+            'end_date' => $attendanceDate,
+        ];
+
+        $attendanceByUserId = $this->attendanceStatusService->buildForUsers($userIds, $filters);
+        $usersOnTask = $this->attendanceStatusService->usersOnTask($userIds, $filters);
+
+        return collect($presentedRows)
+            ->map(function (array $row) use ($tenantUsersByCompanyUserId, $attendanceByUserId, $usersOnTask, $attendanceDate): array {
+                /** @var User|null $user */
+                $user = $tenantUsersByCompanyUserId->get((string) ($row['id'] ?? ''));
+                $userId = $user?->id ? (string) $user->id : null;
+
+                $attendance = $userId !== null && $attendanceByUserId->has($userId)
+                    ? $attendanceByUserId->get($userId)
+                    : $this->attendanceStatusService->syntheticAbsent(
+                        $user,
+                        $attendanceDate,
+                        $userId !== null && in_array($userId, $usersOnTask, true)
+                    );
+
+                $row['attendance'] = $this->formatAttendanceForList($attendance);
+
+                return $row;
+            })
+            ->values()
+            ->all();
+    }
+
+    private function resolveTenantUser(CompanyUser $companyUser): ?User
+    {
+        $tenantId = tenant('id') ?: auth()->user()?->company_id;
+
+        if ($tenantId !== null && $tenantId !== '') {
+            $tenantUser = $companyUser->users
+                ->first(fn (User $user): bool => (string) $user->company_id === (string) $tenantId);
+
+            if ($tenantUser) {
+                return $tenantUser;
+            }
+
+            return null;
+        }
+
+        return $companyUser->users->first();
+    }
+
+    private function formatAttendanceForList(array $attendance): array
+    {
+        [$code, $label] = $this->attendanceListDisplay($attendance);
+
+        return [
+            'id' => $attendance['id'] ?? null,
+            'code' => $code,
+            'label' => $label,
+            'employee_status' => $attendance['employee_status'] ?? null,
+            'status' => $attendance['status'] ?? null,
+            'is_absent' => (int) ($attendance['is_absent'] ?? 0),
+            'is_late' => (int) ($attendance['is_late'] ?? 0),
+            'is_holiday' => (int) ($attendance['is_holiday'] ?? 0),
+            'day_status' => $attendance['day_status'] ?? null,
+            'attendance_constraint_id' => $attendance['attendance_constraint_id'] ?? null,
+            'attendance_constraint' => $attendance['attendance_constraint'] ?? null,
+            'work_date' => $attendance['work_date'] ?? null,
+            'clock_in_time' => $attendance['clock_in_time'] ?? null,
+        ];
+    }
+
+    private function attendanceListDisplay(array $attendance): array
+    {
+        $status = $attendance['status'] ?? null;
+        $isAbsent = (int) ($attendance['is_absent'] ?? 0) === 1;
+        $isHoliday = (int) ($attendance['is_holiday'] ?? 0) === 1;
+        $clockInTime = $attendance['clock_in_time'] ?? null;
+
+        if ($status === 'on_task') {
+            return ['on_task', 'متواجد'];
+        }
+
+        if ($isHoliday || $status === Attendance::STATUS_HOLIDAY) {
+            return ['holiday', 'اجازه'];
+        }
+
+        if ($status === Attendance::STATUS_WAITING || ($status !== Attendance::STATUS_ABSENT && $clockInTime === null && ! $isAbsent)) {
+            return ['required_attendance', 'مطلوب للحضور'];
+        }
+
+        if ($isAbsent || $status === Attendance::STATUS_ABSENT) {
+            return ['absent', 'غائب'];
+        }
+
+        return ['present', 'حاضر'];
     }
 
     public function getWidgetsData(string $subEntityId, string $registrationFormId): array
