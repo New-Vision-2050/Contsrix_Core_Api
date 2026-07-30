@@ -215,6 +215,7 @@ class FolderRepository extends BaseRepository
         $isEmployeeLibrary = $searchType === 'employee';
         $effectiveSearchType = $isEmployeeLibrary ? 'all' : $searchType;
         $hasParent = $parentId !== null && $parentId !== '';
+        $isSearching = $search !== null && $search !== '';
 
         $folderQuery = $withoutTenancy
             ? $this->model->query()->withoutTenancy()
@@ -259,8 +260,8 @@ class FolderRepository extends BaseRepository
             });
         }
 
-        // Check password first if parent folder is provided
-        if ($hasParent) {
+        // Check password first if parent folder is provided (skip during global search)
+        if ($hasParent && !$isSearching) {
             $folder = (clone $folderQuery)->where('id', $parentId)->first();
             if ($folder && $folder->password != null && (!request()->has("password") || !Hash::check(request()->get("password"), $folder->password))) {
                 throw new CustomException(__("validation.access-denied"));
@@ -297,15 +298,15 @@ class FolderRepository extends BaseRepository
                 },
             ]);
 
-            if ($hasParent) {
+            if ($hasParent && !$isSearching) {
                 $foldersQuery->where('parent_id', $parentId);
             }
-            else{
+            elseif (!$isSearching) {
                 $foldersQuery->whereNull('parent_id');
             }
 
             // Apply search filter to folders by name
-            if ($search !== null && $search !== '') {
+            if ($isSearching) {
                 $foldersQuery->where('name', 'LIKE', '%' . $search . '%');
             }
 
@@ -337,9 +338,9 @@ class FolderRepository extends BaseRepository
         // Query files based on parent_id (folder_id)
         $filesQuery = (clone $fileQueryBase)->with('company');
 
-        if ($hasParent) {
+        if ($hasParent && !$isSearching) {
             $filesQuery->where('folder_id', $parentId);
-        }elseif ($isEmployeeLibrary || !$hasFileFilters)
+        }elseif (!$isSearching && ($isEmployeeLibrary || !$hasFileFilters))
         {
             $filesQuery->whereNull('folder_id');
 
