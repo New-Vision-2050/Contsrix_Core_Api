@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Modules\ArchiveLibrary\File\Models\File as ArchiveFile;
 use Modules\ArchiveLibrary\Folder\Models\Folder as ArchiveFolder;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Shared\Media\Models\CustomMedia;
 use Modules\Shared\PCloud\Jobs\SyncMediaToPCloudJob;
 use Throwable;
@@ -101,8 +103,9 @@ class PCloudArchiveSyncService
         $remoteFolderPath = $this->buildRemoteFolderPath($media);
         $folderId = $this->client->ensureFolderPath($remoteFolderPath);
         $filename = $media->file_name ?: ($media->name ?: 'file');
+        $mimeType = $media->mime_type ?: null;
 
-        $result = $this->client->uploadFile($folderId, $filename, $contents);
+        $result = $this->client->uploadFile($folderId, $filename, $contents, $mimeType);
 
         Log::info('pCloud archive sync uploaded file', [
             'media_id' => $media->id,
@@ -110,96 +113,157 @@ class PCloudArchiveSyncService
             'model_id' => $media->model_id,
             'remote_folder' => $remoteFolderPath,
             'filename' => $filename,
+            'mime_type' => $mimeType,
+            'size' => strlen($contents),
             'fileid' => $result['metadata'][0]['fileid'] ?? ($result['fileids'][0] ?? null),
+            'contenttype' => $result['metadata'][0]['contenttype'] ?? null,
         ]);
     }
 
+    /**
+     * Layout: Constrix Archive / {Company Name} / {Project Name} / {archive subfolders…}
+     */
     private function buildRemoteFolderPath(CustomMedia $media): string
     {
+        $context = $this->resolveArchiveContext($media);
         $root = trim((string) config('pcloud.root_folder', 'Constrix Archive'), '/');
-        $tenantSegment = $this->resolveTenantSegment($media);
-        $archivePath = $this->resolveArchivePath($media);
+        $companyName = $this->resolveCompanyName($context['company_id']);
+        $projectName = $this->resolveProjectName($context['project_id']);
+        $archivePath = $this->resolveArchivePath($media, $context, $projectName);
 
-        return collect([$root, $tenantSegment, $archivePath])
+        return collect([$root, $companyName, $archivePath])
             ->filter(static fn (?string $part): bool => filled($part))
             ->implode('/');
     }
 
-    private function resolveTenantSegment(CustomMedia $media): string
+    /**
+     * @return array{company_id: ?string, project_id: ?string, folder: ?ArchiveFolder, file: ?ArchiveFile}
+     */
+    private function resolveArchiveContext(CustomMedia $media): array
     {
-        $fileId = $this->resolveArchiveFileId($media);
-        if ($fileId) {
-            $file = ArchiveFile::query()->withoutTenancy()->find($fileId);
-            if ($file?->company_id) {
-                return (string) $file->company_id;
-            }
-        }
+        $folder = null;
+        $file = null;
 
         $folderId = $this->resolveArchiveFolderId($media);
         if ($folderId) {
             $folder = ArchiveFolder::query()->withoutTenancy()->find($folderId);
-            if ($folder?->company_id) {
-                return (string) $folder->company_id;
-            }
-        }
-
-        $model = $media->model;
-        if ($model instanceof ArchiveFile || $model instanceof ArchiveFolder) {
-            if (!empty($model->company_id)) {
-                return (string) $model->company_id;
-            }
-        }
-
-        if (is_object($model) && isset($model->company_id) && filled($model->company_id)) {
-            return (string) $model->company_id;
-        }
-
-        if (tenant('id')) {
-            return (string) tenant('id');
-        }
-
-        return 'shared';
-    }
-
-    private function resolveArchivePath(CustomMedia $media): string
-    {
-        // Prefer real Archive Library folder tree (project → emergency → …)
-        $folderId = $this->resolveArchiveFolderId($media);
-        if ($folderId) {
-            $folder = ArchiveFolder::query()->withoutTenancy()->find($folderId);
-            if ($folder) {
-                return $this->folderHierarchyPath($folder);
-            }
         }
 
         $fileId = $this->resolveArchiveFileId($media);
         if ($fileId) {
             $file = ArchiveFile::query()->withoutTenancy()->with('folder')->find($fileId);
-            if ($file?->folder) {
-                return $this->folderHierarchyPath($file->folder);
+            if (!$folder && $file?->folder) {
+                $folder = $file->folder;
             }
         }
 
-        $customPath = $media->getCustomProperty('file_path');
-        if (is_string($customPath) && $customPath !== '' && $customPath !== 'default' && $customPath !== 'default_path') {
-            return trim($customPath, '/');
+        $model = $media->relationLoaded('model') || method_exists($media, 'model')
+            ? $media->model
+            : null;
+
+        $companyId = $folder?->company_id
+            ?? $file?->company_id
+            ?? (is_object($model) && isset($model->company_id) ? $model->company_id : null)
+            ?? (tenant('id') ? (string) tenant('id') : null);
+
+        $projectId = $folder?->project_id
+            ?? $file?->project_id
+            ?? (is_object($model) && isset($model->project_id) ? $model->project_id : null);
+
+        return [
+            'company_id' => $companyId ? (string) $companyId : null,
+            'project_id' => $projectId ? (string) $projectId : null,
+            'folder' => $folder,
+            'file' => $file,
+        ];
+    }
+
+    private function resolveCompanyName(?string $companyId): string
+    {
+        $id = $companyId ?: (tenant('id') ? (string) tenant('id') : null);
+        if (!$id) {
+            return 'Unknown Company';
+        }
+
+        $company = Company::query()->find($id);
+        if (!$company) {
+            try {
+                $company = Company::on('mysql')->find($id);
+            } catch (Throwable) {
+                $company = null;
+            }
+        }
+
+        if ($company) {
+            return $this->stringifyName($company->name) ?: 'Unknown Company';
+        }
+
+        if (tenant('id') && (string) tenant('id') === $id) {
+            $tenantName = $this->stringifyName(tenant('name'));
+            if ($tenantName !== '') {
+                return $tenantName;
+            }
+        }
+
+        return 'Unknown Company';
+    }
+
+    private function resolveProjectName(?string $projectId): ?string
+    {
+        if (!$projectId) {
+            return null;
+        }
+
+        $project = ProjectManagement::query()->find($projectId);
+        if (!$project) {
+            return null;
+        }
+
+        $name = $this->stringifyName($project->name);
+
+        return $name !== '' ? $name : null;
+    }
+
+    /**
+     * @param  array{company_id: ?string, project_id: ?string, folder: ?ArchiveFolder, file: ?ArchiveFile}  $context
+     */
+    private function resolveArchivePath(CustomMedia $media, array $context, ?string $projectName): string
+    {
+        // Prefer real Archive Library folder tree (project → emergency → …)
+        if ($context['folder'] instanceof ArchiveFolder) {
+            return $this->folderHierarchyPath($context['folder']);
+        }
+
+        if ($context['file']?->folder instanceof ArchiveFolder) {
+            return $this->folderHierarchyPath($context['file']->folder);
         }
 
         $model = $media->model;
-
         if ($model instanceof ArchiveFolder) {
             return $this->folderHierarchyPath($model);
         }
-
-        if ($model instanceof ArchiveFile) {
-            if ($model->folder) {
-                return $this->folderHierarchyPath($model->folder);
-            }
-
-            return 'files';
+        if ($model instanceof ArchiveFile && $model->folder) {
+            return $this->folderHierarchyPath($model->folder);
         }
 
-        return 'files';
+        // Fallback when only storage path exists (should still include project name)
+        $customPath = $media->getCustomProperty('file_path');
+        $fallback = '';
+        if (is_string($customPath) && $customPath !== '' && $customPath !== 'default' && $customPath !== 'default_path') {
+            $fallback = trim($customPath, '/');
+            $fallback = preg_replace('#^project-notifications/#', '', $fallback) ?? $fallback;
+        }
+
+        if ($projectName) {
+            if ($fallback === '' || $fallback === 'files') {
+                return $projectName;
+            }
+            if (!str_starts_with($fallback, $projectName . '/') && $fallback !== $projectName) {
+                return $projectName . '/' . $fallback;
+            }
+        }
+
+        return $fallback !== '' ? $fallback : ($projectName ?: 'files');
     }
 
     private function resolveArchiveFileId(CustomMedia $media): ?string
@@ -230,7 +294,28 @@ class PCloudArchiveSyncService
             $current = $parent;
         }
 
-        return implode('/', array_filter($parts));
+        // If the root folder name is missing/empty but we know the project, use project name.
+        if (($parts[0] ?? '') === '' && $folder->project_id) {
+            $projectName = $this->resolveProjectName((string) $folder->project_id);
+            if ($projectName) {
+                $parts[0] = $projectName;
+            }
+        }
+
+        return implode('/', array_filter($parts, static fn ($part) => filled($part)));
+    }
+
+    private function stringifyName(mixed $name): string
+    {
+        if (is_array($name)) {
+            $value = $name['ar'] ?? $name['en'] ?? reset($name);
+            $name = is_string($value) ? $value : '';
+        }
+
+        $name = trim((string) $name);
+        $name = str_replace(["\0", '/', '\\'], ['', '-', '-'], $name);
+
+        return $name;
     }
 
     private function readMediaContents(CustomMedia $media): ?string

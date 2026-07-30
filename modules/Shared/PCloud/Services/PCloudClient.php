@@ -55,11 +55,22 @@ class PCloudClient
     /**
      * Upload file contents into an existing pCloud folder.
      *
+     * Uses PUT with raw binary body so images/PDFs keep the correct bytes and
+     * Content-Type (multipart string attach can be treated as text).
+     *
+     * @see https://docs.pcloud.com/protocols/http_json_protocol/uploading_files.html
+     *
      * @return array<string, mixed>
      */
-    public function uploadFile(int $folderId, string $filename, string $contents): array
-    {
+    public function uploadFile(
+        int $folderId,
+        string $filename,
+        string $contents,
+        ?string $mimeType = null,
+    ): array {
         $safeName = $this->sanitizeName($filename);
+        $safeName = $this->ensureExtension($safeName, $mimeType);
+        $contentType = $this->resolveContentType($safeName, $mimeType);
         $host = rtrim((string) config('pcloud.default_api_host'), '/');
         $query = http_build_query(array_merge($this->freshCredentials(), [
             'folderid' => $folderId,
@@ -68,8 +79,12 @@ class PCloudClient
         ]));
 
         $response = Http::timeout((int) config('pcloud.timeout', 120))
-            ->attach('file', $contents, $safeName)
-            ->post($host . '/uploadfile?' . $query);
+            ->withBody($contents, $contentType)
+            ->withHeaders([
+                'Content-Type' => $contentType,
+                'Content-Length' => (string) strlen($contents),
+            ])
+            ->put($host . '/uploadfile?' . $query);
 
         if (!$response->successful()) {
             throw new RuntimeException('pCloud uploadfile HTTP error: ' . $response->status());
@@ -158,5 +173,52 @@ class PCloudClient
         $name = preg_replace('/\s+/', ' ', $name) ?? $name;
 
         return $name !== '' ? $name : 'untitled';
+    }
+
+    private function ensureExtension(string $filename, ?string $mimeType): string
+    {
+        if (pathinfo($filename, PATHINFO_EXTENSION) !== '') {
+            return $filename;
+        }
+
+        $map = [
+            'image/jpeg' => 'jpg',
+            'image/jpg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+            'image/heic' => 'heic',
+            'application/pdf' => 'pdf',
+            'text/plain' => 'txt',
+        ];
+
+        $ext = $map[strtolower((string) $mimeType)] ?? null;
+
+        return $ext ? "{$filename}.{$ext}" : $filename;
+    }
+
+    private function resolveContentType(string $filename, ?string $mimeType): string
+    {
+        if (filled($mimeType) && $mimeType !== 'application/octet-stream') {
+            return $mimeType;
+        }
+
+        $ext = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+        $map = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'heic' => 'image/heic',
+            'pdf' => 'application/pdf',
+            'txt' => 'text/plain',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ];
+
+        return $map[$ext] ?? ($mimeType ?: 'application/octet-stream');
     }
 }
