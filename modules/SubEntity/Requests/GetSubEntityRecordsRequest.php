@@ -14,6 +14,7 @@ class GetSubEntityRecordsRequest extends FormRequest
             'sub_entity_id' => ['required', 'string', 'exists:sub_entities,id'],
             'registration_form_id' => ['required', 'string', 'exists:registration_forms,id'],
             'branch_id' => ['nullable', 'exists:management_hierarchies,id,type,branch'],
+            'start_date' => ['nullable', 'date'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];

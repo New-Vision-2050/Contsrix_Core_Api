@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Services;
 
+use Modules\Attendance\Services\AttendanceStatusService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
+use Modules\CompanyUser\Models\CompanyUser;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Carbon\Carbon;
@@ -26,7 +28,8 @@ class SubEntityRecordsService
         protected SuperEntityService          $superEntityService,
         protected SubEntityCRUDService        $subEntityCRUDService,
         protected CompanyUserRepository       $companyUserRepository,
-        protected RegistrationFormCRUDService $registrationFormCRUDService
+        protected RegistrationFormCRUDService $registrationFormCRUDService,
+        protected AttendanceStatusService     $attendanceStatusService
     ) {}
 
 
@@ -57,32 +60,90 @@ class SubEntityRecordsService
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
-    protected function getMappedRecords($page = 1, $perPage = 10, $type, $branchId = null): array
+    public function resolvePerPage(mixed $perPage): int
     {
+        if ($perPage === null || $perPage === '') {
+            return 10;
+        }
+
+        return max(1, min(100, (int) $perPage));
+    }
+
+    protected function getMappedRecords($page, $perPage, $type, $branchId = null): array
+    {
+        $relations = [
+            'users.companyUserCompanies',
+            'bankAccount',
+            'userProfessionalData.jobTitle',
+            'jobOffer',
+            'employmentContract',
+            'userSalary',
+            'userAbout',
+            'contactInfo',
+            'qualifications.academicQualification',
+            'userExperiences',
+            'userEducationalCourses',
+            'professionalCertificates',
+            'userPrivileges.typePrivilege',
+            'userRelatives',
+            'contractualRelationships',
+        ];
+
+        if ((int) $type === CompanyUserRole::EMPLOYEE->value) {
+            $relations[] = 'users.userProfessionalData.attendanceConstraint';
+        }
+
         return $this->companyUserRepository->withRelationsFilterByType(
-            [
-                'users.companyUserCompanies',
-                'bankAccount',
-                'userProfessionalData.jobTitle',
-                'jobOffer',
-                'employmentContract',
-                'userSalary',
-                'userAbout',
-                'contactInfo',
-                'qualifications.academicQualification',
-                'userExperiences',
-                'userEducationalCourses',
-                'professionalCertificates',
-                'userPrivileges.typePrivilege',
-                'userRelatives',
-                'contractualRelationships',
-            ],
+            $relations,
             $page,
             $perPage,
             $type,
             null,
             $branchId
         );
+    }
+
+    public function attachAttendanceToEmployeeRows(iterable $records, array $presentedRows, string $attendanceDate): array
+    {
+        $companyUsers = collect($records)->values();
+        $tenantUsersByCompanyUserId = $companyUsers
+            ->mapWithKeys(function (CompanyUser $companyUser): array {
+                $user = $this->resolveTenantUser($companyUser);
+
+                return [(string) $companyUser->id => $user];
+            });
+
+        $attendanceByCompanyUserId = $this->attendanceStatusService->buildDailyListForUsersByKey(
+            $tenantUsersByCompanyUserId,
+            $attendanceDate
+        );
+
+        return collect($presentedRows)
+            ->map(function (array $row) use ($attendanceByCompanyUserId): array {
+                $row['attendance'] = $attendanceByCompanyUserId->get((string) ($row['id'] ?? ''));
+
+                return $row;
+            })
+            ->values()
+            ->all();
+    }
+
+    private function resolveTenantUser(CompanyUser $companyUser): ?User
+    {
+        $tenantId = tenant('id') ?: auth()->user()?->company_id;
+
+        if ($tenantId !== null && $tenantId !== '') {
+            $tenantUser = $companyUser->users
+                ->first(fn (User $user): bool => (string) $user->company_id === (string) $tenantId);
+
+            if ($tenantUser) {
+                return $tenantUser;
+            }
+
+            return null;
+        }
+
+        return $companyUser->users->first();
     }
 
     public function getWidgetsData(string $subEntityId, string $registrationFormId): array

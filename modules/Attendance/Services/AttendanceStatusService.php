@@ -21,13 +21,14 @@ class AttendanceStatusService
     /**
      * @param  Collection<int, string>  $userIds
      * @param  array<string, mixed>  $filters
+     * @param  array<int, string>|null  $usersOnTask
      * @return Collection<string, array<string, mixed>>
      */
-    public function buildForUsers(Collection $userIds, array $filters): Collection
+    public function buildForUsers(Collection $userIds, array $filters, ?array $usersOnTask = null): Collection
     {
         $attendanceRecords = $this->getAttendanceRecordsForUsers($userIds, $filters);
         $requestedDate = $filters['start_date'] ?? null;
-        $usersOnTask = $this->usersOnTask($userIds, $filters);
+        $usersOnTask ??= $this->usersOnTask($userIds, $filters);
 
         return $attendanceRecords
             ->mapWithKeys(function (Attendance $attendance) use ($requestedDate, $usersOnTask): array {
@@ -55,6 +56,95 @@ class AttendanceStatusService
             $filters['start_date'] ?? null,
             $filters['end_date'] ?? ($filters['start_date'] ?? null),
         );
+    }
+
+    /**
+     * Build list-ready attendance statuses while keeping the status rules inside
+     * the attendance module.
+     *
+     * @param  Collection<string, User|null>  $usersByKey
+     * @return Collection<string, array<string, mixed>>
+     */
+    public function buildDailyListForUsersByKey(Collection $usersByKey, string $attendanceDate): Collection
+    {
+        $usersByKey = $usersByKey->mapWithKeys(
+            fn (?User $user, string|int $key): array => [(string) $key => $user]
+        );
+
+        $userIds = $usersByKey
+            ->filter()
+            ->map(fn (User $user): string => (string) $user->id)
+            ->unique()
+            ->values();
+
+        $filters = [
+            'start_date' => $attendanceDate,
+            'end_date' => $attendanceDate,
+        ];
+
+        $usersOnTask = $this->usersOnTask($userIds, $filters);
+        $attendanceByUserId = $this->buildForUsers($userIds, $filters, $usersOnTask);
+
+        return $usersByKey->mapWithKeys(function (?User $user, string $key) use ($attendanceByUserId, $usersOnTask, $attendanceDate): array {
+            $userId = $user?->id ? (string) $user->id : null;
+
+            $attendance = $userId !== null && $attendanceByUserId->has($userId)
+                ? $attendanceByUserId->get($userId)
+                : $this->syntheticAbsent(
+                    $user,
+                    $attendanceDate,
+                    $userId !== null && in_array($userId, $usersOnTask, true)
+                );
+
+            return [$key => $this->formatForList($attendance)];
+        });
+    }
+
+    public function formatForList(array $attendance): array
+    {
+        [$code, $label] = $this->listDisplay($attendance);
+
+        return [
+            'id' => $attendance['id'] ?? null,
+            'code' => $code,
+            'label' => $label,
+            'employee_status' => $attendance['employee_status'] ?? null,
+            'status' => $attendance['status'] ?? null,
+            'is_absent' => (int) ($attendance['is_absent'] ?? 0),
+            'is_late' => (int) ($attendance['is_late'] ?? 0),
+            'is_holiday' => (int) ($attendance['is_holiday'] ?? 0),
+            'day_status' => $attendance['day_status'] ?? null,
+            'attendance_constraint_id' => $attendance['attendance_constraint_id'] ?? null,
+            'attendance_constraint' => $attendance['attendance_constraint'] ?? null,
+            'work_date' => $attendance['work_date'] ?? null,
+            'clock_in_time' => $attendance['clock_in_time'] ?? null,
+        ];
+    }
+
+    private function listDisplay(array $attendance): array
+    {
+        $status = $attendance['status'] ?? null;
+        $isAbsent = (int) ($attendance['is_absent'] ?? 0) === 1;
+        $isHoliday = (int) ($attendance['is_holiday'] ?? 0) === 1;
+        $clockInTime = $attendance['clock_in_time'] ?? null;
+
+        if ($status === 'on_task') {
+            return ['on_task', 'متواجد'];
+        }
+
+        if ($isHoliday || $status === Attendance::STATUS_HOLIDAY) {
+            return ['holiday', 'اجازه'];
+        }
+
+        if ($status === Attendance::STATUS_WAITING || ($status !== Attendance::STATUS_ABSENT && $clockInTime === null && ! $isAbsent)) {
+            return ['required_attendance', 'مطلوب للحضور'];
+        }
+
+        if ($isAbsent || $status === Attendance::STATUS_ABSENT) {
+            return ['absent', 'غائب'];
+        }
+
+        return ['present', 'حاضر'];
     }
 
     /**
