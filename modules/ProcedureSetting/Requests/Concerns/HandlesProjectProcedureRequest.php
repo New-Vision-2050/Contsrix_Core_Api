@@ -39,7 +39,9 @@ trait HandlesProjectProcedureRequest
         $nameRule = $required ? 'required' : 'sometimes';
 
         return [
-            'project_id' => ['required', 'uuid', $this->tenantOwnedProjectRule()],
+            'project_id' => $this->filled('parent_id')
+                ? ['sometimes', 'uuid', $this->tenantOwnedProjectRule()]
+                : ['required', 'uuid', $this->tenantOwnedProjectRule()],
             'type' => ['sometimes', 'string', Rule::in([ProjectProcedureSetting::PROCEDURE_TYPE])],
             'form' => [Rule::prohibitedIf($this->filled('form'))],
             'parent_id' => ['sometimes', 'uuid', 'exists:procedure_settings,id'],
