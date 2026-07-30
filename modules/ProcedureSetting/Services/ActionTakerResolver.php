@@ -377,6 +377,25 @@ class ActionTakerResolver
      */
     private function resolveReceiverCompanyUsers(ProcedureSettingStep $step, array $context = []): array
     {
+        // If specific project employees are selected on the step, resolve only
+        // those users instead of every user in the receiver company.
+        $projectEmployeeIds = collect($step->project_employee_ids ?? [])
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->filter(static fn (string $id): bool => $id !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($projectEmployeeIds !== []) {
+            return User::query()
+                ->withoutGlobalScopes()
+                ->whereIn('id', $projectEmployeeIds)
+                ->pluck('id')
+                ->map(static fn ($id) => (string) $id)
+                ->values()
+                ->all();
+        }
+
         $receiverCompanyIds = collect($step->receiver_company_ids ?? [])
             ->map(static fn (mixed $id): string => (string) $id)
             ->filter(static fn (string $id): bool => $id !== '')
