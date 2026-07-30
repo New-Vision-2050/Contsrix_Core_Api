@@ -497,7 +497,7 @@ class UserAttendanceService
 
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
-            'is_active' => $isActiveForDisplay,
+            'is_active' => $isActiveForDisplay && $canClockIn,
             'total_hours_present' => round($totalHoursPresent, 2),
             'can_clock_in' => $canClockIn,
             'can_clock_out' => $currentAttendance !== null && $isActiveForDisplay,
