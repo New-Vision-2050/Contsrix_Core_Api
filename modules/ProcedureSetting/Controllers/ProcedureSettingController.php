@@ -147,7 +147,7 @@ class ProcedureSettingController extends Controller
         $projectId = $this->projectIdFromRequest($request);
 
         if ($projectId !== null) {
-            $this->authorizeProjectProcedure(Permission::PROJECT_MANAGEMENT_CREATE());
+//            $this->authorizeProjectProcedure(Permission::PROJECT_MANAGEMENT_CREATE());
 
             $item = $this->projectProcedureService->create(
                 $projectId,
