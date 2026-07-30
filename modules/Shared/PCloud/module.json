@@ -1,0 +1,11 @@
+{
+    "name": "PCloud",
+    "alias": "pcloud",
+    "description": "pCloud archive sync using email/password HTTP JSON API",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\PCloud\\Providers\\PCloudServiceProvider"
+    ],
+    "files": []
+}
