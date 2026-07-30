@@ -7,9 +7,25 @@ namespace Modules\Shared\Media\Observers;
 use Modules\Shared\Media\Models\CustomMedia;
 use Modules\ArchiveLibrary\File\Models\File;
 use Illuminate\Support\Facades\Log;
+use Modules\Shared\PCloud\Services\PCloudArchiveSyncService;
 
 class CustomMediaObserver
 {
+    /**
+     * Mirror Archive Library media to pCloud after it is stored.
+     */
+    public function created(CustomMedia $media): void
+    {
+        try {
+            app(PCloudArchiveSyncService::class)->dispatchSync($media);
+        } catch (\Throwable $e) {
+            Log::error('Failed to dispatch pCloud archive sync', [
+                'media_id' => $media->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     /**
      * Handle the CustomMedia "deleting" event.
      * Automatically delete associated File if file_id exists.
