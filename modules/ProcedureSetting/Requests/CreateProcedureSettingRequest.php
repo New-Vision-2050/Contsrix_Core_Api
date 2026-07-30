@@ -8,11 +8,18 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\ProcedureSetting\DTO\CreateProcedureSettingDTO;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Requests\Concerns\HandlesProjectProcedureRequest;
 
 class CreateProcedureSettingRequest extends FormRequest
 {
+    use HandlesProjectProcedureRequest;
+
     public function rules(): array
     {
+        if ($this->isProjectProcedureRequest()) {
+            return $this->projectProcedureRules(required: true);
+        }
+
         $rules = [
             'name' => 'required|string|max:255',
             'type' => ['required', 'string', Rule::in(ProcedureSettingType::values())],
@@ -52,6 +59,8 @@ class CreateProcedureSettingRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->prepareProjectProcedureAliases();
+
         $merge = [];
         if ($this->route('project_id') !== null) {
             $merge['project_id'] = (string) $this->route('project_id');
@@ -95,15 +104,4 @@ class CreateProcedureSettingRequest extends FormRequest
         );
     }
 
-    private function tenantOwnedProjectRule()
-    {
-        $rule = Rule::exists('projects', 'id');
-        $tenantId = tenant('id');
-
-        if ($tenantId !== null && $tenantId !== '') {
-            $rule->where('company_id', (string) $tenantId);
-        }
-
-        return $rule;
-    }
 }
