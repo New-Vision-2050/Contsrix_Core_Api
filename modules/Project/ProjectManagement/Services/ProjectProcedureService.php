@@ -237,7 +237,6 @@ class ProjectProcedureService
             ->where('id', $parentProcedureSettingId)
             ->where('company_id', $project->company_id)
             ->where('type', self::PROCEDURE_TYPE)
-            ->whereNull('parent_id')
             ->whereHas('workFlow', static function ($query) use ($project): void {
                 $query->where('company_id', $project->company_id)
                     ->where('project_id', $project->id)
