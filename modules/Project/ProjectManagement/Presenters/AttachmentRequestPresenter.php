@@ -6,7 +6,10 @@ namespace Modules\Project\ProjectManagement\Presenters;
 
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\ProcessStep;
+use Illuminate\Support\Facades\Auth;
 
 class AttachmentRequestPresenter extends AbstractPresenter
 {
@@ -28,6 +31,7 @@ class AttachmentRequestPresenter extends AbstractPresenter
             'notes' => $this->request->notes,
             'created_at' => $this->request->created_at?->toISOString(),
             'responded_at' => $this->request->responded_at?->toISOString(),
+            'can_take_action' => $this->canTakeAction(),
         ];
 
             $data['project'] = $this->request->project ? [
@@ -168,6 +172,44 @@ class AttachmentRequestPresenter extends AbstractPresenter
 
 
         return $data;
+    }
+
+    private function canTakeAction(): int
+    {
+        $userId = Auth::id();
+
+        if ($userId === null) {
+            return 0;
+        }
+
+        $userId = (string) $userId;
+
+        $process = $this->request->relationLoaded('attachmentRequestProcess')
+            ? $this->request->attachmentRequestProcess
+            : null;
+
+        if ($process === null || $process->status !== ProcessStatus::InProgress) {
+            return 0;
+        }
+
+        $steps = $process->relationLoaded('steps') ? $process->steps : collect();
+
+        foreach ($steps as $step) {
+            if ($step->status !== ProcessStepStatus::Pending) {
+                continue;
+            }
+
+            if ($step->assigned_user_id === $userId) {
+                return 1;
+            }
+
+            $authorized = $step->authorized_user_ids ?? [];
+            if (in_array($userId, $authorized, true)) {
+                return 1;
+            }
+        }
+
+        return 0;
     }
 
     /**
