@@ -387,11 +387,13 @@ class ActionTakerResolver
             ->all();
 
         if ($projectEmployeeIds !== []) {
-            return User::query()
+            return \Modules\Project\ProjectManagement\Models\ProjectEmployee::query()
                 ->withoutGlobalScopes()
                 ->whereIn('id', $projectEmployeeIds)
-                ->pluck('id')
+                ->whereNotNull('user_id')
+                ->pluck('user_id')
                 ->map(static fn ($id) => (string) $id)
+                ->unique()
                 ->values()
                 ->all();
         }
