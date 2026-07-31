@@ -11,8 +11,9 @@ use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Project\ProjectManagement\Models\AttachmentRequestItem;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Models\ProjectRequirementSubmission;
+use Modules\Shared\Media\Models\CustomMedia;
+use Modules\Shared\PCloud\Services\PCloudArchiveSyncService;
 use Ramsey\Uuid\Uuid;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Delivers approved attachment media into the receiving company's ArchiveLibrary.
@@ -118,7 +119,7 @@ final class AttachmentArchiveDeliveryService
     }
 
     /**
-     * @param  Collection<int, Media>  $mediaItems
+     * @param  Collection<int, CustomMedia>  $mediaItems
      */
     private function deliverMediaRows(
         Collection $mediaItems,
@@ -155,17 +156,29 @@ final class AttachmentArchiveDeliveryService
         ]);
 
         foreach ($mediaItems as $mediaItem) {
-            $replicatedMedia = $mediaItem->replicate(['id', 'uuid']);
-            $replicatedMedia->model_id = $file->id;
-            $replicatedMedia->model_type = File::class;
-            $replicatedMedia->collection_name = 'upload';
-            $replicatedMedia->save();
+            $attrs = collect($mediaItem->getAttributes())
+                ->except(['id', 'uuid'])
+                ->all();
+
+            $newMedia = new CustomMedia();
+            $newMedia->forceFill($attrs);
+            $newMedia->uuid = Uuid::uuid4()->toString();
+            $newMedia->model_id = $file->id;
+            $newMedia->model_type = File::class;
+            $newMedia->collection_name = 'upload';
+            $newMedia->file_id = $file->id;
+            $newMedia->folder_id = $folderId;
+            $newMedia->setCustomProperty('file_id', $file->id);
+            $newMedia->setCustomProperty('folder_id', $folderId);
+            $newMedia->save();
+
+            app(PCloudArchiveSyncService::class)->dispatchSync($newMedia);
         }
     }
 
     /**
      * @param  class-string<Model>  $sourceModelType
-     * @return Collection<int, Media>
+     * @return Collection<int, CustomMedia>
      */
     private function getMediaFromSourceTenant(
         Model $source,
@@ -176,7 +189,7 @@ final class AttachmentArchiveDeliveryService
         $modelId = (string) $source->getKey();
 
         if ($sourceCompanyId === $receiverCompanyId) {
-            return Media::query()
+            return CustomMedia::query()
                 ->where('model_id', Uuid::fromString($modelId))
                 ->where('model_type', $sourceModelType)
                 ->get();
@@ -186,7 +199,7 @@ final class AttachmentArchiveDeliveryService
         tenancy()->initialize($sourceCompanyId);
 
         try {
-            return Media::query()
+            return CustomMedia::query()
                 ->where('model_id', Uuid::fromString($modelId))
                 ->where('model_type', $sourceModelType)
                 ->get();

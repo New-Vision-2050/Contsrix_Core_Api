@@ -183,14 +183,15 @@ class PCloudArchiveSyncService
             }
         }
 
-        $model = $media->relationLoaded('model') || method_exists($media, 'model')
-            ? $media->model
-            : null;
+        $model = null;
+        if ($media->relationLoaded('model')) {
+            $model = $media->getRelation('model');
+        }
 
         $companyId = $folder?->company_id
             ?? $file?->company_id
             ?? (is_object($model) && isset($model->company_id) ? $model->company_id : null)
-            ?? (tenant('id') ? (string) tenant('id') : null);
+            ?? (function_exists('tenant') && tenant('id') ? (string) tenant('id') : null);
 
         $projectId = $folder?->project_id
             ?? $file?->project_id
@@ -264,11 +265,14 @@ class PCloudArchiveSyncService
             return $this->folderHierarchyPath($context['file']->folder);
         }
 
-        $model = $media->model;
+        $model = null;
+        if ($media->relationLoaded('model')) {
+            $model = $media->getRelation('model');
+        }
         if ($model instanceof ArchiveFolder) {
             return $this->folderHierarchyPath($model);
         }
-        if ($model instanceof ArchiveFile && $model->folder) {
+        if ($model instanceof ArchiveFile && $model->relationLoaded('folder') && $model->folder) {
             return $this->folderHierarchyPath($model->folder);
         }
 
@@ -333,9 +337,17 @@ class PCloudArchiveSyncService
 
     private function stringifyName(mixed $name): string
     {
+        if ($name === null) {
+            return '';
+        }
+
         if (is_array($name)) {
-            $value = $name['ar'] ?? $name['en'] ?? reset($name);
+            $value = $name['ar'] ?? $name['en'] ?? reset($name) ?: '';
             $name = is_string($value) ? $value : '';
+        }
+
+        if (!is_string($name) && !is_numeric($name)) {
+            return '';
         }
 
         $name = trim((string) $name);
@@ -344,7 +356,7 @@ class PCloudArchiveSyncService
         return $name;
     }
 
-    private function readMediaContents(CustomMedia $media): ?string
+    protected function readMediaContents(CustomMedia $media): ?string
     {
         try {
             $disk = $media->disk ?: 'public';

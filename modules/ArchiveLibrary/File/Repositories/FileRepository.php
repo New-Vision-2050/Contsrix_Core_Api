@@ -234,16 +234,21 @@ class FileRepository extends BaseRepository
                 'access_type' => $originalFile->access_type,
             ]);
 
-            // Copy media files
+            // Copy media files into Archive File (and mirror to pCloud)
             foreach ($originalFile->getMedia('upload') as $media) {
-                $newMedia = $media->replicate();
-
+                $newMedia = $media->replicate(['id', 'uuid']);
                 $newMedia->model_id = $copiedFile->id;
-
-
+                $newMedia->model_type = File::class;
                 $newMedia->uuid = \Ramsey\Uuid\Uuid::uuid4()->toString();
-
+                $newMedia->file_id = $copiedFile->id;
+                if ($targetFolderId) {
+                    $newMedia->folder_id = $targetFolderId->toString();
+                    $newMedia->setCustomProperty('folder_id', $targetFolderId->toString());
+                }
+                $newMedia->setCustomProperty('file_id', $copiedFile->id);
                 $newMedia->save();
+
+                app(\Modules\Shared\PCloud\Services\PCloudArchiveSyncService::class)->dispatchSync($newMedia);
             }
 
             // Copy user permissions
