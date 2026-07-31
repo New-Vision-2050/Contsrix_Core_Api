@@ -190,13 +190,20 @@ REVERB_APP_SECRET="${REVERB_APP_SECRET}"
 REVERB_HOST="0.0.0.0"
 REVERB_PORT=8081
 REVERB_SCHEME="http"
-PCLOUD_ENABLED="${PCLOUD_ENABLED:-false}"
+PCLOUD_ENABLED="${PCLOUD_ENABLED:-true}"
 PCLOUD_EMAIL="${PCLOUD_EMAIL}"
 PCLOUD_PASSWORD="${PCLOUD_PASSWORD}"
 PCLOUD_ROOT_FOLDER="${PCLOUD_ROOT_FOLDER:-Constrix Archive}"
 PCLOUD_DISPATCH="${PCLOUD_DISPATCH:-sync}"
 
 EOF
+
+if [ -z "${PCLOUD_EMAIL}" ] || [ -z "${PCLOUD_PASSWORD}" ]; then
+  echo "WARNING: PCLOUD_EMAIL / PCLOUD_PASSWORD are empty — archive files will NOT sync to pCloud."
+  echo "Add GitHub Actions secrets PCLOUD_EMAIL and PCLOUD_PASSWORD, then redeploy."
+else
+  echo "✓ pCloud credentials present (enabled=${PCLOUD_ENABLED})"
+fi
 
 echo "APP_ENV: $APP_ENV"
 
