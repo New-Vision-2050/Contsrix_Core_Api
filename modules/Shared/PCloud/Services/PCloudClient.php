@@ -169,8 +169,10 @@ class PCloudClient
 
     private function sanitizeName(string $name): string
     {
-        $name = trim(str_replace(["\0", '/', '\\'], ['', '-', '-'], $name));
+        $name = str_replace(["\0", '/', '\\'], ['', '-', '-'], $name);
+        $name = trim($name);
         $name = preg_replace('/\s+/', ' ', $name) ?? $name;
+        $name = trim($name);
 
         return $name !== '' ? $name : 'untitled';
     }
