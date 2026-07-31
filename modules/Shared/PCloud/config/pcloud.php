@@ -51,6 +51,19 @@ return [
     */
     'root_folder' => env('PCLOUD_ROOT_FOLDER', 'Constrix Archive'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dispatch mode
+    |--------------------------------------------------------------------------
+    |
+    | sync  = upload to pCloud in the same request (reliable; no queue worker)
+    | queue = push SyncMediaToPCloudJob to the queue (needs queue:work)
+    |
+    | Prefer sync locally and when using Octane — afterResponse can be dropped.
+    |
+    */
+    'dispatch' => env('PCLOUD_DISPATCH', 'sync'),
+
     'auth_cache_ttl' => (int) env('PCLOUD_AUTH_CACHE_TTL', 3500),
 
     'timeout' => (int) env('PCLOUD_TIMEOUT', 120),

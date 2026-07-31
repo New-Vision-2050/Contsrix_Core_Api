@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Shared\PCloud\Services;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Modules\ArchiveLibrary\File\Models\File as ArchiveFile;
@@ -16,6 +17,9 @@ use Throwable;
 
 class PCloudArchiveSyncService
 {
+    /** @var array<string, true> */
+    private array $dispatchedMediaIds = [];
+
     public function __construct(
         private readonly PCloudClient $client,
     ) {
@@ -49,9 +53,14 @@ class PCloudArchiveSyncService
 
     public function dispatchSync(CustomMedia $media): void
     {
+        $mediaId = (string) $media->id;
+        if (isset($this->dispatchedMediaIds[$mediaId])) {
+            return;
+        }
+
         if (!$this->client->isConfigured()) {
-            Log::debug('pCloud sync skipped: not configured', [
-                'media_id' => $media->id,
+            Log::warning('pCloud sync skipped: not configured', [
+                'media_id' => $mediaId,
                 'enabled' => (bool) config('pcloud.enabled'),
                 'email_set' => filled(config('pcloud.email')),
             ]);
@@ -60,29 +69,46 @@ class PCloudArchiveSyncService
         }
 
         if (!$this->shouldSync($media)) {
-            Log::debug('pCloud sync skipped: media not archive-linked', [
-                'media_id' => $media->id,
+            Log::info('pCloud sync skipped: media not archive-linked', [
+                'media_id' => $mediaId,
                 'model_type' => $media->model_type,
                 'file_id' => $this->resolveArchiveFileId($media),
                 'folder_id' => $this->resolveArchiveFolderId($media),
+                'file_path' => $media->getCustomProperty('file_path'),
             ]);
 
             return;
         }
 
-        // afterResponse runs in-process after the HTTP response (no queue worker
-        // required). Production still has a worker for other jobs.
-        SyncMediaToPCloudJob::dispatch(
-            (string) $media->id,
-            tenant('id') ? (string) tenant('id') : null,
-        )->afterResponse();
+        $this->dispatchedMediaIds[$mediaId] = true;
+        $companyId = tenant('id') ? (string) tenant('id') : null;
+        $mode = strtolower((string) config('pcloud.dispatch', 'sync'));
 
-        Log::info('pCloud sync dispatched', [
-            'media_id' => $media->id,
-            'model_type' => $media->model_type,
-            'file_id' => $this->resolveArchiveFileId($media),
-            'folder_id' => $this->resolveArchiveFolderId($media),
-        ]);
+        $run = function () use ($mediaId, $companyId, $mode, $media): void {
+            Log::info('pCloud sync starting', [
+                'media_id' => $mediaId,
+                'mode' => $mode,
+                'model_type' => $media->model_type,
+                'file_id' => $this->resolveArchiveFileId($media),
+                'folder_id' => $this->resolveArchiveFolderId($media),
+            ]);
+
+            if ($mode === 'queue') {
+                SyncMediaToPCloudJob::dispatch($mediaId, $companyId);
+                Log::info('pCloud sync job queued', ['media_id' => $mediaId]);
+
+                return;
+            }
+
+            // Default: run now (works without queue worker / Octane terminating hooks)
+            SyncMediaToPCloudJob::dispatchSync($mediaId, $companyId);
+        };
+
+        if (DB::transactionLevel() > 0) {
+            DB::afterCommit($run);
+        } else {
+            $run();
+        }
     }
 
     public function syncMedia(CustomMedia $media): void
