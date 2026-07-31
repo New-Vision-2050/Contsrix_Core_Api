@@ -11,7 +11,10 @@ return [
     | When enabled, Archive Library media uploads are mirrored to pCloud.
     |
     */
-    'enabled' => filter_var(env('PCLOUD_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+    'enabled' => filter_var(
+        env('PCLOUD_ENABLED', filled(env('PCLOUD_EMAIL')) && filled(env('PCLOUD_PASSWORD'))),
+        FILTER_VALIDATE_BOOLEAN
+    ),
 
     /*
     |--------------------------------------------------------------------------
