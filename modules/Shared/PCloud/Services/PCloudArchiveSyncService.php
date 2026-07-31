@@ -82,26 +82,36 @@ class PCloudArchiveSyncService
 
         $this->dispatchedMediaIds[$mediaId] = true;
         $companyId = tenant('id') ? (string) tenant('id') : null;
-        $mode = strtolower((string) config('pcloud.dispatch', 'sync'));
+        // Prefer queue so API responses stay fast when many files are uploaded.
+        $mode = strtolower((string) config('pcloud.dispatch', 'queue'));
 
         $run = function () use ($mediaId, $companyId, $mode, $media): void {
-            Log::info('pCloud sync starting', [
-                'media_id' => $mediaId,
-                'mode' => $mode,
-                'model_type' => $media->model_type,
-                'file_id' => $this->resolveArchiveFileId($media),
-                'folder_id' => $this->resolveArchiveFolderId($media),
-            ]);
+            try {
+                Log::info('pCloud sync starting', [
+                    'media_id' => $mediaId,
+                    'mode' => $mode,
+                    'model_type' => $media->model_type,
+                    'file_id' => $this->resolveArchiveFileId($media),
+                    'folder_id' => $this->resolveArchiveFolderId($media),
+                ]);
 
-            if ($mode === 'queue') {
+                if ($mode === 'sync') {
+                    // Explicit sync only — never block the request by default.
+                    SyncMediaToPCloudJob::dispatchSync($mediaId, $companyId);
+
+                    return;
+                }
+
                 SyncMediaToPCloudJob::dispatch($mediaId, $companyId);
                 Log::info('pCloud sync job queued', ['media_id' => $mediaId]);
-
-                return;
+            } catch (Throwable $e) {
+                // Archive upload must succeed even if pCloud is down/slow.
+                Log::error('pCloud sync failed (non-blocking)', [
+                    'media_id' => $mediaId,
+                    'mode' => $mode,
+                    'error' => $e->getMessage(),
+                ]);
             }
-
-            // Default: run now (works without queue worker / Octane terminating hooks)
-            SyncMediaToPCloudJob::dispatchSync($mediaId, $companyId);
         };
 
         if (DB::transactionLevel() > 0) {

@@ -59,13 +59,11 @@ return [
     | Dispatch mode
     |--------------------------------------------------------------------------
     |
-    | sync  = upload to pCloud in the same request (reliable; no queue worker)
-    | queue = push SyncMediaToPCloudJob to the queue (needs queue:work)
-    |
-    | Prefer sync locally and when using Octane — afterResponse can be dropped.
+    | queue = push SyncMediaToPCloudJob (fast API; requires queue:work) [default]
+    | sync  = upload inside the request (can make multi-file APIs slow/timeout)
     |
     */
-    'dispatch' => env('PCLOUD_DISPATCH', 'sync'),
+    'dispatch' => env('PCLOUD_DISPATCH', 'queue'),
 
     'auth_cache_ttl' => (int) env('PCLOUD_AUTH_CACHE_TTL', 3500),
 
