@@ -3,6 +3,8 @@
 namespace Modules\Shared\Media\Services;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
+use Modules\Shared\PCloud\Services\PCloudArchiveSyncService;
 
 class FileUploadService
 {
@@ -74,11 +76,28 @@ class FileUploadService
                 ->preservingOriginal()
                 ->toMediaCollection($collectionName, $disk);
             $media->file_id = $currentFileId;
+            if ($folderId) {
+                $media->folder_id = $folderId;
+            }
             $media->save();
+
+            $this->dispatchPCloudSync($media);
 
             $allMedia->push($media);
         }
 
         return $allMedia;
+    }
+
+    private function dispatchPCloudSync($media): void
+    {
+        try {
+            app(PCloudArchiveSyncService::class)->dispatchSync($media);
+        } catch (\Throwable $e) {
+            Log::error('Failed to dispatch pCloud sync from FileUploadService', [
+                'media_id' => $media->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
