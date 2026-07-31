@@ -239,6 +239,43 @@ class SafetyService
     }
 
     /**
+     * Evaluate violations on the pending safety record that belongs to the
+     * given project notification and actor. This is the "merge" path used by
+     * the project-notification safety-violation workflow: the raw safety
+     * record was already created when the notification was published, and
+     * this method fills in the violation data (sync, upload evidence, score).
+     *
+     * If the actor has no pending record, a completed record is left untouched
+     * and the call is a no-op (returns null).
+     *
+     * @param  array<int, array{violation_id: string, weight?: mixed, status?: string, action?: string|null, images?: UploadedFile[]|null}>  $violations
+     */
+    public function evaluateViolationsForNotification(
+        ProjectNotification $notification,
+        array $violations,
+        ?string $actorUserId = null,
+    ): ?SafetyRecord {
+        $actorUserId = $actorUserId ?? (string) auth()->id();
+
+        $record = SafetyRecord::query()
+            ->where('morphable_type', 'project_notification')
+            ->where('morphable_id', (string) $notification->id)
+            ->where('assigned_user_id', $actorUserId)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($record === null) {
+            return null;
+        }
+
+        $this->syncViolations($record, $violations);
+        $this->uploadViolationEvidence($record, $violations);
+        $this->calculateAndStoreScores($record);
+
+        return $this->show((string) $notification->project_id, $record->id);
+    }
+
+    /**
      * Auto-create a pending SafetyRecord for each assigned user of a
      * ProjectNotification, one per user. Users that already have a record for
      * this notification are skipped, so publishing and updating only ever

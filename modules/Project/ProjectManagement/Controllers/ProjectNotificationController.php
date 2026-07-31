@@ -31,6 +31,7 @@ use Modules\Project\ProjectManagement\Requests\GetProjectNotificationEmployeesRe
 use Modules\Project\ProjectManagement\Requests\ReassignProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationFineRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationLocationConfirmationRequest;
+use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationSafetyViolationRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationSiteStatusUpdateRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationTaskPostponementRequest;
 use Modules\Project\ProjectManagement\Requests\RequestProjectNotificationUpdateRequest;
@@ -351,6 +352,28 @@ class ProjectNotificationController extends Controller
         return Json::item(
             $this->detailWithReadStatus($notification),
             message: 'Site status update request submitted successfully',
+        );
+    }
+
+    /**
+     * POST /projects/notifications/{id}/request-safety-violation
+     *
+     * Submit a workflow-based safety violation evaluation. The raw SafetyRecord
+     * was already created when the notification was published; this fills in
+     * the violation data. The actual violations are synced only after all
+     * workflow steps are approved.
+     */
+    public function requestSafetyViolation(RequestProjectNotificationSafetyViolationRequest $request): JsonResponse
+    {
+        $notification = $this->notificationService->requestSafetyViolation(
+            $request->route('id'),
+            $request->toDTO(),
+            (string) $request->user()->id,
+        );
+
+        return Json::item(
+            $this->detailWithReadStatus($notification),
+            message: 'Safety violation request submitted successfully',
         );
     }
 

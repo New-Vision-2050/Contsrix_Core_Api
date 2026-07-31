@@ -37,6 +37,7 @@ use Modules\Project\ProjectManagement\DTO\CreateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\FilterProjectNotificationDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationFineDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationLocationConfirmationDTO;
+use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationSafetyViolationDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationSiteStatusUpdateDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationTaskPostponementDTO;
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationUpdateDTO;
@@ -1303,6 +1304,71 @@ class ProjectNotificationService
             $task,
             $notification,
             InternalProcessForm::UpdateProjectNotificationSiteStatus->value,
+            $metadata,
+            $procedureSetting,
+            $userId,
+        );
+
+        return $this->get($id);
+    }
+
+    /**
+     * Request a workflow-based safety violation evaluation for a project
+     * notification. The raw SafetyRecord was already created when the
+     * notification was published; this method fills in the violation data.
+     *
+     * Creates a Process snapshot with the violations data; the actual
+     * SafetyRecord violations are synced only when the process completes
+     * (all steps approved).
+     */
+    public function requestSafetyViolation(
+        string $id,
+        RequestProjectNotificationSafetyViolationDTO $dto,
+        string $userId,
+    ): ProjectNotification {
+        $notification = $this->get($id);
+        $this->guardNotDraft($notification, 'request safety violation');
+        $task = $this->linkedTask($id);
+
+        $this->checkWorkflowFormConditions(
+            InternalProcessForm::ProjectNotificationSafetyViolation->value,
+            $task,
+            $notification,
+            $dto->currentLatitude,
+            $dto->currentLongitude,
+        );
+
+        $procedureSetting = $this->engine->resolveLifecycleSetting(
+            $dto->internalProcedureSettingId,
+            $task->procedureSettingType()->value,
+            InternalProcessForm::ProjectNotificationSafetyViolation->value,
+            $task->company_id,
+            $task->user?->userProfessionalData?->branch_id !== null
+                ? (string) $task->user->userProfessionalData->branch_id
+                : null,
+        );
+
+        if ($procedureSetting === null) {
+            // No procedure configured → evaluate violations directly.
+            $this->safetyService->evaluateViolationsForNotification(
+                $notification,
+                $dto->violations,
+                $userId,
+            );
+
+            return $this->get($id);
+        }
+
+        $metadata = [
+            'form' => InternalProcessForm::ProjectNotificationSafetyViolation->value,
+            'violations' => $dto->violationsForMetadata(),
+            'user_id' => $userId,
+        ];
+
+        $this->createLifecycleProcessForNotification(
+            $task,
+            $notification,
+            InternalProcessForm::ProjectNotificationSafetyViolation->value,
             $metadata,
             $procedureSetting,
             $userId,
