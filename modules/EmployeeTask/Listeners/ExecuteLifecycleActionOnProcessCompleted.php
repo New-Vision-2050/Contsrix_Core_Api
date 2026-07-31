@@ -24,6 +24,7 @@ use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageRepo
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason;
 use Modules\Project\ProjectManagement\Repositories\ProjectNotificationRepository;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationService;
+use Modules\Project\ProjectType\Services\SafetyService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
 
@@ -33,6 +34,7 @@ final class ExecuteLifecycleActionOnProcessCompleted
         private readonly EmployeeTaskLifecycleService $lifecycleService,
         private readonly ProjectNotificationRepository $notificationRepository,
         private readonly ProjectNotificationService $notificationService,
+        private readonly SafetyService $safetyService,
     ) {}
 
     public function handle(EmployeeTaskLifecycleProcessCompleted $event): void
@@ -122,6 +124,11 @@ final class ExecuteLifecycleActionOnProcessCompleted
                 $metadata,
             ),
             InternalProcessForm::ProjectNotificationTaskPostponement => $this->applyProjectNotificationTaskPostponement(
+                $task,
+                $process,
+                $metadata,
+            ),
+            InternalProcessForm::ProjectNotificationSafetyViolation => $this->applyProjectNotificationSafetyViolation(
                 $task,
                 $process,
                 $metadata,
@@ -319,6 +326,28 @@ final class ExecuteLifecycleActionOnProcessCompleted
         }
 
         $this->moveStagedFineFilesToAttachments($notification, $fine, $metadata['files'] ?? []);
+    }
+
+    private function applyProjectNotificationSafetyViolation(
+        EmployeeTaskRequest $task,
+        ?Process $process,
+        array $metadata,
+    ): void {
+        $notification = $task->projectNotification;
+        if ($notification === null) {
+            return;
+        }
+
+        $violations = $metadata['violations'] ?? [];
+        if ($violations === []) {
+            return;
+        }
+
+        $this->safetyService->evaluateViolationsForNotification(
+            $notification,
+            $violations,
+            $metadata['user_id'] ?? null,
+        );
     }
 
     private function applyProjectNotificationWorkStoppageReport(

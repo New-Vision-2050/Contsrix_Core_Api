@@ -29,6 +29,7 @@ enum InternalProcessForm: string
     case ProjectNotificationWorkStoppageReport = 'projectNotificationWorkStoppageReport';
     case ProjectNotificationWorkResumption     = 'projectNotificationWorkResumption';
     case ProjectNotificationTaskPostponement   = 'projectNotificationTaskPostponement';
+    case ProjectNotificationSafetyViolation    = 'projectNotificationSafetyViolation';
     case EndProjectNotificationTask         = 'endProjectNotificationTask';
 
     /**
@@ -48,6 +49,7 @@ enum InternalProcessForm: string
             self::ProjectNotificationWorkStoppageReport,
             self::ProjectNotificationWorkResumption,
             self::ProjectNotificationTaskPostponement,
+            self::ProjectNotificationSafetyViolation,
             self::EndProjectNotificationTask => 'accept_reject',
             default => 'accept_reject',
         };
@@ -77,6 +79,7 @@ enum InternalProcessForm: string
             self::ProjectNotificationWorkStoppageReport => 'محضر إيقاف أعمال',
             self::ProjectNotificationWorkResumption     => 'استئناف الأعمال',
             self::ProjectNotificationTaskPostponement   => 'تأجيل المهمة',
+            self::ProjectNotificationSafetyViolation    => 'تقييم المخالفات الأمنية',
             self::EndProjectNotificationTask         => 'إنهاء المهمة',
         };
     }
@@ -118,6 +121,9 @@ enum InternalProcessForm: string
             self::EndProjectNotificationTask => [
                 InternalProcessCondition::InsideTaskLocation,
 
+            ],
+            self::ProjectNotificationSafetyViolation => [
+                InternalProcessCondition::InsideTaskLocation,
             ],
             self::AttachAttachments => [
                 InternalProcessCondition::MaxAttachments,
@@ -185,6 +191,7 @@ enum InternalProcessForm: string
             self::ProjectNotificationWorkStoppageReport => ['project_notification_task'],
             self::ProjectNotificationWorkResumption => ['project_notification_task'],
             self::ProjectNotificationTaskPostponement => ['project_notification_task'],
+            self::ProjectNotificationSafetyViolation => ['project_notification_task'],
             self::EndProjectNotificationTask => ['project_notification_task'],
             self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
         };
@@ -225,6 +232,7 @@ enum InternalProcessForm: string
             self::ProjectNotificationWorkStoppageReport,
             self::ProjectNotificationWorkResumption,
             self::ProjectNotificationTaskPostponement,
+            self::ProjectNotificationSafetyViolation,
             self::EndProjectNotificationTask => ProcedureSettingType::ProjectNotificationTask,
             default => ProcedureSettingType::EmployeeTask,
         };

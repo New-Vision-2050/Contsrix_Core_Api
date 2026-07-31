@@ -299,6 +299,8 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
            ;
         Route::post('/{id}/request-task-postponement', [ProjectNotificationController::class, 'requestTaskPostponement'])
            ;
+        Route::post('/{id}/request-safety-violation', [ProjectNotificationController::class, 'requestSafetyViolation'])
+           ;
         Route::get('/{id}/site-status-updates', [ProjectNotificationController::class, 'siteStatusUpdates'])
             ;
         Route::get('/{id}/site-status-updates/copied', [ProjectNotificationController::class, 'copiedSiteStatusUpdates'])
