@@ -99,14 +99,16 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
 
         $this->assertSame([
             ['parent' => 0, 'name' => 'Constrix Archive', 'folderid' => 1000],
-            ['parent' => 1000, 'name' => 'PCloud Service Project', 'folderid' => 1001],
-            ['parent' => 1001, 'name' => 'الصيانة والطوارئ', 'folderid' => 1002],
-            ['parent' => 1002, 'name' => '4120899397', 'folderid' => 1003],
+            ['parent' => 1000, 'name' => 'Attendance Report Company', 'folderid' => 1001],
+            ['parent' => 1001, 'name' => 'المشاريع', 'folderid' => 1002],
+            ['parent' => 1002, 'name' => 'PCloud Service Project', 'folderid' => 1003],
+            ['parent' => 1003, 'name' => 'الصيانة والطوارئ', 'folderid' => 1004],
+            ['parent' => 1004, 'name' => '4120899397', 'folderid' => 1005],
         ], $folders);
 
         $this->assertSame([
             [
-                'folderid' => 1003,
+                'folderid' => 1005,
                 'filename' => 'site-photo.pdf',
                 'renameifexists' => 1,
                 'has_file' => true,
@@ -115,10 +117,10 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
 
         $this->assertSame('run-test', $result['run_id']);
         $this->assertSame((string) $project->id, $result['project_id']);
-        $this->assertSame(4, $result['folders_created_or_found']);
+        $this->assertSame(6, $result['folders_created_or_found']);
         $this->assertSame(1, $result['files_uploaded']);
         $this->assertSame(0, $result['files_failed']);
-        $this->assertSame('Constrix Archive/PCloud Service Project/الصيانة والطوارئ', $result['path']);
+        $this->assertSame('Constrix Archive/Attendance Report Company/المشاريع/PCloud Service Project/الصيانة والطوارئ', $result['path']);
     }
 
     private function createProject(string $name): ProjectManagement
