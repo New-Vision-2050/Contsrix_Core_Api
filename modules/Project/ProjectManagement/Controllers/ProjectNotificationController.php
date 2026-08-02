@@ -20,9 +20,9 @@ use Modules\EmployeeTask\Requests\EndTaskRequest;
 use Modules\EmployeeTask\Requests\StartTaskRequest;
 use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
 use Modules\Project\ProjectManagement\Exports\ProjectNotificationExport;
+use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationChartsPresenter;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationEmployeeLocationPresenter;
-use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter;
 use Modules\Project\ProjectManagement\Requests\CreateProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Requests\FilterProjectNotificationChartsRequest;
@@ -512,11 +512,12 @@ class ProjectNotificationController extends Controller
 
     public function export(FilterProjectNotificationsRequest $request)
     {
-        $format = $request->get('format', 'xlsx');
-        $fileName = 'project_notifications.' . $format;
+        $dto = $request->toDTO();
+        $format = $dto->format ?? 'xlsx';
+        $fileName = 'project_notifications.'.$format;
 
         return Excel::download(
-            new ProjectNotificationExport($request->toDTO()->toFilters()),
+            new ProjectNotificationExport($dto->toFilters(), $dto->sort),
             $fileName,
         );
     }
@@ -706,26 +707,26 @@ class ProjectNotificationController extends Controller
                 continue;
             }
             $statuses[] = [
-                'key'      => $statusValue,
+                'key' => $statusValue,
                 'title_ar' => $enum->label('ar'),
                 'title_en' => $enum->label('en'),
-                'count'    => (int) $count,
+                'count' => (int) $count,
             ];
         }
 
         $projects = [];
         foreach ($metadata['project_counts'] as $project) {
             $projects[] = [
-                'key'   => $project['id'],
+                'key' => $project['id'],
                 'title' => $project['name'],
                 'count' => $project['count'],
             ];
         }
 
         $duration = [
-            'key'         => 'duration_minutes',
-            'title_ar'    => 'مدة المهمة',
-            'title_en'    => 'Task Duration',
+            'key' => 'duration_minutes',
+            'title_ar' => 'مدة المهمة',
+            'title_en' => 'Task Duration',
             'min_minutes' => $metadata['duration']['min_hours'] !== null
                 ? (int) round($metadata['duration']['min_hours'] * 60)
                 : null,
@@ -937,7 +938,7 @@ class ProjectNotificationController extends Controller
             $result = $this->notificationService->procedures($request->route('id'), $debug);
 
             $payload = [
-                'items'   => TaskProcedurePresenter::collection($result['items']),
+                'items' => TaskProcedurePresenter::collection($result['items']),
                 'summary' => $result['summary'],
             ];
 
@@ -946,7 +947,7 @@ class ProjectNotificationController extends Controller
             }
 
             return Json::item($payload, message: 'Procedures retrieved successfully');
-        } catch (ProjectNotificationException | EmployeeTaskException $e) {
+        } catch (ProjectNotificationException|EmployeeTaskException $e) {
             return Json::error($e->getMessage(), $e->getCode() ?: 422);
         }
     }

@@ -8,6 +8,7 @@ use Modules\Project\ProjectManagement\Controllers\ProjectEmployeeController;
 use Modules\Project\ProjectManagement\Controllers\ProjectManagementController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
+use Modules\Project\ProjectManagement\Controllers\ProjectPCloudSyncController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRequirementController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
@@ -149,6 +150,8 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
     // Role Comparison
     Route::get('/{project_id}/roles/compare', [ProjectPermissionController::class, 'compareRoles']);
 
+    Route::post('/{project}/pcloud-sync', ProjectPCloudSyncController::class);
+
     // Project Roles Routes
     Route::prefix('{project_id}/roles')->group(function () {
         Route::get('/', [ProjectRoleController::class, 'index']);
@@ -217,10 +220,8 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
 
     Route::prefix('notifications')->group(function () {
         // Static routes MUST come before /{id} to avoid route conflicts
-        Route::get('/map-tasks', [ProjectNotificationController::class, 'mapTasks'])
-            ->permission(Permission::PROJECT_NOTIFICATION_LIST());
-        Route::get('/contractors', [ProjectContractorController::class, 'index'])
-            ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
+        Route::get('/map-tasks', [ProjectNotificationController::class, 'mapTasks']);
+        Route::get('/contractors', [ProjectContractorController::class, 'index']);
         Route::get('/employees-with-locations', [ProjectNotificationController::class, 'employeesWithLocations']);
         Route::get('/site-statuses', [ProjectNotificationController::class, 'siteStatuses'])
             ;

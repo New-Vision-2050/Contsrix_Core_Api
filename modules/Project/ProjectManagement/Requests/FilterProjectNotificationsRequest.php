@@ -17,21 +17,24 @@ class FilterProjectNotificationsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_id'        => ['nullable', 'uuid', 'exists:projects,id'],
-            'status'            => ['nullable', 'string'],
+            'project_id' => ['nullable', 'uuid', 'exists:projects,id'],
+            'status' => ['nullable', 'string'],
             'notification_type' => ['nullable', 'string'],
-            'work_type'         => ['nullable', 'string'],
-            'contractor_name'   => ['nullable', 'string'],
-            'contractor_id'     => ['nullable', 'uuid', 'exists:project_contractors,id'],
-            'assigned_user_id'  => ['nullable', 'uuid'],
-            'task_date'         => ['nullable', 'date_format:Y-m-d'],
-            'date_from'         => ['nullable', 'date_format:Y-m-d'],
-            'date_to'           => ['nullable', 'date_format:Y-m-d'],
-            'search'                     => ['nullable', 'string', 'max:255'],
+            'work_type' => ['nullable', 'string'],
+            'contractor_name' => ['nullable', 'string'],
+            'contractor_id' => ['nullable', 'uuid', 'exists:project_contractors,id'],
+            'assigned_user_id' => ['nullable', 'uuid'],
+            'task_date' => ['nullable', 'date_format:Y-m-d'],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d'],
+            'search' => ['nullable', 'string', 'max:255'],
             'contractual_engagement_key' => ['nullable', 'string', 'exists:contractual_engagements,code'],
-            'created_by_user_id'         => ['nullable', 'uuid', 'exists:users,id'],
-            'per_page'                   => ['nullable', 'integer', 'min:1', 'max:100'],
-            'sort'                       => ['nullable', 'string'],
+            'created_by_user_id' => ['nullable', 'uuid', 'exists:users,id'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'sort' => ['nullable', 'string'],
+            'format' => ['nullable', 'string', 'in:xlsx,csv'],
+            'ids' => ['nullable', 'array', 'min:1'],
+            'ids.*' => ['uuid'],
         ];
     }
 
@@ -53,6 +56,8 @@ class FilterProjectNotificationsRequest extends FormRequest
             createdByUserId: $this->input('created_by_user_id'),
             perPage: (int) $this->input('per_page', 15),
             sort: $this->input('sort'),
+            format: $this->input('format', 'xlsx'),
+            ids: $this->input('ids'),
         );
     }
 }
