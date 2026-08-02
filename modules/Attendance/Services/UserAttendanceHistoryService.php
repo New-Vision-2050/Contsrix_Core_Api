@@ -102,7 +102,7 @@ final class UserAttendanceHistoryService
 
             $periodsWithAttendance = $this->buildHistoryPeriodsForDay($user, $dateString, $dateCarbon, $attendances, $timezone);
 
-            $dayStatusPayload = $this->buildDayStatusPayload($attendances);
+            $dayStatusPayload = $this->buildDayStatusPayload($attendances, $this->isManualHolidayOverrideActive($user, $dateString));
             $dayName = $this->getDayNameArabic($dateCarbon);
 
             $result[] = [
@@ -207,7 +207,7 @@ final class UserAttendanceHistoryService
 
             $periodsWithAttendance = $this->buildHistoryPeriodsForDay($user, $dateString, $dateCarbon, $attendances, $timezone);
 
-            $dayStatusPayload = $this->buildDayStatusPayload($attendances);
+            $dayStatusPayload = $this->buildDayStatusPayload($attendances, $this->isManualHolidayOverrideActive($user, $dateString));
             $dayName = $this->getDayNameArabic($dateCarbon);
 
             $result[] = [
@@ -729,8 +729,19 @@ final class UserAttendanceHistoryService
     /**
      * @return array{status: string, is_late: int, is_absent: int, is_holiday: int}
      */
-    private function buildDayStatusPayload(Collection $attendances): array
+    private function buildDayStatusPayload(Collection $attendances, bool $manualHolidayOverride = false): array
     {
+        if ($manualHolidayOverride) {
+            $hasLate = $attendances->contains(fn ($a) => $this->isTruthy($a->is_late ?? null));
+
+            return [
+                'status'     => 'عطلة',
+                'is_late'    => (int) $hasLate,
+                'is_absent'  => 0,
+                'is_holiday' => 1,
+            ];
+        }
+
         if ($attendances->isEmpty()) {
             return [
                 'status'     => 'غائب',
@@ -778,6 +789,27 @@ final class UserAttendanceHistoryService
             'is_absent'  => 0,
             'is_holiday' => 0,
         ];
+    }
+
+    /**
+     * Checks the persistent manual attendance status override (set via the sub-entity
+     * "attendance-status" endpoint). Active from the day it was set onward until changed again.
+     */
+    private function isManualHolidayOverrideActive(User $user, string $dateString): bool
+    {
+        if (($user->manual_attendance_status ?? null) !== 'holiday') {
+            return false;
+        }
+
+        $since = $user->manual_attendance_status_since;
+
+        if ($since === null) {
+            return true;
+        }
+
+        $sinceDate = $since instanceof Carbon ? $since->toDateString() : Carbon::parse((string) $since)->toDateString();
+
+        return $sinceDate <= $dateString;
     }
 
     private function determineDayStatus(Collection $attendances): string

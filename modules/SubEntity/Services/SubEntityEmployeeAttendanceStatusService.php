@@ -43,20 +43,32 @@ class SubEntityEmployeeAttendanceStatusService
         return $usersByKey->mapWithKeys(function (?User $user, string $key) use ($attendanceRowsByUserId, $workDate): array {
             $rows = $user?->id ? $attendanceRowsByUserId->get((string) $user->id, collect()) : collect();
             $attendance = $this->requiredHolidayRepresentative($rows);
+            $override = $this->activeOverrideStatus($user, $workDate);
 
-            return [$key => $this->requiredHolidayPayload($attendance, $workDate)];
+            return [$key => $this->requiredHolidayPayload($attendance, $workDate, $override)];
         });
     }
 
-    public function setDailyRequiredHolidayStatus(User $user, string $workDate, string $status): array
+    /**
+     * Sets the employee's daily attendance requirement status effective immediately,
+     * and keeps it in effect for every following day until it is changed again.
+     */
+    public function setRequiredHolidayStatus(User $user, string $status): array
     {
-        $workDate = $this->normalizeWorkDate($workDate);
-
         if (! in_array($status, [self::STATUS_HOLIDAY, self::STATUS_REQUIRED_ATTENDANCE], true)) {
             throw new \InvalidArgumentException('Invalid daily attendance status.');
         }
 
-        return DB::transaction(function () use ($user, $workDate, $status): array {
+        return DB::transaction(function () use ($user, $status): array {
+            $workDate = $this->normalizeWorkDate(Carbon::now($this->attendanceCalendarTimezone())->toDateString());
+
+            $user->forceFill([
+                'manual_attendance_status' => $status,
+                'manual_attendance_status_since' => $workDate,
+            ])->save();
+
+            // Keep today's attendance row in sync immediately so anything reading
+            // the attendances table directly (e.g. history) reflects the change right away.
             $rows = $this->getDailyAttendanceRowsForUser((string) $user->id, $workDate);
 
             if ($rows->isEmpty()) {
@@ -69,9 +81,37 @@ class SubEntityEmployeeAttendanceStatusService
 
             return $this->requiredHolidayPayload(
                 $this->requiredHolidayRepresentative($rows),
-                $workDate
+                $workDate,
+                $status
             );
         });
+    }
+
+    /**
+     * Returns the persistent manual override status for the user if it is active
+     * (i.e. set and effective on or before the requested date), otherwise null.
+     */
+    private function activeOverrideStatus(?User $user, string $workDate): ?string
+    {
+        if (! $user) {
+            return null;
+        }
+
+        $status = $user->manual_attendance_status;
+
+        if (! in_array($status, [self::STATUS_HOLIDAY, self::STATUS_REQUIRED_ATTENDANCE], true)) {
+            return null;
+        }
+
+        $since = $user->manual_attendance_status_since;
+
+        if ($since === null) {
+            return $status;
+        }
+
+        $sinceDate = $since instanceof Carbon ? $since : Carbon::parse((string) $since);
+
+        return $sinceDate->toDateString() <= $workDate ? $status : null;
     }
 
     /**
@@ -120,9 +160,11 @@ class SubEntityEmployeeAttendanceStatusService
             ?? $rows->first();
     }
 
-    private function requiredHolidayPayload(?Attendance $attendance, string $workDate): array
+    private function requiredHolidayPayload(?Attendance $attendance, string $workDate, ?string $override = null): array
     {
-        $isHoliday = $attendance !== null && $this->isHolidayAttendance($attendance);
+        $isHoliday = $override !== null
+            ? $override === self::STATUS_HOLIDAY
+            : ($attendance !== null && $this->isHolidayAttendance($attendance));
 
         return [
             'attendance_id' => $attendance?->id ? (string) $attendance->id : null,

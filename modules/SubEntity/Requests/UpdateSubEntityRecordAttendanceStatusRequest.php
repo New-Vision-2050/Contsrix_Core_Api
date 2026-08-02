@@ -13,7 +13,6 @@ class UpdateSubEntityRecordAttendanceStatusRequest extends FormRequest
     {
         return [
             'company_user_id' => ['required', 'uuid', 'exists:company_users,id'],
-            'work_date' => ['required', 'date'],
             'status' => ['required', 'string', Rule::in(['holiday', 'required_attendance'])],
         ];
     }

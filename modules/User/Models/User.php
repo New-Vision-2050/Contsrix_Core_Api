@@ -80,6 +80,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "message_address",
         "fcm_token",
         "imei",
+        "manual_attendance_status",
+        "manual_attendance_status_since",
     ];
 
     protected $casts = [
@@ -98,6 +100,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'manual_attendance_status_since' => 'date',
         ];
     }
 

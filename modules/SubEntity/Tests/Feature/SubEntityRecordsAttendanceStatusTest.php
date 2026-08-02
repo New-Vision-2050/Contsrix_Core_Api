@@ -120,6 +120,8 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
 
     public function test_can_set_employee_day_to_holiday_and_back_to_required_attendance(): void
     {
+        Carbon::setTestNow(Carbon::parse('2026-07-30 10:00:00'));
+
         [$subEntity, $registrationForm] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
         $user = $this->createCompanyUserRecord('Toggle Employee', $subEntity, CompanyUserRole::EMPLOYEE);
         $companyUser = $this->companyUserForUser($user);
@@ -128,7 +130,6 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->withHeader('X-Tenant', $this->company->id)
             ->patchJson('/api/v1/sub_entities/records/attendance-status', [
                 'company_user_id' => $companyUser->id,
-                'work_date' => '2026-07-30',
                 'status' => 'holiday',
             ])
             ->assertOk()
@@ -144,6 +145,8 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             'day_status' => 'holiday',
         ]);
 
+        $this->assertSame('holiday', $user->fresh()->manual_attendance_status);
+
         $this->assertAttendanceListStatus(
             $this->listPayload($subEntity, $registrationForm),
             $user,
@@ -152,11 +155,19 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             '2026-07-30'
         );
 
+        // The override remains active on a later day without any explicit call.
+        $this->assertAttendanceListStatus(
+            $this->listPayload($subEntity, $registrationForm, '2026-08-05'),
+            $user,
+            'holiday',
+            'اجازه',
+            '2026-08-05'
+        );
+
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->patchJson('/api/v1/sub_entities/records/attendance-status', [
                 'company_user_id' => $companyUser->id,
-                'work_date' => '2026-07-30',
                 'status' => 'required_attendance',
             ])
             ->assertOk()
@@ -183,6 +194,8 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
 
     public function test_setting_status_preserves_existing_clock_times(): void
     {
+        Carbon::setTestNow(Carbon::parse('2026-07-30 10:00:00'));
+
         [$subEntity] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
         $user = $this->createCompanyUserRecord('Clocked Employee', $subEntity, CompanyUserRole::EMPLOYEE);
         $companyUser = $this->companyUserForUser($user);
@@ -196,7 +209,6 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->withHeader('X-Tenant', $this->company->id)
             ->patchJson('/api/v1/sub_entities/records/attendance-status', [
                 'company_user_id' => $companyUser->id,
-                'work_date' => '2026-07-30',
                 'status' => 'holiday',
             ])
             ->assertOk()
@@ -213,7 +225,6 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->withHeader('X-Tenant', $this->company->id)
             ->patchJson('/api/v1/sub_entities/records/attendance-status', [
                 'company_user_id' => $companyUser->id,
-                'work_date' => '2026-07-30',
                 'status' => 'required_attendance',
             ])
             ->assertOk()
@@ -229,6 +240,8 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
 
     public function test_update_attendance_status_validates_status_and_tenant_user(): void
     {
+        Carbon::setTestNow(Carbon::parse('2026-07-30 10:00:00'));
+
         [$subEntity] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
         $user = $this->createCompanyUserRecord('Validated Employee', $subEntity, CompanyUserRole::EMPLOYEE);
         $companyUser = $this->companyUserForUser($user);
@@ -237,7 +250,6 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->withHeader('X-Tenant', $this->company->id)
             ->patchJson('/api/v1/sub_entities/records/attendance-status', [
                 'company_user_id' => $companyUser->id,
-                'work_date' => '2026-07-30',
                 'status' => 'present',
             ])
             ->assertUnprocessable();
@@ -256,7 +268,6 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->withHeader('X-Tenant', $this->company->id)
             ->patchJson('/api/v1/sub_entities/records/attendance-status', [
                 'company_user_id' => $orphanCompanyUser->id,
-                'work_date' => '2026-07-30',
                 'status' => 'holiday',
             ])
             ->assertNotFound();
@@ -367,14 +378,14 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->firstOrFail();
     }
 
-    private function listPayload(SubEntity $subEntity, RegistrationForm $registrationForm): Collection
+    private function listPayload(SubEntity $subEntity, RegistrationForm $registrationForm, string $startDate = '2026-07-30'): Collection
     {
         return collect($this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson('/api/v1/sub_entities/records/list?'.http_build_query([
                 'sub_entity_id' => $subEntity->id,
                 'registration_form_id' => $registrationForm->id,
-                'start_date' => '2026-07-30',
+                'start_date' => $startDate,
                 'page' => 1,
                 'per_page' => 10,
             ]))
