@@ -4,10 +4,11 @@ use Illuminate\Support\Facades\Route;
 use Modules\RoleAndPermission\Enums\Permission;
 use Modules\SubEntity\Controllers\RegistrationFormController;
 use Modules\SubEntity\Controllers\SubEntityController;
-use Modules\SubEntity\Controllers\SuperEntityController;
 use Modules\SubEntity\Controllers\SubEntityRecordsController;
+use Modules\SubEntity\Controllers\SuperEntityController;
+use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
-Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
+Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [SubEntityController::class, 'index'])->permission(Permission::SUB_ENTITY_LIST());
     Route::post('/', [SubEntityController::class, 'store'])->permission(Permission::SUB_ENTITY_CREATE());
     Route::post('/slug-validate', [SubEntityController::class, 'validateSlug']);
@@ -21,7 +22,6 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/list/selection', [SubEntityController::class, 'getSelection']);
     Route::put('/{id}/status', [SubEntityController::class, 'updateStatus'])->permission(Permission::SUB_ENTITY_ACTIVATE());
 
-
     // super entity
     Route::get('/super_entities/list', [SuperEntityController::class, 'index'])->permission(Permission::SUPER_ENTITY_LIST());
     Route::get('/super_entities/default_attributes', [SuperEntityController::class, 'getDefaultAttributes']);
@@ -34,9 +34,9 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::post('/super_entities/registration/config', [SuperEntityController::class, 'setRegistrationConfig']);
     Route::get('/super_entities/registration/config', [SuperEntityController::class, 'getRegistrationConfig'])->permission(Permission::SUPER_ENTITY_VIEW());
 
-
     // sub-entity records
     Route::get('/records/list', [SubEntityRecordsController::class, 'index']);
     Route::get('/records/widgets', [SubEntityRecordsController::class, 'widgets']);
+    Route::patch('/records/attendance-status', [SubEntityRecordsController::class, 'updateAttendanceStatus']);
     Route::post('/records/list/export', [SubEntityRecordsController::class, 'export']);
 });

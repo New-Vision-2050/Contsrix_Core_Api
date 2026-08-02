@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Services;
 
-use Modules\Attendance\Services\AttendanceStatusService;
-use Modules\User\Models\User;
-use Ramsey\Uuid\Uuid;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUser;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
-use Carbon\Carbon;
+use Modules\User\Models\User;
+use Ramsey\Uuid\Uuid;
 
 class SubEntityRecordsService
 {
@@ -23,15 +22,13 @@ class SubEntityRecordsService
         CompanyUserRole::CLIENT->value,
     ];
 
-
     public function __construct(
-        protected SuperEntityService          $superEntityService,
-        protected SubEntityCRUDService        $subEntityCRUDService,
-        protected CompanyUserRepository       $companyUserRepository,
+        protected SuperEntityService $superEntityService,
+        protected SubEntityCRUDService $subEntityCRUDService,
+        protected CompanyUserRepository $companyUserRepository,
         protected RegistrationFormCRUDService $registrationFormCRUDService,
-        protected AttendanceStatusService     $attendanceStatusService
+        protected SubEntityEmployeeAttendanceStatusService $employeeAttendanceStatusService
     ) {}
-
 
     public function getRecords(string $subEntityId, string $registrationFormId, $branchId = null, $page = 1, $perPage = 10): array|Collection|LengthAwarePaginator
     {
@@ -41,9 +38,9 @@ class SubEntityRecordsService
             return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map, $branchId);
         }
 
-        //get sub_entity
+        // get sub_entity
         $sub_entity = $this->subEntityCRUDService->get(Uuid::fromString($subEntityId));
-        //get super entity model
+        // get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
         $query = $model::query();
         if ($model === User::class) {
@@ -52,6 +49,7 @@ class SubEntityRecordsService
                     ->where('sub_entity_id', $subEntityId);
             });
         }
+
         return $query->paginate($perPage);
     }
 
@@ -113,19 +111,35 @@ class SubEntityRecordsService
                 return [(string) $companyUser->id => $user];
             });
 
-        $attendanceByCompanyUserId = $this->attendanceStatusService->buildDailyListForUsersByKey(
+        $attendanceByCompanyUserId = $this->employeeAttendanceStatusService->buildRequiredHolidayStatusesForUsersByKey(
             $tenantUsersByCompanyUserId,
             $attendanceDate
         );
 
         return collect($presentedRows)
             ->map(function (array $row) use ($attendanceByCompanyUserId): array {
-                $row['attendance'] = $attendanceByCompanyUserId->get((string) ($row['id'] ?? ''));
-
-                return $row;
+                return array_merge(
+                    $row,
+                    $attendanceByCompanyUserId->get((string) ($row['id'] ?? ''), [])
+                );
             })
             ->values()
             ->all();
+    }
+
+    public function setAttendanceStatusForCompanyUser(string $companyUserId, string $workDate, string $status): array
+    {
+        $companyUser = CompanyUser::query()
+            ->with(['users.userProfessionalData.attendanceConstraint'])
+            ->findOrFail($companyUserId);
+
+        $user = $this->resolveTenantUser($companyUser);
+
+        if (! $user) {
+            abort(404, 'Tenant user not found for company user.');
+        }
+
+        return $this->employeeAttendanceStatusService->setDailyRequiredHolidayStatus($user, $workDate, $status);
     }
 
     private function resolveTenantUser(CompanyUser $companyUser): ?User
@@ -154,9 +168,9 @@ class SubEntityRecordsService
             return $this->getMappedRecordsWidgets($registrationForm->company_user_role_map);
         }
 
-        //get sub_entity
+        // get sub_entity
         $sub_entity = $this->subEntityCRUDService->get(Uuid::fromString($subEntityId));
-        //get super entity model
+        // get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
 
         return $this->getCustomEntityWidgets($model, $registrationFormId);
@@ -172,12 +186,12 @@ class SubEntityRecordsService
         }
 
         $query = $query->when($type != null, function ($query) use ($type) {
-            $query->whereHas("users.companyUserCompanies", function ($query) use ($type) {
-                $query->where("role", $type);
+            $query->whereHas('users.companyUserCompanies', function ($query) use ($type) {
+                $query->where('role', $type);
             });
-        })->when(request()->has('sub_entity_id'), function ($query) use ($type) {
-            $query->whereHas("users.companyUserCompanies", function ($query) use ($type) {
-                $query->where("sub_entity_id", request()->sub_entity_id);
+        })->when(request()->has('sub_entity_id'), function ($query) {
+            $query->whereHas('users.companyUserCompanies', function ($query) {
+                $query->where('sub_entity_id', request()->sub_entity_id);
             });
         })
             // Only count users who have roles (user relationship exists)
@@ -185,17 +199,17 @@ class SubEntityRecordsService
                 $query->whereNotNull('id');
             });
 
-        $activeStatus   = (string) CompanyUserStatus::ACTIVE->value;   // "1"
+        $activeStatus = (string) CompanyUserStatus::ACTIVE->value;   // "1"
         $inactiveStatus = (string) CompanyUserStatus::INACTIVE->value; // "0"
-        $roleStr        = (string) $type;
+        $roleStr = (string) $type;
 
         // Get current period data
         $totalRecords = $query->count();
-        $activeRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($roleStr, $activeStatus) {
-            $q->where("role", $roleStr)->where("status", $activeStatus);
+        $activeRecords = (clone $query)->whereHas('users.companyUserCompanies', function ($q) use ($roleStr, $activeStatus) {
+            $q->where('role', $roleStr)->where('status', $activeStatus);
         })->count();
-        $suspendedRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($roleStr, $inactiveStatus) {
-            $q->where("role", $roleStr)->where("status", $inactiveStatus);
+        $suspendedRecords = (clone $query)->whereHas('users.companyUserCompanies', function ($q) use ($roleStr, $inactiveStatus) {
+            $q->where('role', $roleStr)->where('status', $inactiveStatus);
         })->count();
 
         // Get last month data for comparison
@@ -207,8 +221,8 @@ class SubEntityRecordsService
         // Get previous month data for percentage calculation
         $prevMonth = Carbon::now()->subMonth();
         $totalRecordsPrevMonth = (clone $query)->where('created_at', '<=', $prevMonth->endOfMonth())->count();
-        $activeRecordsPrevMonth = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($roleStr, $activeStatus) {
-            $q->where("role", $roleStr)->where("status", $activeStatus);
+        $activeRecordsPrevMonth = (clone $query)->whereHas('users.companyUserCompanies', function ($q) use ($roleStr, $activeStatus) {
+            $q->where('role', $roleStr)->where('status', $activeStatus);
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
         if (CompanyUserRole::BROKER->value == $type) {
@@ -219,30 +233,29 @@ class SubEntityRecordsService
             $typeLabel = __('clients');
         }
 
-
         return [
             [
-                "title" => __('total_count', ['type' => $typeLabel]),
+                'title' => __('total_count', ['type' => $typeLabel]),
                 'total' => $totalRecords,
                 'percentage' => 100,
             ],
             [
-                "title" => __('added_last_month', ['type' => $typeLabel]),
+                'title' => __('added_last_month', ['type' => $typeLabel]),
                 'total' => $recordsAddedLastMonth,
                 'percentage' => $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords), // No comparison for this metric
-                "start" => Carbon::now()->startOfMonth(),
-                "end" => Carbon::now()->endOfMonth()
+                'start' => Carbon::now()->startOfMonth(),
+                'end' => Carbon::now()->endOfMonth(),
             ],
             [
-                "title" => __('active_records', ['type' => $typeLabel]),
+                'title' => __('active_records', ['type' => $typeLabel]),
                 'total' => $activeRecords,
-                'percentage' => $this->calculatePercentageChange($activeRecords, $totalRecords)
+                'percentage' => $this->calculatePercentageChange($activeRecords, $totalRecords),
             ],
             [
-                "title" => __('suspended_records', ['type' => $typeLabel]),
+                'title' => __('suspended_records', ['type' => $typeLabel]),
                 'total' => $suspendedRecords,
-                'percentage' => $this->calculatePercentageChange($suspendedRecords, $totalRecords) // Could add comparison if needed
-            ]
+                'percentage' => $this->calculatePercentageChange($suspendedRecords, $totalRecords), // Could add comparison if needed
+            ],
         ];
     }
 
@@ -271,20 +284,20 @@ class SubEntityRecordsService
         return [
             'total_records' => [
                 'count' => $totalRecords,
-                'percentage_change' => $this->calculatePercentageChange($totalRecords, $totalRecordsPrevMonth)
+                'percentage_change' => $this->calculatePercentageChange($totalRecords, $totalRecordsPrevMonth),
             ],
             'records_added_last_month' => [
                 'count' => $recordsAddedLastMonth,
-                'percentage_change' => $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords)
+                'percentage_change' => $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords),
             ],
             'active_records' => [
                 'count' => $activeRecords,
-                'percentage_change' => $this->calculatePercentageChange($activeRecords, $totalRecords)
+                'percentage_change' => $this->calculatePercentageChange($activeRecords, $totalRecords),
             ],
             'suspended_records' => [
                 'count' => $suspendedRecords,
-                'percentage_change' => 0
-            ]
+                'percentage_change' => 0,
+            ],
         ];
     }
 
@@ -299,11 +312,8 @@ class SubEntityRecordsService
 
     /**
      * Get records for export without pagination
-     *
-     * @param array $filters
-     * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getForExport(array $filters): \Illuminate\Database\Eloquent\Collection
+    public function getForExport(array $filters): Collection
     {
         $subEntityId = $filters['sub_entity_id'];
         $registrationFormId = $filters['registration_form_id'];
@@ -342,13 +352,8 @@ class SubEntityRecordsService
 
     /**
      * Get mapped records for export without pagination
-     *
-     * @param int $type
-     * @param string|null $branchId
-     * @param array|null $ids
-     * @return \Illuminate\Database\Eloquent\Collection
      */
-    protected function getMappedRecordsForExport(int $type, ?string $branchId = null, ?array $ids = null): \Illuminate\Database\Eloquent\Collection
+    protected function getMappedRecordsForExport(int $type, ?string $branchId = null, ?array $ids = null): Collection
     {
         $query = $this->companyUserRepository->getModel();
 
@@ -357,15 +362,15 @@ class SubEntityRecordsService
         }
 
         $query = $query->when($type != null, function ($query) use ($type) {
-            $query->whereHas("users.companyUserCompanies", function ($query) use ($type) {
-                $query->where("role", $type);
+            $query->whereHas('users.companyUserCompanies', function ($query) use ($type) {
+                $query->where('role', $type);
             });
         });
 
         // Apply branch filter if provided
         if ($branchId) {
-            $query->whereHas("users.companyUserCompanies", function ($query) use ($branchId) {
-                $query->where("branch_id", $branchId);
+            $query->whereHas('users.companyUserCompanies', function ($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
             });
         }
 
