@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Models;
 
 use App\Traits\CustomBelongsToTenant;
-use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
+use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,11 +20,11 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class ProjectNotification extends Model implements HasMedia
 {
-    use UuidTrait;
     use BaseFilterable;
     use CustomBelongsToTenant;
     use InteractsWithMedia;
     use SoftDeletes;
+    use UuidTrait;
 
     protected $table = 'project_notifications';
 
@@ -194,6 +194,21 @@ class ProjectNotification extends Model implements HasMedia
     public function siteStatusUpdates(): HasMany
     {
         return $this->hasMany(ProjectNotificationSiteStatusUpdate::class, 'project_notification_id');
+    }
+
+    public function fines(): HasMany
+    {
+        return $this->hasMany(ProjectNotificationFine::class, 'project_notification_id');
+    }
+
+    public function workStoppageReports(): HasMany
+    {
+        return $this->hasMany(ProjectNotificationWorkStoppageReport::class, 'project_notification_id');
+    }
+
+    public function workResumptions(): HasMany
+    {
+        return $this->hasMany(ProjectNotificationWorkResumption::class, 'project_notification_id');
     }
 
     public function siteStatusType(): BelongsTo
