@@ -362,21 +362,45 @@ class SafetyService
             return;
         }
 
-        try {
-            $this->create([
-                'project_id' => $projectId,
-                'morphable_type' => 'project_notification',
-                'morphable_id' => (string) $notification->id,
-                'assigned_user_ids' => $toCreate,
-                'date' => $notification->task_date?->toDateString(),
-                'time' => $notification->task_time?->format('H:i'),
-            ]);
-        } catch (Throwable $e) {
-            Log::warning('Failed to auto-create safety records for project notification.', [
-                'project_notification_id' => $notification->id,
-                'assigned_user_ids' => $toCreate,
-                'exception' => $e->getMessage(),
-            ]);
+        $notification->loadMissing('project');
+
+        $users = User::withoutGlobalScopes()
+            ->whereIn('id', $toCreate)
+            ->get()
+            ->keyBy(fn (User $user) => (string) $user->id);
+
+        foreach ($toCreate as $userId) {
+            $user = $users->get((string) $userId);
+
+            if (! $user) {
+                Log::warning('Skipped auto-create safety record for unknown notification assignee.', [
+                    'project_notification_id' => $notification->id,
+                    'assigned_user_id' => $userId,
+                ]);
+
+                continue;
+            }
+
+            try {
+                $this->create([
+                    'project_id' => $projectId,
+                    'morphable_type' => 'project_notification',
+                    'morphable_id' => (string) $notification->id,
+                    'assigned_user_ids' => [$userId],
+                    'date' => $notification->task_date?->toDateString(),
+                    'time' => $notification->task_time?->format('H:i'),
+                    'contractor_id' => $notification->contractor_id,
+                    'order_type' => $notification->work_type,
+                    'consultant_engineer' => $user->name,
+                    'consultant' => $notification->company->name,
+                ]);
+            } catch (Throwable $e) {
+                Log::warning('Failed to auto-create safety records for project notification.', [
+                    'project_notification_id' => $notification->id,
+                    'assigned_user_ids' => [$userId],
+                    'exception' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
