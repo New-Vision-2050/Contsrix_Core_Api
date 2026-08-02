@@ -217,10 +217,8 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
 
     Route::prefix('notifications')->group(function () {
         // Static routes MUST come before /{id} to avoid route conflicts
-        Route::get('/map-tasks', [ProjectNotificationController::class, 'mapTasks'])
-            ->permission(Permission::PROJECT_NOTIFICATION_LIST());
-        Route::get('/contractors', [ProjectContractorController::class, 'index'])
-            ->permission(Permission::PROJECT_NOTIFICATION_CREATE());
+        Route::get('/map-tasks', [ProjectNotificationController::class, 'mapTasks']);
+        Route::get('/contractors', [ProjectContractorController::class, 'index']);
         Route::get('/employees-with-locations', [ProjectNotificationController::class, 'employeesWithLocations']);
         Route::get('/site-statuses', [ProjectNotificationController::class, 'siteStatuses'])
             ;

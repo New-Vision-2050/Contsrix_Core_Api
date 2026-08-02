@@ -262,7 +262,7 @@ final class SafetyLifecycleTest extends TestCase
         ]);
     }
 
-    public function test_evaluating_violation_found_without_action_fails_validation(): void
+    public function test_evaluating_violation_found_without_action_succeeds(): void
     {
         $record = $this->createSafetyRecord($this->assignee);
 
@@ -278,10 +278,17 @@ final class SafetyLifecycleTest extends TestCase
                 ],
             ]);
 
-        $response->assertStatus(422);
-        $this->assertDatabaseHas('safety_records', [
-            'id' => $record->id,
-            'status' => 'pending',
+        $response->assertOk();
+
+        $violationPayload = collect($response->json('payload.all_violations'))
+            ->firstWhere('id', $this->violationOne->id);
+        $this->assertNull($violationPayload['action']);
+
+        $this->assertDatabaseHas('safety_record_violation', [
+            'safety_record_id' => $record->id,
+            'violation_id' => $this->violationOne->id,
+            'status' => 'violation_found',
+            'action' => null,
         ]);
     }
 
