@@ -16,6 +16,8 @@ class ProjectPCloudExportService
 {
     private const MAINTENANCE_FOLDER = 'الصيانة والطوارئ';
 
+    private const PROJECTS_FOLDER = 'المشاريع';
+
     public function __construct(
         private readonly PCloudClient $client,
     ) {}
@@ -34,6 +36,8 @@ class ProjectPCloudExportService
     {
         return implode('/', [
             $this->client->rootFolderName(),
+            $this->client->normalizeFolderName($this->companyFolderName($project)),
+            self::PROJECTS_FOLDER,
             $this->client->normalizeFolderName((string) $project->name),
             self::MAINTENANCE_FOLDER,
         ]);
@@ -53,7 +57,13 @@ class ProjectPCloudExportService
         $rootFolder = $this->client->ensureFolder(0, $this->client->rootFolderName());
         $foldersCreatedOrFound++;
 
-        $projectFolder = $this->client->ensureFolder($rootFolder['folderid'], (string) $project->name);
+        $companyFolder = $this->client->ensureFolder($rootFolder['folderid'], $this->companyFolderName($project));
+        $foldersCreatedOrFound++;
+
+        $projectsFolder = $this->client->ensureFolder($companyFolder['folderid'], self::PROJECTS_FOLDER);
+        $foldersCreatedOrFound++;
+
+        $projectFolder = $this->client->ensureFolder($projectsFolder['folderid'], (string) $project->name);
         $foldersCreatedOrFound++;
 
         $maintenanceFolder = $this->client->ensureFolder($projectFolder['folderid'], self::MAINTENANCE_FOLDER);
@@ -219,5 +229,27 @@ class ProjectPCloudExportService
         $name = basename((string) ($media->file_name ?: $media->name ?: 'attachment'));
 
         return $name !== '' ? $name : 'attachment';
+    }
+
+    private function companyFolderName(ProjectManagement $project): string
+    {
+        $company = $project->company;
+
+        if ($company !== null && method_exists($company, 'getTranslation')) {
+            foreach (array_unique([app()->getLocale(), 'ar', 'en']) as $locale) {
+                $name = trim($company->getTranslation('name', $locale));
+
+                if ($name !== '') {
+                    return $name;
+                }
+            }
+        }
+
+        $name = $company?->getRawOriginal('name');
+        if (is_string($name) && trim($name) !== '') {
+            return $name;
+        }
+
+        return (string) $project->company_id;
     }
 }
