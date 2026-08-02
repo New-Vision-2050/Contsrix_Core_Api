@@ -23,13 +23,13 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
         Storage::fake('public');
         config([
             'media-library.disk_name' => 'public',
-            'services.pcloud.enabled' => true,
-            'services.pcloud.email' => 'user@example.test',
-            'services.pcloud.password' => 'secret-password',
-            'services.pcloud.root_folder' => 'Constrix Archive',
-            'services.pcloud.dispatch' => 'sync',
-            'services.pcloud.base_url' => 'https://api.pcloud.com',
-            'services.pcloud.timeout' => 5,
+            'pcloud.enabled' => true,
+            'pcloud.email' => 'user@example.test',
+            'pcloud.password' => 'secret-password',
+            'pcloud.root_folder' => 'Constrix Archive',
+            'pcloud.dispatch' => 'sync',
+            'pcloud.default_api_host' => 'https://api.pcloud.com',
+            'pcloud.timeout' => 5,
         ]);
 
         $folders = [];
@@ -39,10 +39,6 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
         Http::fake(function (Request $request) use (&$folders, &$uploads, &$nextFolderId) {
             if (str_contains($request->url(), '/getdigest')) {
                 return Http::response(['result' => 0, 'digest' => 'digest-token']);
-            }
-
-            if (str_contains($request->url(), '/userinfo')) {
-                return Http::response(['result' => 0, 'auth' => 'auth-token']);
             }
 
             if (str_contains($request->url(), '/createfolderifnotexists')) {
@@ -64,11 +60,15 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
             }
 
             if (str_contains($request->url(), '/uploadfile')) {
+                parse_str(parse_url($request->url(), PHP_URL_QUERY) ?: '', $query);
+
                 $uploads[] = [
-                    'folderid' => (int) $this->multipartValue($request, 'folderid'),
-                    'filename' => $this->multipartValue($request, 'filename'),
-                    'renameifexists' => (int) $this->multipartValue($request, 'renameifexists'),
-                    'has_file' => $request->hasFile('file', null, 'site-photo.pdf'),
+                    'folderid' => (int) ($query['folderid'] ?? 0),
+                    'filename' => $query['filename'] ?? null,
+                    'renameifexists' => (int) ($query['renameifexists'] ?? 0),
+                    'method' => $request->method(),
+                    'content_type' => $request->header('Content-Type')[0] ?? null,
+                    'has_body' => $request->body() !== '',
                 ];
 
                 return Http::response([
@@ -111,7 +111,9 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
                 'folderid' => 1005,
                 'filename' => 'site-photo.pdf',
                 'renameifexists' => 1,
-                'has_file' => true,
+                'method' => 'PUT',
+                'content_type' => 'application/pdf',
+                'has_body' => true,
             ],
         ], $uploads);
 
@@ -180,16 +182,5 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
             'status' => 'approved',
             'requested_by' => $this->actor->id,
         ]);
-    }
-
-    private function multipartValue(Request $request, string $name): mixed
-    {
-        foreach ($request->data() as $part) {
-            if (($part['name'] ?? null) === $name) {
-                return $part['contents'] ?? null;
-            }
-        }
-
-        return null;
     }
 }

@@ -71,7 +71,7 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
 
     public function test_sync_route_returns_unprocessable_when_pcloud_is_disabled(): void
     {
-        config(['services.pcloud.enabled' => false]);
+        config(['pcloud.enabled' => false]);
 
         $project = $this->createProject('PCloud Disabled Project');
 
@@ -87,13 +87,13 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
     private function configurePCloud(string $dispatch = 'queue'): void
     {
         config([
-            'services.pcloud.enabled' => true,
-            'services.pcloud.email' => 'user@example.test',
-            'services.pcloud.password' => 'secret-password',
-            'services.pcloud.root_folder' => 'Constrix Archive',
-            'services.pcloud.dispatch' => $dispatch,
-            'services.pcloud.base_url' => 'https://api.pcloud.com',
-            'services.pcloud.timeout' => 5,
+            'pcloud.enabled' => true,
+            'pcloud.email' => 'user@example.test',
+            'pcloud.password' => 'secret-password',
+            'pcloud.root_folder' => 'Constrix Archive',
+            'pcloud.dispatch' => $dispatch,
+            'pcloud.default_api_host' => 'https://api.pcloud.com',
+            'pcloud.timeout' => 5,
         ]);
     }
 

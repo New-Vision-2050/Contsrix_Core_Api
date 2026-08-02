@@ -7,8 +7,10 @@ namespace Modules\Project\ProjectManagement\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Modules\Project\ProjectManagement\Exceptions\PCloudConfigurationException;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
+use Modules\Shared\PCloud\Services\PCloudClient;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
@@ -24,21 +26,29 @@ class ProjectPCloudExportService
 
     public function ensureConfigured(): void
     {
-        $this->client->assertConfigured();
+        if (! (bool) config('pcloud.enabled')) {
+            throw new PCloudConfigurationException('pCloud integration is disabled.');
+        }
+
+        foreach (['email', 'password', 'root_folder'] as $key) {
+            if (! is_string(config("pcloud.{$key}")) || trim((string) config("pcloud.{$key}")) === '') {
+                throw new PCloudConfigurationException("pCloud {$key} is not configured.");
+            }
+        }
     }
 
     public function dispatchMode(): string
     {
-        return strtolower((string) config('services.pcloud.dispatch', 'sync'));
+        return strtolower((string) config('pcloud.dispatch', 'queue'));
     }
 
     public function targetPath(ProjectManagement $project): string
     {
         return implode('/', [
-            $this->client->rootFolderName(),
-            $this->client->normalizeFolderName($this->companyFolderName($project)),
+            $this->rootFolderName(),
+            $this->normalizePathPart($this->companyFolderName($project)),
             self::PROJECTS_FOLDER,
-            $this->client->normalizeFolderName((string) $project->name),
+            $this->normalizePathPart((string) $project->name),
             self::MAINTENANCE_FOLDER,
         ]);
     }
@@ -54,31 +64,31 @@ class ProjectPCloudExportService
         $filesUploaded = 0;
         $filesFailed = 0;
 
-        $rootFolder = $this->client->ensureFolder(0, $this->client->rootFolderName());
+        $rootFolder = $this->client->ensureFolder(0, $this->rootFolderName());
         $foldersCreatedOrFound++;
 
-        $companyFolder = $this->client->ensureFolder($rootFolder['folderid'], $this->companyFolderName($project));
+        $companyFolderId = $this->client->ensureFolder($rootFolder, $this->companyFolderName($project));
         $foldersCreatedOrFound++;
 
-        $projectsFolder = $this->client->ensureFolder($companyFolder['folderid'], self::PROJECTS_FOLDER);
+        $projectsFolderId = $this->client->ensureFolder($companyFolderId, self::PROJECTS_FOLDER);
         $foldersCreatedOrFound++;
 
-        $projectFolder = $this->client->ensureFolder($projectsFolder['folderid'], (string) $project->name);
+        $projectFolderId = $this->client->ensureFolder($projectsFolderId, (string) $project->name);
         $foldersCreatedOrFound++;
 
-        $maintenanceFolder = $this->client->ensureFolder($projectFolder['folderid'], self::MAINTENANCE_FOLDER);
+        $maintenanceFolderId = $this->client->ensureFolder($projectFolderId, self::MAINTENANCE_FOLDER);
         $foldersCreatedOrFound++;
 
         foreach ($this->notificationsForProject($project) as $notification) {
-            $notificationFolder = $this->client->ensureFolder(
-                $maintenanceFolder['folderid'],
+            $notificationFolderId = $this->client->ensureFolder(
+                $maintenanceFolderId,
                 (string) ($notification->notification_number ?: $notification->id),
             );
             $foldersCreatedOrFound++;
 
             foreach ($this->collectMedia($notification) as $media) {
                 try {
-                    $this->uploadMedia($notificationFolder['folderid'], $media);
+                    $this->uploadMedia($notificationFolderId, $media);
                     $filesUploaded++;
                 } catch (Throwable $exception) {
                     $filesFailed++;
@@ -205,23 +215,17 @@ class ProjectPCloudExportService
             throw new \RuntimeException('Media file does not exist on configured disk.');
         }
 
-        $stream = Storage::disk($disk)->readStream($path);
-        if (! is_resource($stream)) {
-            throw new \RuntimeException('Unable to open media file stream.');
+        $contents = Storage::disk($disk)->get($path);
+        if ($contents === '') {
+            throw new \RuntimeException('Media file is empty.');
         }
 
-        try {
-            $this->client->uploadFile(
-                folderId: $folderId,
-                stream: $stream,
-                filename: $this->mediaFileName($media),
-                mtime: $media->updated_at?->timestamp,
-            );
-        } finally {
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        }
+        $this->client->uploadFile(
+            $folderId,
+            $this->mediaFileName($media),
+            $contents,
+            $media->mime_type ?: null,
+        );
     }
 
     private function mediaFileName(Media $media): string
@@ -251,5 +255,20 @@ class ProjectPCloudExportService
         }
 
         return (string) $project->company_id;
+    }
+
+    private function rootFolderName(): string
+    {
+        return $this->normalizePathPart((string) config('pcloud.root_folder', 'Constrix Archive'));
+    }
+
+    private function normalizePathPart(string $name): string
+    {
+        $name = str_replace(["\0", '/', '\\'], ['', '-', '-'], $name);
+        $name = trim($name);
+        $name = preg_replace('/\s+/', ' ', $name) ?? $name;
+        $name = trim($name);
+
+        return $name !== '' ? $name : 'untitled';
     }
 }
