@@ -93,6 +93,11 @@ class ProjectNotificationFilter extends SearchModelFilter
         return $this->where('project_notifications.project_id', $projectId);
     }
 
+    public function ids(array $ids)
+    {
+        return $this->whereIn('project_notifications.id', $ids);
+    }
+
     public function contractualEngagementKey($code)
     {
         return $this->whereHas('project.contractualEngagement', function ($query) use ($code) {
@@ -112,7 +117,7 @@ class ProjectNotificationFilter extends SearchModelFilter
 
     public function contractorName($name)
     {
-        return $this->where('contractor_name', 'like', '%' . $name . '%');
+        return $this->where('contractor_name', 'like', '%'.$name.'%');
     }
 
     public function contractorId($contractorId)
@@ -175,10 +180,10 @@ class ProjectNotificationFilter extends SearchModelFilter
     public function search($term)
     {
         return $this->where(function ($query) use ($term) {
-            $query->where('notification_number', 'like', '%' . $term . '%')
-                  ->orWhere('contractor_name', 'like', '%' . $term . '%')
-                  ->orWhere('work_description', 'like', '%' . $term . '%')
-                  ->orWhere('repair_point', 'like', '%' . $term . '%');
+            $query->where('notification_number', 'like', '%'.$term.'%')
+                ->orWhere('contractor_name', 'like', '%'.$term.'%')
+                ->orWhere('work_description', 'like', '%'.$term.'%')
+                ->orWhere('repair_point', 'like', '%'.$term.'%');
         });
     }
 
