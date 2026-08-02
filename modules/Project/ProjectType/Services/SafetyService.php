@@ -80,16 +80,18 @@ class SafetyService
                     $status = 'جارية';
                 }
 
+                $notification = $first->morphable instanceof ProjectNotification ? $first->morphable : null;
+
                 return [
                     'morphable_type' => $first->morphable_type,
                     'morphable_id' => $first->morphable_id,
                     'morphable_display' => $first->morphable?->name
                         ?? $first->morphable?->notification_number
                         ?? null,
-                    'contractor_id' => $first->contractor_id,
-                    'contractor_name' => $first->contractor?->name,
+                    'contractor_id' => $first->contractor_id ?? $notification?->contractor_id,
+                    'contractor_name' => $first->contractor?->name ?? $notification?->contractor_name,
                     'consultant_engineer' => $first->consultant_engineer,
-                    'consultant' => $first->consultant,
+                    'consultant' => $first->consultant ?? tenant('name'),
                     'total_assignments' => $total,
                     'completed_count' => $completed,
                     'pending_count' => $pending,
@@ -362,7 +364,7 @@ class SafetyService
             return;
         }
 
-        $notification->loadMissing('project');
+        $notification->loadMissing(['project', 'company']);
 
         $users = User::withoutGlobalScopes()
             ->whereIn('id', $toCreate)
@@ -392,7 +394,7 @@ class SafetyService
                     'contractor_id' => $notification->contractor_id,
                     'order_type' => $notification->work_type,
                     'consultant_engineer' => $user->name,
-                    'consultant' => $notification->company->name,
+                    'consultant' => $notification->company?->name,
                 ]);
             } catch (Throwable $e) {
                 Log::warning('Failed to auto-create safety records for project notification.', [
@@ -526,7 +528,7 @@ class SafetyService
                 'description' => $violation->description,
                 'category' => $violation->category,
                 'is_attached' => $isAttached,
-                'weight' => $pivot?->weight,
+                'weight' => $pivot?->weight ?? $violation->default_weight,
                 'status' => $pivot?->status,
                 'action' => $pivot?->action,
             ];
