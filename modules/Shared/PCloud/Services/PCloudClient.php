@@ -38,15 +38,25 @@ class PCloudClient
         ));
 
         foreach ($segments as $segment) {
-            $response = $this->request('createfolderifnotexists', [
-                'folderid' => $folderId,
-                'name' => $this->sanitizeName($segment),
-            ]);
+            $folderId = $this->ensureFolder($folderId, $segment);
+        }
 
-            $folderId = (int) ($response['metadata']['folderid'] ?? 0);
-            if ($folderId <= 0) {
-                throw new RuntimeException('pCloud createfolderifnotexists did not return folderid.');
-            }
+        return $folderId;
+    }
+
+    /**
+     * Ensure a direct child folder exists and return its pCloud folder id.
+     */
+    public function ensureFolder(int $parentFolderId, string $name): int
+    {
+        $response = $this->request('createfolderifnotexists', [
+            'folderid' => $parentFolderId,
+            'name' => $this->sanitizeName($name),
+        ]);
+
+        $folderId = (int) ($response['metadata']['folderid'] ?? 0);
+        if ($folderId <= 0) {
+            throw new RuntimeException('pCloud createfolderifnotexists did not return folderid.');
         }
 
         return $folderId;
@@ -84,16 +94,16 @@ class PCloudClient
                 'Content-Type' => $contentType,
                 'Content-Length' => (string) strlen($contents),
             ])
-            ->put($host . '/uploadfile?' . $query);
+            ->put($host.'/uploadfile?'.$query);
 
-        if (!$response->successful()) {
-            throw new RuntimeException('pCloud uploadfile HTTP error: ' . $response->status());
+        if (! $response->successful()) {
+            throw new RuntimeException('pCloud uploadfile HTTP error: '.$response->status());
         }
 
         $payload = $response->json() ?? [];
         if (($payload['result'] ?? 1) !== 0) {
             throw new RuntimeException(
-                'pCloud uploadfile failed: ' . ($payload['error'] ?? json_encode($payload))
+                'pCloud uploadfile failed: '.($payload['error'] ?? json_encode($payload))
             );
         }
 
@@ -111,16 +121,16 @@ class PCloudClient
 
         $response = Http::timeout((int) config('pcloud.timeout', 120))
             ->asForm()
-            ->post($host . '/' . ltrim($method, '/'), $payloadParams);
+            ->post($host.'/'.ltrim($method, '/'), $payloadParams);
 
-        if (!$response->successful()) {
-            throw new RuntimeException("pCloud {$method} HTTP error: " . $response->status());
+        if (! $response->successful()) {
+            throw new RuntimeException("pCloud {$method} HTTP error: ".$response->status());
         }
 
         $payload = $response->json() ?? [];
         if (($payload['result'] ?? 1) !== 0) {
             throw new RuntimeException(
-                "pCloud {$method} failed: " . ($payload['error'] ?? json_encode($payload))
+                "pCloud {$method} failed: ".($payload['error'] ?? json_encode($payload))
             );
         }
 
@@ -141,10 +151,10 @@ class PCloudClient
         $host = rtrim((string) config('pcloud.default_api_host'), '/');
 
         $digestResponse = Http::timeout((int) config('pcloud.timeout', 120))
-            ->get($host . '/getdigest');
+            ->get($host.'/getdigest');
 
-        if (!$digestResponse->successful()) {
-            throw new RuntimeException('pCloud getdigest HTTP error: ' . $digestResponse->status());
+        if (! $digestResponse->successful()) {
+            throw new RuntimeException('pCloud getdigest HTTP error: '.$digestResponse->status());
         }
 
         $digestPayload = $digestResponse->json() ?? [];
@@ -154,7 +164,7 @@ class PCloudClient
                 'error' => $digestPayload['error'] ?? null,
             ]);
             throw new RuntimeException(
-                'pCloud getdigest failed: ' . ($digestPayload['error'] ?? 'missing digest')
+                'pCloud getdigest failed: '.($digestPayload['error'] ?? 'missing digest')
             );
         }
 
@@ -163,7 +173,7 @@ class PCloudClient
         return [
             'username' => $email,
             'digest' => $digest,
-            'passworddigest' => sha1($password . sha1(strtolower($email)) . $digest),
+            'passworddigest' => sha1($password.sha1(strtolower($email)).$digest),
         ];
     }
 

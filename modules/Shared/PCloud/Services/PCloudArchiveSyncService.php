@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Shared\PCloud\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Modules\ArchiveLibrary\File\Models\File as ArchiveFile;
@@ -22,12 +23,11 @@ class PCloudArchiveSyncService
 
     public function __construct(
         private readonly PCloudClient $client,
-    ) {
-    }
+    ) {}
 
     public function shouldSync(CustomMedia $media): bool
     {
-        if (!$this->client->isConfigured()) {
+        if (! $this->client->isConfigured()) {
             return false;
         }
 
@@ -58,7 +58,7 @@ class PCloudArchiveSyncService
             return;
         }
 
-        if (!$this->client->isConfigured()) {
+        if (! $this->client->isConfigured()) {
             Log::warning('pCloud sync skipped: not configured', [
                 'media_id' => $mediaId,
                 'enabled' => (bool) config('pcloud.enabled'),
@@ -68,7 +68,7 @@ class PCloudArchiveSyncService
             return;
         }
 
-        if (!$this->shouldSync($media)) {
+        if (! $this->shouldSync($media)) {
             Log::info('pCloud sync skipped: media not archive-linked', [
                 'media_id' => $mediaId,
                 'model_type' => $media->model_type,
@@ -123,7 +123,7 @@ class PCloudArchiveSyncService
 
     public function syncMedia(CustomMedia $media): void
     {
-        if (!$this->shouldSync($media)) {
+        if (! $this->shouldSync($media)) {
             return;
         }
 
@@ -154,6 +154,37 @@ class PCloudArchiveSyncService
             'fileid' => $result['metadata'][0]['fileid'] ?? ($result['fileids'][0] ?? null),
             'contenttype' => $result['metadata'][0]['contenttype'] ?? null,
         ]);
+    }
+
+    public function ensureArchiveFolder(ArchiveFolder $folder): ?int
+    {
+        if (! $this->client->isConfigured()) {
+            Log::warning('pCloud folder sync skipped: not configured', [
+                'folder_id' => $folder->id,
+                'enabled' => (bool) config('pcloud.enabled'),
+                'email_set' => filled(config('pcloud.email')),
+            ]);
+
+            return null;
+        }
+
+        $remoteFolderPath = collect([
+            trim((string) config('pcloud.root_folder', 'Constrix Archive'), '/'),
+            $this->resolveCompanyName($folder->company_id ? (string) $folder->company_id : null),
+            $this->folderHierarchyPath($folder),
+        ])
+            ->filter(static fn (?string $part): bool => filled($part))
+            ->implode('/');
+
+        $folderId = $this->client->ensureFolderPath($remoteFolderPath);
+
+        Log::info('pCloud archive folder ensured', [
+            'folder_id' => $folder->id,
+            'remote_folder' => $remoteFolderPath,
+            'pcloud_folder_id' => $folderId,
+        ]);
+
+        return $folderId;
     }
 
     /**
@@ -188,7 +219,7 @@ class PCloudArchiveSyncService
         $fileId = $this->resolveArchiveFileId($media);
         if ($fileId) {
             $file = ArchiveFile::query()->withoutTenancy()->with('folder')->find($fileId);
-            if (!$folder && $file?->folder) {
+            if (! $folder && $file?->folder) {
                 $folder = $file->folder;
             }
         }
@@ -218,12 +249,12 @@ class PCloudArchiveSyncService
     private function resolveCompanyName(?string $companyId): string
     {
         $id = $companyId ?: (tenant('id') ? (string) tenant('id') : null);
-        if (!$id) {
+        if (! $id) {
             return 'Unknown Company';
         }
 
         $company = Company::query()->find($id);
-        if (!$company) {
+        if (! $company) {
             try {
                 $company = Company::on('mysql')->find($id);
             } catch (Throwable) {
@@ -247,12 +278,12 @@ class PCloudArchiveSyncService
 
     private function resolveProjectName(?string $projectId): ?string
     {
-        if (!$projectId) {
+        if (! $projectId) {
             return null;
         }
 
         $project = ProjectManagement::query()->find($projectId);
-        if (!$project) {
+        if (! $project) {
             return null;
         }
 
@@ -298,8 +329,8 @@ class PCloudArchiveSyncService
             if ($fallback === '' || $fallback === 'files') {
                 return $projectName;
             }
-            if (!str_starts_with($fallback, $projectName . '/') && $fallback !== $projectName) {
-                return $projectName . '/' . $fallback;
+            if (! str_starts_with($fallback, $projectName.'/') && $fallback !== $projectName) {
+                return $projectName.'/'.$fallback;
             }
         }
 
@@ -327,7 +358,7 @@ class PCloudArchiveSyncService
 
         while ($current->parent_id) {
             $parent = ArchiveFolder::query()->withoutTenancy()->find($current->parent_id);
-            if (!$parent) {
+            if (! $parent) {
                 break;
             }
             array_unshift($parts, $parent->name);
@@ -356,7 +387,7 @@ class PCloudArchiveSyncService
             $name = is_string($value) ? $value : '';
         }
 
-        if (!is_string($name) && !is_numeric($name)) {
+        if (! is_string($name) && ! is_numeric($name)) {
             return '';
         }
 
@@ -385,11 +416,11 @@ class PCloudArchiveSyncService
 
             $url = $media->getFullUrl();
             if (is_string($url) && $url !== '') {
-                if (!str_starts_with($url, 'http')) {
-                    $url = 'https://' . ltrim($url, '/');
+                if (! str_starts_with($url, 'http')) {
+                    $url = 'https://'.ltrim($url, '/');
                 }
 
-                $response = \Illuminate\Support\Facades\Http::timeout(60)->get($url);
+                $response = Http::timeout(60)->get($url);
                 if ($response->successful()) {
                     return $response->body();
                 }

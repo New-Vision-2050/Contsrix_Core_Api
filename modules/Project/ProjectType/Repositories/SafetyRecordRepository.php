@@ -22,7 +22,7 @@ class SafetyRecordRepository extends BaseRepository
     ): LengthAwarePaginator {
         $query = SafetyRecord::query()
             ->where('project_id', $projectId)
-            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'media'])
+            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'company', 'media'])
             ->filter($filters);
 
         $this->applySorting($query, $sort);
@@ -40,7 +40,7 @@ class SafetyRecordRepository extends BaseRepository
 
         $query = SafetyRecord::query()
             ->where('assigned_user_id', $userId)
-            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'project', 'media'])
+            ->with(['violations', 'morphable', 'assignedUser', 'contractor', 'company', 'project', 'media'])
             ->filter($filters);
 
         $this->applySorting($query, $sort);
