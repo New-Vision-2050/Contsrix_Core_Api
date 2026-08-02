@@ -37,7 +37,8 @@ class SafetyRecordPresenter extends AbstractPresenter
             'earned_score' => $this->model->earned_score,
             'percentage' => $this->model->percentage,
             'consultant_engineer' => $this->model->consultant_engineer,
-            'consultant' => $this->model->consultant,
+            'consultant' => $this->model->consultant
+                ?? ($this->model->relationLoaded('company') ? $this->model->company?->name : null),
             'contractor_id' => $this->model->contractor_id,
             'contractor_name' => $this->model->relationLoaded('contractor')
                 ? ($this->model->contractor?->name ?? null)

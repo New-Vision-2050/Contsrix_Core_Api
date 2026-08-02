@@ -104,7 +104,7 @@ class SafetyService
     public function show(string $projectId, string $id): SafetyRecord
     {
         $record = $this->findForProject($projectId, $id);
-        $record->load(['violations', 'morphable', 'assignedUser', 'contractor', 'media']);
+        $record->load(['violations', 'morphable', 'assignedUser', 'contractor', 'company', 'media']);
 
         return $this->attachAllViolationsToRecord($record);
     }
@@ -164,7 +164,7 @@ class SafetyService
                 ]);
 
                 $this->syncViolations($record, Arr::get($data, 'violations', []));
-                $record->load(['violations', 'morphable', 'assignedUser', 'contractor', 'media']);
+                $record->load(['violations', 'morphable', 'assignedUser', 'contractor', 'company', 'media']);
                 $record->setRelation('all_violations', $this->buildAllViolations($record, $allViolations));
 
                 $user = User::withoutGlobalScopes()->find($userId);
