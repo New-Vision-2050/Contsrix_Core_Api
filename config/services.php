@@ -63,14 +63,4 @@ return [
     'firebase' => [
         'credentials' => env('FIREBASE_CREDENTIALS', public_path('firebase_credentials.json')),
     ],
-
-    'pcloud' => [
-        'enabled' => env('PCLOUD_ENABLED', false),
-        'email' => env('PCLOUD_EMAIL'),
-        'password' => env('PCLOUD_PASSWORD'),
-        'root_folder' => env('PCLOUD_ROOT_FOLDER', 'Constrix Archive'),
-        'dispatch' => env('PCLOUD_DISPATCH', 'sync'),
-        'base_url' => env('PCLOUD_BASE_URL', 'https://api.pcloud.com'),
-        'timeout' => (int) env('PCLOUD_TIMEOUT', 60),
-    ],
 ];

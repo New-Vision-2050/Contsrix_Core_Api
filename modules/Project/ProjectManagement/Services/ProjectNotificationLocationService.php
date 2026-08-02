@@ -5,13 +5,8 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Services;
 
 use Carbon\Carbon;
-use Carbon\CarbonImmutable;
-use Modules\Attendance\Domain\Time\ShiftWindowCalculator;
-use Modules\Attendance\Domain\Time\ShiftWindowInput;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\UserLocation;
-use Modules\Attendance\Services\AttendanceConstraintService;
-use Modules\Attendance\Support\EarlyClockInRules;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Support\GeoDistance;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
@@ -19,29 +14,11 @@ use Modules\User\Models\User;
 
 class ProjectNotificationLocationService
 {
-    /**
-     * Minutes without a GPS update before an employee is reported as `not_connected`.
-     * Overridable via config `projectmanagement.notifications.location_stale_minutes`.
-     */
-    private const LOCATION_STALE_MINUTES = 15;
-
-    /**
-     * Statuses hidden from dispatchers unless explicitly requested.
-     */
-    private const UNAVAILABLE_STATUSES = ['absent', 'out'];
-
-    public function __construct(
-        private readonly AttendanceConstraintService $attendanceConstraintService,
-        private readonly ShiftWindowCalculator $shiftWindowCalculator,
-    ) {}
-
     public function getProjectEmployeesWithLocations(
         string $projectId,
         float $notificationLat,
         float $notificationLng,
         ?float $radiusMeters = null,
-        bool $includeUnavailable = false,
-        array $statuses = [],
     ): array {
         $companyId = (string) tenant('id');
 
@@ -76,21 +53,19 @@ class ProjectNotificationLocationService
             ->get()
             ->keyBy('user_id');
 
-        // 3. Batch-query today's attendance rows per user (for status + absence).
-        //    Absent rows are kept (R9): is_absent must be visible to derive `absent`.
-        //    Holiday rows stay excluded. Rows matched on business_date so absence
-        //    records without a clock_in_time still surface; latest clock-in wins
-        //    when a user has several rows today (NULL clock-ins sort last).
-        $attendances = Attendance::whereIn('user_id', $userIds)
+        // 3. Batch-query the latest attendance per user for today (for status).
+        $latestAttendanceSubquery = Attendance::whereIn('user_id', $userIds)
+            ->whereBetween('clock_in_time', [now()->startOfDay(), now()->endOfDay()])
+            ->where('is_absent', false)
             ->where('is_holiday', false)
-            ->where(function ($q) {
-                $q->whereDate('business_date', now()->toDateString())
-                    ->orWhereBetween('clock_in_time', [now()->startOfDay(), now()->endOfDay()]);
-            })
-            ->orderByDesc('clock_in_time')
-            ->orderByDesc('created_at')
+            ->select('user_id', \DB::raw('MAX(clock_in_time) as latest_clock_in'))
+            ->groupBy('user_id');
+
+        $attendances = Attendance::joinSub($latestAttendanceSubquery, 'latest_attendance', function ($join) {
+            $join->on('attendances.user_id', '=', 'latest_attendance.user_id')
+                ->on('attendances.clock_in_time', '=', 'latest_attendance.latest_clock_in');
+        })
             ->get()
-            ->unique('user_id')
             ->keyBy('user_id');
 
         // 4. Get users with names.
@@ -104,8 +79,6 @@ class ProjectNotificationLocationService
             ->unique()
             ->toArray();
 
-        $staleMinutes = $this->locationStaleMinutes();
-
         // 6. Build result per user.
         $results = [];
         foreach ($userIds as $userId) {
@@ -118,7 +91,6 @@ class ProjectNotificationLocationService
 
             // Primary: latest user_locations record (from track-location API).
             $latestPoint = null;
-            $latestPointAt = null;
             $userLoc = $latestUserLocations->get($userId);
             if ($userLoc) {
                 $latestPoint = [
@@ -130,7 +102,6 @@ class ProjectNotificationLocationService
                         : null,
                     'location_source' => $userLoc->location_source ?? 'GPS',
                 ];
-                $latestPointAt = $userLoc->recorded_at;
             }
 
             // Fallback 1: attendance.location_tracking (last tracking point).
@@ -139,7 +110,6 @@ class ProjectNotificationLocationService
                 $tracking = end($trackingData);
                 if (is_array($tracking)) {
                     $latestPoint = $tracking;
-                    $latestPointAt = $this->parsePointTimestamp($tracking['timestamp'] ?? null);
                 }
             }
 
@@ -152,9 +122,6 @@ class ProjectNotificationLocationService
                     'type' => 'clock_in',
                     'location_source' => 'clock_in',
                 ]);
-                $latestPointAt = $attendance->clock_in_time
-                    ? Carbon::parse($attendance->clock_in_time, $attendance->timezone ?? getTimeZoneBranchByRequest())
-                    : null;
             }
 
             $employeeLat = $latestPoint['latitude'] ?? null;
@@ -168,27 +135,11 @@ class ProjectNotificationLocationService
                 ));
             }
 
-            $isStaleLocation = $latestPoint !== null
-                && ($latestPointAt === null || $latestPointAt->lessThan(now()->subMinutes($staleMinutes)));
-
-            // Clock-in eligibility is resolved only for users with no clock-in today:
-            // they are the ones who can still flip to absent or clock in. Users who
-            // already clocked in (or are already flagged absent) never call the
-            // constraint service, and each user is resolved at most once per request.
-            $eligibility = ['can_clock_in' => false, 'can_clock_in_until' => null, 'absent_by_deadline' => false];
-            $hasClockInToday = $attendance !== null && $attendance->clock_in_time !== null;
-            if (! $hasClockInToday && ! (bool) ($attendance?->is_absent)) {
-                $eligibility = $this->resolveClockInEligibility($user);
-            }
-
             $status = $this->deriveEmployeeStatus(
                 $attendance,
                 $latestPoint !== null,
                 in_array($userId, $busyUserIds, true),
-                $isStaleLocation,
-                $eligibility['absent_by_deadline'],
-                $distanceMeters,
-                $radiusMeters,
+                $latestPoint['timestamp'] ?? null,
             );
 
             $results[] = [
@@ -212,22 +163,10 @@ class ProjectNotificationLocationService
                         ? Carbon::parse($attendance->clock_in_time, $attendance->timezone ?? getTimeZoneBranchByRequest())->format('H:i:s')
                         : null,
                 ] : null,
-                'can_clock_in' => $eligibility['can_clock_in'],
-                'can_clock_in_until' => $eligibility['can_clock_in_until'],
-                'is_absent' => (bool) ($attendance?->is_absent) || $eligibility['absent_by_deadline'],
             ];
         }
 
-        // 7. Status filtering. An explicit statuses[] list takes precedence; otherwise
-        //    unavailable statuses (absent, out) are hidden unless include_unavailable.
-        if ($statuses !== []) {
-            $allowed = array_flip($statuses);
-            $results = array_values(array_filter($results, fn ($r) => isset($allowed[$r['status']])));
-        } elseif (! $includeUnavailable) {
-            $results = array_values(array_filter($results, fn ($r) => ! in_array($r['status'], self::UNAVAILABLE_STATUSES, true)));
-        }
-
-        // 8. Sort by distance (nulls last).
+        // 7. Sort by distance (nulls last).
         usort($results, function ($a, $b) {
             if ($a['distance_meters'] === null) {
                 return 1;
@@ -239,11 +178,8 @@ class ProjectNotificationLocationService
             return $a['distance_meters'] <=> $b['distance_meters'];
         });
 
-        // 9. Radius. With no new params the legacy behaviour is kept exactly: employees
-        //    beyond the radius are dropped (null distances kept). When the caller opted
-        //    into statuses[] or include_unavailable the radius only classifies — far
-        //    employees stay in the payload as `available_far`.
-        if ($radiusMeters !== null && $statuses === [] && ! $includeUnavailable) {
+        // 8. Filter by radius if provided.
+        if ($radiusMeters !== null) {
             $results = array_filter($results, fn ($r) => $r['distance_meters'] === null || $r['distance_meters'] <= $radiusMeters);
             $results = array_values($results);
         }
@@ -260,19 +196,18 @@ class ProjectNotificationLocationService
         ?Attendance $attendance,
         bool $hasLocation,
         bool $isBusy,
-        bool $isStaleLocation,
-        bool $isAbsentByDeadline,
-        ?int $distanceMeters,
-        ?float $radiusMeters,
+        ?string $lastUpdateTimestamp,
     ): string {
-        // Absent: flagged on today's row, or the first-clock-in deadline passed
-        // with no clock-in. Checked before out/busy/available (R9).
-        if ((bool) ($attendance?->is_absent) || $isAbsentByDeadline) {
-            return 'absent';
+        if (! $attendance) {
+            if ($isBusy) {
+                return 'busy';
+            }
+
+            return $hasLocation ? 'available' : 'offline';
         }
 
         // Clocked out / completed for today.
-        if ($attendance && ($attendance->clock_out_time !== null || $attendance->status === Attendance::STATUS_COMPLETED)) {
+        if ($attendance->clock_out_time !== null || $attendance->status === Attendance::STATUS_COMPLETED) {
             return 'out';
         }
 
@@ -281,133 +216,10 @@ class ProjectNotificationLocationService
         }
 
         if (! $hasLocation) {
-            return $attendance ? 'no_location' : 'offline';
-        }
-
-        // A point exists but is older than the staleness threshold (or untimed).
-        if ($isStaleLocation) {
-            return 'not_connected';
-        }
-
-        if ($radiusMeters !== null && $distanceMeters !== null && $distanceMeters > $radiusMeters) {
-            return 'available_far';
+            return 'no_location';
         }
 
         return 'available';
-    }
-
-    /**
-     * Clock-in window for a user with no clock-in today, from the attendance work rules.
-     *
-     * Returns can_clock_in / can_clock_in_until (ISO-8601|null) / absent_by_deadline.
-     * Degrades gracefully when the parallel rules work is not deployed (missing keys,
-     * no periods, resolver failure): can_clock_in=true, no deadline, no absence.
-     *
-     * @return array{can_clock_in: bool, can_clock_in_until: ?string, absent_by_deadline: bool}
-     */
-    private function resolveClockInEligibility(User $user): array
-    {
-        $fallback = ['can_clock_in' => true, 'can_clock_in_until' => null, 'absent_by_deadline' => false];
-
-        try {
-            $rules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user, now());
-        } catch (\Throwable) {
-            return $fallback;
-        }
-
-        // The rules live at the top level of the resolver response today, and move
-        // under a `work_rules` envelope in the V2 contract — accept both shapes.
-        $workRules = is_array($rules['work_rules'] ?? null) ? $rules['work_rules'] : $rules;
-
-        $periods = $workRules['all_work_periods'] ?? [];
-        if (! is_array($periods) || $periods === []) {
-            return $fallback;
-        }
-
-        $earlyClockInRules = $workRules['early_clock_in_rules'] ?? null;
-        $earlyMinutes = EarlyClockInRules::minutes(is_array($earlyClockInRules) ? $earlyClockInRules : null);
-
-        $extensionRules = $workRules['extension_rules'] ?? null;
-        $extensionMinutes = is_array($extensionRules)
-            ? max(0, (int) round(((float) ($extensionRules['extension_hours'] ?? 0)) * 60))
-            : 0;
-
-        $deadlineRules = $workRules['clock_in_deadline_rules'] ?? null;
-        $canClockInBeforeMinutes = is_array($deadlineRules) && isset($deadlineRules['can_clock_in_before_minutes'])
-            ? max(0, (int) $deadlineRules['can_clock_in_before_minutes'])
-            : null;
-
-        // One window per scheduled period (all boundaries from ShiftWindowCalculator).
-        $windows = [];
-        foreach ($periods as $period) {
-            $periodStart = $period['period_start_time_carbon'] ?? null;
-            $periodEnd = $period['period_end_time_carbon'] ?? null;
-            if (! $periodStart instanceof \Carbon\CarbonInterface || ! $periodEnd instanceof \Carbon\CarbonInterface) {
-                continue;
-            }
-
-            $windows[] = $this->shiftWindowCalculator->compute(new ShiftWindowInput(
-                scheduledStart: CarbonImmutable::instance($periodStart),
-                scheduledEnd: CarbonImmutable::instance($periodEnd),
-                clockIn: null,
-                earlyWindowMinutes: $earlyMinutes,
-                extensionMinutes: $extensionMinutes,
-                canClockInBeforeMinutes: $canClockInBeforeMinutes,
-            ));
-        }
-
-        if ($windows === []) {
-            return $fallback;
-        }
-
-        // Relevant period: the one whose ordinary window is still open at now (covers
-        // "contains now", the extension tail, and the next upcoming period). When every
-        // window is fully past there is nothing left to clock into.
-        $now = CarbonImmutable::instance(now());
-        $relevant = null;
-        foreach ($windows as $window) {
-            if ($now->lessThanOrEqualTo($window->workWindowEnd)) {
-                $relevant = $window;
-                break;
-            }
-        }
-
-        // Deadline absence: the day's last first-clock-in deadline passed with no clock-in.
-        $lastWindow = end($windows);
-        $absentByDeadline = $lastWindow->firstClockInDeadline !== null
-            && $now->greaterThan($lastWindow->firstClockInDeadline);
-
-        if ($relevant === null) {
-            return ['can_clock_in' => false, 'can_clock_in_until' => null, 'absent_by_deadline' => $absentByDeadline];
-        }
-
-        $clockInUntil = $relevant->firstClockInDeadline ?? $relevant->workWindowEnd;
-        $canClockIn = $now->greaterThanOrEqualTo($relevant->workWindowStart)
-            && $now->lessThanOrEqualTo($clockInUntil);
-
-        return [
-            'can_clock_in' => $canClockIn,
-            'can_clock_in_until' => $clockInUntil->toIso8601String(),
-            'absent_by_deadline' => $absentByDeadline,
-        ];
-    }
-
-    private function locationStaleMinutes(): int
-    {
-        return max(1, (int) config('projectmanagement.notifications.location_stale_minutes', self::LOCATION_STALE_MINUTES));
-    }
-
-    private function parsePointTimestamp(?string $timestamp): ?Carbon
-    {
-        if ($timestamp === null || $timestamp === '') {
-            return null;
-        }
-
-        try {
-            return Carbon::parse($timestamp);
-        } catch (\Throwable) {
-            return null;
-        }
     }
 
     private function statusLabel(string $status): string
@@ -422,7 +234,6 @@ class ProjectNotificationLocationService
             'available_far' => ['ar' => 'متاح بعيد', 'en' => 'Available Far'],
             'not_connected' => ['ar' => 'لا يوجد تحديث', 'en' => 'Not Connected'],
             'out' => ['ar' => 'خارج', 'en' => 'Out'],
-            'absent' => ['ar' => 'غائب', 'en' => 'Absent'],
         ];
 
         return $labels[$status][$locale] ?? $status;

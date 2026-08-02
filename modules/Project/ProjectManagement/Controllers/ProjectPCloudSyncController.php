@@ -8,11 +8,11 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Facade\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
-use Modules\Project\ProjectManagement\Exceptions\PCloudApiException;
 use Modules\Project\ProjectManagement\Exceptions\PCloudConfigurationException;
 use Modules\Project\ProjectManagement\Jobs\ExportProjectPCloudArchiveJob;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Services\ProjectPCloudExportService;
+use RuntimeException;
 
 class ProjectPCloudSyncController extends Controller
 {
@@ -57,7 +57,7 @@ class ProjectPCloudSyncController extends Controller
             );
         } catch (PCloudConfigurationException $exception) {
             return Json::error($exception->getMessage(), httpStatus: 422);
-        } catch (PCloudApiException $exception) {
+        } catch (RuntimeException $exception) {
             return Json::error($exception->getMessage(), httpStatus: 502);
         }
     }
