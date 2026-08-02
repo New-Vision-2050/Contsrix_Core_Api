@@ -27,29 +27,30 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
         parent::tearDown();
     }
 
-    public function test_employee_records_are_enriched_with_daily_attendance_status(): void
+    public function test_employee_records_show_required_or_holiday_daily_status_only(): void
     {
         [$subEntity, $registrationForm] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
-        $presentUser = $this->createCompanyUserRecord('Present Employee', $subEntity, CompanyUserRole::EMPLOYEE);
-        $waitingUser = $this->createCompanyUserRecord('Waiting Employee', $subEntity, CompanyUserRole::EMPLOYEE);
+        $requiredUser = $this->createCompanyUserRecord('Required Employee', $subEntity, CompanyUserRole::EMPLOYEE);
         $holidayUser = $this->createCompanyUserRecord('Holiday Employee', $subEntity, CompanyUserRole::EMPLOYEE);
+        $activeUser = $this->createCompanyUserRecord('Active Employee', $subEntity, CompanyUserRole::EMPLOYEE);
         $absentUser = $this->createCompanyUserRecord('Absent Employee', $subEntity, CompanyUserRole::EMPLOYEE);
 
-        $this->createAttendance($presentUser, [
-            'status' => Attendance::STATUS_ACTIVE,
-            'clock_in_time' => '2026-07-30 08:00:00',
-            'day_status' => 'in_location',
-        ]);
-        $this->createAttendance($waitingUser, [
-            'status' => Attendance::STATUS_WAITING,
-            'clock_in_time' => null,
-            'day_status' => 'work_day',
-        ]);
         $this->createAttendance($holidayUser, [
             'status' => Attendance::STATUS_HOLIDAY,
             'clock_in_time' => null,
             'is_holiday' => true,
             'day_status' => 'holiday',
+        ]);
+        $this->createAttendance($activeUser, [
+            'status' => Attendance::STATUS_ACTIVE,
+            'clock_in_time' => '2026-07-30 08:00:00',
+            'day_status' => 'in_location',
+        ]);
+        $this->createAttendance($absentUser, [
+            'status' => Attendance::STATUS_ABSENT,
+            'clock_in_time' => null,
+            'is_absent' => true,
+            'day_status' => 'absent',
         ]);
 
         $payload = collect($this->actingAs($this->actor, 'api')
@@ -64,10 +65,10 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->assertOk()
             ->json('payload'));
 
-        $this->assertAttendanceListStatus($payload, $presentUser, 'present', 'حاضر', '2026-07-30');
-        $this->assertAttendanceListStatus($payload, $waitingUser, 'required_attendance', 'مطلوب للحضور', '2026-07-30');
+        $this->assertAttendanceListStatus($payload, $requiredUser, 'required_attendance', 'مطلوب للحضور', '2026-07-30');
         $this->assertAttendanceListStatus($payload, $holidayUser, 'holiday', 'اجازه', '2026-07-30');
-        $this->assertAttendanceListStatus($payload, $absentUser, 'absent', 'غائب', '2026-07-30');
+        $this->assertAttendanceListStatus($payload, $activeUser, 'required_attendance', 'مطلوب للحضور', '2026-07-30');
+        $this->assertAttendanceListStatus($payload, $absentUser, 'required_attendance', 'مطلوب للحضور', '2026-07-30');
     }
 
     public function test_employee_records_use_today_by_default_and_empty_per_page_defaults_to_ten(): void
@@ -88,12 +89,13 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             ]).'&per_page');
 
         $response->assertOk()
-            ->assertJsonPath('payload.0.attendance.work_date', '2026-07-30');
+            ->assertJsonPath('payload.0.attendance_work_date', '2026-07-30')
+            ->assertJsonPath('payload.0.attendance_status_code', 'required_attendance');
 
         $this->assertCount(10, $response->json('payload'));
     }
 
-    public function test_client_and_broker_records_do_not_include_attendance_object(): void
+    public function test_client_and_broker_records_do_not_include_attendance_status_fields(): void
     {
         foreach ([CompanyUserRole::CLIENT, CompanyUserRole::BROKER] as $role) {
             [$subEntity, $registrationForm] = $this->createSubEntitySetup($role);
@@ -109,8 +111,155 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
                     'per_page' => 10,
                 ]))
                 ->assertOk()
-                ->assertJsonMissingPath('payload.0.attendance');
+                ->assertJsonMissingPath('payload.0.attendance_id')
+                ->assertJsonMissingPath('payload.0.attendance_work_date')
+                ->assertJsonMissingPath('payload.0.attendance_status_code')
+                ->assertJsonMissingPath('payload.0.attendance_status_label');
         }
+    }
+
+    public function test_can_set_employee_day_to_holiday_and_back_to_required_attendance(): void
+    {
+        [$subEntity, $registrationForm] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
+        $user = $this->createCompanyUserRecord('Toggle Employee', $subEntity, CompanyUserRole::EMPLOYEE);
+        $companyUser = $this->companyUserForUser($user);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $companyUser->id,
+                'work_date' => '2026-07-30',
+                'status' => 'holiday',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.attendance_status_code', 'holiday')
+            ->assertJsonPath('payload.attendance_status_label', 'اجازه');
+
+        $this->assertDatabaseHas('attendances', [
+            'user_id' => $user->id,
+            'business_date' => '2026-07-30',
+            'status' => Attendance::STATUS_HOLIDAY,
+            'is_holiday' => 1,
+            'is_absent' => 0,
+            'day_status' => 'holiday',
+        ]);
+
+        $this->assertAttendanceListStatus(
+            $this->listPayload($subEntity, $registrationForm),
+            $user,
+            'holiday',
+            'اجازه',
+            '2026-07-30'
+        );
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $companyUser->id,
+                'work_date' => '2026-07-30',
+                'status' => 'required_attendance',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.attendance_status_code', 'required_attendance')
+            ->assertJsonPath('payload.attendance_status_label', 'مطلوب للحضور');
+
+        $this->assertDatabaseHas('attendances', [
+            'user_id' => $user->id,
+            'business_date' => '2026-07-30',
+            'status' => Attendance::STATUS_WAITING,
+            'is_holiday' => 0,
+            'is_absent' => 0,
+            'day_status' => 'work_day',
+        ]);
+
+        $this->assertAttendanceListStatus(
+            $this->listPayload($subEntity, $registrationForm),
+            $user,
+            'required_attendance',
+            'مطلوب للحضور',
+            '2026-07-30'
+        );
+    }
+
+    public function test_setting_status_preserves_existing_clock_times(): void
+    {
+        [$subEntity] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
+        $user = $this->createCompanyUserRecord('Clocked Employee', $subEntity, CompanyUserRole::EMPLOYEE);
+        $companyUser = $this->companyUserForUser($user);
+        $attendance = $this->createAttendance($user, [
+            'status' => Attendance::STATUS_ACTIVE,
+            'clock_in_time' => '2026-07-30 08:00:00',
+            'day_status' => 'in_location',
+        ]);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $companyUser->id,
+                'work_date' => '2026-07-30',
+                'status' => 'holiday',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.attendance_status_code', 'holiday');
+
+        $attendance->refresh();
+
+        $this->assertSame('2026-07-30 08:00:00', (string) $attendance->clock_in_time);
+        $this->assertSame(Attendance::STATUS_ACTIVE, $attendance->status);
+        $this->assertSame(1, (int) $attendance->is_holiday);
+        $this->assertSame('holiday', $attendance->day_status);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $companyUser->id,
+                'work_date' => '2026-07-30',
+                'status' => 'required_attendance',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.attendance_status_code', 'required_attendance');
+
+        $attendance->refresh();
+
+        $this->assertSame('2026-07-30 08:00:00', (string) $attendance->clock_in_time);
+        $this->assertSame(Attendance::STATUS_ACTIVE, $attendance->status);
+        $this->assertSame(0, (int) $attendance->is_holiday);
+        $this->assertSame('work_day', $attendance->day_status);
+    }
+
+    public function test_update_attendance_status_validates_status_and_tenant_user(): void
+    {
+        [$subEntity] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
+        $user = $this->createCompanyUserRecord('Validated Employee', $subEntity, CompanyUserRole::EMPLOYEE);
+        $companyUser = $this->companyUserForUser($user);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $companyUser->id,
+                'work_date' => '2026-07-30',
+                'status' => 'present',
+            ])
+            ->assertUnprocessable();
+
+        $orphanCompanyUser = CompanyUser::query()->create([
+            'id' => (string) Str::uuid(),
+            'global_id' => (string) Str::uuid(),
+            'name' => 'No Tenant User',
+            'email' => 'no-tenant-user-'.Str::random(6).'@example.test',
+            'phone' => '010'.random_int(10000000, 99999999),
+            'phone_code' => '20',
+            'country_id' => $this->country->id,
+        ]);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $orphanCompanyUser->id,
+                'work_date' => '2026-07-30',
+                'status' => 'holiday',
+            ])
+            ->assertNotFound();
     }
 
     /**
@@ -211,6 +360,28 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
         ], $overrides));
     }
 
+    private function companyUserForUser(User $user): CompanyUser
+    {
+        return CompanyUser::query()
+            ->where('global_id', $user->global_company_user_id)
+            ->firstOrFail();
+    }
+
+    private function listPayload(SubEntity $subEntity, RegistrationForm $registrationForm): Collection
+    {
+        return collect($this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/sub_entities/records/list?'.http_build_query([
+                'sub_entity_id' => $subEntity->id,
+                'registration_form_id' => $registrationForm->id,
+                'start_date' => '2026-07-30',
+                'page' => 1,
+                'per_page' => 10,
+            ]))
+            ->assertOk()
+            ->json('payload'));
+    }
+
     private function assertAttendanceListStatus(
         Collection $payload,
         User $user,
@@ -221,8 +392,8 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
         $row = $payload->firstWhere('user_id', (string) $user->id);
 
         $this->assertNotNull($row, 'Expected employee row was not returned.');
-        $this->assertSame($code, $row['attendance']['code']);
-        $this->assertSame($label, $row['attendance']['label']);
-        $this->assertSame($workDate, $row['attendance']['work_date']);
+        $this->assertSame($code, $row['attendance_status_code']);
+        $this->assertSame($label, $row['attendance_status_label']);
+        $this->assertSame($workDate, $row['attendance_work_date']);
     }
 }

@@ -4,26 +4,26 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Controllers;
 
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
+use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Presenters\CompanyUserClientPresenter;
+use Modules\CompanyUser\Presenters\CompanyUserPresenter;
+use Modules\SubEntity\Exports\SubEntityRecordsExport;
+use Modules\SubEntity\Requests\ExportSubEntityRecordsRequest;
+use Modules\SubEntity\Requests\GetSubEntityRecordsRequest;
+use Modules\SubEntity\Requests\UpdateSubEntityRecordAttendanceStatusRequest;
 use Modules\SubEntity\Services\RegistrationFormCRUDService;
 use Modules\SubEntity\Services\SubEntityRecordsService;
-use Modules\CompanyUser\Presenters\CompanyUserPresenter;
-use Modules\SubEntity\Requests\GetSubEntityRecordsRequest;
-use Modules\SubEntity\Requests\ExportSubEntityRecordsRequest;
-use Modules\SubEntity\Exports\SubEntityRecordsExport;
-use Maatwebsite\Excel\Facades\Excel;
 
 class SubEntityRecordsController extends Controller
 {
     public function __construct(
         private SubEntityRecordsService $subEntityRecordsService,
         private RegistrationFormCRUDService $registrationFormCRUDService,
-    ) {
-    }
+    ) {}
 
     public function index(GetSubEntityRecordsRequest $request)
     {
@@ -55,6 +55,19 @@ class SubEntityRecordsController extends Controller
         return Json::items($presented, paginationSettings: $list['pagination'] ?? []);
     }
 
+    public function updateAttendanceStatus(UpdateSubEntityRecordAttendanceStatusRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $payload = $this->subEntityRecordsService->setAttendanceStatusForCompanyUser(
+            $validated['company_user_id'],
+            $validated['work_date'],
+            $validated['status']
+        );
+
+        return Json::item($payload, message: 'Attendance status updated successfully');
+    }
+
     public function widgets(GetSubEntityRecordsRequest $request): JsonResponse
     {
         $widgetsData = $this->subEntityRecordsService->getWidgetsData(
@@ -67,13 +80,11 @@ class SubEntityRecordsController extends Controller
 
     /**
      * Export sub entity records to a file
-     *
-     * @param ExportSubEntityRecordsRequest $request
      */
     public function export(ExportSubEntityRecordsRequest $request)
     {
         $format = $request->get('format', 'xlsx');
-        $fileName = 'sub_entity_records.' . $format;
+        $fileName = 'sub_entity_records.'.$format;
 
         $filters = $request->getFilters();
 
