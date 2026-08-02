@@ -8,6 +8,7 @@ use BasePackage\Shared\Module\ModuleServiceProvider;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Route;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
+use Modules\Project\ProjectType\Console\SyncSafetyRecordsFromNotificationsCommand;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\Project\ProjectType\Observers\ProjectTypeObserver;
@@ -24,6 +25,7 @@ class ProjectTypeServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        $this->registerCommands();
 
         // Register observer
         ProjectType::observe(ProjectTypeObserver::class);
@@ -32,6 +34,15 @@ class ProjectTypeServiceProvider extends ModuleServiceProvider
             'project_notification' => ProjectNotification::class,
             'project_order_permit' => ProjectOrderPermit::class,
         ]);
+    }
+
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SyncSafetyRecordsFromNotificationsCommand::class,
+            ]);
+        }
     }
 
     public function register(): void
