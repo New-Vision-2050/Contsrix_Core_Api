@@ -61,7 +61,6 @@ class SubEntityRecordsController extends Controller
 
         $payload = $this->subEntityRecordsService->setAttendanceStatusForCompanyUser(
             $validated['company_user_id'],
-            $validated['work_date'],
             $validated['status']
         );
 

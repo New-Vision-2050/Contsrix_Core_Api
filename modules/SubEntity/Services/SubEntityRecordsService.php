@@ -127,7 +127,7 @@ class SubEntityRecordsService
             ->all();
     }
 
-    public function setAttendanceStatusForCompanyUser(string $companyUserId, string $workDate, string $status): array
+    public function setAttendanceStatusForCompanyUser(string $companyUserId, string $status): array
     {
         $companyUser = CompanyUser::query()
             ->with(['users.userProfessionalData.attendanceConstraint'])
@@ -139,7 +139,7 @@ class SubEntityRecordsService
             abort(404, 'Tenant user not found for company user.');
         }
 
-        return $this->employeeAttendanceStatusService->setDailyRequiredHolidayStatus($user, $workDate, $status);
+        return $this->employeeAttendanceStatusService->setRequiredHolidayStatus($user, $status);
     }
 
     private function resolveTenantUser(CompanyUser $companyUser): ?User

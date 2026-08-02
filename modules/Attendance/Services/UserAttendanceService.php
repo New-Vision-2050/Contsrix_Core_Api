@@ -107,6 +107,7 @@ class UserAttendanceService
             $dateCarbon = $this->parseDateTime($targetDate, $timezone);
 
             $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate, $timezone);
+            $workRules = $this->applyManualAttendanceOverride($user, $targetDate, $workRules);
             [$attendances, $currentAttendance] = $this->fetchDayAttendancesAndCurrentOpen($user, $dateCarbon);
 
             if (isset($workRules['all_work_periods']) && is_array($workRules['all_work_periods'])) {
@@ -131,6 +132,40 @@ class UserAttendanceService
             $this->requestTimezoneOverride = $previousTz;
         }
     }
+    /**
+     * Applies a persistent manual attendance status override (set via the sub-entity
+     * "attendance-status" endpoint) on top of the computed work rules. The override
+     * takes effect from the day it was set and remains active for every following
+     * day until it is changed again.
+     */
+    private function applyManualAttendanceOverride(User $user, string $targetDate, array $workRules): array
+    {
+        $status = $user->manual_attendance_status ?? null;
+
+        if (! in_array($status, ['holiday', 'required_attendance'], true)) {
+            return $workRules;
+        }
+
+        $since = $user->manual_attendance_status_since;
+        $sinceDate = $since instanceof Carbon ? $since->toDateString() : ($since ? Carbon::parse((string) $since)->toDateString() : null);
+
+        if ($sinceDate !== null && $sinceDate > $targetDate) {
+            return $workRules;
+        }
+
+        if ($status === 'holiday') {
+            $workRules['day_status'] = 'holiday';
+            $workRules['is_holiday'] = true;
+            $workRules['reason'] = 'Manual holiday override.';
+        } else {
+            $workRules['day_status'] = 'work_day';
+            $workRules['is_holiday'] = false;
+            $workRules['reason'] = 'Manual required-attendance override.';
+        }
+
+        return $workRules;
+    }
+
     /**
      * Check if user is clocked in
      *
