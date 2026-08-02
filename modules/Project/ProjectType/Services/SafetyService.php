@@ -80,16 +80,18 @@ class SafetyService
                     $status = 'جارية';
                 }
 
+                $notification = $first->morphable instanceof ProjectNotification ? $first->morphable : null;
+
                 return [
                     'morphable_type' => $first->morphable_type,
                     'morphable_id' => $first->morphable_id,
                     'morphable_display' => $first->morphable?->name
                         ?? $first->morphable?->notification_number
                         ?? null,
-                    'contractor_id' => $first->contractor_id,
-                    'contractor_name' => $first->contractor?->name,
+                    'contractor_id' => $first->contractor_id ?? $notification?->contractor_id,
+                    'contractor_name' => $first->contractor?->name ?? $notification?->contractor_name,
                     'consultant_engineer' => $first->consultant_engineer,
-                    'consultant' => $first->consultant,
+                    'consultant' => $first->consultant ?? tenant('name'),
                     'total_assignments' => $total,
                     'completed_count' => $completed,
                     'pending_count' => $pending,
@@ -370,6 +372,9 @@ class SafetyService
                 'assigned_user_ids' => $toCreate,
                 'date' => $notification->task_date?->toDateString(),
                 'time' => $notification->task_time?->format('H:i'),
+                'order_type' => $notification->work_type,
+                'contractor_id' => $notification->contractor_id,
+                'consultant' => $notification->company?->name,
             ]);
         } catch (Throwable $e) {
             Log::warning('Failed to auto-create safety records for project notification.', [
@@ -502,7 +507,7 @@ class SafetyService
                 'description' => $violation->description,
                 'category' => $violation->category,
                 'is_attached' => $isAttached,
-                'weight' => $pivot?->weight,
+                'weight' => $pivot?->weight ?? $violation->default_weight,
                 'status' => $pivot?->status,
                 'action' => $pivot?->action,
             ];
