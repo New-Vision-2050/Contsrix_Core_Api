@@ -48,7 +48,7 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('message', 'PCloud export queued')
             ->assertJsonPath('payload.project_id', (string) $project->id)
             ->assertJsonPath('payload.mode', 'queue')
-            ->assertJsonPath('payload.path', 'Constrix Archive/PCloud Queue Project/الصيانة والطوارئ');
+            ->assertJsonPath('payload.path', 'Constrix Archive/Attendance Report Company/المشاريع/PCloud Queue Project/الصيانة والطوارئ');
 
         $runId = (string) $response->json('payload.run_id');
         $this->assertNotSame('', $runId);
