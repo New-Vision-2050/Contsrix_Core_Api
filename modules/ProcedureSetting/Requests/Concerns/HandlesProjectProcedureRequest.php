@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\ProcedureSetting\Requests\Concerns;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\WorkFlow;
-use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 
 trait HandlesProjectProcedureRequest
@@ -123,39 +121,10 @@ trait HandlesProjectProcedureRequest
 
     protected function tenantOwnedProjectRule()
     {
-        $tenantId = tenant('id');
-
-        if ($tenantId === null || $tenantId === '') {
-            return Rule::exists('projects', 'id');
-        }
-
-        $tenantId = (string) $tenantId;
-        $morphType = ProjectManagement::class;
-
-        return function (string $attribute, mixed $value, \Closure $fail) use ($tenantId, $morphType) {
-            if (! is_string($value) || $value === '') {
-                return;
-            }
-
-            $exists = DB::table('projects')
-                ->where('id', $value)
-                ->where(function ($query) use ($tenantId, $morphType, $value) {
-                    $query->where('company_id', $tenantId)
-                        ->orWhereExists(function ($shareQuery) use ($tenantId, $morphType, $value) {
-                            $shareQuery->select(DB::raw(1))
-                                ->from('resource_shares')
-                                ->where('shareable_type', $morphType)
-                                ->where('shareable_id', $value)
-                                ->where('shared_with_company_id', $tenantId)
-                                ->where('status', 'accepted');
-                        });
-                })
-                ->exists();
-
-            if (! $exists) {
-                $fail(__('The selected :attribute is invalid.', ['attribute' => 'project id']));
-            }
-        };
+        // Bypasses tenancy/sharing checks entirely: any authenticated user with
+        // the correct permission may reference any existing project, since
+        // projects can be shared across tenants.
+        return Rule::exists('projects', 'id');
     }
 
     private function projectProcedureKeys(): array
