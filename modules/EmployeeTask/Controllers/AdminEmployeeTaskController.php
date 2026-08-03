@@ -101,6 +101,17 @@ class AdminEmployeeTaskController extends Controller
         })->values();
     }
 
+    /**
+     * Pending tasks where the admin is an action-taker in the current
+     * process step. Shared by inbox() and inboxCounts() so the two
+     * endpoints never drift out of sync.
+     */
+    private function getInboxTaskItems(string $adminId, array $filters): \Illuminate\Support\Collection
+    {
+        return $this->requestService->inboxAll($adminId, $filters)
+            ->values();
+    }
+
     public function index(): JsonResponse
     {
         $filters = request()->only(['user_id', 'status', 'task_date', 'date_from', 'date_to']);
@@ -134,8 +145,7 @@ class AdminEmployeeTaskController extends Controller
 
         $type = $filters['type'] ?? null;
 
-        $taskItems         = $this->requestService->inboxAll($adminId, $filters)
-            ->reject(fn ($t) => $t->user_id === $adminId);
+        $taskItems         = $this->getInboxTaskItems($adminId, $filters);
         $extItems          = $this->applyDynamicActionTakerResolution(
             $this->extensionService->listInboxAllForAdmin($adminId, $filters),
             $adminId,
@@ -158,9 +168,13 @@ class AdminEmployeeTaskController extends Controller
             ->merge($extItems->map(fn ($e)   => ['_type' => 'extension_request', '_model' => $e, '_at' => $e->created_at]))
             ->merge($approvalItems->map(fn ($a) => ['_type' => 'task_approval',  '_model' => $a, '_at' => $a->created_at]))
             ->merge($endRequestItems->map(fn ($r) => ['_type' => 'end_request',  '_model' => $r, '_at' => $r->created_at]))
-            ->merge($startRequestItems->map(fn ($r) => ['_type' => 'start_request', '_model' => $r, '_at' => $r->created_at]))
-            ->sortByDesc('_at')
-            ->values();
+            ->merge($startRequestItems->map(fn ($r) => ['_type' => 'start_request', '_model' => $r, '_at' => $r->created_at]));
+
+        if ($type !== null) {
+            $combined = $combined->filter(fn ($item) => $item['_type'] === $type);
+        }
+
+        $combined = $combined->sortByDesc('_at')->values();
 
         $direction = str_ends_with($sort, '_desc') ? 'desc' : 'asc';
         $column    = str_replace(['_desc', '_asc'], '', $sort);
@@ -434,7 +448,7 @@ class AdminEmployeeTaskController extends Controller
         $adminId = (string) Auth::id();
         $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to']);
 
-        $taskCount         = $this->requestService->inboxAll($adminId, $filters)->where('status', 'pending')->count();
+        $taskCount         = $this->getInboxTaskItems($adminId, $filters)->count();
         $extCount          = $this->applyDynamicActionTakerResolution(
             $this->extensionService->listInboxAllForAdmin($adminId, $filters),
             $adminId,
