@@ -205,7 +205,7 @@ class AuthService
         $firstLogin = $user->password == null ? 1 : 0;
 
         if ($user->password == null) {
-            $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier(), $firstLogin);
+            $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier(), $firstLogin, ["mail", "sms"]);
             return [$loginWay->id, null, $step, 1, $firstLogin];
         }
 

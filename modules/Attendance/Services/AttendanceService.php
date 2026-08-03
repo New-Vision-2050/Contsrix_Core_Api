@@ -176,11 +176,18 @@ class AttendanceService
         $startTimeStr = $startDateTime->format('Y-m-d H:i:s');
         $endTimeStr   = $endDateTime->format('Y-m-d H:i:s');
 
+        $earlyMinutes = max(
+            (int) ($constraints['early_clock_in_minutes'] ?? 0),
+            \Modules\Attendance\Support\EarlyClockInRules::minutes(
+                is_array($constraints['early_clock_in_rules'] ?? null) ? $constraints['early_clock_in_rules'] : null
+            ),
+        );
+
         return $this->windowCalculator->compute(new ShiftWindowInput(
             scheduledStart: CarbonImmutable::parse($startTimeStr, $timezone),
             scheduledEnd: CarbonImmutable::parse($endTimeStr, $timezone),
             clockIn: $clockIn,
-            earlyWindowMinutes: (int) ($constraints['early_clock_in_minutes'] ?? 0),
+            earlyWindowMinutes: $earlyMinutes,
             extensionMinutes: (int) ($constraints['extension_minutes'] ?? 0),
             canClockInBeforeMinutes: isset($constraints['can_clock_in_before_minutes'])
                 ? (int) $constraints['can_clock_in_before_minutes']
@@ -210,7 +217,6 @@ class AttendanceService
         Carbon $endDateTime
     ): void {
         $clockInMoment = CarbonImmutable::parse($dto->getClockInTime(), $timezone);
-        $details = ['window' => $window->toResponseArray()];
 
         if ($clockInMoment->lessThan($window->earliestClockIn)) {
             throw AttendanceException::clockInBlocked([[
@@ -218,7 +224,6 @@ class AttendanceService
                 'severity' => 'blocking',
                 'message'  => 'Clock-in is too early. You can clock in from '
                     . $window->earliestClockIn->format('H:i') . '.',
-                'details'  => $details,
             ]]);
         }
 
@@ -244,7 +249,6 @@ class AttendanceService
                 'type'     => $type,
                 'severity' => 'blocking',
                 'message'  => $message,
-                'details'  => $details,
             ]]);
         }
     }
