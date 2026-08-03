@@ -388,6 +388,37 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         ]);
     }
 
+    public function test_project_procedure_list_is_accessible_from_shared_company(): void
+    {
+        $project = $this->createProject();
+        $procedureSetting = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createReceiverCompany();
+
+        $this->createAcceptedShare($project, $receiverCompany);
+
+        setPermissionsTeamId($receiverCompany->id);
+        $permissions = [
+            Permission::PROJECT_MANAGEMENT_VIEW(),
+        ];
+        foreach ($permissions as $permission) {
+            SpatiePermission::firstOrCreate(
+                ['name' => $permission, 'guard_name' => 'api'],
+                ['name' => $permission, 'guard_name' => 'api', 'company_id' => $receiverCompany->id],
+            );
+        }
+        $this->actor->givePermissionTo($permissions);
+        setPermissionsTeamId($this->company->id);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->getJson("/api/v1/procedure-settings/internal-procedures?type=project_procedure&project_id={$project->id}")
+            ->assertOk();
+
+        $ids = collect($response->json('payload'))->pluck('id')->all();
+
+        $this->assertContains($procedureSetting->id, $ids);
+    }
+
     public function test_project_procedure_step_can_use_receiver_company_action_takers(): void
     {
         $project = $this->createProject();

@@ -94,10 +94,12 @@ class ProjectProcedureRepository extends BaseRepository
                 $parentProcedureSettingId,
                 $companyId
             ): void {
-                $query->where('type', $procedureType)
+                $query->withoutGlobalScopes()
+                    ->where('type', $procedureType)
                     ->where('company_id', $companyId)
                     ->whereHas('workFlow', static function ($query) use ($projectId, $procedureType, $companyId): void {
-                        $query->where('project_id', $projectId)
+                        $query->withoutGlobalScopes()
+                            ->where('project_id', $projectId)
                             ->where('type', $procedureType)
                             ->where('company_id', $companyId);
                     });

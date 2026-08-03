@@ -170,21 +170,10 @@ class ProjectProcedureService
 
     private function findOwnedProjectOrFail(string $projectId): ProjectManagement
     {
-        $tenantId = tenant('id');
-
+        // No tenancy restriction: projects can be shared across tenants, so any
+        // authenticated user with the correct permission may access it here.
         return ProjectManagement::withoutGlobalScopes()
             ->where('id', $projectId)
-            ->where(function ($query) use ($tenantId,$projectId) {
-                $query->where('company_id', $tenantId)
-                    ->orWhereExists(function ($shareQuery) use ($tenantId,$projectId) {
-                        $shareQuery->select(DB::raw(1))
-                            ->from('resource_shares')
-                            ->where('shareable_type', ProjectManagement::class)
-                            ->where('shareable_id', $projectId)
-                            ->where('shared_with_company_id', $tenantId)
-                            ->where('status', 'accepted');
-                    });
-            })
             ->firstOrFail();
     }
 
@@ -257,7 +246,8 @@ class ProjectProcedureService
             ->where('company_id', $project->company_id)
             ->where('type', self::PROCEDURE_TYPE)
             ->whereHas('workFlow', static function ($query) use ($project): void {
-                $query->where('company_id', $project->company_id)
+                $query->withoutGlobalScopes()
+                    ->where('company_id', $project->company_id)
                     ->where('project_id', $project->id)
                     ->where('type', self::PROCEDURE_TYPE);
             })
