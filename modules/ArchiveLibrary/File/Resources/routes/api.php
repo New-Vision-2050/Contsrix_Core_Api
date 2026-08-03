@@ -15,6 +15,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/', [FileController::class, 'store']);
 //        ->permission(Permission::FILE_CREATE());
 
+    Route::post('/employee-archive/sync', [FileController::class, 'syncEmployeeArchive']);
+
     Route::post('/export', [FileController::class, 'export'])
         ->name('file.export');
 //        ->permission(Permission::FILE_EXPORT());

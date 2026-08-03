@@ -27,7 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )->withCommands([
         \App\Console\Commands\TestMailSendCommand::class,
         \App\Console\Commands\AuditAbsencesCommand::class,
-                           ])
+        \App\Console\Commands\SyncEmployeeArchiveCommand::class,
+    ])
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'lang' => \App\Http\Middleware\Localization::class,
