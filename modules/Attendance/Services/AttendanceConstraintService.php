@@ -79,13 +79,7 @@ class AttendanceConstraintService
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
         if ($constraints->isEmpty()) {
-
-            return [
-                'constraint_type' => 'none applied to user and no default constraint',
-                'severity' => $config['severity'] ?? 'high',
-                'message' => 'Location data is required to validate against branch locations but was not provided.',
-                'details' => ['reason' => 'Missing GPS data from user.']
-            ];
+            return [];
         }
 
         foreach ($constraints as $constraint) {

@@ -64,12 +64,7 @@ class AttendanceController extends Controller
                 message: 'Successfully clocked in.'
             );
         } catch (AttendanceException $e) {
-            // Return a plain readable string only. Json::error merges `data` into
-            // message, which made mobile dump the full violations/window JSON on screen.
-            return Json::error(
-                description: $e->getMessage(),
-                httpStatus: $e->getStatusCode()
-            );
+            return $this->attendanceErrorResponse($e);
         }
     }
 
@@ -78,23 +73,40 @@ class AttendanceController extends Controller
      */
     public function clockOut(ClockOutRequest $request): JsonResponse
     {
-        $attendance = $this->clockOutService->execute($request->toDTO());
+        try {
+            $attendance = $this->clockOutService->execute($request->toDTO());
 
-        // Non-blocking post-clock-out constraint logging.
-        $violations = $this->constraintService->validateAttendance($attendance, $request->all());
-        foreach ($violations as $violationData) {
-            if (isset($violationData['constraint_id'])) {
+            // Non-blocking post-clock-out constraint logging.
+            $violations = $this->constraintService->validateAttendance($attendance, $request->all());
+            foreach ($violations as $violationData) {
+                if (!is_array($violationData) || !isset($violationData['constraint_id'])) {
+                    continue;
+                }
                 $constraint = AttendanceConstraint::find($violationData['constraint_id']);
                 if ($constraint) {
                     $this->constraintService->createViolation($attendance, $constraint, $violationData);
                 }
             }
-        }
 
-        return Json::item(
-            (new AttendancePresenter($attendance))->present(),
-            message: 'Successfully clocked out'
-        );
+            return Json::item(
+                (new AttendancePresenter($attendance))->present(),
+                message: 'Successfully clocked out'
+            );
+        } catch (AttendanceException $e) {
+            return $this->attendanceErrorResponse($e);
+        }
+    }
+
+    /**
+     * Same envelope as success responses: message is a plain string, never an object.
+     * (Json::error nests type/code/description and merges data into message — mobile dumps that.)
+     */
+    private function attendanceErrorResponse(AttendanceException $e): JsonResponse
+    {
+        return Json::make([
+            'code' => 'ATTENDANCE_ERROR',
+            'message' => $e->getMessage(),
+        ], $e->getStatusCode());
     }
 
     /**
@@ -102,17 +114,21 @@ class AttendanceController extends Controller
      */
     public function startBreak(BreakRequest $request): JsonResponse
     {
-        $attendance = $this->attendanceService->startBreak(
-            $request->user()->id,
-            $request->input('notes')
-        );
+        try {
+            $attendance = $this->attendanceService->startBreak(
+                $request->user()->id,
+                $request->input('notes')
+            );
 
-        $presenter = new AttendancePresenter($attendance);
+            $presenter = new AttendancePresenter($attendance);
 
-        return Json::item(
-            $presenter->present(),
-            message: 'Break started successfully'
-        );
+            return Json::item(
+                $presenter->present(),
+                message: 'Break started successfully'
+            );
+        } catch (AttendanceException $e) {
+            return $this->attendanceErrorResponse($e);
+        }
     }
 
     /**
@@ -120,28 +136,32 @@ class AttendanceController extends Controller
      */
     public function endBreak(BreakRequest $request): JsonResponse
     {
-        $attendance = $this->attendanceService->endBreak(
-            $request->user()->id,
-            $request->input('notes')
-        );
+        try {
+            $attendance = $this->attendanceService->endBreak(
+                $request->user()->id,
+                $request->input('notes')
+            );
 
-        // Validate break time limits
-        $violationData = $this->constraintService->validateBreakEnd($attendance);
+            // Validate break time limits
+            $violationData = $this->constraintService->validateBreakEnd($attendance);
 
-        if ($violationData) {
-            // If a violation is found, create a record for it
-            $constraint = AttendanceConstraint::find($violationData['constraint_id']);
-            if ($constraint) {
-                $this->constraintService->createViolation($attendance, $constraint, $violationData);
+            if ($violationData) {
+                // If a violation is found, create a record for it
+                $constraint = AttendanceConstraint::find($violationData['constraint_id']);
+                if ($constraint) {
+                    $this->constraintService->createViolation($attendance, $constraint, $violationData);
+                }
             }
+
+            $presenter = new AttendancePresenter($attendance);
+
+            return Json::item(
+                $presenter->present(),
+                message: 'Break ended successfully'
+            );
+        } catch (AttendanceException $e) {
+            return $this->attendanceErrorResponse($e);
         }
-
-        $presenter = new AttendancePresenter($attendance);
-
-        return Json::item(
-            $presenter->present(),
-            message: 'Break ended successfully'
-        );
     }
 
     /**

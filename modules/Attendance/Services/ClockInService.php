@@ -35,6 +35,8 @@ final class ClockInService
         $violations = $this->mockAttendanceService->validateClockIn($dto, $requestData);
 
         if (!empty($violations)) {
+            // Normalize a single associative violation into a list so the exception
+            // always extracts a plain string message (never dumps details objects).
             throw AttendanceException::clockInBlocked($violations);
         }
 
