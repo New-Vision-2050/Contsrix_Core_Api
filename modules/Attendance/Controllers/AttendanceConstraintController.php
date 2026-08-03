@@ -1309,6 +1309,8 @@ class AttendanceConstraintController extends Controller
 
     /**
      * Get constraint-level rules for a given constraint.
+     *
+     * All duration fields are minutes (never hours).
      */
     public function getRules(string $constraintId): JsonResponse
     {
@@ -1323,7 +1325,7 @@ class AttendanceConstraintController extends Controller
         $earlyClockInMinutes  = null;
         $workingHours         = null;
         $canClockInBefore     = null;
-        $extensionHoursShift  = null;
+        $extensionMinutes     = null;
 
         foreach ($allDays as $day) {
             $dayData = $schedule[$day] ?? [];
@@ -1336,8 +1338,6 @@ class AttendanceConstraintController extends Controller
             }
 
             if ($earlyClockInMinutes === null && isset($dayData['early_clock_in_rules'])) {
-                // minutes() returns 0 for a configured zero — keep the 0-vs-null distinction
-                // (key present → numeric, key absent → null).
                 $earlyClockInMinutes = \Modules\Attendance\Support\EarlyClockInRules::minutes(
                     is_array($dayData['early_clock_in_rules']) ? $dayData['early_clock_in_rules'] : null
                 );
@@ -1351,43 +1351,57 @@ class AttendanceConstraintController extends Controller
                 $canClockInBefore = (int) $dayData['clock_in_deadline_rules']['can_clock_in_before_minutes'];
             }
 
-            if ($extensionHoursShift === null && isset($dayData['extension_rules']['extension_hours'])) {
-                $extensionHoursShift = (float) $dayData['extension_rules']['extension_hours'];
+            if ($extensionMinutes === null) {
+                $extRules = is_array($dayData['extension_rules'] ?? null) ? $dayData['extension_rules'] : [];
+                if (isset($extRules['extension_minutes'])) {
+                    $extensionMinutes = (int) $extRules['extension_minutes'];
+                } elseif (isset($extRules['extension_hours'])) {
+                    // Legacy hours → minutes
+                    $extensionMinutes = (int) round(((float) $extRules['extension_hours']) * 60);
+                }
             }
 
             if ($latenessMinutes !== null && $earlyClockInMinutes !== null && $workingHours !== null
-                && $canClockInBefore !== null && $extensionHoursShift !== null) {
+                && $canClockInBefore !== null && $extensionMinutes !== null) {
                 break;
             }
         }
 
-        $overtimeRules = $config['time_rules']['overtime_rules'] ?? [];
+        $overtimeRules = \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray(
+            $config['time_rules']['overtime_rules'] ?? []
+        )->toArray();
+
+        // Column stores hours; API always exposes minutes.
+        $maxOverTimeMinutes = (int) round(((float) ($constraint->max_over_time ?? 0)) * 60);
 
         return Json::item([
-            'constraint_id'          => $constraint->id,
-            'max_over_time'          => $constraint->max_over_time,
-            'out_zone_minutes'       => $constraint->out_zone_minutes,
-            'max_working_hours'      => $constraint->max_working_hours,
-            'out_zone_rules'         => $constraint->out_zone_rules,
-            'lateness_minutes'       => $latenessMinutes,
-            'early_clock_in_minutes' => $earlyClockInMinutes,
-            'working_hours'          => $workingHours,
-            'can_clock_in_before'    => $canClockInBefore,
-            'extension_hours_shift'  => $extensionHoursShift,
-            'overtime_rules'         => \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($overtimeRules)->toArray(),
+            'constraint_id'                              => $constraint->id,
+            'max_over_time'                              => $maxOverTimeMinutes,
+            'out_zone_minutes'                           => $constraint->out_zone_minutes,
+            'max_working_hours'                          => $constraint->max_working_hours,
+            'out_zone_rules'                             => $constraint->out_zone_rules,
+            'lateness_minutes'                           => $latenessMinutes,
+            'early_clock_in_minutes'                     => $earlyClockInMinutes,
+            'working_hours'                              => $workingHours,
+            'can_clock_in_before'                        => $canClockInBefore,
+            'extension_minutes'                          => $extensionMinutes,
+            // Alias kept for older FE builds — same value, still minutes (not hours).
+            'extension_hours_shift'                      => $extensionMinutes,
+            'is_overtime_before_early_clock_in'          => $overtimeRules['is_overtime_before_early_clock_in'],
+            'is_overtime_after_extension_hours_shift'    => $overtimeRules['is_overtime_after_extension_hours_shift'],
+            'is_after_finish_working_hours'              => $overtimeRules['is_after_finish_working_hours'],
+            'overtime_rules'                             => $overtimeRules,
         ], message: 'Constraint rules retrieved successfully');
     }
 
     /**
-     * Update constraint-level rules (lateness, early clock-in, max overtime,
-     * working hours cap, out-of-zone hours and out-of-zone approval rules).
+     * Update constraint-level rules.
      *
-     * lateness_minutes, early_clock_in_minutes, and working_hours are applied
-     * uniformly to every day that already exists in the weekly_schedule.
-     * Passing null for lateness_minutes / early_clock_in_minutes clears the rule.
+     * All duration inputs are minutes (never hours):
+     *  - early_clock_in_minutes, can_clock_in_before, extension_minutes / extension_hours_shift,
+     *    max_over_time, out_zone_minutes
      *
-     * out_zone_rules is written to both the dedicated column and
-     * constraint_config.time_rules.out_zone_rules so both access paths stay in sync.
+     * Overtime flags may be sent flat on the body or nested under overtime_rules.
      */
     public function updateRules(Request $request, string $constraintId): JsonResponse
     {
@@ -1397,21 +1411,29 @@ class AttendanceConstraintController extends Controller
             'lateness_minutes'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
             'early_clock_in_minutes'                      => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
             'can_clock_in_before'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1440'],
-            'max_over_time'                               => ['sometimes', 'nullable', 'integer', 'min:0'],
+            // Minutes (API). Stored internally as hours on the column for domain calculators.
+            'max_over_time'                               => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1440'],
             'working_hours'                               => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:24'],
-            'out_zone_minutes'                             => ['sometimes', 'nullable', 'integer', 'min:0'],
-            'max_working_hours'                            => ['sometimes', 'nullable', 'integer', 'min:1', 'max:24'],
+            'out_zone_minutes'                            => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'max_working_hours'                           => ['sometimes', 'nullable', 'integer', 'min:1', 'max:24'],
             'out_zone_rules'                              => ['sometimes', 'nullable', 'array'],
             'out_zone_rules.requires_approval'            => ['sometimes', 'boolean'],
             'out_zone_rules.approval_threshold_minutes'   => ['sometimes', 'integer', 'min:0'],
             'out_zone_rules.unit'                         => ['sometimes', 'string', 'in:minute,hour,day'],
-            'extension_hours_shift'                       => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:12'],
-            'extention_hours_shift'                       => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:12'],
+            // Canonical minutes field (+ legacy aliases — all interpreted as minutes).
+            'extension_minutes'                           => ['sometimes', 'nullable', 'integer', 'min:0', 'max:720'],
+            'extension_hours_shift'                       => ['sometimes', 'nullable', 'integer', 'min:0', 'max:720'],
+            'extention_hours_shift'                       => ['sometimes', 'nullable', 'integer', 'min:0', 'max:720'],
             'overtime_rules'                              => ['sometimes', 'nullable', 'array'],
             'overtime_rules.is_overtime_before_early_clock_in'            => ['sometimes', 'boolean'],
             'overtime_rules.is_overtime_after_extension_hours_shift'      => ['sometimes', 'boolean'],
             'overtime_rules.is_overtime_after_extention_hours_shift'      => ['sometimes', 'boolean'],
             'overtime_rules.is_after_finish_working_hours'                => ['sometimes', 'boolean'],
+            // Flat overtime flags (same meaning as overtime_rules.*).
+            'is_overtime_before_early_clock_in'           => ['sometimes', 'boolean'],
+            'is_overtime_after_extension_hours_shift'     => ['sometimes', 'boolean'],
+            'is_overtime_after_extention_hours_shift'     => ['sometimes', 'boolean'],
+            'is_after_finish_working_hours'               => ['sometimes', 'boolean'],
         ]);
 
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
@@ -1419,7 +1441,11 @@ class AttendanceConstraintController extends Controller
         $updates    = ['updated_by' => Auth::id()];
 
         if ($request->has('max_over_time')) {
-            $updates['max_over_time'] = $request->input('max_over_time');
+            $minutes = $request->input('max_over_time');
+            // Persist hours for domain (ShiftWindowCalculator maxOverTimeHours).
+            $updates['max_over_time'] = $minutes !== null
+                ? round(((int) $minutes) / 60, 4)
+                : null;
         }
 
         if ($request->has('out_zone_minutes')) {
@@ -1437,17 +1463,28 @@ class AttendanceConstraintController extends Controller
             'working_hours',
             'out_zone_rules',
             'out_zone_minutes',
+            'extension_minutes',
             'extension_hours_shift',
             'extention_hours_shift',
             'overtime_rules',
+            'is_overtime_before_early_clock_in',
+            'is_overtime_after_extension_hours_shift',
+            'is_overtime_after_extention_hours_shift',
+            'is_after_finish_working_hours',
         ]);
 
         if ($hasConfigUpdate) {
             $config = $constraint->constraint_config ?? [];
 
+            $extensionInput = $request->has('extension_minutes')
+                ? $request->input('extension_minutes')
+                : ($request->hasAny(['extension_hours_shift', 'extention_hours_shift'])
+                    ? $request->input('extension_hours_shift', $request->input('extention_hours_shift'))
+                    : null);
+            $hasExtension = $request->hasAny(['extension_minutes', 'extension_hours_shift', 'extention_hours_shift']);
+
             foreach ($allDays as $day) {
                 if ($request->has('lateness_minutes')) {
-                    // Strict lateness: always stored as 0 regardless of the submitted value.
                     $config['time_rules']['weekly_schedule'][$day]['lateness_rules'] =
                         ['lateness_period' => 0, 'lateness_unit' => 'minute', 'grace_period_minutes' => 0];
                 }
@@ -1474,18 +1511,43 @@ class AttendanceConstraintController extends Controller
                     }
                 }
 
-                if ($request->has('extension_hours_shift') || $request->has('extention_hours_shift')) {
-                    $hours = $request->input('extension_hours_shift', $request->input('extention_hours_shift'));
-                    $config['time_rules']['weekly_schedule'][$day]['extension_rules'] = $hours !== null
-                        ? ['extension_hours' => (float) $hours]
-                        : null;
+                if ($hasExtension) {
+                    if ($extensionInput === null) {
+                        $config['time_rules']['weekly_schedule'][$day]['extension_rules'] = null;
+                    } else {
+                        $mins = (int) $extensionInput;
+                        $config['time_rules']['weekly_schedule'][$day]['extension_rules'] = [
+                            'extension_minutes' => $mins,
+                            // Dual-write legacy hours key so older readers keep working.
+                            'extension_hours' => round($mins / 60, 4),
+                        ];
+                    }
                 }
             }
 
-            if ($request->has('overtime_rules')) {
-                // Normalise (also folds the legacy `extention` misspelling into the canonical key).
+            $hasOtUpdate = $request->has('overtime_rules')
+                || $request->hasAny([
+                    'is_overtime_before_early_clock_in',
+                    'is_overtime_after_extension_hours_shift',
+                    'is_overtime_after_extention_hours_shift',
+                    'is_after_finish_working_hours',
+                ]);
+
+            if ($hasOtUpdate) {
+                $otSource = is_array($request->input('overtime_rules')) ? $request->input('overtime_rules') : [];
+                // Flat body flags override / fill nested overtime_rules.
+                foreach ([
+                    'is_overtime_before_early_clock_in',
+                    'is_overtime_after_extension_hours_shift',
+                    'is_overtime_after_extention_hours_shift',
+                    'is_after_finish_working_hours',
+                ] as $flag) {
+                    if ($request->has($flag)) {
+                        $otSource[$flag] = $request->input($flag);
+                    }
+                }
                 $config['time_rules']['overtime_rules'] =
-                    \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($request->input('overtime_rules'))->toArray();
+                    \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($otSource)->toArray();
             }
 
             if ($request->has('out_zone_rules') || $request->has('out_zone_minutes')) {
@@ -1508,23 +1570,38 @@ class AttendanceConstraintController extends Controller
         $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
 
         $fresh = $constraint->fresh();
+        $ot = \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray(
+            $fresh->constraint_config['time_rules']['overtime_rules'] ?? []
+        )->toArray();
+
+        $extensionOut = null;
+        if ($request->hasAny(['extension_minutes', 'extension_hours_shift', 'extention_hours_shift'])) {
+            $extensionOut = $request->input(
+                'extension_minutes',
+                $request->input('extension_hours_shift', $request->input('extention_hours_shift'))
+            );
+        }
+
+        $maxOtOut = $request->has('max_over_time')
+            ? $request->input('max_over_time')
+            : (int) round(((float) ($fresh->max_over_time ?? 0)) * 60);
 
         return Json::item([
-            'constraint_id'          => $fresh->id,
-            'max_over_time'          => $fresh->max_over_time,
-            'out_zone_minutes'        => $fresh->out_zone_minutes,
-            'max_working_hours'       => $fresh->max_working_hours,
-            'out_zone_rules'         => $fresh->out_zone_rules,
-            'lateness_minutes'       => $request->has('lateness_minutes')       ? $request->input('lateness_minutes')       : null,
-            'early_clock_in_minutes' => $request->has('early_clock_in_minutes') ? $request->input('early_clock_in_minutes') : null,
-            'can_clock_in_before'    => $request->has('can_clock_in_before')    ? $request->input('can_clock_in_before')    : null,
-            'working_hours'          => $request->has('working_hours')          ? $request->input('working_hours')          : null,
-            'extension_hours_shift'  => $request->hasAny(['extension_hours_shift', 'extention_hours_shift'])
-                ? $request->input('extension_hours_shift', $request->input('extention_hours_shift'))
-                : null,
-            'overtime_rules'         => \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray(
-                $fresh->constraint_config['time_rules']['overtime_rules'] ?? []
-            )->toArray(),
+            'constraint_id'                              => $fresh->id,
+            'max_over_time'                              => $maxOtOut,
+            'out_zone_minutes'                           => $fresh->out_zone_minutes,
+            'max_working_hours'                          => $fresh->max_working_hours,
+            'out_zone_rules'                             => $fresh->out_zone_rules,
+            'lateness_minutes'                           => $request->has('lateness_minutes') ? $request->input('lateness_minutes') : null,
+            'early_clock_in_minutes'                     => $request->has('early_clock_in_minutes') ? $request->input('early_clock_in_minutes') : null,
+            'can_clock_in_before'                        => $request->has('can_clock_in_before') ? $request->input('can_clock_in_before') : null,
+            'working_hours'                              => $request->has('working_hours') ? $request->input('working_hours') : null,
+            'extension_minutes'                          => $extensionOut,
+            'extension_hours_shift'                      => $extensionOut,
+            'is_overtime_before_early_clock_in'          => $ot['is_overtime_before_early_clock_in'],
+            'is_overtime_after_extension_hours_shift'    => $ot['is_overtime_after_extension_hours_shift'],
+            'is_after_finish_working_hours'              => $ot['is_after_finish_working_hours'],
+            'overtime_rules'                             => $ot,
         ], message: 'Constraint rules updated successfully');
     }
 

@@ -537,7 +537,12 @@ class UserAttendanceService
             'can_clock_in' => $canClockIn,
             'can_clock_out' => $currentAttendance !== null && $isActiveForDisplay,
             'early_clock_in_rules' => $this->buildEarlyClockInRulesForResponse($earlyClockInRules),
-            'extension_hours_shift' => isset($workRules['extension_minutes']) ? round(((int) $workRules['extension_minutes']) / 60, 2) : 0,
+            'extension_hours_shift' => isset($workRules['extension_minutes'])
+                ? (int) $workRules['extension_minutes']
+                : 0,
+            'extension_minutes' => isset($workRules['extension_minutes'])
+                ? (int) $workRules['extension_minutes']
+                : 0,
             'can_clock_in_before' => $workRules['can_clock_in_before_minutes'] ?? null,
             'attendance' => $attendance,
         ], $extra);
@@ -564,7 +569,12 @@ class UserAttendanceService
 
         $extensionMinutes = (int) ($workRules['extension_minutes'] ?? 0);
         if ($extensionMinutes <= 0) {
-            $extensionMinutes = (int) round(((float) (($workRules['extension_rules']['extension_hours'] ?? 0))) * 60);
+            $extRules = is_array($workRules['extension_rules'] ?? null) ? $workRules['extension_rules'] : [];
+            if (isset($extRules['extension_minutes'])) {
+                $extensionMinutes = (int) $extRules['extension_minutes'];
+            } else {
+                $extensionMinutes = (int) round(((float) ($extRules['extension_hours'] ?? 0)) * 60);
+            }
         }
 
         $canClockInBefore = array_key_exists('can_clock_in_before_minutes', $workRules)
