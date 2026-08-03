@@ -272,7 +272,9 @@ class AttendanceCalendarService
             );
         }
 
-        $hasLate = $dayAttendances->contains(fn ($a) => $this->isTruthy($a->is_late ?? null));
+        // Late = clock-in AFTER shift start only.
+        // Early clock-out (before required hours) is NOT late — show present + hours worked.
+        $hasLate = $this->hasLateArrival($dayAttendances);
         $hasAbsent = $dayAttendances->contains(fn ($a) =>
             $this->isTruthy($a->is_absent ?? null) || ($a->status ?? null) === Attendance::STATUS_ABSENT
         );
@@ -321,6 +323,34 @@ class AttendanceCalendarService
             $workHours,
             $dayAttendances
         );
+    }
+
+    /**
+     * Strict lateness for calendar: clock_in > scheduled start.
+     * Does not treat early departure or a stale is_late flag as late.
+     */
+    private function hasLateArrival(Collection $dayAttendances): bool
+    {
+        foreach ($dayAttendances as $attendance) {
+            if (empty($attendance->clock_in_time) || empty($attendance->start_time)) {
+                continue;
+            }
+
+            $tz = $attendance->timezone ?: $this->getTimezone();
+
+            try {
+                $clockIn = $this->toCarbon($attendance->clock_in_time, $tz);
+                $scheduledStart = $this->toCarbon($attendance->start_time, $tz);
+            } catch (\Exception) {
+                continue;
+            }
+
+            if ($clockIn->greaterThan($scheduledStart)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -382,6 +412,11 @@ class AttendanceCalendarService
 
         $totalMinutes = 0;
         foreach ($attendances as $attendance) {
+            // Only rows with an actual clock-in contribute worked hours
+            // (ignore waiting/absent placeholders that can inflate the day total).
+            if (empty($attendance->clock_in_time)) {
+                continue;
+            }
             $totalMinutes += $this->calculateWorkedMinutes($attendance);
         }
 

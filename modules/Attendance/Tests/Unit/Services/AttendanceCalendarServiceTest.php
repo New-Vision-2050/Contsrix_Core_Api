@@ -90,6 +90,42 @@ class AttendanceCalendarServiceTest extends TestCase
         $this->assertSame(4.0, $this->totalWorkHours($groupedAttendances));
     }
 
+    public function test_on_time_clock_in_with_early_departure_is_present_not_late(): void
+    {
+        $method = new ReflectionMethod($this->service, 'hasLateArrival');
+        $method->setAccessible(true);
+
+        $attendances = collect([
+            $this->attendance([
+                'start_time' => '2026-08-03 07:30:00',
+                'end_time' => '2026-08-03 16:30:00',
+                'clock_in_time' => '2026-08-03 07:30:00',
+                'clock_out_time' => '2026-08-03 16:12:00',
+                'timezone' => 'Asia/Riyadh',
+                'is_late' => 1,
+                'total_work_hours' => '8.69',
+            ]),
+        ]);
+
+        $this->assertFalse($method->invoke($this->service, $attendances));
+    }
+
+    public function test_clock_in_after_shift_start_is_late(): void
+    {
+        $method = new ReflectionMethod($this->service, 'hasLateArrival');
+        $method->setAccessible(true);
+
+        $attendances = collect([
+            $this->attendance([
+                'start_time' => '2026-08-03 07:30:00',
+                'clock_in_time' => '2026-08-03 07:45:00',
+                'timezone' => 'Asia/Riyadh',
+            ]),
+        ]);
+
+        $this->assertTrue($method->invoke($this->service, $attendances));
+    }
+
     /**
      * @param Collection<string, Collection<int, Attendance>> $groupedAttendances
      */

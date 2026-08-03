@@ -8,27 +8,101 @@ use App\Exceptions\CustomException;
 
 class AttendanceException extends CustomException
 {
-    /** @var array<int, array<string, mixed>> */
+    /** @var array<int, array{type: ?string, severity: ?string, message: ?string}> */
     private array $violations = [];
 
     /**
      * Thrown when a clock-in is blocked by constraint violations.
-     * Carries the violation array so the controller can include it in the response.
+     * Exception message is always a plain readable string — never JSON / nested objects.
      *
-     * @param array<int, array<string, mixed>> $violations
+     * @param array<int|string, mixed> $violations
      */
     public static function clockInBlocked(array $violations): self
     {
-        $message = $violations[0]['message'] ?? 'Clock-in blocked due to constraint violations';
+        $list = self::normalizeViolationList($violations);
+        $message = self::firstReadableMessage($list)
+            ?? 'Clock-in blocked due to constraint violations';
+
         $instance = new self($message, 422);
-        $instance->violations = $violations;
+        // Keep only slim fields so nothing dumps window/details payloads by accident.
+        $instance->violations = array_map(
+            static fn (array $v): array => [
+                'type' => isset($v['type']) && is_string($v['type'])
+                    ? $v['type']
+                    : (isset($v['constraint_type']) && is_string($v['constraint_type']) ? $v['constraint_type'] : null),
+                'severity' => isset($v['severity']) && is_scalar($v['severity']) ? (string) $v['severity'] : null,
+                'message' => isset($v['message']) && is_string($v['message']) ? $v['message'] : null,
+            ],
+            $list
+        );
+
         return $instance;
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array<int, array{type: ?string, severity: ?string, message: ?string}> */
     public function getViolations(): array
     {
         return $this->violations;
+    }
+
+    /**
+     * @param array<int|string, mixed> $violations
+     * @return list<array<string, mixed>>
+     */
+    private static function normalizeViolationList(array $violations): array
+    {
+        if ($violations === []) {
+            return [];
+        }
+
+        // Single associative violation returned instead of a list.
+        if (!array_is_list($violations) && (
+            isset($violations['message'])
+            || isset($violations['constraint_type'])
+            || isset($violations['type'])
+        )) {
+            return [$violations];
+        }
+
+        $out = [];
+        foreach ($violations as $item) {
+            if (is_array($item)) {
+                $out[] = $item;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Prefer the most specific human-readable string available.
+     *
+     * @param list<array<string, mixed>> $list
+     */
+    private static function firstReadableMessage(array $list): ?string
+    {
+        foreach ($list as $violation) {
+            $nested = $violation['details']['violations'] ?? null;
+            if (is_array($nested)) {
+                foreach ($nested as $inner) {
+                    if (is_array($inner) && is_string($inner['message'] ?? null)) {
+                        $text = trim($inner['message']);
+                        if ($text !== '') {
+                            return $text;
+                        }
+                    }
+                }
+            }
+
+            if (is_string($violation['message'] ?? null)) {
+                $text = trim($violation['message']);
+                if ($text !== '') {
+                    return $text;
+                }
+            }
+        }
+
+        return null;
     }
 
     public static function alreadyClockedIn(): self
@@ -96,8 +170,6 @@ class AttendanceException extends CustomException
      */
     public static function cannotRejectApprovedAttendance(): self
     {
-        // You can customize the message and HTTP status code as needed.
-        // 400 (Bad Request) or 409 (Conflict) are good choices.
         return new self('Cannot reject an attendance record that has already been approved.', 409);
     }
 

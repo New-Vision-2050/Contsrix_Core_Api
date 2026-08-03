@@ -732,7 +732,7 @@ final class UserAttendanceHistoryService
     private function buildDayStatusPayload(Collection $attendances, bool $manualHolidayOverride = false): array
     {
         if ($manualHolidayOverride) {
-            $hasLate = $attendances->contains(fn ($a) => $this->isTruthy($a->is_late ?? null));
+            $hasLate = $this->hasLateArrival($attendances);
 
             return [
                 'status'     => 'عطلة',
@@ -758,7 +758,8 @@ final class UserAttendanceHistoryService
         $hasAbsent = $attendances->contains(fn ($a) => $this->isTruthy($a->is_absent ?? null)
             || ($a->status ?? null) === Attendance::STATUS_ABSENT);
 
-        $hasLate = $attendances->contains(fn ($a) => $this->isTruthy($a->is_late ?? null));
+        // Late = clock-in after shift start only (early departure is not late).
+        $hasLate = $this->hasLateArrival($attendances);
 
         if ($hasHoliday) {
             return [
@@ -789,6 +790,33 @@ final class UserAttendanceHistoryService
             'is_absent'  => 0,
             'is_holiday' => 0,
         ];
+    }
+
+    /**
+     * Strict lateness: clock_in > scheduled start. Early clock-out does not count as late.
+     */
+    private function hasLateArrival(Collection $attendances): bool
+    {
+        foreach ($attendances as $attendance) {
+            if (empty($attendance->clock_in_time) || empty($attendance->start_time)) {
+                continue;
+            }
+
+            $tz = $attendance->timezone ?? $this->getTimezone();
+
+            try {
+                $clockIn = $this->toCarbon($attendance->clock_in_time, $tz);
+                $scheduledStart = $this->toCarbon($attendance->start_time, $tz);
+            } catch (\Exception) {
+                continue;
+            }
+
+            if ($clockIn->greaterThan($scheduledStart)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
