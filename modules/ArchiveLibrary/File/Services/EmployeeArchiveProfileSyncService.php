@@ -82,8 +82,7 @@ class EmployeeArchiveProfileSyncService
 
     public function __construct(
         private EmployeeArchiveFileService $employeeArchiveFileService,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{
@@ -103,8 +102,7 @@ class EmployeeArchiveProfileSyncService
         ?string $employeeGlobalId = null,
         bool $dryRun = false,
         ?array $employeeGlobalIds = null,
-    ): array
-    {
+    ): array {
         $summary = $this->emptySummary();
         $employeeGlobalIds = $this->normalizeEmployeeGlobalIds($employeeGlobalId, $employeeGlobalIds);
 
@@ -177,6 +175,7 @@ class EmployeeArchiveProfileSyncService
                         if (! $companyUser) {
                             $summary['employees']++;
                             $summary['skipped']++;
+
                             continue;
                         }
 
@@ -235,7 +234,7 @@ class EmployeeArchiveProfileSyncService
 
         foreach (self::RELATED_MODEL_COLLECTIONS as $modelClass => $config) {
             $modelClass::query()
-                ->withoutTenancy()
+                ->withoutGlobalScopes()
                 ->where('company_id', $companyId)
                 ->where('global_id', $employeeGlobalId)
                 ->orderBy('id')
@@ -295,6 +294,7 @@ class EmployeeArchiveProfileSyncService
 
         if ($result['skipped']) {
             $summary['skipped']++;
+
             return;
         }
 

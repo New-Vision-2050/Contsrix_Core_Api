@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\ArchiveLibrary\File\Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -352,7 +352,7 @@ class EmployeeArchiveSyncCommandTest extends TestCase
 
     private function createSourceMedia(Model $model, string $collection, string $fileName): CustomMedia
     {
-        return CustomMedia::withoutEvents(fn () => CustomMedia::query()->forceCreate([
+        $media = CustomMedia::withoutEvents(fn () => CustomMedia::query()->forceCreate([
             'model_type' => $model::class,
             'model_id' => $model->getKey(),
             'uuid' => (string) Str::uuid(),
@@ -376,6 +376,8 @@ class EmployeeArchiveSyncCommandTest extends TestCase
             'folder_id' => null,
             'file_id' => null,
         ]));
+
+        return $media->fresh();
     }
 
     private function createQualification(Company $company, string $globalId): Qualification

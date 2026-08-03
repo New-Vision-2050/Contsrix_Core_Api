@@ -6,8 +6,8 @@ namespace Modules\ArchiveLibrary\File\Services;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\ArchiveLibrary\File\Models\File;
 use Modules\ArchiveLibrary\File\Repositories\FileRepository;
@@ -20,16 +20,25 @@ class EmployeeArchiveFileService
     public const TYPE_EMPLOYEE = 'employee';
 
     public const SECTION_PERSONAL = 'البيانات الشخصية';
+
     public const SECTION_ACADEMIC = 'البيانات الأكاديمية';
+
     public const SECTION_EMPLOYMENT = 'البيانات الوظيفية';
+
     public const SECTION_FINANCIAL = 'الامتيازات المالية';
 
     public const SUB_PERSONAL_PHOTO = 'الصورة الشخصية';
+
     public const SUB_RESIDENCE_INFO = 'معلومات الإقامة';
+
     public const SUB_QUALIFICATION = 'المؤهل';
+
     public const SUB_COURSES = 'الكورسات';
+
     public const SUB_PROFESSIONAL_CERTIFICATES = 'الشهادات المهنية';
+
     public const SUB_CV = 'السيرة الذاتية';
+
     public const SUB_EXPERIENCE = 'الخبرات';
     public const SUB_JOB_OFFER = 'عرض العمل';
     public const SUB_EMPLOYMENT_CONTRACT = 'العقد الوظيفي';
@@ -301,11 +310,9 @@ class EmployeeArchiveFileService
             return false;
         }
 
-        $attributes = collect($sourceMedia->getAttributes())
-            ->except(['id', 'uuid', 'model_id', 'model_type', 'collection_name', 'file_id', 'folder_id', 'created_at', 'updated_at'])
-            ->all();
+        $attributes = $this->cloneableMediaAttributes($sourceMedia);
 
-        $archiveMedia = new CustomMedia();
+        $archiveMedia = new CustomMedia;
         $archiveMedia->forceFill($attributes);
         $archiveMedia->uuid = (string) Str::uuid();
         $archiveMedia->model_id = $file->id;
@@ -318,6 +325,42 @@ class EmployeeArchiveFileService
         $archiveMedia->save();
 
         return true;
+    }
+
+    private function cloneableMediaAttributes(CustomMedia $sourceMedia): array
+    {
+        $attributes = collect($sourceMedia->getAttributes())
+            ->except(['id', 'uuid', 'model_id', 'model_type', 'collection_name', 'file_id', 'folder_id', 'created_at', 'updated_at'])
+            ->all();
+
+        foreach (['manipulations', 'custom_properties', 'generated_conversions', 'responsive_images'] as $attribute) {
+            $attributes[$attribute] = $this->arrayMediaAttribute($sourceMedia, $attribute, $attributes[$attribute] ?? []);
+        }
+
+        return $attributes;
+    }
+
+    private function arrayMediaAttribute(CustomMedia $sourceMedia, string $attribute, mixed $rawValue): array
+    {
+        $castValue = $sourceMedia->getAttribute($attribute);
+
+        if (is_array($castValue)) {
+            return $castValue;
+        }
+
+        if (is_array($rawValue)) {
+            return $rawValue;
+        }
+
+        if (is_string($rawValue) && $rawValue !== '') {
+            $decoded = json_decode($rawValue, true);
+
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return [];
     }
 
     private function syncArchiveMediaFolder(File $file, string $folderId): bool
