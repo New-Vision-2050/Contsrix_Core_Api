@@ -95,7 +95,7 @@ class AttendanceConstraint extends Model implements Auditable
         'created_by' => 'string',
         'updated_by' => 'string',
         'constraint_config' => 'array',
-        'max_over_time' => 'integer',
+        'max_over_time' => 'float',
         'out_zone_minutes' => 'integer',
         'out_zone_rules' => 'array',
         'max_working_hours' => 'integer',

@@ -211,20 +211,23 @@ class MockAttendanceService
 
     private function resolveExtensionMinutes(array $period, array $workRules): int
     {
-        if (isset($period['extension_minutes'])) {
-            return (int) $period['extension_minutes'];
-        }
-        if (isset($workRules['extension_minutes'])) {
-            return (int) $workRules['extension_minutes'];
+        foreach ([
+            $period['extension_minutes'] ?? null,
+            $workRules['extension_minutes'] ?? null,
+            $period['extension_rules']['extension_minutes'] ?? null,
+            $workRules['extension_rules']['extension_minutes'] ?? null,
+        ] as $candidate) {
+            if ($candidate !== null && is_numeric($candidate)) {
+                return max(0, (int) $candidate);
+            }
         }
 
-        $hours = $period['extension_hours_shift']
-            ?? $period['extension_rules']['extension_hours']
+        // Legacy hours (pre minutes-only Rules API).
+        $legacyHours = $period['extension_rules']['extension_hours']
             ?? $workRules['extension_rules']['extension_hours']
-            ?? $workRules['extension_hours_shift']
             ?? null;
 
-        return $hours !== null ? (int) round(((float) $hours) * 60) : 0;
+        return $legacyHours !== null ? max(0, (int) round(((float) $legacyHours) * 60)) : 0;
     }
 
     private function resolveCanClockInBeforeMinutes(array $period, array $workRules): ?int

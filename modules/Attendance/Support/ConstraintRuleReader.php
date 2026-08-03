@@ -59,14 +59,40 @@ final class ConstraintRuleReader
     }
 
     /**
-     * `extension_hours_shift` converted to minutes. Hours (decimal) per the rules API.
+     * Extension window after shift end, in minutes.
+     * Prefers `extension_minutes` (canonical); falls back to legacy `extension_hours` × 60.
      */
     public function extensionMinutes(string $dayName): int
     {
         $rules = $this->dayRules($dayName, 'extension_rules');
+
+        if (isset($rules['extension_minutes']) && is_numeric($rules['extension_minutes'])) {
+            return max(0, (int) $rules['extension_minutes']);
+        }
+
+        // Legacy Rules API stored hours (decimal).
         $hours = (float) ($rules['extension_hours'] ?? 0);
 
         return max(0, (int) round($hours * 60));
+    }
+
+    /**
+     * Max overtime cap in minutes (API / FE unit).
+     * Column historically stores hours (decimal); convert at the boundary.
+     */
+    public function maxOverTimeMinutes(): int
+    {
+        $hours = (float) ($this->constraintArray['max_over_time'] ?? 0.0);
+
+        return max(0, (int) round($hours * 60));
+    }
+
+    /**
+     * Domain calculator still uses hours (decimal).
+     */
+    public function maxOverTimeHours(): float
+    {
+        return (float) ($this->constraintArray['max_over_time'] ?? 0.0);
     }
 
     /**
@@ -85,11 +111,6 @@ final class ConstraintRuleReader
         $timeRules = $this->timeRules();
 
         return OvertimeFlags::fromArray(is_array($timeRules['overtime_rules'] ?? null) ? $timeRules['overtime_rules'] : []);
-    }
-
-    public function maxOverTimeHours(): float
-    {
-        return (float) ($this->constraintArray['max_over_time'] ?? 0.0);
     }
 
     /**
