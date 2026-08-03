@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Modules\ArchiveLibrary\File\Handlers\DeleteFileHandler;
 use Modules\ArchiveLibrary\File\Handlers\UpdateFileHandler;
+use Modules\ArchiveLibrary\File\Jobs\SyncEmployeeArchiveProfileJob;
 use Modules\ArchiveLibrary\File\Notifications\FileSharedNotification;
 use Modules\ArchiveLibrary\File\Notifications\MultipleFilesSharedNotification;
 use Modules\ArchiveLibrary\File\Presenters\FilePresenter;
@@ -28,6 +29,7 @@ use Modules\ArchiveLibrary\File\Requests\GetFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFilesWithWidgetsRequest;
 use Modules\ArchiveLibrary\File\Requests\ManageFavouritesRequest;
 use Modules\ArchiveLibrary\File\Requests\ShareFileRequest;
+use Modules\ArchiveLibrary\File\Requests\SyncEmployeeArchiveRequest;
 use Modules\ArchiveLibrary\File\Requests\UpdateFileRequest;
 use Modules\ArchiveLibrary\File\Services\FileCRUDService;
 use Modules\ArchiveLibrary\File\Services\FileFavouritesService;
@@ -77,6 +79,35 @@ class FileController extends Controller
         $presenter = new FilePresenter($createdItem);
 
         return Json::item($presenter->getData());
+    }
+
+    public function syncEmployeeArchive(SyncEmployeeArchiveRequest $request): JsonResponse
+    {
+        $companyId = $request->getCompanyId();
+
+        if (! $companyId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Company context is required to sync employee archive from the API',
+            ], 422);
+        }
+
+        $employeeGlobalIds = $request->getEmployeeGlobalIds();
+        $dryRun = $request->isDryRun();
+
+        SyncEmployeeArchiveProfileJob::dispatch($companyId, $dryRun, $employeeGlobalIds);
+
+        return response()->json([
+            'status' => true,
+            'message' => $dryRun
+                ? 'Employee archive sync dry run queued'
+                : 'Employee archive sync queued',
+            'data' => [
+                'company_id' => $companyId,
+                'employee_global_ids' => $employeeGlobalIds,
+                'dry_run' => $dryRun,
+            ],
+        ], 202);
     }
 
     public function update(UpdateFileRequest $request): JsonResponse
