@@ -36,7 +36,7 @@ class ProjectProcedureService
             $parentProcedureSettingId = $parent->id;
         }
 
-        return $this->repository->listForProject($project->id, self::PROCEDURE_TYPE, $parentProcedureSettingId);
+        return $this->repository->listForProject($project->id, self::PROCEDURE_TYPE, $parentProcedureSettingId, $project->company_id);
     }
 
     /**
@@ -70,7 +70,8 @@ class ProjectProcedureService
             $project->id,
             $procedureSettingId,
             self::PROCEDURE_TYPE,
-            $parentProcedureSettingId
+            $parentProcedureSettingId,
+            $project->company_id
         );
     }
 
@@ -125,7 +126,8 @@ class ProjectProcedureService
             $project->id,
             $procedureSettingId,
             self::PROCEDURE_TYPE,
-            $parentProcedureSettingId
+            $parentProcedureSettingId,
+            $project->company_id
         );
 
         return DB::transaction(function () use ($projectProcedure, $procedureData, $metadata): ProjectProcedureSetting {
@@ -155,7 +157,8 @@ class ProjectProcedureService
             $project->id,
             $procedureSettingId,
             self::PROCEDURE_TYPE,
-            $parentProcedureSettingId
+            $parentProcedureSettingId,
+            $project->company_id
         );
 
         DB::transaction(function () use ($projectProcedure): void {
@@ -167,9 +170,21 @@ class ProjectProcedureService
 
     private function findOwnedProjectOrFail(string $projectId): ProjectManagement
     {
+        $tenantId = tenant('id');
+
         return ProjectManagement::withoutGlobalScopes()
             ->where('id', $projectId)
-            ->where('company_id', tenant('id'))
+            ->where(function ($query) use ($tenantId,$projectId) {
+                $query->where('company_id', $tenantId)
+                    ->orWhereExists(function ($shareQuery) use ($tenantId,$projectId) {
+                        $shareQuery->select(DB::raw(1))
+                            ->from('resource_shares')
+                            ->where('shareable_type', ProjectManagement::class)
+                            ->where('shareable_id', $projectId)
+                            ->where('shared_with_company_id', $tenantId)
+                            ->where('status', 'accepted');
+                    });
+            })
             ->firstOrFail();
     }
 

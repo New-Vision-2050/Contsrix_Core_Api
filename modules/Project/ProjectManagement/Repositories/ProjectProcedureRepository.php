@@ -22,9 +22,10 @@ class ProjectProcedureRepository extends BaseRepository
     public function listForProject(
         string $projectId,
         string $procedureType,
-        ?string $parentProcedureSettingId = null
+        ?string $parentProcedureSettingId = null,
+        ?string $ownerCompanyId = null
     ): Collection {
-        return $this->baseProjectQuery($projectId, $procedureType, $parentProcedureSettingId)
+        return $this->baseProjectQuery($projectId, $procedureType, $parentProcedureSettingId, $ownerCompanyId)
             ->get()
             ->sortBy(static fn (ProjectProcedureSetting $item): string => sprintf(
                 '%010d-%s',
@@ -38,9 +39,10 @@ class ProjectProcedureRepository extends BaseRepository
         string $projectId,
         string $procedureSettingId,
         string $procedureType,
-        ?string $parentProcedureSettingId = null
+        ?string $parentProcedureSettingId = null,
+        ?string $ownerCompanyId = null
     ): ProjectProcedureSetting {
-        return $this->baseProjectQuery($projectId, $procedureType, $parentProcedureSettingId)
+        return $this->baseProjectQuery($projectId, $procedureType, $parentProcedureSettingId, $ownerCompanyId)
             ->where('procedure_setting_id', $procedureSettingId)
             ->firstOrFail();
     }
@@ -77,20 +79,27 @@ class ProjectProcedureRepository extends BaseRepository
     private function baseProjectQuery(
         string $projectId,
         string $procedureType,
-        ?string $parentProcedureSettingId = null
+        ?string $parentProcedureSettingId = null,
+        ?string $ownerCompanyId = null
     ): Builder {
+        $companyId = $ownerCompanyId ?? (string) (tenant('id') ?? '');
+
         return $this->model->newQuery()
+            ->withoutGlobalScopes()
             ->where('project_id', $projectId)
+            ->where('company_id', $companyId)
             ->whereHas('procedureSetting', static function ($query) use (
                 $projectId,
                 $procedureType,
-                $parentProcedureSettingId
+                $parentProcedureSettingId,
+                $companyId
             ): void {
                 $query->where('type', $procedureType)
-                    ->where('company_id', tenant('id'))
-                    ->whereHas('workFlow', static function ($query) use ($projectId, $procedureType): void {
+                    ->where('company_id', $companyId)
+                    ->whereHas('workFlow', static function ($query) use ($projectId, $procedureType, $companyId): void {
                         $query->where('project_id', $projectId)
-                            ->where('type', $procedureType);
+                            ->where('type', $procedureType)
+                            ->where('company_id', $companyId);
                     });
 
                 if ($parentProcedureSettingId !== null) {
