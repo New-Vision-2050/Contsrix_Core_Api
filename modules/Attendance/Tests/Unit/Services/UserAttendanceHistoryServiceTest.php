@@ -74,7 +74,10 @@ class UserAttendanceHistoryServiceTest extends TestCase
         $payload = $this->dayStatusPayload(collect([
             new Attendance([
                 'status' => Attendance::STATUS_COMPLETED,
+                'start_time' => '2026-06-09 09:00:00',
+                'clock_in_time' => '2026-06-09 09:15:00',
                 'clock_out_time' => '2026-06-09 17:00:00',
+                'timezone' => 'Asia/Riyadh',
                 'is_late' => 1,
             ]),
         ]));
@@ -85,12 +88,37 @@ class UserAttendanceHistoryServiceTest extends TestCase
         $this->assertSame(0, $payload['is_holiday']);
     }
 
+    public function test_on_time_clock_in_with_early_departure_is_not_late(): void
+    {
+        // Stale is_late=1 must not override clock_in == shift start.
+        $payload = $this->dayStatusPayload(collect([
+            new Attendance([
+                'status' => Attendance::STATUS_COMPLETED,
+                'start_time' => '2026-08-03 07:30:00',
+                'end_time' => '2026-08-03 16:30:00',
+                'clock_in_time' => '2026-08-03 07:30:00',
+                'clock_out_time' => '2026-08-03 16:12:00',
+                'timezone' => 'Asia/Riyadh',
+                'is_late' => 1,
+                'is_early_departure' => 1,
+            ]),
+        ]));
+
+        $this->assertSame('تم الخروج', $payload['status']);
+        $this->assertSame(0, $payload['is_late']);
+        $this->assertSame(0, $payload['is_absent']);
+        $this->assertSame(0, $payload['is_holiday']);
+    }
+
     public function test_normal_completed_attendance_keeps_flags_clear(): void
     {
         $payload = $this->dayStatusPayload(collect([
             new Attendance([
                 'status' => Attendance::STATUS_COMPLETED,
+                'start_time' => '2026-06-09 09:00:00',
+                'clock_in_time' => '2026-06-09 09:00:00',
                 'clock_out_time' => '2026-06-09 17:00:00',
+                'timezone' => 'Asia/Riyadh',
                 'is_late' => 0,
                 'is_absent' => 0,
                 'is_holiday' => 0,
