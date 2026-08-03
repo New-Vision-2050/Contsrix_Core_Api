@@ -291,7 +291,9 @@ final class InboxItemPresenter
         $step         = $model->currentProcedureStep;
         $actionTakers = [];
 
-        if ($step->relationLoaded('actionTakers') && $step->actionTakers->isNotEmpty()) {
+        if ($model->getAttribute('resolved_action_takers') !== null) {
+            $actionTakers = $model->getAttribute('resolved_action_takers');
+        } elseif ($step->relationLoaded('actionTakers') && $step->actionTakers->isNotEmpty()) {
             foreach ($step->actionTakers as $at) {
                 $actionTakers[] = [
                     'user_id' => $at->user_id,

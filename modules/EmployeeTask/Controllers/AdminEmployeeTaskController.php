@@ -28,9 +28,24 @@ use Modules\EmployeeTask\Services\EmployeeTaskExtensionWorkflowService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\EmployeeTask\Services\EmployeeTaskStartRequestService;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
+use Modules\ProcedureSetting\Services\ActionTakerResolver;
+use Modules\User\Models\User;
 
 class AdminEmployeeTaskController extends Controller
 {
+    /**
+     * action_taker_type values that are resolved dynamically per task context
+     * (e.g. management hierarchy of the task owner) instead of via the static
+     * procedure_setting_step_action_takers table.
+     */
+    private const DYNAMIC_ACTION_TAKER_TYPES = [
+        'management_hierarchy',
+        'specific_procedures',
+        'receiver_company',
+        'himself',
+        'assigned_user',
+    ];
+
     public function __construct(
         private readonly EmployeeTaskRequestService           $requestService,
         private readonly EmployeeTaskExtensionService         $extensionService,
@@ -38,7 +53,53 @@ class AdminEmployeeTaskController extends Controller
         private readonly EmployeeTaskApprovalService          $approvalService,
         private readonly EmployeeTaskEndRequestService        $endRequestService,
         private readonly EmployeeTaskStartRequestService      $startRequestService,
+        private readonly ActionTakerResolver                  $actionTakerResolver,
     ) {}
+
+    /**
+     * For inbox items whose current_procedure_step uses a dynamic
+     * action-taker type (management_hierarchy, specific_procedures,
+     * receiver_company, himself, assigned_user), the static
+     * `currentProcedureStep.actionTakers` table is empty, so the repository's
+     * SQL-level filter treats the step as "open" and lets every admin see it.
+     *
+     * This re-filters those items down to the admins actually resolved for
+     * the step (given the task owner + context), and annotates each model
+     * with a `resolved_action_takers` attribute (with names) so the
+     * presenter can display the real action-takers instead of nulls.
+     */
+    private function applyDynamicActionTakerResolution(\Illuminate\Support\Collection $items, string $adminId): \Illuminate\Support\Collection
+    {
+        return $items->filter(function ($model) use ($adminId) {
+            if (!$model->relationLoaded('currentProcedureStep') || !$model->currentProcedureStep) {
+                return true;
+            }
+
+            $step = $model->currentProcedureStep;
+            $actionTakerType = $step->action_taker_type?->value ?? 'specific_user';
+
+            if (!in_array($actionTakerType, self::DYNAMIC_ACTION_TAKER_TYPES, true)) {
+                return true;
+            }
+
+            $task = $model->relationLoaded('task') ? $model->task : null;
+            $context = $task && $task->project_id ? ['project_id' => $task->project_id] : [];
+            $createdByUserId = $task->user_id ?? null;
+
+            $resolvedIds = $this->actionTakerResolver->resolveUsersForStep($step, $createdByUserId, $context);
+
+            $names = $resolvedIds === []
+                ? collect()
+                : User::query()->whereIn('id', $resolvedIds)->pluck('name', 'id');
+
+            $model->setAttribute('resolved_action_takers', collect($resolvedIds)->map(fn ($id) => [
+                'user_id' => $id,
+                'name'    => $names[$id] ?? null,
+            ])->all());
+
+            return in_array($adminId, $resolvedIds, true);
+        })->values();
+    }
 
     public function index(): JsonResponse
     {
@@ -75,10 +136,22 @@ class AdminEmployeeTaskController extends Controller
 
         $taskItems         = $this->requestService->inboxAll($adminId, $filters)
             ->reject(fn ($t) => $t->user_id === $adminId);
-        $extItems          = $this->extensionService->listInboxAllForAdmin($adminId, $filters);
-        $approvalItems     = $this->requestService->inboxAllApprovals($adminId, $filters);
-        $endRequestItems   = $this->requestService->inboxAllEndRequests($adminId, $filters);
-        $startRequestItems = $this->requestService->inboxAllStartRequests($adminId, $filters);
+        $extItems          = $this->applyDynamicActionTakerResolution(
+            $this->extensionService->listInboxAllForAdmin($adminId, $filters),
+            $adminId,
+        );
+        $approvalItems     = $this->applyDynamicActionTakerResolution(
+            $this->requestService->inboxAllApprovals($adminId, $filters),
+            $adminId,
+        );
+        $endRequestItems   = $this->applyDynamicActionTakerResolution(
+            $this->requestService->inboxAllEndRequests($adminId, $filters),
+            $adminId,
+        );
+        $startRequestItems = $this->applyDynamicActionTakerResolution(
+            $this->requestService->inboxAllStartRequests($adminId, $filters),
+            $adminId,
+        );
 
         $combined = collect()
             ->merge($taskItems->map(fn ($t)  => ['_type' => 'task_request',      '_model' => $t, '_at' => $t->created_at]))
@@ -362,10 +435,22 @@ class AdminEmployeeTaskController extends Controller
         $filters = request()->only(['task_id', 'task_date', 'date_from', 'date_to']);
 
         $taskCount         = $this->requestService->inboxAll($adminId, $filters)->where('status', 'pending')->count();
-        $extCount          = $this->extensionService->listInboxAllForAdmin($adminId, $filters)->count();
-        $approvalCount     = $this->requestService->inboxAllApprovals($adminId, $filters)->count();
-        $endRequestCount   = $this->requestService->inboxAllEndRequests($adminId, $filters)->count();
-        $startRequestCount = $this->requestService->inboxAllStartRequests($adminId, $filters)->count();
+        $extCount          = $this->applyDynamicActionTakerResolution(
+            $this->extensionService->listInboxAllForAdmin($adminId, $filters),
+            $adminId,
+        )->count();
+        $approvalCount     = $this->applyDynamicActionTakerResolution(
+            $this->requestService->inboxAllApprovals($adminId, $filters),
+            $adminId,
+        )->count();
+        $endRequestCount   = $this->applyDynamicActionTakerResolution(
+            $this->requestService->inboxAllEndRequests($adminId, $filters),
+            $adminId,
+        )->count();
+        $startRequestCount = $this->applyDynamicActionTakerResolution(
+            $this->requestService->inboxAllStartRequests($adminId, $filters),
+            $adminId,
+        )->count();
 
         return Json::item([
             'pending_tasks'          => $taskCount,
