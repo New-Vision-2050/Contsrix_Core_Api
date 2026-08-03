@@ -246,7 +246,8 @@ class ProjectProcedureService
             ->where('company_id', $project->company_id)
             ->where('type', self::PROCEDURE_TYPE)
             ->whereHas('workFlow', static function ($query) use ($project): void {
-                $query->where('company_id', $project->company_id)
+                $query->withoutGlobalScopes()
+                    ->where('company_id', $project->company_id)
                     ->where('project_id', $project->id)
                     ->where('type', self::PROCEDURE_TYPE);
             })

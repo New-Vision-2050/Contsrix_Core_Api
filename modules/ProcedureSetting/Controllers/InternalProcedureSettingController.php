@@ -36,7 +36,7 @@ class InternalProcedureSettingController extends Controller
     public function index(GetInternalProcedureSettingListRequest $request): JsonResponse
     {
         if ($request->projectId() !== null) {
-            $this->authorizeProjectProcedure(Permission::PROJECT_MANAGEMENT_VIEW());
+//            $this->authorizeProjectProcedure(Permission::PROJECT_MANAGEMENT_VIEW());
 
             $items = $this->projectProcedureService->list(
                 $request->projectId(),
