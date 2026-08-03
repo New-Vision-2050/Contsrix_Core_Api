@@ -118,11 +118,21 @@ final class EmployeeTaskRequestPresenter
             if ($process->relationLoaded('steps')) {
                 $pendingStep = $process->steps->first(fn ($s) => $s->status->value === 'pending');
                 if ($pendingStep) {
-                    $userIds = $pendingStep->authorized_user_ids ?? [$pendingStep->assigned_user_id];
+                    $userIds = array_values(array_filter($pendingStep->authorized_user_ids ?? [$pendingStep->assigned_user_id]));
+
+                    $namesById = [];
+                    if ($pendingStep->relationLoaded('assignedUser') && $pendingStep->assignedUser) {
+                        $namesById[$pendingStep->assignedUser->id] = $pendingStep->assignedUser->name;
+                    }
+                    $missingIds = array_diff($userIds, array_keys($namesById));
+                    if (!empty($missingIds)) {
+                        $namesById += \Modules\User\Models\User::whereIn('id', $missingIds)->pluck('name', 'id')->all();
+                    }
+
                     foreach ($userIds as $userId) {
                         $actionTakers[] = [
                             'user_id' => $userId,
-                            'name'    => null,
+                            'name'    => $namesById[$userId] ?? null,
                         ];
                     }
                 }
