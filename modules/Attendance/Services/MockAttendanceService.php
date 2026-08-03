@@ -14,6 +14,7 @@ use Modules\Attendance\DTO\ClockInDTO;
 use Modules\Attendance\Events\AttendanceClockedIn;
 use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\Models\AttendanceConstraint;
+use Modules\Attendance\Support\EarlyClockInRules;
 use Modules\User\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -167,9 +168,9 @@ class MockAttendanceService
         string $timezone,
         string $userId
     ): ShiftWindow {
-        $earlyMinutes = (int) ($period['early_clock_in_minutes'] ?? $workRules['early_clock_in_minutes'] ?? 0);
-        $extensionMinutes = (int) ($period['extension_minutes'] ?? $workRules['extension_minutes'] ?? 0);
-        $canClockInBefore = $period['can_clock_in_before_minutes'] ?? $workRules['can_clock_in_before_minutes'] ?? null;
+        $earlyMinutes = $this->resolveEarlyClockInMinutes($period, $workRules);
+        $extensionMinutes = $this->resolveExtensionMinutes($period, $workRules);
+        $canClockInBefore = $this->resolveCanClockInBeforeMinutes($period, $workRules);
         $flags = OvertimeFlags::fromArray($period['overtime_rules'] ?? $workRules['overtime_rules'] ?? null);
 
         return $this->windowCalculator->compute(new ShiftWindowInput(
@@ -178,7 +179,7 @@ class MockAttendanceService
             clockIn: CarbonImmutable::parse($clockIn->format('Y-m-d H:i:s'), $timezone),
             earlyWindowMinutes: $earlyMinutes,
             extensionMinutes: $extensionMinutes,
-            canClockInBeforeMinutes: $canClockInBefore !== null ? (int) $canClockInBefore : null,
+            canClockInBeforeMinutes: $canClockInBefore,
             maxOverTimeHours: (float) ($workRules['max_over_time'] ?? 0.0),
             alreadyWorkedMinutesInPeriod: $this->attendanceService->workedMinutesInScheduledPeriod(
                 $userId,
@@ -188,6 +189,66 @@ class MockAttendanceService
             overtimeFlags: $flags,
             timezone: $timezone,
         ));
+    }
+
+    /**
+     * Prefer day-level V2 minutes; fall back to period/day early_clock_in_rules (legacy shape).
+     * Take the max across sources so a stripped minutes key (0) cannot hide early_period=30.
+     */
+    private function resolveEarlyClockInMinutes(array $period, array $workRules): int
+    {
+        return max(
+            (int) ($period['early_clock_in_minutes'] ?? 0),
+            (int) ($workRules['early_clock_in_minutes'] ?? 0),
+            EarlyClockInRules::minutes(
+                is_array($period['early_clock_in_rules'] ?? null) ? $period['early_clock_in_rules'] : null
+            ),
+            EarlyClockInRules::minutes(
+                is_array($workRules['early_clock_in_rules'] ?? null) ? $workRules['early_clock_in_rules'] : null
+            ),
+        );
+    }
+
+    private function resolveExtensionMinutes(array $period, array $workRules): int
+    {
+        if (isset($period['extension_minutes'])) {
+            return (int) $period['extension_minutes'];
+        }
+        if (isset($workRules['extension_minutes'])) {
+            return (int) $workRules['extension_minutes'];
+        }
+
+        $hours = $period['extension_hours_shift']
+            ?? $period['extension_rules']['extension_hours']
+            ?? $workRules['extension_rules']['extension_hours']
+            ?? $workRules['extension_hours_shift']
+            ?? null;
+
+        return $hours !== null ? (int) round(((float) $hours) * 60) : 0;
+    }
+
+    private function resolveCanClockInBeforeMinutes(array $period, array $workRules): ?int
+    {
+        if (array_key_exists('can_clock_in_before_minutes', $period)) {
+            return isset($period['can_clock_in_before_minutes']) ? (int) $period['can_clock_in_before_minutes'] : null;
+        }
+        if (array_key_exists('can_clock_in_before_minutes', $workRules)) {
+            return isset($workRules['can_clock_in_before_minutes']) ? (int) $workRules['can_clock_in_before_minutes'] : null;
+        }
+        if (isset($period['can_clock_in_before'])) {
+            return (int) $period['can_clock_in_before'];
+        }
+        if (isset($workRules['can_clock_in_before'])) {
+            return (int) $workRules['can_clock_in_before'];
+        }
+        if (isset($period['clock_in_deadline_rules']['can_clock_in_before_minutes'])) {
+            return (int) $period['clock_in_deadline_rules']['can_clock_in_before_minutes'];
+        }
+        if (isset($workRules['clock_in_deadline_rules']['can_clock_in_before_minutes'])) {
+            return (int) $workRules['clock_in_deadline_rules']['can_clock_in_before_minutes'];
+        }
+
+        return null;
     }
 
     /**
@@ -235,40 +296,11 @@ class MockAttendanceService
             $reason = 'No active work period available for clock in.';
         }
 
-        $details = [
-            'day_status' => $dayStatus,
-            'is_holiday' => $workRules['is_holiday'] ?? false,
-        ];
-
-        if ($rejection !== null) {
-            $details['window'] = $rejection['window']->toResponseArray();
-        }
-
-        // Include work periods with early_clock_in_rules so client can show "Clock in from HH:mm (early)"
-        $periods = $workRules['all_work_periods'] ?? [];
-        if (!empty($periods)) {
-            $details['work_periods'] = array_map(function (array $p) {
-                $out = [
-                    'start_time' => $p['start_time'] ?? null,
-                    'end_time' => $p['end_time'] ?? null,
-                ];
-                if (!empty($p['early_clock_in_rules'])) {
-                    $out['early_clock_in_rules'] = $p['early_clock_in_rules'];
-                }
-                foreach (['can_clock_in_from', 'can_clock_in_until', 'can_clock_out_until', 'absent_at'] as $key) {
-                    if (array_key_exists($key, $p)) {
-                        $out[$key] = $p[$key];
-                    }
-                }
-                return $out;
-            }, $periods);
-        }
-
+        // Keep violation payload minimal — mobile clients often dump the whole error body.
         return [
             'type' => $type,
             'severity' => 'blocking',
             'message' => $reason,
-            'details' => $details,
         ];
     }
 }

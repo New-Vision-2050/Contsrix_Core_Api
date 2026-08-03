@@ -64,15 +64,12 @@ class AttendanceController extends Controller
                 message: 'Successfully clocked in.'
             );
         } catch (AttendanceException $e) {
-            $violations = $e->getViolations();
-            if (!empty($violations)) {
-                return Json::error(
-                    description: $e->getMessage(),
-                    data: ['violations' => $violations],
-                    httpStatus: $e->getStatusCode()
-                );
-            }
-            return Json::error($e->getMessage(), httpStatus: $e->getStatusCode());
+            // Return a plain readable string only. Json::error merges `data` into
+            // message, which made mobile dump the full violations/window JSON on screen.
+            return Json::error(
+                description: $e->getMessage(),
+                httpStatus: $e->getStatusCode()
+            );
         }
     }
 

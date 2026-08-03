@@ -555,16 +555,32 @@ class UserAttendanceService
         string $timezone,
         int $alreadyWorkedMinutesInPeriod = 0
     ): \Modules\Attendance\Domain\Time\ShiftWindow {
+        $earlyMinutes = max(
+            (int) ($workRules['early_clock_in_minutes'] ?? 0),
+            \Modules\Attendance\Support\EarlyClockInRules::minutes(
+                is_array($workRules['early_clock_in_rules'] ?? null) ? $workRules['early_clock_in_rules'] : null
+            ),
+        );
+
+        $extensionMinutes = (int) ($workRules['extension_minutes'] ?? 0);
+        if ($extensionMinutes <= 0) {
+            $extensionMinutes = (int) round(((float) (($workRules['extension_rules']['extension_hours'] ?? 0))) * 60);
+        }
+
+        $canClockInBefore = array_key_exists('can_clock_in_before_minutes', $workRules)
+            ? (isset($workRules['can_clock_in_before_minutes']) ? (int) $workRules['can_clock_in_before_minutes'] : null)
+            : (isset($workRules['clock_in_deadline_rules']['can_clock_in_before_minutes'])
+                ? (int) $workRules['clock_in_deadline_rules']['can_clock_in_before_minutes']
+                : null);
+
         return (new \Modules\Attendance\Domain\Time\ShiftWindowCalculator())->compute(
             new \Modules\Attendance\Domain\Time\ShiftWindowInput(
                 scheduledStart: \Carbon\CarbonImmutable::parse($periodStart->format('Y-m-d H:i:s'), $timezone),
                 scheduledEnd: \Carbon\CarbonImmutable::parse($periodEnd->format('Y-m-d H:i:s'), $timezone),
                 clockIn: \Carbon\CarbonImmutable::parse($now->format('Y-m-d H:i:s'), $timezone),
-                earlyWindowMinutes: (int) ($workRules['early_clock_in_minutes'] ?? 0),
-                extensionMinutes: (int) ($workRules['extension_minutes'] ?? 0),
-                canClockInBeforeMinutes: isset($workRules['can_clock_in_before_minutes'])
-                    ? (int) $workRules['can_clock_in_before_minutes']
-                    : null,
+                earlyWindowMinutes: $earlyMinutes,
+                extensionMinutes: $extensionMinutes,
+                canClockInBeforeMinutes: $canClockInBefore,
                 maxOverTimeHours: (float) ($workRules['max_over_time'] ?? 0.0),
                 alreadyWorkedMinutesInPeriod: $alreadyWorkedMinutesInPeriod,
                 overtimeFlags: \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($workRules['overtime_rules'] ?? null),
@@ -608,6 +624,16 @@ class UserAttendanceService
                 'radius' => $locationWork['radius'] ?? null,
             ] : null,
             'additional_locations' => $workRules['additional_locations'] ?? [],
+            // V2 window rules — required by MockAttendanceService clock-in matching.
+            // Stripping these made earliest_clock_in = shift start even when early_period=30.
+            'early_clock_in_rules' => $workRules['early_clock_in_rules'] ?? null,
+            'early_clock_in_minutes' => $workRules['early_clock_in_minutes'] ?? 0,
+            'extension_minutes' => $workRules['extension_minutes'] ?? 0,
+            'extension_rules' => $workRules['extension_rules'] ?? null,
+            'can_clock_in_before_minutes' => $workRules['can_clock_in_before_minutes'] ?? null,
+            'clock_in_deadline_rules' => $workRules['clock_in_deadline_rules'] ?? null,
+            'overtime_rules' => $workRules['overtime_rules'] ?? [],
+            'max_over_time' => $workRules['max_over_time'] ?? null,
             '_debug' => $workRules['_debug'] ?? null,
         ];
     }
