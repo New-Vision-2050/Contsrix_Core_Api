@@ -90,11 +90,14 @@ class AdminEmployeeTaskController extends Controller
 
             $names = $resolvedIds === []
                 ? collect()
-                : User::query()->whereIn('id', $resolvedIds)->pluck('name', 'id');
+                : User::query()->whereIn('id', $resolvedIds)
+                    ->get()
+                    ->pluck('name', 'id')
+                    ->mapWithKeys(fn ($name, $id) => [(string) $id => $name]);
 
             $model->setAttribute('resolved_action_takers', collect($resolvedIds)->map(fn ($id) => [
                 'user_id' => $id,
-                'name'    => $names[$id] ?? null,
+                'name'    => $names[(string) $id] ?? null,
             ])->all());
 
             return in_array($adminId, $resolvedIds, true);

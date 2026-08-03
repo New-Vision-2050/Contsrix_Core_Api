@@ -256,15 +256,19 @@ final class InboxItemPresenter
 
         $namesById = [];
         if ($processStep->relationLoaded('assignedUser') && $processStep->assignedUser) {
-            $namesById[$processStep->assignedUser->id] = $processStep->assignedUser->name;
+            $namesById[(string) $processStep->assignedUser->id] = $processStep->assignedUser->name;
         }
-        $missingIds = array_diff($userIds, array_keys($namesById));
+        $missingIds = array_values(array_filter($userIds, fn ($id) => !isset($namesById[(string) $id])));
         if (!empty($missingIds)) {
-            $namesById += \Modules\User\Models\User::whereIn('id', $missingIds)->pluck('name', 'id')->all();
+            $namesById += \Modules\User\Models\User::whereIn('id', $missingIds)
+                ->get()
+                ->pluck('name', 'id')
+                ->mapWithKeys(fn ($name, $id) => [(string) $id => $name])
+                ->all();
         }
 
         foreach ($userIds as $userId) {
-            $actionTakers[] = ['user_id' => $userId, 'name' => $namesById[$userId] ?? null];
+            $actionTakers[] = ['user_id' => $userId, 'name' => $namesById[(string) $userId] ?? null];
         }
 
         return [
