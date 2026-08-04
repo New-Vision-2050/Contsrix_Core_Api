@@ -87,6 +87,34 @@ class EmployeeFolderContentsTest extends TestCase
         $this->assertNotContains(EmployeeArchiveFileService::SUB_COURSES, $this->names($response->json('payload.folders')));
     }
 
+    public function test_employee_folder_contents_clamps_out_of_range_page(): void
+    {
+        $tree = $this->seedEmployeeArchiveTree();
+
+        $response = $this->getEmployeeContents([
+            'parent_id' => $tree['employee_root']->id,
+            'page' => 23,
+            'per_page' => 10,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('pagination.total', 3)
+            ->assertJsonPath('pagination.current_page', 1)
+            ->assertJsonPath('pagination.last_page', 1)
+            ->assertJsonPath('pagination.from', 1)
+            ->assertJsonPath('pagination.to', 3);
+
+        $this->assertEqualsCanonicalizing(
+            [
+                EmployeeArchiveFileService::SECTION_PERSONAL,
+                EmployeeArchiveFileService::SECTION_ACADEMIC,
+                EmployeeArchiveFileService::SECTION_EMPLOYMENT,
+            ],
+            $this->names($response->json('payload.folders'))
+        );
+        $this->assertSame([], $this->names($response->json('payload.files')));
+    }
+
     public function test_employee_section_and_subsection_return_only_their_direct_contents(): void
     {
         $tree = $this->seedEmployeeArchiveTree();
