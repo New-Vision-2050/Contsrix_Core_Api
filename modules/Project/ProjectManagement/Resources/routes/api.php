@@ -35,7 +35,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
 
         //inquiry
        Route::get('/inquiry/my-map-tasks', [ProjectNotificationController::class, 'myMapTasks']);
-       Route::get('/inquiry/safety/search', [SafetySearchController::class, 'search']);
+       Route::get('/inquiry/search', [SafetySearchController::class, 'search']);
 
         // Safety & Violations — static routes MUST come before {project}/safety/{id}
         Route::get('/violations', [ViolationController::class, 'index']);
