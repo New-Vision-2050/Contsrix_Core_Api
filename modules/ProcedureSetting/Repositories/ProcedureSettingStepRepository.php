@@ -7,10 +7,12 @@ namespace Modules\ProcedureSetting\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedManagementHierarchy;
 use Modules\ProcedureSetting\Support\ProcedureSettingProjectResolver;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 
 /**
  * @property ProcedureSettingStep $model
@@ -34,10 +36,17 @@ class ProcedureSettingStepRepository extends BaseRepository
 
     public function getStepsByProcedureSettingId(string $procedureSettingId): Collection
     {
-        return $this->model
-            ->with(self::STEP_WITH)
-            ->where('procedure_setting_id', $procedureSettingId)
-            ->orderByRaw('(step_order IS NULL) ASC')
+        $ownerCompanyId = $this->resolveProjectProcedureOwnerCompany($procedureSettingId);
+
+        $query = $this->model->with(self::STEP_WITH)
+            ->where('procedure_setting_id', $procedureSettingId);
+
+        if ($ownerCompanyId !== null) {
+            $query->withoutGlobalScopes()
+                ->where('company_id', $ownerCompanyId);
+        }
+
+        return $query->orderByRaw('(step_order IS NULL) ASC')
             ->orderBy('step_order')
             ->orderBy('id')
             ->get();
@@ -52,9 +61,17 @@ class ProcedureSettingStepRepository extends BaseRepository
         string $procedureSettingId,
         int $id
     ): ProcedureSettingStep {
-        return $this->model->with(self::STEP_WITH)
-            ->where('procedure_setting_id', $procedureSettingId)
-            ->findOrFail($id);
+        $ownerCompanyId = $this->resolveProjectProcedureOwnerCompany($procedureSettingId);
+
+        $query = $this->model->with(self::STEP_WITH)
+            ->where('procedure_setting_id', $procedureSettingId);
+
+        if ($ownerCompanyId !== null) {
+            $query->withoutGlobalScopes()
+                ->where('company_id', $ownerCompanyId);
+        }
+
+        return $query->findOrFail($id);
     }
 
     public function createProcedureSettingStep(array $data): ProcedureSettingStep
@@ -164,5 +181,19 @@ class ProcedureSettingStepRepository extends BaseRepository
             ->max('step_order');
 
         return $max + 1;
+    }
+
+    /**
+     * If the procedure setting is a project_procedure, return the owner company
+     * so steps can be queried without the tenant global scope.
+     */
+    private function resolveProjectProcedureOwnerCompany(string $procedureSettingId): ?string
+    {
+        $setting = ProcedureSetting::withoutGlobalScopes()
+            ->where('id', $procedureSettingId)
+            ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
+            ->first(['company_id']);
+
+        return $setting?->company_id;
     }
 }
