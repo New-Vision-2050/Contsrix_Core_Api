@@ -238,6 +238,7 @@ class CompanyUserProfileController extends Controller
         $presenter = $this->companyUserWidgetService->getCompanyStatistics(
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
+            (string) $user->id,
         );
 
         return Json::item($presenter->getData());
