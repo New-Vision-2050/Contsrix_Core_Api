@@ -14,6 +14,7 @@ use Modules\ProcedureSetting\Jobs\AutoApproveWorkflowStep;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Services\ActionTakerResolver;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
@@ -428,26 +429,40 @@ class ProcessWorkflowService
      */
     private function resolveStepsForSetting(ProcedureSetting $setting): Collection
     {
-        $ids = [$setting->id];
-        $ids = array_merge($ids, $this->collectDescendantIds($setting->id));
+        $isProjectProcedure = $setting->type === ProjectProcedureSetting::PROCEDURE_TYPE;
+        $ownerCompanyId = $isProjectProcedure ? $setting->company_id : null;
 
-        return ProcedureSettingStep::query()
-            ->with(['actionTakers'])
-            ->whereIn('procedure_setting_id', $ids)
+        $ids = [$setting->id];
+        $ids = array_merge($ids, $this->collectDescendantIds($setting->id, $ownerCompanyId));
+
+        $query = ProcedureSettingStep::query()
+            ->with(['actionTakers']);
+
+        if ($ownerCompanyId !== null) {
+            $query->withoutGlobalScopes()
+                ->where('company_id', $ownerCompanyId);
+        }
+
+        return $query->whereIn('procedure_setting_id', $ids)
             ->orderBy('step_order')
             ->get();
     }
 
-    private function collectDescendantIds(string $parentId): array
+    private function collectDescendantIds(string $parentId, ?string $ownerCompanyId = null): array
     {
-        $children = ProcedureSetting::query()
-            ->where('parent_id', $parentId)
-            ->pluck('id')
-            ->all();
+        $query = ProcedureSetting::query()
+            ->where('parent_id', $parentId);
+
+        if ($ownerCompanyId !== null) {
+            $query->withoutGlobalScopes()
+                ->where('company_id', $ownerCompanyId);
+        }
+
+        $children = $query->pluck('id')->all();
 
         $result = $children;
         foreach ($children as $childId) {
-            $result = array_merge($result, $this->collectDescendantIds($childId));
+            $result = array_merge($result, $this->collectDescendantIds($childId, $ownerCompanyId));
         }
 
         return $result;

@@ -112,19 +112,29 @@ class ProcedureSettingRepository extends BaseRepository
         $hasProjectFilter = array_key_exists('project_id', $filters);
         $projectId = $filters['project_id'] ?? null;
 
-        $query = WorkFlow::query()
-            ->with([
-                'managementHierarchies:id,name,type,company_id',
-                'procedureSettings' => function ($q) use ($parentId) {
-                    if ($parentId !== null) {
-                        $q->where('parent_id', $parentId);
-                    } else {
-                        $q->whereNull('parent_id');
-                    }
-                    $q->orderBy('sort_order')
-                        ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id,project_id']);
-                },
-            ]);
+        // Project-scoped workflows belong to the project's owner company, not the
+        // current tenant. Strip global scopes and filter by project_id explicitly.
+        $isProjectProcedure = $hasProjectFilter && $projectId !== null && $projectId !== '';
+
+        $query = $isProjectProcedure
+            ? WorkFlow::query()->withoutGlobalScopes()
+            : WorkFlow::query();
+
+        $query->with([
+            'managementHierarchies:id,name,type,company_id',
+            'procedureSettings' => function ($q) use ($parentId, $isProjectProcedure) {
+                if ($isProjectProcedure) {
+                    $q->withoutGlobalScopes();
+                }
+                if ($parentId !== null) {
+                    $q->where('parent_id', $parentId);
+                } else {
+                    $q->whereNull('parent_id');
+                }
+                $q->orderBy('sort_order')
+                    ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name,company_id,project_id']);
+            },
+        ]);
 
         if ($hasProjectFilter) {
             if ($projectId === null || $projectId === '') {
