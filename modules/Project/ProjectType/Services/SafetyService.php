@@ -101,6 +101,55 @@ class SafetyService
             ->values();
     }
 
+    /**
+     * Find a project notification or order permit by its business number.
+     *
+     * @return array{type: string, item: ProjectNotification|ProjectOrderPermit}
+     */
+    public function search(string $query): array
+    {
+        $notification = ProjectNotification::query()
+            ->where('notification_number', $query)
+            ->with([
+                'contractor' => fn ($q) => $q->withoutGlobalScopes(),
+                'project' => fn ($q) => $q->withoutGlobalScopes(),
+            ])
+            ->first();
+
+        if ($notification !== null) {
+            return [
+                'type' => 'notification',
+                'item' => $notification,
+            ];
+        }
+
+        $orderPermit = ProjectOrderPermit::query()
+            ->where('name', $query)
+            ->with([
+                'contractor' => fn ($q) => $q->withoutGlobalScopes(),
+                'department',
+                'orderPermit.department',
+                'projectManagement',
+                'state',
+                'employee' => fn ($q) => $q->withoutGlobalScopes(),
+                'project' => fn ($q) => $q->withoutGlobalScopes(),
+                'projectCompletionPhase',
+                'projectPhaseStatus',
+                'connectionCompletionPhase',
+                'connectionPhaseStatus',
+            ])
+            ->first();
+
+        if ($orderPermit !== null) {
+            return [
+                'type' => 'order_permit',
+                'item' => $orderPermit,
+            ];
+        }
+
+        throw SafetyException::searchNotFound();
+    }
+
     public function show(string $projectId, string $id): SafetyRecord
     {
         $record = $this->findForProject($projectId, $id);

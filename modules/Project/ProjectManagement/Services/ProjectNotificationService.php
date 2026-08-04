@@ -65,6 +65,8 @@ use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageRepo
 use Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReportReason;
 use Modules\Project\ProjectManagement\Notifications\SiteStatusUpdateRequiredVoiceNotification;
 use Modules\Project\ProjectManagement\Repositories\ProjectNotificationRepository;
+use Modules\Project\ProjectManagement\Models\ProjectEmployee;
+use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Services\SafetyService;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\User\Models\User;
@@ -489,6 +491,59 @@ class ProjectNotificationService
     public function mapTasks(FilterProjectNotificationDTO $dto): \Illuminate\Database\Eloquent\Collection
     {
         return $this->repository->allForMap($dto->toFilters());
+    }
+
+    /**
+     * Map view for the authenticated user.
+     * Loads the user's assigned project notifications and order permits from
+     * their own tables (not via SafetyRecord).
+     *
+     * @return array{
+     *     notifications: \Illuminate\Database\Eloquent\Collection<int, ProjectNotification>,
+     *     order_permits: \Illuminate\Support\Collection<int, ProjectOrderPermit>
+     * }
+     */
+    public function myMapTasks(string $userId): array
+    {
+        $notifications = ProjectNotification::query()
+            ->whereJsonContains('assigned_user_ids', $userId)
+            ->where('status', '!=', 'draft')
+            ->with([
+                'project',
+                'company',
+                'contractor' => fn ($q) => $q->withoutGlobalScopes(),
+                'contractorRepresentative',
+                'updateSiteStatus',
+                'endTaskStatus',
+            ])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $this->repository->preloadAssignedUsersForMap($notifications);
+
+        $projectIds = ProjectEmployee::query()
+            ->where('user_id', $userId)
+            ->pluck('project_id')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $orderPermits = $projectIds === []
+            ? collect()
+            : ProjectOrderPermit::query()
+                ->whereIn('project_id', $projectIds)
+                ->with([
+                    'contractor' => fn ($q) => $q->withoutGlobalScopes(),
+                    'employee' => fn ($q) => $q->withoutGlobalScopes(),
+                ])
+                ->orderByDesc('created_at')
+                ->get();
+
+        return [
+            'notifications' => $notifications,
+            'order_permits' => $orderPermits,
+        ];
     }
 
     /**

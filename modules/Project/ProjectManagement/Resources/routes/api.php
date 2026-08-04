@@ -18,6 +18,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 use Modules\Project\ProjectType\Controllers\ViolationController;
 use Modules\Project\ProjectType\Controllers\SafetyRecordController;
 use Modules\Project\ProjectType\Controllers\SafetyAnalyticsController;
+use Modules\Project\ProjectType\Controllers\SafetySearchController;
 use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
 Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class]], function () {
@@ -31,6 +32,10 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         ->permission(Permission::PROJECT_MANAGEMENT_LIST());
     Route::get('/contractual-engagements', [ProjectManagementController::class, 'contractualEngagements']);
 
+
+        //inquiry
+       Route::get('/inquiry/my-map-tasks', [ProjectNotificationController::class, 'myMapTasks']);
+       Route::get('/inquiry/safety/search', [SafetySearchController::class, 'search']);
 
         // Safety & Violations — static routes MUST come before {project}/safety/{id}
         Route::get('/violations', [ViolationController::class, 'index']);
