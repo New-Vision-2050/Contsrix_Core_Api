@@ -17,6 +17,7 @@ final class AllowDuringShiftEvaluator implements ConditionEvaluator
 
     public function __construct(
         private readonly AttendanceConstraintService $attendanceConstraintService,
+        private readonly \Modules\Attendance\Services\UserAttendanceService $userAttendanceService,
     ) {}
 
     public function condition(): InternalProcessCondition
@@ -64,8 +65,9 @@ final class AllowDuringShiftEvaluator implements ConditionEvaluator
             );
         }
 
-        // ── shift mode (default) ────────────────────────────────────────
-        $workRules = $this->attendanceConstraintService->getTodaysWorkRulesForUser($user, null, $timezone);
+        // ── shift mode (default) — Attendance Rules V2 windows ─────────
+        $userConstraints = $this->userAttendanceService->getUserConstraints($user, null);
+        $workRules = $userConstraints['work_rules'] ?? [];
         $isHoliday = (bool) ($workRules['is_holiday'] ?? false);
 
         if ($isHoliday) {

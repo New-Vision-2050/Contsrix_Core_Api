@@ -20,9 +20,13 @@ final class EmployeeTaskExceptionResolver implements ExceptionResolver
     {
         match ($result->exception) {
             'notAllowedDuringShift'          => throw EmployeeTaskException::notAllowedDuringShift(),
-            'outsideShiftTimeWindow'         => throw EmployeeTaskException::outsideShiftTimeWindow(),
+            'outsideShiftTimeWindow'         => throw EmployeeTaskException::outsideShiftTimeWindow($result->message),
+            'clockInDeadlinePassed'          => throw EmployeeTaskException::clockInDeadlinePassed(
+                is_string($result->context['deadline'] ?? null) ? $result->context['deadline'] : null
+            ),
             'notAllowedOnHolidays'           => throw EmployeeTaskException::notAllowedOnHolidays(),
             'notAllowedOutsideLocation'      => throw EmployeeTaskException::notAllowedOutsideLocation(),
+            'employeeHasNoAttendance'        => throw EmployeeTaskException::employeeHasNoAttendance(),
             'taskDurationExceedsLimit'       => throw EmployeeTaskException::taskDurationExceedsLimit(
                 (int) ($result->context['maxHours'] ?? 0),
             ),
