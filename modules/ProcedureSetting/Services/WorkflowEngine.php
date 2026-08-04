@@ -15,6 +15,7 @@ use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\ProcedureSetting\Services\WorkflowPushNotificationService;
+use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
@@ -135,7 +136,13 @@ final class WorkflowEngine
         ?string $independentUserId = null,
     ): WorkflowStartResult {
         if ($resolvedSetting !== null) {
-            $settings = new Collection([$resolvedSetting->load(['steps' => fn ($query) => $query->orderBy('step_order')])]);
+            $isProjectProcedure = $resolvedSetting->type === ProjectProcedureSetting::PROCEDURE_TYPE;
+            $settings = new Collection([$resolvedSetting->load(['steps' => function ($query) use ($isProjectProcedure): void {
+                if ($isProjectProcedure) {
+                    $query->withoutGlobalScopes();
+                }
+                $query->orderBy('step_order');
+            }])]);
         } else {
             $settings = $this->resolveSettingsForEntry($type, $formKey, $companyId, $branchId);
         }
