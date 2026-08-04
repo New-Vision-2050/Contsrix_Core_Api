@@ -216,9 +216,13 @@ class AttachmentRequestService
      */
     public function getSelectableProcedures(string $projectId): array
     {
+        $project = ProjectManagement::withoutGlobalScopes()
+            ->where('id', $projectId)
+            ->firstOrFail();
+
         return ProjectProcedureSetting::query()
             ->withoutGlobalScopes()
-            ->where('company_id', (string) tenant('id'))
+            ->where('company_id', $project->company_id)
             ->where('project_id', $projectId)
             ->with([
                 'procedureSetting',
@@ -492,14 +496,17 @@ class AttachmentRequestService
     ): ProjectProcedureSetting {
         $projectProcedure = ProjectProcedureSetting::query()
             ->withoutGlobalScopes()
-            ->where('company_id', (string) tenant('id'))
+            ->where('company_id', $project->company_id)
             ->where('project_id', $project->id)
             ->where('procedure_setting_id', $procedureSettingId)
             ->whereHas('procedureSetting', static function ($query) use ($project): void {
-                $query->where('company_id', (string) tenant('id'))
+                $query->withoutGlobalScopes()
+                    ->where('company_id', $project->company_id)
                     ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE)
                     ->whereHas('workFlow', static function ($query) use ($project): void {
-                        $query->where('project_id', $project->id)
+                        $query->withoutGlobalScopes()
+                            ->where('company_id', $project->company_id)
+                            ->where('project_id', $project->id)
                             ->where('type', ProjectProcedureSetting::PROCEDURE_TYPE);
                     });
             })
