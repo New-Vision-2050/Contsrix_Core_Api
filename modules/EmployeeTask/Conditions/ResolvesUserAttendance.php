@@ -42,6 +42,25 @@ trait ResolvesUserAttendance
     private function isCurrentlyInAnyWorkPeriod(array $periods): bool
     {
         foreach ($periods as $period) {
+            if (! is_array($period)) {
+                continue;
+            }
+
+            // Attendance Rules V2 window (same fields as user-constraint/today).
+            if (! empty($period['can_clock_in_from']) && ! empty($period['can_clock_out_until'])) {
+                try {
+                    $from = Carbon::parse((string) $period['can_clock_in_from']);
+                    $until = Carbon::parse((string) $period['can_clock_out_until']);
+                    $now = Carbon::now($from->getTimezone());
+                    if ($now->between($from, $until, true)) {
+                        return true;
+                    }
+                } catch (\Throwable) {
+                    // fall through to legacy period bounds
+                }
+                continue;
+            }
+
             $start = $period['period_start_time_carbon'] ?? null;
             $end   = $period['period_end_time_carbon'] ?? null;
 

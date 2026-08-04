@@ -39,6 +39,7 @@ class EmployeeTaskRequestService
         private readonly ProcessWorkflowService $processService,
         private readonly FileUploadService $fileUploadService,
         private readonly EmployeeTaskFormConditionService $conditionService,
+        private readonly EmployeeTaskAttendanceWindowGuard $attendanceWindowGuard,
     ) {}
 
     public function create(CreateEmployeeTaskRequestDTO $dto, ?string $formKey = null): EmployeeTaskRequest
@@ -53,6 +54,11 @@ class EmployeeTaskRequestService
             ? (string) $creator->userProfessionalData->branch_id
             : null;
         $companyId = (string) tenant('id');
+
+        // Same attendance window + clock-in rules as clock-in (skip admin dashboard creates).
+        if ($formKey === InternalProcessForm::CreateTask->value) {
+            $this->attendanceWindowGuard->assertCanCreateTask($dto->userId);
+        }
 
         $this->conditionService->checkCreateTaskConditions(
             $dto->userId,

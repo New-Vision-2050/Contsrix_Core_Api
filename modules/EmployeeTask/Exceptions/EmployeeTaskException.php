@@ -204,9 +204,21 @@ final class EmployeeTaskException extends RuntimeException
         return new self(__('You must be within the task location to start this task.'), 422);
     }
 
-    public static function outsideShiftTimeWindow(): self
+    public static function outsideShiftTimeWindow(?string $message = null): self
     {
-        return new self(__('This action is only allowed within the configured shift time window.'), 422);
+        return new self(
+            $message ?? __('This action is only allowed within the configured shift time window.'),
+            422
+        );
+    }
+
+    public static function clockInDeadlinePassed(?string $deadlineHm = null): self
+    {
+        $message = $deadlineHm
+            ? 'Clock-in deadline passed at '.$deadlineHm.'. You cannot create a task.'
+            : 'Clock-in deadline passed. You cannot create a task without clocking in.';
+
+        return new self($message, 422);
     }
 
     public static function notAllowedOutsideLocation(): self
@@ -216,7 +228,7 @@ final class EmployeeTaskException extends RuntimeException
 
     public static function employeeHasNoAttendance(): self
     {
-        return new self(__('The employee must be clocked in (have an active attendance record) to perform this action.'), 422);
+        return new self('You must clock in before creating a task.', 422);
     }
 
     public static function taskNotApproved(): self

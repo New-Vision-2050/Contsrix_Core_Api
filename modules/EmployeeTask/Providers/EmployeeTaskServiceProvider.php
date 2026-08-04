@@ -74,6 +74,7 @@ class EmployeeTaskServiceProvider extends ServiceProvider
         $this->app->singleton(EmployeeTaskEndRequestService::class);
         $this->app->singleton(EmployeeTaskFormConditionService::class);
         $this->app->singleton(EmployeeTaskAvailableActionsService::class);
+        $this->app->singleton(EmployeeTaskAttendanceWindowGuard::class);
 
         // Attendance Rules V2 (Feature 6): expose active task geofences to the
         // Attendance module through a tagged contract, keeping the dependency

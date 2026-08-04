@@ -432,8 +432,26 @@ class ProcessWorkflowService
         $isProjectProcedure = $setting->type === ProjectProcedureSetting::PROCEDURE_TYPE;
         $ownerCompanyId = $isProjectProcedure ? $setting->company_id : null;
 
-        $ids = [$setting->id];
-        $ids = array_merge($ids, $this->collectDescendantIds($setting->id, $ownerCompanyId));
+        $directQuery = ProcedureSettingStep::query()
+            ->with(['actionTakers'])
+            ->where('procedure_setting_id', $setting->id);
+
+        if ($ownerCompanyId !== null) {
+            $directQuery->withoutGlobalScopes()
+                ->where('company_id', $ownerCompanyId);
+        }
+
+        $directSteps = $directQuery->orderBy('step_order')->get();
+
+        if ($directSteps->isNotEmpty()) {
+            return $directSteps;
+        }
+
+        $ids = $this->collectDescendantIds($setting->id, $ownerCompanyId);
+
+        if ($ids === []) {
+            return new Collection();
+        }
 
         $query = ProcedureSettingStep::query()
             ->with(['actionTakers']);
