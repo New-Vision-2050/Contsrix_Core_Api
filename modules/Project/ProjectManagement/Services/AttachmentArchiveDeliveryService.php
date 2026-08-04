@@ -162,6 +162,9 @@ final class AttachmentArchiveDeliveryService
 
             $newMedia = new CustomMedia();
             $newMedia->forceFill($attrs);
+            $newMedia->custom_properties = is_string($newMedia->getRawAttribute('custom_properties'))
+                ? json_decode($newMedia->getRawAttribute('custom_properties'), true) ?? []
+                : ($newMedia->custom_properties ?? []);
             $newMedia->uuid = Uuid::uuid4()->toString();
             $newMedia->model_id = $file->id;
             $newMedia->model_type = File::class;
