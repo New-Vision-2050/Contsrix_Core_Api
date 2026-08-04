@@ -230,7 +230,6 @@ class FolderRepository extends BaseRepository
             });
         }
 
-
         $folderQuery = $folderQuery->when(!request()->has("project_id") && !request()->has("is_project") && !request()->has("contractual_engagement_key")
         ,function($query){
            $query->whereNull("project_id");
@@ -452,7 +451,10 @@ class FolderRepository extends BaseRepository
         $totalFolders = $folders->count();
         $totalFiles = $files->count();
         $totalItems = $totalFolders + $totalFiles;
-        $totalPages = (int)ceil($totalItems / $perPage);
+        $page = max(1, $page);
+        $perPage = max(1, $perPage);
+        $totalPages = $totalItems > 0 ? (int) ceil($totalItems / $perPage) : 0;
+        $page = $totalPages > 0 ? min($page, $totalPages) : 1;
         $offset = ($page - 1) * $perPage;
 
         // Determine how many folders and files to include in this page
