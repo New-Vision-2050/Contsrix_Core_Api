@@ -66,9 +66,7 @@ class CreateProjectOrderPermitRequest extends FormRequest
         ];
     }
 
-    /**
-     * تخصيص رسائل الخطأ.
-     */
+
     public function messages(): array
     {
         return [
@@ -78,9 +76,6 @@ class CreateProjectOrderPermitRequest extends FormRequest
         ];
     }
 
-    /**
-     * إضافة تحقق مخصص بعد التحقق الأساسي للتأكد من عدم تكرار name + order_permit_id
-     */
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {

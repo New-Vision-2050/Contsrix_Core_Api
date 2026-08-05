@@ -85,7 +85,7 @@ class ProjectOrderPermitService
                 'consultnat_statement_status' => Arr::get($workOrderData, 'consultnat_statement_status'),
             ]);
 
-            $this->autoFillFromUds($item);
+            // $this->autoFillFromUds($item);
 
             $this->createNoteLog($item, Arr::get($workOrderData, 'note_from_permit_to_departments'), ProjectOrderPermitNoteLog::TYPE_PERMIT_TO_DEPARTMENTS);
             $this->createNoteLog($item, Arr::get($workOrderData, 'note_from_departments_to_permit'), ProjectOrderPermitNoteLog::TYPE_DEPARTMENTS_TO_PERMIT);
