@@ -45,4 +45,9 @@ class SafetyException extends CustomException
     {
         return new self('مهمة السلامة غير موجودة.', 404);
     }
+
+    public static function searchNotFound(): self
+    {
+        return new self('لم يتم العثور على إشعار أو أمر عمل بهذا الرقم.', 404);
+    }
 }
