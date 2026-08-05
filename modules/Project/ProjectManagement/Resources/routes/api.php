@@ -211,6 +211,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         // Route::get('/department/{departmentId}', [ProjectOrderPermitController::class, 'getByDepartment']);
         Route::post('/', [ProjectOrderPermitController::class, 'store']);
         Route::post('/import', [ProjectOrderPermitController::class, 'importExcel']);
+        Route::get('/{name}/update-from-uds', [ProjectOrderPermitController::class, 'updateFromUds']);
         Route::get('/{id}', [ProjectOrderPermitController::class, 'show']);
         Route::put('/{id}', [ProjectOrderPermitController::class, 'update']);
         Route::put('/{id}/statuses', [ProjectOrderPermitController::class, 'updateStatuses']);

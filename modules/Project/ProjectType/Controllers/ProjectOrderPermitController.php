@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectType\Controllers;
 
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitPresenter;
@@ -14,11 +15,7 @@ use Modules\Project\ProjectType\Requests\CreateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitStatusRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
-use Modules\Project\ProjectType\Services\OrderPermitExcelImportService;
-use Maatwebsite\Excel\Facades\Excel;
-use Modules\Project\ProjectType\Jobs\ImportOrderPermitsJob;
-use Modules\Project\ProjectType\Models\UdsExcelSheet;
-use Modules\Shared\Media\Services\FileUploadService;
+use Modules\Project\ProjectType\Jobs\ImportProjectOrderPermitUdsJob;
 
 class ProjectOrderPermitController extends Controller
 {
@@ -134,33 +131,39 @@ class ProjectOrderPermitController extends Controller
 
         try {
             $file = $request->file('file');
-            $projectId = $request->route('project');
-            $companyId = tenant('id');
+            $projectId = (string) $request->route('project');
+            $companyId = (string) tenant('id');
 
             $path = $file->store('temp_imports', 'public');
-            $job = new ImportOrderPermitsJob($path);
-            dispatch($job);
 
-            $udsSheet = UdsExcelSheet::firstOrCreate([
-                'project_id' => $projectId,
-                'company_id' => $companyId,
-            ]);
-
-            $udsSheet->clearMediaCollection('uds_sheets');
-            app(FileUploadService::class)->uploadFile(
-                $udsSheet,
-                $file,
-                'temp_imports',
-                'uds_sheets',
-                'public'
-            );
+            dispatch(new ImportProjectOrderPermitUdsJob($path, $projectId, $companyId));
 
             return response()->json([
                 'message' => 'جاري تحديث البيانات في الخلفية',
-                'uds_sheet'=>$udsSheet->withMedia('uds_sheets')->getData()
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateFromUds(Request $request, string $project, string $name): JsonResponse
+    {
+        $request->validate([
+            'order_permit_id' => 'required',
+        ]);
+
+        try {
+            $item = $this->service->updateFromUds(
+                $project,
+                $name,
+                $request->query('order_permit_id')
+            );
+
+            return Json::item((new ProjectOrderPermitPresenter($item))->getData());
+        } catch (ModelNotFoundException $e) {
+            return Json::error($e->getMessage(), 404);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
         }
     }
 
