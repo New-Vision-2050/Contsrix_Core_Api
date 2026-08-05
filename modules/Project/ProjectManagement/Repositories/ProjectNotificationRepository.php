@@ -119,6 +119,46 @@ class ProjectNotificationRepository
     }
 
     /**
+     * Load specific notifications for the map view by id.
+     *
+     * @param  list<string>  $ids
+     * @return Collection<int, ProjectNotification>
+     */
+    public function findManyForMap(array $ids): Collection
+    {
+        if ($ids === []) {
+            return new Collection();
+        }
+
+        $result = ProjectNotification::query()
+            ->whereIn('id', $ids)
+            ->with([
+                'project',
+                'company',
+                'contractor',
+                'contractorRepresentative',
+                'updateSiteStatus',
+                'endTaskStatus',
+            ])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $this->preloadAssignedUsers($result);
+
+        return $result;
+    }
+
+    /**
+     * Public wrapper used by my-map-tasks after a custom query.
+     *
+     * @param  \Illuminate\Support\Collection<int, ProjectNotification>|Collection<int, ProjectNotification>  $notifications
+     */
+    public function preloadAssignedUsersForMap($notifications): void
+    {
+        $this->preloadAssignedUsers($notifications);
+    }
+
+    /**
      * Mobile "my-tasks" query. Filters by JSON contains on assigned_user_ids
      * so that any notification assigned to the current user appears.
      */

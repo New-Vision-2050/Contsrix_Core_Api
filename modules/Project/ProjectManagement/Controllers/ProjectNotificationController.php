@@ -24,6 +24,7 @@ use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationChartsPresenter;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationEmployeeLocationPresenter;
 use Modules\Project\ProjectManagement\Presenters\ProjectNotificationPresenter;
+use Modules\Project\ProjectManagement\Presenters\MyMapTaskPresenter;
 use Modules\Project\ProjectManagement\Requests\CreateProjectNotificationRequest;
 use Modules\Project\ProjectManagement\Requests\FilterProjectNotificationChartsRequest;
 use Modules\Project\ProjectManagement\Requests\FilterProjectNotificationsRequest;
@@ -42,6 +43,7 @@ use Modules\Project\ProjectManagement\Services\ProjectNotificationChartsService;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationLocationService;
 use Modules\Project\ProjectManagement\Services\ProjectNotificationService;
 use Modules\RoleAndPermission\Enums\Permission;
+use Throwable;
 
 class ProjectNotificationController extends Controller
 {
@@ -122,6 +124,36 @@ class ProjectNotificationController extends Controller
             ],
             message: 'Map tasks retrieved successfully',
         );
+    }
+
+    /**
+     * GET /projects/my-map-tasks
+     *
+     * Map payload for the authenticated user only: assigned project notifications
+     * plus order permits on the user's projects. Uses a dedicated presenter so
+     * contractor is always included.
+     */
+    public function myMapTasks(): JsonResponse
+    {
+        try {
+            $userId = (string) Auth::id();
+            $result = $this->notificationService->myMapTasks($userId);
+
+            $this->notificationService->attachReadStatus($result['notifications'], $userId);
+
+            return Json::item(
+                [
+                    'items' => MyMapTaskPresenter::collection(
+                        $result['notifications'],
+                        $result['order_permits'],
+                    ),
+                    'statuses' => MyMapTaskPresenter::statusLookup(),
+                ],
+                message: 'My map tasks retrieved successfully',
+            );
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
+        }
     }
 
     /**
@@ -1011,5 +1043,12 @@ class ProjectNotificationController extends Controller
         $this->notificationService->attachReadStatus([$notification], (string) Auth::id());
 
         return ProjectNotificationPresenter::detail($notification);
+    }
+
+    private function errorResponse(Throwable $e): JsonResponse
+    {
+        $httpStatus = method_exists($e, 'getStatusCode') ? (int) $e->getStatusCode() : 500;
+
+        return Json::error($e->getMessage(), $httpStatus, null, [], $httpStatus);
     }
 }

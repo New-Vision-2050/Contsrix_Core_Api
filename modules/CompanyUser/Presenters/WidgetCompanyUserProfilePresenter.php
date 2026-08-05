@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Presenters;
 
-use Modules\CompanyUser\Models\CompanyUser;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Carbon\Carbon;
+
 class WidgetCompanyUserProfilePresenter extends AbstractPresenter
 {
-    private  $employmentContract;
+    private $employmentContract;
     private $userSalary;
+    private array $tasks;
 
-    public function __construct( $employmentContract, $userSalary)
+    public function __construct($employmentContract, $userSalary, array $tasks = [])
     {
         $this->employmentContract = $employmentContract;
         $this->userSalary = $userSalary;
+        $this->tasks = $tasks;
     }
 
     protected function present(bool $isListing = false): array
@@ -27,7 +29,8 @@ class WidgetCompanyUserProfilePresenter extends AbstractPresenter
                     'end_date'     => null,
                     'user_salary'  => null,
                 ],
-                'message' => 'Some user data is missing.'
+                'tasks' => $this->tasks,
+                'message' => 'Some user data is missing.',
             ];
         }
 
@@ -53,8 +56,8 @@ class WidgetCompanyUserProfilePresenter extends AbstractPresenter
                 'start_date'   => $startDate->toDateString(),
                 'end_date'     => $endDate->toDateString(),
                 'user_salary'  => $this->userSalary->salary,
-            ]
+            ],
+            'tasks' => $this->tasks,
         ];
     }
-
 }
