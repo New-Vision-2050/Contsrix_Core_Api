@@ -267,7 +267,7 @@ class SafetyService
     }
 
     /**
-     * @param  array<int, array{violation_id: string, weight?: mixed, status?: int|string, images?: UploadedFile[]}>  $violations
+     * @param  array<int, array{violation_id: string, weight?: mixed, status?: string, images?: UploadedFile[]}>  $violations
      */
     public function evaluateViolations(string $projectId, string $id, array $violations, ?string $actorUserId = null): SafetyRecord
     {
@@ -299,7 +299,7 @@ class SafetyService
      * If the actor has no pending record, a completed record is left untouched
      * and the call is a no-op (returns null).
      *
-     * @param  array<int, array{violation_id: string, weight?: mixed, status?: int|string, action?: string|null, images?: UploadedFile[]|null}>  $violations
+     * @param  array<int, array{violation_id: string, weight?: mixed, status?: string, action?: string|null, images?: UploadedFile[]|null}>  $violations
      */
     public function evaluateViolationsForNotification(
         ProjectNotification $notification,
@@ -557,7 +557,7 @@ class SafetyService
                 'category' => $violation->category,
                 'is_attached' => $isAttached,
                 'weight' => $pivot?->weight ?? $violation->default_weight,
-                'status' => (int) ($pivot?->status ?? 0),
+                'status' => $pivot?->status,
                 'action' => $pivot?->action,
             ];
         });
@@ -576,14 +576,13 @@ class SafetyService
             }
 
             $violationId = (string) $violation['violation_id'];
-            $status = (int) ($violation['status'] ?? 0);
+            $status = (string) ($violation['status'] ?? '');
             $baseWeight = abs((float) ($violation['weight'] ?? $defaults[$violationId] ?? 0));
 
             $syncData[$violationId] = [
                 'weight' => $this->signedWeight($baseWeight, $status),
-                // varchar column: store numeric status as string ("-1", "1", "0")
-                'status' => (string) $status,
-                'action' => $status === -1
+                'status' => $status,
+                'action' => $status === 'violation_found'
                     ? ($violation['action'] ?? null)
                     : null,
             ];
@@ -595,11 +594,9 @@ class SafetyService
     /**
      * Persist earned_score, required_score, and percentage from pivot weights.
      *
-     * earned_score    = sum of signed pivot weights (N/A / unevaluated stored as 0)
+     * earned_score    = sum of signed pivot weights (N/A stored as 0)
      * required_score  = sum of ABS(weights) for non-N/A (max if all were no_violation)
      * percentage      = earned_score / required_score * 100 (100 when required_score = 0)
-     *
-     * Status: -1 = violation_found, 1 = no_violation, 0 = not_applicable / unevaluated
      */
     private function calculateAndStoreScores(SafetyRecord $record): void
     {
@@ -609,10 +606,10 @@ class SafetyService
         $requiredScore = 0.0;
 
         foreach ($record->violations as $violation) {
-            $status = (int) ($violation->pivot->status ?? 0);
+            $status = (string) ($violation->pivot->status ?? '');
             $weight = (float) ($violation->pivot->weight ?? 0);
 
-            if ($status === 0) {
+            if ($status === 'not_applicable') {
                 continue;
             }
 
@@ -632,15 +629,12 @@ class SafetyService
         ]);
     }
 
-    /**
-     * Status: -1 = violation_found, 1 = no_violation, 0 = not_applicable / default
-     */
-    private function signedWeight(float $baseWeight, int|string $status): float
+    private function signedWeight(float $baseWeight, string $status): float
     {
-        return match ((int) $status) {
-            -1 => -1 * $baseWeight,
-            1 => $baseWeight,
-            0 => 0.0,
+        return match ($status) {
+            'violation_found' => -1 * $baseWeight,
+            'no_violation' => $baseWeight,
+            'not_applicable' => 0.0,
             default => 0.0,
         };
     }

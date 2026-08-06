@@ -13,7 +13,7 @@ return new class extends Migration
             $table->uuid('safety_record_id');
             $table->uuid('violation_id');
             $table->decimal('weight', 5, 2)->nullable();
-            $table->string('status', 30)->nullable()->default('0');
+            $table->string('status', 30)->nullable()->default('not_applicable');
             $table->timestamps();
 
             $table->foreign('safety_record_id')->references('id')->on('safety_records')->cascadeOnDelete();
