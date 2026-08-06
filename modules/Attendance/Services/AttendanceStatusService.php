@@ -19,6 +19,73 @@ class AttendanceStatusService
     }
 
     /**
+     * Present team attendance rows with the same متواجد (on_task) overlay used by
+     * the calendar / AttendanceStatusService: absent + task activity that day → on_task.
+     *
+     * @param  iterable<int, Attendance>  $attendances
+     * @return list<array<string, mixed>>
+     */
+    public function presentTeamAttendances(
+        iterable $attendances,
+        ?string $rangeStart = null,
+        ?string $rangeEnd = null,
+    ): array {
+        $items = collect($attendances)->values();
+        if ($items->isEmpty()) {
+            return [];
+        }
+
+        $userIds = $items
+            ->map(static fn (Attendance $a): string => (string) $a->user_id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $workDates = $items
+            ->map(function (Attendance $a): ?string {
+                if (! empty($a->business_date)) {
+                    $d = $a->business_date;
+
+                    return $d instanceof Carbon ? $d->format('Y-m-d') : substr((string) $d, 0, 10);
+                }
+                if ($a->start_time) {
+                    return Carbon::parse($a->start_time)->format('Y-m-d');
+                }
+                if ($a->clock_in_time) {
+                    return Carbon::parse($a->clock_in_time)->format('Y-m-d');
+                }
+
+                return null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        $start = $rangeStart ?: ($workDates->min() ?: Carbon::today()->toDateString());
+        $end = $rangeEnd ?: ($workDates->max() ?: $start);
+
+        $presence = $this->taskPresenceService->taskPresenceDetailsForUsers($userIds->all(), $start, $end);
+
+        return $items->map(function (Attendance $attendance) use ($presence): array {
+            $userId = (string) $attendance->user_id;
+            $workDate = null;
+            if (! empty($attendance->business_date)) {
+                $d = $attendance->business_date;
+                $workDate = $d instanceof Carbon ? $d->format('Y-m-d') : substr((string) $d, 0, 10);
+            } elseif ($attendance->start_time) {
+                $workDate = Carbon::parse($attendance->start_time)->format('Y-m-d');
+            } elseif ($attendance->clock_in_time) {
+                $workDate = Carbon::parse($attendance->clock_in_time)->format('Y-m-d');
+            }
+
+            $hasTask = $workDate !== null
+                && isset($presence[$userId][$workDate]);
+
+            return (new AttendanceTeamPresenter($attendance, $hasTask))->present();
+        })->all();
+    }
+
+    /**
      * @param  Collection<int, string>  $userIds
      * @param  array<string, mixed>  $filters
      * @param  array<int, string>|null  $usersOnTask
@@ -327,6 +394,7 @@ class AttendanceStatusService
             'clock_in_time',
             'clock_out_time',
             'start_time',
+            'business_date',
             'overtime_hours',
             'clock_in_location',
             'location_tracking',

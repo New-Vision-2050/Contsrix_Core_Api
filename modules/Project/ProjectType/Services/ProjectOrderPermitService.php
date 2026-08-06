@@ -6,16 +6,16 @@ namespace Modules\Project\ProjectType\Services;
 
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Storage;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Models\ProjectPhaseStatus;
 use Modules\Project\ProjectType\Models\ConnectionPhaseStatus;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
-use Modules\Project\ProjectType\Models\UdsExcelSheet;
+use Modules\Project\ProjectType\Models\OrderPermitDepartment;
 use Modules\Project\ProjectType\Models\ProjectOrderPermitNoteLog;
+use Modules\Project\ProjectType\Models\ProjectOrderPermitUds;
 
 class ProjectOrderPermitService
 {
@@ -85,7 +85,7 @@ class ProjectOrderPermitService
                 'consultnat_statement_status' => Arr::get($workOrderData, 'consultnat_statement_status'),
             ]);
 
-            $this->autoFillFromUds($item);
+            // $this->autoFillFromUds($item);
 
             $this->createNoteLog($item, Arr::get($workOrderData, 'note_from_permit_to_departments'), ProjectOrderPermitNoteLog::TYPE_PERMIT_TO_DEPARTMENTS);
             $this->createNoteLog($item, Arr::get($workOrderData, 'note_from_departments_to_permit'), ProjectOrderPermitNoteLog::TYPE_DEPARTMENTS_TO_PERMIT);
@@ -97,107 +97,388 @@ class ProjectOrderPermitService
     }
 
 
-private function autoFillFromUds(ProjectOrderPermit $order): void
-{
-    try {
-        $udsSheet = UdsExcelSheet::where('project_id', $order->project_id)->first();
-        if (!$udsSheet) return;
+    public function updateWorkOrdersFromUds(string $projectId): int
+    {
+        $udsRecords = ProjectOrderPermitUds::withoutGlobalScopes()
+            ->where('project_id', $projectId)
+            ->get();
 
-        $media = $udsSheet->getFirstMedia('uds_sheets');
-        if (!$media) return;
-
-        $fullPath = $media->getPath();
-        $tempFile = null;
-
-        if (!file_exists($fullPath)) {
-            $disk = $media->disk;
-            if (!in_array($disk, ['public', 'local'], true)) {
-                $content = Storage::disk($disk)->get($media->getPathRelativeToRoot());
-                if ($content === false) return;
-                $tempFile = tempnam(sys_get_temp_dir(), 'uds_') . '.xlsx';
-                file_put_contents($tempFile, $content);
-                $fullPath = $tempFile;
-            } else {
-                return;
-            }
+        if ($udsRecords->isEmpty()) {
+            return 0;
         }
 
-        $rows = Excel::toArray([], $fullPath)[0] ?? [];
+        $workOrderNames = $udsRecords->pluck('name')->filter()->unique()->values()->all();
 
-        if ($tempFile !== null && file_exists($tempFile)) {
-            unlink($tempFile);
-        }
+        $existingOrders = ProjectOrderPermit::where('project_id', $projectId)
+            ->whereIn('name', $workOrderNames)
+            ->with(['orderPermit', 'contractor', 'department'])
+            ->get()
+            ->groupBy('name');
 
-        if (empty($rows)) return;
+        $companyId = $udsRecords->first()->company_id;
 
-        $matchedRows = [];
-        foreach ($rows as $row) {
-            if (trim((string)($row[34] ?? '')) === $order->name) {
-                $matchedRows[] = $row;
-            }
-        }
+        $contractorNames = $udsRecords->pluck('contractor_name')->filter()->unique()->values()->all();
+        $contractorsByName = empty($contractorNames)
+            ? collect()
+            : ProjectContractor::withoutGlobalScopes()
+                ->where('company_id', $companyId)
+                ->whereIn('name', $contractorNames)
+                ->get()
+                ->keyBy('name');
 
-        if (empty($matchedRows)) return;
-
-        $orderPermit = $order->orderPermit()->first();
-        if (!$orderPermit) return;
-
-        $value = function (array $row, int $index): ?string {
-            $val = trim((string)($row[$index] ?? ''));
-            return $val !== '' ? $val : null;
-        };
-        $parseDate = function (array $row, int $index) use ($value): ?string {
-            $val = $value($row, $index);
-            if ($val === null) return null;
-            try { return Carbon::parse($val)->format('Y-m-d'); } catch (\Exception $e) { return null; }
-        };
-        $parseFloat = function (array $row, int $index) use ($value): ?float {
-            $val = $value($row, $index);
-            return $val !== null ? (float) $val : null;
-        };
+        $departmentNames = $udsRecords->pluck('office')->filter()->unique()->values()->all();
+        $departmentsByName = empty($departmentNames)
+            ? collect()
+            : OrderPermitDepartment::whereIn('name', $departmentNames)->get()->keyBy('name');
 
         $updates = [];
+        $logMessages = [];
 
-        foreach ($matchedRows as $matchedRow) {
-            $typeCode = trim((string)($matchedRow[35] ?? ''));
-            if ($typeCode === '') continue;
+        foreach ($udsRecords as $uds) {
+            $typeCode = $uds->type_code !== null ? trim((string) $uds->type_code) : '';
+            if ($uds->name === null || $typeCode === '') {
+                continue;
+            }
 
-            $isContractor = $orderPermit->code !== null && (string)$orderPermit->code === $typeCode;
-            $isConsultant = $orderPermit->type !== null && (string)$orderPermit->type === $typeCode;
+            $candidates = $existingOrders->get($uds->name);
+            if ($candidates === null || $candidates->isEmpty()) {
+                continue;
+            }
 
-            if (!$isContractor && !$isConsultant) continue;
+            foreach ($candidates as $order) {
+                $orderPermit = $order->orderPermit;
+                if (!$orderPermit) {
+                    continue;
+                }
 
-            if ($isContractor) {
-                $updates['executing_entity'] = $value($matchedRow, 27);
-                $updates['office'] = $value($matchedRow, 37);
-                $updates['contractor_basket'] = $value($matchedRow, 16);
-                $updates['contractor_last_procedure_code'] = $value($matchedRow, 30);
-                $updates['contractor_last_procedure_date'] = $parseDate($matchedRow, 28);
-                $updates['contractor_column_155_entry_date'] = $parseDate($matchedRow, 24);
-                $updates['material_balance_elec_contractor'] = $value($matchedRow, 13);
-                $updates['contractor_work_order_status'] = $value($matchedRow, 6);
-            } else {
-                $updates['consultant_current_basket'] = $value($matchedRow, 16);
-                $updates['assigned_date'] = $parseDate($matchedRow, 25);
-                $updates['consultant_assignment_date'] = $parseDate($matchedRow, 25);
-                $updates['consultant_last_procedure_code'] = $value($matchedRow, 30);
-                $updates['consultant_last_procedure_date'] = $parseDate($matchedRow, 28);
-                $updates['consultant_column_155_entry_date'] = $parseDate($matchedRow, 24);
-                $updates['price'] = $parseFloat($matchedRow, 12);
-                $updates['consultant_price'] = $parseFloat($matchedRow, 12);
+                $isContractor =
+                    $orderPermit->code !== null
+                    && (string) $orderPermit->code === $typeCode;
+
+                $isConsultant =
+                    $orderPermit->type !== null
+                    && (string) $orderPermit->type === $typeCode;
+
+                if (!$isContractor && !$isConsultant) {
+                    continue;
+                }
+
+                $orderId = $order->id;
+                if (!isset($updates[$orderId])) {
+                    $updates[$orderId] = [];
+                }
+
+                if ($isContractor) {
+                    $akValue = $uds->contractor_name !== null ? trim((string) $uds->contractor_name) : null;
+                    $akValue = $akValue !== '' ? $akValue : null;
+                    $currentContractor = $order->contractor;
+
+                    if ($akValue !== null) {
+                        if ($currentContractor) {
+                            $currentName = $currentContractor->name;
+                            if ($currentName !== $akValue) {
+                                $newContractor = $contractorsByName->get($akValue);
+                                if ($newContractor) {
+                                    $updates[$orderId]['contractor_id'] = $newContractor->id;
+                                    $updates[$orderId]['import_log'] = null;
+                                } else {
+                                    $msg = '[' . Carbon::now()->toDateTimeString() . "] Contractor name '{$akValue}' not found; kept '{$currentName}'.";
+                                    Log::warning($msg);
+                                    $logMessages[$orderId] = [$msg];
+                                }
+                            }
+                        } else {
+                            $newContractor = $contractorsByName->get($akValue);
+                            if ($newContractor) {
+                                $updates[$orderId]['contractor_id'] = $newContractor->id;
+                                $updates[$orderId]['import_log'] = null;
+                            } else {
+                                $msg = '[' . Carbon::now()->toDateTimeString() . "] No contractor with name '{$akValue}' found.";
+                                Log::warning($msg);
+                                $logMessages[$orderId] = [$msg];
+                            }
+                        }
+                    }
+                }
+
+                $departmentName = $uds->office !== null ? trim((string) $uds->office) : null;
+                $departmentName = $departmentName !== '' ? $departmentName : null;
+
+                if ($departmentName !== null) {
+                    $currentDepartment = $order->department;
+                    $currentDeptName = $currentDepartment?->name;
+
+                    if ($currentDeptName !== $departmentName) {
+                        $newDepartment = $departmentsByName->get($departmentName);
+                        if ($newDepartment) {
+                            $updates[$orderId]['order_permit_department_id'] = $newDepartment->id;
+                            if (!array_key_exists('import_log', $updates[$orderId]) || $updates[$orderId]['import_log'] !== null) {
+                                $updates[$orderId]['import_log'] = null;
+                            }
+                        } else {
+                            $msg = '[' . Carbon::now()->toDateTimeString() . "] Department '{$departmentName}' not found; kept '{$currentDeptName}'.";
+                            Log::warning($msg);
+                            $logMessages[$orderId][] = $msg;
+                        }
+                    }
+                }
+
+                if ($isContractor) {
+                    $updates[$orderId]['executing_entity'] = $uds->executing_entity;
+                    $updates[$orderId]['office'] = $uds->office;
+                    $updates[$orderId]['contractor_basket'] = $uds->contractor_basket;
+                    $updates[$orderId]['contractor_last_procedure_code'] = $uds->contractor_last_procedure_code;
+                    $updates[$orderId]['contractor_last_procedure_date'] = $this->formatUdsDate($uds->contractor_last_procedure_date);
+                    $updates[$orderId]['contractor_column_155_entry_date'] = $this->formatUdsDate($uds->contractor_column_155_entry_date);
+                    $updates[$orderId]['material_balance_elec_contractor'] = $uds->material_balance_elec_contractor;
+                    $updates[$orderId]['contractor_work_order_status'] = $uds->contractor_work_order_status;
+                } else {
+                    $updates[$orderId]['consultant_current_basket'] = $uds->consultant_current_basket;
+                    $updates[$orderId]['assigned_date'] = $this->formatUdsDate($uds->assigned_date);
+                    $updates[$orderId]['consultant_assignment_date'] = $this->formatUdsDate($uds->consultant_assignment_date);
+                    $updates[$orderId]['consultant_last_procedure_code'] = $uds->consultant_last_procedure_code;
+                    $updates[$orderId]['consultant_last_procedure_date'] = $this->formatUdsDate($uds->consultant_last_procedure_date);
+                    $updates[$orderId]['consultant_column_155_entry_date'] = $this->formatUdsDate($uds->consultant_column_155_entry_date);
+                    $updates[$orderId]['price'] = $uds->price;
+                    $updates[$orderId]['consultant_price'] = $uds->consultant_price;
+                }
             }
         }
 
-        $updates = array_filter($updates, fn($v) => $v !== null);
+        $updatedCount = 0;
+        $now = Carbon::now();
 
-        if (!empty($updates)) {
-            $order->update($updates);
-            Log::info("Auto-filled order {$order->name} from UDS Excel.", ['fields' => array_keys($updates)]);
+        foreach ($updates as $orderId => $fields) {
+            if (empty($fields)) {
+                continue;
+            }
+
+            $fields['last_row_update_at'] = $now;
+
+            if (isset($logMessages[$orderId]) && !array_key_exists('import_log', $fields)) {
+                $fields['import_log'] = implode("\n", $logMessages[$orderId]);
+            }
+
+            ProjectOrderPermit::where('id', $orderId)->update($fields);
+            $updatedCount++;
         }
-    } catch (\Exception $e) {
-        Log::error("Auto-fill failed for order {$order->name}: " . $e->getMessage());
+
+        Log::info('UDS work-order sync completed', [
+            'project_id' => $projectId,
+            'updated' => $updatedCount,
+            'uds_rows' => $udsRecords->count(),
+        ]);
+
+        return $updatedCount;
     }
-}
+
+    public function updateFromUds(string $projectId, string $name, int|string $orderPermitId): ProjectOrderPermit
+    {
+        $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
+
+        $order = ProjectOrderPermit::query()
+            ->where('project_id', $project->id)
+            ->where('name', $name)
+            ->where('order_permit_id', $orderPermitId)
+            ->with(['orderPermit', 'contractor', 'department'])
+            ->firstOrFail();
+
+        $this->autoFillFromUds($order);
+
+        return $order->fresh([
+            'orderPermit.department',
+            'department',
+            'contractor',
+            'state',
+            'projectManagement',
+            'projectDistrict',
+            'projectCompletionPhase',
+            'projectPhaseStatus',
+            'connectionCompletionPhase',
+            'connectionPhaseStatus',
+            'employee',
+            'noteLogs.user',
+        ]);
+    }
+
+    public function autoFillFromUds(ProjectOrderPermit $order): void
+    {
+        try {
+            $udsRecords = ProjectOrderPermitUds::withoutGlobalScopes()
+                ->where('project_id', $order->project_id)
+                ->where('name', $order->name)
+                ->get();
+
+            if ($udsRecords->isEmpty()) {
+                return;
+            }
+
+            if (!$order->relationLoaded('orderPermit')) {
+                $order->load('orderPermit');
+            }
+            if (!$order->relationLoaded('contractor')) {
+                $order->load('contractor');
+            }
+            if (!$order->relationLoaded('department')) {
+                $order->load('department');
+            }
+
+            $orderPermit = $order->orderPermit;
+            if (!$orderPermit) {
+                return;
+            }
+
+            $companyId = $udsRecords->first()->company_id;
+
+            $contractorNames = $udsRecords->pluck('contractor_name')->filter()->unique()->values()->all();
+            $contractorsByName = empty($contractorNames)
+                ? collect()
+                : ProjectContractor::withoutGlobalScopes()
+                    ->where('company_id', $companyId)
+                    ->whereIn('name', $contractorNames)
+                    ->get()
+                    ->keyBy('name');
+
+            $departmentNames = $udsRecords->pluck('office')->filter()->unique()->values()->all();
+            $departmentsByName = empty($departmentNames)
+                ? collect()
+                : OrderPermitDepartment::whereIn('name', $departmentNames)->get()->keyBy('name');
+
+            $updates = [];
+            $logMessages = [];
+
+            foreach ($udsRecords as $uds) {
+                $typeCode = $uds->type_code !== null ? trim((string) $uds->type_code) : '';
+                if ($typeCode === '') {
+                    continue;
+                }
+
+                $isContractor =
+                    $orderPermit->code !== null
+                    && (string) $orderPermit->code === $typeCode;
+
+                $isConsultant =
+                    $orderPermit->type !== null
+                    && (string) $orderPermit->type === $typeCode;
+
+                if (!$isContractor && !$isConsultant) {
+                    continue;
+                }
+
+                if ($isContractor) {
+                    $akValue = $uds->contractor_name !== null ? trim((string) $uds->contractor_name) : null;
+                    $akValue = $akValue !== '' ? $akValue : null;
+                    $currentContractor = $order->contractor;
+
+                    if ($akValue !== null) {
+                        if ($currentContractor) {
+                            $currentName = $currentContractor->name;
+                            if ($currentName !== $akValue) {
+                                $newContractor = $contractorsByName->get($akValue);
+                                if ($newContractor) {
+                                    $updates['contractor_id'] = $newContractor->id;
+                                    $updates['import_log'] = null;
+                                } else {
+                                    $msg = '[' . Carbon::now()->toDateTimeString() . "] Contractor name '{$akValue}' not found; kept '{$currentName}'.";
+                                    Log::warning($msg);
+                                    $logMessages = [$msg];
+                                }
+                            }
+                        } else {
+                            $newContractor = $contractorsByName->get($akValue);
+                            if ($newContractor) {
+                                $updates['contractor_id'] = $newContractor->id;
+                                $updates['import_log'] = null;
+                            } else {
+                                $msg = '[' . Carbon::now()->toDateTimeString() . "] No contractor with name '{$akValue}' found.";
+                                Log::warning($msg);
+                                $logMessages = [$msg];
+                            }
+                        }
+                    }
+                }
+
+                $departmentName = $uds->office !== null ? trim((string) $uds->office) : null;
+                $departmentName = $departmentName !== '' ? $departmentName : null;
+
+                if ($departmentName !== null) {
+                    $currentDepartment = $order->department;
+                    $currentDeptName = $currentDepartment?->name;
+
+                    if ($currentDeptName !== $departmentName) {
+                        $newDepartment = $departmentsByName->get($departmentName);
+                        if ($newDepartment) {
+                            $updates['order_permit_department_id'] = $newDepartment->id;
+                            if (!array_key_exists('import_log', $updates) || $updates['import_log'] !== null) {
+                                $updates['import_log'] = null;
+                            }
+                        } else {
+                            $msg = '[' . Carbon::now()->toDateTimeString() . "] Department '{$departmentName}' not found; kept '{$currentDeptName}'.";
+                            Log::warning($msg);
+                            $logMessages[] = $msg;
+                        }
+                    }
+                }
+
+                if ($isContractor) {
+                    $updates['executing_entity'] = $uds->executing_entity;
+                    $updates['office'] = $uds->office;
+                    $updates['contractor_basket'] = $uds->contractor_basket;
+                    $updates['contractor_last_procedure_code'] = $uds->contractor_last_procedure_code;
+                    $updates['contractor_last_procedure_date'] = $this->formatUdsDate($uds->contractor_last_procedure_date);
+                    $updates['contractor_column_155_entry_date'] = $this->formatUdsDate($uds->contractor_column_155_entry_date);
+                    $updates['material_balance_elec_contractor'] = $uds->material_balance_elec_contractor;
+                    $updates['contractor_work_order_status'] = $uds->contractor_work_order_status;
+                } else {
+                    $updates['consultant_current_basket'] = $uds->consultant_current_basket;
+                    $updates['assigned_date'] = $this->formatUdsDate($uds->assigned_date);
+                    $updates['consultant_assignment_date'] = $this->formatUdsDate($uds->consultant_assignment_date);
+                    $updates['consultant_last_procedure_code'] = $uds->consultant_last_procedure_code;
+                    $updates['consultant_last_procedure_date'] = $this->formatUdsDate($uds->consultant_last_procedure_date);
+                    $updates['consultant_column_155_entry_date'] = $this->formatUdsDate($uds->consultant_column_155_entry_date);
+                    $updates['price'] = $uds->price;
+                    $updates['consultant_price'] = $uds->consultant_price;
+                }
+            }
+
+            if (empty($updates) && empty($logMessages)) {
+                return;
+            }
+
+            $updates['last_row_update_at'] = Carbon::now();
+
+            if (!empty($logMessages) && !array_key_exists('import_log', $updates)) {
+                $updates['import_log'] = implode("\n", $logMessages);
+            }
+
+            ProjectOrderPermit::where('id', $order->id)->update($updates);
+            $order->refresh();
+
+            Log::info("Auto-filled order {$order->name} from project_order_permit_uds.", [
+                'fields' => array_keys($updates),
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Auto-fill failed for order {$order->name}: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function formatUdsDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($value instanceof Carbon) {
+            return $value->format('Y-m-d');
+        }
+
+        try {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
 
     public function list(string $projectId, array $filters = []): Collection
     {
