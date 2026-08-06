@@ -42,11 +42,16 @@ class CompanyIdentityDataPresenter extends AbstractPresenter
             'work_permit_start_date' => $this->companyUser->work_permit_start_date,
             'work_permit_end_date' => $this->companyUser->work_permit_end_date,
 
+            'industrial_safety' => $this->companyUser->industrial_safety,
+            'industrial_safety_start_date' => $this->companyUser->industrial_safety_start_date,
+            'industrial_safety_end_date' => $this->companyUser->industrial_safety_end_date,
+
             'file_passport' => MediaPresenter::collection($this->companyUser->getMedia('file_passport')),
             'file_identity' => MediaPresenter::collection($this->companyUser->getMedia('file_identity')),
             'file_border_number' => MediaPresenter::collection($this->companyUser->getMedia('file_border_number')),
             'file_entry_number' => MediaPresenter::collection($this->companyUser->getMedia('file_entry_number')),
             'file_work_permit' => MediaPresenter::collection($this->companyUser->getMedia('file_work_permit')),
+            'file_industrial_safety' => MediaPresenter::collection($this->companyUser->getMedia('file_industrial_safety')),
 
         ];
     }
