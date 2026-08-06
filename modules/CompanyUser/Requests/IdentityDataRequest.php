@@ -32,10 +32,15 @@ class IdentityDataRequest extends FormRequest
             'file_border_number.*' => 'nullable',
             'file_entry_number.*' => 'nullable',
             'file_work_permit.*' => 'nullable',
+            'file_industrial_safety.*' => 'nullable',
 
             'work_permit_start_date'=>'nullable|string',
             'work_permit_end_date' => 'required_with:work_permit_start_date|date|after:work_permit_start_date',
             'work_permit' => 'nullable|numeric',
+
+            'industrial_safety_start_date'=>'nullable|string',
+            'industrial_safety_end_date' => 'required_with:industrial_safety_start_date|date|after:industrial_safety_start_date',
+            'industrial_safety' => 'nullable|string',
         ];
     }
     public function messages(): array
@@ -59,6 +64,10 @@ class IdentityDataRequest extends FormRequest
             'work_permit_end_date.required_with' => __('validation.identity.work_permit_end_date_required_with'),
             'work_permit_end_date.date' => __('validation.identity.work_permit_end_date_date'),
             'work_permit_end_date.after' => __('validation.identity.work_permit_end_date_after'),
+
+            'industrial_safety_end_date.required_with' => __('validation.identity.industrial_safety_end_date_required_with'),
+            'industrial_safety_end_date.date' => __('validation.identity.industrial_safety_end_date_date'),
+            'industrial_safety_end_date.after' => __('validation.identity.industrial_safety_end_date_after'),
         ];
     }
     public function updateIdentityDataCommand(): UpdateIdentityDataCommand
@@ -81,6 +90,9 @@ class IdentityDataRequest extends FormRequest
             work_permit_start_date:$this->get('work_permit_start_date'),
             work_permit_end_date:$this->get('work_permit_end_date'),
             work_permit:$this->get('work_permit'),
+            industrial_safety_start_date:$this->get('industrial_safety_start_date'),
+            industrial_safety_end_date:$this->get('industrial_safety_end_date'),
+            industrial_safety:$this->get('industrial_safety'),
         );
     }
 }

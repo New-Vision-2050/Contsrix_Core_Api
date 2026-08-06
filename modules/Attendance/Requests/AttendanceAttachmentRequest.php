@@ -15,7 +15,7 @@ class AttendanceAttachmentRequest extends FormRequest
         $key = $this->input('key');
 
         $rules = [
-            'key' => ['required', 'string', Rule::in(['profile', 'passport', 'identity', 'border_number'])],
+            'key' => ['required', 'string', Rule::in(['profile', 'passport', 'identity', 'border_number', 'industrial_safety'])],
         ];
 
         return array_merge($rules, match ($key) {
@@ -40,6 +40,12 @@ class AttendanceAttachmentRequest extends FormRequest
                 'border_number_end_date' => 'nullable|date|after:border_number_start_date',
                 'file_border_number.*' => 'nullable',
             ],
+            'industrial_safety' => [
+                'industrial_safety' => 'nullable|string',
+                'industrial_safety_start_date' => 'nullable|string',
+                'industrial_safety_end_date' => 'required_with:industrial_safety_start_date|date|after:industrial_safety_start_date',
+                'file_industrial_safety.*' => 'nullable',
+            ],
             default => [],
         });
     }
@@ -57,6 +63,10 @@ class AttendanceAttachmentRequest extends FormRequest
 
             'border_number_end_date.date' => __('validation.identity.border_number_end_date_date'),
             'border_number_end_date.after' => __('validation.identity.border_number_end_date_after'),
+
+            'industrial_safety_end_date.required_with' => __('validation.identity.industrial_safety_end_date_required_with'),
+            'industrial_safety_end_date.date' => __('validation.identity.industrial_safety_end_date_date'),
+            'industrial_safety_end_date.after' => __('validation.identity.industrial_safety_end_date_after'),
         ];
     }
 
@@ -78,6 +88,9 @@ class AttendanceAttachmentRequest extends FormRequest
             work_permit_start_date: null,
             work_permit_end_date: null,
             work_permit: null,
+            industrial_safety_start_date: $this->get('industrial_safety_start_date'),
+            industrial_safety_end_date: $this->get('industrial_safety_end_date'),
+            industrial_safety: $this->get('industrial_safety'),
         );
     }
 }

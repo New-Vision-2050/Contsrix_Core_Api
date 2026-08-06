@@ -92,6 +92,9 @@ class CompanyUser extends Model implements HasMedia
         'work_permit_start_date',
         'work_permit_end_date',
         'work_permit',
+        'industrial_safety_start_date',
+        'industrial_safety_end_date',
+        'industrial_safety',
 
         'passport_start_date',
         'identity_start_date',
