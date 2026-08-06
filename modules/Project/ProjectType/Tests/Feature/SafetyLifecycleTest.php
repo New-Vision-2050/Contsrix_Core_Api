@@ -121,7 +121,7 @@ final class SafetyLifecycleTest extends TestCase
                     [
                         'violation_id' => $this->violationOne->id,
                         'weight' => 7,
-                        'status' => 'not_applicable',
+                        'status' => 0,
                     ],
                 ],
             ]);
@@ -213,13 +213,13 @@ final class SafetyLifecycleTest extends TestCase
                     [
                         'violation_id' => $this->violationOne->id,
                         'weight' => 7,
-                        'status' => 'violation_found',
+                        'status' => -1,
                         'action' => 'stop_work',
                     ],
                     [
                         'violation_id' => $this->violationTwo->id,
                         'weight' => 2,
-                        'status' => 'no_violation',
+                        'status' => 1,
                     ],
                 ],
             ]);
@@ -237,6 +237,8 @@ final class SafetyLifecycleTest extends TestCase
         $violationTwoPayload = collect($response->json('payload.all_violations'))
             ->firstWhere('id', $this->violationTwo->id);
 
+        $this->assertSame(-1, $violationOnePayload['status']);
+        $this->assertSame(1, $violationTwoPayload['status']);
         $this->assertSame('stop_work', $violationOnePayload['action']);
         $this->assertNull($violationTwoPayload['action']);
 
@@ -249,7 +251,7 @@ final class SafetyLifecycleTest extends TestCase
             'safety_record_id' => $record->id,
             'violation_id' => $this->violationOne->id,
             'weight' => -7,
-            'status' => 'violation_found',
+            'status' => '-1',
             'action' => 'stop_work',
         ]);
 
@@ -257,7 +259,7 @@ final class SafetyLifecycleTest extends TestCase
             'safety_record_id' => $record->id,
             'violation_id' => $this->violationTwo->id,
             'weight' => 2,
-            'status' => 'no_violation',
+            'status' => '1',
             'action' => null,
         ]);
     }
@@ -273,7 +275,7 @@ final class SafetyLifecycleTest extends TestCase
                     [
                         'violation_id' => $this->violationOne->id,
                         'weight' => 7,
-                        'status' => 'violation_found',
+                        'status' => -1,
                     ],
                 ],
             ]);
@@ -282,12 +284,13 @@ final class SafetyLifecycleTest extends TestCase
 
         $violationPayload = collect($response->json('payload.all_violations'))
             ->firstWhere('id', $this->violationOne->id);
+        $this->assertSame(-1, $violationPayload['status']);
         $this->assertNull($violationPayload['action']);
 
         $this->assertDatabaseHas('safety_record_violation', [
             'safety_record_id' => $record->id,
             'violation_id' => $this->violationOne->id,
-            'status' => 'violation_found',
+            'status' => '-1',
             'action' => null,
         ]);
     }
@@ -310,11 +313,11 @@ final class SafetyLifecycleTest extends TestCase
                     [
                         'violation_id' => $this->violationOne->id,
                         'weight' => 7,
-                        'status' => 'no_violation',
+                        'status' => 1,
                     ],
                     [
                         'violation_id' => $violationThree->id,
-                        'status' => 'not_applicable',
+                        'status' => 0,
                     ],
                 ],
             ]);
@@ -322,19 +325,21 @@ final class SafetyLifecycleTest extends TestCase
         $response->assertOk();
 
         $payload = collect($response->json('payload.all_violations'));
+        $this->assertSame(1, $payload->firstWhere('id', $this->violationOne->id)['status']);
+        $this->assertSame(0, $payload->firstWhere('id', $violationThree->id)['status']);
         $this->assertNull($payload->firstWhere('id', $this->violationOne->id)['action']);
         $this->assertNull($payload->firstWhere('id', $violationThree->id)['action']);
 
         $this->assertDatabaseHas('safety_record_violation', [
             'safety_record_id' => $record->id,
             'violation_id' => $this->violationOne->id,
-            'status' => 'no_violation',
+            'status' => '1',
             'action' => null,
         ]);
         $this->assertDatabaseHas('safety_record_violation', [
             'safety_record_id' => $record->id,
             'violation_id' => $violationThree->id,
-            'status' => 'not_applicable',
+            'status' => '0',
             'action' => null,
         ]);
     }
@@ -350,7 +355,7 @@ final class SafetyLifecycleTest extends TestCase
                     [
                         'violation_id' => $this->violationOne->id,
                         'weight' => 7,
-                        'status' => 'violation_found',
+                        'status' => -1,
                         'action' => 'exclude_equipment',
                     ],
                 ],
@@ -360,12 +365,13 @@ final class SafetyLifecycleTest extends TestCase
 
         $violationPayload = collect($response->json('payload.all_violations'))
             ->firstWhere('id', $this->violationOne->id);
+        $this->assertSame(-1, $violationPayload['status']);
         $this->assertSame('exclude_equipment', $violationPayload['action']);
 
         $this->assertDatabaseHas('safety_record_violation', [
             'safety_record_id' => $record->id,
             'violation_id' => $this->violationOne->id,
-            'status' => 'violation_found',
+            'status' => '-1',
             'action' => 'exclude_equipment',
         ]);
     }
@@ -407,7 +413,7 @@ final class SafetyLifecycleTest extends TestCase
                     [
                         'violation_id' => $this->violationOne->id,
                         'weight' => 7,
-                        'status' => 'no_violation',
+                        'status' => 1,
                     ],
                 ],
             ]);
@@ -432,7 +438,7 @@ final class SafetyLifecycleTest extends TestCase
                     [
                         'violation_id' => $this->violationOne->id,
                         'weight' => 7,
-                        'status' => 'no_violation',
+                        'status' => 1,
                     ],
                 ],
             ]);
@@ -447,7 +453,7 @@ final class SafetyLifecycleTest extends TestCase
                     [
                         'violation_id' => $this->violationTwo->id,
                         'weight' => 2,
-                        'status' => 'violation_found',
+                        'status' => -1,
                         'action' => 'stop_work',
                     ],
                 ],

@@ -40,12 +40,37 @@ class SubEntityEmployeeAttendanceStatusService
             $workDate
         )->groupBy(fn (Attendance $attendance): string => (string) $attendance->user_id);
 
-        return $usersByKey->mapWithKeys(function (?User $user, string $key) use ($attendanceRowsByUserId, $workDate): array {
-            $rows = $user?->id ? $attendanceRowsByUserId->get((string) $user->id, collect()) : collect();
+        $holidayUserIds = $usersByKey
+            ->filter(function (?User $user) use ($attendanceRowsByUserId, $workDate): bool {
+                if (! $user) {
+                    return false;
+                }
+
+                if ($this->activeOverrideStatus($user, $workDate) === self::STATUS_HOLIDAY) {
+                    return true;
+                }
+
+                $rows = $attendanceRowsByUserId->get((string) $user->id, collect());
+                $attendance = $this->requiredHolidayRepresentative($rows);
+
+                return $attendance !== null && $this->isHolidayAttendance($attendance);
+            })
+            ->map(fn (User $user): string => (string) $user->id)
+            ->unique()
+            ->values();
+
+        $holidayRangesByUserId = $this->holidayRangesForUsers($holidayUserIds, $workDate);
+
+        return $usersByKey->mapWithKeys(function (?User $user, string $key) use ($attendanceRowsByUserId, $holidayRangesByUserId, $workDate): array {
+            $userId = $user?->id ? (string) $user->id : null;
+            $rows = $userId ? $attendanceRowsByUserId->get($userId, collect()) : collect();
             $attendance = $this->requiredHolidayRepresentative($rows);
             $override = $this->activeOverrideStatus($user, $workDate);
+            $holidayRange = $override === self::STATUS_HOLIDAY
+                ? $this->overrideHolidayRange($user, $workDate)
+                : ($userId ? $holidayRangesByUserId->get($userId) : null);
 
-            return [$key => $this->requiredHolidayPayload($attendance, $workDate, $override)];
+            return [$key => $this->requiredHolidayListPayload($attendance, $workDate, $override, $holidayRange)];
         });
     }
 
@@ -162,9 +187,7 @@ class SubEntityEmployeeAttendanceStatusService
 
     private function requiredHolidayPayload(?Attendance $attendance, string $workDate, ?string $override = null): array
     {
-        $isHoliday = $override !== null
-            ? $override === self::STATUS_HOLIDAY
-            : ($attendance !== null && $this->isHolidayAttendance($attendance));
+        $isHoliday = $this->isHolidayStatus($attendance, $override);
 
         return [
             'attendance_id' => $attendance?->id ? (string) $attendance->id : null,
@@ -172,6 +195,114 @@ class SubEntityEmployeeAttendanceStatusService
             'attendance_status_code' => $isHoliday ? self::STATUS_HOLIDAY : self::STATUS_REQUIRED_ATTENDANCE,
             'attendance_status_label' => $isHoliday ? self::LABEL_HOLIDAY : self::LABEL_REQUIRED_ATTENDANCE,
         ];
+    }
+
+    /**
+     * @param  array{date_from: string, date_to: string|null}|null  $holidayRange
+     * @return array<string, mixed>
+     */
+    private function requiredHolidayListPayload(
+        ?Attendance $attendance,
+        string $workDate,
+        ?string $override = null,
+        ?array $holidayRange = null
+    ): array {
+        $isHoliday = $this->isHolidayStatus($attendance, $override);
+
+        return array_merge($this->requiredHolidayPayload($attendance, $workDate, $override), [
+            'attendance_date_from' => $isHoliday ? ($holidayRange['date_from'] ?? $workDate) : null,
+            'attendance_date_to' => $isHoliday
+                ? ($holidayRange !== null && array_key_exists('date_to', $holidayRange) ? $holidayRange['date_to'] : $workDate)
+                : null,
+        ]);
+    }
+
+    private function isHolidayStatus(?Attendance $attendance, ?string $override = null): bool
+    {
+        return $override !== null
+            ? $override === self::STATUS_HOLIDAY
+            : ($attendance !== null && $this->isHolidayAttendance($attendance));
+    }
+
+    /**
+     * @return array{date_from: string, date_to: string|null}|null
+     */
+    private function overrideHolidayRange(?User $user, string $workDate): ?array
+    {
+        if ($this->activeOverrideStatus($user, $workDate) !== self::STATUS_HOLIDAY) {
+            return null;
+        }
+
+        $since = $user?->manual_attendance_status_since;
+        $dateFrom = $since === null
+            ? $workDate
+            : Carbon::parse((string) $since, $this->attendanceCalendarTimezone())->toDateString();
+
+        if ($dateFrom > $workDate) {
+            $dateFrom = $workDate;
+        }
+
+        return [
+            'date_from' => $dateFrom,
+            'date_to' => null,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, string>  $userIds
+     * @return Collection<string, array{date_from: string, date_to: string}>
+     */
+    private function holidayRangesForUsers(Collection $userIds, string $workDate): Collection
+    {
+        $workDate = $this->normalizeWorkDate($workDate);
+        $ids = $userIds
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        $rowsByUserId = Attendance::query()
+            ->whereIn('user_id', $ids->all())
+            ->where(function ($query) {
+                $query->where('is_holiday', 1)
+                    ->orWhere('status', Attendance::STATUS_HOLIDAY)
+                    ->orWhere('day_status', self::STATUS_HOLIDAY);
+            })
+            ->get()
+            ->groupBy(fn (Attendance $attendance): string => (string) $attendance->user_id);
+
+        return $rowsByUserId->map(function (Collection $rows) use ($workDate): ?array {
+            $holidayDates = $rows
+                ->map(fn (Attendance $attendance): ?string => $this->attendanceWorkDate($attendance))
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values();
+
+            if (! $holidayDates->contains($workDate)) {
+                return null;
+            }
+
+            $dateSet = $holidayDates->flip();
+            $dateFrom = $workDate;
+            $dateTo = $workDate;
+
+            while ($dateSet->has(Carbon::parse($dateFrom, $this->attendanceCalendarTimezone())->subDay()->toDateString())) {
+                $dateFrom = Carbon::parse($dateFrom, $this->attendanceCalendarTimezone())->subDay()->toDateString();
+            }
+
+            while ($dateSet->has(Carbon::parse($dateTo, $this->attendanceCalendarTimezone())->addDay()->toDateString())) {
+                $dateTo = Carbon::parse($dateTo, $this->attendanceCalendarTimezone())->addDay()->toDateString();
+            }
+
+            return [
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+            ];
+        })->filter();
     }
 
     private function isHolidayAttendance(Attendance $attendance): bool
@@ -247,6 +378,19 @@ class SubEntityEmployeeAttendanceStatusService
     private function normalizeWorkDate(string $workDate): string
     {
         return Carbon::parse($workDate, $this->attendanceCalendarTimezone())->toDateString();
+    }
+
+    private function attendanceWorkDate(Attendance $attendance): ?string
+    {
+        if ($attendance->business_date !== null) {
+            return Carbon::parse($attendance->business_date, $this->attendanceCalendarTimezone())->toDateString();
+        }
+
+        if ($attendance->start_time !== null) {
+            return Carbon::parse($attendance->start_time, $this->attendanceCalendarTimezone())->toDateString();
+        }
+
+        return null;
     }
 
     private function attendanceCalendarTimezone(): string
