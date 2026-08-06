@@ -275,11 +275,15 @@ class CompanyRepository extends BaseRepository
     /**
      * Get client companies with owner relationship
      */
-    public function getClientCompanies(?int $page, ?int $perPage = 10): array
+    public function getClientCompanies(?int $page, ?int $perPage = 10, ?string $name = null): array
     {
         $query = $this->model->where('is_client', 1)
             ->where('is_draft', 0)
             ->with($this->relations);
+
+        if ($name) {
+            $query->whereTranslatable('name', $name);
+        }
 
         $total = $query->count();
 
