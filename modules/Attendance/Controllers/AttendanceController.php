@@ -14,6 +14,7 @@ use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\Presenters\AttendanceUserPresenter;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\Attendance\Services\AttendanceStatusService;
 use Modules\Attendance\Services\ClockInService;
 use Modules\Attendance\Services\ClockOutService;
 use Modules\Attendance\Requests\ClockInRequest;
@@ -44,6 +45,7 @@ class AttendanceController extends Controller
         private MockAttendanceService $mockAttendanceService,
         private ClockInService $clockInService,
         private ClockOutService $clockOutService,
+        private AttendanceStatusService $attendanceStatusService,
     ) {}
     public function test(Request $request): JsonResponse
     {
@@ -353,26 +355,35 @@ class AttendanceController extends Controller
     public function getTeamAttendance(FilterAttendanceRequest $request)//: JsonResponse
     {
         $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);
+        $filters = $filterDTO->toArray();
 
         $result = $this->attendanceService->getTeamAttendance(
-            $filterDTO->toArray(),
+            $filters,
             (int) $request->input('page', 1),
             (int) $request->input('per_page', 10)
         );
         if ($result->isEmpty()) {
             return Json::items([], message: 'No attendance records found');
         }
+
+        $payload = $this->attendanceStatusService->presentTeamAttendances(
+            $result->items(),
+            $filters['start_date'] ?? null,
+            $filters['end_date'] ?? null,
+        );
+
         return Json::items(
-    AttendanceTeamPresenter::collection($result->items()),
-    [],
-    200,
-    [
-            'total' => $result->total(),
-            'per_page' => $result->perPage(),
-            'current_page' => $result->currentPage(),
-            'last_page' => $result->lastPage(),
-            'result_count' =>$result->total(),
-        ]);
+            $payload,
+            [],
+            200,
+            [
+                'total' => $result->total(),
+                'per_page' => $result->perPage(),
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'result_count' => $result->total(),
+            ]
+        );
     }
         public function getUserAttendance(FilterAttendanceRequest $request)//: JsonResponse
     {

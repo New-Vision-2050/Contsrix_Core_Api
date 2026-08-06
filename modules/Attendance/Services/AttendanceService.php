@@ -784,7 +784,7 @@ class AttendanceService
         return [
             'id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
             'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',
-            'start_time', 'overtime_hours', 'clock_in_location', 'location_tracking',
+            'start_time', 'business_date', 'overtime_hours', 'clock_in_location', 'location_tracking',
         ];
     }
 
