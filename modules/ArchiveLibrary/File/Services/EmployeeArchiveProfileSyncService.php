@@ -43,6 +43,10 @@ class EmployeeArchiveProfileSyncService
             EmployeeArchiveFileService::SECTION_PERSONAL,
             EmployeeArchiveFileService::SUB_RESIDENCE_INFO,
         ],
+        'file_industrial_safety' => [
+            EmployeeArchiveFileService::SECTION_PERSONAL,
+            EmployeeArchiveFileService::SUB_RESIDENCE_INFO,
+        ],
         'upload_biography' => [
             EmployeeArchiveFileService::SECTION_ACADEMIC,
             EmployeeArchiveFileService::SUB_CV,

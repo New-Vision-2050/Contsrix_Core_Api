@@ -332,6 +332,10 @@ return [
         'work_permit_end_date_required_with' => 'تاريخ انتهاء تصريح العمل مطلوب عند وجود تاريخ بداية.',
         'work_permit_end_date_date' => 'يجب أن يكون تاريخ انتهاء تصريح العمل تاريخًا صالحًا.',
         'work_permit_end_date_after' => 'يجب أن يكون تاريخ انتهاء تصريح العمل بعد تاريخ البداية.',
+
+        'industrial_safety_end_date_required_with' => 'تاريخ انتهاء الأمن الصناعي مطلوب عند وجود تاريخ بداية.',
+        'industrial_safety_end_date_date' => 'يجب أن يكون تاريخ انتهاء الأمن الصناعي تاريخًا صالحًا.',
+        'industrial_safety_end_date_after' => 'يجب أن يكون تاريخ انتهاء الأمن الصناعي بعد تاريخ البداية.',
     ],
 
     'validation_failed'   => 'فشل التحقق من الصحة',

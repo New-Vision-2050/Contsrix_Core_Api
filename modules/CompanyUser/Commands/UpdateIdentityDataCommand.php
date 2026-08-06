@@ -26,7 +26,11 @@ class UpdateIdentityDataCommand
 
         public ? string $work_permit_start_date,
         public ? string $work_permit_end_date,
-        public ? string $work_permit
+        public ? string $work_permit,
+
+        public ? string $industrial_safety_start_date = null,
+        public ? string $industrial_safety_end_date = null,
+        public ? string $industrial_safety = null
     ) {
     }
 
@@ -48,6 +52,9 @@ class UpdateIdentityDataCommand
             'work_permit_start_date' => $this->work_permit_start_date,
             'work_permit_end_date' => $this->work_permit_end_date,
             'work_permit' => $this->work_permit,
+            'industrial_safety_start_date' => $this->industrial_safety_start_date,
+            'industrial_safety_end_date' => $this->industrial_safety_end_date,
+            'industrial_safety' => $this->industrial_safety,
         ], fn($value) => !is_null($value));
     }
 }
