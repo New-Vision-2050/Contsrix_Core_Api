@@ -71,6 +71,40 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
         $this->assertAttendanceListStatus($payload, $absentUser, 'required_attendance', 'مطلوب للحضور', '2026-07-30');
     }
 
+    public function test_employee_holiday_record_includes_holiday_date_from_and_to(): void
+    {
+        [$subEntity, $registrationForm] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
+        $user = $this->createCompanyUserRecord('Holiday Range Employee', $subEntity, CompanyUserRole::EMPLOYEE);
+
+        foreach (['2026-07-29', '2026-07-30', '2026-07-31'] as $workDate) {
+            $this->createAttendance($user, [
+                'status' => Attendance::STATUS_HOLIDAY,
+                'clock_in_time' => null,
+                'is_holiday' => true,
+                'day_status' => 'holiday',
+                'start_time' => "{$workDate} 00:00:00",
+                'business_date' => $workDate,
+            ]);
+        }
+
+        $this->createAttendance($user, [
+            'status' => Attendance::STATUS_HOLIDAY,
+            'clock_in_time' => null,
+            'is_holiday' => true,
+            'day_status' => 'holiday',
+            'start_time' => '2026-08-02 00:00:00',
+            'business_date' => '2026-08-02',
+        ]);
+
+        $row = $this->attendanceRowForUser($this->listPayload($subEntity, $registrationForm, '2026-07-30'), $user);
+
+        $this->assertSame('holiday', $row['attendance_status_code']);
+        $this->assertSame('اجازه', $row['attendance_status_label']);
+        $this->assertSame('2026-07-30', $row['attendance_work_date']);
+        $this->assertSame('2026-07-29', $row['attendance_date_from']);
+        $this->assertSame('2026-07-31', $row['attendance_date_to']);
+    }
+
     public function test_employee_records_use_today_by_default_and_empty_per_page_defaults_to_ten(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-30 10:00:00'));
@@ -114,7 +148,9 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
                 ->assertJsonMissingPath('payload.0.attendance_id')
                 ->assertJsonMissingPath('payload.0.attendance_work_date')
                 ->assertJsonMissingPath('payload.0.attendance_status_code')
-                ->assertJsonMissingPath('payload.0.attendance_status_label');
+                ->assertJsonMissingPath('payload.0.attendance_status_label')
+                ->assertJsonMissingPath('payload.0.attendance_date_from')
+                ->assertJsonMissingPath('payload.0.attendance_date_to');
         }
     }
 
