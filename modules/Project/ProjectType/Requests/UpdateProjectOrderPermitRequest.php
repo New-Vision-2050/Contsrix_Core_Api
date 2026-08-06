@@ -65,9 +65,7 @@ class UpdateProjectOrderPermitRequest extends FormRequest
         ];
     }
 
-    /**
-     * تخصيص رسائل الخطأ.
-     */
+
     public function messages(): array
     {
         return [
@@ -77,15 +75,13 @@ class UpdateProjectOrderPermitRequest extends FormRequest
         ];
     }
 
-    /**
-     * إضافة تحقق مخصص بعد التحقق الأساسي للتأكد من عدم تكرار name + order_permit_id
-     */
+
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
             $name = $this->input('name');
             $orderPermitId = $this->input('order_permit_id');
-            $currentId = $this->route('id'); // لأن مسار التحديث هو {project}/order-permits/{id}
+            $currentId = $this->route('id');
 
             if ($name && $orderPermitId) {
                 $exists = ProjectOrderPermit::where('name', $name)
