@@ -45,10 +45,16 @@ class SubEntityRecordsController extends Controller
         $presented = CompanyUserPresenter::collection($records, $role);
 
         if ((int) $role === CompanyUserRole::EMPLOYEE->value) {
+            [$dateFrom, $dateTo] = $this->subEntityRecordsService->resolveAttendanceDateRange(
+                $request->get('date_from') ?: $request->get('start_date'),
+                $request->get('date_to')
+            );
+
             $presented = $this->subEntityRecordsService->attachAttendanceToEmployeeRows(
                 $records,
                 $presented,
-                $request->get('start_date') ?: now()->toDateString()
+                $dateFrom,
+                $dateTo
             );
         }
 
@@ -58,10 +64,15 @@ class SubEntityRecordsController extends Controller
     public function updateAttendanceStatus(UpdateSubEntityRecordAttendanceStatusRequest $request): JsonResponse
     {
         $validated = $request->validated();
+        [$dateFrom, $dateTo] = $this->subEntityRecordsService->resolveAttendanceDateRange(
+            $validated['date_from'] ?? $validated['work_date'] ?? null,
+            $validated['date_to'] ?? null
+        );
 
         $payload = $this->subEntityRecordsService->setAttendanceStatusForCompanyUser(
             $validated['company_user_id'],
-            $validated['work_date'],
+            $dateFrom,
+            $dateTo,
             $validated['status']
         );
 

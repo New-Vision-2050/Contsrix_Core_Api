@@ -67,6 +67,18 @@ class SubEntityRecordsService
         return max(1, min(100, (int) $perPage));
     }
 
+    public function resolveAttendanceDateRange(?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        $from = Carbon::parse($dateFrom ?: $dateTo ?: now()->toDateString())->toDateString();
+        $to = Carbon::parse($dateTo ?: $from)->toDateString();
+
+        if ($to < $from) {
+            abort(422, 'date_to must be after or equal to date_from.');
+        }
+
+        return [$from, $to];
+    }
+
     protected function getMappedRecords($page, $perPage, $type, $branchId = null): array
     {
         $relations = [
@@ -101,7 +113,7 @@ class SubEntityRecordsService
         );
     }
 
-    public function attachAttendanceToEmployeeRows(iterable $records, array $presentedRows, string $attendanceDate): array
+    public function attachAttendanceToEmployeeRows(iterable $records, array $presentedRows, string $dateFrom, ?string $dateTo = null): array
     {
         $companyUsers = collect($records)->values();
         $tenantUsersByCompanyUserId = $companyUsers
@@ -113,7 +125,8 @@ class SubEntityRecordsService
 
         $attendanceByCompanyUserId = $this->employeeAttendanceStatusService->buildRequiredHolidayStatusesForUsersByKey(
             $tenantUsersByCompanyUserId,
-            $attendanceDate
+            $dateFrom,
+            $dateTo
         );
 
         return collect($presentedRows)
@@ -127,7 +140,7 @@ class SubEntityRecordsService
             ->all();
     }
 
-    public function setAttendanceStatusForCompanyUser(string $companyUserId, string $workDate, string $status): array
+    public function setAttendanceStatusForCompanyUser(string $companyUserId, string $dateFrom, ?string $dateTo, string $status): array
     {
         $companyUser = CompanyUser::query()
             ->with(['users.userProfessionalData.attendanceConstraint'])
@@ -139,7 +152,7 @@ class SubEntityRecordsService
             abort(404, 'Tenant user not found for company user.');
         }
 
-        return $this->employeeAttendanceStatusService->setDailyRequiredHolidayStatus($user, $workDate, $status);
+        return $this->employeeAttendanceStatusService->setDailyRequiredHolidayStatus($user, $dateFrom, $dateTo, $status);
     }
 
     private function resolveTenantUser(CompanyUser $companyUser): ?User

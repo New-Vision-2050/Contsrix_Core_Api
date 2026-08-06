@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\SubEntity\Services;
 
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\Attendance;
@@ -24,53 +25,76 @@ class SubEntityEmployeeAttendanceStatusService
      * @param  Collection<string, User|null>  $usersByKey
      * @return Collection<string, array<string, mixed>>
      */
-    public function buildRequiredHolidayStatusesForUsersByKey(Collection $usersByKey, string $workDate): Collection
+    public function buildRequiredHolidayStatusesForUsersByKey(Collection $usersByKey, string $dateFrom, ?string $dateTo = null): Collection
     {
-        $workDate = $this->normalizeWorkDate($workDate);
+        [$dateFrom, $dateTo] = $this->normalizeDateRange($dateFrom, $dateTo);
+        $workDates = $this->workDates($dateFrom, $dateTo);
         $usersByKey = $usersByKey->mapWithKeys(
             fn (?User $user, string|int $key): array => [(string) $key => $user]
         );
 
-        $attendanceRowsByUserId = $this->getDailyAttendanceRowsForUsers(
+        $attendanceRowsByUserIdAndDate = $this->getDailyAttendanceRowsForUsers(
             $usersByKey
                 ->filter()
                 ->map(fn (User $user): string => (string) $user->id)
                 ->unique()
                 ->values(),
-            $workDate
-        )->groupBy(fn (Attendance $attendance): string => (string) $attendance->user_id);
+            $dateFrom,
+            $dateTo
+        )
+            ->groupBy(fn (Attendance $attendance): string => (string) $attendance->user_id)
+            ->map(fn (Collection $rows): Collection => $rows->groupBy(
+                fn (Attendance $attendance): string => $this->attendanceWorkDate($attendance)
+            ));
 
-        return $usersByKey->mapWithKeys(function (?User $user, string $key) use ($attendanceRowsByUserId, $workDate): array {
-            $rows = $user?->id ? $attendanceRowsByUserId->get((string) $user->id, collect()) : collect();
-            $attendance = $this->requiredHolidayRepresentative($rows);
+        return $usersByKey->mapWithKeys(function (?User $user, string $key) use ($attendanceRowsByUserIdAndDate, $workDates, $dateFrom, $dateTo): array {
+            $rowsByDate = $user?->id ? $attendanceRowsByUserIdAndDate->get((string) $user->id, collect()) : collect();
+            $statuses = collect($workDates)
+                ->map(function (string $workDate) use ($rowsByDate): array {
+                    $rows = $rowsByDate->get($workDate, collect());
 
-            return [$key => $this->requiredHolidayPayload($attendance, $workDate)];
+                    return $this->requiredHolidayPayload(
+                        $this->requiredHolidayRepresentative($rows),
+                        $workDate
+                    );
+                })
+                ->values()
+                ->all();
+
+            return [$key => $this->rangePayload($statuses, $dateFrom, $dateTo)];
         });
     }
 
-    public function setDailyRequiredHolidayStatus(User $user, string $workDate, string $status): array
+    public function setDailyRequiredHolidayStatus(User $user, string $dateFrom, ?string $dateTo, string $status): array
     {
-        $workDate = $this->normalizeWorkDate($workDate);
+        [$dateFrom, $dateTo] = $this->normalizeDateRange($dateFrom, $dateTo);
 
         if (! in_array($status, [self::STATUS_HOLIDAY, self::STATUS_REQUIRED_ATTENDANCE], true)) {
             throw new \InvalidArgumentException('Invalid daily attendance status.');
         }
 
-        return DB::transaction(function () use ($user, $workDate, $status): array {
-            $rows = $this->getDailyAttendanceRowsForUser((string) $user->id, $workDate);
+        return DB::transaction(function () use ($user, $dateFrom, $dateTo, $status): array {
+            $statuses = collect($this->workDates($dateFrom, $dateTo))
+                ->map(function (string $workDate) use ($user, $status): array {
+                    $rows = $this->getDailyAttendanceRowsForUser((string) $user->id, $workDate);
 
-            if ($rows->isEmpty()) {
-                $rows = collect([$this->createDailyRequiredHolidayAttendance($user, $workDate, $status)]);
-            }
+                    if ($rows->isEmpty()) {
+                        $rows = collect([$this->createDailyRequiredHolidayAttendance($user, $workDate, $status)]);
+                    }
 
-            $rows->each(fn (Attendance $attendance) => $this->applyRequiredHolidayStatus($attendance, $status, $workDate));
+                    $rows->each(fn (Attendance $attendance) => $this->applyRequiredHolidayStatus($attendance, $status, $workDate));
 
-            $rows = $this->getDailyAttendanceRowsForUser((string) $user->id, $workDate);
+                    $rows = $this->getDailyAttendanceRowsForUser((string) $user->id, $workDate);
 
-            return $this->requiredHolidayPayload(
-                $this->requiredHolidayRepresentative($rows),
-                $workDate
-            );
+                    return $this->requiredHolidayPayload(
+                        $this->requiredHolidayRepresentative($rows),
+                        $workDate
+                    );
+                })
+                ->values()
+                ->all();
+
+            return $this->rangePayload($statuses, $dateFrom, $dateTo);
         });
     }
 
@@ -78,8 +102,9 @@ class SubEntityEmployeeAttendanceStatusService
      * @param  Collection<int, string>  $userIds
      * @return Collection<int, Attendance>
      */
-    private function getDailyAttendanceRowsForUsers(Collection $userIds, string $workDate): Collection
+    private function getDailyAttendanceRowsForUsers(Collection $userIds, string $dateFrom, ?string $dateTo = null): Collection
     {
+        [$dateFrom, $dateTo] = $this->normalizeDateRange($dateFrom, $dateTo);
         $ids = $userIds
             ->filter()
             ->unique()
@@ -91,9 +116,12 @@ class SubEntityEmployeeAttendanceStatusService
 
         return Attendance::query()
             ->whereIn('user_id', $ids->all())
-            ->where(function ($query) use ($workDate) {
-                $query->whereDate('business_date', $workDate)
-                    ->orWhereDate('start_time', $workDate);
+            ->where(function ($query) use ($dateFrom, $dateTo) {
+                $query->whereBetween('business_date', [$dateFrom, $dateTo])
+                    ->orWhere(function ($query) use ($dateFrom, $dateTo) {
+                        $query->whereDate('start_time', '>=', $dateFrom)
+                            ->whereDate('start_time', '<=', $dateTo);
+                    });
             })
             ->orderBy('start_time')
             ->get();
@@ -129,6 +157,21 @@ class SubEntityEmployeeAttendanceStatusService
             'attendance_work_date' => $workDate,
             'attendance_status_code' => $isHoliday ? self::STATUS_HOLIDAY : self::STATUS_REQUIRED_ATTENDANCE,
             'attendance_status_label' => $isHoliday ? self::LABEL_HOLIDAY : self::LABEL_REQUIRED_ATTENDANCE,
+        ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $statuses
+     */
+    private function rangePayload(array $statuses, string $dateFrom, string $dateTo): array
+    {
+        $firstStatus = $statuses[0] ?? $this->requiredHolidayPayload(null, $dateFrom);
+
+        return [
+            ...$firstStatus,
+            'attendance_date_from' => $dateFrom,
+            'attendance_date_to' => $dateTo,
+            'attendance_statuses' => $statuses,
         ];
     }
 
@@ -202,9 +245,39 @@ class SubEntityEmployeeAttendanceStatusService
         return Attendance::STATUS_WAITING;
     }
 
-    private function normalizeWorkDate(string $workDate): string
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function normalizeDateRange(string $dateFrom, ?string $dateTo = null): array
     {
-        return Carbon::parse($workDate, $this->attendanceCalendarTimezone())->toDateString();
+        $from = Carbon::parse($dateFrom, $this->attendanceCalendarTimezone())->toDateString();
+        $to = Carbon::parse($dateTo ?: $from, $this->attendanceCalendarTimezone())->toDateString();
+
+        if ($to < $from) {
+            throw new \InvalidArgumentException('date_to must be after or equal to date_from.');
+        }
+
+        return [$from, $to];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function workDates(string $dateFrom, string $dateTo): array
+    {
+        return collect(CarbonPeriod::create($dateFrom, $dateTo))
+            ->map(fn (Carbon $date): string => $date->toDateString())
+            ->values()
+            ->all();
+    }
+
+    private function attendanceWorkDate(Attendance $attendance): string
+    {
+        if ($attendance->business_date !== null) {
+            return Carbon::parse($attendance->business_date, $this->attendanceCalendarTimezone())->toDateString();
+        }
+
+        return Carbon::parse($attendance->start_time, $this->attendanceCalendarTimezone())->toDateString();
     }
 
     private function attendanceCalendarTimezone(): string

@@ -71,6 +71,47 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
         $this->assertAttendanceListStatus($payload, $absentUser, 'required_attendance', 'مطلوب للحضور', '2026-07-30');
     }
 
+    public function test_employee_records_can_return_attendance_status_range(): void
+    {
+        [$subEntity, $registrationForm] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
+        $user = $this->createCompanyUserRecord('Range Employee', $subEntity, CompanyUserRole::EMPLOYEE);
+
+        $this->createAttendance($user, [
+            'status' => Attendance::STATUS_HOLIDAY,
+            'clock_in_time' => null,
+            'is_holiday' => true,
+            'day_status' => 'holiday',
+            'start_time' => '2026-07-31 00:00:00',
+            'business_date' => '2026-07-31',
+        ]);
+
+        $payload = collect($this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/sub_entities/records/list?'.http_build_query([
+                'sub_entity_id' => $subEntity->id,
+                'registration_form_id' => $registrationForm->id,
+                'date_from' => '2026-07-30',
+                'date_to' => '2026-08-01',
+                'page' => 1,
+                'per_page' => 10,
+            ]))
+            ->assertOk()
+            ->json('payload'));
+
+        $row = $this->attendanceRowForUser($payload, $user);
+
+        $this->assertSame('2026-07-30', $row['attendance_date_from']);
+        $this->assertSame('2026-08-01', $row['attendance_date_to']);
+        $this->assertSame('2026-07-30', $row['attendance_work_date']);
+        $this->assertSame('required_attendance', $row['attendance_status_code']);
+        $this->assertCount(3, $row['attendance_statuses']);
+        $this->assertSame([
+            '2026-07-30' => 'required_attendance',
+            '2026-07-31' => 'holiday',
+            '2026-08-01' => 'required_attendance',
+        ], collect($row['attendance_statuses'])->pluck('attendance_status_code', 'attendance_work_date')->all());
+    }
+
     public function test_employee_records_use_today_by_default_and_empty_per_page_defaults_to_ten(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-30 10:00:00'));
@@ -114,7 +155,10 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
                 ->assertJsonMissingPath('payload.0.attendance_id')
                 ->assertJsonMissingPath('payload.0.attendance_work_date')
                 ->assertJsonMissingPath('payload.0.attendance_status_code')
-                ->assertJsonMissingPath('payload.0.attendance_status_label');
+                ->assertJsonMissingPath('payload.0.attendance_status_label')
+                ->assertJsonMissingPath('payload.0.attendance_date_from')
+                ->assertJsonMissingPath('payload.0.attendance_date_to')
+                ->assertJsonMissingPath('payload.0.attendance_statuses');
         }
     }
 
@@ -181,6 +225,72 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
         );
     }
 
+    public function test_can_set_employee_attendance_status_for_date_range(): void
+    {
+        [$subEntity, $registrationForm] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
+        $user = $this->createCompanyUserRecord('Range Toggle Employee', $subEntity, CompanyUserRole::EMPLOYEE);
+        $companyUser = $this->companyUserForUser($user);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $companyUser->id,
+                'date_from' => '2026-07-30',
+                'date_to' => '2026-08-01',
+                'status' => 'holiday',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.attendance_date_from', '2026-07-30')
+            ->assertJsonPath('payload.attendance_date_to', '2026-08-01')
+            ->assertJsonPath('payload.attendance_status_code', 'holiday')
+            ->assertJsonCount(3, 'payload.attendance_statuses');
+
+        foreach (['2026-07-30', '2026-07-31', '2026-08-01'] as $workDate) {
+            $this->assertDatabaseHas('attendances', [
+                'user_id' => $user->id,
+                'business_date' => $workDate,
+                'status' => Attendance::STATUS_HOLIDAY,
+                'is_holiday' => 1,
+                'is_absent' => 0,
+                'day_status' => 'holiday',
+            ]);
+        }
+
+        $row = $this->attendanceRowForUser(
+            $this->listPayload($subEntity, $registrationForm, '2026-07-30', '2026-08-01'),
+            $user
+        );
+
+        $this->assertSame([
+            '2026-07-30' => 'holiday',
+            '2026-07-31' => 'holiday',
+            '2026-08-01' => 'holiday',
+        ], collect($row['attendance_statuses'])->pluck('attendance_status_code', 'attendance_work_date')->all());
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $companyUser->id,
+                'date_from' => '2026-07-30',
+                'date_to' => '2026-08-01',
+                'status' => 'required_attendance',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.attendance_status_code', 'required_attendance')
+            ->assertJsonCount(3, 'payload.attendance_statuses');
+
+        foreach (['2026-07-30', '2026-07-31', '2026-08-01'] as $workDate) {
+            $this->assertDatabaseHas('attendances', [
+                'user_id' => $user->id,
+                'business_date' => $workDate,
+                'status' => Attendance::STATUS_WAITING,
+                'is_holiday' => 0,
+                'is_absent' => 0,
+                'day_status' => 'work_day',
+            ]);
+        }
+    }
+
     public function test_setting_status_preserves_existing_clock_times(): void
     {
         [$subEntity] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
@@ -239,6 +349,16 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
                 'company_user_id' => $companyUser->id,
                 'work_date' => '2026-07-30',
                 'status' => 'present',
+            ])
+            ->assertUnprocessable();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $companyUser->id,
+                'date_from' => '2026-08-01',
+                'date_to' => '2026-07-30',
+                'status' => 'holiday',
             ])
             ->assertUnprocessable();
 
@@ -367,19 +487,34 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
             ->firstOrFail();
     }
 
-    private function listPayload(SubEntity $subEntity, RegistrationForm $registrationForm): Collection
+    private function listPayload(SubEntity $subEntity, RegistrationForm $registrationForm, string $dateFrom = '2026-07-30', ?string $dateTo = null): Collection
     {
+        $query = [
+            'sub_entity_id' => $subEntity->id,
+            'registration_form_id' => $registrationForm->id,
+            'date_from' => $dateFrom,
+            'page' => 1,
+            'per_page' => 10,
+        ];
+
+        if ($dateTo !== null) {
+            $query['date_to'] = $dateTo;
+        }
+
         return collect($this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
-            ->getJson('/api/v1/sub_entities/records/list?'.http_build_query([
-                'sub_entity_id' => $subEntity->id,
-                'registration_form_id' => $registrationForm->id,
-                'start_date' => '2026-07-30',
-                'page' => 1,
-                'per_page' => 10,
-            ]))
+            ->getJson('/api/v1/sub_entities/records/list?'.http_build_query($query))
             ->assertOk()
             ->json('payload'));
+    }
+
+    private function attendanceRowForUser(Collection $payload, User $user): array
+    {
+        $row = $payload->firstWhere('user_id', (string) $user->id);
+
+        $this->assertNotNull($row, 'Expected employee row was not returned.');
+
+        return $row;
     }
 
     private function assertAttendanceListStatus(
@@ -389,9 +524,7 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
         string $label,
         string $workDate
     ): void {
-        $row = $payload->firstWhere('user_id', (string) $user->id);
-
-        $this->assertNotNull($row, 'Expected employee row was not returned.');
+        $row = $this->attendanceRowForUser($payload, $user);
         $this->assertSame($code, $row['attendance_status_code']);
         $this->assertSame($label, $row['attendance_status_label']);
         $this->assertSame($workDate, $row['attendance_work_date']);
