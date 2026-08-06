@@ -41,6 +41,7 @@ class IdentityDataService
             'file_border_number',
             'file_entry_number',
             'file_work_permit',
+            'file_industrial_safety',
         ];
 
         foreach ($fields as $field) {

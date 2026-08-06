@@ -373,6 +373,10 @@ return [
         'work_permit_end_date_required_with' => 'The work permit end date is required when work permit start date is present.',
         'work_permit_end_date_date' => 'The work permit end date must be a valid date.',
         'work_permit_end_date_after' => 'The work permit end date must be after the start date.',
+
+        'industrial_safety_end_date_required_with' => 'The industrial safety end date is required when industrial safety start date is present.',
+        'industrial_safety_end_date_date' => 'The industrial safety end date must be a valid date.',
+        'industrial_safety_end_date_after' => 'The industrial safety end date must be after the start date.',
     ],
 
     'validation_failed'   => 'Validation failed',
