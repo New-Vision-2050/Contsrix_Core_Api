@@ -81,16 +81,16 @@ class ReportRepository extends BaseRepository
         return $this->findOneByOrFail(['id' => $id->toString()]);
     }
 
-    public function create(array $data): Report
+    public function create(array $attributes): Report
     {
-        if (!isset($data['company_id'])) {
-            $data['company_id'] = tenant('id');
+        if (!isset($attributes['company_id'])) {
+            $attributes['company_id'] = tenant('id');
         }
-        if (!isset($data['status'])) {
-            $data['status'] = ReportStatus::PENDING;
+        if (!isset($attributes['status'])) {
+            $attributes['status'] = ReportStatus::PENDING;
         }
 
-        return parent::create($data);
+        return parent::create($attributes);
     }
 
     public function markProcessing(UuidInterface $id): void

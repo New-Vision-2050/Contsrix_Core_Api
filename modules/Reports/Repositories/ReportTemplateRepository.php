@@ -25,13 +25,13 @@ class ReportTemplateRepository extends BaseRepository
         return $this->findOneByOrFail(['id' => $id->toString()]);
     }
 
-    public function create(array $data): ReportTemplate
+    public function create(array $attributes): ReportTemplate
     {
-        if (!isset($data['company_id'])) {
-            $data['company_id'] = tenant('id');
+        if (!isset($attributes['company_id'])) {
+            $attributes['company_id'] = tenant('id');
         }
 
-        return parent::create($data);
+        return parent::create($attributes);
     }
 
     public function updateTemplate(UuidInterface $id, array $data): ReportTemplate

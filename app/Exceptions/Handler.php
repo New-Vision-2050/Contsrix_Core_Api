@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -45,6 +46,12 @@ class Handler
                 'error' => $e->getMessage(), // Hide error details in production
                 'trace' => $e->getTrace(), // Hide error details in production <==>
             ], 404),
+
+            $e instanceof HttpException => response()->json([
+                'success' => false,
+                'message' => $e->getMessage() ?: 'HTTP Error',
+                'error' => $e->getMessage(),
+            ], $e->getStatusCode()),
 
             $e instanceof CustomException => response()->json([
                 'success' => false,
