@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -18,10 +19,7 @@ class Handler
         return match (true) {
             $e instanceof ValidationException => response()->json([
                 'success' => false,
-                // Prefer the first field error (e.g. custom withValidator messages)
-                // over the generic "Validation failed" so clients see the specific reason.
-                'message' => collect($e->errors())->flatten()->first()
-                    ?? __('validation.validation_failed'),
+                'message' => __('validation.validation_failed'),
                 'errors' => $e->errors(),
             ], 422),
 
@@ -48,6 +46,12 @@ class Handler
                 'error' => $e->getMessage(), // Hide error details in production
                 'trace' => $e->getTrace(), // Hide error details in production <==>
             ], 404),
+
+            $e instanceof HttpException => response()->json([
+                'success' => false,
+                'message' => $e->getMessage() ?: 'HTTP Error',
+                'error' => $e->getMessage(),
+            ], $e->getStatusCode()),
 
             $e instanceof CustomException => response()->json([
                 'success' => false,

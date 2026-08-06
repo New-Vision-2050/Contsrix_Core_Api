@@ -6,6 +6,7 @@ namespace Modules\Reports\Services;
 
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Reports\DTO\CreateReportDTO;
@@ -247,6 +248,10 @@ class ReportCRUDService
         $report = $this->repository->getReport($id);
 
         if (!$report->isReady()) {
+            Log::warning('[Reports] download: report not ready', [
+                'report_id' => $report->id,
+                'status'    => $report->status,
+            ]);
             abort(409, __('Report is not ready for download yet.'));
         }
 
@@ -270,9 +275,26 @@ class ReportCRUDService
         if ($report->file_disk === 'media') {
             $media = $report->getFirstMedia('report_file');
             if (!$media) {
+                Log::warning('[Reports] download: media record missing', [
+                    'report_id' => $report->id,
+                    'status'    => $report->status,
+                ]);
                 abort(404, __('Report file is missing.'));
             }
-            $contents = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
+
+            try {
+                $contents = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
+            } catch (\Throwable $e) {
+                Log::error('[Reports] download: failed to read file from storage', [
+                    'report_id' => $report->id,
+                    'media_id'  => $media->id,
+                    'disk'      => $media->disk,
+                    'path'      => $media->getPathRelativeToRoot(),
+                    'error'     => $e->getMessage(),
+                ]);
+                abort(404, __('Report file is missing.'));
+            }
+
             $headers['Content-Length'] = (string) ($report->file_size ?: strlen((string) $contents));
 
             return response($contents, 200, $headers);

@@ -46,7 +46,7 @@ class StoreSafetyRecordRequest extends FormRequest
             'violations' => ['nullable', 'array'],
             'violations.*.violation_id' => ['required', 'uuid', 'exists:violations,id'],
             'violations.*.weight' => ['nullable', 'numeric'],
-            'violations.*.status' => ['nullable', Rule::in([-1, 1, 0])],
+            'violations.*.status' => ['nullable', Rule::in(['violation_found', 'no_violation', 'not_applicable'])],
         ];
     }
 }

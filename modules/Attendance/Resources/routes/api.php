@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Attendance\Controllers\AttendanceAttachmentController;
 use Modules\Attendance\Controllers\AttendanceController;
 use Modules\Attendance\Controllers\DashboardOverviewController;
 use Modules\Attendance\Controllers\AttendanceReportController;
@@ -213,6 +214,14 @@ Route::prefix('leave')->group(function () {
         Route::get('/', [AttendanceReportController::class, 'index'])
             ->permission(Permission::ATTENDANCE_REPORTS_VIEW())
             ->name('hr.attendance.reports.index');
+    });
+
+    Route::prefix('hr/attendance/attachments')->group(function () {
+        Route::get('/', [AttendanceAttachmentController::class, 'show'])
+            ->name('hr.attendance.attachments.show');
+
+        Route::post('/', [AttendanceAttachmentController::class, 'store'])
+            ->name('hr.attendance.attachments.store');
     });
 
 // Dashboard Statistics (for different user roles)
