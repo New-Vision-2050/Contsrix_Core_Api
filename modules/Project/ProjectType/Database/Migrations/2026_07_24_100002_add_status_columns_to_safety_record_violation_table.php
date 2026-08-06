@@ -10,7 +10,7 @@ return new class extends Migration
     {
         if (! Schema::hasColumn('safety_record_violation', 'status')) {
             Schema::table('safety_record_violation', function (Blueprint $table) {
-                $table->string('status', 30)->nullable()->default('not_applicable')->after('weight');
+                $table->string('status', 30)->nullable()->default('0')->after('weight');
             });
         }
     }

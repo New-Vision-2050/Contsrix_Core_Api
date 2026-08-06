@@ -18,7 +18,10 @@ class Handler
         return match (true) {
             $e instanceof ValidationException => response()->json([
                 'success' => false,
-                'message' => __('validation.validation_failed'),
+                // Prefer the first field error (e.g. custom withValidator messages)
+                // over the generic "Validation failed" so clients see the specific reason.
+                'message' => collect($e->errors())->flatten()->first()
+                    ?? __('validation.validation_failed'),
                 'errors' => $e->errors(),
             ], 422),
 
