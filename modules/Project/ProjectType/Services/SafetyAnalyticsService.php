@@ -98,7 +98,7 @@ class SafetyAnalyticsService
             ->join('safety_record_violation', 'safety_record_violation.violation_id', '=', 'violations.id')
             ->join('safety_records', 'safety_records.id', '=', 'safety_record_violation.safety_record_id')
             ->where('safety_records.project_id', $projectId)
-            ->where('safety_record_violation.status', 'violation_found')
+            ->where('safety_record_violation.status', '-1')
             ->when(
                 tenancy()->initialized && ! tenant('is_central_company'),
                 fn ($q) => $q->where('safety_records.company_id', tenant('id'))
@@ -124,6 +124,8 @@ class SafetyAnalyticsService
 
     /**
      * Per-violation evaluation breakdown for this project.
+     *
+     * Status: -1 = violation_found, 1 = no_violation, 0 = not_applicable
      */
     public function violationPerformance(string $projectId): Collection
     {
@@ -134,9 +136,9 @@ class SafetyAnalyticsService
                 'violations.description',
                 'violations.category',
                 DB::raw('COUNT(safety_record_violation.id) as total_evaluations'),
-                DB::raw("SUM(CASE WHEN safety_record_violation.status = 'violation_found' THEN 1 ELSE 0 END) as violation_found_count"),
-                DB::raw("SUM(CASE WHEN safety_record_violation.status = 'no_violation' THEN 1 ELSE 0 END) as no_violation_count"),
-                DB::raw("SUM(CASE WHEN safety_record_violation.status = 'not_applicable' THEN 1 ELSE 0 END) as not_applicable_count"),
+                DB::raw("SUM(CASE WHEN safety_record_violation.status = '-1' THEN 1 ELSE 0 END) as violation_found_count"),
+                DB::raw("SUM(CASE WHEN safety_record_violation.status = '1' THEN 1 ELSE 0 END) as no_violation_count"),
+                DB::raw("SUM(CASE WHEN safety_record_violation.status = '0' THEN 1 ELSE 0 END) as not_applicable_count"),
             ])
             ->join('safety_record_violation', 'safety_record_violation.violation_id', '=', 'violations.id')
             ->join('safety_records', 'safety_records.id', '=', 'safety_record_violation.safety_record_id')
@@ -189,7 +191,7 @@ class SafetyAnalyticsService
             ])
             ->join('safety_record_violation', 'safety_record_violation.safety_record_id', '=', 'safety_records.id')
             ->where('safety_records.project_id', $projectId)
-            ->where('safety_record_violation.status', 'violation_found')
+            ->where('safety_record_violation.status', '-1')
             ->when(
                 tenancy()->initialized && ! tenant('is_central_company'),
                 fn ($q) => $q->where('safety_records.company_id', tenant('id'))
@@ -235,7 +237,7 @@ class SafetyAnalyticsService
             ])
             ->join('violations', 'violations.id', '=', 'safety_record_violation.violation_id')
             ->join('safety_records', 'safety_records.id', '=', 'safety_record_violation.safety_record_id')
-            ->where('safety_record_violation.status', 'violation_found')
+            ->where('safety_record_violation.status', '-1')
             ->groupBy(
                 'violations.id',
                 'violations.code',

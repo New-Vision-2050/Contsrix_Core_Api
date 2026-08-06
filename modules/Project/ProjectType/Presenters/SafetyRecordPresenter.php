@@ -69,6 +69,8 @@ class SafetyRecordPresenter extends AbstractPresenter
             $data['all_violations'] = $this->model->all_violations
                 ->map(function (array $violation) use ($evidenceByViolation) {
                     $violationId = (string) ($violation['id'] ?? '');
+                    // Numeric status: -1 = violation_found, 1 = no_violation, 0 = not_applicable / unevaluated
+                    $violation['status'] = (int) ($violation['status'] ?? 0);
                     $violation['evidence'] = $evidenceByViolation[$violationId] ?? [];
 
                     return $violation;
