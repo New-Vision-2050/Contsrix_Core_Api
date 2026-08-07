@@ -193,9 +193,9 @@ class CompanyCRUDService
         Cache::forget($cacheKey);
     }
 
-    public function getClientCompanies(int $page = 1, int $perPage = 10): array
+    public function getClientCompanies(int $page = 1, int $perPage = 10, ?string $name = null): array
     {
-        return $this->repository->getClientCompanies($page, $perPage);
+        return $this->repository->getClientCompanies($page, $perPage, $name);
     }
 
     public function getBrokerCompanies(int $page = 1, int $perPage = 10): array

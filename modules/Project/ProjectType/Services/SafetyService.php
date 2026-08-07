@@ -559,6 +559,7 @@ class SafetyService
                 'weight' => $pivot?->weight ?? $violation->default_weight,
                 'status' => $pivot?->status,
                 'action' => $pivot?->action,
+                'actions' => $violation->actions(),
             ];
         });
     }

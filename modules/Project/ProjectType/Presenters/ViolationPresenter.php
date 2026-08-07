@@ -17,6 +17,7 @@ class ViolationPresenter extends AbstractPresenter
             'description' => $this->model->description,
             'category' => $this->model->category,
             'weight' => $this->model->default_weight,
+            'actions' => $this->model->actions(),
         ];
     }
 }

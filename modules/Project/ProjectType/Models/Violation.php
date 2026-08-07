@@ -21,11 +21,41 @@ class Violation extends Model
         'description',
         'category',
         'default_weight',
+        'work_cancellation',
+        'work_stop',
+        'equipment_exclusion',
     ];
 
     protected $casts = [
         'default_weight' => 'decimal:2',
+        'work_cancellation' => 'boolean',
+        'work_stop' => 'boolean',
+        'equipment_exclusion' => 'boolean',
     ];
+
+    /**
+     * Arabic labels for enabled action flags, in catalog column order.
+     *
+     * @return list<string>
+     */
+    public function actions(): array
+    {
+        $actions = [];
+
+        if ($this->work_cancellation) {
+            $actions[] = 'إلغاء العمل';
+        }
+
+        if ($this->work_stop) {
+            $actions[] = 'إيقاف العمل';
+        }
+
+        if ($this->equipment_exclusion) {
+            $actions[] = 'استبعاد المعدة أو الموظف';
+        }
+
+        return $actions;
+    }
 
     public function safetyRecords(): BelongsToMany
     {
