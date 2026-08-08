@@ -75,46 +75,79 @@ class SubEntityEmployeeAttendanceStatusService
     }
 
     /**
-     * Sets the employee's daily attendance requirement status effective immediately,
-     * and keeps it in effect for every following day until it is changed again.
+     * Sets the employee's attendance requirement status.
+     *
+     * Holiday with date_from/date_to stays active only inside that inclusive range.
+     * After date_to the override expires and the employee is treated as مطلوب للحضور again.
+     * Holiday without date_to remains open-ended until manually changed (legacy behaviour).
+     *
+     * @param  array{date_from?: string|null, date_to?: string|null}  $dates
      */
-    public function setRequiredHolidayStatus(User $user, string $status): array
+    public function setRequiredHolidayStatus(User $user, string $status, array $dates = []): array
     {
         if (! in_array($status, [self::STATUS_HOLIDAY, self::STATUS_REQUIRED_ATTENDANCE], true)) {
             throw new \InvalidArgumentException('Invalid daily attendance status.');
         }
 
-        return DB::transaction(function () use ($user, $status): array {
-            $workDate = $this->normalizeWorkDate(Carbon::now($this->attendanceCalendarTimezone())->toDateString());
+        return DB::transaction(function () use ($user, $status, $dates): array {
+            $today = $this->normalizeWorkDate(Carbon::now($this->attendanceCalendarTimezone())->toDateString());
+            $dateFrom = isset($dates['date_from']) && is_string($dates['date_from']) && $dates['date_from'] !== ''
+                ? $this->normalizeWorkDate($dates['date_from'])
+                : $today;
+            $dateTo = isset($dates['date_to']) && is_string($dates['date_to']) && $dates['date_to'] !== ''
+                ? $this->normalizeWorkDate($dates['date_to'])
+                : null;
+
+            if ($dateTo !== null && $dateTo < $dateFrom) {
+                throw new \InvalidArgumentException('date_to must be on or after date_from.');
+            }
+
+            // required_attendance clears any holiday window; until is only meaningful for holiday.
+            $until = $status === self::STATUS_HOLIDAY ? $dateTo : null;
 
             $user->forceFill([
                 'manual_attendance_status' => $status,
-                'manual_attendance_status_since' => $workDate,
+                'manual_attendance_status_since' => $dateFrom,
+                'manual_attendance_status_until' => $until,
             ])->save();
 
-            // Keep today's attendance row in sync immediately so anything reading
-            // the attendances table directly (e.g. history) reflects the change right away.
-            $rows = $this->getDailyAttendanceRowsForUser((string) $user->id, $workDate);
+            $syncFrom = $dateFrom;
+            $syncTo = $until ?? $dateFrom;
 
-            if ($rows->isEmpty()) {
-                $rows = collect([$this->createDailyRequiredHolidayAttendance($user, $workDate, $status)]);
+            // When clearing back to required attendance without an explicit range,
+            // sync the current work day so today's row reflects مطلوب للحضور immediately.
+            if ($status === self::STATUS_REQUIRED_ATTENDANCE && ($dates['date_from'] ?? null) === null) {
+                $syncFrom = $today;
+                $syncTo = $today;
             }
 
-            $rows->each(fn (Attendance $attendance) => $this->applyRequiredHolidayStatus($attendance, $status, $workDate));
+            $this->syncRequiredHolidayAttendanceRange($user, $status, $syncFrom, $syncTo);
 
-            $rows = $this->getDailyAttendanceRowsForUser((string) $user->id, $workDate);
+            $responseDate = $this->activeOverrideStatus($user->fresh(), $today) !== null
+                ? $today
+                : $syncFrom;
 
-            return $this->requiredHolidayPayload(
+            if ($responseDate < $syncFrom || $responseDate > $syncTo) {
+                $responseDate = $syncFrom;
+            }
+
+            $rows = $this->getDailyAttendanceRowsForUser((string) $user->id, $responseDate);
+            $holidayRange = $status === self::STATUS_HOLIDAY
+                ? ['date_from' => $dateFrom, 'date_to' => $until]
+                : null;
+
+            return $this->requiredHolidayListPayload(
                 $this->requiredHolidayRepresentative($rows),
-                $workDate,
-                $status
+                $responseDate,
+                $status,
+                $holidayRange
             );
         });
     }
 
     /**
      * Returns the persistent manual override status for the user if it is active
-     * (i.e. set and effective on or before the requested date), otherwise null.
+     * on the requested date (inclusive since/until window), otherwise null.
      */
     private function activeOverrideStatus(?User $user, string $workDate): ?string
     {
@@ -130,13 +163,47 @@ class SubEntityEmployeeAttendanceStatusService
 
         $since = $user->manual_attendance_status_since;
 
-        if ($since === null) {
-            return $status;
+        if ($since !== null) {
+            $sinceDate = $since instanceof Carbon ? $since : Carbon::parse((string) $since);
+
+            if ($sinceDate->toDateString() > $workDate) {
+                return null;
+            }
         }
 
-        $sinceDate = $since instanceof Carbon ? $since : Carbon::parse((string) $since);
+        $until = $user->manual_attendance_status_until;
 
-        return $sinceDate->toDateString() <= $workDate ? $status : null;
+        if ($until !== null) {
+            $untilDate = $until instanceof Carbon ? $until : Carbon::parse((string) $until);
+
+            if ($workDate > $untilDate->toDateString()) {
+                return null;
+            }
+        }
+
+        return $status;
+    }
+
+    private function syncRequiredHolidayAttendanceRange(
+        User $user,
+        string $status,
+        string $dateFrom,
+        string $dateTo
+    ): void {
+        $cursor = Carbon::parse($dateFrom, $this->attendanceCalendarTimezone())->startOfDay();
+        $end = Carbon::parse($dateTo, $this->attendanceCalendarTimezone())->startOfDay();
+
+        while ($cursor->lte($end)) {
+            $workDate = $cursor->toDateString();
+            $rows = $this->getDailyAttendanceRowsForUser((string) $user->id, $workDate);
+
+            if ($rows->isEmpty()) {
+                $rows = collect([$this->createDailyRequiredHolidayAttendance($user, $workDate, $status)]);
+            }
+
+            $rows->each(fn (Attendance $attendance) => $this->applyRequiredHolidayStatus($attendance, $status, $workDate));
+            $cursor->addDay();
+        }
     }
 
     /**
@@ -242,9 +309,14 @@ class SubEntityEmployeeAttendanceStatusService
             $dateFrom = $workDate;
         }
 
+        $until = $user?->manual_attendance_status_until;
+        $dateTo = $until === null
+            ? null
+            : Carbon::parse((string) $until, $this->attendanceCalendarTimezone())->toDateString();
+
         return [
             'date_from' => $dateFrom,
-            'date_to' => null,
+            'date_to' => $dateTo,
         ];
     }
 

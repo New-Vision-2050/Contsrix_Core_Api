@@ -134,9 +134,10 @@ class UserAttendanceService
     }
     /**
      * Applies a persistent manual attendance status override (set via the sub-entity
-     * "attendance-status" endpoint) on top of the computed work rules. The override
-     * takes effect from the day it was set and remains active for every following
-     * day until it is changed again.
+     * "attendance-status" endpoint) on top of the computed work rules. Active from
+     * `manual_attendance_status_since` through `manual_attendance_status_until`
+     * (inclusive). When until is null the override stays open-ended until changed.
+     * After until expires, holiday automatically falls back to required attendance.
      */
     private function applyManualAttendanceOverride(User $user, string $targetDate, array $workRules): array
     {
@@ -150,6 +151,15 @@ class UserAttendanceService
         $sinceDate = $since instanceof Carbon ? $since->toDateString() : ($since ? Carbon::parse((string) $since)->toDateString() : null);
 
         if ($sinceDate !== null && $sinceDate > $targetDate) {
+            return $workRules;
+        }
+
+        $until = $user->manual_attendance_status_until ?? null;
+        $untilDate = $until instanceof Carbon
+            ? $until->toDateString()
+            : ($until ? Carbon::parse((string) $until)->toDateString() : null);
+
+        if ($untilDate !== null && $targetDate > $untilDate) {
             return $workRules;
         }
 

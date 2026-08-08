@@ -566,6 +566,15 @@ class ProjectOrderPermitService
             $phaseUpdateData['project_phase_status_id'] = Arr::get($data, 'project_phase_status_id', $orderPermit->project_phase_status_id);
             $phaseUpdateData['connection_completion_phase_id'] = Arr::get($data, 'connection_completion_phase_id', $orderPermit->connection_completion_phase_id);
             $phaseUpdateData['connection_phase_status_id'] = Arr::get($data, 'connection_phase_status_id', $orderPermit->connection_phase_status_id);
+
+            $completionPhaseId = Arr::get($data, 'completion_phase_id');
+            if ($completionPhaseId !== null) {
+                if ($departmentName === 'مشاريع') {
+                    $phaseUpdateData['project_completion_phase_id'] = $completionPhaseId;
+                } elseif ($departmentName === 'توصيلات') {
+                    $phaseUpdateData['connection_completion_phase_id'] = $completionPhaseId;
+                }
+            }
         }
 
         $orderPermit->update([
