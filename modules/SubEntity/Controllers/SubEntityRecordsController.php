@@ -61,7 +61,11 @@ class SubEntityRecordsController extends Controller
 
         $payload = $this->subEntityRecordsService->setAttendanceStatusForCompanyUser(
             $validated['company_user_id'],
-            $validated['status']
+            $validated['status'],
+            [
+                'date_from' => $validated['date_from'] ?? null,
+                'date_to' => $validated['date_to'] ?? null,
+            ]
         );
 
         return Json::item($payload, message: 'Attendance status updated successfully');

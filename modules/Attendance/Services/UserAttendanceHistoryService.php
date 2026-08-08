@@ -820,8 +820,9 @@ final class UserAttendanceHistoryService
     }
 
     /**
-     * Checks the persistent manual attendance status override (set via the sub-entity
-     * "attendance-status" endpoint). Active from the day it was set onward until changed again.
+     * Checks the persistent manual holiday override (set via the sub-entity
+     * "attendance-status" endpoint). Active from since through until (inclusive).
+     * After until, holiday expires and the day is treated as required attendance.
      */
     private function isManualHolidayOverrideActive(User $user, string $dateString): bool
     {
@@ -831,13 +832,25 @@ final class UserAttendanceHistoryService
 
         $since = $user->manual_attendance_status_since;
 
-        if ($since === null) {
-            return true;
+        if ($since !== null) {
+            $sinceDate = $since instanceof Carbon ? $since->toDateString() : Carbon::parse((string) $since)->toDateString();
+
+            if ($sinceDate > $dateString) {
+                return false;
+            }
         }
 
-        $sinceDate = $since instanceof Carbon ? $since->toDateString() : Carbon::parse((string) $since)->toDateString();
+        $until = $user->manual_attendance_status_until ?? null;
 
-        return $sinceDate <= $dateString;
+        if ($until !== null) {
+            $untilDate = $until instanceof Carbon ? $until->toDateString() : Carbon::parse((string) $until)->toDateString();
+
+            if ($dateString > $untilDate) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function determineDayStatus(Collection $attendances): string

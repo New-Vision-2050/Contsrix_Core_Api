@@ -521,9 +521,19 @@ final class SafetyLifecycleTest extends TestCase
 
         $response->assertOk();
 
-        $ids = collect($response->json('payload'))->pluck('id');
+        $payload = collect($response->json('payload'));
+        $ids = $payload->pluck('id');
         $this->assertTrue($ids->contains($this->violationOne->id));
         $this->assertTrue($ids->contains($this->violationTwo->id));
+
+        $one = $payload->firstWhere('id', $this->violationOne->id);
+        $two = $payload->firstWhere('id', $this->violationTwo->id);
+
+        $this->assertSame(
+            ['إيقاف العمل', 'استبعاد المعدة أو الموظف'],
+            $one['actions'] ?? null
+        );
+        $this->assertSame([], $two['actions'] ?? null);
     }
 
     private function safetyTablesReady(): bool
@@ -632,6 +642,9 @@ final class SafetyLifecycleTest extends TestCase
             'description' => 'Test violation A',
             'category' => 'A',
             'default_weight' => 7,
+            'work_cancellation' => false,
+            'work_stop' => true,
+            'equipment_exclusion' => true,
         ]);
 
         $two = Violation::query()->create([
@@ -640,6 +653,9 @@ final class SafetyLifecycleTest extends TestCase
             'description' => 'Test violation B',
             'category' => 'B',
             'default_weight' => 2,
+            'work_cancellation' => false,
+            'work_stop' => false,
+            'equipment_exclusion' => false,
         ]);
 
         return [$one, $two];
