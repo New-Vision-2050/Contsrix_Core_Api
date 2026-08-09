@@ -50,4 +50,14 @@ class SafetyException extends CustomException
     {
         return new self('لم يتم العثور على إشعار أو أمر عمل بهذا الرقم.', 404);
     }
+
+    public static function noFoundViolations(): self
+    {
+        return new self('لا توجد مخالفات بحالة "مخالفة موجودة" لإنشاء محضر المخالفة.', 422);
+    }
+
+    public static function reportGenerationFailed(): self
+    {
+        return new self('تعذر إنشاء ملف محضر المخالفة.', 500);
+    }
 }
