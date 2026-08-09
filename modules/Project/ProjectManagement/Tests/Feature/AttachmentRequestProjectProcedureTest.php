@@ -12,14 +12,16 @@ use Illuminate\Support\Str;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\Process\Enums\ProcessStatus;
-use Modules\Process\Enums\ProcessStepStatus;
-use Modules\Process\Models\Process;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
 use Modules\ProcedureSetting\Models\WorkFlow;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
+use Modules\Process\Models\Process;
+use Modules\Process\Services\ProcessWorkflowService;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
+use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
@@ -272,42 +274,314 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         ]);
     }
 
-    public function test_workflow_step_actions_are_logged_from_first_step(): void
+    public function test_workflow_step_history_transitions_from_pending_to_approved(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
         $receiverCompany = $this->createCompany();
         $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $alternateFirstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
         $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
         $this->createAcceptedShare($project, $receiverCompany);
-        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $firstProcedureStep = $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        ProcedureSettingStepActionTaker::query()->create([
+            'procedure_setting_step_id' => $firstProcedureStep->id,
+            'user_id' => $alternateFirstReceiverUser->id,
+            'company_id' => $this->company->id,
+        ]);
         $this->createProcedureStep($procedure, $secondReceiverUser, 2);
 
-        $requestId = $this->postAttachmentRequest($project, $procedure)
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
-            ->json('payload.id');
+            ->assertJsonPath('payload.history.0.user.0.id', $this->actor->id)
+            ->assertJsonPath('payload.history.1.action', 'workflow_step_pending')
+            ->assertJsonPath('payload.history.1.metadata.status', 'pending')
+            ->assertJsonPath('payload.history.1.user.0.id', $firstReceiverUser->id)
+            ->assertJsonPath('payload.history.1.user.1.id', $alternateFirstReceiverUser->id)
+            ->assertJsonPath('payload.history.2.action', 'workflow_step_pending')
+            ->assertJsonPath('payload.history.2.metadata.status', 'pending')
+            ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
+            ->assertJsonPath('payload.history.2.metadata.process_step_id', null)
+            ->assertJsonPath('payload.history.2.user.0.id', $secondReceiverUser->id);
+        $this->assertHistoryUsersAreArrays($createResponse->json('payload.history'));
+        $this->assertCount(2, $createResponse->json('payload.history.1.user'));
 
-        $this->actingAs($firstReceiverUser, 'api')
+        $requestId = $createResponse->json('payload.id');
+
+        $this->assertHistoryCount($requestId, 'request_created', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 2);
+
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+
+        $this->assertSame(1, $process->steps()->count());
+
+        $this->actingAs($secondReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertStatus(422);
+
+        $firstStep = $process
+            ->steps()
+            ->where('template_step_order', 1)
+            ->firstOrFail();
+
+        $firstStepHistory = $this->workflowStepHistory($requestId, (string) $firstStep->id);
+        $firstStepHistoryId = $firstStepHistory->id;
+        $secondStepHistoryId = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('metadata->template_step_order', 2)
+            ->firstOrFail()
+            ->id;
+
+        $this->assertSame('workflow_step_pending', $firstStepHistory->action);
+        $this->assertSame('pending', $firstStepHistory->metadata['status']);
+
+        $firstApproveResponse = $this->actingAs($firstReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
             ->assertOk()
             ->assertJsonPath('payload.history.1.action', 'workflow_step_approved')
-            ->assertJsonPath('payload.history.1.metadata.template_step_order', 1);
+            ->assertJsonPath('payload.history.1.metadata.template_step_order', 1)
+            ->assertJsonPath('payload.history.1.metadata.status', 'approved')
+            ->assertJsonPath('payload.history.1.user.0.id', $firstReceiverUser->id)
+            ->assertJsonPath('payload.history.2.action', 'workflow_step_pending')
+            ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
+            ->assertJsonPath('payload.history.2.metadata.status', 'pending')
+            ->assertJsonPath('payload.history.2.user.0.id', $secondReceiverUser->id);
+        $this->assertHistoryUsersAreArrays($firstApproveResponse->json('payload.history'));
+        $this->assertCount(1, $firstApproveResponse->json('payload.history.1.user'));
 
+        $this->assertHistoryCount($requestId, 'workflow_step_approved', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
         $this->assertDatabaseHas('attachment_request_history', [
+            'id' => $firstStepHistoryId,
             'attachment_request_id' => $requestId,
             'action' => 'workflow_step_approved',
             'user_id' => $firstReceiverUser->id,
         ]);
+        $this->assertSame(
+            1,
+            AttachmentRequestHistory::query()
+                ->where('attachment_request_id', $requestId)
+                ->where('metadata->process_step_id', (string) $firstStep->id)
+                ->count()
+        );
 
-        $this->actingAs($secondReceiverUser, 'api')
+        $secondStep = $process->fresh()
+            ->steps()
+            ->where('template_step_order', 2)
+            ->firstOrFail();
+
+        $this->assertSame(
+            1,
+            AttachmentRequestHistory::query()
+                ->where('attachment_request_id', $requestId)
+                ->where('metadata->process_step_id', (string) $secondStep->id)
+                ->count()
+        );
+        $this->assertSame(
+            $secondStepHistoryId,
+            $this->workflowStepHistory($requestId, (string) $secondStep->id)->id
+        );
+
+        $secondApproveResponse = $this->actingAs($secondReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
             ->assertOk()
             ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED)
             ->assertJsonPath('payload.history.2.action', 'workflow_step_approved')
             ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
-            ->assertJsonPath('payload.history.3.action', 'request_approved');
+            ->assertJsonPath('payload.history.2.metadata.status', 'approved')
+            ->assertJsonPath('payload.history.2.user.0.id', $secondReceiverUser->id)
+            ->assertJsonPath('payload.history.3.action', 'request_approved')
+            ->assertJsonPath('payload.history.3.user.0.id', $secondReceiverUser->id);
+        $this->assertHistoryUsersAreArrays($secondApproveResponse->json('payload.history'));
+
+        $workflowStepOrders = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', 'workflow_step_approved')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(static fn (AttachmentRequestHistory $history): int => (int) $history->metadata['template_step_order'])
+            ->all();
+
+        $this->assertSame([1, 2], $workflowStepOrders);
+        $this->assertHistoryCount($requestId, 'workflow_step_approved', 2);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
+        $this->assertHistoryCount($requestId, 'request_approved', 1);
+    }
+
+    public function test_auto_approved_workflow_step_is_not_logged_but_request_approval_is_logged(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $step = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail()
+            ->steps()
+            ->where('status', ProcessStepStatus::Pending->value)
+            ->firstOrFail();
+
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
+        app(ProcessWorkflowService::class)->autoApproveStep((string) $step->id);
+
+        $this->assertHistoryCount($requestId, 'request_created', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
+        $this->assertHistoryCount($requestId, 'workflow_step_approved', 0);
+        $this->assertHistoryCount($requestId, 'request_approved', 1);
+
+        $this->assertDatabaseHas('process_steps', [
+            'id' => $step->id,
+            'status' => ProcessStepStatus::Approved->value,
+            'action_by' => null,
+        ]);
+        $this->assertNotNull($step->fresh()->acted_at);
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $requestId,
+            'processable_type' => AttachmentRequest::PROCESSABLE_TYPE,
+            'status' => ProcessStatus::Completed->value,
+        ]);
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $requestId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+    }
+
+    public function test_auto_approved_step_is_skipped_from_history_while_manual_steps_and_final_approval_are_logged(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $autoStepUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $firstManualUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondManualUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $autoStepUser, 1);
+        $this->createProcedureStep($procedure, $firstManualUser, 2);
+        $this->createProcedureStep($procedure, $secondManualUser, 3);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+
+        $autoStep = $process->steps()
+            ->where('status', ProcessStepStatus::Pending->value)
+            ->where('template_step_order', 1)
+            ->firstOrFail();
+
+        $timelineStart = now();
+
+        try {
+            \Carbon\Carbon::setTestNow($timelineStart->copy()->addMinute());
+            app(ProcessWorkflowService::class)->autoApproveStep((string) $autoStep->id);
+
+            $this->assertDatabaseHas('process_steps', [
+                'id' => $autoStep->id,
+                'template_step_order' => 1,
+                'status' => ProcessStepStatus::Approved->value,
+                'action_by' => null,
+            ]);
+
+            \Carbon\Carbon::setTestNow($timelineStart->copy()->addMinutes(2));
+            $this->actingAs($firstManualUser, 'api')
+                ->withHeader('X-Tenant', $receiverCompany->id)
+                ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+                ->assertOk()
+                ->assertJsonPath('payload.status', AttachmentRequest::STATUS_PENDING);
+
+            \Carbon\Carbon::setTestNow($timelineStart->copy()->addMinutes(3));
+            $this->actingAs($secondManualUser, 'api')
+                ->withHeader('X-Tenant', $receiverCompany->id)
+                ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+                ->assertOk()
+                ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
+        } finally {
+            \Carbon\Carbon::setTestNow();
+        }
+
+        $history = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $this->assertSame([
+            'request_created',
+            'workflow_step_approved',
+            'workflow_step_approved',
+            'request_approved',
+        ], $history->pluck('action')->all());
+
+        $manualStepHistory = $history
+            ->where('action', 'workflow_step_approved')
+            ->values();
+
+        $this->assertSame(2, $manualStepHistory->count());
+        $this->assertSame(2, (int) $manualStepHistory[0]->metadata['template_step_order']);
+        $this->assertSame($firstManualUser->id, $manualStepHistory[0]->user_id);
+        $this->assertSame(3, (int) $manualStepHistory[1]->metadata['template_step_order']);
+        $this->assertSame($secondManualUser->id, $manualStepHistory[1]->user_id);
+        $this->assertSame($secondManualUser->id, $history->last()->user_id);
+        $this->assertFalse($history->contains(
+            static fn (AttachmentRequestHistory $entry): bool => ($entry->metadata['is_auto_approved'] ?? false) === true
+        ));
+        $this->assertHistoryCount($requestId, 'request_created', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
+        $this->assertHistoryCount($requestId, 'workflow_step_approved', 2);
+        $this->assertHistoryCount($requestId, 'request_approved', 1);
+    }
+
+    public function test_history_writer_is_idempotent_for_same_logical_workflow_step(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $request = AttachmentRequest::query()->findOrFail($requestId);
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+        $actedStep = $process->steps()
+            ->where('status', ProcessStepStatus::Approved->value)
+            ->firstOrFail();
+
+        $request->onWorkflowStepActionCompleted($process, $actedStep, 'approve', (string) $receiverUser->id);
+
+        $this->assertHistoryCount($requestId, 'request_created', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_approved', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
+        $this->assertHistoryCount($requestId, 'request_approved', 1);
     }
 
     public function test_workflow_approval_uses_pending_step_actor_not_legacy_receiver_company_gate(): void
@@ -351,11 +625,28 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertOk()
             ->json('payload.id');
 
-        $this->actingAs($receiverUser, 'api')
+        $step = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail()
+            ->steps()
+            ->where('status', ProcessStepStatus::Pending->value)
+            ->firstOrFail();
+        $pendingHistory = $this->workflowStepHistory($requestId, (string) $step->id);
+
+        $this->assertSame('workflow_step_pending', $pendingHistory->action);
+        $this->assertSame('pending', $pendingHistory->metadata['status']);
+
+        $declineResponse = $this->actingAs($receiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/decline", [], ['Accept' => 'application/json'])
             ->assertOk()
-            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_DECLINED);
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_DECLINED)
+            ->assertJsonPath('payload.history.1.action', 'workflow_step_rejected')
+            ->assertJsonPath('payload.history.1.user.0.id', $receiverUser->id)
+            ->assertJsonPath('payload.history.2.action', 'request_declined')
+            ->assertJsonPath('payload.history.2.user.0.id', $receiverUser->id);
+        $this->assertHistoryUsersAreArrays($declineResponse->json('payload.history'));
 
         $this->assertDatabaseHas('processes', [
             'processable_id' => $requestId,
@@ -366,6 +657,15 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'attachment_request_id' => $requestId,
             'status' => AttachmentRequest::STATUS_DECLINED,
         ]);
+
+        $rejectedHistory = $this->workflowStepHistory($requestId, (string) $step->id);
+        $this->assertSame($pendingHistory->id, $rejectedHistory->id);
+        $this->assertSame('workflow_step_rejected', $rejectedHistory->action);
+        $this->assertSame('rejected', $rejectedHistory->metadata['status']);
+        $this->assertSame($receiverUser->id, $rejectedHistory->user_id);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
+        $this->assertHistoryCount($requestId, 'workflow_step_rejected', 1);
+        $this->assertHistoryCount($requestId, 'request_declined', 1);
     }
 
     public function test_item_level_response_allowed_for_pending_step_owner(): void
@@ -460,6 +760,9 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             && ! Schema::hasColumn('attachment_requests', 'attachment_sub_type_id')
             && ! Schema::hasColumn('attachment_requests', 'attachment_sub_sub_type_id')
             && Schema::hasTable('attachment_request_items')
+            && Schema::hasTable('attachment_request_history')
+            && Schema::hasColumn('attachment_request_history', 'dedupe_key')
+            && Schema::hasColumn('attachment_request_history', 'sort_order')
             && Schema::hasTable('project_procedure_settings')
             && Schema::hasTable('folders')
             && Schema::hasTable('procedure_settings')
@@ -470,6 +773,32 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             && Schema::hasTable('resource_shares')
             && Schema::hasTable('work_flows')
             && Schema::hasTable('media');
+    }
+
+    private function assertHistoryCount(string $requestId, string $action, int $expected): void
+    {
+        $this->assertSame(
+            $expected,
+            AttachmentRequestHistory::query()
+                ->where('attachment_request_id', $requestId)
+                ->where('action', $action)
+                ->count()
+        );
+    }
+
+    private function workflowStepHistory(string $requestId, string $processStepId): AttachmentRequestHistory
+    {
+        return AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('metadata->process_step_id', $processStepId)
+            ->firstOrFail();
+    }
+
+    private function assertHistoryUsersAreArrays(array $history): void
+    {
+        foreach ($history as $entry) {
+            $this->assertIsArray($entry['user']);
+        }
     }
 
     private function createProject(): ProjectManagement

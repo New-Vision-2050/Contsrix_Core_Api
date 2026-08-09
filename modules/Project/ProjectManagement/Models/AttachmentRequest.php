@@ -160,6 +160,8 @@ class AttachmentRequest extends Model
     public function history(): HasMany
     {
         return $this->hasMany(AttachmentRequestHistory::class, 'attachment_request_id')
+            ->orderByRaw('sort_order is null')
+            ->orderBy('sort_order', 'asc')
             ->orderBy('created_at', 'asc')
             ->orderBy('id', 'asc');
     }
@@ -285,23 +287,40 @@ class AttachmentRequest extends Model
         string $action,
         ?string $userId
     ): void {
-        AttachmentRequestHistory::log(
+        if ($action === 'approve' && $userId === null) {
+            AttachmentRequestHistory::deleteWorkflowStepLifecycle(
+                requestId: $this->id,
+                process: $process,
+                step: $step
+            );
+
+            return;
+        }
+
+        AttachmentRequestHistory::transitionWorkflowStep(
             requestId: $this->id,
+            process: $process,
+            step: $step,
             action: $action === 'reject' ? 'workflow_step_rejected' : 'workflow_step_approved',
             description: $action === 'reject' ? 'Workflow step rejected' : 'Workflow step approved',
-            userId: $userId,
-            metadata: [
-                'process_id' => $process->id,
-                'process_step_id' => $step->id,
-                'step_id' => $step->step_id,
-                'template_step_order' => $step->template_step_order,
-                'assigned_user_id' => $step->assigned_user_id,
-                'authorized_user_ids' => $step->authorized_user_ids,
-                'status' => $step->status->value,
-                'acted_at' => $step->acted_at?->toIso8601String(),
-                'is_auto_approved' => $userId === null && $action === 'approve',
-            ],
-            createdAt: $step->acted_at
+            userId: $userId
+        );
+    }
+
+    public function onWorkflowTimelineInitialized(Process $process): void
+    {
+        AttachmentRequestHistory::recordWorkflowTimeline(
+            requestId: $this->id,
+            process: $process
+        );
+    }
+
+    public function onWorkflowStepActivated(Process $process, ProcessStep $step): void
+    {
+        AttachmentRequestHistory::recordWorkflowStepPending(
+            requestId: $this->id,
+            process: $process,
+            step: $step
         );
     }
 

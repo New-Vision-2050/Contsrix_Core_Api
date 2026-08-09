@@ -83,13 +83,11 @@ final class AttachmentRequestWorkflowService
             abort(422, 'No pending process step assigned to you for this attachment request.');
         }
 
-        $actedStep = match ($action) {
+        match ($action) {
             'approve' => $this->processWorkflowService->approveStep((string) $step->id),
             'reject' => $this->processWorkflowService->rejectStep((string) $step->id),
             default => abort(422, 'Invalid process step action.'),
         };
-
-        $request->onWorkflowStepActionCompleted($process, $actedStep, $action, (string) Auth::id());
 
         return Process::query()
             ->with('steps')
