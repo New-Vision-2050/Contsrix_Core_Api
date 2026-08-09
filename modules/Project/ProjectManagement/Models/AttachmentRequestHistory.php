@@ -24,6 +24,7 @@ class AttachmentRequestHistory extends Model
         'description',
         'user_id',
         'metadata',
+        'dedupe_key',
         'created_at',
     ];
 
@@ -62,7 +63,7 @@ class AttachmentRequestHistory extends Model
         ?array $metadata = null,
         ?\DateTimeInterface $createdAt = null
     ): self {
-        return self::create([
+        $attributes = [
             'attachment_request_id' => $requestId,
             'attachment_request_item_id' => $itemId,
             'action' => $action,
@@ -70,6 +71,47 @@ class AttachmentRequestHistory extends Model
             'user_id' => $userId,
             'metadata' => $metadata,
             'created_at' => $createdAt ?? now(),
-        ]);
+        ];
+
+        $dedupeKey = self::dedupeKey($requestId, $action, $metadata);
+
+        if ($dedupeKey === null) {
+            return self::create($attributes);
+        }
+
+        return self::query()->createOrFirst(
+            ['dedupe_key' => $dedupeKey],
+            $attributes
+        );
+    }
+
+    /**
+     * Return the domain identity for history events that must be idempotent.
+     */
+    private static function dedupeKey(string $requestId, string $action, ?array $metadata): ?string
+    {
+        if (in_array($action, ['request_created', 'request_approved', 'request_declined'], true)) {
+            return hash('sha256', implode('|', [$requestId, $action]));
+        }
+
+        if (in_array($action, ['workflow_step_approved', 'workflow_step_rejected'], true)) {
+            $processId = $metadata['process_id'] ?? null;
+            $processStepId = $metadata['process_step_id'] ?? null;
+            $status = $metadata['status'] ?? null;
+
+            if ($processId === null || $processStepId === null) {
+                return null;
+            }
+
+            return hash('sha256', implode('|', [
+                $requestId,
+                $action,
+                (string) $processId,
+                (string) $processStepId,
+                (string) $status,
+            ]));
+        }
+
+        return null;
     }
 }
