@@ -19,8 +19,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Process\Enums\ProcessStatus;
-use Modules\Process\Enums\ProcessStepStatus;
-use Modules\Process\Models\Process;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\Project\ProjectManagement\Events\AttachmentRequestResponded;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
@@ -337,7 +335,6 @@ class AttachmentRequestService
 
         if ($this->workflowService->hasActiveWorkflow($request)) {
             $process = $this->workflowService->actOnPendingStepForCurrentUser($request, 'approve');
-            $this->logWorkflowStepAction($request, $process, 'approve', Auth::check() ? (string) Auth::id() : null);
 
             if ($process->status === ProcessStatus::Completed && ! $this->workflowService->hasActiveWorkflow($request)) {
                 return $this->completeWorkflowApproval($request);
@@ -412,7 +409,6 @@ class AttachmentRequestService
 
         if ($this->workflowService->hasActiveWorkflow($request)) {
             $process = $this->workflowService->actOnPendingStepForCurrentUser($request, 'reject');
-            $this->logWorkflowStepAction($request, $process, 'reject', Auth::check() ? (string) Auth::id() : null);
 
             if ($process->status === ProcessStatus::Failed) {
                 return $this->completeWorkflowDecline($request);
@@ -584,48 +580,6 @@ class AttachmentRequestService
         }
 
         return round($size, 2) . ' ' . $units[$i];
-    }
-
-    private function logWorkflowStepAction(
-        AttachmentRequest $request,
-        Process $process,
-        string $action,
-        ?string $userId
-    ): void {
-        if ($userId === null) {
-            return;
-        }
-
-        $status = $action === 'reject'
-            ? ProcessStepStatus::Rejected
-            : ProcessStepStatus::Approved;
-
-        $step = $process->steps
-            ->where('status', $status)
-            ->where('action_by', $userId)
-            ->sortByDesc(static fn ($step) => $step->acted_at?->getTimestamp() ?? 0)
-            ->first();
-
-        if ($step === null) {
-            return;
-        }
-
-        AttachmentRequestHistory::log(
-            requestId: $request->id,
-            action: $action === 'reject' ? 'workflow_step_rejected' : 'workflow_step_approved',
-            description: $action === 'reject' ? 'Workflow step rejected' : 'Workflow step approved',
-            userId: $userId,
-            metadata: [
-                'process_id' => $process->id,
-                'process_step_id' => $step->id,
-                'step_id' => $step->step_id,
-                'template_step_order' => $step->template_step_order,
-                'assigned_user_id' => $step->assigned_user_id,
-                'authorized_user_ids' => $step->authorized_user_ids,
-                'status' => $step->status->value,
-                'acted_at' => $step->acted_at?->toIso8601String(),
-            ]
-        );
     }
 
     /**

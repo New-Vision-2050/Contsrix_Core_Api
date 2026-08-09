@@ -13,6 +13,7 @@ use Modules\Process\Models\Process;
 use Modules\Process\Models\ProcessStep;
 use Modules\Process\Services\ProcessWorkflowService;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
+use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 
 final class AttachmentRequestWorkflowService
@@ -83,11 +84,13 @@ final class AttachmentRequestWorkflowService
             abort(422, 'No pending process step assigned to you for this attachment request.');
         }
 
-        match ($action) {
+        $actedStep = match ($action) {
             'approve' => $this->processWorkflowService->approveStep((string) $step->id),
             'reject' => $this->processWorkflowService->rejectStep((string) $step->id),
             default => abort(422, 'Invalid process step action.'),
         };
+
+        $this->logWorkflowStepAction($request, $process, $actedStep, $action, (string) Auth::id());
 
         return Process::query()
             ->with('steps')
@@ -169,5 +172,30 @@ final class AttachmentRequestWorkflowService
         }
 
         return [(string) $step->assigned_user_id];
+    }
+
+    private function logWorkflowStepAction(
+        AttachmentRequest $request,
+        Process $process,
+        ProcessStep $step,
+        string $action,
+        string $userId
+    ): void {
+        AttachmentRequestHistory::log(
+            requestId: $request->id,
+            action: $action === 'reject' ? 'workflow_step_rejected' : 'workflow_step_approved',
+            description: $action === 'reject' ? 'Workflow step rejected' : 'Workflow step approved',
+            userId: $userId,
+            metadata: [
+                'process_id' => $process->id,
+                'process_step_id' => $step->id,
+                'step_id' => $step->step_id,
+                'template_step_order' => $step->template_step_order,
+                'assigned_user_id' => $step->assigned_user_id,
+                'authorized_user_ids' => $step->authorized_user_ids,
+                'status' => $step->status->value,
+                'acted_at' => $step->acted_at?->toIso8601String(),
+            ]
+        );
     }
 }
