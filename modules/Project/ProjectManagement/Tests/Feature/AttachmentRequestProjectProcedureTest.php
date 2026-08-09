@@ -274,7 +274,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         ]);
     }
 
-    public function test_workflow_step_actions_are_logged_from_first_step(): void
+    public function test_workflow_step_history_transitions_from_pending_to_approved(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
@@ -290,20 +290,48 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->json('payload.id');
 
         $this->assertHistoryCount($requestId, 'request_created', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
+
+        $firstStep = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail()
+            ->steps()
+            ->where('template_step_order', 1)
+            ->firstOrFail();
+
+        $firstStepHistory = $this->workflowStepHistory($requestId, (string) $firstStep->id);
+        $firstStepHistoryId = $firstStepHistory->id;
+
+        $this->assertSame('workflow_step_pending', $firstStepHistory->action);
+        $this->assertSame('pending', $firstStepHistory->metadata['status']);
 
         $this->actingAs($firstReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
             ->assertOk()
             ->assertJsonPath('payload.history.1.action', 'workflow_step_approved')
-            ->assertJsonPath('payload.history.1.metadata.template_step_order', 1);
+            ->assertJsonPath('payload.history.1.metadata.template_step_order', 1)
+            ->assertJsonPath('payload.history.1.metadata.status', 'approved')
+            ->assertJsonPath('payload.history.2.action', 'workflow_step_pending')
+            ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
+            ->assertJsonPath('payload.history.2.metadata.status', 'pending');
 
         $this->assertHistoryCount($requestId, 'workflow_step_approved', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
         $this->assertDatabaseHas('attachment_request_history', [
+            'id' => $firstStepHistoryId,
             'attachment_request_id' => $requestId,
             'action' => 'workflow_step_approved',
             'user_id' => $firstReceiverUser->id,
         ]);
+        $this->assertSame(
+            1,
+            AttachmentRequestHistory::query()
+                ->where('attachment_request_id', $requestId)
+                ->where('metadata->process_step_id', (string) $firstStep->id)
+                ->count()
+        );
 
         $this->actingAs($secondReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
@@ -312,6 +340,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED)
             ->assertJsonPath('payload.history.2.action', 'workflow_step_approved')
             ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
+            ->assertJsonPath('payload.history.2.metadata.status', 'approved')
             ->assertJsonPath('payload.history.3.action', 'request_approved');
 
         $workflowStepOrders = AttachmentRequestHistory::query()
@@ -324,6 +353,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $this->assertSame([1, 2], $workflowStepOrders);
         $this->assertHistoryCount($requestId, 'workflow_step_approved', 2);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
         $this->assertHistoryCount($requestId, 'request_approved', 1);
     }
 
@@ -348,9 +378,11 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->where('status', ProcessStepStatus::Pending->value)
             ->firstOrFail();
 
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
         app(ProcessWorkflowService::class)->autoApproveStep((string) $step->id);
 
         $this->assertHistoryCount($requestId, 'request_created', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
         $this->assertHistoryCount($requestId, 'workflow_step_approved', 0);
         $this->assertHistoryCount($requestId, 'request_approved', 1);
 
@@ -455,6 +487,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             static fn (AttachmentRequestHistory $entry): bool => ($entry->metadata['is_auto_approved'] ?? false) === true
         ));
         $this->assertHistoryCount($requestId, 'request_created', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
         $this->assertHistoryCount($requestId, 'workflow_step_approved', 2);
         $this->assertHistoryCount($requestId, 'request_approved', 1);
     }
@@ -490,6 +523,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $this->assertHistoryCount($requestId, 'request_created', 1);
         $this->assertHistoryCount($requestId, 'workflow_step_approved', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
         $this->assertHistoryCount($requestId, 'request_approved', 1);
     }
 
@@ -534,6 +568,18 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertOk()
             ->json('payload.id');
 
+        $step = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail()
+            ->steps()
+            ->where('status', ProcessStepStatus::Pending->value)
+            ->firstOrFail();
+        $pendingHistory = $this->workflowStepHistory($requestId, (string) $step->id);
+
+        $this->assertSame('workflow_step_pending', $pendingHistory->action);
+        $this->assertSame('pending', $pendingHistory->metadata['status']);
+
         $this->actingAs($receiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/decline", [], ['Accept' => 'application/json'])
@@ -549,6 +595,15 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'attachment_request_id' => $requestId,
             'status' => AttachmentRequest::STATUS_DECLINED,
         ]);
+
+        $rejectedHistory = $this->workflowStepHistory($requestId, (string) $step->id);
+        $this->assertSame($pendingHistory->id, $rejectedHistory->id);
+        $this->assertSame('workflow_step_rejected', $rejectedHistory->action);
+        $this->assertSame('rejected', $rejectedHistory->metadata['status']);
+        $this->assertSame($receiverUser->id, $rejectedHistory->user_id);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
+        $this->assertHistoryCount($requestId, 'workflow_step_rejected', 1);
+        $this->assertHistoryCount($requestId, 'request_declined', 1);
     }
 
     public function test_item_level_response_allowed_for_pending_step_owner(): void
@@ -666,6 +721,14 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 ->where('action', $action)
                 ->count()
         );
+    }
+
+    private function workflowStepHistory(string $requestId, string $processStepId): AttachmentRequestHistory
+    {
+        return AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('metadata->process_step_id', $processStepId)
+            ->firstOrFail();
     }
 
     private function createProject(): ProjectManagement

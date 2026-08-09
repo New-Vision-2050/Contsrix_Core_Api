@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Process\Models\ProcessStep;
 use Modules\User\Models\User;
 
 class AttachmentRequestHistory extends Model
@@ -85,6 +86,78 @@ class AttachmentRequestHistory extends Model
         );
     }
 
+    public static function recordWorkflowStepPending(
+        string $requestId,
+        string $processId,
+        ProcessStep $step
+    ): self {
+        $dedupeKey = self::workflowStepDedupeKey($requestId, $processId, (string) $step->id);
+        $existing = self::query()->where('dedupe_key', $dedupeKey)->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return self::create([
+            'attachment_request_id' => $requestId,
+            'action' => 'workflow_step_pending',
+            'description' => 'Workflow step pending',
+            'user_id' => null,
+            'metadata' => self::workflowStepMetadata($processId, $step, 'pending'),
+            'dedupe_key' => $dedupeKey,
+            'created_at' => $step->created_at ?? now(),
+        ]);
+    }
+
+    public static function transitionWorkflowStep(
+        string $requestId,
+        string $processId,
+        ProcessStep $step,
+        string $action,
+        string $description,
+        ?string $userId
+    ): self {
+        $status = $action === 'workflow_step_rejected' ? 'rejected' : 'approved';
+        $dedupeKey = self::workflowStepDedupeKey($requestId, $processId, (string) $step->id);
+        $history = self::query()->where('dedupe_key', $dedupeKey)->first();
+
+        if ($history === null) {
+            return self::create([
+                'attachment_request_id' => $requestId,
+                'action' => $action,
+                'description' => $description,
+                'user_id' => $userId,
+                'metadata' => self::workflowStepMetadata($processId, $step, $status),
+                'dedupe_key' => $dedupeKey,
+                'created_at' => $step->created_at ?? $step->acted_at ?? now(),
+            ]);
+        }
+
+        $metadata = array_merge(
+            $history->metadata ?? [],
+            self::workflowStepMetadata($processId, $step, $status)
+        );
+
+        $history->forceFill([
+            'action' => $action,
+            'description' => $description,
+            'user_id' => $userId,
+            'metadata' => $metadata,
+        ])->save();
+
+        return $history;
+    }
+
+    public static function deleteWorkflowStepLifecycle(
+        string $requestId,
+        string $processId,
+        string $processStepId
+    ): void {
+        self::query()
+            ->where('dedupe_key', self::workflowStepDedupeKey($requestId, $processId, $processStepId))
+            ->delete();
+    }
+
     /**
      * Return the domain identity for history events that must be idempotent.
      */
@@ -94,24 +167,45 @@ class AttachmentRequestHistory extends Model
             return hash('sha256', implode('|', [$requestId, $action]));
         }
 
-        if (in_array($action, ['workflow_step_approved', 'workflow_step_rejected'], true)) {
+        if (in_array($action, ['workflow_step_pending', 'workflow_step_approved', 'workflow_step_rejected'], true)) {
             $processId = $metadata['process_id'] ?? null;
             $processStepId = $metadata['process_step_id'] ?? null;
-            $status = $metadata['status'] ?? null;
 
             if ($processId === null || $processStepId === null) {
                 return null;
             }
 
-            return hash('sha256', implode('|', [
-                $requestId,
-                $action,
-                (string) $processId,
-                (string) $processStepId,
-                (string) $status,
-            ]));
+            return self::workflowStepDedupeKey($requestId, (string) $processId, (string) $processStepId);
         }
 
         return null;
+    }
+
+    private static function workflowStepDedupeKey(string $requestId, string $processId, string $processStepId): string
+    {
+        return hash('sha256', implode('|', [
+            $requestId,
+            'workflow_step',
+            $processId,
+            $processStepId,
+        ]));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function workflowStepMetadata(string $processId, ProcessStep $step, string $status): array
+    {
+        return [
+            'process_id' => $processId,
+            'process_step_id' => $step->id,
+            'step_id' => $step->step_id,
+            'template_step_order' => $step->template_step_order,
+            'assigned_user_id' => $step->assigned_user_id,
+            'authorized_user_ids' => $step->authorized_user_ids,
+            'status' => $status,
+            'acted_at' => $step->acted_at?->toIso8601String(),
+            'is_auto_approved' => false,
+        ];
     }
 }
