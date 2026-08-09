@@ -59,6 +59,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
             Route::get('/{id}', [SafetyRecordController::class, 'show']);
             Route::put('/{id}', [SafetyRecordController::class, 'update']);
             Route::post('/{id}/violations', [SafetyRecordController::class, 'evaluateViolations']);
+            Route::get('/{id}/violation-report', [SafetyRecordController::class, 'violationReport']);
             Route::delete('/{id}', [SafetyRecordController::class, 'destroy']);
         });
 

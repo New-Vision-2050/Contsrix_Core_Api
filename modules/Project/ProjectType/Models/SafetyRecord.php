@@ -37,6 +37,8 @@ class SafetyRecord extends Model implements HasMedia
         'order_type',
         'date',
         'time',
+        'inspection_date',
+        'inspection_time',
         'required_score',
         'earned_score',
         'percentage',
@@ -50,6 +52,8 @@ class SafetyRecord extends Model implements HasMedia
     protected $casts = [
         'date' => 'date',
         'time' => 'string',
+        'inspection_date' => 'date',
+        'inspection_time' => 'string',
         'required_score' => 'decimal:2',
         'earned_score' => 'decimal:2',
         'percentage' => 'decimal:2',
