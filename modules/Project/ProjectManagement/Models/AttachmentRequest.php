@@ -159,7 +159,8 @@ class AttachmentRequest extends Model
     public function history(): HasMany
     {
         return $this->hasMany(AttachmentRequestHistory::class, 'attachment_request_id')
-            ->orderBy('created_at', 'asc');
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc');
     }
 
     public function processes(): HasMany

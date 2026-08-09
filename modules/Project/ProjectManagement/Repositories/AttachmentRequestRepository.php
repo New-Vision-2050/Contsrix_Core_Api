@@ -65,6 +65,7 @@ class AttachmentRequestRepository extends BaseRepository
             'createdByUser',
             'respondedByUser',
             'items.respondedByUser',
+            'history.user',
             'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
         ]);
 
@@ -165,6 +166,7 @@ class AttachmentRequestRepository extends BaseRepository
                 'createdByUser',
                 'respondedByUser',
                 'items.respondedByUser',
+                'history.user',
                 'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
             ]);
 
@@ -190,6 +192,7 @@ class AttachmentRequestRepository extends BaseRepository
             'createdByUser',
             'respondedByUser',
             'items.respondedByUser',
+            'history.user',
             'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
         ]);
 
@@ -218,6 +221,7 @@ class AttachmentRequestRepository extends BaseRepository
                 'createdByUser',
                 'respondedByUser',
                 'items.respondedByUser',
+                'history.user',
                 'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
             ])
             ->orderBy('created_at', 'desc')
@@ -299,6 +303,7 @@ class AttachmentRequestRepository extends BaseRepository
                 'senderCompany',
                 'createdByUser',
                 'items.respondedByUser',
+                'history.user',
                 'attachmentRequestProcess.steps' => fn ($query) => $this->orderProcessSteps($query),
             ]);
 
