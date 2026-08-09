@@ -755,7 +755,11 @@ final class UserAttendanceHistoryService
             || ($a->status ?? null) === Attendance::STATUS_HOLIDAY
             || ($a->day_status ?? null) === 'holiday');
 
-        $hasAbsent = $attendances->contains(fn ($a) => $this->isTruthy($a->is_absent ?? null)
+        // Real clock-in always wins over leftover absent/waiting period rows
+        // (common when early clock-in creates/uses one period while another stays absent).
+        $hasPresence = $attendances->contains(fn ($a) => ! empty($a->clock_in_time));
+
+        $hasAbsent = ! $hasPresence && $attendances->contains(fn ($a) => $this->isTruthy($a->is_absent ?? null)
             || ($a->status ?? null) === Attendance::STATUS_ABSENT);
 
         // Late = clock-in after shift start only (early departure is not late).
@@ -859,8 +863,11 @@ final class UserAttendanceHistoryService
             return 'غائب';
         }
 
-        $hasCompleted = $attendances->contains(fn($a) => $a->clock_out_time !== null);
-        $hasActive    = $attendances->contains(fn($a) => $a->clock_out_time === null && $a->status === 'active');
+        $hasCompleted = $attendances->contains(fn ($a) => $a->clock_out_time !== null);
+        // Any open clock-in counts as active (do not require status=active only).
+        $hasActive = $attendances->contains(
+            fn ($a) => ! empty($a->clock_in_time) && $a->clock_out_time === null
+        );
 
         if ($hasActive) {
             return 'نشط';

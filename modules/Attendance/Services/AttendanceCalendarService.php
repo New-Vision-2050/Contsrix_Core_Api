@@ -275,11 +275,14 @@ class AttendanceCalendarService
         // Late = clock-in AFTER shift start only.
         // Early clock-out (before required hours) is NOT late — show present + hours worked.
         $hasLate = $this->hasLateArrival($dayAttendances);
-        $hasAbsent = $dayAttendances->contains(fn ($a) =>
+        // Real clock-in always wins over leftover absent period rows (early clock-in
+        // often leaves a second period marked absent while the active one has clock_in).
+        $hasPresence = $dayAttendances->contains(fn ($a) => ! empty($a->clock_in_time));
+        $hasAbsent = ! $hasPresence && $dayAttendances->contains(fn ($a) =>
             $this->isTruthy($a->is_absent ?? null) || ($a->status ?? null) === Attendance::STATUS_ABSENT
         );
 
-        if ($hasAbsent && !$hasLate) {
+        if ($hasAbsent && ! $hasLate) {
             // Employee has an assigned/active task on this day → present (متواجد).
             if ($hasTask) {
                 return $this->formatDay(
