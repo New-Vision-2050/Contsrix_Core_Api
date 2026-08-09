@@ -9,10 +9,17 @@ use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\ProcessStep;
+use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
+use Modules\User\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class AttachmentRequestPresenter extends AbstractPresenter
 {
+    /**
+     * @var array<string, array{id: string, name: mixed, email: ?string}|null>
+     */
+    private array $historyUserCache = [];
+
     public function __construct(private AttachmentRequest $request)
     {
     }
@@ -112,20 +119,19 @@ class AttachmentRequestPresenter extends AbstractPresenter
             }
 
             // Add request history from database
-                $data['history'] = $this->request->history->map(function ($historyEntry) {
-                    return [
-                        'id' => $historyEntry->id,
-                        'action' => $historyEntry->action,
-                        'description' => $historyEntry->description,
-                        'user' => $historyEntry->user ? [
-                            'id' => $historyEntry->user->id,
-                            'name' => $historyEntry->user->name,
-                            'email' => $historyEntry->user->email,
-                        ] : null,
-                        'timestamp' => $historyEntry->created_at?->toISOString(),
-                        'metadata' => $historyEntry->metadata,
-                    ];
-                })->toArray();
+            $historyEntries = $this->request->history;
+            $this->preloadPendingHistoryUsers($historyEntries);
+
+            $data['history'] = $historyEntries->map(function ($historyEntry) {
+                return [
+                    'id' => $historyEntry->id,
+                    'action' => $historyEntry->action,
+                    'description' => $historyEntry->description,
+                    'user' => $this->historyUsers($historyEntry),
+                    'timestamp' => $historyEntry->created_at?->toISOString(),
+                    'metadata' => $historyEntry->metadata,
+                ];
+            })->toArray();
 
             $data['process'] = null;
             $data['process_steps'] = [];
@@ -210,6 +216,148 @@ class AttachmentRequestPresenter extends AbstractPresenter
         }
 
         return 0;
+    }
+
+    /**
+     * @return list<array{id: string, name: mixed, email: ?string}>
+     */
+    private function historyUsers(AttachmentRequestHistory $historyEntry): array
+    {
+        $metadata = $historyEntry->metadata ?? [];
+
+        if (
+            $historyEntry->action === 'workflow_step_pending'
+            && ($metadata['status'] ?? null) === ProcessStepStatus::Pending->value
+        ) {
+            return $this->pendingWorkflowStepUsers((string) ($metadata['process_step_id'] ?? ''));
+        }
+
+        if ($historyEntry->user === null) {
+            return [];
+        }
+
+        return [$this->presentUser($historyEntry->user)];
+    }
+
+    private function preloadPendingHistoryUsers($historyEntries): void
+    {
+        $userIds = $historyEntries
+            ->flatMap(function (AttachmentRequestHistory $historyEntry): array {
+                $metadata = $historyEntry->metadata ?? [];
+
+                if (
+                    $historyEntry->action !== 'workflow_step_pending'
+                    || ($metadata['status'] ?? null) !== ProcessStepStatus::Pending->value
+                ) {
+                    return [];
+                }
+
+                $step = $this->findProcessStep((string) ($metadata['process_step_id'] ?? ''));
+
+                return $step !== null ? $this->authorizedUserIdsForStep($step) : [];
+            })
+            ->filter()
+            ->map(static fn ($userId): string => (string) $userId)
+            ->unique()
+            ->values();
+
+        if ($userIds->isEmpty()) {
+            return;
+        }
+
+        User::query()
+            ->withoutGlobalScopes()
+            ->whereIn('id', $userIds->all())
+            ->get()
+            ->each(function (User $user): void {
+                $this->historyUserCache[(string) $user->id] = $this->presentUser($user);
+            });
+
+        foreach ($userIds as $userId) {
+            $this->historyUserCache[$userId] ??= null;
+        }
+    }
+
+    /**
+     * @return list<array{id: string, name: mixed, email: ?string}>
+     */
+    private function pendingWorkflowStepUsers(string $processStepId): array
+    {
+        if ($processStepId === '') {
+            return [];
+        }
+
+        $step = $this->findProcessStep($processStepId);
+        if ($step === null) {
+            return [];
+        }
+
+        return collect($this->authorizedUserIdsForStep($step))
+            ->map(fn (string $userId): ?array => $this->resolveHistoryUser($userId))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function findProcessStep(string $processStepId): ?ProcessStep
+    {
+        $process = $this->request->relationLoaded('attachmentRequestProcess')
+            ? $this->request->attachmentRequestProcess
+            : null;
+
+        if ($process !== null && $process->relationLoaded('steps')) {
+            $step = $process->steps->firstWhere('id', $processStepId);
+            if ($step instanceof ProcessStep) {
+                return $step;
+            }
+        }
+
+        return ProcessStep::query()->find($processStepId);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function authorizedUserIdsForStep(ProcessStep $step): array
+    {
+        $userIds = $step->authorized_user_ids ?? [$step->assigned_user_id];
+
+        return collect($userIds)
+            ->filter()
+            ->map(static fn ($userId): string => (string) $userId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{id: string, name: mixed, email: ?string}|null
+     */
+    private function resolveHistoryUser(string $userId): ?array
+    {
+        if (! array_key_exists($userId, $this->historyUserCache)) {
+            $user = User::query()
+                ->withoutGlobalScopes()
+                ->find($userId);
+
+            $this->historyUserCache[$userId] = $user !== null
+                ? $this->presentUser($user)
+                : null;
+        }
+
+        return $this->historyUserCache[$userId];
+    }
+
+    /**
+     * @return array{id: string, name: mixed, email: ?string}
+     */
+    private function presentUser(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ];
     }
 
     /**
