@@ -45,7 +45,7 @@ use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationWorkResumpti
 use Modules\Project\ProjectManagement\DTO\RequestProjectNotificationWorkStoppageReportDTO;
 use Modules\Project\ProjectManagement\DTO\UpdateProjectNotificationDTO;
 use Modules\Project\ProjectManagement\Exceptions\ProjectNotificationException;
-use Modules\Project\ProjectManagement\Models\Contractor;
+use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationEndTaskStatus;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationRead;
@@ -3691,7 +3691,7 @@ class ProjectNotificationService
             return $data;
         }
 
-        $contractor = Contractor::query()->find($data['contractor_id']);
+        $contractor = ProjectContractor::query()->find($data['contractor_id']);
 
         if (! $contractor) {
             return $data;

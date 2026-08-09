@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
@@ -18,6 +19,7 @@ use Modules\Project\ProjectType\Events\SafetyTaskAssigned as SafetyTaskAssignedE
 use Modules\Project\ProjectType\Models\SafetyRecord;
 use Modules\Project\ProjectType\Models\Violation;
 use Modules\Project\ProjectType\Notifications\SafetyTaskAssigned as SafetyTaskAssignedNotification;
+use Modules\Project\ProjectType\Services\SafetyService;
 use Modules\User\Models\User;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Tests\TestCase;
@@ -536,6 +538,90 @@ final class SafetyLifecycleTest extends TestCase
         $this->assertSame([], $two['actions'] ?? null);
     }
 
+    public function test_create_from_notification_populates_enriched_safety_fields_per_assignee(): void
+    {
+        $contractor = ProjectContractor::query()->create([
+            'id' => (string) Str::uuid(),
+            'company_id' => $this->company->id,
+            'project_id' => $this->project->id,
+            'name' => 'Safety Notification Contractor',
+            'number' => 'CTR-SAFE-'.Str::upper(Str::random(4)),
+            'is_active' => true,
+        ]);
+
+        $workType = 'صيانة وقائية';
+        $taskDate = now()->toDateString();
+        $taskTime = '10:15';
+
+        $notification = ProjectNotification::query()->create([
+            'id' => (string) Str::uuid(),
+            'company_id' => $this->company->id,
+            'project_id' => $this->project->id,
+            'notification_number' => 'NTF-SAFE-ENRICH-'.Str::upper(Str::random(4)),
+            'status' => 'pending',
+            'created_by_user_id' => $this->actor->id,
+            'work_description' => 'Enriched safety from notification',
+            'contractor_id' => $contractor->id,
+            'work_type' => $workType,
+            'assigned_user_ids' => [(string) $this->assignee->id, (string) $this->assigneeTwo->id],
+            'task_date' => $taskDate,
+            'task_time' => $taskTime,
+        ]);
+
+        // Same entry point used by ProjectNotificationService after publish.
+        app(SafetyService::class)->createFromNotification($notification);
+
+        foreach ([$this->assignee, $this->assigneeTwo] as $user) {
+            $this->assertDatabaseHas('safety_records', [
+                'project_id' => $this->project->id,
+                'morphable_type' => 'project_notification',
+                'morphable_id' => $notification->id,
+                'assigned_user_id' => (string) $user->id,
+                'contractor_id' => $contractor->id,
+                'order_type' => $workType,
+                'consultant_engineer' => $user->name,
+                'consultant' => null,
+                'status' => 'pending',
+                'date' => $taskDate,
+            ]);
+        }
+
+        $inbox = $this->actingAs($this->assignee, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/safety/inbox');
+
+        $inbox->assertOk();
+
+        $inboxItem = collect($inbox->json('payload'))->first(function (array $row) use ($notification) {
+            return ($row['morphable']['id'] ?? null) === $notification->id
+                && ($row['assigned_user']['id'] ?? null) === (string) $this->assignee->id;
+        });
+
+        $this->assertNotNull($inboxItem);
+        $this->assertSame($workType, $inboxItem['order_type']);
+        $this->assertSame($contractor->id, $inboxItem['contractor_id']);
+        $this->assertSame($contractor->name, $inboxItem['contractor_name']);
+        $this->assertSame($this->assignee->name, $inboxItem['consultant_engineer']);
+        $this->assertNull($inboxItem['consultant']);
+
+        $list = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/'.$this->project->id.'/safety');
+
+        $list->assertOk();
+
+        $listIds = collect($list->json('payload'))->pluck('id');
+        $createdIds = SafetyRecord::query()
+            ->where('morphable_type', 'project_notification')
+            ->where('morphable_id', $notification->id)
+            ->pluck('id');
+
+        $this->assertCount(2, $createdIds);
+        foreach ($createdIds as $id) {
+            $this->assertTrue($listIds->contains($id));
+        }
+    }
+
     private function safetyTablesReady(): bool
     {
         try {
@@ -543,6 +629,7 @@ final class SafetyLifecycleTest extends TestCase
                 && Schema::hasTable('violations')
                 && Schema::hasTable('safety_record_violation')
                 && Schema::hasTable('project_notifications')
+                && Schema::hasTable('project_contractors')
                 && Schema::hasTable('project_employees')
                 && Schema::hasTable('projects')
                 && Schema::hasTable('companies')
