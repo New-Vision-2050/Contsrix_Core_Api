@@ -285,6 +285,10 @@ class AttachmentRequest extends Model
         string $action,
         ?string $userId
     ): void {
+        if ($action === 'approve' && $userId === null) {
+            return;
+        }
+
         AttachmentRequestHistory::log(
             requestId: $this->id,
             action: $action === 'reject' ? 'workflow_step_rejected' : 'workflow_step_approved',

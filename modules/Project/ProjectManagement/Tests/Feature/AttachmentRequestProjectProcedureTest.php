@@ -327,7 +327,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertHistoryCount($requestId, 'request_approved', 1);
     }
 
-    public function test_auto_approved_workflow_step_and_request_approval_are_logged_once(): void
+    public function test_auto_approved_workflow_step_is_not_logged_but_request_approval_is_logged(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
@@ -351,15 +351,112 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         app(ProcessWorkflowService::class)->autoApproveStep((string) $step->id);
 
         $this->assertHistoryCount($requestId, 'request_created', 1);
-        $this->assertHistoryCount($requestId, 'workflow_step_approved', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_approved', 0);
         $this->assertHistoryCount($requestId, 'request_approved', 1);
 
-        $autoHistory = AttachmentRequestHistory::query()
-            ->where('attachment_request_id', $requestId)
-            ->where('action', 'workflow_step_approved')
+        $this->assertDatabaseHas('process_steps', [
+            'id' => $step->id,
+            'status' => ProcessStepStatus::Approved->value,
+            'action_by' => null,
+        ]);
+        $this->assertNotNull($step->fresh()->acted_at);
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $requestId,
+            'processable_type' => AttachmentRequest::PROCESSABLE_TYPE,
+            'status' => ProcessStatus::Completed->value,
+        ]);
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $requestId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+    }
+
+    public function test_auto_approved_step_is_skipped_from_history_while_manual_steps_and_final_approval_are_logged(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $autoStepUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $firstManualUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondManualUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $autoStepUser, 1);
+        $this->createProcedureStep($procedure, $firstManualUser, 2);
+        $this->createProcedureStep($procedure, $secondManualUser, 3);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
             ->firstOrFail();
 
-        $this->assertTrue($autoHistory->metadata['is_auto_approved']);
+        $autoStep = $process->steps()
+            ->where('status', ProcessStepStatus::Pending->value)
+            ->where('template_step_order', 1)
+            ->firstOrFail();
+
+        $timelineStart = now();
+
+        try {
+            \Carbon\Carbon::setTestNow($timelineStart->copy()->addMinute());
+            app(ProcessWorkflowService::class)->autoApproveStep((string) $autoStep->id);
+
+            $this->assertDatabaseHas('process_steps', [
+                'id' => $autoStep->id,
+                'template_step_order' => 1,
+                'status' => ProcessStepStatus::Approved->value,
+                'action_by' => null,
+            ]);
+
+            \Carbon\Carbon::setTestNow($timelineStart->copy()->addMinutes(2));
+            $this->actingAs($firstManualUser, 'api')
+                ->withHeader('X-Tenant', $receiverCompany->id)
+                ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+                ->assertOk()
+                ->assertJsonPath('payload.status', AttachmentRequest::STATUS_PENDING);
+
+            \Carbon\Carbon::setTestNow($timelineStart->copy()->addMinutes(3));
+            $this->actingAs($secondManualUser, 'api')
+                ->withHeader('X-Tenant', $receiverCompany->id)
+                ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+                ->assertOk()
+                ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
+        } finally {
+            \Carbon\Carbon::setTestNow();
+        }
+
+        $history = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get();
+
+        $this->assertSame([
+            'request_created',
+            'workflow_step_approved',
+            'workflow_step_approved',
+            'request_approved',
+        ], $history->pluck('action')->all());
+
+        $manualStepHistory = $history
+            ->where('action', 'workflow_step_approved')
+            ->values();
+
+        $this->assertSame(2, $manualStepHistory->count());
+        $this->assertSame(2, (int) $manualStepHistory[0]->metadata['template_step_order']);
+        $this->assertSame($firstManualUser->id, $manualStepHistory[0]->user_id);
+        $this->assertSame(3, (int) $manualStepHistory[1]->metadata['template_step_order']);
+        $this->assertSame($secondManualUser->id, $manualStepHistory[1]->user_id);
+        $this->assertSame($secondManualUser->id, $history->last()->user_id);
+        $this->assertFalse($history->contains(
+            static fn (AttachmentRequestHistory $entry): bool => ($entry->metadata['is_auto_approved'] ?? false) === true
+        ));
+        $this->assertHistoryCount($requestId, 'request_created', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_approved', 2);
+        $this->assertHistoryCount($requestId, 'request_approved', 1);
     }
 
     public function test_history_writer_is_idempotent_for_same_logical_workflow_step(): void
