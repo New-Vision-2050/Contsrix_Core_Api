@@ -166,6 +166,11 @@ class ProcessWorkflowService
             context: $context,
         ));
 
+        $processable = $process->processable;
+        if ($processable && method_exists($processable, 'onWorkflowStepActivated')) {
+            $processable->onWorkflowStepActivated($process, $step);
+        }
+
         // 2. Schedule auto-approve if skipping_period is configured
         if (
             $templateStep->requires_approval_within_period

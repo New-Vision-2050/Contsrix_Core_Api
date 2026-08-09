@@ -286,26 +286,31 @@ class AttachmentRequest extends Model
         ?string $userId
     ): void {
         if ($action === 'approve' && $userId === null) {
+            AttachmentRequestHistory::deleteWorkflowStepLifecycle(
+                requestId: $this->id,
+                processId: $process->id,
+                processStepId: (string) $step->id
+            );
+
             return;
         }
 
-        AttachmentRequestHistory::log(
+        AttachmentRequestHistory::transitionWorkflowStep(
             requestId: $this->id,
+            processId: $process->id,
+            step: $step,
             action: $action === 'reject' ? 'workflow_step_rejected' : 'workflow_step_approved',
             description: $action === 'reject' ? 'Workflow step rejected' : 'Workflow step approved',
-            userId: $userId,
-            metadata: [
-                'process_id' => $process->id,
-                'process_step_id' => $step->id,
-                'step_id' => $step->step_id,
-                'template_step_order' => $step->template_step_order,
-                'assigned_user_id' => $step->assigned_user_id,
-                'authorized_user_ids' => $step->authorized_user_ids,
-                'status' => $step->status->value,
-                'acted_at' => $step->acted_at?->toIso8601String(),
-                'is_auto_approved' => $userId === null && $action === 'approve',
-            ],
-            createdAt: $step->acted_at
+            userId: $userId
+        );
+    }
+
+    public function onWorkflowStepActivated(Process $process, ProcessStep $step): void
+    {
+        AttachmentRequestHistory::recordWorkflowStepPending(
+            requestId: $this->id,
+            processId: $process->id,
+            step: $step
         );
     }
 
