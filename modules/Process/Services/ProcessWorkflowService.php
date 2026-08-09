@@ -109,6 +109,11 @@ class ProcessWorkflowService
                 'metadata'              => $metadata,
             ]);
 
+            $processable = $process->processable;
+            if ($processable && method_exists($processable, 'onWorkflowTimelineInitialized')) {
+                $processable->onWorkflowTimelineInitialized($process);
+            }
+
             if ($index === 0) {
                 $firstProcess = $process;
                 $this->initializeProcessSteps($process, $context);
