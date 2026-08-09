@@ -13,6 +13,7 @@ use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\Process\Models\Process;
+use Modules\Process\Models\ProcessStep;
 use Modules\User\Models\User;
 
 class AttachmentRequest extends Model
@@ -276,6 +277,32 @@ class AttachmentRequest extends Model
             ]);
             throw $e;
         }
+    }
+
+    public function onWorkflowStepActionCompleted(
+        Process $process,
+        ProcessStep $step,
+        string $action,
+        ?string $userId
+    ): void {
+        AttachmentRequestHistory::log(
+            requestId: $this->id,
+            action: $action === 'reject' ? 'workflow_step_rejected' : 'workflow_step_approved',
+            description: $action === 'reject' ? 'Workflow step rejected' : 'Workflow step approved',
+            userId: $userId,
+            metadata: [
+                'process_id' => $process->id,
+                'process_step_id' => $step->id,
+                'step_id' => $step->step_id,
+                'template_step_order' => $step->template_step_order,
+                'assigned_user_id' => $step->assigned_user_id,
+                'authorized_user_ids' => $step->authorized_user_ids,
+                'status' => $step->status->value,
+                'acted_at' => $step->acted_at?->toIso8601String(),
+                'is_auto_approved' => $userId === null && $action === 'approve',
+            ],
+            createdAt: $step->acted_at
+        );
     }
 
     /**

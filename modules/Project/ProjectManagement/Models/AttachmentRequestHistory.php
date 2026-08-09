@@ -59,7 +59,8 @@ class AttachmentRequestHistory extends Model
         string $description,
         ?string $userId = null,
         ?string $itemId = null,
-        ?array $metadata = null
+        ?array $metadata = null,
+        ?\DateTimeInterface $createdAt = null
     ): self {
         return self::create([
             'attachment_request_id' => $requestId,
@@ -68,7 +69,7 @@ class AttachmentRequestHistory extends Model
             'description' => $description,
             'user_id' => $userId,
             'metadata' => $metadata,
-            'created_at' => now(),
+            'created_at' => $createdAt ?? now(),
         ]);
     }
 }

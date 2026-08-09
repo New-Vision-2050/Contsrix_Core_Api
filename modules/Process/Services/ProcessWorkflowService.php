@@ -312,9 +312,15 @@ class ProcessWorkflowService
                 'acted_at' => now(),
             ]);
 
+            $actedStep = $step->fresh();
+            $processable = $process->processable;
+            if ($processable && method_exists($processable, 'onWorkflowStepActionCompleted')) {
+                $processable->onWorkflowStepActionCompleted($process, $actedStep, 'approve', null);
+            }
+
             $this->advanceProcessAfterAction($process);
 
-            return $step->fresh();
+            return $actedStep;
         });
     }
 
