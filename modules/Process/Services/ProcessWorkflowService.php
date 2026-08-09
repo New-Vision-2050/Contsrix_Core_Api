@@ -109,6 +109,11 @@ class ProcessWorkflowService
                 'metadata'              => $metadata,
             ]);
 
+            $processable = $process->processable;
+            if ($processable && method_exists($processable, 'onWorkflowTimelineInitialized')) {
+                $processable->onWorkflowTimelineInitialized($process);
+            }
+
             if ($index === 0) {
                 $firstProcess = $process;
                 $this->initializeProcessSteps($process, $context);
@@ -165,6 +170,11 @@ class ProcessWorkflowService
             userIds: $authorizedUserIds,
             context: $context,
         ));
+
+        $processable = $process->processable;
+        if ($processable && method_exists($processable, 'onWorkflowStepActivated')) {
+            $processable->onWorkflowStepActivated($process, $step);
+        }
 
         // 2. Schedule auto-approve if skipping_period is configured
         if (
@@ -225,9 +235,15 @@ class ProcessWorkflowService
                 'acted_at' => now(),
             ]);
 
+            $actedStep = $step->fresh();
+            $processable = $process->processable;
+            if ($processable && method_exists($processable, 'onWorkflowStepActionCompleted')) {
+                $processable->onWorkflowStepActionCompleted($process, $actedStep, 'approve', (string) Auth::id());
+            }
+
             $this->advanceProcessAfterAction($process);
 
-            return $step->fresh();
+            return $actedStep;
         });
     }
 
@@ -272,12 +288,24 @@ class ProcessWorkflowService
             $isJobRole = in_array('job_role', $specificTypes, true);
 
             if ($isJobRole) {
+                $actedStep = $step->fresh();
+                $processable = $process->processable;
+                if ($processable && method_exists($processable, 'onWorkflowStepActionCompleted')) {
+                    $processable->onWorkflowStepActionCompleted($process, $actedStep, 'reject', (string) Auth::id());
+                }
+
                 $this->advanceProcessAfterAction($process);
             } else {
+                $actedStep = $step->fresh();
+                $processable = $process->processable;
+                if ($processable && method_exists($processable, 'onWorkflowStepActionCompleted')) {
+                    $processable->onWorkflowStepActionCompleted($process, $actedStep, 'reject', (string) Auth::id());
+                }
+
                 $process->update(['status' => ProcessStatus::Failed]);
 
-                if (method_exists($process->processable, 'onProcessFailed')) {
-                    $process->processable->onProcessFailed($process);
+                if ($processable && method_exists($processable, 'onProcessFailed')) {
+                    $processable->onProcessFailed($process);
                 }
             }
 
@@ -312,9 +340,15 @@ class ProcessWorkflowService
                 'acted_at' => now(),
             ]);
 
+            $actedStep = $step->fresh();
+            $processable = $process->processable;
+            if ($processable && method_exists($processable, 'onWorkflowStepActionCompleted')) {
+                $processable->onWorkflowStepActionCompleted($process, $actedStep, 'approve', null);
+            }
+
             $this->advanceProcessAfterAction($process);
 
-            return $step->fresh();
+            return $actedStep;
         });
     }
 
