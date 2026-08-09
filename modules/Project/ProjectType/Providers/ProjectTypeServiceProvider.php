@@ -26,6 +26,7 @@ class ProjectTypeServiceProvider extends ModuleServiceProvider
         //$this->registerConfig();
         $this->registerMigrations();
         $this->registerCommands();
+        $this->registerViews();
 
         // Register observer
         ProjectType::observe(ProjectTypeObserver::class);
@@ -34,6 +35,16 @@ class ProjectTypeServiceProvider extends ModuleServiceProvider
             'project_notification' => ProjectNotification::class,
             'project_order_permit' => ProjectOrderPermit::class,
         ]);
+    }
+
+    protected function registerViews(): void
+    {
+        $alias = 'project-type';
+        $sourcePath = $this->getModulePath('Resources/views');
+        $viewPath = resource_path('views/modules/'.$alias);
+
+        $this->publishes([$sourcePath => $viewPath], 'views');
+        $this->loadViewsFrom([$viewPath, $sourcePath], $alias);
     }
 
     protected function registerCommands(): void

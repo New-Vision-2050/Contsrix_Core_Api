@@ -31,6 +31,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
     Route::get('/widgets', [ProjectManagementController::class, 'widgets'])
         ->permission(Permission::PROJECT_MANAGEMENT_LIST());
     Route::get('/contractual-engagements', [ProjectManagementController::class, 'contractualEngagements']);
+    Route::get('/project-tags', [ProjectManagementController::class, 'projectTags']);
 
 
         //inquiry
@@ -58,6 +59,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
             Route::get('/{id}', [SafetyRecordController::class, 'show']);
             Route::put('/{id}', [SafetyRecordController::class, 'update']);
             Route::post('/{id}/violations', [SafetyRecordController::class, 'evaluateViolations']);
+            Route::get('/{id}/violation-report', [SafetyRecordController::class, 'violationReport']);
             Route::delete('/{id}', [SafetyRecordController::class, 'destroy']);
         });
 

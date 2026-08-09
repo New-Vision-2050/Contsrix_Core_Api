@@ -16,7 +16,6 @@ use Modules\Shared\Currency\Models\Currency;
 use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
 use App\Traits\Shareable;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProjectManagement extends Model
@@ -49,6 +48,7 @@ class ProjectManagement extends Model
         'project_owner_id',
         'contract_id',
         'contractual_engagement_id',
+        'project_tag_id',
         'client_id',
         'project_classification_id',
         'cost_center_branch_id',
@@ -72,6 +72,7 @@ class ProjectManagement extends Model
         'project_owner_id' => 'string',
         'contract_id' => 'string',
         'contractual_engagement_id' => 'string',
+        'project_tag_id' => 'string',
         'client_id' => 'string',
         'project_classification_id' => 'string',
         'cost_center_branch_id' => 'string',
@@ -178,6 +179,11 @@ class ProjectManagement extends Model
     public function contractualEngagement()
     {
         return $this->belongsTo(ContractualEngagement::class, 'contractual_engagement_id')->withoutGlobalScopes();
+    }
+
+    public function projectTag()
+    {
+        return $this->belongsTo(ProjectTag::class, 'project_tag_id')->withoutGlobalScopes();
     }
 
     public function costCenterBranch()

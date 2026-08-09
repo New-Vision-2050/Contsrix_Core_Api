@@ -648,6 +648,8 @@ class SafetyService
             'earned_score' => round($earnedScore, 2),
             'required_score' => round($requiredScore, 2),
             'percentage' => $percentage,
+            'inspection_date' => now()->toDateString(),
+            'inspection_time' => now()->format('H:i:s'),
         ]);
     }
 

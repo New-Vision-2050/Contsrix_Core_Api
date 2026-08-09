@@ -135,4 +135,12 @@ class ProjectManagementController extends Controller
 
         return Json::items($items);
     }
+
+    /**
+     * List active project tags for dropdown selection.
+     */
+    public function projectTags(): JsonResponse
+    {
+        return Json::items($this->projectManagementService->projectTags());
+    }
 }
