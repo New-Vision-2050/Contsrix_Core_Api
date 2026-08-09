@@ -272,6 +272,44 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         ]);
     }
 
+    public function test_workflow_step_actions_are_logged_from_first_step(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.history.1.action', 'workflow_step_approved')
+            ->assertJsonPath('payload.history.1.metadata.template_step_order', 1);
+
+        $this->assertDatabaseHas('attachment_request_history', [
+            'attachment_request_id' => $requestId,
+            'action' => 'workflow_step_approved',
+            'user_id' => $firstReceiverUser->id,
+        ]);
+
+        $this->actingAs($secondReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED)
+            ->assertJsonPath('payload.history.2.action', 'workflow_step_approved')
+            ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
+            ->assertJsonPath('payload.history.3.action', 'request_approved');
+    }
+
     public function test_workflow_approval_uses_pending_step_actor_not_legacy_receiver_company_gate(): void
     {
         $project = $this->createProject();
