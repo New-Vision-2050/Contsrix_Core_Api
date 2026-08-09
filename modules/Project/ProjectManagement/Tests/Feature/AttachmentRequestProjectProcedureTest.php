@@ -280,14 +280,28 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $procedure = $this->createProjectProcedure($project);
         $receiverCompany = $this->createCompany();
         $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $alternateFirstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
         $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
         $this->createAcceptedShare($project, $receiverCompany);
-        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $firstProcedureStep = $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        ProcedureSettingStepActionTaker::query()->create([
+            'procedure_setting_step_id' => $firstProcedureStep->id,
+            'user_id' => $alternateFirstReceiverUser->id,
+            'company_id' => $this->company->id,
+        ]);
         $this->createProcedureStep($procedure, $secondReceiverUser, 2);
 
-        $requestId = $this->postAttachmentRequest($project, $procedure)
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
-            ->json('payload.id');
+            ->assertJsonPath('payload.history.0.user.0.id', $this->actor->id)
+            ->assertJsonPath('payload.history.1.action', 'workflow_step_pending')
+            ->assertJsonPath('payload.history.1.metadata.status', 'pending')
+            ->assertJsonPath('payload.history.1.user.0.id', $firstReceiverUser->id)
+            ->assertJsonPath('payload.history.1.user.1.id', $alternateFirstReceiverUser->id);
+        $this->assertHistoryUsersAreArrays($createResponse->json('payload.history'));
+        $this->assertCount(2, $createResponse->json('payload.history.1.user'));
+
+        $requestId = $createResponse->json('payload.id');
 
         $this->assertHistoryCount($requestId, 'request_created', 1);
         $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
@@ -306,16 +320,20 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame('workflow_step_pending', $firstStepHistory->action);
         $this->assertSame('pending', $firstStepHistory->metadata['status']);
 
-        $this->actingAs($firstReceiverUser, 'api')
+        $firstApproveResponse = $this->actingAs($firstReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
             ->assertOk()
             ->assertJsonPath('payload.history.1.action', 'workflow_step_approved')
             ->assertJsonPath('payload.history.1.metadata.template_step_order', 1)
             ->assertJsonPath('payload.history.1.metadata.status', 'approved')
+            ->assertJsonPath('payload.history.1.user.0.id', $firstReceiverUser->id)
             ->assertJsonPath('payload.history.2.action', 'workflow_step_pending')
             ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
-            ->assertJsonPath('payload.history.2.metadata.status', 'pending');
+            ->assertJsonPath('payload.history.2.metadata.status', 'pending')
+            ->assertJsonPath('payload.history.2.user.0.id', $secondReceiverUser->id);
+        $this->assertHistoryUsersAreArrays($firstApproveResponse->json('payload.history'));
+        $this->assertCount(1, $firstApproveResponse->json('payload.history.1.user'));
 
         $this->assertHistoryCount($requestId, 'workflow_step_approved', 1);
         $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
@@ -333,7 +351,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 ->count()
         );
 
-        $this->actingAs($secondReceiverUser, 'api')
+        $secondApproveResponse = $this->actingAs($secondReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
             ->assertOk()
@@ -341,7 +359,10 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.history.2.action', 'workflow_step_approved')
             ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
             ->assertJsonPath('payload.history.2.metadata.status', 'approved')
-            ->assertJsonPath('payload.history.3.action', 'request_approved');
+            ->assertJsonPath('payload.history.2.user.0.id', $secondReceiverUser->id)
+            ->assertJsonPath('payload.history.3.action', 'request_approved')
+            ->assertJsonPath('payload.history.3.user.0.id', $secondReceiverUser->id);
+        $this->assertHistoryUsersAreArrays($secondApproveResponse->json('payload.history'));
 
         $workflowStepOrders = AttachmentRequestHistory::query()
             ->where('attachment_request_id', $requestId)
@@ -580,11 +601,16 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame('workflow_step_pending', $pendingHistory->action);
         $this->assertSame('pending', $pendingHistory->metadata['status']);
 
-        $this->actingAs($receiverUser, 'api')
+        $declineResponse = $this->actingAs($receiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/decline", [], ['Accept' => 'application/json'])
             ->assertOk()
-            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_DECLINED);
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_DECLINED)
+            ->assertJsonPath('payload.history.1.action', 'workflow_step_rejected')
+            ->assertJsonPath('payload.history.1.user.0.id', $receiverUser->id)
+            ->assertJsonPath('payload.history.2.action', 'request_declined')
+            ->assertJsonPath('payload.history.2.user.0.id', $receiverUser->id);
+        $this->assertHistoryUsersAreArrays($declineResponse->json('payload.history'));
 
         $this->assertDatabaseHas('processes', [
             'processable_id' => $requestId,
@@ -729,6 +755,13 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->where('attachment_request_id', $requestId)
             ->where('metadata->process_step_id', $processStepId)
             ->firstOrFail();
+    }
+
+    private function assertHistoryUsersAreArrays(array $history): void
+    {
+        foreach ($history as $entry) {
+            $this->assertIsArray($entry['user']);
+        }
     }
 
     private function createProject(): ProjectManagement
