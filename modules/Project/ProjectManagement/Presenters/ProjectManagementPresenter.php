@@ -43,6 +43,7 @@ class ProjectManagementPresenter extends AbstractPresenter
             'project_owner_id' => $this->projectManagement->project_owner_id,
             'contract_id' => $this->projectManagement->contract_id,
             'contractual_engagement_id' => $this->projectManagement->contractual_engagement_id,
+            'project_tag_id' => $this->projectManagement->project_tag_id,
             'client_id' => $this->projectManagement->client_id,
             'project_classification_id' => $this->projectManagement->project_classification_id,
             'cost_center_branch_id' => $this->projectManagement->cost_center_branch_id,
@@ -128,6 +129,12 @@ class ProjectManagementPresenter extends AbstractPresenter
                 'name_ar' => $this->projectManagement->contractualEngagement->name_ar,
                 'name_en' => $this->projectManagement->contractualEngagement->name_en,
                 'code' => $this->projectManagement->contractualEngagement->code,
+            ] : null;
+
+            $data['project_tag'] = $this->projectManagement->projectTag ? [
+                'id' => $this->projectManagement->projectTag->id,
+                'name' => $this->projectManagement->projectTag->getTranslation('name'),
+                'code' => $this->projectManagement->projectTag->code,
             ] : null;
 
             // Add employees assigned to this project
@@ -292,6 +299,7 @@ class ProjectManagementPresenter extends AbstractPresenter
             $data['cost_center_branch_name'] = $this->projectManagement->costCenterBranch?->name;
             $data['management_name'] = $this->projectManagement->management?->name;
             $data['contractual_engagement_name'] = $this->projectManagement->contractualEngagement?->name_ar;
+            $data['project_tag_name'] = $this->projectManagement->projectTag?->getTranslation('name');
         }
 
         return $data;

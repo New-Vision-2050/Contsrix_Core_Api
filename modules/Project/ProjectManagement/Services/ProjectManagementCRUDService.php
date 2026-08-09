@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Services;
 use Illuminate\Support\Collection;
 use Modules\Project\ProjectManagement\DTO\CreateProjectManagementDTO;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectTag;
 use Modules\Project\ProjectManagement\Repositories\ProjectManagementRepository;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
@@ -40,5 +41,19 @@ class ProjectManagementCRUDService
         return $this->repository->getProjectManagement(
             id: $id,
         );
+    }
+
+    public function projectTags(): array
+    {
+        return ProjectTag::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'sort_order'])
+            ->map(fn (ProjectTag $tag) => [
+                'id' => $tag->id,
+                'name' => $tag->getTranslation('name'),
+                'code' => $tag->code,
+                'sort_order' => $tag->sort_order,
+            ])->toArray();
     }
 }

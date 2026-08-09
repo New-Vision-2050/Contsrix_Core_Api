@@ -10,7 +10,12 @@ return new class extends Migration
     {
         if (! Schema::hasColumn('project_order_permit', 'employee_id')) {
             Schema::table('project_order_permit', function (Blueprint $table) {
-                $table->foreignId('employee_id')->nullable()->constrained('users')->nullOnDelete()->after('consultant_price');
+                $table->uuid('employee_id')->nullable()->after('consultant_price');
+
+                $table->foreign('employee_id')
+                    ->references('id')
+                    ->on('users')
+                    ->nullOnDelete();
             });
         }
 
@@ -45,7 +50,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('project_order_permit', function (Blueprint $table) {
-            $table->dropForeign(['employee_id']);
+            if (Schema::hasColumn('project_order_permit', 'employee_id')) {
+                $table->dropForeign(['employee_id']);
+            }
+
             $table->dropColumn([
                 'employee_id',
                 'target_drilling',

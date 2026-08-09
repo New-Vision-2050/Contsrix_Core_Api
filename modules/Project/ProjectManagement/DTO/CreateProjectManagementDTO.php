@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\DTO;
 
-use Ramsey\Uuid\UuidInterface;
-
 class CreateProjectManagementDTO
 {
     public function __construct(
@@ -19,6 +17,7 @@ class CreateProjectManagementDTO
         public ?string $projectOwnerId = null,
         public ?string $contractId = null,
         public ?string $contractualEngagementId = null,
+        public ?string $projectTagId = null,
         public ?string $clientId = null,
         public ?string $projectClassificationId = null,
         public ?string $costCenterBranchId = null,
@@ -42,6 +41,7 @@ class CreateProjectManagementDTO
             'project_owner_id' => $this->projectOwnerId,
             'contract_id' => $this->contractId,
             'contractual_engagement_id' => $this->contractualEngagementId,
+            'project_tag_id' => $this->projectTagId,
             'client_id' => $this->clientId,
             'project_classification_id' => $this->projectClassificationId,
             'cost_center_branch_id' => $this->costCenterBranchId,

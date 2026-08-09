@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Ramsey\Uuid\Uuid;
 use Modules\Project\ProjectManagement\DTO\CreateProjectManagementDTO;
 
 class CreateProjectManagementRequest extends FormRequest
@@ -23,6 +22,7 @@ class CreateProjectManagementRequest extends FormRequest
             'project_owner_id' => 'nullable|uuid',
             'contract_id' => 'nullable|uuid',
             'contractual_engagement_id' => 'nullable|uuid|exists:contractual_engagements,id',
+            'project_tag_id' => 'nullable|uuid|exists:project_tags,id',
             'client_id' => 'nullable',
             'project_classification_id' => 'nullable|uuid',
             'cost_center_branch_id' => 'nullable|exists:management_hierarchies,id',
@@ -46,6 +46,7 @@ class CreateProjectManagementRequest extends FormRequest
             projectOwnerId: $this->get('project_owner_id'),
             contractId:$this->get("contract_id")!= null ?  (string) $this->get('contract_id') : null,
             contractualEngagementId:$this->get("contractual_engagement_id")!= null ? (string) $this->get('contractual_engagement_id'):null,
+            projectTagId:$this->get("project_tag_id")!= null ? (string) $this->get('project_tag_id'):null,
             clientId:$this->get("client_id")!= null ? (string) $this->get('client_id'):null,
             projectClassificationId: $this->get('project_classification_id'),
             costCenterBranchId: $this->get('cost_center_branch_id'),

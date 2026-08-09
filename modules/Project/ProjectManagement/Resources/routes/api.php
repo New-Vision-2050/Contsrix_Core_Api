@@ -31,6 +31,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
     Route::get('/widgets', [ProjectManagementController::class, 'widgets'])
         ->permission(Permission::PROJECT_MANAGEMENT_LIST());
     Route::get('/contractual-engagements', [ProjectManagementController::class, 'contractualEngagements']);
+    Route::get('/project-tags', [ProjectManagementController::class, 'projectTags']);
 
 
         //inquiry
