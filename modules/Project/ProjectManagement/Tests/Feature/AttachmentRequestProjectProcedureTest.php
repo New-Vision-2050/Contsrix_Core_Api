@@ -297,25 +297,44 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.history.1.action', 'workflow_step_pending')
             ->assertJsonPath('payload.history.1.metadata.status', 'pending')
             ->assertJsonPath('payload.history.1.user.0.id', $firstReceiverUser->id)
-            ->assertJsonPath('payload.history.1.user.1.id', $alternateFirstReceiverUser->id);
+            ->assertJsonPath('payload.history.1.user.1.id', $alternateFirstReceiverUser->id)
+            ->assertJsonPath('payload.history.2.action', 'workflow_step_pending')
+            ->assertJsonPath('payload.history.2.metadata.status', 'pending')
+            ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
+            ->assertJsonPath('payload.history.2.metadata.process_step_id', null)
+            ->assertJsonPath('payload.history.2.user.0.id', $secondReceiverUser->id);
         $this->assertHistoryUsersAreArrays($createResponse->json('payload.history'));
         $this->assertCount(2, $createResponse->json('payload.history.1.user'));
 
         $requestId = $createResponse->json('payload.id');
 
         $this->assertHistoryCount($requestId, 'request_created', 1);
-        $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 2);
 
-        $firstStep = Process::query()
+        $process = Process::query()
             ->where('processable_id', $requestId)
             ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
-            ->firstOrFail()
+            ->firstOrFail();
+
+        $this->assertSame(1, $process->steps()->count());
+
+        $this->actingAs($secondReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertStatus(422);
+
+        $firstStep = $process
             ->steps()
             ->where('template_step_order', 1)
             ->firstOrFail();
 
         $firstStepHistory = $this->workflowStepHistory($requestId, (string) $firstStep->id);
         $firstStepHistoryId = $firstStepHistory->id;
+        $secondStepHistoryId = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('metadata->template_step_order', 2)
+            ->firstOrFail()
+            ->id;
 
         $this->assertSame('workflow_step_pending', $firstStepHistory->action);
         $this->assertSame('pending', $firstStepHistory->metadata['status']);
@@ -351,6 +370,23 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 ->count()
         );
 
+        $secondStep = $process->fresh()
+            ->steps()
+            ->where('template_step_order', 2)
+            ->firstOrFail();
+
+        $this->assertSame(
+            1,
+            AttachmentRequestHistory::query()
+                ->where('attachment_request_id', $requestId)
+                ->where('metadata->process_step_id', (string) $secondStep->id)
+                ->count()
+        );
+        $this->assertSame(
+            $secondStepHistoryId,
+            $this->workflowStepHistory($requestId, (string) $secondStep->id)->id
+        );
+
         $secondApproveResponse = $this->actingAs($secondReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
             ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
@@ -367,7 +403,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $workflowStepOrders = AttachmentRequestHistory::query()
             ->where('attachment_request_id', $requestId)
             ->where('action', 'workflow_step_approved')
-            ->orderBy('created_at')
+            ->orderBy('sort_order')
             ->get()
             ->map(static fn (AttachmentRequestHistory $history): int => (int) $history->metadata['template_step_order'])
             ->all();
@@ -483,7 +519,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $history = AttachmentRequestHistory::query()
             ->where('attachment_request_id', $requestId)
-            ->orderBy('created_at')
+            ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
 
@@ -726,6 +762,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             && Schema::hasTable('attachment_request_items')
             && Schema::hasTable('attachment_request_history')
             && Schema::hasColumn('attachment_request_history', 'dedupe_key')
+            && Schema::hasColumn('attachment_request_history', 'sort_order')
             && Schema::hasTable('project_procedure_settings')
             && Schema::hasTable('folders')
             && Schema::hasTable('procedure_settings')

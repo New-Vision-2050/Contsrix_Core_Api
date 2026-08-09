@@ -160,6 +160,8 @@ class AttachmentRequest extends Model
     public function history(): HasMany
     {
         return $this->hasMany(AttachmentRequestHistory::class, 'attachment_request_id')
+            ->orderByRaw('sort_order is null')
+            ->orderBy('sort_order', 'asc')
             ->orderBy('created_at', 'asc')
             ->orderBy('id', 'asc');
     }
@@ -288,8 +290,8 @@ class AttachmentRequest extends Model
         if ($action === 'approve' && $userId === null) {
             AttachmentRequestHistory::deleteWorkflowStepLifecycle(
                 requestId: $this->id,
-                processId: $process->id,
-                processStepId: (string) $step->id
+                process: $process,
+                step: $step
             );
 
             return;
@@ -297,7 +299,7 @@ class AttachmentRequest extends Model
 
         AttachmentRequestHistory::transitionWorkflowStep(
             requestId: $this->id,
-            processId: $process->id,
+            process: $process,
             step: $step,
             action: $action === 'reject' ? 'workflow_step_rejected' : 'workflow_step_approved',
             description: $action === 'reject' ? 'Workflow step rejected' : 'Workflow step approved',
@@ -305,11 +307,19 @@ class AttachmentRequest extends Model
         );
     }
 
+    public function onWorkflowTimelineInitialized(Process $process): void
+    {
+        AttachmentRequestHistory::recordWorkflowTimeline(
+            requestId: $this->id,
+            process: $process
+        );
+    }
+
     public function onWorkflowStepActivated(Process $process, ProcessStep $step): void
     {
         AttachmentRequestHistory::recordWorkflowStepPending(
             requestId: $this->id,
-            processId: $process->id,
+            process: $process,
             step: $step
         );
     }

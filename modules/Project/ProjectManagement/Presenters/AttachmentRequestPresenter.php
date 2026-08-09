@@ -229,7 +229,7 @@ class AttachmentRequestPresenter extends AbstractPresenter
             $historyEntry->action === 'workflow_step_pending'
             && ($metadata['status'] ?? null) === ProcessStepStatus::Pending->value
         ) {
-            return $this->pendingWorkflowStepUsers((string) ($metadata['process_step_id'] ?? ''));
+            return $this->pendingWorkflowStepUsers($metadata);
         }
 
         if ($historyEntry->user === null) {
@@ -252,9 +252,7 @@ class AttachmentRequestPresenter extends AbstractPresenter
                     return [];
                 }
 
-                $step = $this->findProcessStep((string) ($metadata['process_step_id'] ?? ''));
-
-                return $step !== null ? $this->authorizedUserIdsForStep($step) : [];
+                return $this->authorizedUserIdsForPendingHistory($metadata);
             })
             ->filter()
             ->map(static fn ($userId): string => (string) $userId)
@@ -281,18 +279,9 @@ class AttachmentRequestPresenter extends AbstractPresenter
     /**
      * @return list<array{id: string, name: mixed, email: ?string}>
      */
-    private function pendingWorkflowStepUsers(string $processStepId): array
+    private function pendingWorkflowStepUsers(array $metadata): array
     {
-        if ($processStepId === '') {
-            return [];
-        }
-
-        $step = $this->findProcessStep($processStepId);
-        if ($step === null) {
-            return [];
-        }
-
-        return collect($this->authorizedUserIdsForStep($step))
+        return collect($this->authorizedUserIdsForPendingHistory($metadata))
             ->map(fn (string $userId): ?array => $this->resolveHistoryUser($userId))
             ->filter()
             ->values()
@@ -301,6 +290,10 @@ class AttachmentRequestPresenter extends AbstractPresenter
 
     private function findProcessStep(string $processStepId): ?ProcessStep
     {
+        if ($processStepId === '') {
+            return null;
+        }
+
         $process = $this->request->relationLoaded('attachmentRequestProcess')
             ? $this->request->attachmentRequestProcess
             : null;
@@ -321,6 +314,30 @@ class AttachmentRequestPresenter extends AbstractPresenter
     private function authorizedUserIdsForStep(ProcessStep $step): array
     {
         $userIds = $step->authorized_user_ids ?? [$step->assigned_user_id];
+
+        return collect($userIds)
+            ->filter()
+            ->map(static fn ($userId): string => (string) $userId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     * @return list<string>
+     */
+    private function authorizedUserIdsForPendingHistory(array $metadata): array
+    {
+        $step = $this->findProcessStep((string) ($metadata['process_step_id'] ?? ''));
+        if ($step !== null) {
+            return $this->authorizedUserIdsForStep($step);
+        }
+
+        $userIds = (array) ($metadata['authorized_user_ids'] ?? []);
+        if ($userIds === [] && ! empty($metadata['assigned_user_id'])) {
+            $userIds = [$metadata['assigned_user_id']];
+        }
 
         return collect($userIds)
             ->filter()
