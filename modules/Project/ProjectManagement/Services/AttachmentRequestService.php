@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Services;
 
 use Modules\Project\ProjectManagement\Repositories\AttachmentRequestRepository;
+use Modules\Project\ProjectManagement\Repositories\ProjectProcedureRepository;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Modules\Project\ProjectManagement\Models\AttachmentRequestItem;
 use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
@@ -28,9 +29,11 @@ class AttachmentRequestService
 {
     public function __construct(
         private AttachmentRequestRepository $repository,
+        private ProjectProcedureRepository $projectProcedureRepository,
         private FileUploadService $fileUploadService,
         private AttachmentRequestWorkflowService $workflowService,
         private AttachmentArchiveDeliveryService $archiveDeliveryService,
+        private AttachmentRequestVisibilityService $visibilityService,
     ) {
     }
 
@@ -198,12 +201,7 @@ class AttachmentRequestService
         }
 
         $companyId = (string) tenant('id');
-        if (
-            $request->sender_company_id !== $companyId
-            && ! $this->repository->companyParticipatesInWorkflow($request->id, $companyId)
-        ) {
-            throw new \Exception('Unauthorized access to this request');
-        }
+        $this->visibilityService->assertCompanyCanView($request, $companyId);
 
         return $request;
     }
@@ -220,17 +218,14 @@ class AttachmentRequestService
             ->where('id', $projectId)
             ->firstOrFail();
 
-        return ProjectProcedureSetting::query()
-            ->withoutGlobalScopes()
-            ->where('company_id', $project->company_id)
-            ->where('project_id', $projectId)
-            ->with([
-                'procedureSetting',
-                'attachmentType:id,name,parent_id,project_id,company_id',
-                'attachmentSubType:id,name,parent_id,project_id,company_id',
-                'attachmentSubSubType:id,name,parent_id,project_id,company_id',
-            ])
-            ->get()
+        return $this->projectProcedureRepository
+            ->listForProject(
+                $project->id,
+                ProjectProcedureSetting::PROCEDURE_TYPE,
+                null,
+                $project->company_id,
+                $this->readerCompanyId(),
+            )
             ->filter(static fn ($pp) => $pp->procedureSetting !== null
                 && (bool) $pp->procedureSetting->is_active)
             ->map(static fn ($pp) => [
@@ -258,22 +253,13 @@ class AttachmentRequestService
         }
 
         $userId = (string) Auth::id();
+        $this->visibilityService->assertCompanyCanView($item->attachmentRequest, (string) tenant('id'));
 
         // Decision D6: per-file actions are allowed. When a workflow is active,
         // only a user who owns the current pending step may respond to items.
         // When no workflow is active, restrict to companies related to the request.
         if ($this->workflowService->hasActiveWorkflow($item->attachmentRequest)) {
             $this->workflowService->assertCurrentUserOwnsPendingStep($item->attachmentRequest);
-        } else {
-            $companyId = (string) tenant('id');
-            $relatedRequest = $item->attachmentRequest;
-
-            if (
-                $relatedRequest->sender_company_id !== $companyId
-                && ! $this->repository->companyParticipatesInWorkflow($relatedRequest->id, $companyId)
-            ) {
-                abort(403, 'You are not authorized to respond to this attachment request.');
-            }
         }
 
         $actionDescriptions = [
@@ -332,6 +318,7 @@ class AttachmentRequestService
     public function approveRequest(string $requestId): AttachmentRequest
     {
         $request = $this->findRequestOrFail($requestId);
+        $this->visibilityService->assertCompanyCanView($request, (string) tenant('id'));
 
         if ($this->workflowService->hasActiveWorkflow($request)) {
             $process = $this->workflowService->actOnPendingStepForCurrentUser($request, 'approve');
@@ -406,6 +393,7 @@ class AttachmentRequestService
     public function declineRequest(string $requestId): AttachmentRequest
     {
         $request = $this->findRequestOrFail($requestId);
+        $this->visibilityService->assertCompanyCanView($request, (string) tenant('id'));
 
         if ($this->workflowService->hasActiveWorkflow($request)) {
             $process = $this->workflowService->actOnPendingStepForCurrentUser($request, 'reject');
@@ -521,6 +509,21 @@ class AttachmentRequestService
         return $projectProcedure;
     }
 
+    private function readerCompanyId(): string
+    {
+        $headerTenantId = request()->header('X-Tenant');
+        if (is_string($headerTenantId) && $headerTenantId !== '') {
+            return $headerTenantId;
+        }
+
+        $tenantId = tenant('id');
+        if ($tenantId !== null) {
+            return (string) $tenantId;
+        }
+
+        return '';
+    }
+
     private function findRequestOrFail(string $requestId): AttachmentRequest
     {
         $request = $this->repository->getWithItems($requestId);
@@ -603,6 +606,7 @@ class AttachmentRequestService
     public function replaceMedia(string $itemId, UploadedFile $newFile): AttachmentRequestItem
     {
         $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
+        $this->visibilityService->assertCompanyCanView($item->attachmentRequest, (string) tenant('id'));
 
         // Verify sender company (only sender can replace media)
 //        if ($item->attachmentRequest->sender_company_id !== tenant('id')) {

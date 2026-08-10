@@ -29,6 +29,10 @@ class AttachmentRequestChartsService
         'update_requested',
     ];
 
+    public function __construct(
+        private readonly AttachmentRequestVisibilityService $visibilityService,
+    ) {}
+
     public function getChartsData(FilterAttachmentRequestChartsDTO $dto): array
     {
         return [
@@ -512,17 +516,12 @@ class AttachmentRequestChartsService
         }
 
         if ($direction === 'incoming') {
-            $this->applyActionTakerScope($query, $companyId);
+            $this->visibilityService->applyReceiverCompanyVisibility($query, $companyId);
 
             return;
         }
 
-        $query->where(function (Builder $query) use ($companyId): void {
-            $query->where('attachment_requests.sender_company_id', $companyId)
-                ->orWhere(function (Builder $query) use ($companyId): void {
-                    $this->applyActionTakerScope($query, $companyId);
-                });
-        });
+        $this->visibilityService->applyVisibleToCompany($query, $companyId);
     }
 
     private function applySubmissionDirectionScope(Builder $query, string $companyId, ?string $direction): void
