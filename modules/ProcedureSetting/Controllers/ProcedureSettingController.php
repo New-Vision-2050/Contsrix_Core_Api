@@ -156,6 +156,8 @@ class ProcedureSettingController extends Controller
                 $request->projectProcedureData(),
                 $request->projectProcedureMetadataData(),
                 $request->parentProcedureSettingId(),
+                $request->projectProcedureReceiverCompanyIds(),
+                $request->sourceProcedureSettingId(),
             );
 
             return Json::item((new ProjectProcedurePresenter($item))->getData());
@@ -194,6 +196,7 @@ class ProcedureSettingController extends Controller
                 $request->projectProcedureData(),
                 $request->projectProcedureMetadataData(),
                 $request->parentProcedureSettingId(),
+                $request->projectProcedureReceiverCompanyIds(),
             );
 
             return Json::item((new ProjectProcedurePresenter($item))->getData());

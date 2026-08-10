@@ -62,6 +62,9 @@ trait HandlesProjectProcedureRequest
             'appears_in_archive_after_approval' => ['sometimes', 'boolean'],
             'appears_in_attachments_library' => ['sometimes', 'boolean'],
             'requires_asset_id' => ['sometimes', 'boolean'],
+            'receiver_company_ids' => ['sometimes', 'array'],
+            'receiver_company_ids.*' => ['required', 'uuid', 'distinct', Rule::exists('companies', 'id')],
+            'source_procedure_setting_id' => [$required ? 'sometimes' : 'prohibited', 'uuid', Rule::exists('procedure_settings', 'id')],
         ];
     }
 
@@ -73,6 +76,28 @@ trait HandlesProjectProcedureRequest
     public function projectProcedureMetadataData(): array
     {
         return array_intersect_key($this->validated(), array_flip($this->projectProcedureMetadataKeys()));
+    }
+
+    public function projectProcedureReceiverCompanyIds(): ?array
+    {
+        if (! array_key_exists('receiver_company_ids', $this->validated())) {
+            return null;
+        }
+
+        return collect($this->validated('receiver_company_ids') ?? [])
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function sourceProcedureSettingId(): ?string
+    {
+        $sourceProcedureSettingId = $this->validated('source_procedure_setting_id');
+
+        return is_string($sourceProcedureSettingId) && $sourceProcedureSettingId !== ''
+            ? $sourceProcedureSettingId
+            : null;
     }
 
     public function projectId(): ?string
