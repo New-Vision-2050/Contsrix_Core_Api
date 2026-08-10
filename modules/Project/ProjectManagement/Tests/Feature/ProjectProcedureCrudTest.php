@@ -655,6 +655,119 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         );
     }
 
+    public function test_project_internal_procedure_clone_duplicates_child_procedure_settings_and_steps(): void
+    {
+        $project = $this->createProject();
+
+        $sourceInternalProcedureId = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'Source Internal Procedure',
+                'execute_type' => 'parallel',
+                'percentage' => 40,
+                'deadline_days' => 3,
+                'deadline_hours' => 5,
+                'sort_order' => 6,
+                'is_active' => true,
+            ])
+            ->assertOk()
+            ->json('payload.id');
+
+        $sourceProcedureSettingId = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'parent_id' => $sourceInternalProcedureId,
+                'name' => 'Source Procedure Setting',
+                'execute_type' => 'sequence',
+                'percentage' => 75,
+                'deadline_days' => 2,
+                'deadline_hours' => 8,
+                'sort_order' => 2,
+                'is_active' => true,
+            ])
+            ->assertOk()
+            ->json('payload.id');
+
+        $sourceStepIds = [];
+        foreach ([['ff', 1], ['kk', 2]] as [$name, $order]) {
+            $sourceStepIds[] = $this->actingAs($this->actor, 'api')
+                ->withHeader('X-Tenant', $this->company->id)
+                ->postJson("/api/v1/procedure-settings/{$sourceProcedureSettingId}/steps", [
+                    'name' => $name,
+                    'forms' => 'approve',
+                    'is_approve' => true,
+                    'step_order' => $order,
+                ])
+                ->assertOk()
+                ->json('payload.id');
+        }
+
+        $sourceChildrenResponse = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/procedure-settings?parent_id={$sourceInternalProcedureId}&type=project_procedure")
+            ->assertOk();
+
+        $sourceChildren = collect($sourceChildrenResponse->json('payload.procedure-settings'));
+        $this->assertCount(1, $sourceChildren);
+        $this->assertSame($sourceProcedureSettingId, $sourceChildren->first()['id']);
+
+        $sourceStepsResponse = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/procedure-settings/{$sourceProcedureSettingId}/steps")
+            ->assertOk();
+
+        $this->assertSame(['ff', 'kk'], collect($sourceStepsResponse->json('payload'))->pluck('name')->all());
+
+        $duplicateInternalProcedureId = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'codex-duplicate-test-'.now()->timestamp,
+                'source_procedure_setting_id' => $sourceInternalProcedureId,
+            ])
+            ->assertOk()
+            ->json('payload.id');
+
+        $duplicateChildrenResponse = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/procedure-settings?parent_id={$duplicateInternalProcedureId}&type=project_procedure")
+            ->assertOk();
+
+        $duplicateChildren = collect($duplicateChildrenResponse->json('payload.procedure-settings'));
+        $this->assertCount(1, $duplicateChildren);
+
+        $duplicateProcedureSettingId = $duplicateChildren->first()['id'];
+        $this->assertNotSame($sourceInternalProcedureId, $duplicateInternalProcedureId);
+        $this->assertNotSame($sourceProcedureSettingId, $duplicateProcedureSettingId);
+        $this->assertSame('Source Procedure Setting', $duplicateChildren->first()['name']);
+
+        $duplicateStepsResponse = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/procedure-settings/{$duplicateProcedureSettingId}/steps")
+            ->assertOk();
+
+        $duplicateSteps = collect($duplicateStepsResponse->json('payload'));
+        $this->assertSame(['ff', 'kk'], $duplicateSteps->pluck('name')->all());
+        $this->assertEmpty(array_intersect($sourceStepIds, $duplicateSteps->pluck('id')->all()));
+
+        $this->assertDatabaseHas('procedure_settings', [
+            'id' => $duplicateProcedureSettingId,
+            'parent_id' => $duplicateInternalProcedureId,
+            'company_id' => $this->company->id,
+            'type' => ProjectProcedureService::PROCEDURE_TYPE,
+        ]);
+
+        foreach ($duplicateSteps as $step) {
+            $this->assertDatabaseHas('procedure_setting_steps', [
+                'id' => $step['id'],
+                'procedure_setting_id' => $duplicateProcedureSettingId,
+                'company_id' => $this->company->id,
+            ]);
+        }
+    }
+
     public function test_project_procedure_step_can_use_receiver_company_action_takers(): void
     {
         $project = $this->createProject();
