@@ -8,11 +8,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
-use Modules\ProcedureSetting\Models\ProcedureSettingStep;
-use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
-use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedManagementHierarchy;
 use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\ProcedureSetting\Repositories\ProcedureSettingRepository;
+use Modules\ProcedureSetting\Services\ProcedureSettingCloneService;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureJobAttribute;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
@@ -27,6 +25,7 @@ class ProjectProcedureService
     public function __construct(
         private readonly ProjectProcedureRepository $repository,
         private readonly ProcedureSettingRepository $procedureSettingRepository,
+        private readonly ProcedureSettingCloneService $cloneService,
     ) {}
 
     public function list(string $projectId, ?string $parentProcedureSettingId = null): Collection
@@ -146,7 +145,7 @@ class ProjectProcedureService
             }
 
             if ($source instanceof ProjectProcedureSetting) {
-                $this->cloneSteps((string) $source->procedure_setting_id, (string) $procedureSetting->id);
+                $this->cloneService->duplicateSteps((string) $source->procedure_setting_id, (string) $procedureSetting->id);
             }
 
             return $this->repository->loadRelations($projectProcedure->refresh());
@@ -457,46 +456,4 @@ class ProjectProcedureService
             ->all();
     }
 
-    private function cloneSteps(string $sourceProcedureSettingId, string $targetProcedureSettingId): void
-    {
-        $sourceSteps = ProcedureSettingStep::query()
-            ->withoutGlobalScopes()
-            ->with(['actionTakers', 'concernedManagementHierarchies'])
-            ->where('procedure_setting_id', $sourceProcedureSettingId)
-            ->orderByRaw('(step_order IS NULL) ASC')
-            ->orderBy('step_order')
-            ->orderBy('id')
-            ->get();
-
-        $fillable = (new ProcedureSettingStep)->getFillable();
-
-        foreach ($sourceSteps as $sourceStep) {
-            $payload = [];
-            foreach ($fillable as $key) {
-                $payload[$key] = $key === 'procedure_setting_id'
-                    ? $targetProcedureSettingId
-                    : $sourceStep->getAttribute($key);
-            }
-
-            $targetStep = ProcedureSettingStep::query()
-                ->withoutGlobalScopes()
-                ->create($payload);
-
-            foreach ($sourceStep->actionTakers as $actionTaker) {
-                ProcedureSettingStepActionTaker::query()->create([
-                    'procedure_setting_step_id' => $targetStep->id,
-                    'user_id' => $actionTaker->user_id,
-                    'company_id' => $targetStep->company_id,
-                ]);
-            }
-
-            foreach ($sourceStep->concernedManagementHierarchies as $concernedManagementHierarchy) {
-                ProcedureSettingStepConcernedManagementHierarchy::query()->create([
-                    'procedure_setting_step_id' => $targetStep->id,
-                    'management_hierarchy_id' => $concernedManagementHierarchy->management_hierarchy_id,
-                    'company_id' => $targetStep->company_id,
-                ]);
-            }
-        }
-    }
 }
