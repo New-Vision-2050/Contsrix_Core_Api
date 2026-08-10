@@ -57,6 +57,7 @@ class CreateInternalProcedureSettingRequest extends FormRequest
             'percentage'        => ['nullable', 'numeric', 'min:0', 'max:100'],
             'deadline_days'     => ['nullable', 'integer', 'min:0'],
             'deadline_hours'    => ['nullable', 'integer', 'min:0'],
+            'source_procedure_setting_id' => ['sometimes', 'uuid', Rule::exists('procedure_settings', 'id')],
         ], InternalProcessCondition::validationRulesForForm($this->input('form'), 'conditions'));
     }
 
