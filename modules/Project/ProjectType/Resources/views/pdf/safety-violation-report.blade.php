@@ -8,7 +8,7 @@
          * Dynamic values are injected into reserved cells; nothing may reflow.
          */
         body {
-            font-family: tahoma, dejavusans, sans-serif;
+            font-family: arial, tahoma, dejavusans, sans-serif;
             font-size: 9.5pt;
             color: #000;
             direction: rtl;
@@ -29,7 +29,7 @@
         }
 
         .t td {
-            border: 1px solid #000;
+            border: 0.7pt solid #000;
             padding: 2px 3px;
             vertical-align: middle;
             text-align: center;
@@ -123,10 +123,10 @@
             height: 16mm;
             overflow: hidden;
         }
-        .act-num {
-            direction: ltr;
-            unicode-bidi: embed;
-            font-weight: bold;
+        .act-line {
+            text-align: right;
+            direction: rtl;
+            unicode-bidi: plaintext;
         }
 
         .desc-row {
@@ -149,9 +149,9 @@
         .warn-b { font-size: 9pt; font-weight: bold; text-align: center; padding: 1px 8px 2px 8px; line-height: 1.35; }
         .sign-row { font-size: 9pt; font-weight: bold; text-align: center; padding: 1px 4px; }
 
-        .auth-hdr { height: 6.5mm; font-size: 8.5pt; font-weight: bold; }
-        .auth-lbl { background-color: #bdd3e9; font-size: 8.5pt; font-weight: bold; text-align: center; height: 6.2mm; overflow: hidden; }
-        .auth-val { font-size: 8.5pt; font-weight: bold; text-align: center; height: 6.2mm; overflow: hidden; }
+        .auth-hdr { height: 6.5mm; font-size: 9pt; font-weight: bold; }
+        .auth-lbl { background-color: #bdd3e9; font-size: 8.5pt; font-weight: bold; text-align: center; height: 6.5mm; overflow: hidden; }
+        .auth-val { font-size: 8.5pt; font-weight: bold; text-align: center; height: 6.5mm; overflow: hidden; }
 
         .note {
             border: 1px solid #000;
@@ -196,6 +196,8 @@
             height: 78mm;
             max-height: 78mm;
             overflow: hidden;
+            /* Avoid double border against .ev and inner .rt */
+            border: none !important;
         }
         .rt {
             width: 100%;
@@ -203,27 +205,27 @@
             table-layout: fixed;
         }
         .rt td {
-            border: 1px solid #000;
+            border: 0.7pt solid #000;
             padding: 2px 3px;
             vertical-align: middle;
             text-align: center;
             font-weight: bold;
             overflow: hidden;
         }
-        /* Fixed column rails inside right panel (straight vertical line) */
-        .c-rep { width: 22%; }
-        .c-txt { width: 78%; }
-        .c-half { width: 50%; }
-        .c-cls-lbl { width: 18%; }
-        .c-cls { width: 41%; }
-        .c-tot { width: 38%; }
-        .c-act { width: 62%; }
+        /*
+         * Fixed 3-column rails for the entire right panel.
+         * Keeps التكرار vertical rule straight from codes row to penalties.
+         * Codes: empty | code1 | code2  (yellow empty + red split)
+         */
+        .c1 { width: 22%; }
+        .c2 { width: 39%; }
+        .c3 { width: 39%; }
     </style>
 </head>
 <body>
 @php
-    $v1 = $violations[0] ?? ['code' => '', 'description' => '', 'category' => '', 'penalty_display' => '', 'repetition' => ''];
-    $v2 = $violations[1] ?? ['code' => '', 'description' => '', 'category' => '', 'penalty_display' => '', 'repetition' => ''];
+    $v1 = $violations[0] ?? ['code' => '', 'description' => '', 'category' => '', 'penalty_display' => '', 'repetition' => '1'];
+    $v2 = $violations[1] ?? ['code' => '', 'description' => '', 'category' => '', 'penalty_display' => '', 'repetition' => '1'];
     $logo = $header['company_logo'] ?? null;
     $sideImage = $side_evidence[0] ?? ($primary_evidence ?? null);
     $cat1 = trim((string) ($v1['category'] ?? ''));
@@ -298,86 +300,85 @@
             </td>
             <td class="right-wrap">
                 <table class="rt" dir="ltr">
+                    <colgroup>
+                        <col style="width:22%;">
+                        <col style="width:39%;">
+                        <col style="width:39%;">
+                    </colgroup>
+
+                    {{-- Codes: yellow empty (c1) + two equal code cells (c2/c3) --}}
                     <tr>
-                        <td class="code c-half">{{ $v1['code'] ?? '' }}</td>
-                        <td class="code c-half">{{ $v2['code'] ?? '' }}</td>
+                        <td class="code c1" style="width:22%;">&nbsp;</td>
+                        <td class="code c2" style="width:39%;">{{ $v1['code'] ?? '' }}</td>
+                        <td class="code c3" style="width:39%;">{{ $v2['code'] ?? '' }}</td>
                     </tr>
 
                     {{-- Violation 1 --}}
                     <tr>
-                        <td class="bg hdr-cell c-rep">
+                        <td class="bg hdr-cell c1">
                             <div class="rep-ar">التكرار</div>
                             <div class="rep-en">Repetition</div>
                         </td>
-                        <td class="bg hdr-cell c-txt">
+                        <td class="bg hdr-cell" colspan="2">
                             <div class="ref-ar">حسب جدول تصنيف المخالفات، رقم ونص المخالفة</div>
                             <div class="ref-en">Violation Reference and statement</div>
                             <div class="ref-en">(as per violation Classification table)</div>
                         </td>
                     </tr>
                     <tr>
-                        <td class="repv c-rep">{{ $v1['repetition'] ?? '' }}</td>
-                        <td class="desc c-txt">{{ $v1['description'] ?? '' }}</td>
+                        <td class="repv c1">{{ $v1['repetition'] ?? '1' }}</td>
+                        <td class="desc" colspan="2">{{ $v1['description'] ?? '' }}</td>
                     </tr>
 
                     {{-- Violation 2 --}}
                     <tr>
-                        <td class="bg hdr-cell c-rep">
+                        <td class="bg hdr-cell c1">
                             <div class="rep-ar">التكرار</div>
                             <div class="rep-en">Repetition</div>
                         </td>
-                        <td class="bg hdr-cell c-txt">
+                        <td class="bg hdr-cell" colspan="2">
                             <div class="ref-ar">حسب جدول تصنيف المخالفات، رقم ونص المخالفة</div>
                             <div class="ref-en">Violation Reference and statement</div>
                             <div class="ref-en">(as per violation Classification table)</div>
                         </td>
                     </tr>
                     <tr>
-                        <td class="repv c-rep">{{ $v2['repetition'] ?? '' }}</td>
-                        <td class="desc c-txt">{{ $v2['description'] ?? '' }}</td>
+                        <td class="repv c1">{{ $v2['repetition'] ?? '1' }}</td>
+                        <td class="desc" colspan="2">{{ $v2['description'] ?? '' }}</td>
                     </tr>
 
-                    {{-- Classification --}}
+                    {{-- Classification on same 3-col rails (no nested table) --}}
                     <tr>
-                        <td class="bg" colspan="2" style="padding:0;">
-                            <table class="rt">
-                                <tr>
-                                    <td class="bg cls c-cls-lbl">التصنيف</td>
-                                    <td class="bg cls c-cls">( {{ $cat1 }} ) التصنيف</td>
-                                    <td class="bg cls c-cls">( {{ $cat2 }} ) التصنيف</td>
-                                </tr>
-                                <tr>
-                                    <td class="c-cls-lbl" style="height:8mm;">&nbsp;</td>
-                                    <td class="pen c-cls">{{ $v1['penalty_display'] ?? '' }}</td>
-                                    <td class="pen c-cls">{{ $v2['penalty_display'] ?? '' }}</td>
-                                </tr>
-                            </table>
-                        </td>
+                        <td class="bg cls c1">التصنيف</td>
+                        <td class="bg cls c2">( {{ $cat1 }} ) التصنيف</td>
+                        <td class="bg cls c3">( {{ $cat2 }} ) التصنيف</td>
+                    </tr>
+                    <tr>
+                        <td class="c1" style="height:8mm;">&nbsp;</td>
+                        <td class="pen c2">{{ $v1['penalty_display'] ?? '' }}</td>
+                        <td class="pen c3">{{ $v2['penalty_display'] ?? '' }}</td>
                     </tr>
 
-                    {{-- Total (left) + الجزاء on the RIGHT: number then text --}}
+                    {{-- Total + الجزاء: full-width nested (different split by design, like original) --}}
                     <tr>
-                        <td class="bg" colspan="2" style="padding:0;">
-                            <table class="rt">
+                        <td colspan="3" style="padding:0;">
+                            <table class="rt" dir="ltr">
                                 <tr>
-                                    <td class="bg tot-lbl c-tot">
+                                    <td class="bg tot-lbl" style="width:38%;">
                                         إجمالي قيمة الغرامة<br>حسب التصنيف والتكرار
                                     </td>
-                                    <td class="bg tot-lbl c-act">
+                                    <td class="bg tot-lbl" style="width:62%;">
                                         الجزاء حسب التصنيف والتكرار
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="tot c-tot">{{ $total_penalty_display }}</td>
-                                    <td class="act c-act">
+                                    <td class="tot">{{ $total_penalty_display }}</td>
+                                    <td class="act">
                                         @for ($i = 0; $i < 3; $i++)
                                             @if (! empty($actions[$i]))
-                                                <div>
-                                                    <span class="act-num">{{ $i + 1 }}-</span>
-                                                    {{ $actions[$i] }}
-                                                </div>
+                                                <div class="act-line">{{ $i + 1 }}- {{ $actions[$i] }}</div>
                                             @else
-                                                <div>&nbsp;</div>
+                                                <div class="act-line">&nbsp;</div>
                                             @endif
                                         @endfor
                                     </td>
@@ -414,36 +415,42 @@
         </tr>
     </table>
 
-    <table class="t" dir="rtl" style="margin-top:-1px;">
+    <table class="t" dir="rtl" style="margin-top:-1px; table-layout:fixed;">
+        <colgroup>
+            <col style="width:25%;">
+            <col style="width:25%;">
+            <col style="width:25%;">
+            <col style="width:25%;">
+        </colgroup>
         <tr>
-            <td class="auth-lbl" style="width:14%;">محرر المحضر</td>
-            <td class="auth-val" style="width:14%;">{{ $header['preparer_name'] ?? '' }}</td>
-            <td class="auth-lbl" style="width:14%;">مستلم المحضر</td>
-            <td class="auth-val" style="width:14%;"></td>
-            <td rowspan="5" style="width:44%;"></td>
+            <td class="auth-lbl" style="width:25%;">محرر المحضر</td>
+            <td class="auth-val" style="width:25%;">{{ $header['preparer_name'] ?? '' }}&nbsp;</td>
+            <td class="auth-lbl" style="width:25%;">مستلم المحضر</td>
+            <td class="auth-val" style="width:25%;">&nbsp;</td>
         </tr>
         <tr>
             <td class="auth-lbl">الرقم الوظيفي</td>
-            <td class="auth-val">{{ $header['preparer_job_code'] ?? '' }}</td>
+            <td class="auth-val">{{ $header['preparer_job_code'] ?? '' }}&nbsp;</td>
             <td class="auth-lbl">رقم الإقامة</td>
-            <td class="auth-val"></td>
+            <td class="auth-val">&nbsp;</td>
         </tr>
         <tr>
             <td class="auth-lbl">التاريخ</td>
-            <td class="auth-val">{{ $header['inspection_date'] ?? '' }}</td>
+            <td class="auth-val">{{ $header['inspection_date'] ?? '' }}&nbsp;</td>
             <td class="auth-lbl">التاريخ</td>
-            <td class="auth-val"></td>
+            <td class="auth-val">&nbsp;</td>
         </tr>
         <tr>
             <td class="auth-lbl">التوقيع</td>
-            <td class="auth-val">{{ $header['preparer_name'] ?? '' }}</td>
+            <td class="auth-val">{{ $header['preparer_name'] ?? '' }}&nbsp;</td>
             <td class="auth-lbl">التوقيع</td>
-            <td class="auth-val"></td>
+            <td class="auth-val">&nbsp;</td>
         </tr>
         <tr>
-            <td class="auth-lbl" colspan="2">مدير إدارة التخطيط والإنشاءات</td>
+            <td class="auth-lbl" style="font-size:7.5pt;">مدير إدارة التخطيط والإنشاءات</td>
+            <td class="auth-val">{{ $header['planning_manager_name'] ?? '' }}&nbsp;</td>
             <td class="auth-lbl">التوقيع</td>
-            <td class="auth-val"></td>
+            <td class="auth-val">&nbsp;</td>
         </tr>
     </table>
 

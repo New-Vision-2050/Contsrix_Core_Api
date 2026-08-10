@@ -234,6 +234,17 @@ class EmployeeTaskController extends Controller
         }
     }
 
+    public function forceDestroy(string $id): JsonResponse
+    {
+        try {
+            $this->requestService->forceDeleteByEmployee($id, (string) Auth::id());
+
+            return Json::success('Task permanently deleted successfully');
+        } catch (EmployeeTaskException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
+    }
+
     public function start(StartTaskRequest $request, string $id): JsonResponse
     {
         try {

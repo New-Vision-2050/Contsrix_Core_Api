@@ -42,6 +42,8 @@ class ProjectProcedurePresenter extends AbstractPresenter
             'appears_in_archive_after_approval' => $this->projectProcedure->appears_in_archive_after_approval,
             'appears_in_attachments_library' => $this->projectProcedure->appears_in_attachments_library,
             'requires_asset_id' => $this->projectProcedure->requires_asset_id,
+            'receiver_company_ids' => $this->receiverCompanyIds(),
+            'receiver_companies' => $this->receiverCompaniesPayload(),
             'procedure_setting' => $procedureSetting ? [
                 'id' => $procedureSetting->id,
                 'name' => $procedureSetting->name,
@@ -54,6 +56,38 @@ class ProjectProcedurePresenter extends AbstractPresenter
             'created_at' => $this->projectProcedure->created_at?->toDateTimeString(),
             'updated_at' => $this->projectProcedure->updated_at?->toDateTimeString(),
         ];
+    }
+
+    private function receiverCompanyIds(): array
+    {
+        if (! $this->projectProcedure->relationLoaded('receiverCompanies')) {
+            return [];
+        }
+
+        return $this->projectProcedure->receiverCompanies
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
+    private function receiverCompaniesPayload(): array
+    {
+        if (! $this->projectProcedure->relationLoaded('receiverCompanies')) {
+            return [];
+        }
+
+        return $this->projectProcedure->receiverCompanies
+            ->map(static fn ($company): array => [
+                'id' => $company->id,
+                'name' => $company->name,
+                'serial_no' => $company->serial_no,
+                'serial_number' => $company->serial_no,
+                'email' => $company->email,
+                'phone' => $company->phone,
+            ])
+            ->values()
+            ->all();
     }
 
     private function folderData(?Folder $folder): ?array

@@ -33,6 +33,11 @@ final class EmployeeTaskException extends RuntimeException
         return new self(__('You can only cancel your own pending task requests.'), 403);
     }
 
+    public static function cannotDelete(): self
+    {
+        return new self(__('You can only permanently delete your own task requests.'), 403);
+    }
+
     public static function procedureSettingNotConfigured(): self
     {
         return new self(__('No procedure setting is configured for employee task requests. Please contact your administrator.'), 422);

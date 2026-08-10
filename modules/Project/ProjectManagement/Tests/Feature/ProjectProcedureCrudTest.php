@@ -9,9 +9,11 @@ use Illuminate\Support\Str;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
+use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedManagementHierarchy;
 use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureJobAttribute;
@@ -20,6 +22,7 @@ use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\RoleAndPermission\Enums\Permission;
 use Modules\Shared\ResourceShare\Models\ResourceShare;
+use Modules\User\Models\User;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 
 class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
@@ -100,7 +103,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->assertNotEmpty($procedureId);
         $this->assertNotEmpty($parentId);
-        $this->assertContains(ProjectProcedureService::PROCEDURE_TYPE, ProcedureSettingType::values());
+        $this->assertSame(ProjectProcedureService::PROCEDURE_TYPE, $createResponse->json('payload.type'));
         $this->assertSame('Document Approval', $createResponse->json('payload.name'));
         $this->assertSame($parentId, $createResponse->json('payload.parent_id'));
         $this->assertSame($lookups['attachment_type']->id, $createResponse->json('payload.attachment_type.id'));
@@ -114,8 +117,9 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         $this->assertArrayNotHasKey('classification_name', $createResponse->json('payload'));
         $this->assertArrayNotHasKey('linked_folder_name', $createResponse->json('payload'));
         $this->assertArrayNotHasKey('classification_code', $createResponse->json('payload'));
-        $this->assertArrayNotHasKey('receiver_companies', $createResponse->json('payload'));
         $this->assertArrayNotHasKey('receiver_company', $createResponse->json('payload'));
+        $this->assertSame([], $createResponse->json('payload.receiver_company_ids'));
+        $this->assertSame([], $createResponse->json('payload.receiver_companies'));
 
         $this->assertDatabaseHas('procedure_settings', [
             'id' => $procedureId,
@@ -154,7 +158,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
 
         $this->assertFalse(Schema::hasColumn('procedure_settings', 'classification_name'));
         $this->assertFalse(Schema::hasColumn('project_procedure_settings', 'receiver_company_id'));
-        $this->assertFalse(Schema::hasTable('project_procedure_receiver_companies'));
+        $this->assertTrue(Schema::hasTable('project_procedure_setting_receiver_companies'));
         $this->assertTrue(Schema::hasTable('project_procedure_job_attributes'));
         $this->assertFalse(Schema::hasColumn('project_procedure_settings', 'classification_name'));
         $this->assertFalse(Schema::hasColumn('project_procedure_settings', 'main_classification_id'));
@@ -173,6 +177,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.0.attachment_type.id', $lookups['attachment_type']->id);
 
         $this->assertArrayNotHasKey('receiver_company', $listResponse->json('payload.0'));
+        $this->assertSame([], $listResponse->json('payload.0.receiver_company_ids'));
 
         $updatedAttachmentType = $this->createFolder($project, 'Updated Project Docs');
 
@@ -196,6 +201,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.attachment_sub_sub_type', null);
 
         $this->assertArrayNotHasKey('receiver_company', $updateResponse->json('payload'));
+        $this->assertSame([], $updateResponse->json('payload.receiver_company_ids'));
 
         $this->assertDatabaseHas('procedure_settings', [
             'id' => $procedureId,
@@ -419,6 +425,186 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         $this->assertContains($procedureSetting->id, $ids);
     }
 
+    public function test_project_procedure_visibility_can_be_limited_to_selected_receiver_companies(): void
+    {
+        $project = $this->createProject();
+        $firstReceiverCompany = $this->createReceiverCompany(['serial_no' => 'PROC-VIS-A']);
+        $secondReceiverCompany = $this->createReceiverCompany(['serial_no' => 'PROC-VIS-B']);
+        $firstReceiverUser = User::factory()->create(['company_id' => $firstReceiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $secondReceiverCompany->id]);
+
+        $this->createAcceptedShare($project, $firstReceiverCompany);
+        $this->createAcceptedShare($project, $secondReceiverCompany);
+        $this->grantProjectProcedurePermissionsForCompany($firstReceiverCompany, $firstReceiverUser);
+        $this->grantProjectProcedurePermissionsForCompany($secondReceiverCompany, $secondReceiverUser);
+
+        $unrestrictedId = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'Visible To All Shared Companies',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.receiver_company_ids', [])
+            ->json('payload.id');
+
+        $restrictedId = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'Visible To First Receiver',
+                'receiver_company_ids' => [$firstReceiverCompany->id],
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.receiver_company_ids.0', $firstReceiverCompany->id)
+            ->assertJsonPath('payload.receiver_companies.0.id', $firstReceiverCompany->id)
+            ->json('payload.id');
+
+        $this->assertDatabaseHas('project_procedure_setting_receiver_companies', [
+            'company_id' => $firstReceiverCompany->id,
+        ]);
+
+        $ownerIds = collect($this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/procedure-settings/internal-procedures?type=project_procedure&project_id={$project->id}")
+            ->assertOk()
+            ->json('payload'))->pluck('id')->all();
+
+        $firstReceiverIds = collect($this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $firstReceiverCompany->id)
+            ->getJson("/api/v1/procedure-settings/internal-procedures?type=project_procedure&project_id={$project->id}")
+            ->assertOk()
+            ->json('payload'))->pluck('id')->all();
+
+        $secondReceiverIds = collect($this->actingAs($secondReceiverUser, 'api')
+            ->withHeader('X-Tenant', $secondReceiverCompany->id)
+            ->getJson("/api/v1/procedure-settings/internal-procedures?type=project_procedure&project_id={$project->id}")
+            ->assertOk()
+            ->json('payload'))->pluck('id')->all();
+
+        $this->assertContains($unrestrictedId, $ownerIds);
+        $this->assertContains($restrictedId, $ownerIds);
+        $this->assertContains($unrestrictedId, $firstReceiverIds);
+        $this->assertContains($restrictedId, $firstReceiverIds);
+        $this->assertContains($unrestrictedId, $secondReceiverIds);
+        $this->assertNotContains($restrictedId, $secondReceiverIds);
+    }
+
+    public function test_project_procedure_receiver_company_ids_must_be_accepted_project_shares(): void
+    {
+        $project = $this->createProject();
+        $receiverCompany = $this->createReceiverCompany();
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'Invalid Receiver Procedure',
+                'receiver_company_ids' => [$receiverCompany->id],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['receiver_company_ids']);
+    }
+
+    public function test_project_procedure_create_can_clone_steps_from_source_procedure_independently(): void
+    {
+        $project = $this->createProject();
+        $receiverCompany = $this->createReceiverCompany();
+        $this->createAcceptedShare($project, $receiverCompany);
+        $management = $this->createManagementHierarchy();
+
+        $sourceId = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'jj',
+            ])
+            ->assertOk()
+            ->json('payload.id');
+
+        $sourceStep = ProcedureSettingStep::query()->withoutGlobalScopes()->create([
+            'procedure_setting_id' => $sourceId,
+            'company_id' => $this->company->id,
+            'project_id' => $project->id,
+            'name' => 'Source review',
+            'forms' => 'approve',
+            'is_approve' => true,
+            'is_return_with_notes' => true,
+            'requires_approval_within_period' => true,
+            'approval_within_days' => 2,
+            'approval_within_hours' => 3,
+            'notify_by_email' => true,
+            'notify_by_sms' => true,
+            'step_order' => 7,
+            'action_taker_type' => 'specific_user',
+            'receiver_company_ids' => [$receiverCompany->id],
+            'project_employee_ids' => [$this->actor->id],
+        ]);
+        ProcedureSettingStepActionTaker::query()->create([
+            'procedure_setting_step_id' => $sourceStep->id,
+            'user_id' => $this->actor->id,
+            'company_id' => $this->company->id,
+        ]);
+        ProcedureSettingStepConcernedManagementHierarchy::query()->create([
+            'procedure_setting_step_id' => $sourceStep->id,
+            'management_hierarchy_id' => $management->id,
+            'company_id' => $this->company->id,
+        ]);
+
+        $targetId = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/procedure-settings/internal-procedures', [
+                'project_id' => $project->id,
+                'name' => 'kk',
+                'source_procedure_setting_id' => $sourceId,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.name', 'kk')
+            ->json('payload.id');
+
+        $sourceSteps = ProcedureSettingStep::query()
+            ->withoutGlobalScopes()
+            ->where('procedure_setting_id', $sourceId)
+            ->get();
+        $targetSteps = ProcedureSettingStep::query()
+            ->withoutGlobalScopes()
+            ->where('procedure_setting_id', $targetId)
+            ->get();
+
+        $this->assertCount(1, $sourceSteps);
+        $this->assertCount(1, $targetSteps);
+
+        $targetStep = $targetSteps->first();
+        $this->assertNotSame($sourceStep->id, $targetStep->id);
+        $this->assertSame('Source review', $targetStep->name);
+        $this->assertSame(7, $targetStep->step_order);
+        $this->assertTrue($targetStep->is_return_with_notes);
+        $this->assertSame([$receiverCompany->id], $targetStep->receiver_company_ids);
+        $this->assertSame([(string) $this->actor->id], array_map('strval', $targetStep->project_employee_ids));
+
+        $this->assertDatabaseHas('procedure_setting_step_action_takers', [
+            'procedure_setting_step_id' => $targetStep->id,
+            'user_id' => $this->actor->id,
+        ]);
+        $this->assertDatabaseHas('procedure_setting_step_concerned_management_hierarchies', [
+            'procedure_setting_step_id' => $targetStep->id,
+            'management_hierarchy_id' => $management->id,
+        ]);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson("/api/v1/procedure-settings/{$targetId}/steps/{$targetStep->id}", [
+                'name' => 'Target review edited',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.name', 'Target review edited');
+
+        $this->assertSame(
+            'Source review',
+            ProcedureSettingStep::query()->withoutGlobalScopes()->findOrFail($sourceStep->id)->name,
+        );
+    }
+
     public function test_project_procedure_step_can_use_receiver_company_action_takers(): void
     {
         $project = $this->createProject();
@@ -579,6 +765,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
     private function projectProcedureTablesReady(): bool
     {
         return Schema::hasTable('project_procedure_settings')
+            && Schema::hasTable('project_procedure_setting_receiver_companies')
             && Schema::hasTable('project_procedure_job_attributes')
             && Schema::hasTable('folders')
             && Schema::hasTable('procedure_settings')
@@ -770,9 +957,24 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         ]);
     }
 
+    private function createManagementHierarchy(): ManagementHierarchy
+    {
+        return ManagementHierarchy::query()->withoutGlobalScopes()->create([
+            'name' => 'Procedure Concerned Management',
+            'company_id' => $this->company->id,
+            'type' => 'management',
+        ]);
+    }
+
     private function grantProjectProcedurePermissions(): void
     {
-        setPermissionsTeamId($this->company->id);
+        $this->grantProjectProcedurePermissionsForCompany($this->company);
+    }
+
+    private function grantProjectProcedurePermissionsForCompany(Company $company, ?User $user = null): void
+    {
+        setPermissionsTeamId($company->id);
+        $user ??= $this->actor;
 
         $permissions = [
             Permission::PROJECT_MANAGEMENT_VIEW(),
@@ -782,10 +984,11 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         foreach ($permissions as $permission) {
             SpatiePermission::firstOrCreate(
                 ['name' => $permission, 'guard_name' => 'api'],
-                ['name' => $permission, 'guard_name' => 'api', 'company_id' => $this->company->id],
+                ['name' => $permission, 'guard_name' => 'api', 'company_id' => $company->id],
             );
         }
 
-        $this->actor->givePermissionTo($permissions);
+        $user->givePermissionTo($permissions);
+        setPermissionsTeamId($this->company->id);
     }
 }
