@@ -511,6 +511,7 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
         $project = $this->createProject();
         $receiverCompany = $this->createReceiverCompany();
         $this->createAcceptedShare($project, $receiverCompany);
+        $lookups = $this->createProcedureLookups($project);
         $management = $this->createManagementHierarchy();
 
         $sourceId = $this->actingAs($this->actor, 'api')
@@ -518,8 +519,24 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             ->postJson('/api/v1/procedure-settings/internal-procedures', [
                 'project_id' => $project->id,
                 'name' => 'jj',
+                'execute_type' => 'parallel',
+                'percentage' => 47.5,
+                'deadline_days' => 6,
+                'deadline_hours' => 8,
+                'sort_order' => 12,
+                'is_active' => true,
+                'attachment_type_id' => $lookups['attachment_type']->id,
+                'attachment_sub_type_id' => $lookups['attachment_sub_type']->id,
+                'attachment_sub_sub_type_id' => $lookups['attachment_sub_sub_type']->id,
+                'job_attribute_id' => $lookups['job_attribute']->id,
+                'used_in_document_cycle' => true,
+                'appears_in_archive_after_approval' => true,
+                'appears_in_attachments_library' => true,
+                'requires_asset_id' => true,
+                'receiver_company_ids' => [$receiverCompany->id],
             ])
             ->assertOk()
+            ->assertJsonPath('payload.receiver_company_ids.0', $receiverCompany->id)
             ->json('payload.id');
 
         $sourceStep = ProcedureSettingStep::query()->withoutGlobalScopes()->create([
@@ -560,7 +577,40 @@ class ProjectProcedureCrudTest extends BaseAttendanceReportTestCase
             ])
             ->assertOk()
             ->assertJsonPath('payload.name', 'kk')
+            ->assertJsonPath('payload.execute_type', 'parallel')
+            ->assertJsonPath('payload.attachment_type.id', $lookups['attachment_type']->id)
+            ->assertJsonPath('payload.job_attribute.id', $lookups['job_attribute']->id)
+            ->assertJsonPath('payload.receiver_company_ids.0', $receiverCompany->id)
             ->json('payload.id');
+
+        $targetProcedureSetting = ProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->findOrFail($targetId);
+        $targetProjectProcedure = ProjectProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->where('procedure_setting_id', $targetId)
+            ->firstOrFail();
+
+        $this->assertSame('kk', $targetProcedureSetting->name);
+        $this->assertSame('parallel', $targetProcedureSetting->execute_type);
+        $this->assertSame(47.5, (float) $targetProcedureSetting->percentage);
+        $this->assertSame(6, $targetProcedureSetting->deadline_days);
+        $this->assertSame(8, $targetProcedureSetting->deadline_hours);
+        $this->assertSame(12, $targetProcedureSetting->sort_order);
+        $this->assertTrue((bool) $targetProcedureSetting->is_active);
+        $this->assertSame($lookups['attachment_type']->id, $targetProjectProcedure->attachment_type_id);
+        $this->assertSame($lookups['attachment_sub_type']->id, $targetProjectProcedure->attachment_sub_type_id);
+        $this->assertSame($lookups['attachment_sub_sub_type']->id, $targetProjectProcedure->attachment_sub_sub_type_id);
+        $this->assertSame($lookups['job_attribute']->id, $targetProjectProcedure->job_attribute_id);
+        $this->assertTrue($targetProjectProcedure->used_in_document_cycle);
+        $this->assertTrue($targetProjectProcedure->appears_in_archive_after_approval);
+        $this->assertTrue($targetProjectProcedure->appears_in_attachments_library);
+        $this->assertTrue($targetProjectProcedure->requires_asset_id);
+
+        $this->assertDatabaseHas('project_procedure_setting_receiver_companies', [
+            'project_procedure_setting_id' => $targetProjectProcedure->id,
+            'company_id' => $receiverCompany->id,
+        ]);
 
         $sourceSteps = ProcedureSettingStep::query()
             ->withoutGlobalScopes()
