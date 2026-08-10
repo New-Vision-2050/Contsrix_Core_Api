@@ -6,13 +6,18 @@ namespace Modules\Project\ProjectManagement\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
+use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedManagementHierarchy;
 use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\ProcedureSetting\Repositories\ProcedureSettingRepository;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureJobAttribute;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Repositories\ProjectProcedureRepository;
+use Modules\Shared\ResourceShare\Models\ResourceShare;
 use Ramsey\Uuid\Uuid;
 
 class ProjectProcedureService
@@ -36,7 +41,13 @@ class ProjectProcedureService
             $parentProcedureSettingId = $parent->id;
         }
 
-        return $this->repository->listForProject($project->id, self::PROCEDURE_TYPE, $parentProcedureSettingId, $project->company_id);
+        return $this->repository->listForProject(
+            $project->id,
+            self::PROCEDURE_TYPE,
+            $parentProcedureSettingId,
+            $project->company_id,
+            $this->readerCompanyId(),
+        );
     }
 
     /**
@@ -71,7 +82,8 @@ class ProjectProcedureService
             $procedureSettingId,
             self::PROCEDURE_TYPE,
             $parentProcedureSettingId,
-            $project->company_id
+            $project->company_id,
+            $this->readerCompanyId(),
         );
     }
 
@@ -79,16 +91,21 @@ class ProjectProcedureService
         string $projectId,
         array $procedureData,
         array $metadata,
-        ?string $parentProcedureSettingId = null
+        ?string $parentProcedureSettingId = null,
+        ?array $receiverCompanyIds = null,
+        ?string $sourceProcedureSettingId = null,
     ): ProjectProcedureSetting
     {
         $project = $this->findOwnedProjectOrFail($projectId);
+        $this->assertReceiverCompaniesAreSharedWithProject($project, $receiverCompanyIds ?? [], 'receiver_company_ids');
 
         return DB::transaction(function () use (
             $project,
             $procedureData,
             $metadata,
-            $parentProcedureSettingId
+            $parentProcedureSettingId,
+            $receiverCompanyIds,
+            $sourceProcedureSettingId,
         ): ProjectProcedureSetting {
             if ($parentProcedureSettingId !== null) {
                 $parent = $this->findProjectProcedureParentOrFail($project, $parentProcedureSettingId);
@@ -106,11 +123,22 @@ class ProjectProcedureService
                 ])
             );
 
-            return $this->repository->createProjectProcedure(array_merge($metadata, [
+            $projectProcedure = $this->repository->createProjectProcedure(array_merge($metadata, [
                 'company_id' => $project->company_id,
                 'project_id' => $project->id,
                 'procedure_setting_id' => $procedureSetting->id,
             ]));
+
+            if ($receiverCompanyIds !== null) {
+                $projectProcedure->receiverCompanies()->sync($receiverCompanyIds);
+            }
+
+            if ($sourceProcedureSettingId !== null) {
+                $source = $this->findCloneSourceOrFail($project, $sourceProcedureSettingId, (string) $parent->id);
+                $this->cloneSteps((string) $source->procedure_setting_id, (string) $procedureSetting->id);
+            }
+
+            return $this->repository->loadRelations($projectProcedure->refresh());
         });
     }
 
@@ -119,18 +147,21 @@ class ProjectProcedureService
         string $procedureSettingId,
         array $procedureData,
         array $metadata,
-        ?string $parentProcedureSettingId = null
+        ?string $parentProcedureSettingId = null,
+        ?array $receiverCompanyIds = null,
     ): ProjectProcedureSetting {
         $project = $this->findOwnedProjectOrFail($projectId);
+        $this->assertReceiverCompaniesAreSharedWithProject($project, $receiverCompanyIds ?? [], 'receiver_company_ids');
         $projectProcedure = $this->repository->findForProject(
             $project->id,
             $procedureSettingId,
             self::PROCEDURE_TYPE,
             $parentProcedureSettingId,
-            $project->company_id
+            $project->company_id,
+            $this->readerCompanyId(),
         );
 
-        return DB::transaction(function () use ($projectProcedure, $procedureData, $metadata): ProjectProcedureSetting {
+        return DB::transaction(function () use ($projectProcedure, $procedureData, $metadata, $receiverCompanyIds): ProjectProcedureSetting {
             if ($procedureData !== []) {
                 $this->procedureSettingRepository->updateProcedureSetting(
                     Uuid::fromString($projectProcedure->procedure_setting_id),
@@ -140,6 +171,10 @@ class ProjectProcedureService
 
             if ($metadata !== []) {
                 $projectProcedure = $this->repository->updateProjectProcedure($projectProcedure, $metadata);
+            }
+
+            if ($receiverCompanyIds !== null) {
+                $projectProcedure->receiverCompanies()->sync($receiverCompanyIds);
             }
 
             return $this->repository->loadRelations($projectProcedure->refresh());
@@ -158,7 +193,8 @@ class ProjectProcedureService
             $procedureSettingId,
             self::PROCEDURE_TYPE,
             $parentProcedureSettingId,
-            $project->company_id
+            $project->company_id,
+            $this->readerCompanyId(),
         );
 
         DB::transaction(function () use ($projectProcedure): void {
@@ -276,5 +312,113 @@ class ProjectProcedureService
         }
 
         return $payload;
+    }
+
+    private function readerCompanyId(): string
+    {
+        $headerTenantId = request()->header('X-Tenant');
+        if (is_string($headerTenantId) && $headerTenantId !== '') {
+            return $headerTenantId;
+        }
+
+        $tenantId = tenant('id');
+        if ($tenantId !== null) {
+            return (string) $tenantId;
+        }
+
+        return '';
+    }
+
+    private function assertReceiverCompaniesAreSharedWithProject(
+        ProjectManagement $project,
+        array $receiverCompanyIds,
+        string $field
+    ): void {
+        $receiverCompanyIds = collect($receiverCompanyIds)
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->filter(static fn (string $id): bool => $id !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($receiverCompanyIds === []) {
+            return;
+        }
+
+        $acceptedCompanyIds = ResourceShare::query()
+            ->where('shareable_type', ProjectManagement::class)
+            ->where('shareable_id', $project->id)
+            ->where('owner_company_id', $project->company_id)
+            ->where('status', 'accepted')
+            ->whereIn('shared_with_company_id', $receiverCompanyIds)
+            ->pluck('shared_with_company_id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->all();
+
+        if (count(array_diff($receiverCompanyIds, $acceptedCompanyIds)) === 0) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            $field => 'Selected receiver companies must be accepted shared companies for this project.',
+        ]);
+    }
+
+    private function findCloneSourceOrFail(
+        ProjectManagement $project,
+        string $sourceProcedureSettingId,
+        string $parentProcedureSettingId
+    ): ProjectProcedureSetting {
+        return $this->repository->findForProject(
+            $project->id,
+            $sourceProcedureSettingId,
+            self::PROCEDURE_TYPE,
+            $parentProcedureSettingId,
+            $project->company_id,
+            $project->company_id,
+        );
+    }
+
+    private function cloneSteps(string $sourceProcedureSettingId, string $targetProcedureSettingId): void
+    {
+        $sourceSteps = ProcedureSettingStep::query()
+            ->withoutGlobalScopes()
+            ->with(['actionTakers', 'concernedManagementHierarchies'])
+            ->where('procedure_setting_id', $sourceProcedureSettingId)
+            ->orderByRaw('(step_order IS NULL) ASC')
+            ->orderBy('step_order')
+            ->orderBy('id')
+            ->get();
+
+        $fillable = (new ProcedureSettingStep)->getFillable();
+
+        foreach ($sourceSteps as $sourceStep) {
+            $payload = [];
+            foreach ($fillable as $key) {
+                $payload[$key] = $key === 'procedure_setting_id'
+                    ? $targetProcedureSettingId
+                    : $sourceStep->getAttribute($key);
+            }
+
+            $targetStep = ProcedureSettingStep::query()
+                ->withoutGlobalScopes()
+                ->create($payload);
+
+            foreach ($sourceStep->actionTakers as $actionTaker) {
+                ProcedureSettingStepActionTaker::query()->create([
+                    'procedure_setting_step_id' => $targetStep->id,
+                    'user_id' => $actionTaker->user_id,
+                    'company_id' => $targetStep->company_id,
+                ]);
+            }
+
+            foreach ($sourceStep->concernedManagementHierarchies as $concernedManagementHierarchy) {
+                ProcedureSettingStepConcernedManagementHierarchy::query()->create([
+                    'procedure_setting_step_id' => $targetStep->id,
+                    'management_hierarchy_id' => $concernedManagementHierarchy->management_hierarchy_id,
+                    'company_id' => $targetStep->company_id,
+                ]);
+            }
+        }
     }
 }

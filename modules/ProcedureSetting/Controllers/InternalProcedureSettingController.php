@@ -128,6 +128,8 @@ class InternalProcedureSettingController extends Controller
                 $request->projectProcedureData(),
                 $request->projectProcedureMetadataData(),
                 $request->parentProcedureSettingId(),
+                $request->projectProcedureReceiverCompanyIds(),
+                $request->sourceProcedureSettingId(),
             );
 
             return Json::item((new ProjectProcedurePresenter($setting))->getData());
@@ -165,6 +167,7 @@ class InternalProcedureSettingController extends Controller
                 $request->projectProcedureData(),
                 $request->projectProcedureMetadataData(),
                 $request->parentProcedureSettingId(),
+                $request->projectProcedureReceiverCompanyIds(),
             );
 
             return Json::item((new ProjectProcedurePresenter($setting))->getData());
