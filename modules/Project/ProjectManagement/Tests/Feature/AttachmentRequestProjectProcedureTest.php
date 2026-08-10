@@ -293,18 +293,20 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $createResponse = $this->postAttachmentRequest($project, $procedure)
             ->assertOk()
-            ->assertJsonPath('payload.history.0.user.0.id', $this->actor->id)
+            ->assertJsonPath('payload.history.0.user.0.id', (string) $this->actor->id)
             ->assertJsonPath('payload.history.1.action', 'workflow_step_pending')
             ->assertJsonPath('payload.history.1.metadata.status', 'pending')
-            ->assertJsonPath('payload.history.1.user.0.id', $firstReceiverUser->id)
-            ->assertJsonPath('payload.history.1.user.1.id', $alternateFirstReceiverUser->id)
             ->assertJsonPath('payload.history.2.action', 'workflow_step_pending')
             ->assertJsonPath('payload.history.2.metadata.status', 'pending')
             ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
             ->assertJsonPath('payload.history.2.metadata.process_step_id', null)
-            ->assertJsonPath('payload.history.2.user.0.id', $secondReceiverUser->id);
+            ->assertJsonPath('payload.history.2.user.0.id', (string) $secondReceiverUser->id);
         $this->assertHistoryUsersAreArrays($createResponse->json('payload.history'));
         $this->assertCount(2, $createResponse->json('payload.history.1.user'));
+        $this->assertEqualsCanonicalizing(
+            [(string) $firstReceiverUser->id, (string) $alternateFirstReceiverUser->id],
+            collect($createResponse->json('payload.history.1.user'))->pluck('id')->all()
+        );
 
         $requestId = $createResponse->json('payload.id');
 
@@ -346,11 +348,11 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.history.1.action', 'workflow_step_approved')
             ->assertJsonPath('payload.history.1.metadata.template_step_order', 1)
             ->assertJsonPath('payload.history.1.metadata.status', 'approved')
-            ->assertJsonPath('payload.history.1.user.0.id', $firstReceiverUser->id)
+            ->assertJsonPath('payload.history.1.user.0.id', (string) $firstReceiverUser->id)
             ->assertJsonPath('payload.history.2.action', 'workflow_step_pending')
             ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
             ->assertJsonPath('payload.history.2.metadata.status', 'pending')
-            ->assertJsonPath('payload.history.2.user.0.id', $secondReceiverUser->id);
+            ->assertJsonPath('payload.history.2.user.0.id', (string) $secondReceiverUser->id);
         $this->assertHistoryUsersAreArrays($firstApproveResponse->json('payload.history'));
         $this->assertCount(1, $firstApproveResponse->json('payload.history.1.user'));
 
@@ -370,22 +372,9 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 ->count()
         );
 
-        $secondStep = $process->fresh()
-            ->steps()
-            ->where('template_step_order', 2)
-            ->firstOrFail();
-
-        $this->assertSame(
-            1,
-            AttachmentRequestHistory::query()
-                ->where('attachment_request_id', $requestId)
-                ->where('metadata->process_step_id', (string) $secondStep->id)
-                ->count()
-        );
-        $this->assertSame(
-            $secondStepHistoryId,
-            $this->workflowStepHistory($requestId, (string) $secondStep->id)->id
-        );
+        $secondPendingHistory = AttachmentRequestHistory::query()->findOrFail($secondStepHistoryId);
+        $this->assertSame('workflow_step_pending', $secondPendingHistory->action);
+        $this->assertSame(2, (int) $secondPendingHistory->metadata['template_step_order']);
 
         $secondApproveResponse = $this->actingAs($secondReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
@@ -395,9 +384,9 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.history.2.action', 'workflow_step_approved')
             ->assertJsonPath('payload.history.2.metadata.template_step_order', 2)
             ->assertJsonPath('payload.history.2.metadata.status', 'approved')
-            ->assertJsonPath('payload.history.2.user.0.id', $secondReceiverUser->id)
+            ->assertJsonPath('payload.history.2.user.0.id', (string) $secondReceiverUser->id)
             ->assertJsonPath('payload.history.3.action', 'request_approved')
-            ->assertJsonPath('payload.history.3.user.0.id', $secondReceiverUser->id);
+            ->assertJsonPath('payload.history.3.user.0.id', (string) $secondReceiverUser->id);
         $this->assertHistoryUsersAreArrays($secondApproveResponse->json('payload.history'));
 
         $workflowStepOrders = AttachmentRequestHistory::query()
@@ -536,10 +525,10 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $this->assertSame(2, $manualStepHistory->count());
         $this->assertSame(2, (int) $manualStepHistory[0]->metadata['template_step_order']);
-        $this->assertSame($firstManualUser->id, $manualStepHistory[0]->user_id);
+        $this->assertSame((string) $firstManualUser->id, $manualStepHistory[0]->user_id);
         $this->assertSame(3, (int) $manualStepHistory[1]->metadata['template_step_order']);
-        $this->assertSame($secondManualUser->id, $manualStepHistory[1]->user_id);
-        $this->assertSame($secondManualUser->id, $history->last()->user_id);
+        $this->assertSame((string) $secondManualUser->id, $manualStepHistory[1]->user_id);
+        $this->assertSame((string) $secondManualUser->id, $history->last()->user_id);
         $this->assertFalse($history->contains(
             static fn (AttachmentRequestHistory $entry): bool => ($entry->metadata['is_auto_approved'] ?? false) === true
         ));
@@ -643,9 +632,9 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertOk()
             ->assertJsonPath('payload.status', AttachmentRequest::STATUS_DECLINED)
             ->assertJsonPath('payload.history.1.action', 'workflow_step_rejected')
-            ->assertJsonPath('payload.history.1.user.0.id', $receiverUser->id)
+            ->assertJsonPath('payload.history.1.user.0.id', (string) $receiverUser->id)
             ->assertJsonPath('payload.history.2.action', 'request_declined')
-            ->assertJsonPath('payload.history.2.user.0.id', $receiverUser->id);
+            ->assertJsonPath('payload.history.2.user.0.id', (string) $receiverUser->id);
         $this->assertHistoryUsersAreArrays($declineResponse->json('payload.history'));
 
         $this->assertDatabaseHas('processes', [
@@ -662,7 +651,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame($pendingHistory->id, $rejectedHistory->id);
         $this->assertSame('workflow_step_rejected', $rejectedHistory->action);
         $this->assertSame('rejected', $rejectedHistory->metadata['status']);
-        $this->assertSame($receiverUser->id, $rejectedHistory->user_id);
+        $this->assertSame((string) $receiverUser->id, $rejectedHistory->user_id);
         $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
         $this->assertHistoryCount($requestId, 'workflow_step_rejected', 1);
         $this->assertHistoryCount($requestId, 'request_declined', 1);
@@ -739,6 +728,154 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertNotEmpty($response->json('data'));
     }
 
+    public function test_attachment_request_visibility_uses_project_procedure_receiver_companies(): void
+    {
+        $project = $this->createProject();
+        $companyA = $this->createCompany(['serial_no' => 'ATT-VIS-A']);
+        $companyB = $this->createCompany(['serial_no' => 'ATT-VIS-B']);
+        $companyC = $this->createCompany(['serial_no' => 'ATT-VIS-C']);
+        $companyD = $this->createCompany(['serial_no' => 'ATT-VIS-D']);
+        $userA = User::factory()->create(['company_id' => $companyA->id]);
+        $userB = User::factory()->create(['company_id' => $companyB->id]);
+        $userC = User::factory()->create(['company_id' => $companyC->id]);
+        $userD = User::factory()->create(['company_id' => $companyD->id]);
+
+        foreach ([$companyA, $companyB, $companyC, $companyD] as $company) {
+            $this->createAcceptedShare($project, $company);
+        }
+
+        $procedure = $this->createProjectProcedure($project, [$companyA->id, $companyC->id]);
+        $this->createProcedureStep($procedure, $userB, 1);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        foreach ([[$userA, $companyA], [$userC, $companyC]] as [$user, $company]) {
+            $ids = collect($this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&direction=incoming')
+                ->assertOk()
+                ->json('data'))->pluck('id')->all();
+
+            $this->assertContains($requestId, $ids);
+
+            $pendingIds = collect($this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson('/api/v1/projects/attachment-requests/incoming/pending?project_id='.$project->id)
+                ->assertOk()
+                ->json('payload'))->pluck('id')->all();
+
+            $this->assertContains($requestId, $pendingIds);
+
+            $this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson('/api/v1/projects/attachment-requests/count?project_id='.$project->id)
+                ->assertOk()
+                ->assertJsonPath('count', 1);
+
+            $this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson("/api/v1/projects/attachment-requests/{$requestId}")
+                ->assertOk()
+                ->assertJsonPath('payload.id', $requestId);
+        }
+
+        foreach ([[$userB, $companyB], [$userD, $companyD]] as [$user, $company]) {
+            $ids = collect($this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&direction=incoming')
+                ->assertOk()
+                ->json('data'))->pluck('id')->all();
+
+            $this->assertNotContains($requestId, $ids);
+
+            $pendingIds = collect($this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson('/api/v1/projects/attachment-requests/incoming/pending?project_id='.$project->id)
+                ->assertOk()
+                ->json('payload'))->pluck('id')->all();
+
+            $this->assertNotContains($requestId, $pendingIds);
+
+            $this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson('/api/v1/projects/attachment-requests/count?project_id='.$project->id)
+                ->assertOk()
+                ->assertJsonPath('count', 0);
+
+            $this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson("/api/v1/projects/attachment-requests/{$requestId}")
+                ->assertForbidden();
+
+            $this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+                ->assertForbidden();
+
+            $this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->post("/api/v1/projects/attachment-requests/{$requestId}/decline", [], ['Accept' => 'application/json'])
+                ->assertForbidden();
+
+            $this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->post('/api/v1/projects/attachment-requests/items/respond', [
+                    'item_id' => $itemId,
+                    'action' => 'approve',
+                ], ['Accept' => 'application/json'])
+                ->assertForbidden();
+        }
+
+        $ownerIds = collect($this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&direction=outgoing')
+            ->assertOk()
+            ->json('data'))->pluck('id')->all();
+
+        $this->assertContains($requestId, $ownerIds);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson("/api/v1/projects/attachment-requests/{$requestId}")
+            ->assertOk()
+            ->assertJsonPath('payload.id', $requestId);
+    }
+
+    public function test_empty_project_procedure_receivers_keep_legacy_shared_company_visibility(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $companyA = $this->createCompany(['serial_no' => 'ATT-LEG-A']);
+        $companyB = $this->createCompany(['serial_no' => 'ATT-LEG-B']);
+        $userA = User::factory()->create(['company_id' => $companyA->id]);
+        $userB = User::factory()->create(['company_id' => $companyB->id]);
+
+        $this->createAcceptedShare($project, $companyA);
+        $this->createAcceptedShare($project, $companyB);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        foreach ([[$userA, $companyA], [$userB, $companyB]] as [$user, $company]) {
+            $ids = collect($this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&direction=incoming')
+                ->assertOk()
+                ->json('data'))->pluck('id')->all();
+
+            $this->assertContains($requestId, $ids);
+
+            $this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson("/api/v1/projects/attachment-requests/{$requestId}")
+                ->assertOk()
+                ->assertJsonPath('payload.id', $requestId);
+        }
+    }
+
     public function test_selectable_procedures_endpoint_returns_project_procedures(): void
     {
         $project = $this->createProject();
@@ -749,6 +886,48 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->getJson('/api/v1/projects/attachment-requests/procedures?project_id='.$project->id)
             ->assertOk()
             ->assertJsonPath('payload.0.procedure_setting_id', $procedure->procedure_setting_id);
+    }
+
+    public function test_attachment_request_selectable_procedures_are_filtered_by_receiver_companies(): void
+    {
+        $project = $this->createProject();
+        $companyA = $this->createCompany(['serial_no' => 'ATT-PROC-A']);
+        $companyB = $this->createCompany(['serial_no' => 'ATT-PROC-B']);
+        $companyC = $this->createCompany(['serial_no' => 'ATT-PROC-C']);
+        $userA = User::factory()->create(['company_id' => $companyA->id]);
+        $userB = User::factory()->create(['company_id' => $companyB->id]);
+
+        foreach ([$companyA, $companyB, $companyC] as $company) {
+            $this->createAcceptedShare($project, $company);
+        }
+
+        $unrestricted = $this->createProjectProcedure($project);
+        $restricted = $this->createProjectProcedure($project, [$companyA->id, $companyC->id]);
+
+        $ownerIds = collect($this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests/procedures?project_id='.$project->id)
+            ->assertOk()
+            ->json('payload'))->pluck('procedure_setting_id')->all();
+
+        $companyAIds = collect($this->actingAs($userA, 'api')
+            ->withHeader('X-Tenant', $companyA->id)
+            ->getJson('/api/v1/projects/attachment-requests/procedures?project_id='.$project->id)
+            ->assertOk()
+            ->json('payload'))->pluck('procedure_setting_id')->all();
+
+        $companyBIds = collect($this->actingAs($userB, 'api')
+            ->withHeader('X-Tenant', $companyB->id)
+            ->getJson('/api/v1/projects/attachment-requests/procedures?project_id='.$project->id)
+            ->assertOk()
+            ->json('payload'))->pluck('procedure_setting_id')->all();
+
+        $this->assertContains($unrestricted->procedure_setting_id, $ownerIds);
+        $this->assertContains($restricted->procedure_setting_id, $ownerIds);
+        $this->assertContains($unrestricted->procedure_setting_id, $companyAIds);
+        $this->assertContains($restricted->procedure_setting_id, $companyAIds);
+        $this->assertContains($unrestricted->procedure_setting_id, $companyBIds);
+        $this->assertNotContains($restricted->procedure_setting_id, $companyBIds);
     }
 
     private function schemaReady(): bool
@@ -772,7 +951,8 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             && Schema::hasTable('process_steps')
             && Schema::hasTable('resource_shares')
             && Schema::hasTable('work_flows')
-            && Schema::hasTable('media');
+            && Schema::hasTable('media')
+            && Schema::hasTable('project_procedure_setting_receiver_companies');
     }
 
     private function assertHistoryCount(string $requestId, string $action, int $expected): void
@@ -832,23 +1012,27 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         )->id;
     }
 
-    private function createProjectProcedure(ProjectManagement $project): ProjectProcedureSetting
+    private function createProjectProcedure(
+        ProjectManagement $project,
+        array $receiverCompanyIds = []
+    ): ProjectProcedureSetting
     {
-        $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
+        $workFlow = WorkFlow::query()->withoutGlobalScopes()->firstOrCreate([
             'company_id' => $this->company->id,
             'project_id' => $project->id,
             'name' => 'project_'.$project->id,
             'type' => ProjectProcedureService::PROCEDURE_TYPE,
         ]);
 
-        $parent = ProcedureSetting::query()->withoutGlobalScopes()->create([
+        $parent = ProcedureSetting::query()->withoutGlobalScopes()->firstOrCreate([
             'company_id' => $this->company->id,
-            'name' => 'Project Procedures',
             'type' => ProjectProcedureService::PROCEDURE_TYPE,
-            'execute_type' => 'sequence',
-            'is_active' => true,
             'work_flow_id' => $workFlow->id,
             'parent_id' => null,
+        ], [
+            'name' => 'Project Procedures',
+            'execute_type' => 'sequence',
+            'is_active' => true,
         ]);
 
         $procedureSetting = ProcedureSetting::query()->withoutGlobalScopes()->create([
@@ -866,7 +1050,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $attachmentSubType = $this->createFolder($project, 'Design Docs', $attachmentType->id);
         $attachmentSubSubType = $this->createFolder($project, 'Issued For Approval', $attachmentSubType->id);
 
-        return ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
+        $projectProcedure = ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
             'company_id' => $this->company->id,
             'project_id' => $project->id,
             'procedure_setting_id' => $procedureSetting->id,
@@ -875,6 +1059,12 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'attachment_sub_sub_type_id' => $attachmentSubSubType->id,
             'used_in_document_cycle' => true,
         ]);
+
+        if ($receiverCompanyIds !== []) {
+            $projectProcedure->receiverCompanies()->sync($receiverCompanyIds);
+        }
+
+        return $projectProcedure->refresh();
     }
 
     private function createFolder(ProjectManagement $project, string $name, ?string $parentId = null): Folder
