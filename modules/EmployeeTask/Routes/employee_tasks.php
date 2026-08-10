@@ -22,6 +22,7 @@ Route::prefix('employee-tasks')->group(function () {
     Route::get('/{id}', [EmployeeTaskController::class, 'show']);
 
     Route::delete('/{id}', [EmployeeTaskController::class, 'destroy']);
+    Route::delete('/{id}/permanent', [EmployeeTaskController::class, 'forceDestroy']);
 
     Route::post('/{id}/start',         [EmployeeTaskController::class, 'start']);
     Route::post('/{id}/pause',         [EmployeeTaskController::class, 'pause']);

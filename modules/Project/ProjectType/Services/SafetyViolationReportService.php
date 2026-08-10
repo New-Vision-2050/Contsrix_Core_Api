@@ -68,7 +68,7 @@ class SafetyViolationReportService
             ->where('id', $safetyRecordId)
             ->with([
                 'violations',
-                'contractor.representatives',
+                'contractor',
                 'project.manager',
                 'assignedUser.professionalData',
                 'company',
@@ -125,10 +125,6 @@ class SafetyViolationReportService
             $location = $morphable->projectDistrict?->name;
         }
 
-        if ($contractorSafetyRep === null) {
-            $contractorSafetyRep = $record->contractor?->representatives?->first()?->name;
-        }
-
         $timeSource = $record->inspection_time ?: $record->time;
         if (is_string($timeSource) && strlen($timeSource) >= 5) {
             $timeSource = substr($timeSource, 0, 5);
@@ -160,6 +156,7 @@ class SafetyViolationReportService
                 24
             ),
             'preparer_job_code' => $this->clampText($assignedUser?->professionalData?->job_code, 16),
+            'planning_manager_name' => '',
             'company_name' => $record->company?->name,
             'company_logo' => $this->resolveReportLogoDataUri(),
         ];
@@ -182,7 +179,7 @@ class SafetyViolationReportService
                 'category' => $this->clampText($violation->category, 1),
                 'penalty' => $weight,
                 'penalty_display' => $this->formatPenalty($weight),
-                'repetition' => null,
+                'repetition' => '1',
                 'actions' => array_map(
                     fn (string $action): string => $this->clampText($action, 42),
                     $violation->actions()
@@ -240,7 +237,7 @@ class SafetyViolationReportService
      *     category: string,
      *     penalty: float,
      *     penalty_display: string,
-     *     repetition: null,
+     *     repetition: string,
      *     actions: list<string>,
      *     pivot_action: null
      * }
@@ -254,7 +251,7 @@ class SafetyViolationReportService
             'category' => '',
             'penalty' => 0.0,
             'penalty_display' => '',
-            'repetition' => null,
+            'repetition' => '1',
             'actions' => [],
             'pivot_action' => null,
         ];
@@ -357,7 +354,16 @@ class SafetyViolationReportService
         $fontData = (new \Mpdf\Config\FontVariables())->getDefaults()['fontdata'];
         $defaultFont = 'dejavusans';
 
-        if (is_file('C:/Windows/Fonts/tahoma.ttf')) {
+        // Prefer Windows Arial for sharper embedded Arabic/Latin text in PDF.
+        if (is_file('C:/Windows/Fonts/arial.ttf')) {
+            $fontData['arial'] = [
+                'R' => 'arial.ttf',
+                'B' => is_file('C:/Windows/Fonts/arialbd.ttf') ? 'arialbd.ttf' : 'arial.ttf',
+                'useOTL' => 0xFF,
+                'useKashida' => 75,
+            ];
+            $defaultFont = 'arial';
+        } elseif (is_file('C:/Windows/Fonts/tahoma.ttf')) {
             $fontData['tahoma'] = [
                 'R' => 'tahoma.ttf',
                 'B' => is_file('C:/Windows/Fonts/tahomabd.ttf') ? 'tahomabd.ttf' : 'tahoma.ttf',
@@ -376,10 +382,12 @@ class SafetyViolationReportService
             'fontdata' => $fontData,
             'default_font' => $defaultFont,
             'default_font_size' => 10,
+            'dpi' => 120,
+            'img_dpi' => 120,
             'autoScriptToLang' => true,
-            'autoLangToFont' => true,
+            'autoLangToFont' => false,
             'autoArabic' => true,
-            'useSubstitutions' => true,
+            'useSubstitutions' => false,
             'margin_left' => 6,
             'margin_right' => 6,
             'margin_top' => 6,
@@ -389,6 +397,8 @@ class SafetyViolationReportService
         $mpdf->SetDirectionality('rtl');
         $mpdf->SetTitle('محضر مخالفة');
         $mpdf->SetCreator('Constrix Safety');
+        // Keep table geometry fixed — never shrink to fit content.
+        $mpdf->shrink_tables_to_fit = 0;
 
         ini_set('pcre.backtrack_limit', '50000000');
 

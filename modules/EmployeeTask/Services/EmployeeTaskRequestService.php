@@ -19,6 +19,7 @@ use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Events\WorkflowProcedureTaken;
+use Modules\ProcedureSetting\Models\InternalProcedureTaken;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Services\WorkflowEngine;
@@ -27,6 +28,7 @@ use Modules\Process\Enums\ProcessStepStatus;
 use Modules\Process\Models\Process;
 use Modules\Process\Models\ProcessStep;
 use Modules\Process\Services\ProcessWorkflowService;
+use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
@@ -600,6 +602,69 @@ class EmployeeTaskRequestService
             'cancelled_at' => now(),
             'cancellation_reason' => $reason,
         ]);
+    }
+
+    /**
+     * Permanently delete a task and all related process / inbox-visible records.
+     */
+    public function forceDeleteByEmployee(string $id, string $userId): void
+    {
+        $task = $this->repository->findById($id);
+
+        if (! $task) {
+            throw EmployeeTaskException::notFound();
+        }
+
+        if ($task->user_id !== $userId) {
+            throw EmployeeTaskException::cannotDelete();
+        }
+
+        DB::transaction(function () use ($task): void {
+            $task->loadMissing([
+                'approvalRequests.media',
+                'media',
+                'workResumptions',
+                'siteStatusUpdates',
+                'fines',
+                'workStoppageReports',
+            ]);
+
+            foreach ($task->approvalRequests as $approvalRequest) {
+                $approvalRequest->clearMediaCollection('attachments');
+            }
+
+            $task->clearMediaCollection('attachments');
+
+            $processableTypes = array_values(array_unique([
+                $task->procedureSettingType()->value,
+                ProcedureSettingType::EmployeeTask->value,
+                ProcedureSettingType::ProjectNotificationTask->value,
+            ]));
+
+            Process::query()
+                ->where('processable_id', $task->id)
+                ->whereIn('processable_type', $processableTypes)
+                ->get()
+                ->each(function (Process $process): void {
+                    $process->delete();
+                });
+
+            InternalProcedureTaken::query()
+                ->where('processable_id', $task->id)
+                ->whereIn('processable_type', $processableTypes)
+                ->delete();
+
+            $task->workResumptions()->delete();
+            $task->siteStatusUpdates()->delete();
+            $task->fines()->delete();
+            $task->workStoppageReports()->delete();
+
+            ProjectNotification::query()
+                ->where('employee_task_request_id', $task->id)
+                ->update(['employee_task_request_id' => null]);
+
+            $this->repository->delete($task);
+        });
     }
 
     private function broadcastTaskNotification(EmployeeTaskRequest $task, ProcedureSettingStep $currentStep, array $userIds = []): void

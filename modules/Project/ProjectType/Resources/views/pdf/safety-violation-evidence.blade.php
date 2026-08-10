@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <style>
         body {
-            font-family: tahoma, dejavusans, sans-serif;
+            font-family: arial, tahoma, dejavusans, sans-serif;
             font-size: 9.5pt;
             color: #000;
             direction: rtl;
