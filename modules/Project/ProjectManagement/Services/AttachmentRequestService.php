@@ -282,9 +282,6 @@ class AttachmentRequestService
         ];
 
         $previousStatus = $item->status;
-        $sortOrder = $action === 'approve' && $pendingWorkflowStep !== null
-            ? $this->pendingWorkflowHistorySortOrder($item, $pendingWorkflowStep)
-            : null;
 
         return DB::transaction(function () use (
             $item,
@@ -294,8 +291,7 @@ class AttachmentRequestService
             $actionKeys,
             $actionDescriptions,
             $previousStatus,
-            $pendingWorkflowStep,
-            $sortOrder
+            $pendingWorkflowStep
         ) {
             $workflowMetadata = [];
 
@@ -352,8 +348,7 @@ class AttachmentRequestService
                     'status' => $item->status,
                     'response_notes' => $notes,
                     'previous_status' => $previousStatus,
-                ], $workflowMetadata),
-                sortOrder: $sortOrder
+                ], $workflowMetadata)
             );
 
             return $item->fresh(['respondedByUser', 'attachmentRequest']);
@@ -589,24 +584,6 @@ class AttachmentRequestService
     private function saveAttachmentToFolder(AttachmentRequestItem $item): void
     {
         $this->archiveDeliveryService->deliverAttachmentRequestItem($item);
-    }
-
-    private function pendingWorkflowHistorySortOrder(AttachmentRequestItem $item, ProcessStep $step): ?int
-    {
-        return AttachmentRequestHistory::query()
-            ->where('attachment_request_id', $item->attachment_request_id)
-            ->where('action', 'workflow_step_pending')
-            ->where(function ($query) use ($step): void {
-                $query
-                    ->where('metadata->process_step_id', (string) $step->id)
-                    ->orWhere(function ($query) use ($step): void {
-                        $query
-                            ->where('metadata->process_id', (string) $step->process_id)
-                            ->where('metadata->step_id', (string) $step->step_id)
-                            ->where('metadata->template_step_order', (int) $step->template_step_order);
-                    });
-            })
-            ->value('sort_order');
     }
 
     private function workflowApprovalMetadata(ProcessStep $step, ?Process $process = null): array

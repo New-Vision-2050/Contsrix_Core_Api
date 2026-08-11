@@ -20,6 +20,13 @@ class AttachmentRequestPresenter extends AbstractPresenter
         'request_declined',
     ];
 
+    private const WORKFLOW_HISTORY_ACTIONS = [
+        'attachment_approved',
+        'workflow_step_pending',
+        'workflow_step_approved',
+        'workflow_step_rejected',
+    ];
+
     /**
      * @var array<string, array{id: string, name: mixed, email: ?string}|null>
      */
@@ -252,17 +259,66 @@ class AttachmentRequestPresenter extends AbstractPresenter
     {
         $historyEntries = $this->withoutItemApprovalPendingEntries($historyEntries);
 
-        if (! $historyEntries->contains(
+        if ($historyEntries->contains(
             static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'request_declined'
         )) {
-            return $historyEntries;
+            $historyEntries = $historyEntries
+                ->reject(
+                    static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'workflow_step_pending'
+                )
+                ->values();
         }
 
         return $historyEntries
-            ->reject(
-                static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'workflow_step_pending'
+            ->sort(
+                fn (AttachmentRequestHistory $left, AttachmentRequestHistory $right): int =>
+                    $this->historySortKey($left) <=> $this->historySortKey($right)
             )
             ->values();
+    }
+
+    /**
+     * @return array{0: int, 1: int, 2: int, 3: string}
+     */
+    private function historySortKey(AttachmentRequestHistory $historyEntry): array
+    {
+        $createdAt = $historyEntry->created_at?->getTimestamp() ?? 0;
+        $id = (string) $historyEntry->id;
+
+        if ($historyEntry->action === 'request_created') {
+            return [0, 0, $createdAt, $id];
+        }
+
+        if (in_array($historyEntry->action, self::FINAL_REQUEST_ACTIONS, true)) {
+            return [3, 900000000, $createdAt, $id];
+        }
+
+        $workflowSortOrder = $this->workflowHistorySortOrder($historyEntry);
+        if ($workflowSortOrder !== null) {
+            return [1, $workflowSortOrder, $createdAt, $id];
+        }
+
+        if ($historyEntry->sort_order !== null) {
+            return [1, (int) $historyEntry->sort_order, $createdAt, $id];
+        }
+
+        return [2, 0, $createdAt, $id];
+    }
+
+    private function workflowHistorySortOrder(AttachmentRequestHistory $historyEntry): ?int
+    {
+        if (! in_array($historyEntry->action, self::WORKFLOW_HISTORY_ACTIONS, true)) {
+            return null;
+        }
+
+        $metadata = $historyEntry->metadata ?? [];
+        if (! isset($metadata['process_sort_order'], $metadata['template_step_order'])) {
+            return null;
+        }
+
+        return 100000
+            + ((int) $metadata['process_sort_order'] * 1000)
+            + (int) $metadata['template_step_order'];
     }
 
     private function withoutItemApprovalPendingEntries($historyEntries)
