@@ -370,6 +370,8 @@ class ProjectProcedureService
             ->map(static fn (mixed $id): string => (string) $id)
             ->all();
 
+        $acceptedCompanyIds[] = (string) $project->company_id;
+
         if (count(array_diff($receiverCompanyIds, $acceptedCompanyIds)) === 0) {
             return;
         }

@@ -31,6 +31,24 @@ class CompanyPackageAssignmentSeeder extends Seeder
                 return;
             }
 
+            $company = Company::find($companyId);
+            if (!$company) {
+                Log::error("CompanyPackageAssignmentSeeder: Company with ID {$companyId} not found");
+                return;
+            }
+
+            // This seeder is only meant to bootstrap brand new companies with a
+            // default package + full permissions. It is executed for every tenant
+            // on every deploy (via `tenant:seed`), so if the company already has
+            // package(s) assigned (either by this seeder previously, or via the
+            // company package update API) we must NOT re-run it: doing so would
+            // overwrite the company's real (possibly limited) package permissions
+            // with the full Main/Client Package permission set every time.
+            if ($company->packages()->exists()) {
+                Log::info("CompanyPackageAssignmentSeeder: Company {$companyId} already has package(s) assigned, skipping default package/permissions seeding");
+                return;
+            }
+
             // Assign Main Package to company
             $this->assignMainPackageToCompany($companyId);
 
