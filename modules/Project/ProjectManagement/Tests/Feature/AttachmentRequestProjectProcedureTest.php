@@ -954,6 +954,123 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertHistoryCount($requestId, 'attachment_approved', 1);
     }
 
+    public function test_item_approval_history_keeps_workflow_step_order_across_sequential_approvals(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $initialHistory = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
+            ->assertOk()
+            ->json('data.0.history');
+
+        $this->assertSame('request_created', $initialHistory[0]['action']);
+        $this->assertSame('workflow_step_pending', $initialHistory[1]['action']);
+        $this->assertSame(1, (int) $initialHistory[1]['metadata']['template_step_order']);
+        $this->assertSame((string) $firstReceiverUser->id, $initialHistory[1]['user'][0]['id']);
+        $this->assertSame('workflow_step_pending', $initialHistory[2]['action']);
+        $this->assertSame(2, (int) $initialHistory[2]['metadata']['template_step_order']);
+        $this->assertSame((string) $secondReceiverUser->id, $initialHistory[2]['user'][0]['id']);
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/replace-media', [
+                'item_id' => $itemId,
+                'new_file' => UploadedFile::fake()->create('step-one-draft.pdf', 16, 'application/pdf'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/replace-media', [
+                'item_id' => $itemId,
+                'new_file' => UploadedFile::fake()->create('step-one-final.pdf', 24, 'application/pdf'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $this->assertHistoryCount($requestId, 'media_replaced', 2);
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+                'notes' => 'Step 1 approved',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $stepOneHistory = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
+            ->assertOk()
+            ->json('data.0.history');
+
+        $this->assertSame('request_created', $stepOneHistory[0]['action']);
+        $this->assertSame('attachment_approved', $stepOneHistory[1]['action']);
+        $this->assertSame(1, (int) $stepOneHistory[1]['metadata']['template_step_order']);
+        $this->assertSame((string) $firstReceiverUser->id, $stepOneHistory[1]['user'][0]['id']);
+        $this->assertSame('workflow_step_pending', $stepOneHistory[2]['action']);
+        $this->assertSame(2, (int) $stepOneHistory[2]['metadata']['template_step_order']);
+        $this->assertSame((string) $secondReceiverUser->id, $stepOneHistory[2]['user'][0]['id']);
+        $this->assertFalse(collect($stepOneHistory)->contains(
+            static fn (array $entry): bool => $entry['action'] === 'media_replaced'
+        ));
+        $this->assertFalse(collect($stepOneHistory)->contains(
+            static fn (array $entry): bool => $entry['action'] === 'workflow_step_approved'
+        ));
+        $this->assertHistoryCount($requestId, 'attachment_approved', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_approved', 0);
+        $this->assertHistoryCount($requestId, 'media_replaced', 0);
+
+        $this->actingAs($secondReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+                'notes' => 'Step 2 approved',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $stepTwoHistory = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
+            ->assertOk()
+            ->json('data.0.history');
+
+        $this->assertSame('request_created', $stepTwoHistory[0]['action']);
+        $this->assertSame('attachment_approved', $stepTwoHistory[1]['action']);
+        $this->assertSame(1, (int) $stepTwoHistory[1]['metadata']['template_step_order']);
+        $this->assertSame((string) $firstReceiverUser->id, $stepTwoHistory[1]['user'][0]['id']);
+        $this->assertSame('attachment_approved', $stepTwoHistory[2]['action']);
+        $this->assertSame(2, (int) $stepTwoHistory[2]['metadata']['template_step_order']);
+        $this->assertSame((string) $secondReceiverUser->id, $stepTwoHistory[2]['user'][0]['id']);
+        $this->assertSame(2, collect($stepTwoHistory)->where('action', 'attachment_approved')->count());
+        $this->assertFalse(collect($stepTwoHistory)->contains(
+            static fn (array $entry): bool => $entry['action'] === 'media_replaced'
+        ));
+        $this->assertFalse(collect($stepTwoHistory)->contains(
+            static fn (array $entry): bool => in_array($entry['action'], ['workflow_step_pending', 'workflow_step_approved'], true)
+        ));
+        $this->assertHistoryCount($requestId, 'attachment_approved', 2);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
+        $this->assertHistoryCount($requestId, 'workflow_step_approved', 0);
+        $this->assertHistoryCount($requestId, 'media_replaced', 0);
+    }
+
     public function test_explicit_media_replacement_still_writes_media_replaced_history(): void
     {
         $project = $this->createProject();

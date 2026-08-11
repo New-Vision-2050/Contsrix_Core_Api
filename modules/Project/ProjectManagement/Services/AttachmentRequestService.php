@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Models\Process;
 use Modules\Process\Models\ProcessStep;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\Project\ProjectManagement\Events\AttachmentRequestResponded;
@@ -293,8 +294,11 @@ class AttachmentRequestService
             $actionKeys,
             $actionDescriptions,
             $previousStatus,
+            $pendingWorkflowStep,
             $sortOrder
         ) {
+            $workflowMetadata = [];
+
             switch ($action) {
                 case 'approve':
                     $item->approve($userId, $notes);
@@ -305,6 +309,22 @@ class AttachmentRequestService
                         (string) $item->id,
                         $userId
                     );
+
+                    if ($pendingWorkflowStep !== null) {
+                        $process = $this->workflowService->actOnPendingStepForCurrentUser(
+                            $item->attachmentRequest,
+                            'approve'
+                        );
+                        $actedStep = $this->workflowStepFromProcess($process, $pendingWorkflowStep);
+
+                        AttachmentRequestHistory::deleteWorkflowStepLifecycle(
+                            requestId: (string) $item->attachment_request_id,
+                            process: $process,
+                            step: $actedStep
+                        );
+
+                        $workflowMetadata = $this->workflowApprovalMetadata($actedStep, $process);
+                    }
                     break;
                 case 'decline':
                     $item->decline($userId, $notes);
@@ -321,7 +341,7 @@ class AttachmentRequestService
                 description: $actionDescriptions[$action],
                 userId: $userId,
                 itemId: $item->id,
-                metadata: [
+                metadata: array_merge([
                     'item_id' => $item->id,
                     'file_name' => $item->file_name,
                     'file_path' => $item->file_path,
@@ -332,7 +352,7 @@ class AttachmentRequestService
                     'status' => $item->status,
                     'response_notes' => $notes,
                     'previous_status' => $previousStatus,
-                ],
+                ], $workflowMetadata),
                 sortOrder: $sortOrder
             );
 
@@ -576,8 +596,43 @@ class AttachmentRequestService
         return AttachmentRequestHistory::query()
             ->where('attachment_request_id', $item->attachment_request_id)
             ->where('action', 'workflow_step_pending')
-            ->where('metadata->process_step_id', (string) $step->id)
+            ->where(function ($query) use ($step): void {
+                $query
+                    ->where('metadata->process_step_id', (string) $step->id)
+                    ->orWhere(function ($query) use ($step): void {
+                        $query
+                            ->where('metadata->process_id', (string) $step->process_id)
+                            ->where('metadata->step_id', (string) $step->step_id)
+                            ->where('metadata->template_step_order', (int) $step->template_step_order);
+                    });
+            })
             ->value('sort_order');
+    }
+
+    private function workflowApprovalMetadata(ProcessStep $step, ?Process $process = null): array
+    {
+        $process ??= $step->relationLoaded('process')
+            ? $step->process
+            : $step->process()->first();
+
+        if ($process === null) {
+            return [];
+        }
+
+        return AttachmentRequestHistory::workflowStepApprovalMetadata($process, $step);
+    }
+
+    private function workflowStepFromProcess(Process $process, ProcessStep $step): ProcessStep
+    {
+        $actedStep = $process->relationLoaded('steps')
+            ? $process->steps->firstWhere('id', (string) $step->id)
+            : null;
+
+        if ($actedStep instanceof ProcessStep) {
+            return $actedStep;
+        }
+
+        return $step->fresh() ?? $step;
     }
 
     /**
