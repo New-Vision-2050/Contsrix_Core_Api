@@ -81,7 +81,7 @@ class AttachmentRequestHistory extends Model
             'sort_order' => $sortOrder,
         ];
 
-        $dedupeKey = self::dedupeKey($requestId, $action, $metadata);
+        $dedupeKey = self::dedupeKey($requestId, $action, $metadata, $itemId);
 
         if ($dedupeKey === null) {
             return self::create($attributes);
@@ -214,10 +214,14 @@ class AttachmentRequestHistory extends Model
     /**
      * Return the domain identity for history events that must be idempotent.
      */
-    private static function dedupeKey(string $requestId, string $action, ?array $metadata): ?string
+    private static function dedupeKey(string $requestId, string $action, ?array $metadata, ?string $itemId): ?string
     {
         if (in_array($action, ['request_created', 'request_approved', 'request_declined'], true)) {
             return hash('sha256', implode('|', [$requestId, $action]));
+        }
+
+        if ($action === 'attachment_approved' && $itemId !== null) {
+            return hash('sha256', implode('|', [$requestId, $action, $itemId]));
         }
 
         if (in_array($action, ['workflow_step_pending', 'workflow_step_approved', 'workflow_step_rejected'], true)) {
