@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Models\ProcessStep;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\Project\ProjectManagement\Events\AttachmentRequestResponded;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
@@ -254,12 +255,17 @@ class AttachmentRequestService
 
         $userId = (string) Auth::id();
         $this->visibilityService->assertCompanyCanView($item->attachmentRequest, (string) tenant('id'));
+        $pendingWorkflowStep = null;
 
         // Decision D6: per-file actions are allowed. When a workflow is active,
         // only a user who owns the current pending step may respond to items.
         // When no workflow is active, restrict to companies related to the request.
         if ($this->workflowService->hasActiveWorkflow($item->attachmentRequest)) {
-            $this->workflowService->assertCurrentUserOwnsPendingStep($item->attachmentRequest);
+            $pendingWorkflowStep = $this->workflowService->pendingStepForCurrentUser($item->attachmentRequest);
+
+            if ($pendingWorkflowStep === null) {
+                abort(422, 'No pending process step assigned to you for this attachment request.');
+            }
         }
 
         $actionDescriptions = [
@@ -273,6 +279,11 @@ class AttachmentRequestService
             'decline' => 'attachment_declined',
             'request_update' => 'attachment_update_requested',
         ];
+
+        $previousStatus = $item->status;
+        $sortOrder = $action === 'approve' && $pendingWorkflowStep !== null
+            ? $this->pendingWorkflowHistorySortOrder($item, $pendingWorkflowStep)
+            : null;
 
         switch ($action) {
             case 'approve':
@@ -305,8 +316,9 @@ class AttachmentRequestService
                 'file_size_formatted' => $this->formatFileSize($item->file_size),
                 'status' => $item->status,
                 'response_notes' => $notes,
-                'previous_status' => 'pending',
-            ]
+                'previous_status' => $previousStatus,
+            ],
+            sortOrder: $sortOrder
         );
 
         return $item->fresh(['respondedByUser', 'attachmentRequest']);
@@ -541,6 +553,15 @@ class AttachmentRequestService
     private function saveAttachmentToFolder(AttachmentRequestItem $item): void
     {
         $this->archiveDeliveryService->deliverAttachmentRequestItem($item);
+    }
+
+    private function pendingWorkflowHistorySortOrder(AttachmentRequestItem $item, ProcessStep $step): ?int
+    {
+        return AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $item->attachment_request_id)
+            ->where('action', 'workflow_step_pending')
+            ->where('metadata->process_step_id', (string) $step->id)
+            ->value('sort_order');
     }
 
     /**

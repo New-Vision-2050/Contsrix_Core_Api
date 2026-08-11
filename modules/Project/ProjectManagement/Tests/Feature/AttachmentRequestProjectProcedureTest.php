@@ -121,6 +121,111 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertArrayNotHasKey('receiver_company', $response->json('data.0'));
     }
 
+    public function test_attachment_request_list_history_hides_pending_workflow_steps_after_final_rejection(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/decline", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_DECLINED);
+
+        $history = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
+            ->assertOk()
+            ->json('data.0.history');
+
+        $this->assertSame([
+            'request_created',
+            'workflow_step_rejected',
+            'request_declined',
+        ], collect($history)->pluck('action')->all());
+        $this->assertSame((string) $firstReceiverUser->id, $history[1]['user'][0]['id']);
+        $this->assertSame([], $history[2]['user']);
+        $this->assertFalse(collect($history)->contains(
+            static fn (array $entry): bool => $entry['action'] === 'workflow_step_pending'
+        ));
+    }
+
+    public function test_attachment_request_list_history_returns_empty_user_for_final_approval(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
+
+        $history = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
+            ->assertOk()
+            ->json('data.0.history');
+
+        $approvalHistory = collect($history)->firstWhere('action', 'request_approved');
+
+        $this->assertSame([], $approvalHistory['user']);
+    }
+
+    public function test_attachment_request_list_history_keeps_pending_workflow_steps_while_in_progress(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_PENDING);
+
+        $history = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
+            ->assertOk()
+            ->json('data.0.history');
+
+        $pendingHistory = collect($history)
+            ->where('action', 'workflow_step_pending')
+            ->values();
+
+        $this->assertSame(2, $pendingHistory->count());
+        $this->assertContains(
+            (string) $firstReceiverUser->id,
+            collect($pendingHistory[0]['user'])->pluck('id')->all()
+        );
+        $this->assertContains(
+            (string) $secondReceiverUser->id,
+            collect($pendingHistory[1]['user'])->pluck('id')->all()
+        );
+    }
+
     public function test_create_attachment_request_ignores_extra_receiver_company(): void
     {
         $project = $this->createProject();
@@ -386,7 +491,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.history.2.metadata.status', 'approved')
             ->assertJsonPath('payload.history.2.user.0.id', (string) $secondReceiverUser->id)
             ->assertJsonPath('payload.history.3.action', 'request_approved')
-            ->assertJsonPath('payload.history.3.user.0.id', (string) $secondReceiverUser->id);
+            ->assertJsonPath('payload.history.3.user', []);
         $this->assertHistoryUsersAreArrays($secondApproveResponse->json('payload.history'));
 
         $workflowStepOrders = AttachmentRequestHistory::query()
@@ -634,7 +739,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.history.1.action', 'workflow_step_rejected')
             ->assertJsonPath('payload.history.1.user.0.id', (string) $receiverUser->id)
             ->assertJsonPath('payload.history.2.action', 'request_declined')
-            ->assertJsonPath('payload.history.2.user.0.id', (string) $receiverUser->id);
+            ->assertJsonPath('payload.history.2.user', []);
         $this->assertHistoryUsersAreArrays($declineResponse->json('payload.history'));
 
         $this->assertDatabaseHas('processes', [
@@ -692,6 +797,99 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'id' => $itemId,
             'status' => AttachmentRequest::STATUS_APPROVED,
         ]);
+    }
+
+    public function test_item_approval_with_notes_replaces_current_pending_history_without_internal_media_history(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+        $notes = 'Approved with notes';
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+                'notes' => $notes,
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $history = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
+            ->assertOk()
+            ->json('data.0.history');
+
+        $this->assertSame([
+            'request_created',
+            'attachment_approved',
+            'workflow_step_pending',
+        ], collect($history)->pluck('action')->all());
+
+        $approvalHistory = collect($history)->firstWhere('action', 'attachment_approved');
+        $pendingHistory = collect($history)->firstWhere('action', 'workflow_step_pending');
+
+        $this->assertSame((string) $firstReceiverUser->id, $approvalHistory['user'][0]['id']);
+        $this->assertSame($notes, $approvalHistory['metadata']['response_notes']);
+        $this->assertSame('pending', $approvalHistory['metadata']['previous_status']);
+        $this->assertSame('approved', $approvalHistory['metadata']['status']);
+        $this->assertSame($itemId, $approvalHistory['metadata']['item_id']);
+        $this->assertArrayHasKey('file_url', $approvalHistory['metadata']);
+        $this->assertArrayHasKey('file_name', $approvalHistory['metadata']);
+        $this->assertArrayHasKey('file_path', $approvalHistory['metadata']);
+        $this->assertArrayHasKey('file_size', $approvalHistory['metadata']);
+        $this->assertArrayHasKey('file_type', $approvalHistory['metadata']);
+        $this->assertArrayHasKey('file_size_formatted', $approvalHistory['metadata']);
+        $this->assertSame((string) $secondReceiverUser->id, $pendingHistory['user'][0]['id']);
+        $this->assertFalse(collect($history)->contains(
+            static fn (array $entry): bool => $entry['action'] === 'media_replaced'
+        ));
+
+        $this->assertHistoryCount($requestId, 'attachment_approved', 1);
+        $this->assertHistoryCount($requestId, 'media_replaced', 0);
+    }
+
+    public function test_explicit_media_replacement_still_writes_media_replaced_history(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $history = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/replace-media', [
+                'item_id' => $itemId,
+                'new_file' => UploadedFile::fake()->create('replacement.pdf', 16, 'application/pdf'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->json('payload.history');
+
+        $mediaHistory = collect($history)->firstWhere('action', 'media_replaced');
+
+        $this->assertNotNull($mediaHistory);
+        $this->assertSame('replacement.pdf', $mediaHistory['metadata']['new_file_name']);
+        $this->assertHistoryCount($requestId, 'media_replaced', 1);
     }
 
     public function test_approval_without_resolvable_workflow_steps_auto_approves(): void
