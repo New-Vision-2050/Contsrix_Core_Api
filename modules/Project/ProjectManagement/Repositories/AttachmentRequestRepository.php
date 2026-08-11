@@ -10,13 +10,15 @@ use Modules\Project\ProjectManagement\Models\ProjectRequirementSubmission;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Shared\Media\Services\FileUploadService;
+use Modules\Project\ProjectManagement\Services\AttachmentRequestVisibilityService;
 use Modules\User\Models\User;
 
 class AttachmentRequestRepository extends BaseRepository
 {
     public function __construct(
         AttachmentRequest $model,
-        private FileUploadService $fileUploadService
+        private FileUploadService $fileUploadService,
+        private AttachmentRequestVisibilityService $visibilityService
     ) {
         parent::__construct($model);
     }
@@ -76,13 +78,8 @@ class AttachmentRequestRepository extends BaseRepository
         } elseif ($direction === 'incoming') {
             $this->applyIncomingScope($query, $companyId);
         } else {
-            // Default: both outgoing (sent by me) and incoming (I am an action-taker).
-            $query->where(function ($q) use ($companyId): void {
-                $q->where('sender_company_id', $companyId)
-                    ->orWhere(function ($q) use ($companyId): void {
-                        $this->applyIncomingScope($q, $companyId);
-                    });
-            });
+            // Default: both outgoing (sent by me) and incoming (visible to my company).
+            $this->visibilityService->applyVisibleToCompany($query, $companyId);
         }
 
         if (!empty($filters['project_id'])) {
@@ -316,22 +313,22 @@ class AttachmentRequestRepository extends BaseRepository
         return $query->orderBy('created_at', 'desc')->get();
     }
 
-    public function companyParticipatesInWorkflow(string $requestId, string $companyId): bool
+    public function companyCanView(string $requestId, string $companyId): bool
     {
         $query = $this->model->newQuery()->whereKey($requestId);
-        $this->applyIncomingScope($query, $companyId);
+        $this->visibilityService->applyVisibleToCompany($query, $companyId);
 
         return $query->exists();
     }
 
     /**
      * Restrict a query to attachment requests that are "incoming" for a company:
-     * requests whose workflow has at least one step whose action-taker is a user
-     * of that company (assigned_user_id or authorized_user_ids).
+     * requests whose selected project procedure is visible to that receiver
+     * company. Empty receiver-company lists retain legacy unrestricted sharing.
      */
     private function applyIncomingScope($query, string $companyId): void
     {
-        $this->applyActionTakerScope($query, $this->companyUserIds($companyId));
+        $this->visibilityService->applyReceiverCompanyVisibility($query, $companyId);
     }
 
     /**

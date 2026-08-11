@@ -8,11 +8,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
-use Modules\ProcedureSetting\Models\ProcedureSettingStep;
-use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
-use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedManagementHierarchy;
 use Modules\ProcedureSetting\Models\WorkFlow;
 use Modules\ProcedureSetting\Repositories\ProcedureSettingRepository;
+use Modules\ProcedureSetting\Services\ProcedureSettingCloneService;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureJobAttribute;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
@@ -27,6 +25,7 @@ class ProjectProcedureService
     public function __construct(
         private readonly ProjectProcedureRepository $repository,
         private readonly ProcedureSettingRepository $procedureSettingRepository,
+        private readonly ProcedureSettingCloneService $cloneService,
     ) {}
 
     public function list(string $projectId, ?string $parentProcedureSettingId = null): Collection
@@ -97,7 +96,6 @@ class ProjectProcedureService
     ): ProjectProcedureSetting
     {
         $project = $this->findOwnedProjectOrFail($projectId);
-        $this->assertReceiverCompaniesAreSharedWithProject($project, $receiverCompanyIds ?? [], 'receiver_company_ids');
 
         return DB::transaction(function () use (
             $project,
@@ -116,6 +114,19 @@ class ProjectProcedureService
                 $workFlowId = $workFlow->id;
             }
 
+            $source = null;
+            if ($sourceProcedureSettingId !== null) {
+                $source = $this->findCloneSourceOrFail($project, $sourceProcedureSettingId, (string) $parent->id);
+                $procedureData = array_replace($this->sourceProcedureData($source), $procedureData);
+                $metadata = array_replace($this->sourceMetadata($source), $metadata);
+
+                if ($receiverCompanyIds === null) {
+                    $receiverCompanyIds = $this->sourceReceiverCompanyIds($source);
+                }
+            }
+
+            $this->assertReceiverCompaniesAreSharedWithProject($project, $receiverCompanyIds ?? [], 'receiver_company_ids');
+
             $procedureSetting = $this->procedureSettingRepository->createProcedureSetting(
                 array_merge($this->procedureSettingPayload($project, $procedureData), [
                     'work_flow_id' => $workFlowId,
@@ -133,9 +144,13 @@ class ProjectProcedureService
                 $projectProcedure->receiverCompanies()->sync($receiverCompanyIds);
             }
 
-            if ($sourceProcedureSettingId !== null) {
-                $source = $this->findCloneSourceOrFail($project, $sourceProcedureSettingId, (string) $parent->id);
-                $this->cloneSteps((string) $source->procedure_setting_id, (string) $procedureSetting->id);
+            if ($source instanceof ProjectProcedureSetting) {
+                $sourceProcedureSetting = $source->procedureSetting;
+
+                if ($sourceProcedureSetting instanceof ProcedureSetting) {
+                    $this->cloneService->duplicateSteps((string) $source->procedure_setting_id, (string) $procedureSetting->id);
+                    $this->duplicateChildProcedureSettings($project, $sourceProcedureSetting, $procedureSetting);
+                }
             }
 
             return $this->repository->loadRelations($projectProcedure->refresh());
@@ -379,46 +394,137 @@ class ProjectProcedureService
         );
     }
 
-    private function cloneSteps(string $sourceProcedureSettingId, string $targetProcedureSettingId): void
+    /**
+     * @return array<string, mixed>
+     */
+    private function sourceProcedureData(ProjectProcedureSetting $source): array
     {
-        $sourceSteps = ProcedureSettingStep::query()
+        $procedureSetting = $source->procedureSetting;
+
+        if (! $procedureSetting instanceof ProcedureSetting) {
+            return [];
+        }
+
+        $data = [];
+        foreach ([
+            'name',
+            'execute_type',
+            'icon',
+            'percentage',
+            'deadline_days',
+            'deadline_hours',
+            'escalation_management_hierarchy_id',
+            'sort_order',
+            'is_active',
+        ] as $key) {
+            $data[$key] = $procedureSetting->getAttribute($key);
+        }
+
+        return $data;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function sourceMetadata(ProjectProcedureSetting $source): array
+    {
+        $data = [];
+        foreach ([
+            'attachment_type_id',
+            'attachment_sub_type_id',
+            'attachment_sub_sub_type_id',
+            'job_attribute_id',
+            'used_in_document_cycle',
+            'appears_in_archive_after_approval',
+            'appears_in_attachments_library',
+            'requires_asset_id',
+        ] as $key) {
+            $data[$key] = $source->getAttribute($key);
+        }
+
+        return $data;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function sourceReceiverCompanyIds(ProjectProcedureSetting $source): array
+    {
+        if (! $source->relationLoaded('receiverCompanies')) {
+            $source->load('receiverCompanies');
+        }
+
+        return $source->receiverCompanies
+            ->pluck('id')
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
+    private function duplicateChildProcedureSettings(
+        ProjectManagement $project,
+        ProcedureSetting $sourceParent,
+        ProcedureSetting $targetParent
+    ): void {
+        $sourceChildren = ProcedureSetting::query()
             ->withoutGlobalScopes()
-            ->with(['actionTakers', 'concernedManagementHierarchies'])
-            ->where('procedure_setting_id', $sourceProcedureSettingId)
-            ->orderByRaw('(step_order IS NULL) ASC')
-            ->orderBy('step_order')
+            ->where('company_id', $project->company_id)
+            ->where('type', self::PROCEDURE_TYPE)
+            ->where('work_flow_id', $sourceParent->work_flow_id)
+            ->where('parent_id', $sourceParent->id)
+            ->orderBy('sort_order')
+            ->orderBy('created_at')
             ->orderBy('id')
             ->get();
 
-        $fillable = (new ProcedureSettingStep)->getFillable();
+        foreach ($sourceChildren as $sourceChild) {
+            $sourceProjectProcedure = $this->projectProcedureForSettingOrFail($project, (string) $sourceChild->id);
+            $receiverCompanyIds = $this->sourceReceiverCompanyIds($sourceProjectProcedure);
 
-        foreach ($sourceSteps as $sourceStep) {
-            $payload = [];
-            foreach ($fillable as $key) {
-                $payload[$key] = $key === 'procedure_setting_id'
-                    ? $targetProcedureSettingId
-                    : $sourceStep->getAttribute($key);
-            }
+            $this->assertReceiverCompaniesAreSharedWithProject(
+                $project,
+                $receiverCompanyIds,
+                'source_procedure_setting_id',
+            );
 
-            $targetStep = ProcedureSettingStep::query()
-                ->withoutGlobalScopes()
-                ->create($payload);
+            $targetChild = $this->procedureSettingRepository->createProcedureSetting(array_merge(
+                $this->procedureSettingPayload($project, $this->sourceProcedureData($sourceProjectProcedure)),
+                [
+                    'work_flow_id' => $targetParent->work_flow_id,
+                    'parent_id' => $targetParent->id,
+                ],
+            ));
 
-            foreach ($sourceStep->actionTakers as $actionTaker) {
-                ProcedureSettingStepActionTaker::query()->create([
-                    'procedure_setting_step_id' => $targetStep->id,
-                    'user_id' => $actionTaker->user_id,
-                    'company_id' => $targetStep->company_id,
-                ]);
-            }
+            $targetProjectProcedure = $this->repository->createProjectProcedure(array_merge(
+                $this->sourceMetadata($sourceProjectProcedure),
+                [
+                    'company_id' => $project->company_id,
+                    'project_id' => $project->id,
+                    'procedure_setting_id' => $targetChild->id,
+                ],
+            ));
 
-            foreach ($sourceStep->concernedManagementHierarchies as $concernedManagementHierarchy) {
-                ProcedureSettingStepConcernedManagementHierarchy::query()->create([
-                    'procedure_setting_step_id' => $targetStep->id,
-                    'management_hierarchy_id' => $concernedManagementHierarchy->management_hierarchy_id,
-                    'company_id' => $targetStep->company_id,
-                ]);
-            }
+            $targetProjectProcedure->receiverCompanies()->sync($receiverCompanyIds);
+
+            $this->cloneService->duplicateSteps((string) $sourceChild->id, (string) $targetChild->id);
+            $this->duplicateChildProcedureSettings($project, $sourceChild, $targetChild);
         }
     }
+
+    private function projectProcedureForSettingOrFail(
+        ProjectManagement $project,
+        string $procedureSettingId
+    ): ProjectProcedureSetting {
+        return ProjectProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->where('project_id', $project->id)
+            ->where('company_id', $project->company_id)
+            ->where('procedure_setting_id', $procedureSettingId)
+            ->with([
+                'procedureSetting',
+                'receiverCompanies',
+            ])
+            ->firstOrFail();
+    }
+
 }

@@ -26,6 +26,7 @@ use Modules\Project\ProjectManagement\Models\ProjectRequirement;
 use Modules\Project\ProjectManagement\Models\ProjectRequirementSubmission;
 use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
 use Modules\Project\ProjectType\Models\ProjectType;
+use Modules\Shared\ResourceShare\Models\ResourceShare;
 use Modules\User\Models\User;
 
 class AttachmentRequestChartsTest extends BaseAttendanceReportTestCase
@@ -119,12 +120,18 @@ class AttachmentRequestChartsTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('payload.attachment_requests.trend.total', 1);
     }
 
-    public function test_incoming_direction_uses_workflow_action_taker_scope(): void
+    public function test_incoming_direction_uses_receiver_company_visibility_scope(): void
     {
         $project = $this->createProject();
-        $procedure = $this->createProjectProcedure($project);
         $receiverCompany = $this->createCompany();
+        $restrictedCompany = $this->createCompany();
         $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $restrictedUser = User::factory()->create(['company_id' => $restrictedCompany->id]);
+
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createAcceptedShare($project, $restrictedCompany);
+
+        $procedure = $this->createProjectProcedure($project, [$receiverCompany->id]);
 
         $request = $this->createAttachmentRequest($project, $procedure, [
             'status' => AttachmentRequest::STATUS_PENDING,
@@ -135,7 +142,7 @@ class AttachmentRequestChartsTest extends BaseAttendanceReportTestCase
             $request->id,
             ProcessStatus::InProgress->value,
         );
-        $this->createProcessStep($process, $receiverUser);
+        $this->createProcessStep($process, $restrictedUser);
 
         $this->actingAs($receiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
@@ -143,6 +150,12 @@ class AttachmentRequestChartsTest extends BaseAttendanceReportTestCase
             ->assertOk()
             ->assertJsonPath('payload.attachment_requests.summary.total_requests', 1)
             ->assertJsonPath('payload.attachment_requests.direction.data.0.code', 'incoming');
+
+        $this->actingAs($restrictedUser, 'api')
+            ->withHeader('X-Tenant', $restrictedCompany->id)
+            ->getJson('/api/v1/projects/attachment-requests/charts?project_id='.$project->id.'&direction=incoming')
+            ->assertOk()
+            ->assertJsonPath('payload.attachment_requests.summary.total_requests', 0);
     }
 
     public function test_name_filter_targets_attachment_requests_and_hides_submissions(): void
@@ -201,7 +214,9 @@ class AttachmentRequestChartsTest extends BaseAttendanceReportTestCase
             && Schema::hasTable('work_flows')
             && Schema::hasTable('processes')
             && Schema::hasTable('process_steps')
-            && Schema::hasTable('media');
+            && Schema::hasTable('media')
+            && Schema::hasTable('resource_shares')
+            && Schema::hasTable('project_procedure_setting_receiver_companies');
     }
 
     private function createProject(array $overrides = []): ProjectManagement
@@ -235,7 +250,10 @@ class AttachmentRequestChartsTest extends BaseAttendanceReportTestCase
         )->id;
     }
 
-    private function createProjectProcedure(ProjectManagement $project): ProjectProcedureSetting
+    private function createProjectProcedure(
+        ProjectManagement $project,
+        array $receiverCompanyIds = [],
+    ): ProjectProcedureSetting
     {
         $workFlow = WorkFlow::query()->withoutGlobalScopes()->create([
             'company_id' => $this->company->id,
@@ -267,12 +285,34 @@ class AttachmentRequestChartsTest extends BaseAttendanceReportTestCase
 
         $attachmentType = $this->createFolder($project, 'Charts Docs');
 
-        return ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
+        $projectProcedure = ProjectProcedureSetting::query()->withoutGlobalScopes()->create([
             'company_id' => $this->company->id,
             'project_id' => $project->id,
             'procedure_setting_id' => $procedureSetting->id,
             'attachment_type_id' => $attachmentType->id,
             'used_in_document_cycle' => true,
+        ]);
+
+        if ($receiverCompanyIds !== []) {
+            $projectProcedure->receiverCompanies()->sync($receiverCompanyIds);
+        }
+
+        return $projectProcedure->refresh();
+    }
+
+    private function createAcceptedShare(ProjectManagement $project, Company $receiverCompany): ResourceShare
+    {
+        return ResourceShare::query()->create([
+            'id' => (string) Str::uuid(),
+            'shareable_type' => ProjectManagement::class,
+            'shareable_id' => $project->id,
+            'owner_company_id' => $this->company->id,
+            'shared_with_company_id' => $receiverCompany->id,
+            'status' => 'accepted',
+            'schema_ids' => [1, 2],
+            'shared_by_user_id' => $this->actor->id,
+            'responded_by_user_id' => $this->actor->id,
+            'responded_at' => now(),
         ]);
     }
 

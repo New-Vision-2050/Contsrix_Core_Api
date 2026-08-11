@@ -220,6 +220,8 @@ class AttachmentRequestController extends Controller
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);
+        } catch (HttpExceptionInterface $e) {
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 404);
         }
@@ -242,7 +244,7 @@ class AttachmentRequestController extends Controller
 
             return Json::item($data);
         } catch (HttpExceptionInterface $e) {
-            throw $e;
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
@@ -265,6 +267,8 @@ class AttachmentRequestController extends Controller
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);
+        } catch (HttpExceptionInterface $e) {
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
@@ -287,6 +291,8 @@ class AttachmentRequestController extends Controller
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);
+        } catch (HttpExceptionInterface $e) {
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
@@ -302,7 +308,7 @@ class AttachmentRequestController extends Controller
 
             return Json::item((new ProjectRequirementSubmissionPresenter($item))->getData());
         } catch (HttpExceptionInterface $e) {
-            throw $e;
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
@@ -318,7 +324,7 @@ class AttachmentRequestController extends Controller
 
             return Json::item((new ProjectRequirementSubmissionPresenter($item))->getData());
         } catch (HttpExceptionInterface $e) {
-            throw $e;
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
@@ -366,6 +372,8 @@ class AttachmentRequestController extends Controller
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);
+        } catch (HttpExceptionInterface $e) {
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400);
         }

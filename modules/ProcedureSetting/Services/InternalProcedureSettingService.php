@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Modules\ProcedureSetting\Services;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use Modules\ProcedureSetting\Models\WorkFlow;
@@ -14,6 +16,10 @@ use Modules\Shared\InternalProcessType\Enums\InternalProcessForm;
 
 final class InternalProcedureSettingService
 {
+    public function __construct(
+        private readonly ProcedureSettingCloneService $cloneService,
+    ) {}
+
     public function listForParent(string $parentId): Collection
     {
         return ProcedureSetting::query()
@@ -40,66 +46,85 @@ final class InternalProcedureSettingService
 
     public function create(string $parentId, array $data): ProcedureSetting
     {
-        $parent = $this->findParentOrFail($parentId);
+        return DB::transaction(function () use ($parentId, $data): ProcedureSetting {
+            $parent = $this->findParentOrFail($parentId);
+            $requestData = $data;
+            $source = $this->sourceFromData($data, (string) $parent->company_id);
 
-        $form = InternalProcessForm::tryFrom($data['form'] ?? '');
+            if ($source instanceof ProcedureSetting) {
+                $data = array_replace($this->sourceProcedureData($source), $data);
+            }
 
-        if ($form === null) {
-            throw new \InvalidArgumentException("Invalid form key: [{$data['form']}]");
-        }
+            unset($data['source_procedure_setting_id']);
 
-        $type = $data['type'] ?? $parent->type;
+            $form = InternalProcessForm::tryFrom($data['form'] ?? '');
 
-        if ($type !== $parent->type) {
-            throw new \InvalidArgumentException(
-                "Provided type [{$type}] must match parent type [{$parent->type}]."
-            );
-        }
+            if ($form === null) {
+                throw new \InvalidArgumentException("Invalid form key: [{$data['form']}]");
+            }
 
-        if (! in_array($type, $form->applicableTypes(), true)) {
-            throw new \InvalidArgumentException(
-                "Form [{$form->value}] is not applicable to procedure type [{$type}]."
-            );
-        }
+            $type = $data['type'] ?? $parent->type;
 
-        $existing = ProcedureSetting::query()
-            ->where('parent_id', $parentId)
-            ->where('form', $form->value)
-            ->first();
+            if ($type !== $parent->type) {
+                throw new \InvalidArgumentException(
+                    "Provided type [{$type}] must match parent type [{$parent->type}]."
+                );
+            }
 
-        if ($existing !== null) {
-            throw new \InvalidArgumentException(
-                "Internal procedure with form [{$form->value}] already exists under this parent."
-            );
-        }
+            if (! in_array($type, $form->applicableTypes(), true)) {
+                throw new \InvalidArgumentException(
+                    "Form [{$form->value}] is not applicable to procedure type [{$type}]."
+                );
+            }
 
-        $conditions = InternalProcessCondition::defaultValuesForForm($form);
-        if (isset($data['conditions']) && is_array($data['conditions'])) {
-            $incoming = $this->normalizeConditions($data['conditions']);
-            // New rich format (indexed list) — use as-is; old flat assoc — merge with defaults
-            $conditions = is_int(array_key_first($incoming) ?? null) ? $incoming : array_merge($conditions, $incoming);
-        }
+            $existing = ProcedureSetting::query()
+                ->where('parent_id', $parentId)
+                ->where('form', $form->value)
+                ->first();
 
-        $workFlow = $this->createWorkFlowForInternal($parent, $form->value, $type);
+            if ($existing !== null) {
+                throw new \InvalidArgumentException(
+                    "Internal procedure with form [{$form->value}] already exists under this parent."
+                );
+            }
 
-        return ProcedureSetting::query()->create([
-            'id'                => (string) Str::uuid(),
-            'company_id'        => $parent->company_id,
-            'work_flow_id'      => $workFlow->id,
-            'parent_id'         => $parent->id,
-            'name'              => $data['name'] ?? $form->labelAr(),
-            'form'              => $form->value,
-            'type'              => $type,
-            'is_active'         => $data['is_active'] ?? true,
-            'execute_type'      => $data['execute_type'] ?? 'sequence',
-            'conditions'        => $conditions,
-            'appears_before_id' => $data['appears_before_id'] ?? null,
-            'appears_after_id'  => $data['appears_after_id'] ?? null,
-            'sort_order'        => $data['sort_order'] ?? $form->sortOrder(),
-            'percentage'        => $data['percentage'] ?? 0,
-            'deadline_days'     => $data['deadline_days'] ?? null,
-            'deadline_hours'    => $data['deadline_hours'] ?? null,
-        ]);
+            $conditions = $source instanceof ProcedureSetting
+                ? ($source->conditions ?? [])
+                : InternalProcessCondition::defaultValuesForForm($form);
+
+            if (isset($requestData['conditions']) && is_array($requestData['conditions'])) {
+                $incoming = $this->normalizeConditions($requestData['conditions']);
+                // New rich format (indexed list) — use as-is; old flat assoc — merge with base
+                $conditions = is_int(array_key_first($incoming) ?? null) ? $incoming : array_merge($conditions, $incoming);
+            }
+
+            $workFlow = $this->createWorkFlowForInternal($parent, $form->value, $type, $source);
+
+            $setting = ProcedureSetting::query()->create([
+                'id'                => (string) Str::uuid(),
+                'company_id'        => $parent->company_id,
+                'work_flow_id'      => $workFlow->id,
+                'parent_id'         => $parent->id,
+                'name'              => $data['name'] ?? $form->labelAr(),
+                'form'              => $form->value,
+                'type'              => $type,
+                'is_active'         => $data['is_active'] ?? true,
+                'execute_type'      => $data['execute_type'] ?? 'sequence',
+                'conditions'        => $conditions,
+                'appears_before_id' => $data['appears_before_id'] ?? null,
+                'appears_after_id'  => $data['appears_after_id'] ?? null,
+                'sort_order'        => $data['sort_order'] ?? $form->sortOrder(),
+                'percentage'        => $data['percentage'] ?? 0,
+                'deadline_days'     => $data['deadline_days'] ?? null,
+                'deadline_hours'    => $data['deadline_hours'] ?? null,
+            ]);
+
+            if ($source instanceof ProcedureSetting) {
+                $this->cloneService->duplicateSteps((string) $source->id, (string) $setting->id);
+            }
+
+            return $setting->fresh();
+        });
     }
 
     public function update(string $parentId, string $id, array $data): ProcedureSetting
@@ -264,7 +289,12 @@ final class InternalProcedureSettingService
             ->max('sort_order') + 1;
     }
 
-    private function createWorkFlowForInternal(ProcedureSetting $parent, string $formValue, string $type): WorkFlow
+    private function createWorkFlowForInternal(
+        ProcedureSetting $parent,
+        string $formValue,
+        string $type,
+        ?ProcedureSetting $source = null,
+    ): WorkFlow
     {
         $workFlow = WorkFlow::query()->create([
             'id'         => (string) Str::uuid(),
@@ -273,14 +303,65 @@ final class InternalProcedureSettingService
             'type'       => $type,
         ]);
 
-        // Copy branch associations from parent workflow
-        $parentWorkFlow = WorkFlow::query()->find($parent->work_flow_id);
-        if ($parentWorkFlow !== null) {
-            $branchIds = $parentWorkFlow->managementHierarchies()->pluck('management_hierarchies.id')->all();
+        $sourceWorkFlow = $source instanceof ProcedureSetting && $source->work_flow_id !== null
+            ? WorkFlow::query()->withoutGlobalScopes()->find($source->work_flow_id)
+            : null;
+
+        // Copy branch associations from the source when cloning, otherwise from the parent workflow.
+        $branchSource = $sourceWorkFlow ?? WorkFlow::query()->withoutGlobalScopes()->find($parent->work_flow_id);
+        if ($branchSource !== null) {
+            $branchIds = $branchSource->managementHierarchies()->pluck('management_hierarchies.id')->all();
             $workFlow->managementHierarchies()->syncWithoutDetaching($branchIds);
         }
 
         return $workFlow;
+    }
+
+    private function sourceFromData(array $data, string $companyId): ?ProcedureSetting
+    {
+        $sourceId = $data['source_procedure_setting_id'] ?? null;
+
+        if (! is_string($sourceId) || $sourceId === '') {
+            return null;
+        }
+
+        return ProcedureSetting::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->whereIn('type', ProcedureSettingType::values())
+            ->whereHas('workFlow', static function ($query): void {
+                $query->withoutGlobalScopes()
+                    ->whereNull('project_id');
+            })
+            ->findOrFail($sourceId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function sourceProcedureData(ProcedureSetting $source): array
+    {
+        $data = [];
+        foreach ([
+            'name',
+            'type',
+            'execute_type',
+            'icon',
+            'percentage',
+            'deadline_days',
+            'deadline_hours',
+            'escalation_management_hierarchy_id',
+            'sort_order',
+            'form',
+            'conditions',
+            'appears_before_id',
+            'appears_after_id',
+            'is_active',
+        ] as $key) {
+            $data[$key] = $source->getAttribute($key);
+        }
+
+        return $data;
     }
 
     /**
