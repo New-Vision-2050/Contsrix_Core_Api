@@ -211,27 +211,6 @@ class AttachmentRequestHistory extends Model
         self::findWorkflowStepLifecycle($requestId, $process, $step)?->delete();
     }
 
-    public static function deleteMediaReplacementHistoryForApproval(
-        string $requestId,
-        string $itemId,
-        ?string $userId
-    ): int {
-        $query = self::query()
-            ->where('attachment_request_id', $requestId)
-            ->where('action', 'media_replaced')
-            ->where(function ($query) use ($itemId): void {
-                $query
-                    ->where('attachment_request_item_id', $itemId)
-                    ->orWhere('metadata->item_id', $itemId);
-            });
-
-        if ($userId !== null) {
-            $query->where('user_id', $userId);
-        }
-
-        return $query->delete();
-    }
-
     public static function workflowStepApprovalMetadata(Process $process, ProcessStep $step): array
     {
         return self::workflowStepMetadata($process, $step, 'approved');

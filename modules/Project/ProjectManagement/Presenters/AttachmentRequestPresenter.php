@@ -257,6 +257,12 @@ class AttachmentRequestPresenter extends AbstractPresenter
 
     private function presentableHistoryEntries($historyEntries)
     {
+        $historyEntries = $historyEntries
+            ->reject(
+                static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'media_replaced'
+            )
+            ->values();
+
         $historyEntries = $this->withoutItemApprovalPendingEntries($historyEntries);
 
         if ($historyEntries->contains(

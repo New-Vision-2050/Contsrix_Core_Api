@@ -304,11 +304,6 @@ class AttachmentRequestService
                     );
                     // Save attachment to ArchiveLibrary folder
                     $this->saveAttachmentToFolder($item);
-                    AttachmentRequestHistory::deleteMediaReplacementHistoryForApproval(
-                        (string) $item->attachment_request_id,
-                        (string) $item->id,
-                        $userId
-                    );
 
                     if ($pendingWorkflowStep !== null) {
                         $process = $this->workflowService->actOnPendingStepForCurrentUser(
