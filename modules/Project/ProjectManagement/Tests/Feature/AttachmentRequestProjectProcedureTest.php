@@ -861,6 +861,99 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertHistoryCount($requestId, 'media_replaced', 0);
     }
 
+    public function test_item_approval_consumes_frontend_media_replacement_history_for_same_item(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+        $notes = 'Approved after final replacement';
+        $finalFileSize = 24 * 1024;
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/replace-media', [
+                'item_id' => $itemId,
+                'new_file' => UploadedFile::fake()->create('intermediate-replacement.pdf', 16, 'application/pdf'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/replace-media', [
+                'item_id' => $itemId,
+                'new_file' => UploadedFile::fake()->create('final-replacement.pdf', 24, 'application/pdf'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.items.0.file_name', 'final-replacement.pdf');
+
+        $this->assertHistoryCount($requestId, 'media_replaced', 2);
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+                'notes' => $notes,
+            ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.items.0.status', AttachmentRequest::STATUS_APPROVED)
+            ->assertJsonPath('payload.items.0.file_name', 'final-replacement.pdf')
+            ->assertJsonPath('payload.items.0.file_size', $finalFileSize)
+            ->assertJsonPath('payload.items.0.response_notes', $notes);
+
+        $history = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
+            ->assertOk()
+            ->json('data.0.history');
+
+        $this->assertSame([
+            'request_created',
+            'attachment_approved',
+            'workflow_step_pending',
+        ], collect($history)->pluck('action')->all());
+
+        $approvalHistory = collect($history)->firstWhere('action', 'attachment_approved');
+        $pendingHistory = collect($history)->firstWhere('action', 'workflow_step_pending');
+
+        $this->assertSame((string) $firstReceiverUser->id, $approvalHistory['user'][0]['id']);
+        $this->assertSame($notes, $approvalHistory['metadata']['response_notes']);
+        $this->assertSame($itemId, $approvalHistory['metadata']['item_id']);
+        $this->assertSame('final-replacement.pdf', $approvalHistory['metadata']['file_name']);
+        $this->assertSame('application/pdf', $approvalHistory['metadata']['file_type']);
+        $this->assertSame($finalFileSize, $approvalHistory['metadata']['file_size']);
+        $this->assertSame('24 KB', $approvalHistory['metadata']['file_size_formatted']);
+        $this->assertSame((string) $secondReceiverUser->id, $pendingHistory['user'][0]['id']);
+        $this->assertSame(1, collect($history)->where('action', 'attachment_approved')->count());
+        $this->assertFalse(collect($history)->contains(
+            static fn (array $entry): bool => $entry['action'] === 'media_replaced'
+        ));
+
+        $this->assertDatabaseHas('attachment_request_items', [
+            'id' => $itemId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+            'file_name' => 'final-replacement.pdf',
+            'file_type' => 'application/pdf',
+            'file_size' => $finalFileSize,
+            'response_notes' => $notes,
+            'responded_by_user_id' => $firstReceiverUser->id,
+        ]);
+
+        $this->assertHistoryCount($requestId, 'media_replaced', 0);
+        $this->assertHistoryCount($requestId, 'attachment_approved', 1);
+    }
+
     public function test_explicit_media_replacement_still_writes_media_replaced_history(): void
     {
         $project = $this->createProject();

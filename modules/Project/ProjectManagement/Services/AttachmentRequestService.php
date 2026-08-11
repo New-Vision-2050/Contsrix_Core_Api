@@ -285,43 +285,59 @@ class AttachmentRequestService
             ? $this->pendingWorkflowHistorySortOrder($item, $pendingWorkflowStep)
             : null;
 
-        switch ($action) {
-            case 'approve':
-                $item->approve($userId, $notes);
-                // Save attachment to ArchiveLibrary folder
-                $this->saveAttachmentToFolder($item);
-                break;
-            case 'decline':
-                $item->decline($userId, $notes);
-                break;
-            case 'request_update':
-                $item->requestUpdate($userId, $notes);
-                break;
-        }
+        return DB::transaction(function () use (
+            $item,
+            $action,
+            $userId,
+            $notes,
+            $actionKeys,
+            $actionDescriptions,
+            $previousStatus,
+            $sortOrder
+        ) {
+            switch ($action) {
+                case 'approve':
+                    $item->approve($userId, $notes);
+                    // Save attachment to ArchiveLibrary folder
+                    $this->saveAttachmentToFolder($item);
+                    AttachmentRequestHistory::deleteMediaReplacementHistoryForApproval(
+                        (string) $item->attachment_request_id,
+                        (string) $item->id,
+                        $userId
+                    );
+                    break;
+                case 'decline':
+                    $item->decline($userId, $notes);
+                    break;
+                case 'request_update':
+                    $item->requestUpdate($userId, $notes);
+                    break;
+            }
 
-        // Log history with detailed file information
-        AttachmentRequestHistory::log(
-            requestId: $item->attachment_request_id,
-            action: $actionKeys[$action],
-            description: $actionDescriptions[$action],
-            userId: $userId,
-            itemId: $item->id,
-            metadata: [
-                'item_id' => $item->id,
-                'file_name' => $item->file_name,
-                'file_path' => $item->file_path,
-                'file_url' => $item->file_path ? asset('storage/' . $item->file_path) : null,
-                'file_type' => $item->file_type,
-                'file_size' => $item->file_size,
-                'file_size_formatted' => $this->formatFileSize($item->file_size),
-                'status' => $item->status,
-                'response_notes' => $notes,
-                'previous_status' => $previousStatus,
-            ],
-            sortOrder: $sortOrder
-        );
+            // Log history with detailed file information
+            AttachmentRequestHistory::log(
+                requestId: $item->attachment_request_id,
+                action: $actionKeys[$action],
+                description: $actionDescriptions[$action],
+                userId: $userId,
+                itemId: $item->id,
+                metadata: [
+                    'item_id' => $item->id,
+                    'file_name' => $item->file_name,
+                    'file_path' => $item->file_path,
+                    'file_url' => $item->file_path ? asset('storage/' . $item->file_path) : null,
+                    'file_type' => $item->file_type,
+                    'file_size' => $item->file_size,
+                    'file_size_formatted' => $this->formatFileSize($item->file_size),
+                    'status' => $item->status,
+                    'response_notes' => $notes,
+                    'previous_status' => $previousStatus,
+                ],
+                sortOrder: $sortOrder
+            );
 
-        return $item->fresh(['respondedByUser', 'attachmentRequest']);
+            return $item->fresh(['respondedByUser', 'attachmentRequest']);
+        });
     }
 
     /**
