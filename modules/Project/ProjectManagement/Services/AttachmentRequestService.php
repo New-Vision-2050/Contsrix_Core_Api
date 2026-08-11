@@ -297,7 +297,11 @@ class AttachmentRequestService
 
             switch ($action) {
                 case 'approve':
-                    $item->approve($userId, $notes);
+                    $item->approve(
+                        userId: $userId,
+                        notes: $notes,
+                        syncRequestStatus: $pendingWorkflowStep === null
+                    );
                     // Save attachment to ArchiveLibrary folder
                     $this->saveAttachmentToFolder($item);
                     AttachmentRequestHistory::deleteMediaReplacementHistoryForApproval(
