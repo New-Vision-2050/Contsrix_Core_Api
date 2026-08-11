@@ -42,10 +42,16 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         Route::get('/violations', [ViolationController::class, 'index']);
         Route::get('/safety/inbox', [SafetyRecordController::class, 'inbox']);
         Route::get('/safety/analytics/top-violations', [SafetyAnalyticsController::class, 'topViolations']);
+        Route::get('/safety/analytics/violation-frequencies', [SafetyAnalyticsController::class, 'globalViolationFrequencies']);
 
         Route::prefix('{project}/safety')->group(function () {
             Route::get('/', [SafetyRecordController::class, 'index']);
             Route::get('/report', [SafetyRecordController::class, 'report']);
+            Route::post('/weekly-report', [SafetyAnalyticsController::class, 'weeklyReport']);
+            Route::post('/weekly-reports', [SafetyAnalyticsController::class, 'storeWeeklyReport']);
+            Route::get('/weekly-reports', [SafetyAnalyticsController::class, 'listWeeklyReports']);
+            Route::get('/weekly-reports/{id}', [SafetyAnalyticsController::class, 'showWeeklyReport']);
+            Route::get('/weekly-reports/{id}/download', [SafetyAnalyticsController::class, 'downloadWeeklyReport']);
             Route::post('/', [SafetyRecordController::class, 'store']);
 
             Route::prefix('analytics')->group(function () {
@@ -54,6 +60,8 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
                 Route::get('/frequent-violations', [SafetyAnalyticsController::class, 'frequentViolations']);
                 Route::get('/violation-performance', [SafetyAnalyticsController::class, 'violationPerformance']);
                 Route::get('/by-contractor-consultant', [SafetyAnalyticsController::class, 'byContractorConsultant']);
+                Route::get('/contractor-compliance', [SafetyAnalyticsController::class, 'contractorCompliance']);
+                Route::get('/contractor-top-violations', [SafetyAnalyticsController::class, 'contractorTopViolations']);
             });
 
             Route::get('/{id}', [SafetyRecordController::class, 'show']);
