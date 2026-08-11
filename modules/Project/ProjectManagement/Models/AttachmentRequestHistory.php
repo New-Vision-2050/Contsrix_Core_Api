@@ -144,7 +144,7 @@ class AttachmentRequestHistory extends Model
 
             $existing->forceFill([
                 'metadata' => $metadata,
-                'sort_order' => $existing->sort_order ?? self::workflowStepSortOrder($process, $step->template_step_order),
+                'sort_order' => self::workflowStepSortOrder($process, $step->template_step_order),
             ])->save();
 
             return $existing;
@@ -197,7 +197,7 @@ class AttachmentRequestHistory extends Model
             'description' => $description,
             'user_id' => $userId,
             'metadata' => $metadata,
-            'sort_order' => $history->sort_order ?? self::workflowStepSortOrder($process, $step->template_step_order),
+            'sort_order' => self::workflowStepSortOrder($process, $step->template_step_order),
         ])->save();
 
         return $history;
@@ -209,27 +209,6 @@ class AttachmentRequestHistory extends Model
         ProcessStep $step
     ): void {
         self::findWorkflowStepLifecycle($requestId, $process, $step)?->delete();
-    }
-
-    public static function deleteMediaReplacementHistoryForApproval(
-        string $requestId,
-        string $itemId,
-        ?string $userId
-    ): int {
-        $query = self::query()
-            ->where('attachment_request_id', $requestId)
-            ->where('action', 'media_replaced')
-            ->where(function ($query) use ($itemId): void {
-                $query
-                    ->where('attachment_request_item_id', $itemId)
-                    ->orWhere('metadata->item_id', $itemId);
-            });
-
-        if ($userId !== null) {
-            $query->where('user_id', $userId);
-        }
-
-        return $query->delete();
     }
 
     public static function workflowStepApprovalMetadata(Process $process, ProcessStep $step): array

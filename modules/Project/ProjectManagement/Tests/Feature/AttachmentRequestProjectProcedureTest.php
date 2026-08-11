@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Tests\Feature;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -861,7 +862,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertHistoryCount($requestId, 'media_replaced', 0);
     }
 
-    public function test_item_approval_consumes_frontend_media_replacement_history_for_same_item(): void
+    public function test_item_approval_hides_frontend_media_replacement_history_but_preserves_audit_rows(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
@@ -936,9 +937,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame('24 KB', $approvalHistory['metadata']['file_size_formatted']);
         $this->assertSame((string) $secondReceiverUser->id, $pendingHistory['user'][0]['id']);
         $this->assertSame(1, collect($history)->where('action', 'attachment_approved')->count());
-        $this->assertFalse(collect($history)->contains(
-            static fn (array $entry): bool => $entry['action'] === 'media_replaced'
-        ));
+        $this->assertSame(0, collect($history)->where('action', 'media_replaced')->count());
 
         $this->assertDatabaseHas('attachment_request_items', [
             'id' => $itemId,
@@ -950,7 +949,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'responded_by_user_id' => $firstReceiverUser->id,
         ]);
 
-        $this->assertHistoryCount($requestId, 'media_replaced', 0);
+        $this->assertHistoryCount($requestId, 'media_replaced', 2);
         $this->assertHistoryCount($requestId, 'attachment_approved', 1);
     }
 
@@ -970,13 +969,33 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $requestId = $createResponse->json('payload.id');
         $itemId = $createResponse->json('payload.items.0.id');
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+        $initialDbSteps = $process->steps()
+            ->orderBy('template_step_order')
+            ->get();
 
-        $initialHistory = $this->actingAs($this->actor, 'api')
+        $this->assertSame(
+            AttachmentRequest::STATUS_PENDING,
+            AttachmentRequest::query()->findOrFail($requestId)->status
+        );
+        $this->assertSame(ProcessStatus::InProgress, $process->status);
+        $this->assertSame(1, $initialDbSteps->count());
+        $this->assertSame(1, (int) $initialDbSteps[0]->template_step_order);
+        $this->assertSame(ProcessStepStatus::Pending, $initialDbSteps[0]->status);
+
+        $initialRequest = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
             ->assertOk()
-            ->json('data.0.history');
+            ->json('data.0');
+        $initialHistory = $initialRequest['history'];
 
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $initialRequest['status']);
+        $this->assertSame(ProcessStatus::InProgress->value, $initialRequest['process']['status']);
+        $this->assertSame(ProcessStepStatus::Pending->value, $initialRequest['process_steps'][0]['status']);
         $this->assertSame('request_created', $initialHistory[0]['action']);
         $this->assertSame('workflow_step_pending', $initialHistory[1]['action']);
         $this->assertSame(1, (int) $initialHistory[1]['metadata']['template_step_order']);
@@ -984,6 +1003,10 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame('workflow_step_pending', $initialHistory[2]['action']);
         $this->assertSame(2, (int) $initialHistory[2]['metadata']['template_step_order']);
         $this->assertSame((string) $secondReceiverUser->id, $initialHistory[2]['user'][0]['id']);
+        $this->assertSame(
+            (int) $initialHistory[1]['metadata']['process_sort_order'],
+            (int) $initialHistory[2]['metadata']['process_sort_order']
+        );
 
         $this->actingAs($firstReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
@@ -1012,12 +1035,30 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ], ['Accept' => 'application/json'])
             ->assertOk();
 
-        $stepOneHistory = $this->actingAs($this->actor, 'api')
+        $stepOneRequest = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
             ->assertOk()
-            ->json('data.0.history');
+            ->json('data.0');
+        $stepOneHistory = $stepOneRequest['history'];
+        $stepOneDbRequest = AttachmentRequest::query()->findOrFail($requestId);
+        $stepOneDbProcess = $process->fresh(['steps']);
+        $stepOneDbSteps = $stepOneDbProcess->steps
+            ->sortBy('template_step_order')
+            ->values();
 
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $stepOneDbRequest->status);
+        $this->assertNotSame(AttachmentRequest::STATUS_APPROVED, $stepOneDbRequest->status);
+        $this->assertSame(ProcessStatus::InProgress, $stepOneDbProcess->status);
+        $this->assertSame([1, 2], $stepOneDbSteps->pluck('template_step_order')->all());
+        $this->assertSame(ProcessStepStatus::Approved, $stepOneDbSteps[0]->status);
+        $this->assertSame(ProcessStepStatus::Pending, $stepOneDbSteps[1]->status);
+        $this->assertSame((string) $secondReceiverUser->id, $stepOneDbSteps[1]->assigned_user_id);
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $stepOneRequest['status']);
+        $this->assertNotSame(AttachmentRequest::STATUS_APPROVED, $stepOneRequest['status']);
+        $this->assertSame(ProcessStatus::InProgress->value, $stepOneRequest['process']['status']);
+        $this->assertSame(ProcessStepStatus::Approved->value, $stepOneRequest['process_steps'][0]['status']);
+        $this->assertSame(ProcessStepStatus::Pending->value, $stepOneRequest['process_steps'][1]['status']);
         $this->assertSame('request_created', $stepOneHistory[0]['action']);
         $this->assertSame('attachment_approved', $stepOneHistory[1]['action']);
         $this->assertSame(1, (int) $stepOneHistory[1]['metadata']['template_step_order']);
@@ -1025,6 +1066,10 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame('workflow_step_pending', $stepOneHistory[2]['action']);
         $this->assertSame(2, (int) $stepOneHistory[2]['metadata']['template_step_order']);
         $this->assertSame((string) $secondReceiverUser->id, $stepOneHistory[2]['user'][0]['id']);
+        $this->assertSame(
+            (int) $stepOneHistory[1]['metadata']['process_sort_order'],
+            (int) $stepOneHistory[2]['metadata']['process_sort_order']
+        );
         $this->assertFalse(collect($stepOneHistory)->contains(
             static fn (array $entry): bool => $entry['action'] === 'media_replaced'
         ));
@@ -1034,7 +1079,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertHistoryCount($requestId, 'attachment_approved', 1);
         $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
         $this->assertHistoryCount($requestId, 'workflow_step_approved', 0);
-        $this->assertHistoryCount($requestId, 'media_replaced', 0);
+        $this->assertHistoryCount($requestId, 'media_replaced', 2);
 
         $this->actingAs($secondReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
@@ -1045,12 +1090,27 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ], ['Accept' => 'application/json'])
             ->assertOk();
 
-        $stepTwoHistory = $this->actingAs($this->actor, 'api')
+        $stepTwoRequest = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
             ->assertOk()
-            ->json('data.0.history');
+            ->json('data.0');
+        $stepTwoHistory = $stepTwoRequest['history'];
+        $stepTwoDbRequest = AttachmentRequest::query()->findOrFail($requestId);
+        $stepTwoDbProcess = $process->fresh(['steps']);
+        $stepTwoDbSteps = $stepTwoDbProcess->steps
+            ->sortBy('template_step_order')
+            ->values();
 
+        $this->assertSame(AttachmentRequest::STATUS_APPROVED, $stepTwoDbRequest->status);
+        $this->assertSame(ProcessStatus::Completed, $stepTwoDbProcess->status);
+        $this->assertSame([1, 2], $stepTwoDbSteps->pluck('template_step_order')->all());
+        $this->assertSame(ProcessStepStatus::Approved, $stepTwoDbSteps[0]->status);
+        $this->assertSame(ProcessStepStatus::Approved, $stepTwoDbSteps[1]->status);
+        $this->assertSame(AttachmentRequest::STATUS_APPROVED, $stepTwoRequest['status']);
+        $this->assertSame(ProcessStatus::Completed->value, $stepTwoRequest['process']['status']);
+        $this->assertSame(ProcessStepStatus::Approved->value, $stepTwoRequest['process_steps'][0]['status']);
+        $this->assertSame(ProcessStepStatus::Approved->value, $stepTwoRequest['process_steps'][1]['status']);
         $this->assertSame('request_created', $stepTwoHistory[0]['action']);
         $this->assertSame('attachment_approved', $stepTwoHistory[1]['action']);
         $this->assertSame(1, (int) $stepTwoHistory[1]['metadata']['template_step_order']);
@@ -1059,6 +1119,8 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame(2, (int) $stepTwoHistory[2]['metadata']['template_step_order']);
         $this->assertSame((string) $secondReceiverUser->id, $stepTwoHistory[2]['user'][0]['id']);
         $this->assertSame(2, collect($stepTwoHistory)->where('action', 'attachment_approved')->count());
+        $this->assertSame(1, collect($stepTwoHistory)->where('action', 'request_approved')->count());
+        $this->assertSame([], collect($stepTwoHistory)->firstWhere('action', 'request_approved')['user']);
         $this->assertFalse(collect($stepTwoHistory)->contains(
             static fn (array $entry): bool => $entry['action'] === 'media_replaced'
         ));
@@ -1068,7 +1130,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertHistoryCount($requestId, 'attachment_approved', 2);
         $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
         $this->assertHistoryCount($requestId, 'workflow_step_approved', 0);
-        $this->assertHistoryCount($requestId, 'media_replaced', 0);
+        $this->assertHistoryCount($requestId, 'media_replaced', 2);
     }
 
     public function test_explicit_media_replacement_still_writes_media_replaced_history(): void
@@ -1097,9 +1159,421 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $mediaHistory = collect($history)->firstWhere('action', 'media_replaced');
 
-        $this->assertNotNull($mediaHistory);
-        $this->assertSame('replacement.pdf', $mediaHistory['metadata']['new_file_name']);
+        $this->assertNull($mediaHistory);
         $this->assertHistoryCount($requestId, 'media_replaced', 1);
+    }
+
+    public function test_historical_attachment_request_history_migration_normalizes_old_item_approval_history(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+                'notes' => 'Historical step 1 approval',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+
+        DB::table('processes')
+            ->where('id', $process->id)
+            ->update(['sort_order' => 7]);
+
+        $process = $process->fresh(['steps']);
+        $steps = $process->steps->sortBy('template_step_order')->values();
+        $stepOne = $steps[0];
+        $stepTwo = $steps[1];
+
+        DB::table('attachment_requests')
+            ->where('id', $requestId)
+            ->update(['status' => AttachmentRequest::STATUS_APPROVED]);
+
+        $legacyApprovalMetadata = [
+            'item_id' => $itemId,
+            'file_name' => 'workflow-file.pdf',
+            'file_type' => 'application/pdf',
+            'file_size' => 12 * 1024,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+            'response_notes' => 'Historical step 1 approval',
+            'previous_status' => AttachmentRequest::STATUS_PENDING,
+        ];
+
+        $approvalHistory = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', 'attachment_approved')
+            ->firstOrFail();
+
+        DB::table('attachment_request_history')
+            ->where('id', $approvalHistory->id)
+            ->update([
+                'metadata' => $this->historyJson($legacyApprovalMetadata),
+                'dedupe_key' => null,
+                'sort_order' => null,
+                'created_at' => now()->addMinutes(5)->toDateTimeString(),
+            ]);
+
+        $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'attachment_approved',
+            description: 'Duplicate historical attachment approval',
+            userId: (string) $firstReceiverUser->id,
+            itemId: $itemId,
+            metadata: $legacyApprovalMetadata,
+            createdAt: now()->addMinutes(6),
+        );
+
+        $stalePendingId = $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'workflow_step_pending',
+            description: 'Old stale pending step 1',
+            userId: null,
+            itemId: null,
+            metadata: [
+                'process_id' => (string) $process->id,
+                'step_id' => (int) $stepOne->step_id,
+                'template_step_order' => 1,
+                'assigned_user_id' => (string) $firstReceiverUser->id,
+                'authorized_user_ids' => [(string) $firstReceiverUser->id],
+                'status' => ProcessStepStatus::Pending->value,
+            ],
+            createdAt: now()->subMinutes(10),
+            sortOrder: 107000,
+        );
+
+        $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'media_replaced',
+            description: 'Old media replacement',
+            userId: (string) $firstReceiverUser->id,
+            itemId: $itemId,
+            metadata: ['item_id' => $itemId, 'new_file_name' => 'old-draft.pdf'],
+            createdAt: now()->subMinutes(8),
+        );
+
+        $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'media_replaced',
+            description: 'Old media replacement',
+            userId: (string) $firstReceiverUser->id,
+            itemId: $itemId,
+            metadata: ['item_id' => $itemId, 'new_file_name' => 'old-final.pdf'],
+            createdAt: now()->subMinutes(7),
+        );
+
+        $this->assertSame(2, $this->historyCountForItem($requestId, 'media_replaced', $itemId));
+        $this->assertHistoryCount($requestId, 'attachment_approved', 2);
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $requestId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+
+        $this->runHistoricalAttachmentRequestHistoryMigration();
+
+        $this->assertSame(2, $this->historyCountForItem($requestId, 'media_replaced', $itemId));
+        $this->assertHistoryCount($requestId, 'attachment_approved', 1);
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $requestId,
+            'status' => AttachmentRequest::STATUS_PENDING,
+        ]);
+        $this->assertDatabaseHas('processes', [
+            'id' => $process->id,
+            'status' => ProcessStatus::InProgress->value,
+        ]);
+        $this->assertDatabaseHas('process_steps', [
+            'id' => $stepOne->id,
+            'status' => ProcessStepStatus::Approved->value,
+        ]);
+        $this->assertDatabaseHas('process_steps', [
+            'id' => $stepTwo->id,
+            'status' => ProcessStepStatus::Pending->value,
+        ]);
+
+        $approvalAfterMigration = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', 'attachment_approved')
+            ->firstOrFail();
+        $approvalMetadata = $approvalAfterMigration->metadata;
+
+        $this->assertSame(7, (int) $approvalMetadata['process_sort_order']);
+        $this->assertSame(1, (int) $approvalMetadata['template_step_order']);
+        $this->assertSame((string) $stepOne->id, $approvalMetadata['process_step_id']);
+        $this->assertSame(107001, (int) $approvalAfterMigration->sort_order);
+
+        $stalePendingMetadata = AttachmentRequestHistory::query()
+            ->findOrFail($stalePendingId)
+            ->metadata;
+        $this->assertSame((string) $stepOne->id, $stalePendingMetadata['process_step_id']);
+
+        $stepTwoPending = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', 'workflow_step_pending')
+            ->where('metadata->template_step_order', 2)
+            ->firstOrFail();
+        $this->assertSame(7, (int) $stepTwoPending->metadata['process_sort_order']);
+        $this->assertSame(107002, (int) $stepTwoPending->sort_order);
+
+        $apiRequest = $this->fetchAttachmentRequestFromList($project);
+        $history = $apiRequest['history'];
+
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $apiRequest['status']);
+        $this->assertSame([
+            'request_created',
+            'attachment_approved',
+            'workflow_step_pending',
+        ], collect($history)->pluck('action')->all());
+        $this->assertSame(0, collect($history)->where('action', 'media_replaced')->count());
+        $this->assertSame(1, (int) $history[1]['metadata']['template_step_order']);
+        $this->assertSame(2, (int) $history[2]['metadata']['template_step_order']);
+        $this->assertLessThan(
+            collect($history)->search(static fn (array $entry): bool => $entry['action'] === 'workflow_step_pending'),
+            collect($history)->search(static fn (array $entry): bool => $entry['action'] === 'attachment_approved')
+        );
+    }
+
+    public function test_historical_attachment_request_history_migration_preserves_standalone_media_replacement(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'media_replaced',
+            description: 'Standalone replacement',
+            userId: (string) $receiverUser->id,
+            itemId: $itemId,
+            metadata: ['item_id' => $itemId, 'new_file_name' => 'standalone.pdf'],
+            createdAt: now(),
+        );
+
+        $this->runHistoricalAttachmentRequestHistoryMigration();
+
+        $this->assertSame(1, $this->historyCountForItem($requestId, 'media_replaced', $itemId));
+
+        $history = $this->fetchAttachmentRequestFromList($project)['history'];
+
+        $this->assertSame(0, collect($history)->where('action', 'media_replaced')->count());
+    }
+
+    public function test_historical_attachment_request_history_migration_preserves_other_item_media_replacement(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemAId = $createResponse->json('payload.items.0.id');
+        $itemBId = $this->createHistoricalAttachmentItem($requestId, 'other-item.pdf');
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemAId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'media_replaced',
+            description: 'Approval-related replacement',
+            userId: (string) $firstReceiverUser->id,
+            itemId: $itemAId,
+            metadata: ['item_id' => $itemAId, 'new_file_name' => 'approved-item.pdf'],
+            createdAt: now(),
+        );
+        $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'media_replaced',
+            description: 'Other item replacement',
+            userId: (string) $firstReceiverUser->id,
+            itemId: $itemBId,
+            metadata: ['item_id' => $itemBId, 'new_file_name' => 'other-item.pdf'],
+            createdAt: now(),
+        );
+
+        $this->runHistoricalAttachmentRequestHistoryMigration();
+
+        $this->assertSame(1, $this->historyCountForItem($requestId, 'media_replaced', $itemAId));
+        $this->assertSame(1, $this->historyCountForItem($requestId, 'media_replaced', $itemBId));
+
+        $history = $this->fetchAttachmentRequestFromList($project)['history'];
+
+        $this->assertSame(0, collect($history)->where('action', 'media_replaced')->count());
+    }
+
+    public function test_historical_attachment_request_history_migration_preserves_completed_approval_and_final_user_presentation(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
+
+        $requestApprovedHistory = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', 'request_approved')
+            ->firstOrFail();
+
+        $this->assertSame((string) $receiverUser->id, (string) $requestApprovedHistory->user_id);
+
+        $this->runHistoricalAttachmentRequestHistoryMigration();
+
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $requestId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $requestId,
+            'processable_type' => AttachmentRequest::PROCESSABLE_TYPE,
+            'status' => ProcessStatus::Completed->value,
+        ]);
+        $this->assertDatabaseHas('attachment_request_history', [
+            'id' => $requestApprovedHistory->id,
+            'user_id' => $receiverUser->id,
+        ]);
+
+        $history = $this->fetchAttachmentRequestFromList($project)['history'];
+        $approvalHistory = collect($history)->firstWhere('action', 'request_approved');
+
+        $this->assertSame([], $approvalHistory['user']);
+    }
+
+    public function test_historical_attachment_request_history_migration_leaves_declined_pending_history_to_presenter(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/decline", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.status', AttachmentRequest::STATUS_DECLINED);
+
+        $pendingIdsBefore = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', 'workflow_step_pending')
+            ->pluck('id')
+            ->all();
+
+        $this->assertNotEmpty($pendingIdsBefore);
+
+        $this->runHistoricalAttachmentRequestHistoryMigration();
+
+        $pendingIdsAfter = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', 'workflow_step_pending')
+            ->pluck('id')
+            ->all();
+
+        $this->assertEqualsCanonicalizing($pendingIdsBefore, $pendingIdsAfter);
+
+        $history = $this->fetchAttachmentRequestFromList($project)['history'];
+
+        $this->assertSame([
+            'request_created',
+            'workflow_step_rejected',
+            'request_declined',
+        ], collect($history)->pluck('action')->all());
+        $this->assertSame([], collect($history)->firstWhere('action', 'request_declined')['user']);
+    }
+
+    public function test_historical_attachment_request_history_migration_is_idempotent_for_already_clean_data(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $historyBefore = $this->historySnapshot($requestId);
+        $requestBefore = $this->requestSnapshot($requestId);
+        $processBefore = $this->processSnapshot($requestId);
+        $stepsBefore = $this->processStepsSnapshot($requestId);
+
+        $this->runHistoricalAttachmentRequestHistoryMigration();
+        $this->runHistoricalAttachmentRequestHistoryMigration();
+
+        $this->assertSame($historyBefore, $this->historySnapshot($requestId));
+        $this->assertSame($requestBefore, $this->requestSnapshot($requestId));
+        $this->assertSame($processBefore, $this->processSnapshot($requestId));
+        $this->assertSame($stepsBefore, $this->processStepsSnapshot($requestId));
+        $this->assertHistoryCount($requestId, 'attachment_approved', 1);
+        $this->assertHistoryCount($requestId, 'media_replaced', 0);
     }
 
     public function test_approval_without_resolvable_workflow_steps_auto_approves(): void
@@ -1336,6 +1810,164 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertContains($restricted->procedure_setting_id, $companyAIds);
         $this->assertContains($unrestricted->procedure_setting_id, $companyBIds);
         $this->assertNotContains($restricted->procedure_setting_id, $companyBIds);
+    }
+
+    private function runHistoricalAttachmentRequestHistoryMigration(): void
+    {
+        $migration = require database_path('migrations/2026_08_11_000000_repair_historical_attachment_request_history_data.php');
+
+        $migration->up();
+    }
+
+    private function fetchAttachmentRequestFromList(ProjectManagement $project): array
+    {
+        return $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
+            ->assertOk()
+            ->json('data.0');
+    }
+
+    private function insertHistoricalHistory(
+        string $requestId,
+        string $action,
+        string $description,
+        ?string $userId,
+        ?string $itemId,
+        array $metadata,
+        \DateTimeInterface $createdAt,
+        ?int $sortOrder = null
+    ): string {
+        $id = (string) Str::uuid();
+
+        DB::table('attachment_request_history')->insert([
+            'id' => $id,
+            'attachment_request_id' => $requestId,
+            'attachment_request_item_id' => $itemId,
+            'action' => $action,
+            'description' => $description,
+            'user_id' => $userId,
+            'metadata' => $this->historyJson($metadata),
+            'dedupe_key' => null,
+            'sort_order' => $sortOrder,
+            'created_at' => $createdAt->format('Y-m-d H:i:s'),
+        ]);
+
+        return $id;
+    }
+
+    private function createHistoricalAttachmentItem(string $requestId, string $fileName): string
+    {
+        $id = (string) Str::uuid();
+
+        DB::table('attachment_request_items')->insert([
+            'id' => $id,
+            'attachment_request_id' => $requestId,
+            'file_name' => $fileName,
+            'file_path' => null,
+            'file_type' => 'application/pdf',
+            'file_size' => 12 * 1024,
+            'status' => AttachmentRequest::STATUS_PENDING,
+            'responded_by_user_id' => null,
+            'responded_at' => null,
+            'response_notes' => null,
+            'created_at' => now()->toDateTimeString(),
+            'updated_at' => now()->toDateTimeString(),
+        ]);
+
+        return $id;
+    }
+
+    private function historyCountForItem(string $requestId, string $action, string $itemId): int
+    {
+        return AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', $action)
+            ->where(function ($query) use ($itemId): void {
+                $query
+                    ->where('attachment_request_item_id', $itemId)
+                    ->orWhere('metadata->item_id', $itemId);
+            })
+            ->count();
+    }
+
+    private function historySnapshot(string $requestId): array
+    {
+        return DB::table('attachment_request_history')
+            ->where('attachment_request_id', $requestId)
+            ->orderBy('id')
+            ->get()
+            ->map(static fn ($row): array => [
+                'id' => (string) $row->id,
+                'attachment_request_item_id' => $row->attachment_request_item_id === null ? null : (string) $row->attachment_request_item_id,
+                'action' => (string) $row->action,
+                'description' => (string) $row->description,
+                'user_id' => $row->user_id === null ? null : (string) $row->user_id,
+                'metadata' => $row->metadata,
+                'dedupe_key' => $row->dedupe_key,
+                'sort_order' => $row->sort_order === null ? null : (int) $row->sort_order,
+                'created_at' => (string) $row->created_at,
+            ])
+            ->all();
+    }
+
+    private function requestSnapshot(string $requestId): array
+    {
+        $row = DB::table('attachment_requests')
+            ->where('id', $requestId)
+            ->first();
+
+        return [
+            'status' => (string) $row->status,
+            'responded_by_user_id' => $row->responded_by_user_id === null ? null : (string) $row->responded_by_user_id,
+            'responded_at' => $row->responded_at === null ? null : (string) $row->responded_at,
+            'updated_at' => (string) $row->updated_at,
+        ];
+    }
+
+    private function processSnapshot(string $requestId): array
+    {
+        $row = DB::table('processes')
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->first();
+
+        return [
+            'id' => (string) $row->id,
+            'status' => (string) $row->status,
+            'sort_order' => $row->sort_order === null ? null : (int) $row->sort_order,
+            'updated_at' => (string) $row->updated_at,
+        ];
+    }
+
+    private function processStepsSnapshot(string $requestId): array
+    {
+        $process = DB::table('processes')
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->first();
+
+        return DB::table('process_steps')
+            ->where('process_id', $process->id)
+            ->orderBy('id')
+            ->get()
+            ->map(static fn ($row): array => [
+                'id' => (string) $row->id,
+                'step_id' => $row->step_id === null ? null : (int) $row->step_id,
+                'template_step_order' => $row->template_step_order === null ? null : (int) $row->template_step_order,
+                'assigned_user_id' => (string) $row->assigned_user_id,
+                'authorized_user_ids' => $row->authorized_user_ids,
+                'status' => (string) $row->status,
+                'action_by' => $row->action_by === null ? null : (string) $row->action_by,
+                'acted_at' => $row->acted_at === null ? null : (string) $row->acted_at,
+                'updated_at' => (string) $row->updated_at,
+            ])
+            ->all();
+    }
+
+    private function historyJson(array $metadata): string
+    {
+        return json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     private function schemaReady(): bool
