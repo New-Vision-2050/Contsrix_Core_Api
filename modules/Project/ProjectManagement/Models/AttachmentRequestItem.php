@@ -89,7 +89,7 @@ class AttachmentRequestItem extends Model implements HasMedia
     /**
      * Approve this item
      */
-    public function approve(string $userId, ?string $notes = null): bool
+    public function approve(string $userId, ?string $notes = null, bool $syncRequestStatus = true): bool
     {
         $result = $this->update([
             'status' => 'approved',
@@ -98,8 +98,10 @@ class AttachmentRequestItem extends Model implements HasMedia
             'response_notes' => $notes,
         ]);
 
-        // Update parent request status
-        $this->attachmentRequest->updateStatusBasedOnItems();
+        if ($syncRequestStatus) {
+            // Update parent request status
+            $this->attachmentRequest->updateStatusBasedOnItems();
+        }
 
         return $result;
     }

@@ -970,13 +970,33 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $requestId = $createResponse->json('payload.id');
         $itemId = $createResponse->json('payload.items.0.id');
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+        $initialDbSteps = $process->steps()
+            ->orderBy('template_step_order')
+            ->get();
 
-        $initialHistory = $this->actingAs($this->actor, 'api')
+        $this->assertSame(
+            AttachmentRequest::STATUS_PENDING,
+            AttachmentRequest::query()->findOrFail($requestId)->status
+        );
+        $this->assertSame(ProcessStatus::InProgress, $process->status);
+        $this->assertSame(1, $initialDbSteps->count());
+        $this->assertSame(1, (int) $initialDbSteps[0]->template_step_order);
+        $this->assertSame(ProcessStepStatus::Pending, $initialDbSteps[0]->status);
+
+        $initialRequest = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
             ->assertOk()
-            ->json('data.0.history');
+            ->json('data.0');
+        $initialHistory = $initialRequest['history'];
 
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $initialRequest['status']);
+        $this->assertSame(ProcessStatus::InProgress->value, $initialRequest['process']['status']);
+        $this->assertSame(ProcessStepStatus::Pending->value, $initialRequest['process_steps'][0]['status']);
         $this->assertSame('request_created', $initialHistory[0]['action']);
         $this->assertSame('workflow_step_pending', $initialHistory[1]['action']);
         $this->assertSame(1, (int) $initialHistory[1]['metadata']['template_step_order']);
@@ -984,6 +1004,10 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame('workflow_step_pending', $initialHistory[2]['action']);
         $this->assertSame(2, (int) $initialHistory[2]['metadata']['template_step_order']);
         $this->assertSame((string) $secondReceiverUser->id, $initialHistory[2]['user'][0]['id']);
+        $this->assertSame(
+            (int) $initialHistory[1]['metadata']['process_sort_order'],
+            (int) $initialHistory[2]['metadata']['process_sort_order']
+        );
 
         $this->actingAs($firstReceiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
@@ -1012,12 +1036,30 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ], ['Accept' => 'application/json'])
             ->assertOk();
 
-        $stepOneHistory = $this->actingAs($this->actor, 'api')
+        $stepOneRequest = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
             ->assertOk()
-            ->json('data.0.history');
+            ->json('data.0');
+        $stepOneHistory = $stepOneRequest['history'];
+        $stepOneDbRequest = AttachmentRequest::query()->findOrFail($requestId);
+        $stepOneDbProcess = $process->fresh(['steps']);
+        $stepOneDbSteps = $stepOneDbProcess->steps
+            ->sortBy('template_step_order')
+            ->values();
 
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $stepOneDbRequest->status);
+        $this->assertNotSame(AttachmentRequest::STATUS_APPROVED, $stepOneDbRequest->status);
+        $this->assertSame(ProcessStatus::InProgress, $stepOneDbProcess->status);
+        $this->assertSame([1, 2], $stepOneDbSteps->pluck('template_step_order')->all());
+        $this->assertSame(ProcessStepStatus::Approved, $stepOneDbSteps[0]->status);
+        $this->assertSame(ProcessStepStatus::Pending, $stepOneDbSteps[1]->status);
+        $this->assertSame((string) $secondReceiverUser->id, $stepOneDbSteps[1]->assigned_user_id);
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $stepOneRequest['status']);
+        $this->assertNotSame(AttachmentRequest::STATUS_APPROVED, $stepOneRequest['status']);
+        $this->assertSame(ProcessStatus::InProgress->value, $stepOneRequest['process']['status']);
+        $this->assertSame(ProcessStepStatus::Approved->value, $stepOneRequest['process_steps'][0]['status']);
+        $this->assertSame(ProcessStepStatus::Pending->value, $stepOneRequest['process_steps'][1]['status']);
         $this->assertSame('request_created', $stepOneHistory[0]['action']);
         $this->assertSame('attachment_approved', $stepOneHistory[1]['action']);
         $this->assertSame(1, (int) $stepOneHistory[1]['metadata']['template_step_order']);
@@ -1025,6 +1067,10 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame('workflow_step_pending', $stepOneHistory[2]['action']);
         $this->assertSame(2, (int) $stepOneHistory[2]['metadata']['template_step_order']);
         $this->assertSame((string) $secondReceiverUser->id, $stepOneHistory[2]['user'][0]['id']);
+        $this->assertSame(
+            (int) $stepOneHistory[1]['metadata']['process_sort_order'],
+            (int) $stepOneHistory[2]['metadata']['process_sort_order']
+        );
         $this->assertFalse(collect($stepOneHistory)->contains(
             static fn (array $entry): bool => $entry['action'] === 'media_replaced'
         ));
@@ -1045,12 +1091,27 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ], ['Accept' => 'application/json'])
             ->assertOk();
 
-        $stepTwoHistory = $this->actingAs($this->actor, 'api')
+        $stepTwoRequest = $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=10')
             ->assertOk()
-            ->json('data.0.history');
+            ->json('data.0');
+        $stepTwoHistory = $stepTwoRequest['history'];
+        $stepTwoDbRequest = AttachmentRequest::query()->findOrFail($requestId);
+        $stepTwoDbProcess = $process->fresh(['steps']);
+        $stepTwoDbSteps = $stepTwoDbProcess->steps
+            ->sortBy('template_step_order')
+            ->values();
 
+        $this->assertSame(AttachmentRequest::STATUS_APPROVED, $stepTwoDbRequest->status);
+        $this->assertSame(ProcessStatus::Completed, $stepTwoDbProcess->status);
+        $this->assertSame([1, 2], $stepTwoDbSteps->pluck('template_step_order')->all());
+        $this->assertSame(ProcessStepStatus::Approved, $stepTwoDbSteps[0]->status);
+        $this->assertSame(ProcessStepStatus::Approved, $stepTwoDbSteps[1]->status);
+        $this->assertSame(AttachmentRequest::STATUS_APPROVED, $stepTwoRequest['status']);
+        $this->assertSame(ProcessStatus::Completed->value, $stepTwoRequest['process']['status']);
+        $this->assertSame(ProcessStepStatus::Approved->value, $stepTwoRequest['process_steps'][0]['status']);
+        $this->assertSame(ProcessStepStatus::Approved->value, $stepTwoRequest['process_steps'][1]['status']);
         $this->assertSame('request_created', $stepTwoHistory[0]['action']);
         $this->assertSame('attachment_approved', $stepTwoHistory[1]['action']);
         $this->assertSame(1, (int) $stepTwoHistory[1]['metadata']['template_step_order']);
@@ -1059,6 +1120,8 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame(2, (int) $stepTwoHistory[2]['metadata']['template_step_order']);
         $this->assertSame((string) $secondReceiverUser->id, $stepTwoHistory[2]['user'][0]['id']);
         $this->assertSame(2, collect($stepTwoHistory)->where('action', 'attachment_approved')->count());
+        $this->assertSame(1, collect($stepTwoHistory)->where('action', 'request_approved')->count());
+        $this->assertSame([], collect($stepTwoHistory)->firstWhere('action', 'request_approved')['user']);
         $this->assertFalse(collect($stepTwoHistory)->contains(
             static fn (array $entry): bool => $entry['action'] === 'media_replaced'
         ));
