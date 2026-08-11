@@ -180,6 +180,17 @@ class ProjectRequirementService
             return;
         }
 
+        $receiverCompanyIds = collect($receiverCompanyIds)
+            ->map(static fn (mixed $id): string => (string) $id)
+            ->filter(static fn (string $id): bool => $id !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($receiverCompanyIds === []) {
+            return;
+        }
+
         $acceptedCompanyIds = ResourceShare::query()
             ->where('shareable_type', ProjectManagement::class)
             ->where('shareable_id', $project->id)
@@ -189,6 +200,8 @@ class ProjectRequirementService
             ->pluck('shared_with_company_id')
             ->map(static fn (mixed $id): string => (string) $id)
             ->all();
+
+        $acceptedCompanyIds[] = (string) $project->company_id;
 
         if (count(array_diff($receiverCompanyIds, $acceptedCompanyIds)) === 0) {
             return;

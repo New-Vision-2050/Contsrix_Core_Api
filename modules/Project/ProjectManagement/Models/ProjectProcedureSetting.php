@@ -7,7 +7,6 @@ namespace Modules\Project\ProjectManagement\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
@@ -93,15 +92,5 @@ class ProjectProcedureSetting extends Model
     public function jobAttribute(): BelongsTo
     {
         return $this->belongsTo(ProjectProcedureJobAttribute::class, 'job_attribute_id');
-    }
-
-    public function receiverCompanies(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            Company::class,
-            'project_procedure_setting_receiver_companies',
-            'project_procedure_setting_id',
-            'company_id'
-        )->withoutGlobalScopes()->withTimestamps();
     }
 }
