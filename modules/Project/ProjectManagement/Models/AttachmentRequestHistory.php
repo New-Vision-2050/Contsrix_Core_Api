@@ -144,7 +144,7 @@ class AttachmentRequestHistory extends Model
 
             $existing->forceFill([
                 'metadata' => $metadata,
-                'sort_order' => $existing->sort_order ?? self::workflowStepSortOrder($process, $step->template_step_order),
+                'sort_order' => self::workflowStepSortOrder($process, $step->template_step_order),
             ])->save();
 
             return $existing;
@@ -197,7 +197,7 @@ class AttachmentRequestHistory extends Model
             'description' => $description,
             'user_id' => $userId,
             'metadata' => $metadata,
-            'sort_order' => $history->sort_order ?? self::workflowStepSortOrder($process, $step->template_step_order),
+            'sort_order' => self::workflowStepSortOrder($process, $step->template_step_order),
         ])->save();
 
         return $history;
