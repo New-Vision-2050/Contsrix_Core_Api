@@ -1871,12 +1871,14 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame(AttachmentRequest::STATUS_DECLINED, $historyResponse['status']);
         $this->assertSame([
             'request_created',
-            'workflow_step_rejected',
             'attachment_declined',
             'request_declined',
         ], collect($historyResponse['history'])->pluck('action')->all());
-        $this->assertSame('full', $historyResponse['history'][2]['metadata']['decision_scope']);
-        $this->assertSame([], $historyResponse['history'][3]['user']);
+        $this->assertSame('full', $historyResponse['history'][1]['metadata']['decision_scope']);
+        $this->assertSame([], $historyResponse['history'][2]['user']);
+        $this->assertFalse(collect($historyResponse['history'])->contains(
+            static fn (array $entry): bool => $entry['action'] === 'workflow_step_rejected'
+        ));
 
         $this->respondToAttachmentItem($receiverUser, $receiverCompany, $itemId, 'decline');
 
@@ -1921,6 +1923,16 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'full',
             $this->attachmentItemHistory($requestId, 'attachment_approved', $secondItemId)->metadata['decision_scope']
         );
+
+        $fullHistory = $this->fetchAttachmentRequestFromList($project)['history'];
+        $this->assertSame([
+            'request_created',
+            'attachment_approved',
+            'attachment_approved',
+            'request_approved',
+        ], collect($fullHistory)->pluck('action')->all());
+        $this->assertSame('partial', $fullHistory[1]['metadata']['decision_scope']);
+        $this->assertSame('full', $fullHistory[2]['metadata']['decision_scope']);
     }
 
     public function test_item_decline_history_scope_changes_from_partial_to_full_when_all_two_files_are_declined(): void
@@ -1977,11 +1989,15 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $history = $this->fetchAttachmentRequestFromList($project)['history'];
         $this->assertSame([
             'request_created',
-            'workflow_step_rejected',
             'attachment_declined',
             'attachment_declined',
             'request_declined',
         ], collect($history)->pluck('action')->all());
+        $this->assertSame('partial', $history[1]['metadata']['decision_scope']);
+        $this->assertSame('full', $history[2]['metadata']['decision_scope']);
+        $this->assertFalse(collect($history)->contains(
+            static fn (array $entry): bool => $entry['action'] === 'workflow_step_rejected'
+        ));
         $this->assertFalse(collect($history)->contains(
             static fn (array $entry): bool => $entry['action'] === 'workflow_step_pending'
         ));
