@@ -294,6 +294,7 @@ class AttachmentRequestService
             $pendingWorkflowStep
         ) {
             $workflowMetadata = [];
+            $decisionScope = null;
 
             switch ($action) {
                 case 'approve':
@@ -301,6 +302,10 @@ class AttachmentRequestService
                         userId: $userId,
                         notes: $notes,
                         syncRequestStatus: $pendingWorkflowStep === null
+                    );
+                    $decisionScope = $this->decisionScopeForItemStatus(
+                        $item,
+                        AttachmentRequest::STATUS_APPROVED
                     );
                     // Save attachment to ArchiveLibrary folder
                     $this->saveAttachmentToFolder($item);
@@ -323,6 +328,17 @@ class AttachmentRequestService
                     break;
                 case 'decline':
                     $item->decline($userId, $notes);
+                    $decisionScope = $this->decisionScopeForItemStatus(
+                        $item,
+                        AttachmentRequest::STATUS_DECLINED
+                    );
+
+                    if ($pendingWorkflowStep !== null) {
+                        $workflowMetadata = array_merge(
+                            $this->workflowApprovalMetadata($pendingWorkflowStep),
+                            ['status' => $item->status]
+                        );
+                    }
                     break;
                 case 'request_update':
                     $item->requestUpdate($userId, $notes);
@@ -347,11 +363,47 @@ class AttachmentRequestService
                     'status' => $item->status,
                     'response_notes' => $notes,
                     'previous_status' => $previousStatus,
+                ], $decisionScope === null ? [] : [
+                    'decision_scope' => $decisionScope,
                 ], $workflowMetadata)
             );
 
+            if (
+                $action === 'decline'
+                && $decisionScope === 'full'
+                && $pendingWorkflowStep !== null
+            ) {
+                $this->workflowService->actOnPendingStepForCurrentUser(
+                    $item->attachmentRequest,
+                    'reject',
+                    forceFailProcess: true
+                );
+                $this->completeWorkflowDecline($item->attachmentRequest, $userId);
+            }
+
             return $item->fresh(['respondedByUser', 'attachmentRequest']);
         });
+    }
+
+    private function decisionScopeForItemStatus(
+        AttachmentRequestItem $item,
+        string $decisionStatus
+    ): string {
+        $counts = AttachmentRequestItem::query()
+            ->where('attachment_request_id', $item->attachment_request_id)
+            ->selectRaw('COUNT(*) as total_items')
+            ->selectRaw(
+                'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as decided_items',
+                [$decisionStatus]
+            )
+            ->first();
+
+        $totalItems = (int) ($counts?->total_items ?? 0);
+        $decidedItems = (int) ($counts?->decided_items ?? 0);
+
+        return $totalItems > 0 && $decidedItems === $totalItems
+            ? 'full'
+            : 'partial';
     }
 
     /**
@@ -458,7 +510,12 @@ class AttachmentRequestService
     {
         $request = $this->repository->getWithItems($request->id) ?? $request;
 
-        if ($request->isDeclined()) {
+        $hasFinalDeclineHistory = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $request->id)
+            ->where('action', 'request_declined')
+            ->exists();
+
+        if ($request->isDeclined() && $hasFinalDeclineHistory) {
             return $request;
         }
 
@@ -479,7 +536,7 @@ class AttachmentRequestService
         $request->declineAll($userId);
 
         // Log history with all declined files
-        AttachmentRequestHistory::log(
+        $finalDeclineHistory = AttachmentRequestHistory::log(
             requestId: $request->id,
             action: 'request_declined',
             description: 'Request declined - All attachments declined',
@@ -493,8 +550,10 @@ class AttachmentRequestService
         $request = $this->repository->getWithItems($request->id)
             ?? $request->fresh(['items', 'respondedByUser', 'projectProcedureSetting']);
 
-        // Broadcast notification to sender company users
-        $this->broadcastToSenderCompany($request, 'declined');
+        if ($finalDeclineHistory->wasRecentlyCreated) {
+            // Broadcast notification to sender company users
+            $this->broadcastToSenderCompany($request, 'declined');
+        }
 
         return $request;
     }

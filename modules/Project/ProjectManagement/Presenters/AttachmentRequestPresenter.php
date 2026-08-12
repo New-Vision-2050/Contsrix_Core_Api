@@ -22,6 +22,7 @@ class AttachmentRequestPresenter extends AbstractPresenter
 
     private const WORKFLOW_HISTORY_ACTIONS = [
         'attachment_approved',
+        'attachment_declined',
         'workflow_step_pending',
         'workflow_step_approved',
         'workflow_step_rejected',
@@ -263,7 +264,9 @@ class AttachmentRequestPresenter extends AbstractPresenter
             )
             ->values();
 
-        $historyEntries = $this->withoutItemApprovalPendingEntries($historyEntries);
+        $historyEntries = $this->withoutItemDecisionPendingEntries($historyEntries);
+
+        $historyEntries = $this->withoutTerminalItemDeclineRejectedEntries($historyEntries);
 
         if ($historyEntries->contains(
             static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'request_declined'
@@ -327,48 +330,96 @@ class AttachmentRequestPresenter extends AbstractPresenter
             + (int) $metadata['template_step_order'];
     }
 
-    private function withoutItemApprovalPendingEntries($historyEntries)
+    private function withoutItemDecisionPendingEntries($historyEntries)
     {
-        $approverIds = $historyEntries
-            ->where('action', 'attachment_approved')
-            ->pluck('user_id')
+        $decisionStepKeys = $historyEntries
+            ->filter(static fn (AttachmentRequestHistory $historyEntry): bool => in_array(
+                $historyEntry->action,
+                ['attachment_approved', 'attachment_declined'],
+                true
+            ))
+            ->map(static function (AttachmentRequestHistory $historyEntry): ?string {
+                $metadata = $historyEntry->metadata ?? [];
+                $processId = $metadata['process_id'] ?? null;
+                $stepId = $metadata['step_id'] ?? null;
+                $templateStepOrder = $metadata['template_step_order'] ?? null;
+
+                return $processId !== null && $stepId !== null && $templateStepOrder !== null
+                    ? $processId.'|'.$stepId.'|'.$templateStepOrder
+                    : null;
+            })
             ->filter()
-            ->map(static fn ($userId): string => (string) $userId)
             ->unique()
             ->values();
 
-        if ($approverIds->isEmpty()) {
+        if ($decisionStepKeys->isEmpty()) {
             return $historyEntries;
         }
 
-        $consumedApproverIds = [];
-
         return $historyEntries
-            ->reject(function (AttachmentRequestHistory $historyEntry) use ($approverIds, &$consumedApproverIds): bool {
+            ->reject(function (AttachmentRequestHistory $historyEntry) use ($decisionStepKeys): bool {
                 $metadata = $historyEntry->metadata ?? [];
 
                 if (
                     $historyEntry->action !== 'workflow_step_pending'
                     || ($metadata['status'] ?? null) !== ProcessStepStatus::Pending->value
-                    || empty($metadata['process_step_id'])
                 ) {
                     return false;
                 }
 
-                $pendingUserIds = $this->authorizedUserIdsForPendingHistory($metadata);
+                return $decisionStepKeys->contains(
+                    ($metadata['process_id'] ?? null)
+                    .'|'.($metadata['step_id'] ?? null)
+                    .'|'.($metadata['template_step_order'] ?? null)
+                );
+            })
+            ->values();
+    }
 
-                foreach ($approverIds as $approverId) {
-                    if (
-                        ! isset($consumedApproverIds[$approverId])
-                        && in_array($approverId, $pendingUserIds, true)
-                    ) {
-                        $consumedApproverIds[$approverId] = true;
+    private function withoutTerminalItemDeclineRejectedEntries($historyEntries)
+    {
+        if (! $historyEntries->contains(
+            static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'request_declined'
+        )) {
+            return $historyEntries;
+        }
 
-                        return true;
-                    }
+        $fullDeclineStepKeys = $historyEntries
+            ->filter(static function (AttachmentRequestHistory $historyEntry): bool {
+                return $historyEntry->action === 'attachment_declined'
+                    && (($historyEntry->metadata ?? [])['decision_scope'] ?? null) === 'full';
+            })
+            ->map(static function (AttachmentRequestHistory $historyEntry): ?string {
+                $metadata = $historyEntry->metadata ?? [];
+                $processId = $metadata['process_id'] ?? null;
+                $stepId = $metadata['step_id'] ?? null;
+                $templateStepOrder = $metadata['template_step_order'] ?? null;
+
+                return $processId !== null && $stepId !== null && $templateStepOrder !== null
+                    ? $processId.'|'.$stepId.'|'.$templateStepOrder
+                    : null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($fullDeclineStepKeys->isEmpty()) {
+            return $historyEntries;
+        }
+
+        return $historyEntries
+            ->reject(function (AttachmentRequestHistory $historyEntry) use ($fullDeclineStepKeys): bool {
+                if ($historyEntry->action !== 'workflow_step_rejected') {
+                    return false;
                 }
 
-                return false;
+                $metadata = $historyEntry->metadata ?? [];
+
+                return $fullDeclineStepKeys->contains(
+                    ($metadata['process_id'] ?? null)
+                    .'|'.($metadata['step_id'] ?? null)
+                    .'|'.($metadata['template_step_order'] ?? null)
+                );
             })
             ->values();
     }
