@@ -247,9 +247,9 @@ class ProcessWorkflowService
         });
     }
 
-    public function rejectStep(string $id): ProcessStep
+    public function rejectStep(string $id, bool $forceFailProcess = false): ProcessStep
     {
-        return DB::transaction(function () use ($id) {
+        return DB::transaction(function () use ($id, $forceFailProcess) {
             $step = ProcessStep::query()
                 ->whereKey($id)
                 ->lockForUpdate()
@@ -287,7 +287,7 @@ class ProcessWorkflowService
             }
             $isJobRole = in_array('job_role', $specificTypes, true);
 
-            if ($isJobRole) {
+            if ($isJobRole && ! $forceFailProcess) {
                 $actedStep = $step->fresh();
                 $processable = $process->processable;
                 if ($processable && method_exists($processable, 'onWorkflowStepActionCompleted')) {

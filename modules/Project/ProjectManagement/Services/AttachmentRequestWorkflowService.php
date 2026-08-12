@@ -61,7 +61,11 @@ final class AttachmentRequestWorkflowService
             ->exists();
     }
 
-    public function actOnPendingStepForCurrentUser(AttachmentRequest $request, string $action): Process
+    public function actOnPendingStepForCurrentUser(
+        AttachmentRequest $request,
+        string $action,
+        bool $forceFailProcess = false
+    ): Process
     {
         if (! Auth::check()) {
             abort(403);
@@ -85,7 +89,7 @@ final class AttachmentRequestWorkflowService
 
         match ($action) {
             'approve' => $this->processWorkflowService->approveStep((string) $step->id),
-            'reject' => $this->processWorkflowService->rejectStep((string) $step->id),
+            'reject' => $this->processWorkflowService->rejectStep((string) $step->id, $forceFailProcess),
             default => abort(422, 'Invalid process step action.'),
         };
 
