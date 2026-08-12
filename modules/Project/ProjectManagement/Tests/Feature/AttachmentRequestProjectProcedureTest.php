@@ -1812,6 +1812,380 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertNotContains($restricted->procedure_setting_id, $companyBIds);
     }
 
+    public function test_item_approval_history_scope_is_full_for_a_single_file_and_is_exposed_by_the_history_api(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $itemId, 'approve');
+
+        $history = $this->attachmentItemHistory($requestId, 'attachment_approved', $itemId);
+        $this->assertSame('full', $history->metadata['decision_scope']);
+
+        $apiHistory = collect($this->fetchAttachmentRequestFromList($project)['history'])
+            ->firstWhere('id', $history->id);
+
+        $this->assertSame('full', $apiHistory['metadata']['decision_scope']);
+    }
+
+    public function test_full_single_file_item_decline_finalizes_the_workflow_and_history_once(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $itemId, 'decline');
+
+        $history = $this->attachmentItemHistory($requestId, 'attachment_declined', $itemId);
+        $this->assertSame('full', $history->metadata['decision_scope']);
+
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->with('steps')
+            ->firstOrFail();
+
+        $this->assertSame(ProcessStatus::Failed, $process->status);
+        $this->assertSame(ProcessStepStatus::Rejected, $process->steps->sole()->status);
+        $this->assertSame((string) $receiverUser->id, (string) $process->steps->sole()->action_by);
+        $this->assertHistoryCount($requestId, 'request_declined', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_rejected', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 0);
+
+        $historyResponse = $this->fetchAttachmentRequestFromList($project);
+        $this->assertSame(AttachmentRequest::STATUS_DECLINED, $historyResponse['status']);
+        $this->assertSame([
+            'request_created',
+            'workflow_step_rejected',
+            'attachment_declined',
+            'request_declined',
+        ], collect($historyResponse['history'])->pluck('action')->all());
+        $this->assertSame('full', $historyResponse['history'][2]['metadata']['decision_scope']);
+        $this->assertSame([], $historyResponse['history'][3]['user']);
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $itemId, 'decline');
+
+        $this->assertHistoryCount($requestId, 'workflow_step_rejected', 1);
+        $this->assertHistoryCount($requestId, 'request_declined', 1);
+    }
+
+    public function test_item_approval_history_scope_changes_from_partial_to_full_when_all_two_files_are_approved(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+        $this->createProcedureStep($procedure, $receiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure, 2)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $firstItemId = $createResponse->json('payload.items.0.id');
+        $secondItemId = $createResponse->json('payload.items.1.id');
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $firstItemId, 'approve');
+        $this->assertSame(
+            'partial',
+            $this->attachmentItemHistory($requestId, 'attachment_approved', $firstItemId)->metadata['decision_scope']
+        );
+
+        $partialHistory = $this->fetchAttachmentRequestFromList($project)['history'];
+        $this->assertSame([
+            'request_created',
+            'attachment_approved',
+            'workflow_step_pending',
+        ], collect($partialHistory)->pluck('action')->all());
+        $this->assertSame($firstItemId, $partialHistory[1]['metadata']['item_id']);
+        $this->assertSame('partial', $partialHistory[1]['metadata']['decision_scope']);
+        $this->assertSame(1, (int) $partialHistory[1]['metadata']['template_step_order']);
+        $this->assertSame(2, (int) $partialHistory[2]['metadata']['template_step_order']);
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $secondItemId, 'approve');
+        $this->assertSame(
+            'full',
+            $this->attachmentItemHistory($requestId, 'attachment_approved', $secondItemId)->metadata['decision_scope']
+        );
+    }
+
+    public function test_item_decline_history_scope_changes_from_partial_to_full_when_all_two_files_are_declined(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+        $this->createProcedureStep($procedure, $receiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure, 2)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $firstItemId = $createResponse->json('payload.items.0.id');
+        $secondItemId = $createResponse->json('payload.items.1.id');
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $firstItemId, 'decline');
+        $this->assertSame(
+            'partial',
+            $this->attachmentItemHistory($requestId, 'attachment_declined', $firstItemId)->metadata['decision_scope']
+        );
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $requestId,
+            'status' => ProcessStatus::InProgress->value,
+        ]);
+        $this->assertHistoryCount($requestId, 'request_declined', 0);
+
+        $partialHistory = $this->fetchAttachmentRequestFromList($project)['history'];
+        $this->assertSame([
+            'request_created',
+            'attachment_declined',
+            'workflow_step_pending',
+        ], collect($partialHistory)->pluck('action')->all());
+        $this->assertSame($firstItemId, $partialHistory[1]['metadata']['item_id']);
+        $this->assertSame('partial', $partialHistory[1]['metadata']['decision_scope']);
+        $this->assertSame(1, (int) $partialHistory[1]['metadata']['template_step_order']);
+        $this->assertSame(2, (int) $partialHistory[2]['metadata']['template_step_order']);
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $secondItemId, 'decline');
+        $this->assertSame(
+            'full',
+            $this->attachmentItemHistory($requestId, 'attachment_declined', $secondItemId)->metadata['decision_scope']
+        );
+
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $requestId,
+            'status' => ProcessStatus::Failed->value,
+        ]);
+        $this->assertHistoryCount($requestId, 'workflow_step_rejected', 1);
+        $this->assertHistoryCount($requestId, 'workflow_step_pending', 1);
+        $this->assertHistoryCount($requestId, 'request_declined', 1);
+
+        $history = $this->fetchAttachmentRequestFromList($project)['history'];
+        $this->assertSame([
+            'request_created',
+            'workflow_step_rejected',
+            'attachment_declined',
+            'attachment_declined',
+            'request_declined',
+        ], collect($history)->pluck('action')->all());
+        $this->assertFalse(collect($history)->contains(
+            static fn (array $entry): bool => $entry['action'] === 'workflow_step_pending'
+        ));
+    }
+
+    public function test_mixed_two_file_item_decisions_remain_partial_in_history(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+        $this->createProcedureStep($procedure, $receiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure, 2)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $approvedItemId = $createResponse->json('payload.items.0.id');
+        $declinedItemId = $createResponse->json('payload.items.1.id');
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $approvedItemId, 'approve');
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $declinedItemId, 'decline');
+
+        $this->assertSame(
+            'partial',
+            $this->attachmentItemHistory($requestId, 'attachment_approved', $approvedItemId)->metadata['decision_scope']
+        );
+        $this->assertSame(
+            'partial',
+            $this->attachmentItemHistory($requestId, 'attachment_declined', $declinedItemId)->metadata['decision_scope']
+        );
+        $this->assertDatabaseHas('processes', [
+            'processable_id' => $requestId,
+            'status' => ProcessStatus::InProgress->value,
+        ]);
+        $this->assertHistoryCount($requestId, 'request_declined', 0);
+
+        $history = $this->fetchAttachmentRequestFromList($project)['history'];
+        $this->assertSame([
+            'request_created',
+            'attachment_approved',
+            'attachment_declined',
+        ], collect($history)->pluck('action')->all());
+        $this->assertSame(1, (int) $history[1]['metadata']['template_step_order']);
+        $this->assertSame(2, (int) $history[2]['metadata']['template_step_order']);
+        $this->assertSame(0, collect($history)->where('action', 'workflow_step_pending')->count());
+    }
+
+    public function test_full_item_decline_fails_a_job_role_workflow_without_advancing_it(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $this->management->forceFill(['manager_id' => $this->actor->id])->saveQuietly();
+        $this->createJobRoleProcedureStep($procedure, 1);
+        $this->createProcedureStep($procedure, $this->actor, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $this->respondToAttachmentItem($this->actor, $this->company, $itemId, 'decline');
+
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->with('steps')
+            ->firstOrFail();
+
+        $this->assertSame(ProcessStatus::Failed, $process->status);
+        $this->assertSame(1, $process->steps->count());
+        $this->assertSame(ProcessStepStatus::Rejected, $process->steps->sole()->status);
+        $this->assertHistoryCount($requestId, 'request_declined', 1);
+        $this->assertHistoryCount($requestId, 'request_approved', 0);
+    }
+
+    public function test_normal_job_role_rejection_still_advances_the_workflow(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $this->management->forceFill(['manager_id' => $this->actor->id])->saveQuietly();
+        $this->createJobRoleProcedureStep($procedure, 1);
+        $this->createProcedureStep($procedure, $this->actor, 2);
+
+        $requestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+        $firstStep = $process->steps()->sole();
+
+        $this->actingAs($this->actor, 'api');
+        app(ProcessWorkflowService::class)->rejectStep((string) $firstStep->id);
+
+        $process->refresh()->load('steps');
+
+        $this->assertSame(ProcessStatus::InProgress, $process->status);
+        $this->assertSame(2, $process->steps->count());
+        $this->assertSame(ProcessStepStatus::Rejected, $process->steps->firstWhere('template_step_order', 1)->status);
+        $this->assertSame(ProcessStepStatus::Pending, $process->steps->firstWhere('template_step_order', 2)->status);
+        $this->assertHistoryCount($requestId, 'request_declined', 0);
+    }
+
+    public function test_three_file_approval_history_scope_is_partial_until_the_final_manual_approval(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+        $this->createProcedureStep($procedure, $receiverUser, 2);
+        $this->createProcedureStep($procedure, $receiverUser, 3);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure, 3)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $firstItemId = $createResponse->json('payload.items.0.id');
+        $secondItemId = $createResponse->json('payload.items.1.id');
+        $thirdItemId = $createResponse->json('payload.items.2.id');
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $firstItemId, 'approve');
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $secondItemId, 'approve');
+        $this->assertSame(
+            'partial',
+            $this->attachmentItemHistory($requestId, 'attachment_approved', $secondItemId)->metadata['decision_scope']
+        );
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $thirdItemId, 'approve');
+        $this->assertSame(
+            'full',
+            $this->attachmentItemHistory($requestId, 'attachment_approved', $thirdItemId)->metadata['decision_scope']
+        );
+    }
+
+    public function test_three_file_mixed_decisions_keep_decline_history_partial(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+        $this->createProcedureStep($procedure, $receiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure, 3)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $approvedItemId = $createResponse->json('payload.items.0.id');
+        $firstDeclinedItemId = $createResponse->json('payload.items.1.id');
+        $secondDeclinedItemId = $createResponse->json('payload.items.2.id');
+
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $approvedItemId, 'approve');
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $firstDeclinedItemId, 'decline');
+        $this->respondToAttachmentItem($receiverUser, $receiverCompany, $secondDeclinedItemId, 'decline');
+
+        $this->assertSame(
+            'partial',
+            $this->attachmentItemHistory(
+                $requestId,
+                'attachment_declined',
+                $secondDeclinedItemId
+            )->metadata['decision_scope']
+        );
+    }
+
+    public function test_legacy_item_history_without_decision_scope_is_returned_without_the_field(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $legacyApprovalHistoryId = $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'attachment_approved',
+            description: 'Legacy attachment approval',
+            userId: (string) $receiverUser->id,
+            itemId: $itemId,
+            metadata: ['item_id' => $itemId],
+            createdAt: now(),
+        );
+        $legacyDeclineHistoryId = $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'attachment_declined',
+            description: 'Legacy attachment decline',
+            userId: (string) $receiverUser->id,
+            itemId: $itemId,
+            metadata: ['item_id' => $itemId],
+            createdAt: now(),
+        );
+
+        $historyById = collect($this->fetchAttachmentRequestFromList($project)['history'])->keyBy('id');
+
+        $this->assertArrayNotHasKey('decision_scope', $historyById[$legacyApprovalHistoryId]['metadata']);
+        $this->assertArrayNotHasKey('decision_scope', $historyById[$legacyDeclineHistoryId]['metadata']);
+    }
+
     private function runHistoricalAttachmentRequestHistoryMigration(): void
     {
         $migration = require database_path('migrations/2026_08_11_000000_repair_historical_attachment_request_history_data.php');
@@ -1889,6 +2263,33 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                     ->orWhere('metadata->item_id', $itemId);
             })
             ->count();
+    }
+
+    private function attachmentItemHistory(
+        string $requestId,
+        string $action,
+        string $itemId
+    ): AttachmentRequestHistory {
+        return AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', $action)
+            ->where('attachment_request_item_id', $itemId)
+            ->firstOrFail();
+    }
+
+    private function respondToAttachmentItem(
+        User $user,
+        Company $company,
+        string $itemId,
+        string $action
+    ): void {
+        $this->actingAs($user, 'api')
+            ->withHeader('X-Tenant', $company->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => $action,
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
     }
 
     private function historySnapshot(string $requestId): array
@@ -2156,8 +2557,17 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
     private function postAttachmentRequest(
         ProjectManagement $project,
-        ProjectProcedureSetting $procedure
+        ProjectProcedureSetting $procedure,
+        int $attachmentCount = 1
     ) {
+        $attachments = collect(range(1, $attachmentCount))
+            ->map(static fn (int $index): UploadedFile => UploadedFile::fake()->create(
+                $attachmentCount === 1 ? 'workflow-file.pdf' : "workflow-file-{$index}.pdf",
+                12,
+                'application/pdf'
+            ))
+            ->all();
+
         return $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->post('/api/v1/projects/attachment-requests', [
@@ -2165,9 +2575,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 'date' => '2026-07-21',
                 'project_id' => $project->id,
                 'procedure_setting_id' => $procedure->procedure_setting_id,
-                'attachments' => [
-                    UploadedFile::fake()->create('workflow-file.pdf', 12, 'application/pdf'),
-                ],
+                'attachments' => $attachments,
             ], ['Accept' => 'application/json']);
     }
 
@@ -2194,6 +2602,24 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         ]);
 
         return $step;
+    }
+
+    private function createJobRoleProcedureStep(
+        ProjectProcedureSetting $procedure,
+        int $order
+    ): ProcedureSettingStep {
+        return ProcedureSettingStep::query()->withoutGlobalScopes()->create([
+            'company_id' => $this->company->id,
+            'procedure_setting_id' => $procedure->procedure_setting_id,
+            'project_id' => $procedure->project_id,
+            'name' => 'Attachment Job Role Workflow Step '.$order,
+            'forms' => 'approve',
+            'is_approve' => true,
+            'step_order' => $order,
+            'action_taker_type' => 'specific_procedures',
+            'action_taker_specific_procedure_type' => ['job_role'],
+            'action_taker_specific_procedure_id' => ['1'],
+        ]);
     }
 
     private function createReceiverCompanyProcedureStep(
