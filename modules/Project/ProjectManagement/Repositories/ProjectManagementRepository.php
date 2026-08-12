@@ -26,7 +26,7 @@ class ProjectManagementRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function paginatedForUser(int $page = 1, int $perPage = 10, ?User $user = null): array
+    public function paginatedForUser(int $page = 1, int $perPage = 10, ?User $user = null, array $filters = []): array
     {
         $query = $this->model
             ->with([
@@ -45,8 +45,9 @@ class ProjectManagementRepository extends BaseRepository
                 'contractualEngagement',
                 'projectTag',
             ])
-            ->filter(request()->all())
             ->orderBy('created_at', 'desc');
+
+        $this->applyFilters($query, $filters);
 
         if ($user !== null && !$user->hasRole('super-admin')) {
             $userId = $user->id;
@@ -69,6 +70,53 @@ class ProjectManagementRepository extends BaseRepository
                 'to'           => $paginator->lastItem(),
             ],
         ];
+    }
+
+    /**
+     * Apply filters to the query builder.
+     *
+     * Supported filters:
+     *  - name (string, LIKE match)
+     *  - project_type_id (int, exact match)
+     *  - sub_project_type_id (int, exact match)
+     *  - sub_sub_project_type_id (int, exact match)
+     *  - manager_id (uuid, exact match)
+     *  - branch_id (uuid, exact match)
+     *  - project_owner_type (string: company|individual, exact match)
+     *  - project_owner_id (uuid, exact match)
+     *  - contract_id (uuid, exact match)
+     *  - client_id (uuid, exact match)
+     *  - management_id (uuid, exact match)
+     *  - status (int: -1|0|1, exact match)
+     */
+    public function applyFilters($query, array $filters): void
+    {
+        $stringFilters = ['name'];
+        $exactFilters = [
+            'project_type_id',
+            'sub_project_type_id',
+            'sub_sub_project_type_id',
+            'manager_id',
+            'branch_id',
+            'project_owner_type',
+            'project_owner_id',
+            'contract_id',
+            'client_id',
+            'management_id',
+            'status',
+        ];
+
+        foreach ($stringFilters as $field) {
+            if (!empty($filters[$field])) {
+                $query->where($field, 'LIKE', '%' . $filters[$field] . '%');
+            }
+        }
+
+        foreach ($exactFilters as $field) {
+            if (isset($filters[$field]) && $filters[$field] !== null && $filters[$field] !== '') {
+                $query->where($field, $filters[$field]);
+            }
+        }
     }
 
     public function getProjectManagementList(?int $page, ?int $perPage = 10): Collection
