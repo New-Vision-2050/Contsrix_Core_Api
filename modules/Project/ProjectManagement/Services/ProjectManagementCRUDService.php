@@ -27,12 +27,13 @@ class ProjectManagementCRUDService
          return $this->repository->createProjectManagement($createProjectManagementDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10, ?User $user = null): array
+    public function list(int $page = 1, int $perPage = 10, ?User $user = null, array $filters = []): array
     {
         return $this->repository->paginatedForUser(
             page: $page,
             perPage: $perPage,
             user: $user,
+            filters: $filters,
         );
     }
 

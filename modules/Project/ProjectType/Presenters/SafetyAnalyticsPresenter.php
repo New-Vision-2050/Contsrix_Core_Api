@@ -80,6 +80,33 @@ class SafetyAnalyticsPresenter extends AbstractPresenter
 
     public static function topViolation(array $item): array
     {
-        return self::frequentViolation($item);
+        return self::violationFrequency($item);
+    }
+
+    public static function violationFrequency(array $item): array
+    {
+        return (new self([
+            'id' => $item['id'] ?? null,
+            'code' => $item['code'] ?? null,
+            'description' => $item['description'] ?? null,
+            'category' => $item['category'] ?? null,
+            'default_weight' => $item['default_weight'] ?? null,
+            'count' => (int) ($item['count'] ?? 0),
+            'percentage' => isset($item['percentage'])
+                ? round((float) $item['percentage'], 1)
+                : 0.0,
+        ]))->getData();
+    }
+
+    public static function contractorCompliance(array $item): array
+    {
+        return (new self([
+            'contractor_id' => $item['contractor_id'] ?? null,
+            'contractor_name' => $item['contractor_name'] ?? null,
+            'percentage' => isset($item['percentage'])
+                ? round((float) $item['percentage'], 2)
+                : 0.0,
+            'completed_tasks' => (int) ($item['completed_tasks'] ?? 0),
+        ]))->getData();
     }
 }

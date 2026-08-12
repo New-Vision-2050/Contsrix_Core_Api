@@ -81,7 +81,7 @@ class AttachmentRequestHistory extends Model
             'sort_order' => $sortOrder,
         ];
 
-        $dedupeKey = self::dedupeKey($requestId, $action, $metadata);
+        $dedupeKey = self::dedupeKey($requestId, $action, $metadata, $itemId);
 
         if ($dedupeKey === null) {
             return self::create($attributes);
@@ -144,7 +144,7 @@ class AttachmentRequestHistory extends Model
 
             $existing->forceFill([
                 'metadata' => $metadata,
-                'sort_order' => $existing->sort_order ?? self::workflowStepSortOrder($process, $step->template_step_order),
+                'sort_order' => self::workflowStepSortOrder($process, $step->template_step_order),
             ])->save();
 
             return $existing;
@@ -197,7 +197,7 @@ class AttachmentRequestHistory extends Model
             'description' => $description,
             'user_id' => $userId,
             'metadata' => $metadata,
-            'sort_order' => $history->sort_order ?? self::workflowStepSortOrder($process, $step->template_step_order),
+            'sort_order' => self::workflowStepSortOrder($process, $step->template_step_order),
         ])->save();
 
         return $history;
@@ -211,13 +211,37 @@ class AttachmentRequestHistory extends Model
         self::findWorkflowStepLifecycle($requestId, $process, $step)?->delete();
     }
 
+    public static function workflowStepApprovalMetadata(Process $process, ProcessStep $step): array
+    {
+        return self::workflowStepMetadata($process, $step, 'approved');
+    }
+
     /**
      * Return the domain identity for history events that must be idempotent.
      */
-    private static function dedupeKey(string $requestId, string $action, ?array $metadata): ?string
+    private static function dedupeKey(string $requestId, string $action, ?array $metadata, ?string $itemId): ?string
     {
         if (in_array($action, ['request_created', 'request_approved', 'request_declined'], true)) {
             return hash('sha256', implode('|', [$requestId, $action]));
+        }
+
+        if ($action === 'attachment_approved' && $itemId !== null) {
+            $processId = $metadata['process_id'] ?? null;
+            $stepId = $metadata['step_id'] ?? null;
+            $templateStepOrder = $metadata['template_step_order'] ?? null;
+
+            if ($processId !== null && $stepId !== null && $templateStepOrder !== null) {
+                return hash('sha256', implode('|', [
+                    $requestId,
+                    $action,
+                    $itemId,
+                    (string) $processId,
+                    (string) $stepId,
+                    (string) $templateStepOrder,
+                ]));
+            }
+
+            return hash('sha256', implode('|', [$requestId, $action, $itemId]));
         }
 
         if (in_array($action, ['workflow_step_pending', 'workflow_step_approved', 'workflow_step_rejected'], true)) {
@@ -352,7 +376,7 @@ class AttachmentRequestHistory extends Model
         return match ($action) {
             'request_created' => 0,
             'request_approved', 'request_declined' => 900000000,
-            'workflow_step_pending', 'workflow_step_approved', 'workflow_step_rejected' => isset($metadata['process_sort_order'], $metadata['template_step_order'])
+            'attachment_approved', 'workflow_step_pending', 'workflow_step_approved', 'workflow_step_rejected' => isset($metadata['process_sort_order'], $metadata['template_step_order'])
                 ? 100000 + ((int) $metadata['process_sort_order'] * 1000) + (int) $metadata['template_step_order']
                 : null,
             default => self::nextSortOrder($requestId),

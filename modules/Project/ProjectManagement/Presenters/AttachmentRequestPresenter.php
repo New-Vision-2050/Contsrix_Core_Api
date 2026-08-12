@@ -15,6 +15,18 @@ use Illuminate\Support\Facades\Auth;
 
 class AttachmentRequestPresenter extends AbstractPresenter
 {
+    private const FINAL_REQUEST_ACTIONS = [
+        'request_approved',
+        'request_declined',
+    ];
+
+    private const WORKFLOW_HISTORY_ACTIONS = [
+        'attachment_approved',
+        'workflow_step_pending',
+        'workflow_step_approved',
+        'workflow_step_rejected',
+    ];
+
     /**
      * @var array<string, array{id: string, name: mixed, email: ?string}|null>
      */
@@ -119,7 +131,7 @@ class AttachmentRequestPresenter extends AbstractPresenter
             }
 
             // Add request history from database
-            $historyEntries = $this->request->history;
+            $historyEntries = $this->presentableHistoryEntries($this->request->history);
             $this->preloadPendingHistoryUsers($historyEntries);
 
             $data['history'] = $historyEntries->map(function ($historyEntry) {
@@ -223,6 +235,10 @@ class AttachmentRequestPresenter extends AbstractPresenter
      */
     private function historyUsers(AttachmentRequestHistory $historyEntry): array
     {
+        if (in_array($historyEntry->action, self::FINAL_REQUEST_ACTIONS, true)) {
+            return [];
+        }
+
         $metadata = $historyEntry->metadata ?? [];
 
         if (
@@ -237,6 +253,124 @@ class AttachmentRequestPresenter extends AbstractPresenter
         }
 
         return [$this->presentUser($historyEntry->user)];
+    }
+
+    private function presentableHistoryEntries($historyEntries)
+    {
+        $historyEntries = $historyEntries
+            ->reject(
+                static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'media_replaced'
+            )
+            ->values();
+
+        $historyEntries = $this->withoutItemApprovalPendingEntries($historyEntries);
+
+        if ($historyEntries->contains(
+            static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'request_declined'
+        )) {
+            $historyEntries = $historyEntries
+                ->reject(
+                    static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'workflow_step_pending'
+                )
+                ->values();
+        }
+
+        return $historyEntries
+            ->sort(
+                fn (AttachmentRequestHistory $left, AttachmentRequestHistory $right): int =>
+                    $this->historySortKey($left) <=> $this->historySortKey($right)
+            )
+            ->values();
+    }
+
+    /**
+     * @return array{0: int, 1: int, 2: int, 3: string}
+     */
+    private function historySortKey(AttachmentRequestHistory $historyEntry): array
+    {
+        $createdAt = $historyEntry->created_at?->getTimestamp() ?? 0;
+        $id = (string) $historyEntry->id;
+
+        if ($historyEntry->action === 'request_created') {
+            return [0, 0, $createdAt, $id];
+        }
+
+        if (in_array($historyEntry->action, self::FINAL_REQUEST_ACTIONS, true)) {
+            return [3, 900000000, $createdAt, $id];
+        }
+
+        $workflowSortOrder = $this->workflowHistorySortOrder($historyEntry);
+        if ($workflowSortOrder !== null) {
+            return [1, $workflowSortOrder, $createdAt, $id];
+        }
+
+        if ($historyEntry->sort_order !== null) {
+            return [1, (int) $historyEntry->sort_order, $createdAt, $id];
+        }
+
+        return [2, 0, $createdAt, $id];
+    }
+
+    private function workflowHistorySortOrder(AttachmentRequestHistory $historyEntry): ?int
+    {
+        if (! in_array($historyEntry->action, self::WORKFLOW_HISTORY_ACTIONS, true)) {
+            return null;
+        }
+
+        $metadata = $historyEntry->metadata ?? [];
+        if (! isset($metadata['process_sort_order'], $metadata['template_step_order'])) {
+            return null;
+        }
+
+        return 100000
+            + ((int) $metadata['process_sort_order'] * 1000)
+            + (int) $metadata['template_step_order'];
+    }
+
+    private function withoutItemApprovalPendingEntries($historyEntries)
+    {
+        $approverIds = $historyEntries
+            ->where('action', 'attachment_approved')
+            ->pluck('user_id')
+            ->filter()
+            ->map(static fn ($userId): string => (string) $userId)
+            ->unique()
+            ->values();
+
+        if ($approverIds->isEmpty()) {
+            return $historyEntries;
+        }
+
+        $consumedApproverIds = [];
+
+        return $historyEntries
+            ->reject(function (AttachmentRequestHistory $historyEntry) use ($approverIds, &$consumedApproverIds): bool {
+                $metadata = $historyEntry->metadata ?? [];
+
+                if (
+                    $historyEntry->action !== 'workflow_step_pending'
+                    || ($metadata['status'] ?? null) !== ProcessStepStatus::Pending->value
+                    || empty($metadata['process_step_id'])
+                ) {
+                    return false;
+                }
+
+                $pendingUserIds = $this->authorizedUserIdsForPendingHistory($metadata);
+
+                foreach ($approverIds as $approverId) {
+                    if (
+                        ! isset($consumedApproverIds[$approverId])
+                        && in_array($approverId, $pendingUserIds, true)
+                    ) {
+                        $consumedApproverIds[$approverId] = true;
+
+                        return true;
+                    }
+                }
+
+                return false;
+            })
+            ->values();
     }
 
     private function preloadPendingHistoryUsers($historyEntries): void

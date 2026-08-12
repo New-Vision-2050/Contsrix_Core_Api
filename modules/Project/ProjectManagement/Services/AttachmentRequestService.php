@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Models\Process;
+use Modules\Process\Models\ProcessStep;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\Project\ProjectManagement\Events\AttachmentRequestResponded;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
@@ -254,12 +256,17 @@ class AttachmentRequestService
 
         $userId = (string) Auth::id();
         $this->visibilityService->assertCompanyCanView($item->attachmentRequest, (string) tenant('id'));
+        $pendingWorkflowStep = null;
 
         // Decision D6: per-file actions are allowed. When a workflow is active,
         // only a user who owns the current pending step may respond to items.
         // When no workflow is active, restrict to companies related to the request.
         if ($this->workflowService->hasActiveWorkflow($item->attachmentRequest)) {
-            $this->workflowService->assertCurrentUserOwnsPendingStep($item->attachmentRequest);
+            $pendingWorkflowStep = $this->workflowService->pendingStepForCurrentUser($item->attachmentRequest);
+
+            if ($pendingWorkflowStep === null) {
+                abort(422, 'No pending process step assigned to you for this attachment request.');
+            }
         }
 
         $actionDescriptions = [
@@ -274,42 +281,77 @@ class AttachmentRequestService
             'request_update' => 'attachment_update_requested',
         ];
 
-        switch ($action) {
-            case 'approve':
-                $item->approve($userId, $notes);
-                // Save attachment to ArchiveLibrary folder
-                $this->saveAttachmentToFolder($item);
-                break;
-            case 'decline':
-                $item->decline($userId, $notes);
-                break;
-            case 'request_update':
-                $item->requestUpdate($userId, $notes);
-                break;
-        }
+        $previousStatus = $item->status;
 
-        // Log history with detailed file information
-        AttachmentRequestHistory::log(
-            requestId: $item->attachment_request_id,
-            action: $actionKeys[$action],
-            description: $actionDescriptions[$action],
-            userId: $userId,
-            itemId: $item->id,
-            metadata: [
-                'item_id' => $item->id,
-                'file_name' => $item->file_name,
-                'file_path' => $item->file_path,
-                'file_url' => $item->file_path ? asset('storage/' . $item->file_path) : null,
-                'file_type' => $item->file_type,
-                'file_size' => $item->file_size,
-                'file_size_formatted' => $this->formatFileSize($item->file_size),
-                'status' => $item->status,
-                'response_notes' => $notes,
-                'previous_status' => 'pending',
-            ]
-        );
+        return DB::transaction(function () use (
+            $item,
+            $action,
+            $userId,
+            $notes,
+            $actionKeys,
+            $actionDescriptions,
+            $previousStatus,
+            $pendingWorkflowStep
+        ) {
+            $workflowMetadata = [];
 
-        return $item->fresh(['respondedByUser', 'attachmentRequest']);
+            switch ($action) {
+                case 'approve':
+                    $item->approve(
+                        userId: $userId,
+                        notes: $notes,
+                        syncRequestStatus: $pendingWorkflowStep === null
+                    );
+                    // Save attachment to ArchiveLibrary folder
+                    $this->saveAttachmentToFolder($item);
+
+                    if ($pendingWorkflowStep !== null) {
+                        $process = $this->workflowService->actOnPendingStepForCurrentUser(
+                            $item->attachmentRequest,
+                            'approve'
+                        );
+                        $actedStep = $this->workflowStepFromProcess($process, $pendingWorkflowStep);
+
+                        AttachmentRequestHistory::deleteWorkflowStepLifecycle(
+                            requestId: (string) $item->attachment_request_id,
+                            process: $process,
+                            step: $actedStep
+                        );
+
+                        $workflowMetadata = $this->workflowApprovalMetadata($actedStep, $process);
+                    }
+                    break;
+                case 'decline':
+                    $item->decline($userId, $notes);
+                    break;
+                case 'request_update':
+                    $item->requestUpdate($userId, $notes);
+                    break;
+            }
+
+            // Log history with detailed file information
+            AttachmentRequestHistory::log(
+                requestId: $item->attachment_request_id,
+                action: $actionKeys[$action],
+                description: $actionDescriptions[$action],
+                userId: $userId,
+                itemId: $item->id,
+                metadata: array_merge([
+                    'item_id' => $item->id,
+                    'file_name' => $item->file_name,
+                    'file_path' => $item->file_path,
+                    'file_url' => $item->file_path ? asset('storage/' . $item->file_path) : null,
+                    'file_type' => $item->file_type,
+                    'file_size' => $item->file_size,
+                    'file_size_formatted' => $this->formatFileSize($item->file_size),
+                    'status' => $item->status,
+                    'response_notes' => $notes,
+                    'previous_status' => $previousStatus,
+                ], $workflowMetadata)
+            );
+
+            return $item->fresh(['respondedByUser', 'attachmentRequest']);
+        });
     }
 
     /**
@@ -541,6 +583,32 @@ class AttachmentRequestService
     private function saveAttachmentToFolder(AttachmentRequestItem $item): void
     {
         $this->archiveDeliveryService->deliverAttachmentRequestItem($item);
+    }
+
+    private function workflowApprovalMetadata(ProcessStep $step, ?Process $process = null): array
+    {
+        $process ??= $step->relationLoaded('process')
+            ? $step->process
+            : $step->process()->first();
+
+        if ($process === null) {
+            return [];
+        }
+
+        return AttachmentRequestHistory::workflowStepApprovalMetadata($process, $step);
+    }
+
+    private function workflowStepFromProcess(Process $process, ProcessStep $step): ProcessStep
+    {
+        $actedStep = $process->relationLoaded('steps')
+            ? $process->steps->firstWhere('id', (string) $step->id)
+            : null;
+
+        if ($actedStep instanceof ProcessStep) {
+            return $actedStep;
+        }
+
+        return $step->fresh() ?? $step;
     }
 
     /**

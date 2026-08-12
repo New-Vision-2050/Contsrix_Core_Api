@@ -100,6 +100,17 @@ final class AttachmentRequestWorkflowService
             abort(403);
         }
 
+        if ($this->pendingStepForCurrentUser($request) === null) {
+            abort(422, 'No pending process step assigned to you for this attachment request.');
+        }
+    }
+
+    public function pendingStepForCurrentUser(AttachmentRequest $request): ?ProcessStep
+    {
+        if (! Auth::check()) {
+            abort(403);
+        }
+
         $process = Process::query()
             ->where('processable_id', $request->id)
             ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
@@ -107,12 +118,10 @@ final class AttachmentRequestWorkflowService
             ->first();
 
         if ($process === null) {
-            return;
+            return null;
         }
 
-        if ($this->findPendingStepForActor($process, (string) Auth::id()) === null) {
-            abort(422, 'No pending process step assigned to you for this attachment request.');
-        }
+        return $this->findPendingStepForActor($process, (string) Auth::id());
     }
 
     /**
