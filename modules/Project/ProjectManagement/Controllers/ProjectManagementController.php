@@ -41,6 +41,20 @@ class ProjectManagementController extends Controller
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10),
             $request->user(),
+            $request->only([
+                'name',
+                'project_type_id',
+                'sub_project_type_id',
+                'sub_sub_project_type_id',
+                'manager_id',
+                'branch_id',
+                'project_owner_type',
+                'project_owner_id',
+                'contract_id',
+                'client_id',
+                'management_id',
+                'status',
+            ]),
         );
 
         return Json::items(ProjectManagementPresenter::collection($list['data']), paginationSettings: $list['pagination']);
