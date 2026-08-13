@@ -107,4 +107,9 @@ class ProjectOrderPermitUds extends Model
     {
         return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
+
+    public function orderPermit(): BelongsTo
+    {
+        return $this->belongsTo(OrderPermit::class, 'type_code', 'code');
+    }
 }

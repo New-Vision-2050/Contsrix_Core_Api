@@ -9,9 +9,12 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Project\ProjectManagement\Models\ProjectContractor;
+use Modules\Project\ProjectManagement\Presenters\ProjectContractorPresenter;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitPresenter;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitNoteLogPresenter;
 use Modules\Project\ProjectType\Requests\CreateProjectOrderPermitRequest;
+use Modules\Project\ProjectType\Requests\SearchProjectOrderPermitUdsRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitStatusRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
@@ -32,6 +35,27 @@ class ProjectOrderPermitController extends Controller
             return Json::items(
                 $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()
             );
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    public function searchUds(SearchProjectOrderPermitUdsRequest $request, string $project): JsonResponse
+    {
+        try {
+            $data = $this->service->searchUds(
+                $project,
+                $request->name(),
+                $request->orderPermitId(),
+            );
+
+            if ($data['contractor'] instanceof ProjectContractor) {
+                $data['contractor'] = (new ProjectContractorPresenter($data['contractor']))->getData();
+            }
+
+            return Json::item($data);
+        } catch (ModelNotFoundException $e) {
+            return Json::error($e->getMessage(), 404);
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }

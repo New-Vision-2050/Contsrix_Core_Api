@@ -15,10 +15,15 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Modules\Project\ProjectType\Models\OrderPermitDepartment;
 use Modules\Project\ProjectType\Models\ProjectOrderPermitNoteLog;
+use Modules\Project\ProjectType\Models\OrderPermit;
 use Modules\Project\ProjectType\Models\ProjectOrderPermitUds;
 
 class ProjectOrderPermitService
 {
+    public function __construct(
+        private readonly ConstructionArchiveFolderService $constructionArchiveFolders,
+    ) {}
+
     public function createMany(array $data): array
     {
         $projectId = (string) Arr::get($data, 'project_id');
@@ -89,6 +94,8 @@ class ProjectOrderPermitService
 
             $this->createNoteLog($item, Arr::get($workOrderData, 'note_from_permit_to_departments'), ProjectOrderPermitNoteLog::TYPE_PERMIT_TO_DEPARTMENTS);
             $this->createNoteLog($item, Arr::get($workOrderData, 'note_from_departments_to_permit'), ProjectOrderPermitNoteLog::TYPE_DEPARTMENTS_TO_PERMIT);
+
+            $this->constructionArchiveFolders->ensureWorkOrderFolder($item);
 
             $items[] = $item;
         }
@@ -492,6 +499,76 @@ class ProjectOrderPermitService
             ->get();
     }
 
+    /**
+     * Aggregate UDS contractor/office data and consultant pricing for a work order + order permit.
+     *
+     * @return array{
+     *     contractor: ProjectContractor|null,
+     *     office: mixed,
+     *     executing_entity: mixed,
+     *     assigned_date: string|null,
+     *     price: mixed,
+     *     consultant_price: mixed
+     * }
+     */
+    public function searchUds(string $projectId, string $name, int $orderPermitId): array
+    {
+        $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
+        $orderPermit = OrderPermit::query()->findOrFail($orderPermitId);
+
+        $contractorUds = $this->findUdsByTypeCode(
+            $project->id,
+            $name,
+            $orderPermit->code,
+            ['contractor_name', 'office', 'executing_entity'],
+        );
+        $consultantUds = $this->findUdsByTypeCode(
+            $project->id,
+            $name,
+            $orderPermit->type,
+            ['assigned_date', 'price', 'consultant_price'],
+        );
+
+        $contractorName = $contractorUds?->contractor_name !== null
+            ? trim((string) $contractorUds->contractor_name)
+            : '';
+
+        $contractor = null;
+        if ($contractorName !== '') {
+            $contractor = ProjectContractor::withoutGlobalScopes()
+                ->where('project_id', $project->id)
+                ->where('name', $contractorName)
+                ->with(['country', 'representatives'])
+                ->first();
+        }
+
+        return [
+            'contractor' => $contractor,
+            'office' => $contractorUds?->office,
+            'executing_entity' => $contractorUds?->executing_entity,
+            'assigned_date' => $consultantUds?->assigned_date?->toDateString(),
+            'price' => $consultantUds?->price,
+            'consultant_price' => $consultantUds?->consultant_price,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $columns
+     */
+    private function findUdsByTypeCode(string $projectId, string $name, mixed $typeCode, array $columns): ?ProjectOrderPermitUds
+    {
+        $typeCode = $typeCode !== null ? trim((string) $typeCode) : '';
+        if ($name === '' || $typeCode === '') {
+            return null;
+        }
+
+        return ProjectOrderPermitUds::query()
+            ->where('project_id', $projectId)
+            ->where('name', $name)
+            ->where('type_code', $typeCode)
+            ->first($columns);
+    }
+
     public function listAll(array $filters = []): Collection
     {
         $projectIds = ProjectManagement::query()->pluck('id');
@@ -577,6 +654,8 @@ class ProjectOrderPermitService
             }
         }
 
+        $oldName = $orderPermit->name;
+
         $orderPermit->update([
             'project_management_id' => Arr::get($data, 'project_management_id', $orderPermit->project_management_id),
             'projects_district_id' => Arr::get($data, 'projects_district_id', $orderPermit->projects_district_id),
@@ -623,6 +702,16 @@ class ProjectOrderPermitService
             'last_date_consultant_statement' => Arr::get($data, 'last_date_consultant_statement', $orderPermit->last_date_consultant_statement),
             'consultnat_statement_status' => Arr::get($data, 'consultnat_statement_status', $orderPermit->consultnat_statement_status),
         ]);
+
+        if ((string) $oldName !== (string) $newName) {
+            $this->constructionArchiveFolders->syncWorkOrderFolderName(
+                $orderPermit,
+                (string) $oldName,
+                (string) $newName,
+            );
+        } else {
+            $this->constructionArchiveFolders->ensureWorkOrderFolder($orderPermit);
+        }
 
         $this->createNoteLog($orderPermit, Arr::get($data, 'note_from_permit_to_departments'), ProjectOrderPermitNoteLog::TYPE_PERMIT_TO_DEPARTMENTS);
         $this->createNoteLog($orderPermit, Arr::get($data, 'note_from_departments_to_permit'), ProjectOrderPermitNoteLog::TYPE_DEPARTMENTS_TO_PERMIT);
