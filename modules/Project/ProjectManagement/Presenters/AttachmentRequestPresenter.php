@@ -266,6 +266,8 @@ class AttachmentRequestPresenter extends AbstractPresenter
 
         $historyEntries = $this->withoutItemDecisionPendingEntries($historyEntries);
 
+        $historyEntries = $this->withoutTerminalItemDeclineRejectedEntries($historyEntries);
+
         if ($historyEntries->contains(
             static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'request_declined'
         )) {
@@ -366,6 +368,54 @@ class AttachmentRequestPresenter extends AbstractPresenter
                 }
 
                 return $decisionStepKeys->contains(
+                    ($metadata['process_id'] ?? null)
+                    .'|'.($metadata['step_id'] ?? null)
+                    .'|'.($metadata['template_step_order'] ?? null)
+                );
+            })
+            ->values();
+    }
+
+    private function withoutTerminalItemDeclineRejectedEntries($historyEntries)
+    {
+        if (! $historyEntries->contains(
+            static fn (AttachmentRequestHistory $historyEntry): bool => $historyEntry->action === 'request_declined'
+        )) {
+            return $historyEntries;
+        }
+
+        $fullDeclineStepKeys = $historyEntries
+            ->filter(static function (AttachmentRequestHistory $historyEntry): bool {
+                return $historyEntry->action === 'attachment_declined'
+                    && (($historyEntry->metadata ?? [])['decision_scope'] ?? null) === 'full';
+            })
+            ->map(static function (AttachmentRequestHistory $historyEntry): ?string {
+                $metadata = $historyEntry->metadata ?? [];
+                $processId = $metadata['process_id'] ?? null;
+                $stepId = $metadata['step_id'] ?? null;
+                $templateStepOrder = $metadata['template_step_order'] ?? null;
+
+                return $processId !== null && $stepId !== null && $templateStepOrder !== null
+                    ? $processId.'|'.$stepId.'|'.$templateStepOrder
+                    : null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($fullDeclineStepKeys->isEmpty()) {
+            return $historyEntries;
+        }
+
+        return $historyEntries
+            ->reject(function (AttachmentRequestHistory $historyEntry) use ($fullDeclineStepKeys): bool {
+                if ($historyEntry->action !== 'workflow_step_rejected') {
+                    return false;
+                }
+
+                $metadata = $historyEntry->metadata ?? [];
+
+                return $fullDeclineStepKeys->contains(
                     ($metadata['process_id'] ?? null)
                     .'|'.($metadata['step_id'] ?? null)
                     .'|'.($metadata['template_step_order'] ?? null)
