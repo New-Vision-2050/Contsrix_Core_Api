@@ -8,7 +8,7 @@
          * Dynamic values are injected into reserved cells; nothing may reflow.
          */
         body {
-            font-family: arial, tahoma, dejavusans, sans-serif;
+            font-family: safety, dejavusans, arial, tahoma, sans-serif;
             font-size: 9.5pt;
             color: #000;
             direction: rtl;

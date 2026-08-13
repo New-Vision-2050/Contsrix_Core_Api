@@ -3,6 +3,7 @@
 namespace Modules\Project\ProjectType\Services;
 
 use Modules\Project\ProjectType\Support\ArabicText;
+use Modules\Project\ProjectType\Support\SafetyPdfFonts;
 
 /**
  * Renders chart PNGs that visually match the weekly safety PDF template.
@@ -208,12 +209,206 @@ class SafetyWeeklyChartRenderer
 
     /**
      * Compact pie for a contractor quadrant (top 5).
+     * Matches template page 11 style: small 3D pie, short outside labels,
+     * elbow leader lines, percentage under each label — text never under the pie.
      *
      * @param  list<array{label: string, code?: string, percentage: float}>  $items
      */
     public function renderContractorPie(array $items, int $size = 520): string
     {
-        return $this->renderPieChart($items, $size, true)['image'];
+        $items = array_values(array_filter(
+            $items,
+            fn (array $i) => max(0.0, (float) ($i['percentage'] ?? 0)) > 0
+        ));
+
+        // Wide canvas so labels sit outside the pie (like the original template).
+        $width = (int) round($size * 1.55);
+        $height = (int) round($size * 1.15);
+        $img = imagecreatetruecolor($width, $height);
+        imagealphablending($img, true);
+        imagesavealpha($img, true);
+        $white = imagecolorallocate($img, 255, 255, 255);
+        imagefilledrectangle($img, 0, 0, $width, $height, $white);
+
+        $cx = (int) ($width / 2);
+        $cy = (int) ($height / 2) + 6;
+        // Smaller pie → clear gap for labels (fixes "كلام تحت الرسم").
+        $rx = (int) round($size * 0.26);
+        $ry = (int) round($size * 0.20);
+        $depth = 14;
+
+        $total = array_sum(array_map(fn ($i) => (float) $i['percentage'], $items));
+        if ($total <= 0 || $items === []) {
+            $grey = imagecolorallocate($img, 220, 220, 220);
+            imagefilledellipse($img, $cx, $cy, $rx * 2, $ry * 2, $grey);
+
+            return $this->toPng($img);
+        }
+
+        // 3D depth
+        for ($d = $depth; $d >= 1; $d--) {
+            $angle = -90.0;
+            foreach ($items as $idx => $item) {
+                $pct = (float) $item['percentage'];
+                $sweep = ($pct / $total) * 360.0;
+                $color = $this->allocateDarker($img, self::PIE_COLORS[$idx % count(self::PIE_COLORS)], 0.72);
+                $this->drawPieSlice($img, $cx, $cy + $d, $rx, $ry, $angle, $angle + $sweep, $color);
+                $angle += $sweep;
+            }
+        }
+
+        // Top face
+        $angle = -90.0;
+        $slices = [];
+        foreach ($items as $idx => $item) {
+            $pct = (float) $item['percentage'];
+            $sweep = ($pct / $total) * 360.0;
+            $rgb = self::PIE_COLORS[$idx % count(self::PIE_COLORS)];
+            $color = imagecolorallocate($img, $rgb[0], $rgb[1], $rgb[2]);
+            $this->drawPieSlice($img, $cx, $cy, $rx, $ry, $angle, $angle + $sweep, $color);
+
+            $midDeg = $angle + $sweep / 2;
+            $slices[] = [
+                'mid' => $midDeg,
+                'label' => $this->formatContractorViolationLabel(
+                    (string) ($item['label'] ?? ''),
+                    (string) ($item['code'] ?? '')
+                ),
+                'pct' => number_format($pct, 1).'%',
+            ];
+            $angle += $sweep;
+        }
+
+        $this->drawContractorPieLabels($img, $cx, $cy, $rx, $ry, $width, $height, $slices);
+
+        return $this->toPng($img);
+    }
+
+    /**
+     * Place labels left/right of the pie with elbow leaders — same layout as template.
+     *
+     * @param  resource|\GdImage  $img
+     * @param  list<array{mid: float, label: string, pct: string}>  $slices
+     */
+    private function drawContractorPieLabels(
+        $img,
+        int $cx,
+        int $cy,
+        int $rx,
+        int $ry,
+        int $width,
+        int $height,
+        array $slices
+    ): void {
+        $lineColor = imagecolorallocate($img, 150, 150, 150);
+        $textColor = imagecolorallocate($img, 55, 55, 55);
+        $pctColor = imagecolorallocate($img, 120, 120, 120);
+
+        $left = [];
+        $right = [];
+        foreach ($slices as $slice) {
+            $mid = deg2rad($slice['mid']);
+            // cos > 0 => right side of pie
+            if (cos($mid) >= 0) {
+                $right[] = $slice;
+            } else {
+                $left[] = $slice;
+            }
+        }
+
+        usort($left, fn ($a, $b) => $a['mid'] <=> $b['mid']);
+        usort($right, fn ($a, $b) => $a['mid'] <=> $b['mid']);
+
+        $this->placeSideLabels($img, $left, false, $cx, $cy, $rx, $ry, $width, $height, $lineColor, $textColor, $pctColor);
+        $this->placeSideLabels($img, $right, true, $cx, $cy, $rx, $ry, $width, $height, $lineColor, $textColor, $pctColor);
+    }
+
+    /**
+     * @param  resource|\GdImage  $img
+     * @param  list<array{mid: float, label: string, pct: string}>  $sideSlices
+     */
+    private function placeSideLabels(
+        $img,
+        array $sideSlices,
+        bool $isRight,
+        int $cx,
+        int $cy,
+        int $rx,
+        int $ry,
+        int $width,
+        int $height,
+        int $lineColor,
+        int $textColor,
+        int $pctColor
+    ): void {
+        $count = count($sideSlices);
+        if ($count === 0) {
+            return;
+        }
+
+        $marginX = 8;
+        $labelColX = $isRight
+            ? (int) min($width - $marginX - 8, $cx + $rx + 58)
+            : (int) max($marginX + 8, $cx - $rx - 58);
+
+        $topY = (int) max(18, $cy - $ry - 28);
+        $bottomY = (int) min($height - 22, $cy + $ry + 28);
+        $span = max(1, $bottomY - $topY);
+        $slot = $span / max($count, 1);
+
+        foreach ($sideSlices as $i => $slice) {
+            $mid = deg2rad($slice['mid']);
+            $ex = (int) round($cx + cos($mid) * ($rx * 0.92));
+            $ey = (int) round($cy + sin($mid) * ($ry * 0.92));
+
+            $ly = (int) round($topY + ($i + 0.5) * $slot);
+            // Keep label Y close to slice direction but spaced (anti-overlap).
+            $naturalY = (int) round($cy + sin($mid) * ($ry + 36));
+            $ly = (int) round(($ly * 0.65) + ($naturalY * 0.35));
+            $ly = max($topY + 10, min($bottomY - 10, $ly));
+
+            $elbowX = $isRight
+                ? (int) round($cx + $rx + 22)
+                : (int) round($cx - $rx - 22);
+
+            // Elbow leader: rim → horizontal run → label column (avoids crossing through text).
+            imageline($img, $ex, $ey, $elbowX, $ly, $lineColor);
+            imageline($img, $elbowX, $ly, $labelColX, $ly, $lineColor);
+
+            $label = $slice['label'];
+            $pct = $slice['pct'];
+            $labelSize = 10.0;
+            $pctSize = 9.0;
+            $labelW = $this->textWidth($labelSize, $label, false);
+
+            if ($isRight) {
+                $textX = $labelColX + 4;
+            } else {
+                $textX = $labelColX - $labelW - 4;
+            }
+
+            // Draw text ABOVE the pie layer (after pie) — never covered by the drawing.
+            $this->drawText($img, $labelSize, 0, $textX, $ly - 14, $textColor, $label, false);
+            $pctW = $this->textWidth($pctSize, $pct, false);
+            $pctX = $isRight ? $textX : ($labelColX - $pctW - 4);
+            $this->drawText($img, $pctSize, 0, $pctX, $ly + 1, $pctColor, $pct, false);
+        }
+    }
+
+    /**
+     * Short label style from template: "عدم وجود - 22"
+     */
+    private function formatContractorViolationLabel(string $description, string $code): string
+    {
+        $desc = trim($description);
+        // Prefer a short readable phrase like the original screenshots.
+        $desc = $this->truncate($desc, 16);
+        $code = trim($code);
+        if ($code === '') {
+            return $desc;
+        }
+
+        return $desc.' - '.$code;
     }
 
     private function drawPieSlice($img, int $cx, int $cy, int $rx, int $ry, float $start, float $end, int $color): void
@@ -327,17 +522,7 @@ class SafetyWeeklyChartRenderer
 
     private function resolveFont(bool $bold): string
     {
-        $candidates = $bold
-            ? ['C:/Windows/Fonts/arialbd.ttf', 'C:/Windows/Fonts/tahoma.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf']
-            : ['C:/Windows/Fonts/arial.ttf', 'C:/Windows/Fonts/tahoma.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'];
-
-        foreach ($candidates as $path) {
-            if (is_file($path)) {
-                return $path;
-            }
-        }
-
-        return '';
+        return SafetyPdfFonts::ttfPath($bold);
     }
 
     /**
