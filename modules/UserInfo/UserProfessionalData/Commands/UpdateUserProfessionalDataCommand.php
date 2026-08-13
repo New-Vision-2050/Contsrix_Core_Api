@@ -15,6 +15,7 @@ class UpdateUserProfessionalDataCommand
         private string $job_type_id,
         private string $job_title_id,
         private string $job_code,
+        private ?string $attendance_type = null,
     ) {
     }
 
@@ -31,6 +32,7 @@ class UpdateUserProfessionalDataCommand
             'job_type_id' => $this->job_type_id,
             'job_title_id' => $this->job_title_id,
             'job_code' => $this->job_code,
-        ]);
+            'attendance_type' => $this->attendance_type,
+        ], fn (mixed $value): bool => $value !== null && $value !== '');
     }
 }

@@ -33,5 +33,15 @@ final readonly class ShiftWindowInput
         public int $alreadyWorkedMinutesInPeriod = 0,
         public ?OvertimeFlags $overtimeFlags = null,
         public string $timezone = 'Asia/Riyadh',
+        /**
+         * When set, required working minutes come from this value instead of
+         * scheduledEnd − scheduledStart (flexible attendance uses constraint working hours).
+         */
+        public ?int $requiredWorkMinutesOverride = null,
+        /**
+         * Full-day flexible mode: ignore shift start/end for clock-in bounds;
+         * auto-close when required hours complete (not after max OT).
+         */
+        public bool $flexibleDay = false,
     ) {}
 }
