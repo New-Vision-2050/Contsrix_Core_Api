@@ -9,6 +9,7 @@ use Modules\Project\ProjectType\Exceptions\SafetyException;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Models\SafetyRecord;
 use Modules\Project\ProjectType\Models\Violation;
+use Modules\Project\ProjectType\Support\SafetyPdfFonts;
 use Mpdf\Mpdf;
 use Mpdf\Output\Destination;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -348,46 +349,23 @@ class SafetyViolationReportService
             @mkdir($tempDir, 0775, true);
         }
 
-        $fontDirs = (new \Mpdf\Config\ConfigVariables())->getDefaults()['fontDir'];
-        $fontDirs[] = 'C:/Windows/Fonts';
-
-        $fontData = (new \Mpdf\Config\FontVariables())->getDefaults()['fontdata'];
-        $defaultFont = 'dejavusans';
-
-        // Prefer Windows Arial for sharper embedded Arabic/Latin text in PDF.
-        if (is_file('C:/Windows/Fonts/arial.ttf')) {
-            $fontData['arial'] = [
-                'R' => 'arial.ttf',
-                'B' => is_file('C:/Windows/Fonts/arialbd.ttf') ? 'arialbd.ttf' : 'arial.ttf',
-                'useOTL' => 0xFF,
-                'useKashida' => 75,
-            ];
-            $defaultFont = 'arial';
-        } elseif (is_file('C:/Windows/Fonts/tahoma.ttf')) {
-            $fontData['tahoma'] = [
-                'R' => 'tahoma.ttf',
-                'B' => is_file('C:/Windows/Fonts/tahomabd.ttf') ? 'tahomabd.ttf' : 'tahoma.ttf',
-                'useOTL' => 0xFF,
-                'useKashida' => 75,
-            ];
-            $defaultFont = 'tahoma';
-        }
+        $fonts = SafetyPdfFonts::mpdfConfig();
 
         $mpdf = new Mpdf([
             'mode' => 'utf-8',
             'format' => 'A4',
             'orientation' => 'P',
             'tempDir' => $tempDir,
-            'fontDir' => $fontDirs,
-            'fontdata' => $fontData,
-            'default_font' => $defaultFont,
+            'fontDir' => $fonts['fontDir'],
+            'fontdata' => $fonts['fontdata'],
+            'default_font' => $fonts['default_font'],
             'default_font_size' => 10,
             'dpi' => 120,
             'img_dpi' => 120,
             'autoScriptToLang' => true,
             'autoLangToFont' => false,
             'autoArabic' => true,
-            'useSubstitutions' => false,
+            'useSubstitutions' => true,
             'margin_left' => 6,
             'margin_right' => 6,
             'margin_top' => 6,

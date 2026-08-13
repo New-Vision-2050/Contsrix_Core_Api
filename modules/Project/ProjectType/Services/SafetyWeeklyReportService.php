@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Modules\Project\ProjectType\Exceptions\SafetyException;
 use Modules\Project\ProjectType\Models\SafetyWeeklyReport;
+use Modules\Project\ProjectType\Support\SafetyPdfFonts;
 use Mpdf\Mpdf;
 use Mpdf\Output\Destination;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -307,21 +308,7 @@ class SafetyWeeklyReportService
             @mkdir($tempDir, 0775, true);
         }
 
-        $fontDirs = (new \Mpdf\Config\ConfigVariables())->getDefaults()['fontDir'];
-        $fontDirs[] = 'C:/Windows/Fonts';
-
-        $fontData = (new \Mpdf\Config\FontVariables())->getDefaults()['fontdata'];
-        $defaultFont = 'dejavusans';
-
-        if (is_file('C:/Windows/Fonts/arial.ttf')) {
-            $fontData['arial'] = [
-                'R' => 'arial.ttf',
-                'B' => is_file('C:/Windows/Fonts/arialbd.ttf') ? 'arialbd.ttf' : 'arial.ttf',
-                'useOTL' => 0xFF,
-                'useKashida' => 75,
-            ];
-            $defaultFont = 'arial';
-        }
+        $fonts = SafetyPdfFonts::mpdfConfig();
 
         $mpdf = new Mpdf([
             'mode' => 'utf-8',
@@ -330,16 +317,16 @@ class SafetyWeeklyReportService
             'format' => [self::PAGE_HEIGHT_MM, self::PAGE_WIDTH_MM],
             'orientation' => 'L',
             'tempDir' => $tempDir,
-            'fontDir' => $fontDirs,
-            'fontdata' => $fontData,
-            'default_font' => $defaultFont,
+            'fontDir' => $fonts['fontDir'],
+            'fontdata' => $fonts['fontdata'],
+            'default_font' => $fonts['default_font'],
             'default_font_size' => 11,
             'dpi' => 120,
             'img_dpi' => 120,
             'autoScriptToLang' => true,
             'autoLangToFont' => false,
             'autoArabic' => true,
-            'useSubstitutions' => false,
+            'useSubstitutions' => true,
             'margin_left' => 0,
             'margin_right' => 0,
             'margin_top' => 0,
@@ -347,7 +334,7 @@ class SafetyWeeklyReportService
         ]);
 
         $mpdf->SetDirectionality('rtl');
-        $mpdf->SetTitle('تقرير السلامة الأسبوعي');
+        $mpdf->SetTitle('تقرير السلامة');
         $mpdf->SetCreator('Constrix Safety');
         $mpdf->shrink_tables_to_fit = 0;
         ini_set('pcre.backtrack_limit', '50000000');
@@ -401,7 +388,7 @@ class SafetyWeeklyReportService
 
         $orientation = $widthPt > $heightPt ? 'Landscape' : ($widthPt < $heightPt ? 'Portrait' : 'Square');
 
-        Log::info('Weekly safety PDF page geometry', [
+        Log::info('safety PDF page geometry', [
             'Generated Page Width' => $widthPt,
             'Generated Page Height' => $heightPt,
             'Orientation' => $orientation,
@@ -492,9 +479,9 @@ class SafetyWeeklyReportService
     }
 
     /**
-     * Contractor pages: clone template page 11 (exact layout/grid/chrome),
-     * clear sample quadrant data, then fill only occupied slots.
-     * Empty slots stay blank inside the original template structure.
+     * Contractor pages: clone template page 11 chrome/footer,
+     * keep titles ABOVE the 2×2 grid, redraw clear quadrant borders,
+     * then fill only occupied slots.
      *
      * @param  Collection<int, array{id: string, name: string, violations: Collection}>  $contractors
      */
@@ -502,15 +489,18 @@ class SafetyWeeklyReportService
     {
         $this->addTemplatePage($mpdf, self::CONTRACTOR_TEMPLATE_PAGE);
 
-        // Quadrant content boxes inside the original 2×2 grid (mm, from template layout).
-        // Index order matches template visual slots: 0=top-right, 1=top-left, 2=bottom-right, 3=bottom-left (RTL page).
-        $quadrants = $this->contractorQuadrantBoxes();
+        $frame = $this->contractorGridFrame();
 
-        // Always clear sample data from all 4 quadrants so leftover template contractors never leak.
-        foreach ($quadrants as $box) {
-            $this->whiteout($mpdf, $box['x'], $box['y'], $box['w'], $box['h']);
-        }
+        // 1) Clear sample data ONLY inside the grid (header stays above this Y).
+        $this->whiteout($mpdf, $frame['x'], $frame['y'], $frame['w'], $frame['h']);
 
+        // 2) Redraw crisp 2×2 borders so all four sections are clearly visible.
+        $this->drawContractorGrid($mpdf, $frame);
+
+        // 3) Rewrite page titles ABOVE the grid so dividers never cover them.
+        $this->writeContractorPageHeader($mpdf);
+
+        $quadrants = $this->contractorQuadrantBoxesFromFrame($frame);
         $slots = $contractors->values()->all();
         foreach ($slots as $index => $contractor) {
             if ($index >= self::CONTRACTORS_PER_PAGE || $contractor === null) {
@@ -518,37 +508,129 @@ class SafetyWeeklyReportService
             }
             $this->writeContractorQuadrant($mpdf, $quadrants[$index], $contractor);
         }
-        // Remaining quadrants stay empty (already whitened) — same as original empty slots.
     }
 
     /**
-     * Content regions for the 4 contractor quadrants on template page 11.
-     * Coordinates are in mm relative to the template page size (MediaBox-derived).
+     * Exact grid frame from template page 11 MediaBox drawings (points → mm).
+     * Grid top ≈ 131.84 pt so titles above it are never covered.
      *
+     * @return array{x: float, y: float, w: float, h: float}
+     */
+    private function contractorGridFrame(): array
+    {
+        $ptToMm = 25.4 / 72;
+
+        // From weekly-safety-report.pdf page 11 black frame:
+        // Rect(50.66, 131.84, 792.26, 526.80) in PDF points.
+        $left = 50.66 * $ptToMm;
+        $top = 131.84 * $ptToMm;
+        $right = 792.26 * $ptToMm;
+        $bottom = 526.80 * $ptToMm;
+
+        return [
+            'x' => $left,
+            'y' => $top,
+            'w' => $right - $left,
+            'h' => $bottom - $top,
+        ];
+    }
+
+    /**
+     * @param  array{x: float, y: float, w: float, h: float}  $frame
+     */
+    private function drawContractorGrid(Mpdf $mpdf, array $frame): void
+    {
+        $x = $frame['x'];
+        $y = $frame['y'];
+        $w = $frame['w'];
+        $h = $frame['h'];
+        $midX = $x + ($w / 2);
+        $midY = $y + ($h / 2);
+
+        $mpdf->SetDrawColor(0, 0, 0);
+        $mpdf->SetLineWidth(0.6);
+
+        // Outer border
+        $mpdf->Rect($x, $y, $w, $h);
+
+        // Vertical divider (starts at grid top — below the titles)
+        $mpdf->Line($midX, $y, $midX, $y + $h);
+
+        // Horizontal divider
+        $mpdf->Line($x, $midY, $x + $w, $midY);
+    }
+
+    /**
+     * Titles must sit above the 2×2 frame; dividers must not cross them.
+     */
+    private function writeContractorPageHeader(Mpdf $mpdf): void
+    {
+        // Clear only the title band (above the grid) to remove any garbled leftover text.
+        $this->whiteout($mpdf, 30, 6, self::PAGE_WIDTH_MM - 60, 38);
+
+        $cssFont = SafetyPdfFonts::cssFamily();
+
+        $html = <<<HTML
+<div style="text-align:center;direction:rtl;font-family:{$cssFont};">
+  <div style="color:#1a3c7e;font-size:16pt;font-weight:bold;line-height:1.3;">مقاولين العقد الموحد</div>
+  <div style="color:#e67e22;font-size:13pt;font-weight:bold;margin-top:1.5mm;line-height:1.3;">أكثر 5 مخالفات تكراراً لكل مقاول</div>
+</div>
+HTML;
+
+        $mpdf->WriteFixedPosHTML(
+            $html,
+            20,
+            8,
+            self::PAGE_WIDTH_MM - 40,
+            36,
+            'auto'
+        );
+    }
+
+    /**
+     * Content regions for the 4 contractor quadrants inside the grid frame.
+     * Index: 0=top-right, 1=top-left, 2=bottom-right, 3=bottom-left (RTL).
+     *
+     * @param  array{x: float, y: float, w: float, h: float}  $frame
      * @return list<array{x: float, y: float, w: float, h: float}>
      */
-    private function contractorQuadrantBoxes(): array
+    private function contractorQuadrantBoxesFromFrame(array $frame): array
     {
-        // Derived from template page 11 grid: outer content frame with 2×2 split.
-        // Page size ≈ PAGE_WIDTH_MM × PAGE_HEIGHT_MM.
-        $left = 16.0;
-        $top = 30.0;
-        $width = self::PAGE_WIDTH_MM - 32.0;
-        $height = 148.0;
-        $halfW = $width / 2;
-        $halfH = $height / 2;
-        $pad = 1.5;
+        $pad = 2.0;
+        $halfW = $frame['w'] / 2;
+        $halfH = $frame['h'] / 2;
+        $left = $frame['x'];
+        $top = $frame['y'];
 
-        // Visual order on RTL template: right column first, then left.
         return [
             // 0 — top-right
-            ['x' => $left + $halfW + $pad, 'y' => $top + $pad, 'w' => $halfW - 2 * $pad, 'h' => $halfH - 2 * $pad],
+            [
+                'x' => $left + $halfW + $pad,
+                'y' => $top + $pad,
+                'w' => $halfW - 2 * $pad,
+                'h' => $halfH - 2 * $pad,
+            ],
             // 1 — top-left
-            ['x' => $left + $pad, 'y' => $top + $pad, 'w' => $halfW - 2 * $pad, 'h' => $halfH - 2 * $pad],
+            [
+                'x' => $left + $pad,
+                'y' => $top + $pad,
+                'w' => $halfW - 2 * $pad,
+                'h' => $halfH - 2 * $pad,
+            ],
             // 2 — bottom-right
-            ['x' => $left + $halfW + $pad, 'y' => $top + $halfH + $pad, 'w' => $halfW - 2 * $pad, 'h' => $halfH - 2 * $pad],
+            [
+                'x' => $left + $halfW + $pad,
+                'y' => $top + $halfH + $pad,
+                'w' => $halfW - 2 * $pad,
+                'h' => $halfH - 2 * $pad,
+            ],
             // 3 — bottom-left
-            ['x' => $left + $pad, 'y' => $top + $halfH + $pad, 'w' => $halfW - 2 * $pad, 'h' => $halfH - 2 * $pad],
+            [
+                'x' => $left + $pad,
+                'y' => $top + $halfH + $pad,
+                'w' => $halfW - 2 * $pad,
+                'h' => $halfH - 2 * $pad,
+            ],
         ];
     }
 
@@ -565,12 +647,13 @@ class SafetyWeeklyReportService
             'percentage' => (float) $row['percentage'],
         ])->values()->all();
 
-        $body = '<div style="color:#1a3c7e;font-weight:bold;font-size:11pt;text-align:center;direction:rtl;">'.$name.'</div>';
+        $cssFont = SafetyPdfFonts::cssFamily();
+        $body = '<div style="color:#1a3c7e;font-weight:bold;font-size:11pt;text-align:center;direction:rtl;font-family:'.$cssFont.';">'.$name.'</div>';
         if ($items === []) {
-            $body .= '<div style="color:#888;font-size:9pt;text-align:center;margin-top:18mm;direction:rtl;">لا توجد مخالفات</div>';
+            $body .= '<div style="color:#555;font-size:10pt;text-align:center;margin-top:18mm;direction:rtl;font-family:'.$cssFont.';">لا توجد مخالفات</div>';
         } else {
-            $chart = $this->charts->renderContractorPie($items, 480);
-            $body .= '<div style="text-align:center;"><img src="'.$chart.'" style="width:'.max(40, $box['w'] - 4).'mm;height:auto;" /></div>';
+            $chart = $this->charts->renderContractorPie($items, 560);
+            $body .= '<div style="text-align:center;margin-top:1mm;"><img src="'.$chart.'" style="width:'.max(42, $box['w'] - 6).'mm;height:auto;" /></div>';
         }
 
         $mpdf->WriteFixedPosHTML(
