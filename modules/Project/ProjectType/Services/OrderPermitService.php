@@ -15,9 +15,9 @@ class OrderPermitService
     ) {
     }
 
-    public function list(): Collection
+    public function list(?string $name = null): Collection
     {
-        return $this->repository->list();
+        return $this->repository->list(name: $name);
     }
 
     public function get(int $id): OrderPermit
