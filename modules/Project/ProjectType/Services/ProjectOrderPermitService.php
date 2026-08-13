@@ -515,9 +515,12 @@ class ProjectOrderPermitService
         $limit = max(1, min($limit, 50));
 
         return ProjectOrderPermitUds::query()
-            ->where('project_id', $project->id)
-            ->where('name', 'like', '%'.$search.'%')
-            ->orderBy('name')
+            ->select('project_order_permit_uds.*')
+            ->join('order_permit', 'order_permit.code', '=', 'project_order_permit_uds.type_code')
+            ->where('project_order_permit_uds.project_id', $project->id)
+            ->where('project_order_permit_uds.name', 'like', '%'.$search.'%')
+            ->distinct()
+            ->orderBy('project_order_permit_uds.name')
             ->limit($limit)
             ->get()
             ->map(static fn (ProjectOrderPermitUds $row): array => $row->toArray())
