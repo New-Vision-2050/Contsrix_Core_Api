@@ -35,6 +35,9 @@ class UserProfessionalDataPresenter extends AbstractPresenter
             'job_type' => $this->userProfessionalData->jobType ? (new JobTypePresenter($this->userProfessionalData->jobType))->getData() : null,
             'job_title' => $this->userProfessionalData->jobTitle ? (new JobTitlePresenter($this->userProfessionalData->jobTitle))->getData() : null,
             'job_code' => $this->userProfessionalData->job_code,
+            'attendance_type' => \Modules\Attendance\Support\AttendanceType::normalize(
+                $this->userProfessionalData->attendance_type
+            ),
 
             // Pass the guaranteed single model or null to the presenter
             'attendance_constraint' =>$this->userProfessionalData->attendanceConstraint ? (new ConstraintListPresenter($this->userProfessionalData->attendanceConstraint))->getData() : null,

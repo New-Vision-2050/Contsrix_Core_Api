@@ -19,9 +19,19 @@ class CreateUserProfessionalDataRequest extends FormRequest
             'job_title_id' => 'required|exists:job_titles,id',
             'job_code' => 'required|string',
             'attendance_constraint_id'=> 'nullable|exists:attendance_constraints,id',
+            'attendance_type' => ['nullable', 'string', 'in:regular,flexible,flexable,flex'],
             "roles"=> "nullable|array",
             "roles.*"=> "nullable|exists:roles,name",
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('attendance_type')) {
+            $this->merge([
+                'attendance_type' => \Modules\Attendance\Support\AttendanceType::normalize($this->input('attendance_type')),
+            ]);
+        }
     }
     public function messages(): array
     {
@@ -45,6 +55,7 @@ class CreateUserProfessionalDataRequest extends FormRequest
             job_title_id: $this->get('job_title_id'),
             job_code: $this->get('job_code'),
             attendance_constraint_id: $this->get('attendance_constraint_id'),
+            attendance_type: \Modules\Attendance\Support\AttendanceType::normalize($this->get('attendance_type')),
             roles: $this->get('roles')
         );
     }

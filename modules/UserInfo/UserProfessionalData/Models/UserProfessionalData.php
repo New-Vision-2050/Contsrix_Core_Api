@@ -42,7 +42,8 @@ class UserProfessionalData extends Model
         'job_type_id',
         'job_title_id',
         'job_code',
-        'attendance_constraint_id'
+        'attendance_constraint_id',
+        'attendance_type',
     ];
 
     protected $casts = [

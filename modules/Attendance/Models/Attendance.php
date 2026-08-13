@@ -96,6 +96,7 @@ class Attendance extends Model implements Auditable
         'start_time',
         'end_time',
         'day_status',
+        'attendance_type',
         'business_date',
         'shift_end_method',
         'required_work_minutes',
