@@ -219,6 +219,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
     Route::prefix('{project}/order-permits')->group(function () {
         Route::get('/', [ProjectOrderPermitController::class, 'index']);
         // Route::get('/department/{departmentId}', [ProjectOrderPermitController::class, 'getByDepartment']);
+        Route::get('/uds-work-orders', [ProjectOrderPermitController::class, 'searchUds']);
         Route::post('/', [ProjectOrderPermitController::class, 'store']);
         Route::post('/import', [ProjectOrderPermitController::class, 'importExcel']);
         Route::get('/{name}/update-from-uds', [ProjectOrderPermitController::class, 'updateFromUds']);

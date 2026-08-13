@@ -22,7 +22,9 @@ class OrderPermitController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $items = $this->service->list();
+        $name = trim((string) $request->input('name', ''));
+
+        $items = $this->service->list($name !== '' ? $name : null);
 
         return Json::items(OrderPermitPresenter::collection($items));
     }
