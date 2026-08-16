@@ -13,7 +13,6 @@ use Modules\Project\ProjectType\Support\SafetyPdfFonts;
 use Mpdf\Mpdf;
 use Mpdf\Output\Destination;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use ZipArchive;
 
 class SafetyViolationReportService
@@ -24,7 +23,47 @@ class SafetyViolationReportService
 
     private const FOUND_STATUS = 'violation_found';
 
-    public function download(string $projectId, string $safetyRecordId): Response|BinaryFileResponse
+    public function download(string $projectId, string $safetyRecordId): Response
+    {
+        $file = $this->buildDownloadableFile($projectId, $safetyRecordId);
+
+        return response($file['content'], 200, [
+            'Content-Type' => $file['mime'],
+            'Content-Disposition' => 'attachment; filename="'.$file['filename'].'"',
+        ]);
+    }
+
+    /**
+     * Generate the same PDF/ZIP as download(), store it on a public disk,
+     * and return a URL that can be opened from an email without API auth.
+     */
+    public function storeAndGetPublicUrl(string $projectId, string $safetyRecordId): string
+    {
+        $file = $this->buildDownloadableFile($projectId, $safetyRecordId);
+        $record = $this->loadRecord($projectId, $safetyRecordId);
+
+        $bucket = config('filesystems.disks.s3_public.bucket');
+        $disk = (is_string($bucket) && $bucket !== '') ? 's3_public' : 'public';
+
+        $record->clearMediaCollection(SafetyRecord::VIOLATION_REPORT_COLLECTION);
+
+        $media = $record
+            ->addMediaFromString($file['content'])
+            ->usingFileName($file['filename'])
+            ->usingName('violation-report')
+            ->withCustomProperties([
+                'file_path' => 'safety/violation-reports/'.$record->project_id,
+                'mime' => $file['mime'],
+            ])
+            ->toMediaCollection(SafetyRecord::VIOLATION_REPORT_COLLECTION, $disk);
+
+        return $media->getFullUrl();
+    }
+
+    /**
+     * @return array{filename: string, content: string, mime: string}
+     */
+    public function buildDownloadableFile(string $projectId, string $safetyRecordId): array
     {
         $record = $this->loadRecord($projectId, $safetyRecordId);
         $foundViolations = $this->foundViolations($record);
@@ -53,13 +92,14 @@ class SafetyViolationReportService
         if (count($pdfBinaries) === 1) {
             $pdf = $pdfBinaries[0];
 
-            return response($pdf['content'], 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="'.$pdf['filename'].'"',
-            ]);
+            return [
+                'filename' => $pdf['filename'],
+                'content' => $pdf['content'],
+                'mime' => 'application/pdf',
+            ];
         }
 
-        return $this->zipResponse($record->id, $pdfBinaries);
+        return $this->buildZipFile($record->id, $pdfBinaries);
     }
 
     private function loadRecord(string $projectId, string $safetyRecordId): SafetyRecord
@@ -171,7 +211,7 @@ class SafetyViolationReportService
     private function buildChunkPayload(SafetyRecord $record, array $header, Collection $chunkViolations): array
     {
         $violations = $chunkViolations->map(function (Violation $violation) {
-            $weight = abs((float) ($violation->pivot->weight ?? $violation->default_weight ?? 0));
+            $weight = abs((float) ($violation->pivot->weight ?? $violation->default_weight ?? 0)) * 1000;
 
             return [
                 'id' => (string) $violation->id,
@@ -400,8 +440,9 @@ class SafetyViolationReportService
 
     /**
      * @param  list<array{filename: string, content: string}>  $pdfBinaries
+     * @return array{filename: string, content: string, mime: string}
      */
-    private function zipResponse(string $safetyRecordId, array $pdfBinaries): BinaryFileResponse
+    private function buildZipFile(string $safetyRecordId, array $pdfBinaries): array
     {
         $tempDir = storage_path('app/temp');
         if (! is_dir($tempDir)) {
@@ -426,17 +467,24 @@ class SafetyViolationReportService
 
         $zip->close();
 
-        register_shutdown_function(static function () use ($tempPdfPaths) {
-            foreach ($tempPdfPaths as $tempPdfPath) {
-                if (is_file($tempPdfPath)) {
-                    @unlink($tempPdfPath);
-                }
-            }
-        });
+        $content = (string) file_get_contents($zipPath);
 
-        return response()->download($zipPath, $zipFileName, [
-            'Content-Type' => 'application/zip',
-        ])->deleteFileAfterSend(true);
+        @unlink($zipPath);
+        foreach ($tempPdfPaths as $tempPdfPath) {
+            if (is_file($tempPdfPath)) {
+                @unlink($tempPdfPath);
+            }
+        }
+
+        if ($content === '') {
+            throw SafetyException::reportGenerationFailed();
+        }
+
+        return [
+            'filename' => $zipFileName,
+            'content' => $content,
+            'mime' => 'application/zip',
+        ];
     }
 
     private function resolveReportLogoDataUri(): ?string
