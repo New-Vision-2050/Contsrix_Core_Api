@@ -29,6 +29,7 @@ class SafetyService
     public function __construct(
         private SafetyRecordRepository $repository,
         private FileUploadService $fileUploadService,
+        private SafetyViolationEmailService $safetyViolationEmailService,
     ) {}
 
     public function list(
@@ -286,7 +287,10 @@ class SafetyService
         $this->uploadViolationEvidence($record, $violations);
         $this->calculateAndStoreScores($record);
 
-        return $this->show($projectId, $record->id);
+        $completed = $this->show($projectId, $record->id);
+        $this->safetyViolationEmailService->sendAfterEvaluation($completed);
+
+        return $completed;
     }
 
     /**
