@@ -23,6 +23,8 @@ class SafetyRecord extends Model implements HasMedia
     use BaseFilterable;
     use InteractsWithMedia;
 
+    public const VIOLATION_REPORT_COLLECTION = 'violation_report';
+
     protected $table = 'safety_records';
 
     public $incrementing = false;
@@ -67,6 +69,7 @@ class SafetyRecord extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('violation_evidence');
+        $this->addMediaCollection(self::VIOLATION_REPORT_COLLECTION)->singleFile();
     }
 
     public function company(): BelongsTo
