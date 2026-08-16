@@ -62,15 +62,25 @@ class AttendanceService
         $user = User::find(auth()->user()->id);
         $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $currentDate = Carbon::now($timezone)->format('Y-m-d');
+        $isFlexible = \Modules\Attendance\Support\AttendanceType::userIsFlexible($user);
 
         $constraintService = app(AttendanceConstraintService::class);
         $constraints = $constraintService->getTodaysWorkRulesForUser($user, $currentDate);
+        if ($isFlexible) {
+            $constraints = \Modules\Attendance\Support\FlexibleWorkDay::applyToWorkRules(
+                $constraints,
+                $currentDate,
+                $timezone
+            );
+        }
 
-        [$startDateTime, $endDateTime] = $this->resolveWorkPeriodBounds($constraints, $currentDate, $timezone);
+        [$startDateTime, $endDateTime] = $isFlexible
+            ? \Modules\Attendance\Support\FlexibleWorkDay::dayBounds($currentDate, $timezone)
+            : $this->resolveWorkPeriodBounds($constraints, $currentDate, $timezone);
 
-        $window = $this->computeShiftWindow($constraints, $startDateTime, $endDateTime, $clockInDTO, $timezone);
+        $window = $this->computeShiftWindow($constraints, $startDateTime, $endDateTime, $clockInDTO, $timezone, $isFlexible);
 
-        $this->enforceClockInWindow($clockInDTO, $window, $timezone, $startDateTime, $endDateTime);
+        $this->enforceClockInWindow($clockInDTO, $window, $timezone, $startDateTime, $endDateTime, $isFlexible);
 
         $attendanceData = $this->buildClockInAttendanceData(
             $clockInDTO,
@@ -78,19 +88,27 @@ class AttendanceService
             $startDateTime,
             $endDateTime,
             $timezone,
-            $window
+            $window,
+            $isFlexible
         );
-        $attendance = $this->persistClockInAttendance($clockInDTO->getUserId(), $startDateTime, $attendanceData);
+        $attendance = $this->persistClockInAttendance(
+            $clockInDTO->getUserId(),
+            $startDateTime,
+            $attendanceData,
+            $isFlexible ? $currentDate : null
+        );
 
         $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'] ?? false;
-        if ($extendsNextDay) {
+        if ($extendsNextDay && ! $isFlexible) {
             ProcessClockInAttendanceData::dispatch(
                 (string) $attendance->id,
                 (string) $attendance->company_id,
             )->delay($endDateTime);
         }
 
-        $this->scheduleAutoClockOutWhenNextShiftStarts($attendance, $constraints, $endDateTime);
+        if (! $isFlexible) {
+            $this->scheduleAutoClockOutWhenNextShiftStarts($attendance, $constraints, $endDateTime);
+        }
         $this->scheduleAutoClose($attendance, $window);
 
         // Absence backstop: if the user never clocks out of *this* row, the row can still
@@ -169,6 +187,7 @@ class AttendanceService
         Carbon $endDateTime,
         ClockInDTO $dto,
         string $timezone,
+        bool $isFlexible = false,
     ): ShiftWindow {
         $clockIn = CarbonImmutable::parse($dto->getClockInTime(), $timezone);
 
@@ -183,6 +202,14 @@ class AttendanceService
             ),
         );
 
+        $alreadyWorked = $isFlexible
+            ? $this->workedMinutesOnBusinessDate((string) $dto->getUserId(), $startDateTime->toDateString())
+            : $this->workedMinutesInScheduledPeriod(
+                (string) $dto->getUserId(),
+                $startTimeStr,
+                $endTimeStr,
+            );
+
         return $this->windowCalculator->compute(new ShiftWindowInput(
             scheduledStart: CarbonImmutable::parse($startTimeStr, $timezone),
             scheduledEnd: CarbonImmutable::parse($endTimeStr, $timezone),
@@ -193,13 +220,13 @@ class AttendanceService
                 ? (int) $constraints['can_clock_in_before_minutes']
                 : null,
             maxOverTimeHours: (float) ($constraints['max_over_time'] ?? 0.0),
-            alreadyWorkedMinutesInPeriod: $this->workedMinutesInScheduledPeriod(
-                (string) $dto->getUserId(),
-                $startTimeStr,
-                $endTimeStr,
-            ),
+            alreadyWorkedMinutesInPeriod: $alreadyWorked,
             overtimeFlags: $flags,
             timezone: $timezone,
+            requiredWorkMinutesOverride: $isFlexible
+                ? \Modules\Attendance\Support\FlexibleWorkDay::requiredMinutesFromWorkRules($constraints)
+                : null,
+            flexibleDay: $isFlexible,
         ));
     }
 
@@ -214,7 +241,8 @@ class AttendanceService
         ShiftWindow $window,
         string $timezone,
         Carbon $startDateTime,
-        Carbon $endDateTime
+        Carbon $endDateTime,
+        bool $isFlexible = false,
     ): void {
         $clockInMoment = CarbonImmutable::parse($dto->getClockInTime(), $timezone);
 
@@ -227,23 +255,29 @@ class AttendanceService
             ]]);
         }
 
-        $isFirstClockIn = !$this->hasAnyClockInForScheduledPeriod(
-            (string) $dto->getUserId(),
-            $startDateTime->format('Y-m-d H:i:s'),
-            $endDateTime->format('Y-m-d H:i:s'),
-        );
+        $isFirstClockIn = $isFlexible
+            ? ! $this->hasAnyClockInOnBusinessDate((string) $dto->getUserId(), $startDateTime->toDateString())
+            : ! $this->hasAnyClockInForScheduledPeriod(
+                (string) $dto->getUserId(),
+                $startDateTime->format('Y-m-d H:i:s'),
+                $endDateTime->format('Y-m-d H:i:s'),
+            );
 
         $latestAllowed = $isFirstClockIn
             ? ($window->firstClockInDeadline ?? $window->lastClockInAt)
             : $window->lastClockInAt;
 
         if ($clockInMoment->greaterThan($latestAllowed)) {
-            $type = $isFirstClockIn && $window->firstClockInDeadline !== null
-                ? 'clock_in_deadline_passed'
-                : 'clock_in_window_closed';
-            $message = $type === 'clock_in_deadline_passed'
-                ? 'Clock-in deadline passed at ' . $window->firstClockInDeadline->format('H:i') . '.'
-                : 'The shift clock-in window has closed.';
+            $type = $isFlexible
+                ? 'working_hours_completed'
+                : ($isFirstClockIn && $window->firstClockInDeadline !== null
+                    ? 'clock_in_deadline_passed'
+                    : 'clock_in_window_closed');
+            $message = match ($type) {
+                'working_hours_completed' => 'Required working hours are completed. Overtime clock-in is not allowed.',
+                'clock_in_deadline_passed' => 'Clock-in deadline passed at ' . $window->firstClockInDeadline->format('H:i') . '.',
+                default => 'The shift clock-in window has closed.',
+            };
 
             throw AttendanceException::clockInBlocked([[
                 'type'     => $type,
@@ -268,12 +302,30 @@ class AttendanceService
                 ->sum('total_work_hours') * 60);
     }
 
+    public function workedMinutesOnBusinessDate(string $userId, string $businessDate): int
+    {
+        return (int) round((float) Attendance::query()
+                ->where('user_id', $userId)
+                ->whereDate('business_date', $businessDate)
+                ->whereNotNull('clock_in_time')
+                ->sum('total_work_hours') * 60);
+    }
+
     private function hasAnyClockInForScheduledPeriod(string $userId, string $startTime, string $endTime): bool
     {
         return Attendance::query()
             ->where('user_id', $userId)
             ->where('start_time', $startTime)
             ->where('end_time', $endTime)
+            ->whereNotNull('clock_in_time')
+            ->exists();
+    }
+
+    private function hasAnyClockInOnBusinessDate(string $userId, string $businessDate): bool
+    {
+        return Attendance::query()
+            ->where('user_id', $userId)
+            ->whereDate('business_date', $businessDate)
             ->whereNotNull('clock_in_time')
             ->exists();
     }
@@ -287,17 +339,25 @@ class AttendanceService
         Carbon $startDateTime,
         Carbon $endDateTime,
         string $timezone,
-        ShiftWindow $window
+        ShiftWindow $window,
+        bool $isFlexible = false,
     ): array {
         $flags = \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($constraints['overtime_rules'] ?? null);
+        $clockIn = Carbon::parse($dto->getClockInTime(), $timezone);
+
+        // Flexible: store start_time = clock-in so calendar/history never treat the day as late.
+        $storedStart = $isFlexible ? $clockIn : $startDateTime;
+        $storedEnd = $isFlexible
+            ? Carbon::parse($window->expectedClockOutAt->format('Y-m-d H:i:s'), $timezone)
+            : $endDateTime;
 
         return [
             'user_id' => $dto->getUserId(),
             'company_id' => $dto->getCompanyId(),
             'clock_in_time' => $dto->getClockInTime(),
             'clock_in_location' => $dto->getLocation(),
-            'start_time' => $startDateTime->format('Y-m-d H:i:s'),
-            'end_time' => $endDateTime->format('Y-m-d H:i:s'),
+            'start_time' => $storedStart->format('Y-m-d H:i:s'),
+            'end_time' => $storedEnd->format('Y-m-d H:i:s'),
             'notes' => $dto->getNotes(),
             'ip_address' => $dto->getIpAddress(),
             'user_agent' => $dto->getUserAgent(),
@@ -306,6 +366,9 @@ class AttendanceService
             'is_late' => 0,
             'is_holiday' => 0,
             'day_status' => 'in_location',
+            'attendance_type' => $isFlexible
+                ? \Modules\Attendance\Support\AttendanceType::FLEXIBLE
+                : \Modules\Attendance\Support\AttendanceType::REGULAR,
             'timezone' => $timezone,
             'max_over_time' => $constraints['max_over_time'] ?? null,
             'business_date' => $startDateTime->toDateString(),
@@ -329,15 +392,23 @@ class AttendanceService
     private function persistClockInAttendance(
          $userId,
         Carbon $startDateTime,
-        array $attendanceData
+        array $attendanceData,
+        ?string $flexibleBusinessDate = null,
     ): Attendance {
-        $startTimeStr = $startDateTime->format('Y-m-d H:i:s');
-
-        $waiting = Attendance::query()
+        $waitingQuery = Attendance::query()
             ->where('user_id', $userId)
-            ->where('start_time', $startTimeStr)
-            ->whereNull('clock_in_time')
-            ->first();
+            ->whereNull('clock_in_time');
+
+        if ($flexibleBusinessDate !== null) {
+            $waitingQuery->where(function ($query) use ($flexibleBusinessDate, $startDateTime) {
+                $query->whereDate('business_date', $flexibleBusinessDate)
+                    ->orWhereDate('start_time', $startDateTime->toDateString());
+            });
+        } else {
+            $waitingQuery->where('start_time', $startDateTime->format('Y-m-d H:i:s'));
+        }
+
+        $waiting = $waitingQuery->first();
 
         if ($waiting) {
             $waiting->update($attendanceData);

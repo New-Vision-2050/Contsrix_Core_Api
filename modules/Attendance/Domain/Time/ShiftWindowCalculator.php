@@ -23,9 +23,15 @@ final class ShiftWindowCalculator
 {
     public function compute(ShiftWindowInput $in): ShiftWindow
     {
+        if ($in->flexibleDay) {
+            return $this->computeFlexible($in);
+        }
+
         $flags = $in->overtimeFlags ?? new OvertimeFlags();
 
-        $requiredMinutes = (int) $in->scheduledStart->diffInMinutes($in->scheduledEnd, false);
+        $requiredMinutes = $in->requiredWorkMinutesOverride !== null
+            ? max(0, $in->requiredWorkMinutesOverride)
+            : (int) $in->scheduledStart->diffInMinutes($in->scheduledEnd, false);
         $maxOtMin        = (int) round($in->maxOverTimeHours * 60);
 
         $workWindowStart = $in->scheduledStart->subMinutes($in->earlyWindowMinutes);
@@ -74,6 +80,56 @@ final class ShiftWindowCalculator
             expectedClockOutAt:   $expectedClockOutAt,
             autoCloseTriggerAt:   $autoCloseTriggerAt,
             absentAt:             $absentAt,
+        );
+    }
+
+    /**
+     * Flexible: clock-in any time during the calendar day. Required hours come from
+     * constraint working_hours. Auto-close when those hours complete. If overtime after
+     * finish is allowed, a later session can run up to max_over_time.
+     */
+    private function computeFlexible(ShiftWindowInput $in): ShiftWindow
+    {
+        $flags = $in->overtimeFlags ?? new OvertimeFlags();
+        $requiredMinutes = $in->requiredWorkMinutesOverride !== null
+            ? max(0, $in->requiredWorkMinutesOverride)
+            : (int) $in->scheduledStart->diffInMinutes($in->scheduledEnd, false);
+        $maxOtMin = (int) round($in->maxOverTimeHours * 60);
+
+        $dayStart = $in->scheduledStart;
+        $dayEnd = $in->scheduledEnd;
+        $alreadyWorked = max(0, $in->alreadyWorkedMinutesInPeriod);
+        $remainingMinutes = max(0, $requiredMinutes - $alreadyWorked);
+        $hoursComplete = $remainingMinutes === 0 && $alreadyWorked > 0;
+
+        $anchor = $in->clockIn ?? $dayStart;
+
+        if ($hoursComplete) {
+            // Overtime re-clock-in after required hours were finished.
+            $expectedClockOutAt = $anchor->addMinutes($maxOtMin + $in->completedBreakMinutes);
+            if ($expectedClockOutAt->greaterThan($dayEnd)) {
+                $expectedClockOutAt = $dayEnd;
+            }
+            $lastClockInAt = $flags->afterFinishWork ? $dayEnd : $dayStart;
+        } else {
+            $expectedClockOutAt = $anchor->addMinutes($remainingMinutes + $in->completedBreakMinutes);
+            if ($expectedClockOutAt->greaterThan($dayEnd)) {
+                $expectedClockOutAt = $dayEnd;
+            }
+            $lastClockInAt = $dayEnd;
+        }
+
+        return new ShiftWindow(
+            requiredWorkMinutes:  $requiredMinutes,
+            workWindowStart:      $dayStart,
+            workWindowEnd:        $dayEnd,
+            earliestClockIn:      $dayStart,
+            firstClockInDeadline: null,
+            lastClockInAt:        $lastClockInAt,
+            lastClockOutAt:       $dayEnd,
+            expectedClockOutAt:   $expectedClockOutAt,
+            autoCloseTriggerAt:   $expectedClockOutAt,
+            absentAt:             $dayEnd,
         );
     }
 }

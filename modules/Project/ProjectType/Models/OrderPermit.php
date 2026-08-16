@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectType\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrderPermit extends Model
 {
@@ -28,6 +29,11 @@ class OrderPermit extends Model
     public function orderPermitType(): BelongsTo
     {
         return $this->belongsTo(OrderPermitType::class, 'order_permit_type_id');
+    }
+
+    public function udsRecords(): HasMany
+    {
+        return $this->hasMany(ProjectOrderPermitUds::class, 'type_code', 'code');
     }
 
 }

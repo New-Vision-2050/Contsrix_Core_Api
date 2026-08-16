@@ -334,6 +334,12 @@ class AttendanceCalendarService
      */
     private function hasLateArrival(Collection $dayAttendances): bool
     {
+        if ($dayAttendances->contains(
+            fn ($a) => \Modules\Attendance\Support\AttendanceType::isFlexible($a->attendance_type ?? null)
+        )) {
+            return false;
+        }
+
         foreach ($dayAttendances as $attendance) {
             if (empty($attendance->clock_in_time) || empty($attendance->start_time)) {
                 continue;
@@ -592,7 +598,7 @@ class AttendanceCalendarService
             'id', 'user_id', 'company_id', 'status', 'timezone',
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours', 'total_break_hours',
-            'business_date', 'day_status', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         foreach (['worked_minutes', 'work_duration'] as $durationColumn) {

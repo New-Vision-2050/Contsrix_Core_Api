@@ -231,4 +231,62 @@ final class ShiftWindowCalculatorTest extends TestCase
         $this->assertSame('2026-07-27 21:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
         $this->assertSame('2026-07-27 22:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
     }
+
+    public function test_flexible_day_clock_in_anytime_auto_closes_after_required_hours(): void
+    {
+        $tz = 'Asia/Riyadh';
+        $w = $this->calc->compute(new ShiftWindowInput(
+            scheduledStart: CarbonImmutable::parse('2026-08-13 00:00:00', $tz),
+            scheduledEnd: CarbonImmutable::parse('2026-08-13 23:59:59', $tz),
+            clockIn: CarbonImmutable::parse('2026-08-13 11:00:00', $tz),
+            maxOverTimeHours: 1.0,
+            overtimeFlags: new OvertimeFlags(afterFinishWork: true),
+            timezone: $tz,
+            requiredWorkMinutesOverride: 480,
+            flexibleDay: true,
+        ));
+
+        $this->assertSame(480, $w->requiredWorkMinutes);
+        $this->assertSame('2026-08-13 00:00', $w->earliestClockIn->format('Y-m-d H:i'));
+        $this->assertNull($w->firstClockInDeadline);
+        $this->assertSame('2026-08-13 19:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 19:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 23:59', $w->absentAt->format('Y-m-d H:i'));
+    }
+
+    public function test_flexible_overtime_session_after_hours_complete(): void
+    {
+        $tz = 'Asia/Riyadh';
+        $w = $this->calc->compute(new ShiftWindowInput(
+            scheduledStart: CarbonImmutable::parse('2026-08-13 00:00:00', $tz),
+            scheduledEnd: CarbonImmutable::parse('2026-08-13 23:59:59', $tz),
+            clockIn: CarbonImmutable::parse('2026-08-13 20:00:00', $tz),
+            maxOverTimeHours: 1.0,
+            alreadyWorkedMinutesInPeriod: 480,
+            overtimeFlags: new OvertimeFlags(afterFinishWork: true),
+            timezone: $tz,
+            requiredWorkMinutesOverride: 480,
+            flexibleDay: true,
+        ));
+
+        $this->assertSame('2026-08-13 21:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 23:59', $w->lastClockInAt->format('Y-m-d H:i'));
+    }
+
+    public function test_flexible_blocks_reclock_when_overtime_not_allowed(): void
+    {
+        $tz = 'Asia/Riyadh';
+        $w = $this->calc->compute(new ShiftWindowInput(
+            scheduledStart: CarbonImmutable::parse('2026-08-13 00:00:00', $tz),
+            scheduledEnd: CarbonImmutable::parse('2026-08-13 23:59:59', $tz),
+            clockIn: CarbonImmutable::parse('2026-08-13 20:00:00', $tz),
+            alreadyWorkedMinutesInPeriod: 480,
+            overtimeFlags: new OvertimeFlags(afterFinishWork: false),
+            timezone: $tz,
+            requiredWorkMinutesOverride: 480,
+            flexibleDay: true,
+        ));
+
+        $this->assertSame('2026-08-13 00:00', $w->lastClockInAt->format('Y-m-d H:i'));
+    }
 }

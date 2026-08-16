@@ -9,6 +9,8 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Project\ProjectManagement\Models\ProjectContractor;
+use Modules\Project\ProjectManagement\Presenters\ProjectContractorPresenter;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitPresenter;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitNoteLogPresenter;
 use Modules\Project\ProjectType\Requests\CreateProjectOrderPermitRequest;
@@ -41,13 +43,17 @@ class ProjectOrderPermitController extends Controller
     public function searchUds(SearchProjectOrderPermitUdsRequest $request, string $project): JsonResponse
     {
         try {
-            $items = $this->service->searchUds(
+            $data = $this->service->searchUds(
                 $project,
-                $request->search(),
-                $request->limit(),
+                $request->name(),
+                $request->orderPermitId(),
             );
 
-            return Json::items($items);
+            if ($data['contractor'] instanceof ProjectContractor) {
+                $data['contractor'] = (new ProjectContractorPresenter($data['contractor']))->getData();
+            }
+
+            return Json::item($data);
         } catch (ModelNotFoundException $e) {
             return Json::error($e->getMessage(), 404);
         } catch (\Exception $e) {

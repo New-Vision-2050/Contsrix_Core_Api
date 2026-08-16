@@ -51,7 +51,7 @@ final class UserAttendanceHistoryService
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
-            'business_date', 'day_status', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         $allAttendances = Attendance::query()
@@ -156,7 +156,7 @@ final class UserAttendanceHistoryService
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
-            'business_date', 'day_status', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         $allAttendances = Attendance::query()
@@ -801,6 +801,12 @@ final class UserAttendanceHistoryService
      */
     private function hasLateArrival(Collection $attendances): bool
     {
+        if ($attendances->contains(
+            fn ($a) => \Modules\Attendance\Support\AttendanceType::isFlexible($a->attendance_type ?? null)
+        )) {
+            return false;
+        }
+
         foreach ($attendances as $attendance) {
             if (empty($attendance->clock_in_time) || empty($attendance->start_time)) {
                 continue;

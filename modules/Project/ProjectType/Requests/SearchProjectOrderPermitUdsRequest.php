@@ -16,18 +16,18 @@ class SearchProjectOrderPermitUdsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'search' => ['nullable', 'string', 'max:255'],
-            'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'name' => ['required', 'string'],
+            'order_permit_id' => ['required', 'integer', 'exists:order_permit,id'],
         ];
     }
 
-    public function search(): string
+    public function name(): string
     {
-        return trim((string) ($this->validated('search') ?? ''));
+        return trim((string) $this->validated('name'));
     }
 
-    public function limit(): int
+    public function orderPermitId(): int
     {
-        return (int) ($this->validated('limit') ?? 20);
+        return (int) $this->validated('order_permit_id');
     }
 }

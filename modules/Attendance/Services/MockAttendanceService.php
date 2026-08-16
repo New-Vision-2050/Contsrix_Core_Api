@@ -105,12 +105,17 @@ class MockAttendanceService
                 // rejection — prefer "too late" (window passed) over "too early" (upcoming).
                 if ($tooEarly || $tooLate) {
                     if ($rejection === null || $tooLate) {
+                        $isFlexible = \Modules\Attendance\Support\AttendanceType::isFlexible(
+                            $period['attendance_type'] ?? $workRules['attendance_type'] ?? null
+                        );
                         $rejection = [
                             'type' => $tooEarly
                                 ? 'clock_in_too_early'
-                                : ($isFirstClockIn && $window->firstClockInDeadline !== null
-                                    ? 'clock_in_deadline_passed'
-                                    : 'clock_in_window_closed'),
+                                : ($isFlexible && ! $isFirstClockIn
+                                    ? 'working_hours_completed'
+                                    : ($isFirstClockIn && $window->firstClockInDeadline !== null
+                                        ? 'clock_in_deadline_passed'
+                                        : 'clock_in_window_closed')),
                             'window' => $window,
                         ];
                     }
@@ -173,6 +178,18 @@ class MockAttendanceService
         $canClockInBefore = $this->resolveCanClockInBeforeMinutes($period, $workRules);
         $flags = OvertimeFlags::fromArray($period['overtime_rules'] ?? $workRules['overtime_rules'] ?? null);
 
+        $isFlexible = \Modules\Attendance\Support\AttendanceType::isFlexible(
+            $period['attendance_type'] ?? $workRules['attendance_type'] ?? null
+        );
+
+        $alreadyWorked = $isFlexible
+            ? $this->attendanceService->workedMinutesOnBusinessDate($userId, $periodStart->toDateString())
+            : $this->attendanceService->workedMinutesInScheduledPeriod(
+                $userId,
+                $periodStart->format('Y-m-d H:i:s'),
+                $periodEnd->format('Y-m-d H:i:s'),
+            );
+
         return $this->windowCalculator->compute(new ShiftWindowInput(
             scheduledStart: CarbonImmutable::parse($periodStart->format('Y-m-d H:i:s'), $timezone),
             scheduledEnd: CarbonImmutable::parse($periodEnd->format('Y-m-d H:i:s'), $timezone),
@@ -181,13 +198,13 @@ class MockAttendanceService
             extensionMinutes: $extensionMinutes,
             canClockInBeforeMinutes: $canClockInBefore,
             maxOverTimeHours: (float) ($workRules['max_over_time'] ?? 0.0),
-            alreadyWorkedMinutesInPeriod: $this->attendanceService->workedMinutesInScheduledPeriod(
-                $userId,
-                $periodStart->format('Y-m-d H:i:s'),
-                $periodEnd->format('Y-m-d H:i:s'),
-            ),
+            alreadyWorkedMinutesInPeriod: $alreadyWorked,
             overtimeFlags: $flags,
             timezone: $timezone,
+            requiredWorkMinutesOverride: $isFlexible
+                ? \Modules\Attendance\Support\FlexibleWorkDay::requiredMinutesFromWorkRules($workRules)
+                : null,
+            flexibleDay: $isFlexible,
         ));
     }
 
@@ -293,6 +310,7 @@ class MockAttendanceService
                     . $window->earliestClockIn->format('H:i') . '.',
                 'clock_in_deadline_passed' => 'Clock-in deadline passed at '
                     . ($window->firstClockInDeadline?->format('H:i') ?? '') . '.',
+                'working_hours_completed' => 'Required working hours are completed. Overtime clock-in is not allowed.',
                 default => 'The shift clock-in window has closed.',
             };
         } elseif (empty($workRules['all_work_periods'])) {

@@ -19,12 +19,18 @@ class OrderPermitRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function list(array $conditions = [], string $orderBy = 'id', string $sortBy = 'asc'): Collection
+    public function list(array $conditions = [], string $orderBy = 'id', string $sortBy = 'asc', ?string $name = null): Collection
     {
         $query = $this->model->with(['department', 'orderPermitType']);
 
         foreach ($conditions as $column => $value) {
             $query->where($column, $value);
+        }
+
+        if ($name !== null && $name !== '') {
+            $query->whereHas('udsRecords', static function ($udsQuery) use ($name): void {
+                $udsQuery->where('name', $name);
+            });
         }
 
         return $query->orderBy($orderBy, $sortBy)->get();

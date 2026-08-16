@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Modules\Project\ProjectType\Models\OrderPermitDepartment;
 use Modules\Project\ProjectType\Models\ProjectOrderPermitNoteLog;
+use Modules\Project\ProjectType\Models\OrderPermit;
 use Modules\Project\ProjectType\Models\ProjectOrderPermitUds;
 
 class ProjectOrderPermitService
@@ -499,33 +500,73 @@ class ProjectOrderPermitService
     }
 
     /**
-     * Autocomplete search against imported UDS work orders for a project.
+     * Aggregate UDS contractor/office data and consultant pricing for a work order + order permit.
      *
-     * @return list<array<string, mixed>>
+     * @return array{
+     *     contractor: ProjectContractor|null,
+     *     office: mixed,
+     *     executing_entity: mixed,
+     *     assigned_date: string|null,
+     *     price: mixed,
+     *     consultant_price: mixed
+     * }
      */
-    public function searchUds(string $projectId, string $search, int $limit = 20): array
+    public function searchUds(string $projectId, string $name, int $orderPermitId): array
     {
         $project = ProjectManagement::withoutGlobalScopes()->findOrFail($projectId);
+        $orderPermit = OrderPermit::query()->findOrFail($orderPermitId);
 
-        $search = trim($search);
-        if ($search === '') {
-            return [];
+        $contractorUds = $this->findUdsByTypeCode(
+            $project->id,
+            $name,
+            $orderPermit->code,
+            ['contractor_name', 'office', 'executing_entity'],
+        );
+        $consultantUds = $this->findUdsByTypeCode(
+            $project->id,
+            $name,
+            $orderPermit->type,
+            ['assigned_date', 'price', 'consultant_price'],
+        );
+
+        $contractorName = $contractorUds?->contractor_name !== null
+            ? trim((string) $contractorUds->contractor_name)
+            : '';
+
+        $contractor = null;
+        if ($contractorName !== '') {
+            $contractor = ProjectContractor::withoutGlobalScopes()
+                ->where('project_id', $project->id)
+                ->where('name', $contractorName)
+                ->with(['country', 'representatives'])
+                ->first();
         }
 
-        $limit = max(1, min($limit, 50));
+        return [
+            'contractor' => $contractor,
+            'office' => $contractorUds?->office,
+            'executing_entity' => $contractorUds?->executing_entity,
+            'assigned_date' => $consultantUds?->assigned_date?->toDateString(),
+            'price' => $consultantUds?->price,
+            'consultant_price' => $consultantUds?->consultant_price,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $columns
+     */
+    private function findUdsByTypeCode(string $projectId, string $name, mixed $typeCode, array $columns): ?ProjectOrderPermitUds
+    {
+        $typeCode = $typeCode !== null ? trim((string) $typeCode) : '';
+        if ($name === '' || $typeCode === '') {
+            return null;
+        }
 
         return ProjectOrderPermitUds::query()
-            ->select('project_order_permit_uds.*')
-            ->join('order_permit', 'order_permit.code', '=', 'project_order_permit_uds.type_code')
-            ->where('project_order_permit_uds.project_id', $project->id)
-            ->where('project_order_permit_uds.name', 'like', '%'.$search.'%')
-            ->distinct()
-            ->orderBy('project_order_permit_uds.name')
-            ->limit($limit)
-            ->get()
-            ->map(static fn (ProjectOrderPermitUds $row): array => $row->toArray())
-            ->values()
-            ->all();
+            ->where('project_id', $projectId)
+            ->where('name', $name)
+            ->where('type_code', $typeCode)
+            ->first($columns);
     }
 
     public function listAll(array $filters = []): Collection

@@ -19,7 +19,17 @@ class UpdateUserProfessionalDataRequest extends FormRequest
             'job_type_id' => 'required|string',
             'job_title_id' => 'required|string',
             'job_code' => 'required|string',
+            'attendance_type' => ['nullable', 'string', 'in:regular,flexible,flexable,flex'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('attendance_type')) {
+            $this->merge([
+                'attendance_type' => \Modules\Attendance\Support\AttendanceType::normalize($this->input('attendance_type')),
+            ]);
+        }
     }
     public function messages(): array
     {
@@ -40,6 +50,9 @@ class UpdateUserProfessionalDataRequest extends FormRequest
             job_type_id: $this->get('job_type_id'),
             job_title_id: $this->get('job_title_id'),
             job_code: $this->get('job_code'),
+            attendance_type: $this->filled('attendance_type')
+                ? \Modules\Attendance\Support\AttendanceType::normalize($this->get('attendance_type'))
+                : null,
         );
     }
 }
