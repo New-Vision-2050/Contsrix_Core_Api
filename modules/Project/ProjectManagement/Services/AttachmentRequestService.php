@@ -733,16 +733,12 @@ class AttachmentRequestService
     public function replaceMedia(string $itemId, UploadedFile $newFile): AttachmentRequestItem
     {
         $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
-        $this->visibilityService->assertCompanyCanView($item->attachmentRequest, (string) tenant('id'));
+        $companyId = (string) tenant('id');
 
-        // Verify sender company (only sender can replace media)
-//        if ($item->attachmentRequest->sender_company_id !== tenant('id')) {
-//            throw new \Exception('Unauthorized to replace media for this item');
-//        }
+        $this->visibilityService->assertCompanyCanView($item->attachmentRequest, $companyId);
 
-        // Verify item is pending or update_requested
-        if (!in_array($item->status, ['pending', 'update_requested'])) {
-            throw new \Exception('Can only replace media for pending or update requested items');
+        if ((string) $item->attachmentRequest->sender_company_id !== $companyId) {
+            abort(403, 'Only the sending company can replace attachment media.');
         }
 
         return DB::transaction(function () use ($item, $newFile) {
@@ -758,15 +754,11 @@ class AttachmentRequestService
                 'public'
             );
 
-            // Update item file information
+            // Preserve the item's decision state while replacing only the file metadata.
             $item->update([
                 'file_name' => $newFile->getClientOriginalName(),
                 'file_type' => $newFile->getClientMimeType(),
                 'file_size' => $newFile->getSize(),
-                'status' => 'pending', // Reset to pending after replacement
-                'responded_by_user_id' => null,
-                'responded_at' => null,
-                'response_notes' => null,
             ]);
 
             // Log history
@@ -784,9 +776,6 @@ class AttachmentRequestService
                     'new_file_size_formatted' => $this->formatFileSize($newFile->getSize()),
                 ]
             );
-
-            // Update parent request status if needed
-            $item->attachmentRequest->updateStatusBasedOnItems();
 
             return $item->fresh(['media', 'attachmentRequest']);
         });

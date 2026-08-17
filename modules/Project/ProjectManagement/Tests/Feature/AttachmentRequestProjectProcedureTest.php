@@ -23,6 +23,7 @@ use Modules\Process\Models\Process;
 use Modules\Process\Services\ProcessWorkflowService;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
+use Modules\Project\ProjectManagement\Models\AttachmentRequestItem;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
@@ -881,16 +882,16 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $notes = 'Approved after final replacement';
         $finalFileSize = 24 * 1024;
 
-        $this->actingAs($firstReceiverUser, 'api')
-            ->withHeader('X-Tenant', $receiverCompany->id)
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
             ->post('/api/v1/projects/attachment-requests/items/replace-media', [
                 'item_id' => $itemId,
                 'new_file' => UploadedFile::fake()->create('intermediate-replacement.pdf', 16, 'application/pdf'),
             ], ['Accept' => 'application/json'])
             ->assertOk();
 
-        $this->actingAs($firstReceiverUser, 'api')
-            ->withHeader('X-Tenant', $receiverCompany->id)
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
             ->post('/api/v1/projects/attachment-requests/items/replace-media', [
                 'item_id' => $itemId,
                 'new_file' => UploadedFile::fake()->create('final-replacement.pdf', 24, 'application/pdf'),
@@ -1008,16 +1009,16 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             (int) $initialHistory[2]['metadata']['process_sort_order']
         );
 
-        $this->actingAs($firstReceiverUser, 'api')
-            ->withHeader('X-Tenant', $receiverCompany->id)
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
             ->post('/api/v1/projects/attachment-requests/items/replace-media', [
                 'item_id' => $itemId,
                 'new_file' => UploadedFile::fake()->create('step-one-draft.pdf', 16, 'application/pdf'),
             ], ['Accept' => 'application/json'])
             ->assertOk();
 
-        $this->actingAs($firstReceiverUser, 'api')
-            ->withHeader('X-Tenant', $receiverCompany->id)
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
             ->post('/api/v1/projects/attachment-requests/items/replace-media', [
                 'item_id' => $itemId,
                 'new_file' => UploadedFile::fake()->create('step-one-final.pdf', 24, 'application/pdf'),
@@ -1161,6 +1162,103 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $this->assertNull($mediaHistory);
         $this->assertHistoryCount($requestId, 'media_replaced', 1);
+    }
+
+    public function test_sender_can_replace_media_for_every_item_status_without_changing_decision_state(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $states = [
+            ['item_status' => 'pending', 'request_status' => AttachmentRequest::STATUS_PENDING],
+            ['item_status' => 'update_requested', 'request_status' => AttachmentRequest::STATUS_PENDING],
+            ['item_status' => 'approved', 'request_status' => AttachmentRequest::STATUS_APPROVED],
+            ['item_status' => 'declined', 'request_status' => AttachmentRequest::STATUS_DECLINED],
+        ];
+
+        foreach ($states as $state) {
+            $createResponse = $this->postAttachmentRequest($project, $procedure)
+                ->assertOk();
+
+            $requestId = $createResponse->json('payload.id');
+            $itemId = $createResponse->json('payload.items.0.id');
+            $item = AttachmentRequestItem::query()->findOrFail($itemId);
+
+            $item->update([
+                'status' => $state['item_status'],
+                'responded_by_user_id' => $state['item_status'] === 'pending' ? null : $receiverUser->id,
+                'responded_at' => $state['item_status'] === 'pending' ? null : now()->subMinute(),
+                'response_notes' => $state['item_status'] === 'pending'
+                    ? null
+                    : "{$state['item_status']} response notes",
+            ]);
+            $item->attachmentRequest->update(['status' => $state['request_status']]);
+
+            $beforeReplacement = $item->fresh();
+            $replacementName = "{$state['item_status']}-replacement.pdf";
+
+            $this->actingAs($this->actor, 'api')
+                ->withHeader('X-Tenant', $this->company->id)
+                ->post('/api/v1/projects/attachment-requests/items/replace-media', [
+                    'item_id' => $itemId,
+                    'new_file' => UploadedFile::fake()->create($replacementName, 16, 'application/pdf'),
+                ], ['Accept' => 'application/json'])
+                ->assertOk()
+                ->assertJsonPath('payload.status', $state['request_status'])
+                ->assertJsonPath('payload.items.0.status', $state['item_status'])
+                ->assertJsonPath('payload.items.0.file_name', $replacementName);
+
+            $replacedItem = $item->fresh();
+            $replacedRequest = AttachmentRequest::query()->findOrFail($requestId);
+
+            $this->assertSame($state['item_status'], $replacedItem->status);
+            $this->assertSame($state['request_status'], $replacedRequest->status);
+            $this->assertSame($replacementName, $replacedItem->file_name);
+            $this->assertSame('application/pdf', $replacedItem->file_type);
+            $this->assertSame(16 * 1024, $replacedItem->file_size);
+            $this->assertSame($beforeReplacement->responded_by_user_id, $replacedItem->responded_by_user_id);
+            $this->assertEquals($beforeReplacement->responded_at, $replacedItem->responded_at);
+            $this->assertSame($beforeReplacement->response_notes, $replacedItem->response_notes);
+            $this->assertHistoryCount($requestId, 'media_replaced', 1);
+        }
+    }
+
+    public function test_visible_receiver_cannot_replace_attachment_media(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+        $beforeReplacement = AttachmentRequestItem::query()->findOrFail($itemId);
+        $mediaCount = $beforeReplacement->getMedia('attachments')->count();
+
+        $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/replace-media', [
+                'item_id' => $itemId,
+                'new_file' => UploadedFile::fake()->create('unauthorized-replacement.pdf', 16, 'application/pdf'),
+            ], ['Accept' => 'application/json'])
+            ->assertStatus(403);
+
+        $unchangedItem = $beforeReplacement->fresh();
+
+        $this->assertSame($beforeReplacement->file_name, $unchangedItem->file_name);
+        $this->assertSame($beforeReplacement->file_type, $unchangedItem->file_type);
+        $this->assertSame($beforeReplacement->file_size, $unchangedItem->file_size);
+        $this->assertSame($mediaCount, $unchangedItem->getMedia('attachments')->count());
+        $this->assertHistoryCount($requestId, 'media_replaced', 0);
     }
 
     public function test_historical_attachment_request_history_migration_normalizes_old_item_approval_history(): void
