@@ -13,6 +13,7 @@ use Modules\Project\ProjectType\Requests\FilterSafetyRecordsRequest;
 use Modules\Project\ProjectType\Requests\StoreSafetyRecordRequest;
 use Modules\Project\ProjectType\Requests\UpdateSafetyRecordRequest;
 use Modules\Project\ProjectType\Services\SafetyService;
+use Modules\Project\ProjectType\Services\SafetyViolationFormReportService;
 use Modules\Project\ProjectType\Services\SafetyViolationReportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
@@ -22,6 +23,7 @@ class SafetyRecordController extends Controller
     public function __construct(
         private SafetyService $service,
         private SafetyViolationReportService $violationReportService,
+        private SafetyViolationFormReportService $violationFormReportService,
     ) {}
 
     public function index(FilterSafetyRecordsRequest $request, string $project): JsonResponse
@@ -148,6 +150,15 @@ class SafetyRecordController extends Controller
     {
         try {
             return $this->violationReportService->download($project, $id);
+        } catch (Throwable $e) {
+            return $this->errorResponse($e);
+        }
+    }
+
+    public function violationFormReport(string $project, string $id): Response|JsonResponse
+    {
+        try {
+            return $this->violationFormReportService->download($project, $id);
         } catch (Throwable $e) {
             return $this->errorResponse($e);
         }
