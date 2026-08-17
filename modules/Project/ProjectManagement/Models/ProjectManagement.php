@@ -17,6 +17,7 @@ use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
 use App\Traits\Shareable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Project\ProjectManagement\Enums\ProjectReportCode;
 
 class ProjectManagement extends Model
 {
@@ -58,6 +59,7 @@ class ProjectManagement extends Model
         'company_id',
         'status',
         'serial_number',
+        'code_report',
     ];
 
     protected $casts = [
@@ -82,6 +84,7 @@ class ProjectManagement extends Model
         'project_value' => 'decimal:2',
         'status' => 'integer',
         'serial_number' => 'string',
+        'code_report' => ProjectReportCode::class,
     ];
 
     protected static function boot()
