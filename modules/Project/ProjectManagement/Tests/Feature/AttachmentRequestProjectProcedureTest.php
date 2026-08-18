@@ -1674,6 +1674,106 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertHistoryCount($requestId, 'media_replaced', 0);
     }
 
+    public function test_historical_final_approval_status_migration_marks_only_eligible_requests_approved(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $eligibleRequestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+        $pendingStepRequestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+        $recentRequestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        foreach ([$eligibleRequestId, $pendingStepRequestId, $recentRequestId] as $requestId) {
+            DB::table('attachment_request_history')
+                ->where('attachment_request_id', $requestId)
+                ->delete();
+
+            $this->insertHistoricalHistory(
+                requestId: $requestId,
+                action: 'request_created',
+                description: 'Legacy request created',
+                userId: (string) $this->actor->id,
+                itemId: null,
+                metadata: [],
+                createdAt: new \DateTimeImmutable('2026-08-13 09:00:00'),
+                sortOrder: 0,
+            );
+            $this->insertHistoricalHistory(
+                requestId: $requestId,
+                action: 'attachment_approved',
+                description: 'Legacy final attachment approval',
+                userId: (string) $receiverUser->id,
+                itemId: null,
+                metadata: ['status' => 'approved'],
+                createdAt: new \DateTimeImmutable('2026-08-13 10:00:00'),
+                sortOrder: 101001,
+            );
+        }
+
+        $this->insertHistoricalHistory(
+            requestId: $pendingStepRequestId,
+            action: 'workflow_step_pending',
+            description: 'Workflow step still pending',
+            userId: null,
+            itemId: null,
+            metadata: ['status' => 'pending'],
+            createdAt: new \DateTimeImmutable('2026-08-13 11:00:00'),
+            sortOrder: 101002,
+        );
+
+        DB::table('attachment_requests')
+            ->whereIn('id', [$eligibleRequestId, $pendingStepRequestId])
+            ->update([
+                'status' => AttachmentRequest::STATUS_PENDING,
+                'created_at' => '2026-08-13 12:00:00',
+            ]);
+        DB::table('attachment_requests')
+            ->where('id', $recentRequestId)
+            ->update([
+                'status' => AttachmentRequest::STATUS_PENDING,
+                'created_at' => '2026-08-14 00:00:00',
+            ]);
+
+        $lastEligibleHistory = DB::table('attachment_request_history')
+            ->where('attachment_request_id', $eligibleRequestId)
+            ->orderByRaw('sort_order is null desc')
+            ->orderByDesc('sort_order')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->first();
+
+        $this->assertSame('attachment_approved', $lastEligibleHistory->action);
+        $this->assertSame(
+            '2026-08-13 12:00:00',
+            DB::table('attachment_requests')->where('id', $eligibleRequestId)->value('created_at')
+        );
+
+        $this->runHistoricalFinalApprovalStatusMigration();
+
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $eligibleRequestId,
+            'status' => AttachmentRequest::STATUS_APPROVED,
+        ]);
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $pendingStepRequestId,
+            'status' => AttachmentRequest::STATUS_PENDING,
+        ]);
+        $this->assertDatabaseHas('attachment_requests', [
+            'id' => $recentRequestId,
+            'status' => AttachmentRequest::STATUS_PENDING,
+        ]);
+    }
+
     public function test_approval_without_resolvable_workflow_steps_auto_approves(): void
     {
         $project = $this->createProject();
@@ -2303,6 +2403,13 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
     private function runHistoricalAttachmentRequestHistoryMigration(): void
     {
         $migration = require database_path('migrations/2026_08_11_000000_repair_historical_attachment_request_history_data.php');
+
+        $migration->up();
+    }
+
+    private function runHistoricalFinalApprovalStatusMigration(): void
+    {
+        $migration = require database_path('migrations/2026_08_17_000000_mark_historically_approved_attachment_requests.php');
 
         $migration->up();
     }
