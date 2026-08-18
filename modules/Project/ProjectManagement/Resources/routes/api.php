@@ -358,6 +358,10 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
            ;
     });
 
+    Route::post('/{id}/stamp', [ProjectManagementController::class, 'storeStamp'])
+        ->permission(Permission::PROJECT_MANAGEMENT_CREATE(), Permission::PROJECT_MANAGEMENT_UPDATE());
+    Route::get('/{id}/stamp', [ProjectManagementController::class, 'showStamp'])
+        ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
     Route::get('/{id}', [ProjectManagementController::class, 'show'])
         ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
     Route::put('/{id}', [ProjectManagementController::class, 'update'])
