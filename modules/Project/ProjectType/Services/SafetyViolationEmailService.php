@@ -19,7 +19,7 @@ class SafetyViolationEmailService
     private const FOUND_STATUS = 'violation_found';
 
     public function __construct(
-        private SafetyViolationReportService $violationReportService,
+        private SafetyViolationReportUrlResolver $reportUrlResolver,
     ) {}
 
     /**
@@ -169,10 +169,7 @@ class SafetyViolationEmailService
     private function resolveReportUrl(SafetyRecord $record): ?string
     {
         try {
-            $url = $this->violationReportService->storeAndGetPublicUrl(
-                (string) $record->project_id,
-                (string) $record->id,
-            );
+            $url = $this->reportUrlResolver->storeAndGetPublicUrl($record);
 
             return $url !== '' ? $url : null;
         } catch (Throwable $e) {

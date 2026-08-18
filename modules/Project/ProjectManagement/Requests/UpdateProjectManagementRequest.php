@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Ramsey\Uuid\Uuid;
 use Modules\Project\ProjectManagement\Commands\UpdateProjectManagementCommand;
+use Modules\Project\ProjectManagement\Enums\ProjectReportCode;
 use Modules\Project\ProjectManagement\Handlers\UpdateProjectManagementHandler;
 
 class UpdateProjectManagementRequest extends FormRequest
@@ -32,6 +34,7 @@ class UpdateProjectManagementRequest extends FormRequest
             'currency_id' => 'nullable|uuid|exists:currencies,id',
             'project_value' => 'nullable|numeric|min:0',
             'status' => 'nullable|integer|in:-1,0,1',
+            'code_report' => ['sometimes', Rule::enum(ProjectReportCode::class)],
         ];
     }
 
@@ -57,6 +60,9 @@ class UpdateProjectManagementRequest extends FormRequest
             currencyId: $this->get('currency_id'),
             projectValue:(float) $this->get('project_value'),
             status: $this->get('status'),
+            codeReport: $this->filled('code_report')
+                ? (string) $this->get('code_report')
+                : null,
         );
     }
 }

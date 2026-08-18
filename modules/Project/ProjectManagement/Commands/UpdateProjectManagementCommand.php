@@ -28,6 +28,7 @@ class UpdateProjectManagementCommand
         private ?string $currencyId = null,
         private ?float $projectValue = null,
         private ?int $status = null,
+        private ?string $codeReport = null,
     ) {
     }
 
@@ -126,9 +127,14 @@ class UpdateProjectManagementCommand
         return $this->status;
     }
 
+    public function getCodeReport(): ?string
+    {
+        return $this->codeReport;
+    }
+
     public function toArray(): array
     {
-        return $this->status == null? [
+        $data = $this->status == null? [
             'project_type_id' => $this->projectTypeId,
             'sub_project_type_id' => $this->subProjectTypeId,
             'sub_sub_project_type_id' => $this->subSubProjectTypeId,
@@ -168,5 +174,11 @@ class UpdateProjectManagementCommand
             'status' => $this->status,
 
         ];
+
+        if ($this->codeReport !== null) {
+            $data['code_report'] = $this->codeReport;
+        }
+
+        return $data;
     }
 }
