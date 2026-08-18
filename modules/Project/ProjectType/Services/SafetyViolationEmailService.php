@@ -142,7 +142,7 @@ class SafetyViolationEmailService
 
         $totalFine = $foundViolations->sum(
             fn (Violation $violation) => abs((float) ($violation->pivot->weight ?? $violation->default_weight ?? 0))
-        );
+        ) * 1000;
 
         /** @var Violation $first */
         $first = $foundViolations->first();

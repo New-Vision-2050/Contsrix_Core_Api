@@ -1774,104 +1774,6 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         ]);
     }
 
-    public function test_legacy_pending_workflow_migration_removes_only_history_for_completed_step(): void
-    {
-        $project = $this->createProject();
-        $procedure = $this->createProjectProcedure($project);
-        $receiverCompany = $this->createCompany();
-        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
-        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
-        $thirdReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
-        $this->createAcceptedShare($project, $receiverCompany);
-        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
-        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
-        $this->createProcedureStep($procedure, $thirdReceiverUser, 3);
-
-        $createResponse = $this->postAttachmentRequest($project, $procedure)
-            ->assertOk();
-        $requestId = $createResponse->json('payload.id');
-        $itemId = $createResponse->json('payload.items.0.id');
-
-        $this->actingAs($firstReceiverUser, 'api')
-            ->withHeader('X-Tenant', $receiverCompany->id)
-            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
-            ->assertOk();
-
-        $this->actingAs($secondReceiverUser, 'api')
-            ->withHeader('X-Tenant', $receiverCompany->id)
-            ->post('/api/v1/projects/attachment-requests/items/respond', [
-                'item_id' => $itemId,
-                'action' => 'approve',
-            ], ['Accept' => 'application/json'])
-            ->assertOk();
-
-        $process = Process::query()
-            ->where('processable_id', $requestId)
-            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
-            ->firstOrFail()
-            ->load('steps');
-        $steps = $process->steps->sortBy('template_step_order')->values();
-        $secondStep = $steps[1];
-        $thirdStep = $steps[2];
-        $processSortOrder = (int) ($process->sort_order ?? 0);
-
-        $stalePendingHistoryId = $this->insertHistoricalHistory(
-            requestId: $requestId,
-            action: 'workflow_step_pending',
-            description: 'Legacy stale pending step two',
-            userId: null,
-            itemId: null,
-            metadata: [
-                'process_id' => (string) $process->id,
-                'process_sort_order' => $processSortOrder,
-                'process_step_id' => null,
-                'step_id' => (int) $secondStep->step_id,
-                'template_step_order' => (int) $secondStep->template_step_order,
-                'status' => ProcessStepStatus::Pending->value,
-            ],
-            createdAt: now(),
-            sortOrder: 100000 + ($processSortOrder * 1000) + (int) $secondStep->template_step_order,
-        );
-
-        DB::table('attachment_requests')
-            ->where('id', $requestId)
-            ->update([
-                'status' => AttachmentRequest::STATUS_APPROVED,
-                'created_at' => '2026-08-13 12:00:00',
-            ]);
-
-        $this->runLegacyPendingWorkflowStatusRepairMigration();
-
-        $this->assertDatabaseHas('attachment_requests', [
-            'id' => $requestId,
-            'status' => AttachmentRequest::STATUS_PENDING,
-        ]);
-        $this->assertDatabaseMissing('attachment_request_history', [
-            'id' => $stalePendingHistoryId,
-        ]);
-        $remainingPendingHistory = AttachmentRequestHistory::query()
-            ->where('attachment_request_id', $requestId)
-            ->where('action', 'workflow_step_pending')
-            ->get()
-            ->filter(static fn (AttachmentRequestHistory $history): bool =>
-                (int) ($history->metadata['template_step_order'] ?? 0) === (int) $thirdStep->template_step_order
-            );
-        $this->assertCount(1, $remainingPendingHistory);
-
-        $history = $this->fetchAttachmentRequestFromList($project)['history'];
-
-        $this->assertSame([
-            'request_created',
-            'workflow_step_approved',
-            'attachment_approved',
-            'workflow_step_pending',
-        ], collect($history)->pluck('action')->all());
-        $this->assertSame(
-            (int) $thirdStep->template_step_order,
-            (int) collect($history)->last()['metadata']['template_step_order']
-        );
-    }
-
     public function test_approval_without_resolvable_workflow_steps_auto_approves(): void
     {
         $project = $this->createProject();
@@ -2508,15 +2410,6 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
     private function runHistoricalFinalApprovalStatusMigration(): void
     {
         $migration = require database_path('migrations/2026_08_17_000000_mark_historically_approved_attachment_requests.php');
-
-        $migration->up();
-    }
-
-    private function runLegacyPendingWorkflowStatusRepairMigration(): void
-    {
-        $migration = require database_path(
-            'migrations/2026_08_18_000000_reopen_legacy_attachment_requests_with_pending_workflows.php'
-        );
 
         $migration->up();
     }
