@@ -25,12 +25,13 @@ class CreateProjectManagementDTO
         public ?string $currencyId = null,
         public ?float $projectValue = null,
         public int $status = 1,
+        public ?string $codeReport = null,
     ) {
     }
 
     public function toArray(): array
     {
-        return [
+        $data = [
             'project_type_id' => $this->projectTypeId,
             'sub_project_type_id' => $this->subProjectTypeId,
             'sub_sub_project_type_id' => $this->subSubProjectTypeId,
@@ -51,5 +52,11 @@ class CreateProjectManagementDTO
             'company_id' => tenant('id'),
             'status' => $this->status,
         ];
+
+        if ($this->codeReport !== null) {
+            $data['code_report'] = $this->codeReport;
+        }
+
+        return $data;
     }
 }

@@ -51,6 +51,8 @@ class ProjectManagementPresenter extends AbstractPresenter
             'currency_id' => $this->projectManagement->currency_id,
             'project_value' => $this->projectManagement->project_value,
             'status' => $this->projectManagement->status,
+            'code_report' => $this->projectManagement->code_report?->value,
+            'stamp' => $this->projectManagement->stampUrl(),
             'company_id' => $this->projectManagement->company_id,
             'created_at' => $this->projectManagement->created_at?->toDateTimeString(),
             'updated_at' => $this->projectManagement->updated_at?->toDateTimeString(),

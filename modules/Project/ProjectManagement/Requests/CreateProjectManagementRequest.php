@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\Project\ProjectManagement\DTO\CreateProjectManagementDTO;
+use Modules\Project\ProjectManagement\Enums\ProjectReportCode;
 
 class CreateProjectManagementRequest extends FormRequest
 {
@@ -30,6 +32,7 @@ class CreateProjectManagementRequest extends FormRequest
             'currency_id' => 'nullable|uuid|exists:currencies,id',
             'project_value' => 'nullable|numeric|min:0',
             'status' => 'nullable|integer|in:-1,0,1',
+            'code_report' => ['sometimes', Rule::enum(ProjectReportCode::class)],
         ];
     }
 
@@ -54,6 +57,9 @@ class CreateProjectManagementRequest extends FormRequest
             currencyId: $this->get('currency_id'),
             projectValue: (float) $this->get('project_value'),
             status: $this->get('status', 1),
+            codeReport: $this->filled('code_report')
+                ? (string) $this->get('code_report')
+                : null,
         );
     }
 }

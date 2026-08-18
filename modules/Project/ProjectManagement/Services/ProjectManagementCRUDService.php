@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Services;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Modules\Project\ProjectManagement\DTO\CreateProjectManagementDTO;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
@@ -42,6 +43,16 @@ class ProjectManagementCRUDService
         return $this->repository->getProjectManagement(
             id: $id,
         );
+    }
+
+    public function uploadStamp(UuidInterface $id, UploadedFile $stamp): ProjectManagement
+    {
+        $project = $this->repository->getProjectManagement($id);
+
+        $project->clearMediaCollection(ProjectManagement::STAMP_COLLECTION);
+        $project->addMedia($stamp)->toMediaCollection(ProjectManagement::STAMP_COLLECTION);
+
+        return $project->fresh() ?? $project;
     }
 
     public function projectTags(): array

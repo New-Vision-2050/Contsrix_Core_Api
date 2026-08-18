@@ -222,6 +222,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         // Route::get('/department/{departmentId}', [ProjectOrderPermitController::class, 'getByDepartment']);
         Route::get('/uds-work-orders', [ProjectOrderPermitController::class, 'searchUds']);
         Route::post('/', [ProjectOrderPermitController::class, 'store']);
+        Route::get('/export-uds-template', [ProjectOrderPermitController::class, 'downloadImportTemplate']);
         Route::post('/import', [ProjectOrderPermitController::class, 'importExcel']);
         Route::get('/{name}/update-from-uds', [ProjectOrderPermitController::class, 'updateFromUds']);
         Route::get('/{id}', [ProjectOrderPermitController::class, 'show']);
@@ -358,6 +359,10 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
            ;
     });
 
+    Route::post('/{id}/stamp', [ProjectManagementController::class, 'storeStamp'])
+        ->permission(Permission::PROJECT_MANAGEMENT_CREATE(), Permission::PROJECT_MANAGEMENT_UPDATE());
+    Route::get('/{id}/stamp', [ProjectManagementController::class, 'showStamp'])
+        ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
     Route::get('/{id}', [ProjectManagementController::class, 'show'])
         ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
     Route::put('/{id}', [ProjectManagementController::class, 'update'])

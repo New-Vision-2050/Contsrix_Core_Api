@@ -17,13 +17,19 @@ use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
 use App\Traits\Shareable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Project\ProjectManagement\Enums\ProjectReportCode;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class ProjectManagement extends Model
+class ProjectManagement extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use Shareable;
+    use InteractsWithMedia;
+
+    public const STAMP_COLLECTION = 'stamp';
 
     protected $table = 'projects';
 
@@ -58,6 +64,8 @@ class ProjectManagement extends Model
         'company_id',
         'status',
         'serial_number',
+        'stamp',
+        'code_report',
     ];
 
     protected $casts = [
@@ -82,6 +90,8 @@ class ProjectManagement extends Model
         'project_value' => 'decimal:2',
         'status' => 'integer',
         'serial_number' => 'string',
+        'stamp' => 'string',
+        'code_report' => ProjectReportCode::class,
     ];
 
     protected static function boot()
@@ -107,6 +117,18 @@ class ProjectManagement extends Model
     public function getTenantIdColumn(): string
     {
         return 'company_id';
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(self::STAMP_COLLECTION);
+    }
+
+    public function stampUrl(): ?string
+    {
+        $url = $this->getFirstMediaUrl(self::STAMP_COLLECTION);
+
+        return $url === '' ? null : $url;
     }
 
     // Relationships

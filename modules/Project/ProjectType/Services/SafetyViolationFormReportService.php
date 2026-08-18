@@ -33,6 +33,46 @@ class SafetyViolationFormReportService
 
     public function download(string $projectId, string $safetyRecordId): Response
     {
+        $file = $this->buildDownloadableFile($projectId, $safetyRecordId);
+
+        return response($file['content'], 200, [
+            'Content-Type' => $file['mime'],
+            'Content-Disposition' => 'attachment; filename="'.$file['filename'].'"',
+        ]);
+    }
+
+    /**
+     * Generate the Jeddah form PDF, store it on a public disk,
+     * and return a URL that can be opened from an email without API auth.
+     */
+    public function storeAndGetPublicUrl(string $projectId, string $safetyRecordId): string
+    {
+        $file = $this->buildDownloadableFile($projectId, $safetyRecordId);
+        $record = $this->loadRecord($projectId, $safetyRecordId);
+
+        $bucket = config('filesystems.disks.s3_public.bucket');
+        $disk = (is_string($bucket) && $bucket !== '') ? 's3_public' : 'public';
+
+        $record->clearMediaCollection(SafetyRecord::VIOLATION_REPORT_COLLECTION);
+
+        $media = $record
+            ->addMediaFromString($file['content'])
+            ->usingFileName($file['filename'])
+            ->usingName('violation-form-report')
+            ->withCustomProperties([
+                'file_path' => 'safety/violation-reports/'.$record->project_id,
+                'mime' => $file['mime'],
+            ])
+            ->toMediaCollection(SafetyRecord::VIOLATION_REPORT_COLLECTION, $disk);
+
+        return $media->getFullUrl();
+    }
+
+    /**
+     * @return array{filename: string, content: string, mime: string}
+     */
+    public function buildDownloadableFile(string $projectId, string $safetyRecordId): array
+    {
         $record = $this->loadRecord($projectId, $safetyRecordId);
         $foundViolations = $this->foundViolations($record);
 
@@ -41,14 +81,12 @@ class SafetyViolationFormReportService
         }
 
         $payload = $this->buildPayload($record, $foundViolations);
-        $binary = $this->renderPdf($payload);
 
-        $filename = sprintf('safety-violation-form-report-%s.pdf', $record->id);
-
-        return response($binary, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-        ]);
+        return [
+            'filename' => sprintf('safety-violation-form-report-%s.pdf', $record->id),
+            'content' => $this->renderPdf($payload),
+            'mime' => 'application/pdf',
+        ];
     }
 
     private function loadRecord(string $projectId, string $safetyRecordId): SafetyRecord
