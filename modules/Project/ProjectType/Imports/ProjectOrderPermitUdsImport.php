@@ -13,6 +13,9 @@ use Carbon\Carbon;
  * Each DB row is an exact copy of ONE Excel row — never merge both roles into one record.
  *
  * Role-specific columns are filled only for that row's role (via type_code classification).
+ *
+ * Official Header validation is separate (UdsExcelOfficialHeader). These 0-based
+ * indexes are the existing import mapping and must not be derived from Header names.
  */
 class ProjectOrderPermitUdsImport
 {
@@ -31,7 +34,8 @@ class ProjectOrderPermitUdsImport
         return str_contains($normalized, 'أمر العمل')
             || str_contains($normalized, 'رقم أمر')
             || str_contains($normalized, 'work order')
-            || str_contains($normalized, 'work_order');
+            || str_contains($normalized, 'work_order')
+            || str_contains($normalized, 'work order number');
     }
 
     /**
@@ -51,18 +55,18 @@ class ProjectOrderPermitUdsImport
             return null;
         }
 
-        $name = $this->value($row, 34); // AI — Work Order Number
+        $name = $this->value($row, 34); // AI — رقم أمر العمل
         if ($name === null) {
             return null;
         }
 
-        $typeCode = $this->value($row, 35); // AJ
-        $basket = $this->value($row, 16); // Q
-        $price = $this->parseFloat($row, 12); // M
-        $assignmentDate = $this->parseDate($row, 25); // Z
-        $column155Date = $this->parseDate($row, 24); // Y
-        $lastProcedureDate = $this->parseDate($row, 28); // AC
-        $lastProcedureCode = $this->value($row, 30); // AE
+        $typeCode = $this->value($row, 35); // AJ — رمز نوع أمر العمل
+        $basket = $this->value($row, 16); // Q — الجهة الحالية
+        $price = $this->parseFloat($row, 12); // M — تكلفة العمالة (existing: consultant price)
+        $assignmentDate = $this->parseDate($row, 25); // Z — تاريخ التسليم للمقاول
+        $column155Date = $this->parseDate($row, 24); // Y — تاريخ الاستلام من المقاول
+        $lastProcedureDate = $this->parseDate($row, 28); // AC — تاريخ آخر إجراء
+        $lastProcedureCode = $this->value($row, 30); // AE — رمز آخر إجراء
 
         // Shared Excel columns — present on every row (exact copy)
         $record = [
@@ -71,39 +75,39 @@ class ProjectOrderPermitUdsImport
             'company_id' => $companyId,
             'name' => $name,
             'type_code' => $typeCode,
-            'executing_entity' => $this->value($row, 27), // AB
-            'office' => $this->value($row, 37), // AL
-            'current_entity' => $basket, // Q
-            'material_balance_elec_contractor' => $this->value($row, 13), // N
-            'contractor_work_order_status' => $this->value($row, 6), // G
-            'contractor_name' => $this->value($row, 36), // AK
-            'penalty_amount' => $this->value($row, 0), // A
-            'finance_approval_date' => $this->parseDate($row, 1), // B
-            'certificate_source_number' => $this->value($row, 2), // C
-            'modifier_employee_number' => $this->value($row, 3), // D
-            'contractor_assigned_employee_number' => $this->value($row, 4), // E
-            'work_order_status' => $this->value($row, 5), // F
-            'work_order_situation' => $this->value($row, 6), // G
-            'penalty_percentage' => $this->value($row, 7), // H
-            'delay_duration' => $this->value($row, 8), // I
-            'disbursement_status' => $this->value($row, 9), // J
-            'total_cost' => $this->value($row, 10), // K
-            'indirect_cost' => $this->value($row, 11), // L
-            'labor_cost' => $this->value($row, 31), // adjusted from M
-            'consumed_material_cost' => $this->value($row, 14), // O
-            'office_code' => $this->value($row, 15), // P
-            'cost_center_name' => $this->value($row, 17), // R
-            'cost_center' => $this->value($row, 18), // S
-            'extract_number' => $this->value($row, 19), // T
-            'completion_certificate_amount' => $this->value($row, 20), // U
-            'contractor_approval_cert_date' => $this->parseDate($row, 21), // V
-            'certificate_approval_date' => $this->parseDate($row, 22), // W
-            'certificate_date' => $this->parseDate($row, 23), // X
-            'procedure_203_date' => $this->parseDate($row, 26), // AA
-            'last_procedure_name' => $this->value($row, 29), // AD
-            'work_order_type' => $this->value($row, 33), // AH
-            'contract_number' => $this->value($row, 32), // adjusted from AI
-            'subscriber_type' => null,
+            'executing_entity' => $this->value($row, 27), // AB — جهة التنفيذ
+            'office' => $this->value($row, 37), // AL — المكتب
+            'current_entity' => $basket, // Q — الجهة الحالية
+            'material_balance_elec_contractor' => $this->value($row, 13), // N — تكلفة المواد الغير مصروفة
+            'contractor_work_order_status' => $this->value($row, 6), // G — موقف أمر العمل
+            'contractor_name' => $this->value($row, 36), // AK — المقاول
+            'penalty_amount' => $this->value($row, 0), // A — مقدار الغرامة
+            'finance_approval_date' => $this->parseDate($row, 1), // B — تاريخ اعتماد المالية
+            'certificate_source_number' => $this->value($row, 2), // C — رقم  مصدر الشهادة
+            'modifier_employee_number' => $this->value($row, 3), // D — رقم الموظف المعدل
+            'contractor_assigned_employee_number' => $this->value($row, 4), // E — رقم الموظف المسند للمقاول
+            'work_order_status' => $this->value($row, 5), // F — حالة أمر العمل
+            'work_order_situation' => $this->value($row, 6), // G — موقف أمر العمل
+            'penalty_percentage' => $this->value($row, 7), // H — نسبة الغرامة
+            'delay_duration' => $this->value($row, 8), // I — مدة التأخير
+            'disbursement_status' => $this->value($row, 9), // J — حالة الصرف
+            'total_cost' => $this->value($row, 10), // K — إجمالي التكلفة
+            'indirect_cost' => $this->value($row, 11), // L — التكلفة الغير مباشرة
+            'labor_cost' => $this->value($row, 31), // AF — نوع امر العمل (existing index, not M)
+            'consumed_material_cost' => $this->value($row, 14), // O — تكلفة المواد المصروفة
+            'office_code' => $this->value($row, 15), // P — رمز المكتب
+            'cost_center_name' => $this->value($row, 17), // R — اسم مركز التكلفة
+            'cost_center' => $this->value($row, 18), // S — مركز التكلفة
+            'extract_number' => $this->value($row, 19), // T — رقم المستخلص
+            'completion_certificate_amount' => $this->value($row, 20), // U — مبلغ شهادة الإنجاز
+            'contractor_approval_cert_date' => $this->parseDate($row, 21), // V — تاريخ اعتماد المقاول لشهادة الانجاز
+            'certificate_approval_date' => $this->parseDate($row, 22), // W — تاريخ اعتماد شهادة الانجاز
+            'certificate_date' => $this->parseDate($row, 23), // X — تاريخ شهادة الانجاز
+            'procedure_203_date' => $this->parseDate($row, 26), // AA — تاريخ اجراء 203
+            'last_procedure_name' => $this->value($row, 29), // AD — مسمى آخر إجراء
+            'work_order_type' => $this->value($row, 33), // AH — نوع المشترك
+            'contract_number' => $this->value($row, 32), // AG — رقم العقد
+            'subscriber_type' => null, // AH exists on the template; existing mapping leaves this unused
             'created_at' => $now,
             'updated_at' => $now,
 

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Project\ProjectType\Imports\ProjectOrderPermitUdsImport;
+use Modules\Project\ProjectType\Imports\UdsExcelHeaderValidator;
 use Modules\Project\ProjectType\Models\OrderPermit;
 use Modules\Project\ProjectType\Models\ProjectOrderPermitUds;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
@@ -58,6 +59,9 @@ class ImportProjectOrderPermitUdsJob implements ShouldQueue
 
                 return;
             }
+
+            // 1b) Official Header must match before any delete/insert/update
+            (new UdsExcelHeaderValidator())->validate($rows[0] ?? []);
 
             // 2) Validate / map (skip header; one Excel row → one UDS row)
             $mapper = new ProjectOrderPermitUdsImport();
