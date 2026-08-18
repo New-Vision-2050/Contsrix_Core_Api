@@ -19,6 +19,11 @@ use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitStatusRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
 use Modules\Project\ProjectType\Jobs\ImportProjectOrderPermitUdsJob;
+use Modules\Project\ProjectType\Imports\InvalidUdsExcelHeaderException;
+use Modules\Project\ProjectType\Imports\UdsExcelHeaderReader;
+use Modules\Project\ProjectType\Imports\UdsExcelHeaderValidator;
+use Modules\Project\ProjectType\Imports\UdsExcelOfficialHeader;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProjectOrderPermitController extends Controller
 {
@@ -147,6 +152,17 @@ class ProjectOrderPermitController extends Controller
         }
     }
 
+    public function downloadImportTemplate(): BinaryFileResponse
+    {
+        $path = UdsExcelOfficialHeader::templateAbsolutePath();
+
+        abort_unless(is_file($path), 404, 'Official UDS template is missing.');
+
+        return response()->download($path, UdsExcelOfficialHeader::DOWNLOAD_NAME, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
     public function importExcel(Request $request): JsonResponse
     {
         $request->validate([
@@ -155,6 +171,9 @@ class ProjectOrderPermitController extends Controller
 
         try {
             $file = $request->file('file');
+            $headerRow = (new UdsExcelHeaderReader())->readFirstRow((string) $file->getRealPath());
+            (new UdsExcelHeaderValidator())->validate($headerRow);
+
             $projectId = (string) $request->route('project');
             $companyId = (string) tenant('id');
 
@@ -165,6 +184,14 @@ class ProjectOrderPermitController extends Controller
             return response()->json([
                 'message' => 'جاري تحديث البيانات في الخلفية',
             ]);
+        } catch (InvalidUdsExcelHeaderException $e) {
+            return Json::error(
+                $e->getMessage(),
+                422,
+                'InvalidUdsTemplate',
+                ['mismatches' => $e->mismatches()],
+                422,
+            );
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }

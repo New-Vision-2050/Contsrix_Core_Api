@@ -13,6 +13,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectType\Imports\ProjectOrderPermitUdsImport;
+use Modules\Project\ProjectType\Imports\UdsExcelHeaderValidator;
 use Modules\Project\ProjectType\Jobs\ImportProjectOrderPermitUdsJob;
 use Modules\Project\ProjectType\Models\OrderPermit;
 use Modules\Project\ProjectType\Models\OrderPermitDepartment;
@@ -50,6 +51,29 @@ final class ProjectOrderPermitUdsImportTest extends TestCase
         }
 
         return $row;
+    }
+
+    public function test_official_template_header_uses_english_names_and_rejects_mismatch(): void
+    {
+        $header = [
+            'Penalty Amount', 'Finance Approval Date', 'Certificate Source Number', 'Modified Employee Number',
+            'Contractor Assigned Employee Number', 'Order Permit Status', 'Order Permit Position', 'Penalty Percentage',
+            'Delay Duration', 'Disbursement Status', 'Total Cost', 'Indirect Cost', 'Labor Cost',
+            'Unpaid Material Cost', 'Paid Material Cost', 'Office Code', 'Current Entity', 'Cost Center Name',
+            'Cost Center', 'Extract Number', 'Completion Certificate Amount', 'Contractor Approval Date for Completion Certificate',
+            'Completion Certificate Approval Date', 'Completion Certificate Date', 'Received from Contractor Date',
+            'Delivered to Contractor Date', 'Action 203 Date', 'Executing Entity', 'Last Action Date',
+            'Last Action Name', 'Last Action Code', 'Order Permit Type', 'Contract Number', 'Subscriber Type',
+            'Order Permit Number', 'Order Permit Type Code', 'Contractor', 'Office',
+        ];
+
+        (new UdsExcelHeaderValidator())->validate($header);
+
+        $invalid = $header;
+        $invalid[0] = 'Penalty Amount Wrong';
+
+        $this->expectException(\RuntimeException::class);
+        (new UdsExcelHeaderValidator())->validate($invalid);
     }
 
     public function test_mapper_skips_header_and_empty_name_rows(): void
