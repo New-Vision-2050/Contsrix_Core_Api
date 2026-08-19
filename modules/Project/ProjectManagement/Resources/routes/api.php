@@ -156,6 +156,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
     // Role Comparison
     Route::get('/{project_id}/roles/compare', [ProjectPermissionController::class, 'compareRoles']);
 
+    Route::post('/pcloud-sync', ProjectPCloudSyncController::class);
     Route::post('/{project}/pcloud-sync', ProjectPCloudSyncController::class);
 
     // Project Roles Routes
