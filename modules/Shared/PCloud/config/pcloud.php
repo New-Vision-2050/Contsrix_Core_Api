@@ -49,7 +49,9 @@ return [
     | Remote folder layout
     |--------------------------------------------------------------------------
     |
-    | Files land under: /{root_folder}/{company_or_tenant}/{archive_path}/
+    | Files land under: /{root_folder}/{company_or_tenant}/{archive_path}/.
+    | Employee and project archive files include /الموظفين/ and /المشاريع/
+    | respectively after the company or tenant folder.
     |
     */
     'root_folder' => env('PCLOUD_ROOT_FOLDER', 'Constrix Archive'),
