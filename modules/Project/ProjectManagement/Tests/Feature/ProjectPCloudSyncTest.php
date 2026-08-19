@@ -81,6 +81,34 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
         );
     }
 
+    public function test_short_sync_route_queues_every_project_when_project_id_is_omitted(): void
+    {
+        Queue::fake();
+
+        $firstProject = $this->createProject('First PCloud Batch Project');
+        $secondProject = $this->createProject('Second PCloud Batch Project');
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/projects/pcloud-sync')
+            ->assertAccepted()
+            ->assertJsonPath('message', 'PCloud export queued')
+            ->assertJsonPath('payload.projects_count', 2);
+
+        Queue::assertPushed(
+            ExportProjectPCloudArchiveJob::class,
+            2,
+        );
+        Queue::assertPushed(
+            ExportProjectPCloudArchiveJob::class,
+            fn (ExportProjectPCloudArchiveJob $job): bool => in_array(
+                $job->projectId,
+                [(string) $firstProject->id, (string) $secondProject->id],
+                true,
+            ),
+        );
+    }
+
     public function test_sync_route_returns_not_found_for_projects_outside_current_tenant(): void
     {
         $response = $this->actingAs($this->actor, 'api')
