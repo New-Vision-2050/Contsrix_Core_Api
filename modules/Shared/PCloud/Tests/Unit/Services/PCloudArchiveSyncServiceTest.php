@@ -154,6 +154,73 @@ final class PCloudArchiveSyncServiceTest extends PCloudTestCase
         $this->assertTrue(true);
     }
 
+    public function test_employee_archive_media_is_uploaded_under_employees_folder(): void
+    {
+        $this->client->shouldReceive('isConfigured')->andReturn(true);
+        $this->client->shouldReceive('ensureFolderPath')
+            ->once()
+            ->with('Constrix Archive/Unknown Company/الموظفين/Ahmed/البيانات الشخصية/الصورة الشخصية')
+            ->andReturn(555);
+        $this->client->shouldReceive('uploadFile')
+            ->once()
+            ->with(555, 'photo.png', 'image-content', 'image/png')
+            ->andReturn(['result' => 0, 'metadata' => [['fileid' => 1001]]]);
+
+        $folder = new ArchiveFolder([
+            'name' => 'الصورة الشخصية',
+            'type' => 'employee',
+            'parent_id' => 'personal-section-id',
+        ]);
+        $sectionFolder = new ArchiveFolder([
+            'name' => 'البيانات الشخصية',
+            'type' => 'employee',
+            'parent_id' => 'employee-root-id',
+        ]);
+        $employeeFolder = new ArchiveFolder([
+            'name' => 'Ahmed',
+            'type' => 'employee',
+        ]);
+        $folder->setRelation('parent', $sectionFolder);
+        $sectionFolder->setRelation('parent', $employeeFolder);
+
+        $archiveFile = new ArchiveFile(['type' => 'employee']);
+        $archiveFile->setRelation('folder', $folder);
+
+        $media = $this->makeMedia([
+            'model_type' => ArchiveFile::class,
+            'file_name' => 'photo.png',
+            'mime_type' => 'image/png',
+        ]);
+        $media->setRelation('model', $archiveFile);
+
+        $service = new class($this->client) extends PCloudArchiveSyncService {
+            protected function readMediaContents(CustomMedia $media): ?string
+            {
+                return 'image-content';
+            }
+        };
+
+        $service->syncMedia($media);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_project_archive_folder_is_created_under_projects_folder(): void
+    {
+        $this->client->shouldReceive('isConfigured')->andReturn(true);
+        $this->client->shouldReceive('ensureFolderPath')
+            ->once()
+            ->with('Constrix Archive/Unknown Company/المشاريع/مشروع الرياض')
+            ->andReturn(777);
+
+        $folder = new ArchiveFolder([
+            'name' => 'مشروع الرياض',
+            'project_id' => 'project-id',
+        ]);
+
+        $this->assertSame(777, $this->service->ensureArchiveFolder($folder));
+    }
+
     public function test_sync_media_skips_empty_contents_without_throwing(): void
     {
         $this->client->shouldReceive('isConfigured')->andReturn(true);
