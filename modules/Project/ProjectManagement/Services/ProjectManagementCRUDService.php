@@ -10,6 +10,7 @@ use Modules\Project\ProjectManagement\DTO\CreateProjectManagementDTO;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectTag;
 use Modules\Project\ProjectManagement\Repositories\ProjectManagementRepository;
+use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
@@ -20,6 +21,7 @@ class ProjectManagementCRUDService
 
     public function __construct(
         private ProjectManagementRepository $repository,
+        private FileUploadService $fileUploadService,
     ) {
     }
 
@@ -50,7 +52,13 @@ class ProjectManagementCRUDService
         $project = $this->repository->getProjectManagement($id);
 
         $project->clearMediaCollection(ProjectManagement::STAMP_COLLECTION);
-        $project->addMedia($stamp)->toMediaCollection(ProjectManagement::STAMP_COLLECTION);
+        $this->fileUploadService->uploadFile(
+            model: $project,
+            file: $stamp,
+            filePath: 'projects/'.$project->id.'/stamp',
+            collectionName: ProjectManagement::STAMP_COLLECTION,
+            visibility: 'public',
+        );
 
         return $project->fresh() ?? $project;
     }
