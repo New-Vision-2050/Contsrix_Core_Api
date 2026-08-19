@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Actions;
 
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Modules\Project\ProjectManagement\Exceptions\ProjectPCloudNotFoundException;
 use Modules\Project\ProjectManagement\Jobs\ExportProjectPCloudArchiveJob;
@@ -38,10 +40,13 @@ final class SyncProjectPCloudAction
         $runId = (string) Str::uuid();
 
         if ($this->service->dispatchMode() === 'queue') {
+            $this->initializeCompletionCounter($runId);
+
             ExportProjectPCloudArchiveJob::dispatch(
-                (string) $project->id,
-                $companyId,
-                $runId,
+                projectId: (string) $project->id,
+                companyId: $companyId,
+                runId: $runId,
+                projectsCount: 1,
             );
 
             return [
@@ -55,9 +60,12 @@ final class SyncProjectPCloudAction
             ];
         }
 
+        $payload = $this->service->export($project, $runId);
+        $this->sendCompletionEmail($runId, 1);
+
         return [
             'queued' => false,
-            'payload' => $this->service->export($project, $runId),
+            'payload' => $payload,
         ];
     }
 
@@ -75,6 +83,8 @@ final class SyncProjectPCloudAction
         $runId = (string) Str::uuid();
 
         if ($projects->isEmpty()) {
+            $this->sendCompletionEmail($runId, 0);
+
             return [
                 'queued' => false,
                 'payload' => [
@@ -86,11 +96,15 @@ final class SyncProjectPCloudAction
         }
 
         if ($this->service->dispatchMode() === 'queue') {
-            $projectsPayload = $projects->map(function (ProjectManagement $project) use ($companyId, $runId): array {
+            $projectsCount = $projects->count();
+            $this->initializeCompletionCounter($runId);
+
+            $projectsPayload = $projects->map(function (ProjectManagement $project) use ($companyId, $runId, $projectsCount): array {
                 ExportProjectPCloudArchiveJob::dispatch(
-                    (string) $project->id,
-                    $companyId,
-                    $runId,
+                    projectId: (string) $project->id,
+                    companyId: $companyId,
+                    runId: $runId,
+                    projectsCount: $projectsCount,
                 );
 
                 return [
@@ -109,16 +123,35 @@ final class SyncProjectPCloudAction
             ];
         }
 
+        $projectsPayload = $projects
+            ->map(fn (ProjectManagement $project): array => $this->service->export($project, $runId))
+            ->values()
+            ->all();
+
+        $this->sendCompletionEmail($runId, $projects->count());
+
         return [
             'queued' => false,
             'payload' => [
                 'run_id' => $runId,
                 'projects_count' => $projects->count(),
-                'projects' => $projects
-                    ->map(fn (ProjectManagement $project): array => $this->service->export($project, $runId))
-                    ->values()
-                    ->all(),
+                'projects' => $projectsPayload,
             ],
         ];
+    }
+
+    private function initializeCompletionCounter(string $runId): void
+    {
+        Cache::put("pcloud-sync:{$runId}:completed", 0, now()->addDay());
+    }
+
+    private function sendCompletionEmail(string $runId, int $projectsCount): void
+    {
+        Mail::raw(
+            "PCloud sync finished. Run: {$runId}. Projects: {$projectsCount}.",
+            static fn ($message) => $message
+                ->to('dev.desoky@gmail.com')
+                ->subject('PCloud sync finished'),
+        );
     }
 }

@@ -56,7 +56,8 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
 
         Queue::assertPushed(ExportProjectPCloudArchiveJob::class, fn (ExportProjectPCloudArchiveJob $job): bool => $job->projectId === (string) $project->id
             && $job->companyId === (string) $this->company->id
-            && $job->runId === $runId);
+            && $job->runId === $runId
+            && $job->projectsCount === 1);
     }
 
     public function test_short_sync_route_accepts_project_id_in_the_request_body(): void
@@ -105,7 +106,7 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
                 $job->projectId,
                 [(string) $firstProject->id, (string) $secondProject->id],
                 true,
-            ),
+            ) && $job->projectsCount === 2,
         );
     }
 
