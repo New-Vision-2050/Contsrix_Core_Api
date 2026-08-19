@@ -37,6 +37,8 @@ class ProjectContractorPresenter extends AbstractPresenter
             'project_manager_phone' => $this->projectContractor->project_manager_phone,
             'project_manager_nationality' => $this->projectContractor->project_manager_nationality,
             'project_manager_email' => $this->projectContractor->project_manager_email,
+            'safety_officer_name' => $this->projectContractor->safety_officer_name,
+            'safety_officer_email' => $this->projectContractor->safety_officer_email,
             'representatives' => $this->projectContractor->relationLoaded('representatives') ? $this->projectContractor->representatives->map(fn ($representative) => [
                 'id' => $representative->id,
                 'name' => $representative->name,
