@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Project\ProjectManagement\Jobs\ExportProjectPCloudArchiveJob;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectType\Models\ProjectType;
 use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
 class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
@@ -48,7 +49,7 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
             ->assertJsonPath('message', 'PCloud export queued')
             ->assertJsonPath('payload.project_id', (string) $project->id)
             ->assertJsonPath('payload.mode', 'queue')
-            ->assertJsonPath('payload.path', 'Constrix Archive/Attendance Report Company/المشاريع/PCloud Queue Project/الصيانة والطوارئ');
+            ->assertJsonPath('payload.path', 'Constrix Archive/'.$this->company->id.'/المشاريع/PCloud Queue Project/الصيانة والطوارئ');
 
         $runId = (string) $response->json('payload.run_id');
         $this->assertNotSame('', $runId);
@@ -56,6 +57,28 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
         Queue::assertPushed(ExportProjectPCloudArchiveJob::class, fn (ExportProjectPCloudArchiveJob $job): bool => $job->projectId === (string) $project->id
             && $job->companyId === (string) $this->company->id
             && $job->runId === $runId);
+    }
+
+    public function test_short_sync_route_accepts_project_id_in_the_request_body(): void
+    {
+        Queue::fake();
+
+        $project = $this->createProject('PCloud Short Route Project');
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/projects/pcloud-sync', [
+                'project_id' => $project->id,
+            ])
+            ->assertAccepted()
+            ->assertJsonPath('message', 'PCloud export queued')
+            ->assertJsonPath('payload.project_id', (string) $project->id);
+
+        Queue::assertPushed(
+            ExportProjectPCloudArchiveJob::class,
+            fn (ExportProjectPCloudArchiveJob $job): bool => $job->projectId === (string) $project->id
+                && $job->companyId === (string) $this->company->id,
+        );
     }
 
     public function test_sync_route_returns_not_found_for_projects_outside_current_tenant(): void
@@ -99,11 +122,43 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
 
     private function createProject(string $name): ProjectManagement
     {
-        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->create([
+        [$projectType, $subProjectType, $subSubProjectType] = $this->createProjectTypes();
+
+        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->forceCreate([
             'id' => (string) Str::uuid(),
             'name' => $name,
             'company_id' => $this->company->id,
             'status' => 1,
+            'serial_number' => 'PCLOUD-'.Str::upper(Str::random(12)),
+            'project_type_id' => $projectType->id,
+            'sub_project_type_id' => $subProjectType->id,
+            'sub_sub_project_type_id' => $subSubProjectType->id,
         ]));
+    }
+
+    /**
+     * @return array{0: ProjectType, 1: ProjectType, 2: ProjectType}
+     */
+    private function createProjectTypes(): array
+    {
+        $projectType = ProjectType::query()->create([
+            'name' => 'PCloud Main Type',
+            'company_id' => $this->company->id,
+            'is_active' => true,
+        ]);
+        $subProjectType = ProjectType::query()->create([
+            'name' => 'PCloud Sub Type',
+            'parent_id' => $projectType->id,
+            'company_id' => $this->company->id,
+            'is_active' => true,
+        ]);
+        $subSubProjectType = ProjectType::query()->create([
+            'name' => 'PCloud Sub Sub Type',
+            'parent_id' => $subProjectType->id,
+            'company_id' => $this->company->id,
+            'is_active' => true,
+        ]);
+
+        return [$projectType, $subProjectType, $subSubProjectType];
     }
 }
