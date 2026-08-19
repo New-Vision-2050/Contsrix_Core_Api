@@ -9,6 +9,7 @@ use Modules\Project\ProjectManagement\Controllers\ProjectManagementController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationController;
 use Modules\Project\ProjectManagement\Controllers\ProjectNotificationSiteStatusTypeController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPCloudSyncController;
+use Modules\Project\ProjectManagement\Controllers\ProjectPCloudTestController;
 use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRequirementController;
 use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
@@ -157,6 +158,7 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
     Route::get('/{project_id}/roles/compare', [ProjectPermissionController::class, 'compareRoles']);
 
     Route::post('/pcloud-sync', ProjectPCloudSyncController::class);
+    Route::post('/pcloud-sync/test', ProjectPCloudTestController::class);
     Route::post('/{project}/pcloud-sync', ProjectPCloudSyncController::class);
 
     // Project Roles Routes
