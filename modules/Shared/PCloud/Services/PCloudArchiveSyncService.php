@@ -18,6 +18,10 @@ use Throwable;
 
 class PCloudArchiveSyncService
 {
+    private const EMPLOYEES_FOLDER = 'الموظفين';
+
+    private const PROJECTS_FOLDER = 'المشاريع';
+
     /** @var array<string, true> */
     private array $dispatchedMediaIds = [];
 
@@ -168,11 +172,20 @@ class PCloudArchiveSyncService
             return null;
         }
 
-        $remoteFolderPath = collect([
+        $pathSegments = [
             trim((string) config('pcloud.root_folder', 'Constrix Archive'), '/'),
             $this->resolveCompanyName($folder->company_id ? (string) $folder->company_id : null),
-            $this->folderHierarchyPath($folder),
-        ])
+        ];
+
+        if ($folder->type === 'employee') {
+            $pathSegments[] = self::EMPLOYEES_FOLDER;
+        } elseif ($folder->project_id) {
+            $pathSegments[] = self::PROJECTS_FOLDER;
+        }
+
+        $pathSegments[] = $this->folderHierarchyPath($folder);
+
+        $remoteFolderPath = collect($pathSegments)
             ->filter(static fn (?string $part): bool => filled($part))
             ->implode('/');
 
@@ -188,7 +201,7 @@ class PCloudArchiveSyncService
     }
 
     /**
-     * Layout: Constrix Archive / {Company Name} / {Project Name} / {archive subfolders…}
+     * Layout: Constrix Archive / {Company Name} / [الموظفين|المشاريع/] / {archive subfolders…}
      */
     private function buildRemoteFolderPath(CustomMedia $media): string
     {
@@ -198,9 +211,34 @@ class PCloudArchiveSyncService
         $projectName = $this->resolveProjectName($context['project_id']);
         $archivePath = $this->resolveArchivePath($media, $context, $projectName);
 
-        return collect([$root, $companyName, $archivePath])
+        $pathSegments = [$root, $companyName];
+
+        if ($this->isEmployeeArchiveContext($media, $context)) {
+            $pathSegments[] = self::EMPLOYEES_FOLDER;
+        } elseif ($context['project_id']) {
+            $pathSegments[] = self::PROJECTS_FOLDER;
+        }
+
+        $pathSegments[] = $archivePath;
+
+        return collect($pathSegments)
             ->filter(static fn (?string $part): bool => filled($part))
             ->implode('/');
+    }
+
+    /**
+     * @param  array{company_id: ?string, project_id: ?string, folder: ?ArchiveFolder, file: ?ArchiveFile}  $context
+     */
+    private function isEmployeeArchiveContext(CustomMedia $media, array $context): bool
+    {
+        if ($context['folder']?->type === 'employee' || $context['file']?->type === 'employee') {
+            return true;
+        }
+
+        $model = $media->relationLoaded('model') ? $media->getRelation('model') : null;
+
+        return ($model instanceof ArchiveFolder || $model instanceof ArchiveFile)
+            && $model->type === 'employee';
     }
 
     /**
@@ -357,7 +395,9 @@ class PCloudArchiveSyncService
         $current = $folder;
 
         while ($current->parent_id) {
-            $parent = ArchiveFolder::query()->withoutTenancy()->find($current->parent_id);
+            $parent = $current->relationLoaded('parent')
+                ? $current->getRelation('parent')
+                : ArchiveFolder::query()->withoutTenancy()->find($current->parent_id);
             if (! $parent) {
                 break;
             }
