@@ -71,6 +71,10 @@ final class PCloudClientTest extends PCloudTestCase
 
         Http::fake([
             'https://api.pcloud.com/getdigest' => Http::response(['result' => 0, 'digest' => $digest]),
+            'https://api.pcloud.com/listfolder' => Http::response([
+                'result' => 0,
+                'metadata' => ['contents' => []],
+            ]),
             'https://api.pcloud.com/uploadfile*' => Http::response([
                 'result' => 0,
                 'metadata' => [[
@@ -113,6 +117,10 @@ final class PCloudClientTest extends PCloudTestCase
 
         Http::fake([
             'https://api.pcloud.com/getdigest' => Http::response(['result' => 0, 'digest' => $digest]),
+            'https://api.pcloud.com/listfolder' => Http::response([
+                'result' => 0,
+                'metadata' => ['contents' => []],
+            ]),
             'https://api.pcloud.com/uploadfile*' => function ($request) {
                 parse_str(parse_url($request->url(), PHP_URL_QUERY) ?? '', $query);
 
@@ -136,6 +144,10 @@ final class PCloudClientTest extends PCloudTestCase
     {
         Http::fake([
             'https://api.pcloud.com/getdigest' => Http::response(['result' => 0, 'digest' => 'd']),
+            'https://api.pcloud.com/listfolder' => Http::response([
+                'result' => 0,
+                'metadata' => ['contents' => []],
+            ]),
             'https://api.pcloud.com/uploadfile*' => Http::response([
                 'result' => 2000,
                 'error' => 'Log in failed.',
@@ -146,6 +158,30 @@ final class PCloudClientTest extends PCloudTestCase
         $this->expectExceptionMessage('pCloud uploadfile failed');
 
         $this->client->uploadFile(1, 'a.txt', 'hello', 'text/plain');
+    }
+
+    public function test_upload_file_skips_an_existing_file_in_the_same_folder(): void
+    {
+        Http::fake([
+            'https://api.pcloud.com/getdigest' => Http::response(['result' => 0, 'digest' => 'd']),
+            'https://api.pcloud.com/listfolder' => Http::response([
+                'result' => 0,
+                'metadata' => [
+                    'contents' => [
+                        ['name' => 'already-there.pdf', 'isfolder' => false, 'fileid' => 9],
+                    ],
+                ],
+            ]),
+            'https://api.pcloud.com/uploadfile*' => Http::response([
+                'result' => 0,
+                'metadata' => [['fileid' => 10]],
+            ]),
+        ]);
+
+        $result = $this->client->uploadFile(1, 'already-there.pdf', 'ignored', 'application/pdf');
+
+        $this->assertTrue($result['skipped']);
+        Http::assertNotSent(static fn ($request): bool => str_contains($request->url(), '/uploadfile'));
     }
 
     public function test_sanitize_keeps_arabic_folder_names(): void

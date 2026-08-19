@@ -57,6 +57,7 @@ class ExportProjectPCloudArchiveJob implements ShouldQueue
                 'company_id' => $this->companyId,
                 'folders_created_or_found' => $result['folders_created_or_found'],
                 'files_uploaded' => $result['files_uploaded'],
+                'files_skipped' => $result['files_skipped'],
                 'files_failed' => $result['files_failed'],
                 'path' => $result['path'],
             ]);

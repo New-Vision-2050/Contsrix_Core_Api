@@ -15,6 +15,7 @@ use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate;
 use Modules\Project\ProjectManagement\Services\ProjectPCloudExportService;
+use Modules\Project\ProjectType\Models\ProjectType;
 
 class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
 {
@@ -90,7 +91,7 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
         $siteStatusUpdate = $this->createSiteStatusUpdate($notification, $task);
 
         $siteStatusUpdate
-            ->addMedia(UploadedFile::fake()->create('site-photo.pdf', 12, 'application/pdf'))
+            ->addMedia(UploadedFile::fake()->createWithContent('site-photo.pdf', 'test-pdf-content'))
             ->usingFileName('site-photo.pdf')
             ->withCustomProperties(['file_path' => 'pcloud-export-test'])
             ->toMediaCollection('attachments', 'public');
@@ -99,7 +100,7 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
 
         $this->assertSame([
             ['parent' => 0, 'name' => 'Constrix Archive', 'folderid' => 1000],
-            ['parent' => 1000, 'name' => 'Attendance Report Company', 'folderid' => 1001],
+            ['parent' => 1000, 'name' => $this->company->id, 'folderid' => 1001],
             ['parent' => 1001, 'name' => 'المشاريع', 'folderid' => 1002],
             ['parent' => 1002, 'name' => 'PCloud Service Project', 'folderid' => 1003],
             ['parent' => 1003, 'name' => 'الصيانة والطوارئ', 'folderid' => 1004],
@@ -110,9 +111,9 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
             [
                 'folderid' => 1005,
                 'filename' => 'site-photo.pdf',
-                'renameifexists' => 1,
+                'renameifexists' => 0,
                 'method' => 'PUT',
-                'content_type' => 'application/pdf',
+                'content_type' => 'text/plain',
                 'has_body' => true,
             ],
         ], $uploads);
@@ -121,18 +122,51 @@ class ProjectPCloudExportServiceTest extends BaseAttendanceReportTestCase
         $this->assertSame((string) $project->id, $result['project_id']);
         $this->assertSame(6, $result['folders_created_or_found']);
         $this->assertSame(1, $result['files_uploaded']);
+        $this->assertSame(0, $result['files_skipped']);
         $this->assertSame(0, $result['files_failed']);
-        $this->assertSame('Constrix Archive/Attendance Report Company/المشاريع/PCloud Service Project/الصيانة والطوارئ', $result['path']);
+        $this->assertSame('Constrix Archive/'.$this->company->id.'/المشاريع/PCloud Service Project/الصيانة والطوارئ', $result['path']);
     }
 
     private function createProject(string $name): ProjectManagement
     {
-        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->create([
+        [$projectType, $subProjectType, $subSubProjectType] = $this->createProjectTypes();
+
+        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->forceCreate([
             'id' => (string) Str::uuid(),
             'name' => $name,
             'company_id' => $this->company->id,
             'status' => 1,
+            'serial_number' => 'PCLOUD-'.Str::upper(Str::random(12)),
+            'project_type_id' => $projectType->id,
+            'sub_project_type_id' => $subProjectType->id,
+            'sub_sub_project_type_id' => $subSubProjectType->id,
         ]));
+    }
+
+    /**
+     * @return array{0: ProjectType, 1: ProjectType, 2: ProjectType}
+     */
+    private function createProjectTypes(): array
+    {
+        $projectType = ProjectType::query()->create([
+            'name' => 'PCloud Main Type',
+            'company_id' => $this->company->id,
+            'is_active' => true,
+        ]);
+        $subProjectType = ProjectType::query()->create([
+            'name' => 'PCloud Sub Type',
+            'parent_id' => $projectType->id,
+            'company_id' => $this->company->id,
+            'is_active' => true,
+        ]);
+        $subSubProjectType = ProjectType::query()->create([
+            'name' => 'PCloud Sub Sub Type',
+            'parent_id' => $subProjectType->id,
+            'company_id' => $this->company->id,
+            'is_active' => true,
+        ]);
+
+        return [$projectType, $subProjectType, $subSubProjectType];
     }
 
     private function createNotification(ProjectManagement $project, string $number): ProjectNotification
