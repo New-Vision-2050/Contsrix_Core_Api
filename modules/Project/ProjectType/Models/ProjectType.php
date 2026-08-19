@@ -129,6 +129,26 @@ class ProjectType extends Model
         return $this->hasOne(ContractorSetting::class, 'project_type_id');
     }
 
+    public function constructionSetting()
+    {
+        return $this->hasOne(ConstructionSetting::class, 'project_type_id');
+    }
+
+    public function safetyTaskSetting()
+    {
+        return $this->hasOne(SafetyTaskSetting::class, 'project_type_id');
+    }
+
+    public function projectManagementSetting()
+    {
+        return $this->hasOne(ProjectManagementSetting::class, 'project_type_id');
+    }
+
+    public function projectOrderPermitSetting()
+    {
+        return $this->hasOne(ProjectOrderPermitSetting::class, 'project_type_id');
+    }
+
     public function orderPermitSetting()
     {
         return $this->hasOne(OrderPermitSetting::class, 'project_type_id');
