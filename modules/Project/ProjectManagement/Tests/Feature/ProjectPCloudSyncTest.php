@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Tests\Feature;
 
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Mockery;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Project\ProjectManagement\Jobs\ExportProjectPCloudArchiveJob;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
@@ -108,6 +111,31 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
                 true,
             ) && $job->projectsCount === 2,
         );
+    }
+
+    public function test_last_finished_job_sends_the_completion_email_once(): void
+    {
+        $runId = 'pcloud-email-test';
+        Cache::put("pcloud-sync:{$runId}:completed", 0, now()->addDay());
+
+        Mail::shouldReceive('raw')
+            ->once()
+            ->withArgs(function (string $text, \Closure $callback): bool {
+                $message = Mockery::mock();
+                $message->shouldReceive('to')->once()->with('dev.desoky@gmail.com')->andReturnSelf();
+                $message->shouldReceive('subject')->once()->with('PCloud sync finished')->andReturnSelf();
+                $callback($message);
+
+                return str_contains($text, 'Run: pcloud-email-test')
+                    && str_contains($text, 'Projects: 1');
+            });
+
+        (new ExportProjectPCloudArchiveJob(
+            projectId: (string) Str::uuid(),
+            companyId: (string) $this->company->id,
+            runId: $runId,
+            projectsCount: 1,
+        ))->failed(new \RuntimeException('test failure'));
     }
 
     public function test_sync_route_returns_not_found_for_projects_outside_current_tenant(): void
