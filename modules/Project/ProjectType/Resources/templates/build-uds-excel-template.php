@@ -15,8 +15,9 @@ $sheet = $spreadsheet->getActiveSheet();
 $sheet->setTitle('UDS');
 $sheet->setRightToLeft(true);
 $sheet->fromArray(UdsExcelOfficialHeader::COLUMNS, null, 'A1');
-$sheet->freezePane('A2');
-$sheet->getStyle('A1:AL1')->applyFromArray([
+$sheet->fromArray(UdsExcelOfficialHeader::ARABIC_COLUMNS, null, 'A2');
+$sheet->freezePane('A3');
+$sheet->getStyle('A1:AL2')->applyFromArray([
     'font' => ['bold' => true],
     'alignment' => [
         'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -27,12 +28,19 @@ $sheet->getStyle('A1:AL1')->applyFromArray([
         'startColor' => ['rgb' => 'D9E2F3'],
     ],
 ]);
+$sheet->getStyle('A2:AL2')->applyFromArray([
+    'fill' => [
+        'fillType' => Fill::FILL_SOLID,
+        'startColor' => ['rgb' => 'E2F0D9'],
+    ],
+]);
 
 foreach (range(1, UdsExcelOfficialHeader::COLUMN_COUNT) as $columnIndex) {
     $sheet->getColumnDimensionByColumn($columnIndex)->setWidth(22);
 }
 
 $sheet->getRowDimension(1)->setRowHeight(30);
+$sheet->getRowDimension(2)->setRowHeight(30);
 
 $destination = __DIR__ . DIRECTORY_SEPARATOR . 'uds-excel-template.xlsx';
 $directory = dirname($destination);
