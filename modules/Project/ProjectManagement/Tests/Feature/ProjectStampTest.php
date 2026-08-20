@@ -59,8 +59,15 @@ class ProjectStampTest extends TestCase
             ]);
 
         $response->assertOk();
-        $this->assertNotEmpty($response->json('payload.stamp'));
+        $stampUrl = $response->json('payload.stamp');
+
+        $this->assertNotEmpty($stampUrl);
+        $this->assertStringNotContainsString('default_path', $stampUrl);
+        $this->assertStringNotContainsString('//storage/', $stampUrl);
         $this->assertSame(1, $project->fresh()->getMedia(ProjectManagement::STAMP_COLLECTION)->count());
+        Storage::disk('public')->assertExists(
+            $project->fresh()->getFirstMedia(ProjectManagement::STAMP_COLLECTION)->getPathRelativeToRoot()
+        );
     }
 
     public function test_user_with_only_create_permission_can_upload_stamp(): void

@@ -125,10 +125,13 @@ class PCloudArchiveSyncService
         }
     }
 
-    public function syncMedia(CustomMedia $media): void
+    /**
+     * @return 'uploaded'|'skipped'
+     */
+    public function syncMedia(CustomMedia $media): string
     {
         if (! $this->shouldSync($media)) {
-            return;
+            return 'skipped';
         }
 
         $contents = $this->readMediaContents($media);
@@ -137,7 +140,7 @@ class PCloudArchiveSyncService
                 'media_id' => $media->id,
             ]);
 
-            return;
+            return 'skipped';
         }
 
         $remoteFolderPath = $this->buildRemoteFolderPath($media);
@@ -146,6 +149,16 @@ class PCloudArchiveSyncService
         $mimeType = $media->mime_type ?: null;
 
         $result = $this->client->uploadFile($folderId, $filename, $contents, $mimeType);
+
+        if ((bool) ($result['skipped'] ?? false)) {
+            Log::info('pCloud archive sync skipped existing file', [
+                'media_id' => $media->id,
+                'remote_folder' => $remoteFolderPath,
+                'filename' => $filename,
+            ]);
+
+            return 'skipped';
+        }
 
         Log::info('pCloud archive sync uploaded file', [
             'media_id' => $media->id,
@@ -158,6 +171,8 @@ class PCloudArchiveSyncService
             'fileid' => $result['metadata'][0]['fileid'] ?? ($result['fileids'][0] ?? null),
             'contenttype' => $result['metadata'][0]['contenttype'] ?? null,
         ]);
+
+        return 'uploaded';
     }
 
     public function ensureArchiveFolder(ArchiveFolder $folder): ?int

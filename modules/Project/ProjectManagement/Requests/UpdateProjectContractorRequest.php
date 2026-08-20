@@ -28,6 +28,8 @@ class UpdateProjectContractorRequest extends FormRequest
             'project_manager_phone' => ['nullable', 'string', 'max:255'],
             'project_manager_nationality' => ['nullable', 'string', 'max:255'],
             'project_manager_email' => ['nullable', 'email', 'max:255'],
+            'safety_officer_name' => ['nullable', 'required_with:safety_officer_email', 'string', 'max:255'],
+            'safety_officer_email' => ['nullable', 'required_with:safety_officer_name', 'email', 'max:255'],
             'representatives' => ['nullable', 'array'],
             'representatives.*.name' => ['required_with:representatives.*.name', 'string', 'max:255'],
             'representatives.*.mobile' => ['nullable', 'string', 'max:255'],

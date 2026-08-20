@@ -25,12 +25,14 @@ final class SyncProjectPCloudRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_id' => ['required', 'uuid'],
+            'project_id' => ['nullable', 'uuid'],
         ];
     }
 
-    public function projectId(): string
+    public function projectId(): ?string
     {
-        return (string) $this->validated('project_id');
+        $projectId = $this->validated('project_id');
+
+        return is_string($projectId) && $projectId !== '' ? $projectId : null;
     }
 }

@@ -47,9 +47,13 @@ class SafetyViolationEmailService
                 return;
             }
 
-            $contractorEmail = trim((string) ($record->contractor?->email ?? ''));
-            if ($contractorEmail === '') {
-                Log::warning('Safety violation email skipped: contractor has no email.', [
+            $recipientEmail = trim((string) (
+                $record->contractor?->safety_officer_email
+                ?: $record->contractor?->email
+                ?: ''
+            ));
+            if ($recipientEmail === '') {
+                Log::warning('Safety violation email skipped: contractor has no safety officer or contractor email.', [
                     'safety_record_id' => $record->id,
                     'contractor_id' => $record->contractor_id,
                 ]);
@@ -59,11 +63,11 @@ class SafetyViolationEmailService
 
             $data = $this->buildMailData($record, $foundViolations);
 
-            Mail::to($contractorEmail)->send(new SafetyViolationMail($data));
+            Mail::to($recipientEmail)->send(new SafetyViolationMail($data));
 
             Log::info('Safety violation email sent.', [
                 'safety_record_id' => $record->id,
-                'contractor_email' => $contractorEmail,
+                'recipient_email' => $recipientEmail,
                 'found_violations' => $foundViolations->count(),
                 'report_url' => $data['report_url'],
             ]);
@@ -157,7 +161,11 @@ class SafetyViolationEmailService
             'visit_time' => $visitTime,
             'location' => $location,
             'project_manager' => (string) ($record->project?->manager?->name ?? ''),
-            'safety_officer' => (string) ($record->assignedUser?->name ?? $consultantEngineer),
+            'safety_officer' => (string) (
+                $record->contractor?->safety_officer_name
+                ?: $record->assignedUser?->name
+                ?: $consultantEngineer
+            ),
             'site_supervisor' => $consultantEngineer,
             'total_fine' => $this->formatPenalty((float) $totalFine),
             'first_violation_code' => (string) ($first->code ?? ''),

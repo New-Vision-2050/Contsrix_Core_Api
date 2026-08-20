@@ -7,10 +7,12 @@ namespace Modules\Project\ProjectManagement\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Modules\ArchiveLibrary\File\Models\File as ArchiveFile;
 use Modules\Project\ProjectManagement\Exceptions\PCloudConfigurationException;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\Shared\PCloud\Services\PCloudClient;
+use Modules\Shared\PCloud\Services\PCloudArchiveSyncService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
@@ -22,6 +24,7 @@ class ProjectPCloudExportService
 
     public function __construct(
         private readonly PCloudClient $client,
+        private readonly PCloudArchiveSyncService $archiveSyncService,
     ) {}
 
     public function ensureConfigured(): void
@@ -54,7 +57,7 @@ class ProjectPCloudExportService
     }
 
     /**
-     * @return array{run_id:string, project_id:string, folders_created_or_found:int, files_uploaded:int, files_failed:int, path:string}
+     * @return array{run_id:string, project_id:string, folders_created_or_found:int, files_uploaded:int, files_skipped:int, files_failed:int, path:string}
      */
     public function export(ProjectManagement $project, string $runId): array
     {
@@ -62,6 +65,7 @@ class ProjectPCloudExportService
 
         $foldersCreatedOrFound = 0;
         $filesUploaded = 0;
+        $filesSkipped = 0;
         $filesFailed = 0;
 
         $rootFolder = $this->client->ensureFolder(0, $this->rootFolderName());
@@ -88,8 +92,11 @@ class ProjectPCloudExportService
 
             foreach ($this->collectMedia($notification) as $media) {
                 try {
-                    $this->uploadMedia($notificationFolderId, $media);
-                    $filesUploaded++;
+                    if ($this->uploadMedia($notificationFolderId, $media)) {
+                        $filesUploaded++;
+                    } else {
+                        $filesSkipped++;
+                    }
                 } catch (Throwable $exception) {
                     $filesFailed++;
 
@@ -104,11 +111,31 @@ class ProjectPCloudExportService
             }
         }
 
+        foreach ($this->archiveMediaForProject($project) as $media) {
+            try {
+                if ($this->archiveSyncService->syncMedia($media) === 'uploaded') {
+                    $filesUploaded++;
+                } else {
+                    $filesSkipped++;
+                }
+            } catch (Throwable $exception) {
+                $filesFailed++;
+
+                Log::warning('PCloud project archive media export failed', [
+                    'run_id' => $runId,
+                    'project_id' => $project->id,
+                    'media_id' => $media->id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
         return [
             'run_id' => $runId,
             'project_id' => (string) $project->id,
             'folders_created_or_found' => $foldersCreatedOrFound,
             'files_uploaded' => $filesUploaded,
+            'files_skipped' => $filesSkipped,
             'files_failed' => $filesFailed,
             'path' => $this->targetPath($project),
         ];
@@ -206,7 +233,10 @@ class ProjectPCloudExportService
         }
     }
 
-    private function uploadMedia(int $folderId, Media $media): void
+    /**
+     * @return bool True when uploaded; false when the file already exists remotely.
+     */
+    private function uploadMedia(int $folderId, Media $media): bool
     {
         $disk = $media->disk ?: $media->conversions_disk ?: (string) config('media-library.disk_name', 'public');
         $path = $media->getPathRelativeToRoot();
@@ -220,12 +250,33 @@ class ProjectPCloudExportService
             throw new \RuntimeException('Media file is empty.');
         }
 
-        $this->client->uploadFile(
+        $result = $this->client->uploadFile(
             $folderId,
             $this->mediaFileName($media),
             $contents,
             $media->mime_type ?: null,
         );
+
+        return ! (bool) ($result['skipped'] ?? false);
+    }
+
+    /**
+     * ArchiveLibrary contains the copies created when an Attachment Request is
+     * approved. Syncing these rows makes the manual project endpoint a real
+     * backfill for existing project documents, not only project notifications.
+     *
+     * @return Collection<int, Media>
+     */
+    private function archiveMediaForProject(ProjectManagement $project): Collection
+    {
+        return ArchiveFile::query()
+            ->where('company_id', (string) $project->company_id)
+            ->where('project_id', (string) $project->id)
+            ->with('media')
+            ->get()
+            ->flatMap(static fn (ArchiveFile $file): Collection => $file->media)
+            ->unique(static fn (Media $media): string => (string) $media->id)
+            ->values();
     }
 
     private function mediaFileName(Media $media): string

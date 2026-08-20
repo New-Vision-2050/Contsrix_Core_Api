@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Tests\Feature;
 
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Mockery;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Project\ProjectManagement\Jobs\ExportProjectPCloudArchiveJob;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
@@ -56,7 +59,8 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
 
         Queue::assertPushed(ExportProjectPCloudArchiveJob::class, fn (ExportProjectPCloudArchiveJob $job): bool => $job->projectId === (string) $project->id
             && $job->companyId === (string) $this->company->id
-            && $job->runId === $runId);
+            && $job->runId === $runId
+            && $job->projectsCount === 1);
     }
 
     public function test_short_sync_route_accepts_project_id_in_the_request_body(): void
@@ -79,6 +83,59 @@ class ProjectPCloudSyncTest extends BaseAttendanceReportTestCase
             fn (ExportProjectPCloudArchiveJob $job): bool => $job->projectId === (string) $project->id
                 && $job->companyId === (string) $this->company->id,
         );
+    }
+
+    public function test_short_sync_route_queues_every_project_when_project_id_is_omitted(): void
+    {
+        Queue::fake();
+
+        $firstProject = $this->createProject('First PCloud Batch Project');
+        $secondProject = $this->createProject('Second PCloud Batch Project');
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->postJson('/api/v1/projects/pcloud-sync')
+            ->assertAccepted()
+            ->assertJsonPath('message', 'PCloud export queued')
+            ->assertJsonPath('payload.projects_count', 2);
+
+        Queue::assertPushed(
+            ExportProjectPCloudArchiveJob::class,
+            2,
+        );
+        Queue::assertPushed(
+            ExportProjectPCloudArchiveJob::class,
+            fn (ExportProjectPCloudArchiveJob $job): bool => in_array(
+                $job->projectId,
+                [(string) $firstProject->id, (string) $secondProject->id],
+                true,
+            ) && $job->projectsCount === 2,
+        );
+    }
+
+    public function test_last_finished_job_sends_the_completion_email_once(): void
+    {
+        $runId = 'pcloud-email-test';
+        Cache::put("pcloud-sync:{$runId}:completed", 0, now()->addDay());
+
+        Mail::shouldReceive('raw')
+            ->once()
+            ->withArgs(function (string $text, \Closure $callback): bool {
+                $message = Mockery::mock();
+                $message->shouldReceive('to')->once()->with('dev.desoky@gmail.com')->andReturnSelf();
+                $message->shouldReceive('subject')->once()->with('PCloud sync finished')->andReturnSelf();
+                $callback($message);
+
+                return str_contains($text, 'Run: pcloud-email-test')
+                    && str_contains($text, 'Projects: 1');
+            });
+
+        (new ExportProjectPCloudArchiveJob(
+            projectId: (string) Str::uuid(),
+            companyId: (string) $this->company->id,
+            runId: $runId,
+            projectsCount: 1,
+        ))->failed(new \RuntimeException('test failure'));
     }
 
     public function test_sync_route_returns_not_found_for_projects_outside_current_tenant(): void

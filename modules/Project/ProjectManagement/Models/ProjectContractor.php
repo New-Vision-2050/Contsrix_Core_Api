@@ -44,6 +44,8 @@ class ProjectContractor extends Model implements HasMedia
         'project_manager_phone',
         'project_manager_nationality',
         'project_manager_email',
+        'safety_officer_name',
+        'safety_officer_email',
     ];
 
     protected $casts = [

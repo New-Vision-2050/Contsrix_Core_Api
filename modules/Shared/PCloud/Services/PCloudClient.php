@@ -80,12 +80,21 @@ class PCloudClient
     ): array {
         $safeName = $this->sanitizeName($filename);
         $safeName = $this->ensureExtension($safeName, $mimeType);
+
+        if ($this->fileExists($folderId, $safeName)) {
+            return [
+                'result' => 0,
+                'skipped' => true,
+                'metadata' => [],
+            ];
+        }
+
         $contentType = $this->resolveContentType($safeName, $mimeType);
         $host = rtrim((string) config('pcloud.default_api_host'), '/');
         $query = http_build_query(array_merge($this->freshCredentials(), [
             'folderid' => $folderId,
             'filename' => $safeName,
-            'renameifexists' => 1,
+            'renameifexists' => 0,
         ]));
 
         $response = Http::timeout((int) config('pcloud.timeout', 120))
@@ -107,7 +116,39 @@ class PCloudClient
             );
         }
 
+        $payload['skipped'] = false;
+
         return $payload;
+    }
+
+    /**
+     * Check the direct contents of a pCloud folder for a file with the exact
+     * target name. A sync is intentionally idempotent: an existing file is
+     * retained and is never renamed or overwritten.
+     */
+    public function fileExists(int $folderId, string $filename): bool
+    {
+        $safeName = $this->sanitizeName($filename);
+        $contents = $this->request('listfolder', [
+            'folderid' => $folderId,
+            'recursive' => 0,
+        ])['metadata']['contents'] ?? [];
+
+        if (! is_array($contents)) {
+            return false;
+        }
+
+        foreach ($contents as $item) {
+            if (! is_array($item) || (bool) ($item['isfolder'] ?? false)) {
+                continue;
+            }
+
+            if (($item['name'] ?? null) === $safeName) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
