@@ -19,6 +19,10 @@ use Modules\Project\ProjectType\Presenters\ProjectSharingSettingPresenter;
 use Modules\Project\ProjectType\Presenters\MaintenanceEmergencySettingPresenter;
 use Modules\Project\ProjectType\Presenters\ContractorSettingPresenter;
 use Modules\Project\ProjectType\Presenters\OrderPermitSettingPresenter;
+use Modules\Project\ProjectType\Presenters\ConstructionSettingPresenter;
+use Modules\Project\ProjectType\Presenters\SafetyTaskSettingPresenter;
+use Modules\Project\ProjectType\Presenters\ProjectManagementSettingPresenter;
+use Modules\Project\ProjectType\Presenters\ProjectOrderPermitSettingPresenter;
 class ProjectManagementPresenter extends AbstractPresenter
 {
     private ProjectManagement $projectManagement;
@@ -51,6 +55,8 @@ class ProjectManagementPresenter extends AbstractPresenter
             'currency_id' => $this->projectManagement->currency_id,
             'project_value' => $this->projectManagement->project_value,
             'status' => $this->projectManagement->status,
+            'code_report' => $this->projectManagement->code_report?->value,
+            'stamp' => $this->projectManagement->stampUrl(),
             'company_id' => $this->projectManagement->company_id,
             'created_at' => $this->projectManagement->created_at?->toDateTimeString(),
             'updated_at' => $this->projectManagement->updated_at?->toDateTimeString(),
@@ -283,6 +289,26 @@ class ProjectManagementPresenter extends AbstractPresenter
                     $this->projectManagement->subSubProjectType->orderPermitSetting &&
                     $this->projectManagement->subSubProjectType->orderPermitSetting) {
                     $permissions['order_permit_setting'] = (new OrderPermitSettingPresenter($this->projectManagement->subSubProjectType->orderPermitSetting))->getData();
+                }
+
+                if ($this->projectManagement->subSubProjectType->relationLoaded('constructionSetting') &&
+                    $this->projectManagement->subSubProjectType->constructionSetting) {
+                    $permissions['construction_setting'] = (new ConstructionSettingPresenter($this->projectManagement->subSubProjectType->constructionSetting))->getData();
+                }
+
+                if ($this->projectManagement->subSubProjectType->relationLoaded('safetyTaskSetting') &&
+                    $this->projectManagement->subSubProjectType->safetyTaskSetting) {
+                    $permissions['safety_task_setting'] = (new SafetyTaskSettingPresenter($this->projectManagement->subSubProjectType->safetyTaskSetting))->getData();
+                }
+
+                if ($this->projectManagement->subSubProjectType->relationLoaded('projectManagementSetting') &&
+                    $this->projectManagement->subSubProjectType->projectManagementSetting) {
+                    $permissions['project_management_setting'] = (new ProjectManagementSettingPresenter($this->projectManagement->subSubProjectType->projectManagementSetting))->getData();
+                }
+
+                if ($this->projectManagement->subSubProjectType->relationLoaded('projectOrderPermitSetting') &&
+                    $this->projectManagement->subSubProjectType->projectOrderPermitSetting) {
+                    $permissions['project_order_permit_setting'] = (new ProjectOrderPermitSettingPresenter($this->projectManagement->subSubProjectType->projectOrderPermitSetting))->getData();
                 }
             }
             $data['permissions'] = $permissions;

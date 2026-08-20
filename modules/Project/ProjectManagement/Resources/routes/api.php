@@ -43,10 +43,16 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         Route::get('/violations', [ViolationController::class, 'index']);
         Route::get('/safety/inbox', [SafetyRecordController::class, 'inbox']);
         Route::get('/safety/analytics/top-violations', [SafetyAnalyticsController::class, 'topViolations']);
+        Route::get('/safety/analytics/violation-frequencies', [SafetyAnalyticsController::class, 'globalViolationFrequencies']);
 
         Route::prefix('{project}/safety')->group(function () {
             Route::get('/', [SafetyRecordController::class, 'index']);
             Route::get('/report', [SafetyRecordController::class, 'report']);
+            Route::post('/weekly-report', [SafetyAnalyticsController::class, 'weeklyReport']);
+            Route::post('/weekly-reports', [SafetyAnalyticsController::class, 'storeWeeklyReport']);
+            Route::get('/weekly-reports', [SafetyAnalyticsController::class, 'listWeeklyReports']);
+            Route::get('/weekly-reports/{id}', [SafetyAnalyticsController::class, 'showWeeklyReport']);
+            Route::get('/weekly-reports/{id}/download', [SafetyAnalyticsController::class, 'downloadWeeklyReport']);
             Route::post('/', [SafetyRecordController::class, 'store']);
 
             Route::prefix('analytics')->group(function () {
@@ -55,11 +61,15 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
                 Route::get('/frequent-violations', [SafetyAnalyticsController::class, 'frequentViolations']);
                 Route::get('/violation-performance', [SafetyAnalyticsController::class, 'violationPerformance']);
                 Route::get('/by-contractor-consultant', [SafetyAnalyticsController::class, 'byContractorConsultant']);
+                Route::get('/contractor-compliance', [SafetyAnalyticsController::class, 'contractorCompliance']);
+                Route::get('/contractor-top-violations', [SafetyAnalyticsController::class, 'contractorTopViolations']);
             });
 
             Route::get('/{id}', [SafetyRecordController::class, 'show']);
             Route::put('/{id}', [SafetyRecordController::class, 'update']);
             Route::post('/{id}/violations', [SafetyRecordController::class, 'evaluateViolations']);
+            Route::get('/{id}/violation-report', [SafetyRecordController::class, 'violationReport']);
+            Route::get('/{id}/violation-form-report', [SafetyRecordController::class, 'violationFormReport']);
             Route::delete('/{id}', [SafetyRecordController::class, 'destroy']);
         });
 
@@ -213,7 +223,9 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
     Route::prefix('{project}/order-permits')->group(function () {
         Route::get('/', [ProjectOrderPermitController::class, 'index']);
         // Route::get('/department/{departmentId}', [ProjectOrderPermitController::class, 'getByDepartment']);
+        Route::get('/uds-work-orders', [ProjectOrderPermitController::class, 'searchUds']);
         Route::post('/', [ProjectOrderPermitController::class, 'store']);
+        Route::get('/export-uds-template', [ProjectOrderPermitController::class, 'downloadImportTemplate']);
         Route::post('/import', [ProjectOrderPermitController::class, 'importExcel']);
         Route::get('/{name}/update-from-uds', [ProjectOrderPermitController::class, 'updateFromUds']);
         Route::get('/{id}', [ProjectOrderPermitController::class, 'show']);
@@ -350,6 +362,10 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
            ;
     });
 
+    Route::post('/{id}/stamp', [ProjectManagementController::class, 'storeStamp'])
+        ->permission(Permission::PROJECT_MANAGEMENT_CREATE(), Permission::PROJECT_MANAGEMENT_UPDATE());
+    Route::get('/{id}/stamp', [ProjectManagementController::class, 'showStamp'])
+        ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
     Route::get('/{id}', [ProjectManagementController::class, 'show'])
         ->permission(Permission::PROJECT_MANAGEMENT_VIEW());
     Route::put('/{id}', [ProjectManagementController::class, 'update'])

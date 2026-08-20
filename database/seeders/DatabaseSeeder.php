@@ -10,6 +10,7 @@ use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSee
 use Modules\ProcedureSetting\Database\Seeders\ProjectNotificationProcedureSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ContractorSeeder;
 use Modules\Project\ProjectType\Database\Seeders\OrderPermitSeeder;
+use Modules\Project\ProjectType\Database\Seeders\ViolationActionFlagsSeeder;
 use Modules\Project\ProjectType\Database\Seeders\ViolationSeeder;
 use Modules\Project\ProjectType\Database\Seeders\OrderPermitCompletionStatusSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ContractualEngagementSeeder;
@@ -189,6 +190,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ContractorSeeder::class);
         $this->call(OrderPermitSeeder::class);
         $this->call(ViolationSeeder::class);
+        $this->call(ViolationActionFlagsSeeder::class);
         $this->call(OrderPermitCompletionStatusSeeder::class);
         $this->call(ContractualEngagementSeeder::class);
         $this->call(ProjectTagSeeder::class);

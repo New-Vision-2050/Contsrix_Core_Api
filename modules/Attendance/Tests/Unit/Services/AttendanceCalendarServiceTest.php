@@ -126,6 +126,39 @@ class AttendanceCalendarServiceTest extends TestCase
         $this->assertTrue($method->invoke($this->service, $attendances));
     }
 
+    public function test_early_clock_in_presence_overrides_sibling_absent_flag(): void
+    {
+        $dayAttendances = collect([
+            $this->attendance([
+                'status' => Attendance::STATUS_ABSENT,
+                'is_absent' => 1,
+                'start_time' => '2026-08-09 08:30:00',
+                'clock_in_time' => null,
+                'timezone' => 'Asia/Riyadh',
+            ]),
+            $this->attendance([
+                'status' => Attendance::STATUS_ACTIVE,
+                'is_absent' => 0,
+                'start_time' => '2026-08-09 08:30:00',
+                'clock_in_time' => '2026-08-09 08:15:00',
+                'clock_out_time' => null,
+                'timezone' => 'Asia/Riyadh',
+            ]),
+        ]);
+
+        $hasLateArrival = new ReflectionMethod($this->service, 'hasLateArrival');
+        $hasLateArrival->setAccessible(true);
+
+        $hasPresence = $dayAttendances->contains(fn ($a) => ! empty($a->clock_in_time));
+        $hasAbsent = ! $hasPresence && $dayAttendances->contains(
+            fn ($a) => (int) ($a->is_absent ?? 0) === 1 || ($a->status ?? null) === Attendance::STATUS_ABSENT
+        );
+
+        $this->assertTrue($hasPresence);
+        $this->assertFalse($hasAbsent);
+        $this->assertFalse($hasLateArrival->invoke($this->service, $dayAttendances));
+    }
+
     /**
      * @param Collection<string, Collection<int, Attendance>> $groupedAttendances
      */

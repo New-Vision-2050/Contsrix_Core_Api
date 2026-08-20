@@ -15,9 +15,15 @@ class OrderPermitService
     ) {
     }
 
-    public function list(): Collection
+    public function list(?string $name = null): Collection
     {
-        return $this->repository->list();
+        $items = $this->repository->list(name: $name);
+
+        if ($name !== null && $name !== '' && $items->isEmpty()) {
+            return $this->repository->list();
+        }
+
+        return $items;
     }
 
     public function get(int $id): OrderPermit

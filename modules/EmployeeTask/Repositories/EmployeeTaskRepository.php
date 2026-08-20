@@ -404,6 +404,11 @@ class EmployeeTaskRepository
         return $task->fresh();
     }
 
+    public function delete(EmployeeTaskRequest $task): bool
+    {
+        return (bool) $task->delete();
+    }
+
     public function getFilterMetadata(string $userId, array $filters = []): array
     {
         $taskDate = $filters['task_date'] ?? null;

@@ -228,6 +228,60 @@ class SubEntityRecordsAttendanceStatusTest extends BaseAttendanceReportTestCase
         );
     }
 
+    public function test_holiday_date_range_auto_returns_to_required_attendance_after_date_to(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-30 10:00:00'));
+
+        [$subEntity, $registrationForm] = $this->createSubEntitySetup(CompanyUserRole::EMPLOYEE);
+        $user = $this->createCompanyUserRecord('Ranged Holiday Employee', $subEntity, CompanyUserRole::EMPLOYEE);
+        $companyUser = $this->companyUserForUser($user);
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->patchJson('/api/v1/sub_entities/records/attendance-status', [
+                'company_user_id' => $companyUser->id,
+                'status' => 'holiday',
+                'time_from' => '2026-07-30 00:00:00',
+                'time_to' => '2026-08-02 23:59:59',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.attendance_status_code', 'holiday')
+            ->assertJsonPath('payload.attendance_date_from', '2026-07-30')
+            ->assertJsonPath('payload.attendance_date_to', '2026-08-02');
+
+        $fresh = $user->fresh();
+        $this->assertSame('holiday', $fresh->manual_attendance_status);
+        $this->assertSame('2026-07-30', $fresh->manual_attendance_status_since?->toDateString());
+        $this->assertSame('2026-08-02', $fresh->manual_attendance_status_until?->toDateString());
+
+        foreach (['2026-07-30', '2026-07-31', '2026-08-01', '2026-08-02'] as $holidayDate) {
+            $this->assertDatabaseHas('attendances', [
+                'user_id' => $user->id,
+                'business_date' => $holidayDate,
+                'status' => Attendance::STATUS_HOLIDAY,
+                'is_holiday' => 1,
+                'day_status' => 'holiday',
+            ]);
+
+            $this->assertAttendanceListStatus(
+                $this->listPayload($subEntity, $registrationForm, $holidayDate),
+                $user,
+                'holiday',
+                'اجازه',
+                $holidayDate
+            );
+        }
+
+        // Day after date_to automatically shows مطلوب للحضور — no manual PATCH needed.
+        $this->assertAttendanceListStatus(
+            $this->listPayload($subEntity, $registrationForm, '2026-08-03'),
+            $user,
+            'required_attendance',
+            'مطلوب للحضور',
+            '2026-08-03'
+        );
+    }
+
     public function test_setting_status_preserves_existing_clock_times(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-30 10:00:00'));

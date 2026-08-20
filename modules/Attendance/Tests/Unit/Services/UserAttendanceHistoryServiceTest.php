@@ -69,6 +69,52 @@ class UserAttendanceHistoryServiceTest extends TestCase
         $this->assertSame(0, $payload['is_holiday']);
     }
 
+    public function test_early_clock_in_with_sibling_absent_period_is_not_absent(): void
+    {
+        // Early clock-in on one period + leftover absent on another must not show غائب.
+        $payload = $this->dayStatusPayload(collect([
+            new Attendance([
+                'status' => Attendance::STATUS_ABSENT,
+                'is_absent' => 1,
+                'start_time' => '2026-08-09 08:30:00',
+                'end_time' => '2026-08-09 17:30:00',
+                'clock_in_time' => null,
+                'timezone' => 'Asia/Riyadh',
+            ]),
+            new Attendance([
+                'status' => Attendance::STATUS_ACTIVE,
+                'is_absent' => 0,
+                'start_time' => '2026-08-09 08:30:00',
+                'end_time' => '2026-08-09 17:30:00',
+                'clock_in_time' => '2026-08-09 08:15:00',
+                'clock_out_time' => null,
+                'timezone' => 'Asia/Riyadh',
+            ]),
+        ]));
+
+        $this->assertSame('نشط', $payload['status']);
+        $this->assertSame(0, $payload['is_late']);
+        $this->assertSame(0, $payload['is_absent']);
+        $this->assertSame(0, $payload['is_holiday']);
+    }
+
+    public function test_clocked_in_row_with_stale_absent_flag_is_not_absent(): void
+    {
+        $payload = $this->dayStatusPayload(collect([
+            new Attendance([
+                'status' => Attendance::STATUS_ACTIVE,
+                'is_absent' => 1,
+                'start_time' => '2026-08-09 08:30:00',
+                'clock_in_time' => '2026-08-09 08:15:00',
+                'clock_out_time' => null,
+                'timezone' => 'Asia/Riyadh',
+            ]),
+        ]));
+
+        $this->assertSame('نشط', $payload['status']);
+        $this->assertSame(0, $payload['is_absent']);
+    }
+
     public function test_late_attendance_sets_late_flag(): void
     {
         $payload = $this->dayStatusPayload(collect([

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Services;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Modules\Project\ProjectManagement\DTO\CreateProjectManagementDTO;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectTag;
 use Modules\Project\ProjectManagement\Repositories\ProjectManagementRepository;
+use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
@@ -19,6 +21,7 @@ class ProjectManagementCRUDService
 
     public function __construct(
         private ProjectManagementRepository $repository,
+        private FileUploadService $fileUploadService,
     ) {
     }
 
@@ -27,12 +30,13 @@ class ProjectManagementCRUDService
          return $this->repository->createProjectManagement($createProjectManagementDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10, ?User $user = null): array
+    public function list(int $page = 1, int $perPage = 10, ?User $user = null, array $filters = []): array
     {
         return $this->repository->paginatedForUser(
             page: $page,
             perPage: $perPage,
             user: $user,
+            filters: $filters,
         );
     }
 
@@ -41,6 +45,22 @@ class ProjectManagementCRUDService
         return $this->repository->getProjectManagement(
             id: $id,
         );
+    }
+
+    public function uploadStamp(UuidInterface $id, UploadedFile $stamp): ProjectManagement
+    {
+        $project = $this->repository->getProjectManagement($id);
+
+        $project->clearMediaCollection(ProjectManagement::STAMP_COLLECTION);
+        $this->fileUploadService->uploadFile(
+            model: $project,
+            file: $stamp,
+            filePath: 'projects/'.$project->id.'/stamp',
+            collectionName: ProjectManagement::STAMP_COLLECTION,
+            visibility: 'public',
+        );
+
+        return $project->fresh() ?? $project;
     }
 
     public function projectTags(): array

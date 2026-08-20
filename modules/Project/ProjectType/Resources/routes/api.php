@@ -15,6 +15,10 @@ use Modules\Project\ProjectType\Controllers\ProjectSharingSettingController;
 use Modules\Project\ProjectType\Controllers\MaintenanceEmergencySettingController;
 use Modules\Project\ProjectType\Controllers\ContractorSettingController;
 use Modules\Project\ProjectType\Controllers\OrderPermitSettingController;
+use Modules\Project\ProjectType\Controllers\ConstructionSettingController;
+use Modules\Project\ProjectType\Controllers\SafetyTaskSettingController;
+use Modules\Project\ProjectType\Controllers\ProjectManagementSettingController;
+use Modules\Project\ProjectType\Controllers\ProjectOrderPermitSettingController;
 use Modules\Project\ProjectType\Controllers\SchemaController;
 use Modules\RoleAndPermission\Enums\Permission;
 
@@ -120,6 +124,28 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{projectTypeId}/contractor-settings', [ContractorSettingController::class, 'show'])
         ->permission(Permission::PROJECT_TYPE_VIEW());
     Route::put('/{projectTypeId}/contractor-settings', [ContractorSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Feature visibility settings
+    Route::get('/{projectTypeId}/construction-settings', [ConstructionSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/construction-settings', [ConstructionSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    Route::get('/{projectTypeId}/safety-task-settings', [SafetyTaskSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/safety-task-settings', [SafetyTaskSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    Route::get('/{projectTypeId}/project-management-settings', [ProjectManagementSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/project-management-settings', [ProjectManagementSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Explicit alias for the existing general order-permit setting.
+    Route::get('/{projectTypeId}/project-order-permit-settings', [ProjectOrderPermitSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/project-order-permit-settings', [ProjectOrderPermitSettingController::class, 'update'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 
     // Order Permit Settings routes

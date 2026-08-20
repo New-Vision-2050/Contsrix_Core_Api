@@ -219,12 +219,200 @@ class SafetyAnalyticsService
     }
 
     /**
-     * Top 5 most frequent violations across all companies and projects.
+     * Top N most frequent violations across all companies and projects.
      * Uses the shared DB (single-DB tenancy) without company scoping.
+     * Optional inspection_date range filter for weekly reports.
+     *
+     * @return Collection<int, array{
+     *     id: mixed,
+     *     code: mixed,
+     *     description: mixed,
+     *     category: mixed,
+     *     default_weight: mixed,
+     *     count: int,
+     *     percentage: float
+     * }>
      */
-    public function topViolations(int $limit = 5): Collection
+    public function topViolations(int $limit = 5, ?string $fromDate = null, ?string $toDate = null): Collection
     {
-        return collect(DB::table('safety_record_violation')
+        $rows = $this->globalViolationFoundQuery($fromDate, $toDate)
+            ->orderByDesc('count')
+            ->limit($limit)
+            ->get();
+
+        $total = (int) $this->globalViolationFoundTotal($fromDate, $toDate);
+
+        return collect($rows)->map(fn ($row) => $this->mapViolationFrequencyRow($row, $total));
+    }
+
+    /**
+     * Frequency % of every found violation across all companies/projects
+     * within the inspection_date range (Page 9 of weekly report).
+     *
+     * @return Collection<int, array{
+     *     id: mixed,
+     *     code: mixed,
+     *     description: mixed,
+     *     category: mixed,
+     *     default_weight: mixed,
+     *     count: int,
+     *     percentage: float
+     * }>
+     */
+    public function globalViolationFrequencies(string $fromDate, string $toDate): Collection
+    {
+        $rows = $this->globalViolationFoundQuery($fromDate, $toDate)
+            ->orderByDesc('count')
+            ->get();
+
+        $total = (int) $this->globalViolationFoundTotal($fromDate, $toDate);
+
+        return collect($rows)->map(fn ($row) => $this->mapViolationFrequencyRow($row, $total));
+    }
+
+    /**
+     * Average completed-task percentage per project contractor
+     * within the inspection_date range (Page 8).
+     * Only contractors that have at least one completed safety record are returned.
+     *
+     * @return Collection<int, array{
+     *     contractor_id: string,
+     *     contractor_name: string|null,
+     *     percentage: float,
+     *     completed_tasks: int
+     * }>
+     */
+    public function contractorCompliance(string $projectId, string $fromDate, string $toDate): Collection
+    {
+        $rows = SafetyRecord::query()
+            ->where('project_id', $projectId)
+            ->where('status', 'completed')
+            ->whereNotNull('contractor_id')
+            ->whereNotNull('inspection_date')
+            ->whereDate('inspection_date', '>=', $fromDate)
+            ->whereDate('inspection_date', '<=', $toDate)
+            ->select([
+                'contractor_id',
+                DB::raw('AVG(percentage) as average_percentage'),
+                DB::raw('COUNT(*) as completed_tasks'),
+            ])
+            ->groupBy('contractor_id')
+            ->orderByDesc('average_percentage')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return collect();
+        }
+
+        $names = ProjectContractor::query()
+            ->withoutGlobalScopes()
+            ->where('project_id', $projectId)
+            ->whereIn('id', $rows->pluck('contractor_id')->all())
+            ->pluck('name', 'id');
+
+        return $rows->map(fn ($row) => [
+            'contractor_id' => (string) $row->contractor_id,
+            'contractor_name' => $names[$row->contractor_id] ?? null,
+            'percentage' => round((float) $row->average_percentage, 2),
+            'completed_tasks' => (int) $row->completed_tasks,
+        ])->values();
+    }
+
+    /**
+     * Top N violations for a single project contractor within inspection_date range.
+     *
+     * @return Collection<int, array{
+     *     id: mixed,
+     *     code: mixed,
+     *     description: mixed,
+     *     category: mixed,
+     *     default_weight: mixed,
+     *     count: int,
+     *     percentage: float
+     * }>
+     */
+    public function contractorTopViolations(
+        string $projectId,
+        string $contractorId,
+        string $fromDate,
+        string $toDate,
+        int $limit = 5
+    ): Collection {
+        $rows = Violation::query()
+            ->select([
+                'violations.id',
+                'violations.code',
+                'violations.description',
+                'violations.category',
+                'violations.default_weight',
+                DB::raw('COUNT(safety_record_violation.id) as count'),
+            ])
+            ->join('safety_record_violation', 'safety_record_violation.violation_id', '=', 'violations.id')
+            ->join('safety_records', 'safety_records.id', '=', 'safety_record_violation.safety_record_id')
+            ->where('safety_records.project_id', $projectId)
+            ->where('safety_records.contractor_id', $contractorId)
+            ->where('safety_record_violation.status', 'violation_found')
+            ->whereNotNull('safety_records.inspection_date')
+            ->whereDate('safety_records.inspection_date', '>=', $fromDate)
+            ->whereDate('safety_records.inspection_date', '<=', $toDate)
+            ->when(
+                tenancy()->initialized && ! tenant('is_central_company'),
+                fn ($q) => $q->where('safety_records.company_id', tenant('id'))
+            )
+            ->groupBy(
+                'violations.id',
+                'violations.code',
+                'violations.description',
+                'violations.category',
+                'violations.default_weight'
+            )
+            ->orderByDesc('count')
+            ->limit($limit)
+            ->get();
+
+        $total = (int) DB::table('safety_record_violation')
+            ->join('safety_records', 'safety_records.id', '=', 'safety_record_violation.safety_record_id')
+            ->where('safety_records.project_id', $projectId)
+            ->where('safety_records.contractor_id', $contractorId)
+            ->where('safety_record_violation.status', 'violation_found')
+            ->whereNotNull('safety_records.inspection_date')
+            ->whereDate('safety_records.inspection_date', '>=', $fromDate)
+            ->whereDate('safety_records.inspection_date', '<=', $toDate)
+            ->when(
+                tenancy()->initialized && ! tenant('is_central_company'),
+                fn ($q) => $q->where('safety_records.company_id', tenant('id'))
+            )
+            ->count();
+
+        return $rows->map(fn ($row) => $this->mapViolationFrequencyRow($row, $total));
+    }
+
+    /**
+     * Project contractors ordered for weekly report pages (project-scoped only).
+     *
+     * @return Collection<int, array{id: string, name: string|null}>
+     */
+    public function projectContractorsForReport(string $projectId): Collection
+    {
+        return ProjectContractor::query()
+            ->withoutGlobalScopes()
+            ->where('project_id', $projectId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (ProjectContractor $contractor) => [
+                'id' => (string) $contractor->id,
+                'name' => $contractor->name,
+            ])
+            ->values();
+    }
+
+    /**
+     * @return \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder
+     */
+    private function globalViolationFoundQuery(?string $fromDate, ?string $toDate)
+    {
+        return DB::table('safety_record_violation')
             ->select([
                 'violations.id',
                 'violations.code',
@@ -236,23 +424,65 @@ class SafetyAnalyticsService
             ->join('violations', 'violations.id', '=', 'safety_record_violation.violation_id')
             ->join('safety_records', 'safety_records.id', '=', 'safety_record_violation.safety_record_id')
             ->where('safety_record_violation.status', 'violation_found')
+            ->when(
+                $fromDate !== null && $toDate !== null,
+                function ($q) use ($fromDate, $toDate) {
+                    $q->whereNotNull('safety_records.inspection_date')
+                        ->whereDate('safety_records.inspection_date', '>=', $fromDate)
+                        ->whereDate('safety_records.inspection_date', '<=', $toDate);
+                }
+            )
             ->groupBy(
                 'violations.id',
                 'violations.code',
                 'violations.description',
                 'violations.category',
                 'violations.default_weight'
+            );
+    }
+
+    private function globalViolationFoundTotal(?string $fromDate, ?string $toDate): int
+    {
+        return (int) DB::table('safety_record_violation')
+            ->join('safety_records', 'safety_records.id', '=', 'safety_record_violation.safety_record_id')
+            ->where('safety_record_violation.status', 'violation_found')
+            ->when(
+                $fromDate !== null && $toDate !== null,
+                function ($q) use ($fromDate, $toDate) {
+                    $q->whereNotNull('safety_records.inspection_date')
+                        ->whereDate('safety_records.inspection_date', '>=', $fromDate)
+                        ->whereDate('safety_records.inspection_date', '<=', $toDate);
+                }
             )
-            ->orderByDesc('count')
-            ->limit($limit)
-            ->get())
-            ->map(fn ($row) => [
-                'id' => $row->id,
-                'code' => $row->code,
-                'description' => $row->description,
-                'category' => $row->category,
-                'default_weight' => $row->default_weight,
-                'count' => (int) $row->count,
-            ]);
+            ->count();
+    }
+
+    /**
+     * @param  object  $row
+     * @return array{
+     *     id: mixed,
+     *     code: mixed,
+     *     description: mixed,
+     *     category: mixed,
+     *     default_weight: mixed,
+     *     count: int,
+     *     percentage: float
+     * }
+     */
+    private function mapViolationFrequencyRow(object $row, int $total): array
+    {
+        $count = (int) $row->count;
+
+        return [
+            'id' => $row->id,
+            'code' => $row->code,
+            'description' => $row->description,
+            'category' => $row->category,
+            'default_weight' => $row->default_weight,
+            'count' => $count,
+            'percentage' => $total === 0
+                ? 0.0
+                : round(($count / $total) * 100, 1),
+        ];
     }
 }

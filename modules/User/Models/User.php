@@ -82,6 +82,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "imei",
         "manual_attendance_status",
         "manual_attendance_status_since",
+        "manual_attendance_status_until",
     ];
 
     protected $casts = [
@@ -101,6 +102,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'manual_attendance_status_since' => 'date',
+            'manual_attendance_status_until' => 'date',
         ];
     }
 

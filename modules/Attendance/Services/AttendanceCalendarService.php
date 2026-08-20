@@ -275,11 +275,14 @@ class AttendanceCalendarService
         // Late = clock-in AFTER shift start only.
         // Early clock-out (before required hours) is NOT late — show present + hours worked.
         $hasLate = $this->hasLateArrival($dayAttendances);
-        $hasAbsent = $dayAttendances->contains(fn ($a) =>
+        // Real clock-in always wins over leftover absent period rows (early clock-in
+        // often leaves a second period marked absent while the active one has clock_in).
+        $hasPresence = $dayAttendances->contains(fn ($a) => ! empty($a->clock_in_time));
+        $hasAbsent = ! $hasPresence && $dayAttendances->contains(fn ($a) =>
             $this->isTruthy($a->is_absent ?? null) || ($a->status ?? null) === Attendance::STATUS_ABSENT
         );
 
-        if ($hasAbsent && !$hasLate) {
+        if ($hasAbsent && ! $hasLate) {
             // Employee has an assigned/active task on this day → present (متواجد).
             if ($hasTask) {
                 return $this->formatDay(
@@ -331,6 +334,12 @@ class AttendanceCalendarService
      */
     private function hasLateArrival(Collection $dayAttendances): bool
     {
+        if ($dayAttendances->contains(
+            fn ($a) => \Modules\Attendance\Support\AttendanceType::isFlexible($a->attendance_type ?? null)
+        )) {
+            return false;
+        }
+
         foreach ($dayAttendances as $attendance) {
             if (empty($attendance->clock_in_time) || empty($attendance->start_time)) {
                 continue;
@@ -589,7 +598,7 @@ class AttendanceCalendarService
             'id', 'user_id', 'company_id', 'status', 'timezone',
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours', 'total_break_hours',
-            'business_date', 'day_status', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         foreach (['worked_minutes', 'work_duration'] as $durationColumn) {

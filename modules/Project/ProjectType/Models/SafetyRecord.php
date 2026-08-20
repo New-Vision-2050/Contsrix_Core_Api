@@ -23,6 +23,8 @@ class SafetyRecord extends Model implements HasMedia
     use BaseFilterable;
     use InteractsWithMedia;
 
+    public const VIOLATION_REPORT_COLLECTION = 'violation_report';
+
     protected $table = 'safety_records';
 
     public $incrementing = false;
@@ -37,6 +39,8 @@ class SafetyRecord extends Model implements HasMedia
         'order_type',
         'date',
         'time',
+        'inspection_date',
+        'inspection_time',
         'required_score',
         'earned_score',
         'percentage',
@@ -50,6 +54,8 @@ class SafetyRecord extends Model implements HasMedia
     protected $casts = [
         'date' => 'date',
         'time' => 'string',
+        'inspection_date' => 'date',
+        'inspection_time' => 'string',
         'required_score' => 'decimal:2',
         'earned_score' => 'decimal:2',
         'percentage' => 'decimal:2',
@@ -63,6 +69,7 @@ class SafetyRecord extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('violation_evidence');
+        $this->addMediaCollection(self::VIOLATION_REPORT_COLLECTION)->singleFile();
     }
 
     public function company(): BelongsTo

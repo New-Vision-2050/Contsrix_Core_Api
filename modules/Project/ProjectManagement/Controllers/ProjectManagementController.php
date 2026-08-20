@@ -16,6 +16,7 @@ use Modules\Project\ProjectManagement\Requests\DeleteProjectManagementRequest;
 use Modules\Project\ProjectManagement\Requests\GetProjectManagementListRequest;
 use Modules\Project\ProjectManagement\Requests\GetProjectManagementRequest;
 use Modules\Project\ProjectManagement\Requests\UpdateProjectManagementRequest;
+use Modules\Project\ProjectManagement\Requests\UploadProjectStampRequest;
 use Modules\Project\ProjectManagement\Services\ProjectManagementCRUDService;
 use Modules\Project\ProjectManagement\Services\ProjectManagementDashboardWidgetsService;
 use Modules\Project\ProjectManagement\Presenters\ProjectManagementDashboardWidgetsPresenter;
@@ -41,6 +42,20 @@ class ProjectManagementController extends Controller
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10),
             $request->user(),
+            $request->only([
+                'name',
+                'project_type_id',
+                'sub_project_type_id',
+                'sub_sub_project_type_id',
+                'manager_id',
+                'branch_id',
+                'project_owner_type',
+                'project_owner_id',
+                'contract_id',
+                'client_id',
+                'management_id',
+                'status',
+            ]),
         );
 
         return Json::items(ProjectManagementPresenter::collection($list['data']), paginationSettings: $list['pagination']);
@@ -53,6 +68,27 @@ class ProjectManagementController extends Controller
         $presenter = new ProjectManagementPresenter($item);
 
         return Json::item($presenter->getData());
+    }
+
+    public function showStamp(GetProjectManagementRequest $request): JsonResponse
+    {
+        $item = $this->projectManagementService->get(Uuid::fromString($request->route('id')));
+
+        return Json::item([
+            'stamp' => $item->stampUrl(),
+        ]);
+    }
+
+    public function storeStamp(UploadProjectStampRequest $request): JsonResponse
+    {
+        $item = $this->projectManagementService->uploadStamp(
+            Uuid::fromString($request->route('id')),
+            $request->file('stamp'),
+        );
+
+        return Json::item([
+            'stamp' => $item->stampUrl(),
+        ]);
     }
 
     public function store(CreateProjectManagementRequest $request): JsonResponse

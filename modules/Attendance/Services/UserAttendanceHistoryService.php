@@ -51,7 +51,7 @@ final class UserAttendanceHistoryService
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
-            'business_date', 'day_status', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         $allAttendances = Attendance::query()
@@ -156,7 +156,7 @@ final class UserAttendanceHistoryService
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
-            'business_date', 'day_status', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         $allAttendances = Attendance::query()
@@ -755,7 +755,11 @@ final class UserAttendanceHistoryService
             || ($a->status ?? null) === Attendance::STATUS_HOLIDAY
             || ($a->day_status ?? null) === 'holiday');
 
-        $hasAbsent = $attendances->contains(fn ($a) => $this->isTruthy($a->is_absent ?? null)
+        // Real clock-in always wins over leftover absent/waiting period rows
+        // (common when early clock-in creates/uses one period while another stays absent).
+        $hasPresence = $attendances->contains(fn ($a) => ! empty($a->clock_in_time));
+
+        $hasAbsent = ! $hasPresence && $attendances->contains(fn ($a) => $this->isTruthy($a->is_absent ?? null)
             || ($a->status ?? null) === Attendance::STATUS_ABSENT);
 
         // Late = clock-in after shift start only (early departure is not late).
@@ -797,6 +801,12 @@ final class UserAttendanceHistoryService
      */
     private function hasLateArrival(Collection $attendances): bool
     {
+        if ($attendances->contains(
+            fn ($a) => \Modules\Attendance\Support\AttendanceType::isFlexible($a->attendance_type ?? null)
+        )) {
+            return false;
+        }
+
         foreach ($attendances as $attendance) {
             if (empty($attendance->clock_in_time) || empty($attendance->start_time)) {
                 continue;
@@ -820,8 +830,9 @@ final class UserAttendanceHistoryService
     }
 
     /**
-     * Checks the persistent manual attendance status override (set via the sub-entity
-     * "attendance-status" endpoint). Active from the day it was set onward until changed again.
+     * Checks the persistent manual holiday override (set via the sub-entity
+     * "attendance-status" endpoint). Active from since through until (inclusive).
+     * After until, holiday expires and the day is treated as required attendance.
      */
     private function isManualHolidayOverrideActive(User $user, string $dateString): bool
     {
@@ -831,13 +842,25 @@ final class UserAttendanceHistoryService
 
         $since = $user->manual_attendance_status_since;
 
-        if ($since === null) {
-            return true;
+        if ($since !== null) {
+            $sinceDate = $since instanceof Carbon ? $since->toDateString() : Carbon::parse((string) $since)->toDateString();
+
+            if ($sinceDate > $dateString) {
+                return false;
+            }
         }
 
-        $sinceDate = $since instanceof Carbon ? $since->toDateString() : Carbon::parse((string) $since)->toDateString();
+        $until = $user->manual_attendance_status_until ?? null;
 
-        return $sinceDate <= $dateString;
+        if ($until !== null) {
+            $untilDate = $until instanceof Carbon ? $until->toDateString() : Carbon::parse((string) $until)->toDateString();
+
+            if ($dateString > $untilDate) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function determineDayStatus(Collection $attendances): string
@@ -846,8 +869,11 @@ final class UserAttendanceHistoryService
             return 'غائب';
         }
 
-        $hasCompleted = $attendances->contains(fn($a) => $a->clock_out_time !== null);
-        $hasActive    = $attendances->contains(fn($a) => $a->clock_out_time === null && $a->status === 'active');
+        $hasCompleted = $attendances->contains(fn ($a) => $a->clock_out_time !== null);
+        // Any open clock-in counts as active (do not require status=active only).
+        $hasActive = $attendances->contains(
+            fn ($a) => ! empty($a->clock_in_time) && $a->clock_out_time === null
+        );
 
         if ($hasActive) {
             return 'نشط';

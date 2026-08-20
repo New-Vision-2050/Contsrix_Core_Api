@@ -108,6 +108,15 @@ class UserAttendanceService
 
             $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate, $timezone);
             $workRules = $this->applyManualAttendanceOverride($user, $targetDate, $workRules);
+            if (\Modules\Attendance\Support\AttendanceType::userIsFlexible($user)) {
+                $workRules = \Modules\Attendance\Support\FlexibleWorkDay::applyToWorkRules(
+                    $workRules,
+                    $targetDate,
+                    $timezone
+                );
+            } else {
+                $workRules['attendance_type'] = \Modules\Attendance\Support\AttendanceType::REGULAR;
+            }
             [$attendances, $currentAttendance] = $this->fetchDayAttendancesAndCurrentOpen($user, $dateCarbon);
 
             if (isset($workRules['all_work_periods']) && is_array($workRules['all_work_periods'])) {
@@ -134,9 +143,10 @@ class UserAttendanceService
     }
     /**
      * Applies a persistent manual attendance status override (set via the sub-entity
-     * "attendance-status" endpoint) on top of the computed work rules. The override
-     * takes effect from the day it was set and remains active for every following
-     * day until it is changed again.
+     * "attendance-status" endpoint) on top of the computed work rules. Active from
+     * `manual_attendance_status_since` through `manual_attendance_status_until`
+     * (inclusive). When until is null the override stays open-ended until changed.
+     * After until expires, holiday automatically falls back to required attendance.
      */
     private function applyManualAttendanceOverride(User $user, string $targetDate, array $workRules): array
     {
@@ -150,6 +160,15 @@ class UserAttendanceService
         $sinceDate = $since instanceof Carbon ? $since->toDateString() : ($since ? Carbon::parse((string) $since)->toDateString() : null);
 
         if ($sinceDate !== null && $sinceDate > $targetDate) {
+            return $workRules;
+        }
+
+        $until = $user->manual_attendance_status_until ?? null;
+        $untilDate = $until instanceof Carbon
+            ? $until->toDateString()
+            : ($until ? Carbon::parse((string) $until)->toDateString() : null);
+
+        if ($untilDate !== null && $targetDate > $untilDate) {
             return $workRules;
         }
 
@@ -294,16 +313,25 @@ class UserAttendanceService
             $periodStart = $periodBounds[$idx]['start'];
             $periodEnd = $periodBounds[$idx]['end'];
 
-            $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
+            $isFlexiblePeriod = \Modules\Attendance\Support\AttendanceType::isFlexible(
+                $period['attendance_type'] ?? $workRules['attendance_type'] ?? null
+            );
+            $totalWorkHours = $isFlexiblePeriod
+                ? round(\Modules\Attendance\Support\FlexibleWorkDay::requiredMinutesFromWorkRules($workRules) / 60, 2)
+                : $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
 
             // Net minutes already credited in this scheduled period (in-memory — rows were
             // already loaded), so window boundaries account for completed attendances.
-            $alreadyWorked = (int) round($attendances
-                ->filter(fn ($a) => !empty($a->clock_in_time)
-                    && $a->start_time === $periodStart->format('Y-m-d H:i:s')
-                    && $a->end_time === $periodEnd->format('Y-m-d H:i:s'))
-                ->sum(fn ($a) => (float) $a->total_work_hours) * 60);
+            $alreadyWorked = $isFlexiblePeriod
+                ? (int) round($attendances
+                    ->filter(fn ($a) => ! empty($a->clock_in_time))
+                    ->sum(fn ($a) => (float) $a->total_work_hours) * 60)
+                : (int) round($attendances
+                    ->filter(fn ($a) => ! empty($a->clock_in_time)
+                        && $a->start_time === $periodStart->format('Y-m-d H:i:s')
+                        && $a->end_time === $periodEnd->format('Y-m-d H:i:s'))
+                    ->sum(fn ($a) => (float) $a->total_work_hours) * 60);
 
             $window = $this->computePeriodWindow($periodStart, $periodEnd, $now, $workRules, $timezone, $alreadyWorked);
             $hasAnyClockIn = collect($periodAttendances)->contains(fn ($att) => !empty($att['clock_in_time']));
@@ -583,6 +611,8 @@ class UserAttendanceService
                 ? (int) $workRules['clock_in_deadline_rules']['can_clock_in_before_minutes']
                 : null);
 
+        $isFlexible = \Modules\Attendance\Support\AttendanceType::isFlexible($workRules['attendance_type'] ?? null);
+
         return (new \Modules\Attendance\Domain\Time\ShiftWindowCalculator())->compute(
             new \Modules\Attendance\Domain\Time\ShiftWindowInput(
                 scheduledStart: \Carbon\CarbonImmutable::parse($periodStart->format('Y-m-d H:i:s'), $timezone),
@@ -595,6 +625,10 @@ class UserAttendanceService
                 alreadyWorkedMinutesInPeriod: $alreadyWorkedMinutesInPeriod,
                 overtimeFlags: \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($workRules['overtime_rules'] ?? null),
                 timezone: $timezone,
+                requiredWorkMinutesOverride: $isFlexible
+                    ? \Modules\Attendance\Support\FlexibleWorkDay::requiredMinutesFromWorkRules($workRules)
+                    : null,
+                flexibleDay: $isFlexible,
             )
         );
     }
@@ -644,6 +678,10 @@ class UserAttendanceService
             'clock_in_deadline_rules' => $workRules['clock_in_deadline_rules'] ?? null,
             'overtime_rules' => $workRules['overtime_rules'] ?? [],
             'max_over_time' => $workRules['max_over_time'] ?? null,
+            'attendance_type' => \Modules\Attendance\Support\AttendanceType::normalize(
+                $workRules['attendance_type'] ?? null
+            ),
+            'flexible_required_work_minutes' => $workRules['flexible_required_work_minutes'] ?? null,
             '_debug' => $workRules['_debug'] ?? null,
         ];
     }

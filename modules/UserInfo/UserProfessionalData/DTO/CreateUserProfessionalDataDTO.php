@@ -17,7 +17,8 @@ class CreateUserProfessionalDataDTO
         public string $job_title_id,
         public string $job_code,
         public ?string $attendance_constraint_id,
-        public ?array $roles
+        public string $attendance_type = 'regular',
+        public ?array $roles = null,
     ) {
     }
 
@@ -31,7 +32,8 @@ class CreateUserProfessionalDataDTO
             'job_type_id' => $this->job_type_id,
             'job_title_id' => $this->job_title_id,
             'job_code' => $this->job_code,
-            'attendance_constraint_id' => $this->attendance_constraint_id
+            'attendance_constraint_id' => $this->attendance_constraint_id,
+            'attendance_type' => $this->attendance_type,
         ];
     }
 

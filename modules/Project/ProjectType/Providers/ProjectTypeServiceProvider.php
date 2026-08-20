@@ -8,6 +8,7 @@ use BasePackage\Shared\Module\ModuleServiceProvider;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Route;
 use Modules\Project\ProjectManagement\Models\ProjectNotification;
+use Modules\Project\ProjectType\Console\SyncConstructionArchiveFoldersCommand;
 use Modules\Project\ProjectType\Console\SyncSafetyRecordsFromNotificationsCommand;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Models\ProjectType;
@@ -26,6 +27,7 @@ class ProjectTypeServiceProvider extends ModuleServiceProvider
         //$this->registerConfig();
         $this->registerMigrations();
         $this->registerCommands();
+        $this->registerViews();
 
         // Register observer
         ProjectType::observe(ProjectTypeObserver::class);
@@ -36,11 +38,22 @@ class ProjectTypeServiceProvider extends ModuleServiceProvider
         ]);
     }
 
+    protected function registerViews(): void
+    {
+        $alias = 'project-type';
+        $sourcePath = $this->getModulePath('Resources/views');
+        $viewPath = resource_path('views/modules/'.$alias);
+
+        $this->publishes([$sourcePath => $viewPath], 'views');
+        $this->loadViewsFrom([$viewPath, $sourcePath], $alias);
+    }
+
     protected function registerCommands(): void
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SyncSafetyRecordsFromNotificationsCommand::class,
+                SyncConstructionArchiveFoldersCommand::class,
             ]);
         }
     }

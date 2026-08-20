@@ -97,11 +97,7 @@ class ProjectProcedureSetting extends Model
 
     public function receiverCompanies(): BelongsToMany
     {
-        return $this->belongsToMany(
-            Company::class,
-            'project_procedure_setting_receiver_companies',
-            'project_procedure_setting_id',
-            'company_id'
-        )->withoutGlobalScopes()->withTimestamps();
+        return $this->belongsToMany(Company::class, 'project_procedure_setting_receiver_companies', 'project_procedure_setting_id', 'company_id')
+            ->withoutGlobalScopes();
     }
 }

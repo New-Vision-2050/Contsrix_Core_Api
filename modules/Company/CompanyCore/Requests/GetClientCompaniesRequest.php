@@ -13,6 +13,7 @@ class GetClientCompaniesRequest extends FormRequest
         return [
             'per_page' => 'integer',
             'page' => 'integer',
+            'name' => 'nullable|string',
         ];
     }
 }

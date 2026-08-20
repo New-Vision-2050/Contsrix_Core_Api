@@ -6,6 +6,7 @@ return [
         'EMPLOYEE_TASK_VIEW'             => 'employee-task.employee-tasks.view',
         'EMPLOYEE_TASK_LIST'             => 'employee-task.employee-tasks.list',
         'EMPLOYEE_TASK_CANCEL'           => 'employee-task.employee-tasks.cancel',
+        'EMPLOYEE_TASK_DELETE'           => 'employee-task.employee-tasks.delete',
         'EMPLOYEE_TASK_START'            => 'employee-task.employee-tasks.start',
         'EMPLOYEE_TASK_END'              => 'employee-task.employee-tasks.end',
         'EMPLOYEE_TASK_APPROVE'          => 'employee-task.employee-tasks.approve',
