@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectManagement\Tests\Feature;
 
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -586,7 +587,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $timelineStart = now();
 
         try {
-            \Carbon\Carbon::setTestNow($timelineStart->copy()->addMinute());
+            Carbon::setTestNow($timelineStart->copy()->addMinute());
             app(ProcessWorkflowService::class)->autoApproveStep((string) $autoStep->id);
 
             $this->assertDatabaseHas('process_steps', [
@@ -596,21 +597,21 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
                 'action_by' => null,
             ]);
 
-            \Carbon\Carbon::setTestNow($timelineStart->copy()->addMinutes(2));
+            Carbon::setTestNow($timelineStart->copy()->addMinutes(2));
             $this->actingAs($firstManualUser, 'api')
                 ->withHeader('X-Tenant', $receiverCompany->id)
                 ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
                 ->assertOk()
                 ->assertJsonPath('payload.status', AttachmentRequest::STATUS_PENDING);
 
-            \Carbon\Carbon::setTestNow($timelineStart->copy()->addMinutes(3));
+            Carbon::setTestNow($timelineStart->copy()->addMinutes(3));
             $this->actingAs($secondManualUser, 'api')
                 ->withHeader('X-Tenant', $receiverCompany->id)
                 ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
                 ->assertOk()
                 ->assertJsonPath('payload.status', AttachmentRequest::STATUS_APPROVED);
         } finally {
-            \Carbon\Carbon::setTestNow();
+            Carbon::setTestNow();
         }
 
         $history = AttachmentRequestHistory::query()
@@ -1853,8 +1854,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->where('attachment_request_id', $requestId)
             ->where('action', 'workflow_step_pending')
             ->get()
-            ->filter(static fn (AttachmentRequestHistory $history): bool =>
-                (int) ($history->metadata['template_step_order'] ?? 0) === (int) $thirdStep->template_step_order
+            ->filter(static fn (AttachmentRequestHistory $history): bool => (int) ($history->metadata['template_step_order'] ?? 0) === (int) $thirdStep->template_step_order
             );
         $this->assertCount(1, $remainingPendingHistory);
 
@@ -2042,6 +2042,302 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame($requestAfterFirstRun, $this->requestSnapshot($requestId));
         $this->assertSame($processAfterFirstRun, $this->processSnapshot($requestId));
         $this->assertSame($stepsAfterFirstRun, $this->processStepsSnapshot($requestId));
+    }
+
+    public function test_legacy_attachment_approval_history_migration_repairs_missing_next_step_case_a(): void
+    {
+        $legacy = $this->recreateMissingSequentialAdvanceLegacyCase(stepCount: 3);
+        $requestId = $legacy['request_id'];
+        $before = $this->legacyWorkflowAuditSnapshot($requestId);
+
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 2],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 3],
+            ['action' => 'attachment_approved', 'template_step_order' => null],
+        ], $before['history']);
+        $this->assertSame([
+            ['template_step_order' => 1, 'status' => 'approved'],
+            ['template_step_order' => 2, 'status' => 'pending'],
+        ], $before['process_steps']);
+        $this->assertSame(AttachmentRequest::STATUS_APPROVED, $before['request_status']);
+        $this->assertSame(ProcessStatus::InProgress->value, $before['process_status']);
+        $this->assertDatabaseHas('attachment_request_items', [
+            'id' => $legacy['item_id'],
+            'status' => AttachmentRequest::STATUS_APPROVED,
+            'responded_by_user_id' => $legacy['second_user_id'],
+        ]);
+        $this->assertDatabaseHas('process_steps', [
+            'id' => $legacy['second_step_id'],
+            'assigned_user_id' => $legacy['second_user_id'],
+            'status' => ProcessStepStatus::Pending->value,
+        ]);
+        $this->assertDatabaseHas('attachment_request_history', [
+            'id' => $legacy['approval_history_id'],
+            'action' => 'attachment_approved',
+            'user_id' => $legacy['second_user_id'],
+        ]);
+
+        // The fixture is complete. The repair itself runs exactly this migration.
+        $this->runLegacyAttachmentApprovalHistoryRepairMigration();
+
+        $after = $this->legacyWorkflowAuditSnapshot($requestId);
+
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'attachment_approved', 'template_step_order' => 2],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 3],
+        ], $after['history']);
+        $this->assertSame([
+            ['template_step_order' => 1, 'status' => 'approved'],
+            ['template_step_order' => 2, 'status' => 'approved'],
+            ['template_step_order' => 3, 'status' => 'pending'],
+        ], $after['process_steps']);
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $after['request_status']);
+        $this->assertSame(ProcessStatus::InProgress->value, $after['process_status']);
+
+        $secondStep = DB::table('process_steps')->find($legacy['second_step_id']);
+        $thirdStep = DB::table('process_steps')
+            ->where('process_id', $legacy['process_id'])
+            ->where('template_step_order', 3)
+            ->firstOrFail();
+        $approval = DB::table('attachment_request_history')->find($legacy['approval_history_id']);
+        $thirdPendingHistory = DB::table('attachment_request_history')->find($legacy['third_pending_history_id']);
+
+        $this->assertSame((string) $legacy['second_user_id'], (string) $secondStep->action_by);
+        $this->assertSame((string) $legacy['item_responded_at'], (string) $secondStep->acted_at);
+        $this->assertSame((string) $legacy['third_pending_history_id'], (string) $thirdPendingHistory->id);
+        $this->assertSame((string) $thirdStep->id, (string) $this->historyMetadata($thirdPendingHistory)['process_step_id']);
+        $this->assertDatabaseMissing('attachment_request_history', ['id' => $legacy['stale_pending_history_id']]);
+
+        $approvalMetadata = $this->historyMetadata($approval);
+        $this->assertSame((string) $legacy['process_id'], (string) $approvalMetadata['process_id']);
+        $this->assertSame((string) $legacy['second_step_id'], (string) $approvalMetadata['process_step_id']);
+        $this->assertSame((int) $legacy['second_template_step_id'], (int) $approvalMetadata['step_id']);
+        $this->assertSame(2, (int) $approvalMetadata['template_step_order']);
+        $this->assertSame(
+            100000 + ($legacy['process_sort_order'] * 1000) + 2,
+            (int) $approval->sort_order
+        );
+    }
+
+    public function test_legacy_attachment_approval_history_migration_completes_final_step_case_b(): void
+    {
+        $legacy = $this->recreateMissingSequentialAdvanceLegacyCase(stepCount: 2);
+        $requestId = $legacy['request_id'];
+        $before = $this->legacyWorkflowAuditSnapshot($requestId);
+
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 2],
+            ['action' => 'attachment_approved', 'template_step_order' => null],
+        ], $before['history']);
+        $this->assertSame([
+            ['template_step_order' => 1, 'status' => 'approved'],
+            ['template_step_order' => 2, 'status' => 'pending'],
+        ], $before['process_steps']);
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $before['request_status']);
+        $this->assertSame(ProcessStatus::InProgress->value, $before['process_status']);
+        $this->assertDatabaseHas('attachment_request_items', [
+            'id' => $legacy['item_id'],
+            'status' => AttachmentRequest::STATUS_APPROVED,
+            'responded_by_user_id' => $legacy['second_user_id'],
+        ]);
+        $this->assertDatabaseHas('process_steps', [
+            'id' => $legacy['second_step_id'],
+            'assigned_user_id' => $legacy['second_user_id'],
+            'status' => ProcessStepStatus::Pending->value,
+        ]);
+
+        $this->runLegacyAttachmentApprovalHistoryRepairMigration();
+
+        $after = $this->legacyWorkflowAuditSnapshot($requestId);
+
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'attachment_approved', 'template_step_order' => 2],
+        ], $after['history']);
+        $this->assertSame([
+            ['template_step_order' => 1, 'status' => 'approved'],
+            ['template_step_order' => 2, 'status' => 'approved'],
+        ], $after['process_steps']);
+        $this->assertSame(AttachmentRequest::STATUS_APPROVED, $after['request_status']);
+        $this->assertSame(ProcessStatus::Completed->value, $after['process_status']);
+        $this->assertDatabaseMissing('attachment_request_history', ['id' => $legacy['stale_pending_history_id']]);
+        $this->assertSame(2, DB::table('process_steps')
+            ->where('process_id', $legacy['process_id'])
+            ->count());
+    }
+
+    public function test_legacy_attachment_approval_history_migration_reproduces_the_supplied_257_record(): void
+    {
+        $legacy = $this->reproduceSuppliedLegacyAttachmentRequest('257');
+        $before = $this->suppliedLegacyAudit($legacy['request_id']);
+
+        $this->assertSame('.KDC-VD-ABN-DOS-DPR-257-00', $before['request']['serial_number']);
+        $this->assertSame('pending', $before['request']['status']);
+        $this->assertSame('in_progress', $before['process']['status']);
+        $this->assertSame('sequence', $before['process']['execute_type']);
+        $this->assertSame([
+            ['step_id' => 43, 'template_step_order' => 1, 'status' => 'approved'],
+            ['step_id' => 44, 'template_step_order' => 2, 'status' => 'pending'],
+        ], $this->sourceStepSummary($before['process_steps']));
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 2],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 3],
+            ['action' => 'attachment_approved', 'template_step_order' => null],
+        ], $this->sourceHistorySummary($before['history']));
+        $this->assertSame(3, count($before['process']['template_snapshot']));
+        $this->assertSame(null, $before['history']['a279a043-86be-4bf8-96f3-7ccfb7a74451']['metadata']['process_step_id']);
+        $this->assertSame('dc241aef-d27d-41d7-9723-45309f950471', $before['item']['responded_by_user_id']);
+
+        // This is deliberately the only production-data migration executed here.
+        $this->runLegacyAttachmentApprovalHistoryRepairMigration();
+
+        $after = $this->suppliedLegacyAudit($legacy['request_id']);
+        $changes = $this->suppliedLegacyChanges($before, $after);
+        $this->printSuppliedLegacyReproduction('257 REAL-SHAPE REPRODUCTION', $before, $after, $changes);
+
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'attachment_approved', 'template_step_order' => 2],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 3],
+        ], $this->sourceHistorySummary($after['history']));
+        $this->assertSame([
+            ['step_id' => 43, 'template_step_order' => 1, 'status' => 'approved'],
+            ['step_id' => 44, 'template_step_order' => 2, 'status' => 'approved'],
+            ['step_id' => 45, 'template_step_order' => 3, 'status' => 'pending'],
+        ], $this->sourceStepSummary($after['process_steps']));
+        $this->assertSame('pending', $after['request']['status']);
+        $this->assertSame('in_progress', $after['process']['status']);
+
+        $secondStep = $after['process_steps']['a279e89e-c0a3-4654-8bdc-1d3374ce109b'];
+        $thirdStep = collect($after['process_steps'])->firstWhere('template_step_order', 3);
+        $approval = $after['history']['a279eddd-97d7-4976-8c68-3d67096ee2f8'];
+        $thirdPending = $after['history']['a279a043-86be-4bf8-96f3-7ccfb7a74451'];
+
+        $this->assertSame('dc241aef-d27d-41d7-9723-45309f950471', $secondStep['action_by']);
+        $this->assertSame('2026-08-11 10:54:45', $secondStep['acted_at']);
+        $this->assertSame((string) $secondStep['id'], $approval['metadata']['process_step_id']);
+        $this->assertSame(44, $approval['metadata']['step_id']);
+        $this->assertSame(2, $approval['metadata']['template_step_order']);
+        $this->assertSame((string) $thirdStep['id'], $thirdPending['metadata']['process_step_id']);
+        $this->assertSame('b5b3b7a3-615a-409f-b609-fbe02bc2a2a7', $thirdStep['assigned_user_id']);
+        $this->assertArrayNotHasKey('a279a043-8532-47c0-bb54-6b284342f27a', $after['history']);
+        $this->assertSame([
+            ['table' => 'process_steps', 'operation' => 'updated', 'id' => 'a279e89e-c0a3-4654-8bdc-1d3374ce109b'],
+            ['table' => 'process_steps', 'operation' => 'inserted', 'id' => $thirdStep['id']],
+            ['table' => 'attachment_request_history', 'operation' => 'deleted', 'id' => 'a279a043-8532-47c0-bb54-6b284342f27a'],
+            ['table' => 'attachment_request_history', 'operation' => 'updated', 'id' => 'a279a043-86be-4bf8-96f3-7ccfb7a74451'],
+            ['table' => 'attachment_request_history', 'operation' => 'updated', 'id' => 'a279eddd-97d7-4976-8c68-3d67096ee2f8'],
+        ], $this->sourceChangeSummary($changes));
+    }
+
+    public function test_legacy_attachment_approval_history_migration_reconstructs_step_three_for_the_supplied_246_shape_without_history(): void
+    {
+        $legacy = $this->reproduceSuppliedLegacyAttachmentRequest('246');
+        $before = $this->suppliedLegacyAudit($legacy['request_id']);
+
+        $this->assertSame('KDC-VD-ABN-DOS-DPR-246-00', $before['request']['serial_number']);
+        $this->assertSame([
+            ['step_id' => 43, 'template_step_order' => 1, 'status' => 'approved'],
+            ['step_id' => 44, 'template_step_order' => 2, 'status' => 'pending'],
+        ], $this->sourceStepSummary($before['process_steps']));
+        $this->assertSame(3, count($before['process']['template_snapshot']));
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 2],
+            ['action' => 'attachment_approved', 'template_step_order' => null],
+        ], $this->sourceHistorySummary($before['history']));
+
+        // The source response supplies no Step 3 pending history. The immutable
+        // snapshot is now authoritative for creating that missing next lifecycle.
+        $this->runLegacyAttachmentApprovalHistoryRepairMigration();
+
+        $after = $this->suppliedLegacyAudit($legacy['request_id']);
+        $changes = $this->suppliedLegacyChanges($before, $after);
+        $this->printSuppliedLegacyReproduction('246–253 REAL-SHAPE REPRODUCTION', $before, $after, $changes);
+
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'attachment_approved', 'template_step_order' => 2],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 3],
+        ], $this->sourceHistorySummary($after['history']));
+        $this->assertSame([
+            ['step_id' => 43, 'template_step_order' => 1, 'status' => 'approved'],
+            ['step_id' => 44, 'template_step_order' => 2, 'status' => 'approved'],
+            ['step_id' => 45, 'template_step_order' => 3, 'status' => 'pending'],
+        ], $this->sourceStepSummary($after['process_steps']));
+        $this->assertSame('pending', $after['request']['status']);
+        $this->assertSame('in_progress', $after['process']['status']);
+
+        $secondStep = $after['process_steps']['a279f212-5a6e-4d47-907d-fd50a2ea4e28'];
+        $thirdStep = collect($after['process_steps'])->firstWhere('template_step_order', 3);
+        $thirdPending = collect($after['history'])
+            ->first(fn (array $history): bool => ($history['metadata']['template_step_order'] ?? null) === 3);
+        $approval = $after['history']['a27a0148-67be-4602-a4cb-f52a9fa63513'];
+
+        $this->assertSame('dc241aef-d27d-41d7-9723-45309f950471', $secondStep['action_by']);
+        $this->assertSame('2026-08-11 11:48:34', $secondStep['acted_at']);
+        $this->assertSame((string) $thirdStep['id'], $thirdPending['metadata']['process_step_id']);
+        $this->assertSame('b5b3b7a3-615a-409f-b609-fbe02bc2a2a7', $thirdPending['user_id']);
+        $this->assertSame((string) $secondStep['id'], $approval['metadata']['process_step_id']);
+        $this->assertArrayNotHasKey('a279f212-a67d-4ce9-bf2d-4d295e3967bb', $after['history']);
+        $this->assertSame([
+            ['table' => 'process_steps', 'operation' => 'updated', 'id' => 'a279f212-5a6e-4d47-907d-fd50a2ea4e28'],
+            ['table' => 'process_steps', 'operation' => 'inserted', 'id' => $thirdStep['id']],
+            ['table' => 'attachment_request_history', 'operation' => 'deleted', 'id' => 'a279f212-a67d-4ce9-bf2d-4d295e3967bb'],
+            ['table' => 'attachment_request_history', 'operation' => 'updated', 'id' => 'a27a0148-67be-4602-a4cb-f52a9fa63513'],
+            ['table' => 'attachment_request_history', 'operation' => 'inserted', 'id' => $thirdPending['id']],
+        ], $this->sourceChangeSummary($changes));
+    }
+
+    public function test_legacy_attachment_approval_history_migration_completes_a_source_shape_final_step(): void
+    {
+        $legacy = $this->reproduceSuppliedLegacyAttachmentRequest('246', finalStep: true);
+        $before = $this->suppliedLegacyAudit($legacy['request_id']);
+
+        $this->assertSame(2, count($before['process']['template_snapshot']));
+        $this->assertSame([
+            ['step_id' => 43, 'template_step_order' => 1, 'status' => 'approved'],
+            ['step_id' => 44, 'template_step_order' => 2, 'status' => 'pending'],
+        ], $this->sourceStepSummary($before['process_steps']));
+
+        $this->runLegacyAttachmentApprovalHistoryRepairMigration();
+
+        $after = $this->suppliedLegacyAudit($legacy['request_id']);
+        $changes = $this->suppliedLegacyChanges($before, $after);
+        $this->printSuppliedLegacyReproduction('FINAL-STEP REAL-SHAPE REPRODUCTION', $before, $after, $changes);
+
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'attachment_approved', 'template_step_order' => 2],
+        ], $this->sourceHistorySummary($after['history']));
+        $this->assertSame([
+            ['step_id' => 43, 'template_step_order' => 1, 'status' => 'approved'],
+            ['step_id' => 44, 'template_step_order' => 2, 'status' => 'approved'],
+        ], $this->sourceStepSummary($after['process_steps']));
+        $this->assertSame('approved', $after['request']['status']);
+        $this->assertSame('completed', $after['process']['status']);
+        $this->assertArrayNotHasKey('a279f212-a67d-4ce9-bf2d-4d295e3967bb', $after['history']);
+        $this->assertSame(2, count($after['process_steps']));
+        $this->assertSame([
+            ['table' => 'attachment_requests', 'operation' => 'updated', 'id' => '0f714ab2-2f64-4d05-ab81-6a033722466b'],
+            ['table' => 'processes', 'operation' => 'updated', 'id' => 'a26d5ee6-6b49-429f-90e4-9f7e4c2c2c7d'],
+            ['table' => 'process_steps', 'operation' => 'updated', 'id' => 'a279f212-5a6e-4d47-907d-fd50a2ea4e28'],
+            ['table' => 'attachment_request_history', 'operation' => 'deleted', 'id' => 'a279f212-a67d-4ce9-bf2d-4d295e3967bb'],
+            ['table' => 'attachment_request_history', 'operation' => 'updated', 'id' => 'a27a0148-67be-4602-a4cb-f52a9fa63513'],
+        ], $this->sourceChangeSummary($changes));
     }
 
     public function test_legacy_attachment_approval_history_migration_leaves_valid_workflows_unchanged(): void
@@ -2728,6 +3024,982 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $migration->up();
     }
 
+    /**
+     * Reproduces the persisted legacy state from the supplied production API
+     * response using only the values exposed by that response. Supporting local
+     * project/procedure records exist only to satisfy local-test foreign keys.
+     *
+     * The 246 response does not include Step 3 history. Its three-step fixture
+     * therefore proves reconstruction directly from template_snapshot. The final
+     * variant intentionally truncates that same authoritative local snapshot at
+     * Step 2 to verify final-step completion separately.
+     *
+     * @return array{request_id: string, process_id: string, item_id: string}
+     */
+    private function reproduceSuppliedLegacyAttachmentRequest(string $record, bool $finalStep = false): array
+    {
+        $source = $this->suppliedLegacySource($record);
+        if ($finalStep) {
+            array_pop($source['template_snapshot']);
+        }
+
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+
+        foreach ($source['users'] as $userId => $user) {
+            $this->createSuppliedFixtureUser($userId, $user['name'], $user['email']);
+        }
+
+        foreach ($source['template_snapshot'] as $snapshot) {
+            $this->createSuppliedFixtureTemplateStep(
+                (int) $snapshot['step_id'],
+                (int) $snapshot['template_step_order'],
+                $procedure,
+                $snapshot['authorized_user_ids'],
+            );
+        }
+
+        DB::table('attachment_requests')->insert([
+            'id' => $source['request']['id'],
+            'serial_number' => $source['request']['serial_number'],
+            'name' => $source['request']['serial_number'],
+            'date' => $source['request']['date'],
+            'project_id' => $project->id,
+            'procedure_setting_id' => $procedure->procedure_setting_id,
+            'sender_company_id' => $this->company->id,
+            'status' => 'pending',
+            'created_by_user_id' => self::sourceCreatorId(),
+            'responded_by_user_id' => null,
+            'responded_at' => null,
+            'notes' => null,
+            'created_at' => $source['request']['created_at'],
+            'updated_at' => $source['request']['created_at'],
+        ]);
+
+        DB::table('attachment_request_items')->insert([
+            'id' => $source['item']['id'],
+            'attachment_request_id' => $source['request']['id'],
+            'file_name' => $source['item']['file_name'],
+            'file_path' => $source['item']['file_path'],
+            'file_type' => 'application/pdf',
+            'file_size' => $source['item']['file_size'],
+            'status' => 'approved',
+            'responded_by_user_id' => self::sourceAttachmentActorId(),
+            'responded_at' => $source['item']['responded_at'],
+            'response_notes' => null,
+            'created_at' => $source['item']['created_at'],
+            'updated_at' => $source['item']['responded_at'],
+        ]);
+
+        DB::table('processes')->insert([
+            'id' => $source['process']['id'],
+            'processable_id' => $source['request']['id'],
+            'processable_type' => AttachmentRequest::PROCESSABLE_TYPE,
+            'user_id' => null,
+            'sort_order' => 16,
+            'execute_type' => 'sequence',
+            'status' => 'in_progress',
+            'template_snapshot' => $this->historyJson($source['template_snapshot']),
+            'procedure_setting_id' => null,
+            'metadata' => null,
+            'created_at' => $source['process']['created_at'],
+            'updated_at' => $source['process']['updated_at'],
+        ]);
+
+        foreach ($source['process_steps'] as $step) {
+            DB::table('process_steps')->insert([
+                'id' => $step['id'],
+                'process_id' => $source['process']['id'],
+                'step_id' => $step['step_id'],
+                'template_step_order' => $step['template_step_order'],
+                'assigned_user_id' => $step['assigned_user_id'],
+                'authorized_user_ids' => $this->historyJson($step['authorized_user_ids']),
+                'escalation_management_hierarchy_id' => null,
+                'status' => $step['status'],
+                'action_by' => $step['action_by'],
+                'acted_at' => $step['acted_at'],
+                'created_at' => $step['created_at'],
+                'updated_at' => $step['updated_at'],
+            ]);
+        }
+
+        foreach ($source['history'] as $history) {
+            DB::table('attachment_request_history')->insert([
+                'id' => $history['id'],
+                'attachment_request_id' => $source['request']['id'],
+                // The API exposes this same source UUID in metadata. Keeping the
+                // relational link local makes the item/actor proof exact too.
+                'attachment_request_item_id' => $history['attachment_request_item_id'],
+                'action' => $history['action'],
+                'description' => $history['description'],
+                'user_id' => $history['user_id'],
+                'metadata' => $this->historyJson($history['metadata']),
+                'dedupe_key' => null,
+                'sort_order' => $history['sort_order'],
+                'created_at' => $history['created_at'],
+            ]);
+        }
+
+        return [
+            'request_id' => $source['request']['id'],
+            'process_id' => $source['process']['id'],
+            'item_id' => $source['item']['id'],
+        ];
+    }
+
+    private function createSuppliedFixtureUser(string $id, string $name, string $email): void
+    {
+        if (DB::table('users')->where('id', $id)->exists()) {
+            return;
+        }
+
+        // UuidTrait intentionally replaces every model-created ID. Insert the
+        // factory's valid local attributes directly so the source UUID remains
+        // the real FK identity used by the fixture.
+        $attributes = User::factory()->raw([
+            'company_id' => $this->company->id,
+            'name' => $name,
+            'email' => $email,
+        ]);
+        $attributes['id'] = $id;
+        $attributes['created_at'] = '2026-08-01 00:00:00';
+        $attributes['updated_at'] = '2026-08-01 00:00:00';
+
+        DB::table('users')->insert($attributes);
+    }
+
+    /**
+     * @param  list<string>  $authorizedUserIds
+     */
+    private function createSuppliedFixtureTemplateStep(
+        int $id,
+        int $order,
+        ProjectProcedureSetting $procedure,
+        array $authorizedUserIds,
+    ): void {
+        if (! DB::table('procedure_setting_steps')->where('id', $id)->exists()) {
+            DB::table('procedure_setting_steps')->insert([
+                'id' => $id,
+                'name' => "Source API workflow step {$id}",
+                'is_accept' => false,
+                'is_approve' => true,
+                'forms' => 'approve',
+                'is_view_only' => false,
+                'is_return_with_notes' => false,
+                'requires_approval_within_period' => false,
+                'procedure_setting_id' => $procedure->procedure_setting_id,
+                'company_id' => $this->company->id,
+                'project_id' => $procedure->project_id,
+                'step_order' => $order,
+                'action_taker_type' => 'specific_user',
+                'created_at' => '2026-08-01 00:00:00',
+                'updated_at' => '2026-08-01 00:00:00',
+            ]);
+        }
+
+        foreach ($authorizedUserIds as $userId) {
+            DB::table('procedure_setting_step_action_takers')->insertOrIgnore([
+                'procedure_setting_step_id' => $id,
+                'user_id' => $userId,
+                'company_id' => $this->company->id,
+                'created_at' => '2026-08-01 00:00:00',
+                'updated_at' => '2026-08-01 00:00:00',
+            ]);
+        }
+    }
+
+    /**
+     * @return array{
+     *     request: array<string, mixed>,
+     *     process: array<string, mixed>,
+     *     item: array<string, mixed>,
+     *     process_steps: list<array<string, mixed>>,
+     *     template_snapshot: list<array<string, mixed>>,
+     *     history: list<array<string, mixed>>,
+     *     users: array<string, array{name: string, email: string}>
+     * }
+     */
+    private function suppliedLegacySource(string $record): array
+    {
+        $firstStepAuthorizedUsers257 = [
+            'a353c1bc-a6fa-4283-a8a9-904f2063fd25',
+            '89ab7f5a-3570-4c92-af1d-020b1d62c9da',
+            '6e79606a-b634-4e15-81ff-ad77ff963285',
+            '48a578e4-ad4d-4db6-91b6-995c5fa7f197',
+            '4bfca16c-28e4-494b-a30b-2de23f6a1f01',
+            '055f54cc-f759-4686-b48c-9c32af8c28d7',
+            'b11b79e8-d146-4a9e-851d-86c34e95a1f5',
+            'c520183b-298f-46a6-abdc-4fc602cd07e3',
+            'b8910f08-e40a-4560-b67e-dc90cf40a37e',
+            'a7abf5ec-6121-4a72-a97c-47fea0b07ece',
+            '46e81fae-0bca-4214-bea3-75b4261204db',
+        ];
+        $attachmentActor = self::sourceAttachmentActorId();
+        $thirdStepActor = self::sourceThirdStepActorId();
+
+        $source = match ($record) {
+            '257' => [
+                'request' => [
+                    'id' => '529fdf4d-7fee-4105-b079-29bc0e8a063a',
+                    'serial_number' => '.KDC-VD-ABN-DOS-DPR-257-00',
+                    'date' => '2026-08-11',
+                    'created_at' => '2026-08-11 07:17:13',
+                    'history_created_at' => '2026-08-11 07:17:15',
+                ],
+                'process' => [
+                    'id' => 'a279a043-81a1-4317-85e3-aebbe806a7c9',
+                    'created_at' => '2026-08-11 07:17:15',
+                    'updated_at' => '2026-08-11 07:17:15',
+                ],
+                'item' => [
+                    'id' => '9c5dee52-2475-4378-a14a-480d84627c47',
+                    'file_name' => 'KDC-VD-ABN-DOS-DPR-257-00.pdf',
+                    'file_path' => 'attachment-requests/KDC-VD-ABN-DOS-DPR-257-00_6a7acc79d0b92.pdf',
+                    'file_size' => 57858832,
+                    'created_at' => '2026-08-11 07:17:13',
+                    'responded_at' => '2026-08-11 10:54:45',
+                ],
+                'first_step' => [
+                    'id' => 'a279a043-887f-411b-b537-efd00ad4a682',
+                    'assigned_user_id' => 'a353c1bc-a6fa-4283-a8a9-904f2063fd25',
+                    'authorized_user_ids' => $firstStepAuthorizedUsers257,
+                    'action_by' => '48a578e4-ad4d-4db6-91b6-995c5fa7f197',
+                    'acted_at' => '2026-08-11 10:39:34',
+                    'created_at' => '2026-08-11 07:17:15',
+                    'updated_at' => '2026-08-11 10:39:34',
+                    'history_id' => 'a279a043-8387-42e7-9312-ac7688830c7a',
+                    'history_created_at' => '2026-08-11 07:17:15',
+                ],
+                'second_step' => [
+                    'id' => 'a279e89e-c0a3-4654-8bdc-1d3374ce109b',
+                    'history_id' => 'a279a043-8532-47c0-bb54-6b284342f27a',
+                    'history_created_at' => '2026-08-11 07:17:15',
+                ],
+                'third_history' => [
+                    'id' => 'a279a043-86be-4bf8-96f3-7ccfb7a74451',
+                    'created_at' => '2026-08-11 07:17:15',
+                ],
+                'approval_history' => [
+                    'id' => 'a279eddd-97d7-4976-8c68-3d67096ee2f8',
+                    'created_at' => '2026-08-11 10:54:14',
+                ],
+            ],
+            '246' => [
+                'request' => [
+                    'id' => '0f714ab2-2f64-4d05-ab81-6a033722466b',
+                    'serial_number' => 'KDC-VD-ABN-DOS-DPR-246-00',
+                    'date' => '2026-08-05',
+                    'created_at' => '2026-08-05 05:04:32',
+                    'history_created_at' => '2026-08-05 05:04:32',
+                ],
+                'process' => [
+                    'id' => 'a26d5ee6-6b49-429f-90e4-9f7e4c2c2c7d',
+                    'created_at' => '2026-08-05 05:04:32',
+                    'updated_at' => '2026-08-05 05:04:32',
+                ],
+                'item' => [
+                    'id' => 'f1dfd122-8bfa-49b4-8710-36f93592f968',
+                    'file_name' => 'KDC-VD-ABN-DOS-DPR-246-00.pdf',
+                    'file_path' => 'attachment-requests/KDC-VD-ABN-DOS-DPR-246-00_6a72c46002cec.pdf',
+                    'file_size' => 39300344,
+                    'created_at' => '2026-08-05 05:04:32',
+                    'responded_at' => '2026-08-11 11:48:34',
+                ],
+                'first_step' => [
+                    'id' => 'a26d5ee6-6cd2-4807-b290-31e998696d67',
+                    'assigned_user_id' => '46e81fae-0bca-4214-bea3-75b4261204db',
+                    'authorized_user_ids' => ['46e81fae-0bca-4214-bea3-75b4261204db'],
+                    'action_by' => '46e81fae-0bca-4214-bea3-75b4261204db',
+                    'acted_at' => '2026-08-11 11:06:00',
+                    'created_at' => '2026-08-05 05:04:32',
+                    'updated_at' => '2026-08-11 11:06:00',
+                    'history_id' => 'a279f212-584e-43f5-860e-57791c20df52',
+                    'history_created_at' => '2026-08-05 05:04:32',
+                ],
+                'second_step' => [
+                    'id' => 'a279f212-5a6e-4d47-907d-fd50a2ea4e28',
+                    'history_id' => 'a279f212-a67d-4ce9-bf2d-4d295e3967bb',
+                    'history_created_at' => '2026-08-11 11:06:00',
+                ],
+                'third_history' => null,
+                'approval_history' => [
+                    'id' => 'a27a0148-67be-4602-a4cb-f52a9fa63513',
+                    'created_at' => '2026-08-11 11:48:32',
+                ],
+            ],
+            default => throw new \InvalidArgumentException("Unsupported supplied legacy source: {$record}"),
+        };
+
+        $snapshot = [
+            $this->suppliedSnapshotStep(43, 1, $source['first_step']['assigned_user_id'], $source['first_step']['authorized_user_ids']),
+            $this->suppliedSnapshotStep(44, 2, $attachmentActor, [$attachmentActor]),
+            // The 257 record supplies the Step 3 identity. The requested 246
+            // scenario uses this three-step snapshot but deliberately omits the
+            // historical Step 3 activation that 246's API response does not have.
+            $this->suppliedSnapshotStep(45, 3, $thirdStepActor, [$thirdStepActor]),
+        ];
+
+        $firstStepMetadata = $this->suppliedWorkflowMetadata(
+            $source['process']['id'],
+            $source['first_step']['id'],
+            43,
+            1,
+            $source['first_step']['assigned_user_id'],
+            $source['first_step']['authorized_user_ids'],
+            'approved',
+            $this->isoUtc($source['first_step']['acted_at']),
+        );
+        $secondStepMetadata = $this->suppliedWorkflowMetadata(
+            $source['process']['id'],
+            $source['second_step']['id'],
+            44,
+            2,
+            $attachmentActor,
+            [$attachmentActor],
+            'pending',
+            null,
+        );
+
+        $history = [
+            [
+                'id' => $this->requestCreatedHistoryId($record),
+                'attachment_request_item_id' => null,
+                'action' => 'request_created',
+                'description' => 'Attachment request created',
+                'user_id' => self::sourceCreatorId(),
+                'metadata' => [
+                    'request_name' => $source['request']['serial_number'],
+                    'total_attachments' => 1,
+                    'procedure_setting_id' => '123cb1bb-d8bf-45f0-9215-548983bba21e',
+                ],
+                'sort_order' => 0,
+                'created_at' => $source['request']['history_created_at'],
+            ],
+            [
+                'id' => $source['first_step']['history_id'],
+                'attachment_request_item_id' => null,
+                'action' => 'workflow_step_approved',
+                'description' => 'Workflow step approved',
+                'user_id' => $source['first_step']['action_by'],
+                'metadata' => $firstStepMetadata,
+                'sort_order' => 116001,
+                'created_at' => $source['first_step']['history_created_at'],
+            ],
+            [
+                'id' => $source['second_step']['history_id'],
+                'attachment_request_item_id' => null,
+                'action' => 'workflow_step_pending',
+                'description' => 'Workflow step pending',
+                'user_id' => $attachmentActor,
+                'metadata' => $secondStepMetadata,
+                'sort_order' => 116002,
+                'created_at' => $source['second_step']['history_created_at'],
+            ],
+        ];
+
+        if ($source['third_history'] !== null) {
+            $history[] = [
+                'id' => $source['third_history']['id'],
+                'attachment_request_item_id' => null,
+                'action' => 'workflow_step_pending',
+                'description' => 'Workflow step pending',
+                'user_id' => $thirdStepActor,
+                'metadata' => $this->suppliedWorkflowMetadata(
+                    $source['process']['id'],
+                    null, 45, 3, $thirdStepActor, [$thirdStepActor], 'pending', null,
+                ),
+                'sort_order' => 116003,
+                'created_at' => $source['third_history']['created_at'],
+            ];
+        }
+
+        $history[] = [
+            'id' => $source['approval_history']['id'],
+            'attachment_request_item_id' => $source['item']['id'],
+            'action' => 'attachment_approved',
+            'description' => 'Attachment approved',
+            'user_id' => $attachmentActor,
+            'metadata' => [
+                'status' => 'approved',
+                'item_id' => $source['item']['id'],
+                'file_url' => 'http://core-be-production.constrix-nv.com/storage/'.$source['item']['file_path'],
+                'file_name' => $source['item']['file_name'],
+                'file_path' => $source['item']['file_path'],
+                'file_size' => $source['item']['file_size'],
+                'file_type' => 'application/pdf',
+                'process_id' => $source['process']['id'],
+                'response_notes' => null,
+                'previous_status' => 'pending',
+                'process_sort_order' => 16,
+                'file_size_formatted' => $record === '257' ? '55.18 MB' : '37.48 MB',
+            ],
+            'sort_order' => $source['third_history'] === null ? 116003 : 116004,
+            'created_at' => $source['approval_history']['created_at'],
+        ];
+
+        return [
+            'request' => $source['request'],
+            'process' => $source['process'],
+            'item' => $source['item'],
+            'process_steps' => [
+                [
+                    'id' => $source['first_step']['id'],
+                    'step_id' => 43,
+                    'template_step_order' => 1,
+                    'assigned_user_id' => $source['first_step']['assigned_user_id'],
+                    'authorized_user_ids' => $source['first_step']['authorized_user_ids'],
+                    'status' => 'approved',
+                    'action_by' => $source['first_step']['action_by'],
+                    'acted_at' => $source['first_step']['acted_at'],
+                    'created_at' => $source['first_step']['created_at'],
+                    'updated_at' => $source['first_step']['updated_at'],
+                ],
+                [
+                    'id' => $source['second_step']['id'],
+                    'step_id' => 44,
+                    'template_step_order' => 2,
+                    'assigned_user_id' => $attachmentActor,
+                    'authorized_user_ids' => [$attachmentActor],
+                    'status' => 'pending',
+                    'action_by' => null,
+                    'acted_at' => null,
+                    'created_at' => $source['first_step']['updated_at'],
+                    'updated_at' => $source['first_step']['updated_at'],
+                ],
+            ],
+            'template_snapshot' => $snapshot,
+            'history' => $history,
+            'users' => $this->suppliedLegacyUsers(array_merge(
+                $source['first_step']['authorized_user_ids'],
+                [$attachmentActor, $thirdStepActor, self::sourceCreatorId()],
+            )),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function suppliedSnapshotStep(
+        int $stepId,
+        int $order,
+        string $assignedUserId,
+        array $authorizedUserIds,
+    ): array {
+        return [
+            'step_id' => $stepId,
+            'template_step_order' => $order,
+            'assigned_user_id' => $assignedUserId,
+            'authorized_user_ids' => $authorizedUserIds,
+            'specific_procedure_types' => [],
+            'action_taker_type' => 'specific_user',
+            'escalation_management_hierarchy_id' => null,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $authorizedUserIds
+     * @return array<string, mixed>
+     */
+    private function suppliedWorkflowMetadata(
+        string $processId,
+        ?string $processStepId,
+        int $stepId,
+        int $templateStepOrder,
+        string $assignedUserId,
+        array $authorizedUserIds,
+        string $status,
+        ?string $actedAt,
+    ): array {
+        return [
+            'status' => $status,
+            'step_id' => $stepId,
+            'acted_at' => $actedAt,
+            'process_id' => $processId,
+            'process_step_id' => $processStepId,
+            'assigned_user_id' => $assignedUserId,
+            'is_auto_approved' => false,
+            'process_sort_order' => 16,
+            'authorized_user_ids' => $authorizedUserIds,
+            'template_step_order' => $templateStepOrder,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $ids
+     * @return array<string, array{name: string, email: string}>
+     */
+    private function suppliedLegacyUsers(array $ids): array
+    {
+        $knownUsers = [
+            self::sourceCreatorId() => ['name' => 'محمد عشماوي', 'email' => 'm.ashmawy@abn.sa.com'],
+            '48a578e4-ad4d-4db6-91b6-995c5fa7f197' => ['name' => 'محمد صلاح حسين', 'email' => 'muhammadsalahal-din-civ-jed@vd-2030.com'],
+            self::sourceAttachmentActorId() => ['name' => 'جمال السيد محمد', 'email' => 'eng.gamal-jed@vd-2030.com'],
+            self::sourceThirdStepActorId() => ['name' => 'بشير نبوي ضيف', 'email' => 'bndeif@kidana.com.sa'],
+            '46e81fae-0bca-4214-bea3-75b4261204db' => ['name' => 'محمد السر علي الحسن', 'email' => 'm.ali-mk@vd-2030.com'],
+        ];
+
+        $users = [];
+        foreach (array_unique($ids) as $id) {
+            $users[$id] = $knownUsers[$id] ?? [
+                'name' => "Source fixture user {$id}",
+                'email' => 'source-'.str_replace('-', '', $id).'@example.test',
+            ];
+        }
+
+        return $users;
+    }
+
+    private static function sourceCreatorId(): string
+    {
+        return 'df9c6212-d355-4475-b66e-2679bbdeaa00';
+    }
+
+    private static function sourceAttachmentActorId(): string
+    {
+        return 'dc241aef-d27d-41d7-9723-45309f950471';
+    }
+
+    private static function sourceThirdStepActorId(): string
+    {
+        return 'b5b3b7a3-615a-409f-b609-fbe02bc2a2a7';
+    }
+
+    private function requestCreatedHistoryId(string $record): string
+    {
+        return $record === '257'
+            ? 'a279a043-7b32-4e34-8e9b-65edbfd4dde2'
+            : 'a26d5ee6-66ee-491d-ad56-600df37d80d3';
+    }
+
+    private function isoUtc(string $dateTime): string
+    {
+        return str_replace(' ', 'T', $dateTime).'+00:00';
+    }
+
+    /**
+     * @return array{
+     *     request: array<string, mixed>,
+     *     item: array<string, mixed>,
+     *     process: array<string, mixed>,
+     *     process_steps: array<string, array<string, mixed>>,
+     *     history: array<string, array<string, mixed>>
+     * }
+     */
+    private function suppliedLegacyAudit(string $requestId): array
+    {
+        $request = (array) DB::table('attachment_requests')->where('id', $requestId)->firstOrFail();
+        $process = (array) DB::table('processes')
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+        $item = (array) DB::table('attachment_request_items')
+            ->where('attachment_request_id', $requestId)
+            ->firstOrFail();
+
+        $request = array_intersect_key($request, array_flip([
+            'id', 'serial_number', 'status', 'created_by_user_id', 'responded_by_user_id', 'responded_at', 'created_at',
+        ]));
+        $item = array_intersect_key($item, array_flip([
+            'id', 'attachment_request_id', 'file_name', 'file_path', 'file_type', 'file_size', 'status',
+            'responded_by_user_id', 'responded_at', 'response_notes', 'created_at', 'updated_at',
+        ]));
+        $process = array_intersect_key($process, array_flip([
+            'id', 'processable_id', 'processable_type', 'sort_order', 'execute_type', 'status', 'template_snapshot',
+            'created_at', 'updated_at',
+        ]));
+        $process['template_snapshot'] = $this->historyMetadata(
+            (object) ['metadata' => $process['template_snapshot']]
+        );
+
+        $steps = DB::table('process_steps')
+            ->where('process_id', $process['id'])
+            ->orderBy('template_step_order')
+            ->orderBy('id')
+            ->get()
+            ->map(function (object $step): array {
+                $row = (array) $step;
+                $row['authorized_user_ids'] = $this->historyMetadata((object) ['metadata' => $row['authorized_user_ids']]);
+
+                return $row;
+            })
+            ->keyBy('id')
+            ->all();
+
+        $history = DB::table('attachment_request_history')
+            ->where('attachment_request_id', $requestId)
+            ->orderByRaw('sort_order is null')
+            ->orderBy('sort_order')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get()
+            ->map(function (object $entry): array {
+                $row = (array) $entry;
+                $row['metadata'] = $this->historyMetadata((object) ['metadata' => $row['metadata']]);
+
+                return $row;
+            })
+            ->keyBy('id')
+            ->all();
+
+        return compact('request', 'item', 'process', 'steps', 'history') + ['process_steps' => $steps];
+    }
+
+    /**
+     * @param  array<string, mixed>  $before
+     * @param  array<string, mixed>  $after
+     * @return list<array{table: string, operation: string, id: string, before?: array<string, mixed>, after?: array<string, mixed>}>
+     */
+    private function suppliedLegacyChanges(array $before, array $after): array
+    {
+        $changes = [];
+        foreach ([
+            'request' => 'attachment_requests',
+            'process' => 'processes',
+        ] as $key => $table) {
+            if (json_encode($before[$key], JSON_THROW_ON_ERROR) !== json_encode($after[$key], JSON_THROW_ON_ERROR)) {
+                $changes[] = [
+                    'table' => $table,
+                    'operation' => 'updated',
+                    'id' => (string) $before[$key]['id'],
+                    'before' => $before[$key],
+                    'after' => $after[$key],
+                ];
+            }
+        }
+
+        foreach ([
+            'process_steps' => 'process_steps',
+            'history' => 'attachment_request_history',
+        ] as $key => $table) {
+            $beforeRows = $before[$key];
+            $afterRows = $after[$key];
+            foreach ($beforeRows as $id => $beforeRow) {
+                if (! array_key_exists($id, $afterRows)) {
+                    $changes[] = ['table' => $table, 'operation' => 'deleted', 'id' => (string) $id, 'before' => $beforeRow];
+
+                    continue;
+                }
+
+                if (json_encode($beforeRow, JSON_THROW_ON_ERROR) !== json_encode($afterRows[$id], JSON_THROW_ON_ERROR)) {
+                    $changes[] = [
+                        'table' => $table,
+                        'operation' => 'updated',
+                        'id' => (string) $id,
+                        'before' => $beforeRow,
+                        'after' => $afterRows[$id],
+                    ];
+                }
+            }
+            foreach ($afterRows as $id => $afterRow) {
+                if (! array_key_exists($id, $beforeRows)) {
+                    $changes[] = ['table' => $table, 'operation' => 'inserted', 'id' => (string) $id, 'after' => $afterRow];
+                }
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $steps
+     * @return list<array{step_id: int, template_step_order: int, status: string}>
+     */
+    private function sourceStepSummary(array $steps): array
+    {
+        return collect($steps)
+            ->sortBy('template_step_order')
+            ->map(static fn (array $step): array => [
+                'step_id' => (int) $step['step_id'],
+                'template_step_order' => (int) $step['template_step_order'],
+                'status' => (string) $step['status'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $history
+     * @return list<array{action: string, template_step_order: int|null}>
+     */
+    private function sourceHistorySummary(array $history): array
+    {
+        return collect($history)
+            ->map(static fn (array $entry): array => [
+                'action' => (string) $entry['action'],
+                'template_step_order' => isset($entry['metadata']['template_step_order'])
+                    ? (int) $entry['metadata']['template_step_order']
+                    : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $changes
+     * @return list<array{table: string, operation: string, id: string}>
+     */
+    private function sourceChangeSummary(array $changes): array
+    {
+        return array_map(static fn (array $change): array => [
+            'table' => $change['table'],
+            'operation' => $change['operation'],
+            'id' => $change['id'],
+        ], $changes);
+    }
+
+    /**
+     * The explicit flag keeps ordinary PHPUnit output concise. The local
+     * verification command enables it and prints every persisted row before,
+     * after, and changed by this one migration.
+     *
+     * @param  array<string, mixed>  $before
+     * @param  array<string, mixed>  $after
+     * @param  list<array<string, mixed>>  $changes
+     */
+    private function printSuppliedLegacyReproduction(string $label, array $before, array $after, array $changes): void
+    {
+        if (getenv('LEGACY_MIGRATION_REPRO_REPORT') !== '1') {
+            return;
+        }
+
+        $output = [
+            "\n===== {$label} =====",
+            'TEMPLATE SNAPSHOT',
+            json_encode($before['process']['template_snapshot'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'BEFORE REQUEST / PROCESS',
+            json_encode(['request' => $before['request'], 'process' => $before['process']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'BEFORE HISTORY',
+            json_encode(array_values($before['history']), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'BEFORE PROCESS_STEPS',
+            json_encode(array_values($before['process_steps']), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'AFTER REQUEST / PROCESS',
+            json_encode(['request' => $after['request'], 'process' => $after['process']], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'AFTER HISTORY',
+            json_encode(array_values($after['history']), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'AFTER PROCESS_STEPS',
+            json_encode(array_values($after['process_steps']), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'ROWS CHANGED BY MIGRATION',
+            json_encode($changes, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            '===== END =====',
+        ];
+
+        fwrite(STDOUT, implode(PHP_EOL, $output).PHP_EOL);
+    }
+
+    /**
+     * Recreate the production legacy gap from a clean request. The initial
+     * workflow is allowed to generate its authentic snapshot/history, then its
+     * Step 2 completion and (for Case A) Step 3 persistence are rolled back to
+     * the exact corrupted state observed in legacy data.
+     *
+     * @return array<string, mixed>
+     */
+    private function recreateMissingSequentialAdvanceLegacyCase(int $stepCount): array
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $receiverCompany = $this->createCompany();
+        $firstReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $thirdReceiverUser = $stepCount === 3
+            ? User::factory()->create(['company_id' => $receiverCompany->id])
+            : null;
+
+        $this->createAcceptedShare($project, $receiverCompany);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+        if ($thirdReceiverUser !== null) {
+            $this->createProcedureStep($procedure, $thirdReceiverUser, 3);
+        }
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post("/api/v1/projects/attachment-requests/{$requestId}/approve", [], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $this->respondToAttachmentItem($secondReceiverUser, $receiverCompany, $itemId, 'approve');
+
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail()
+            ->load('steps');
+        $steps = $process->steps->sortBy('template_step_order')->values();
+        $secondStep = $steps[1];
+        $thirdStep = $stepCount === 3 ? $steps[2] : null;
+        $processSortOrder = (int) ($process->sort_order ?? 0);
+        $approval = AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', 'attachment_approved')
+            ->firstOrFail();
+        $item = AttachmentRequestItem::query()->findOrFail($itemId);
+
+        $thirdPendingHistory = $thirdStep === null
+            ? null
+            : AttachmentRequestHistory::query()
+                ->where('attachment_request_id', $requestId)
+                ->where('action', 'workflow_step_pending')
+                ->get()
+                ->first(fn (AttachmentRequestHistory $history): bool => (int) ($history->metadata['template_step_order'] ?? 0)
+                    === (int) $thirdStep->template_step_order
+                );
+
+        if ($thirdPendingHistory instanceof AttachmentRequestHistory) {
+            $thirdMetadata = $thirdPendingHistory->metadata;
+            $thirdMetadata['process_step_id'] = null;
+            $thirdMetadata['process_id'] = (string) $process->id;
+            $thirdMetadata['process_sort_order'] = $processSortOrder;
+            $thirdMetadata['step_id'] = (int) $thirdStep->step_id;
+            $thirdMetadata['template_step_order'] = (int) $thirdStep->template_step_order;
+            $thirdMetadata['assigned_user_id'] = (string) $thirdStep->assigned_user_id;
+            $thirdMetadata['authorized_user_ids'] = $thirdStep->authorized_user_ids;
+            $thirdMetadata['status'] = ProcessStepStatus::Pending->value;
+
+            $thirdPendingHistory->forceFill([
+                'metadata' => $thirdMetadata,
+                'sort_order' => 100000 + ($processSortOrder * 1000) + 3,
+            ])->save();
+        }
+
+        $approvalMetadata = $approval->metadata;
+        unset(
+            $approvalMetadata['process_id'],
+            $approvalMetadata['process_sort_order'],
+            $approvalMetadata['process_step_id'],
+            $approvalMetadata['step_id'],
+            $approvalMetadata['template_step_order'],
+            $approvalMetadata['assigned_user_id'],
+            $approvalMetadata['authorized_user_ids'],
+            $approvalMetadata['acted_at'],
+            $approvalMetadata['is_auto_approved'],
+        );
+        $approval->forceFill([
+            'metadata' => $approvalMetadata,
+            'sort_order' => 100000 + ($processSortOrder * 1000) + $stepCount + 1,
+        ])->save();
+
+        DB::table('process_steps')
+            ->where('id', $secondStep->id)
+            ->update([
+                'status' => ProcessStepStatus::Pending->value,
+                'action_by' => null,
+                'acted_at' => null,
+            ]);
+
+        if ($thirdStep !== null) {
+            DB::table('process_steps')->where('id', $thirdStep->id)->delete();
+        }
+
+        $stalePendingHistoryId = $this->insertHistoricalHistory(
+            requestId: $requestId,
+            action: 'workflow_step_pending',
+            description: 'Legacy stale pending step two',
+            userId: null,
+            itemId: null,
+            metadata: [
+                'process_id' => (string) $process->id,
+                'process_sort_order' => $processSortOrder,
+                'process_step_id' => (string) $secondStep->id,
+                'step_id' => (int) $secondStep->step_id,
+                'template_step_order' => (int) $secondStep->template_step_order,
+                'assigned_user_id' => (string) $secondStep->assigned_user_id,
+                'authorized_user_ids' => $secondStep->authorized_user_ids,
+                'status' => ProcessStepStatus::Pending->value,
+            ],
+            createdAt: $approval->created_at->copy()->subSecond(),
+            sortOrder: 100000 + ($processSortOrder * 1000) + 2,
+        );
+
+        // Case B's genuine execution would have finalized the request. The legacy
+        // state is the point immediately before that final persisted transition.
+        AttachmentRequestHistory::query()
+            ->where('attachment_request_id', $requestId)
+            ->where('action', 'request_approved')
+            ->delete();
+
+        DB::table('processes')
+            ->where('id', $process->id)
+            ->update(['status' => ProcessStatus::InProgress->value]);
+        DB::table('attachment_requests')
+            ->where('id', $requestId)
+            ->update([
+                'status' => $stepCount === 3
+                    ? AttachmentRequest::STATUS_APPROVED
+                    : AttachmentRequest::STATUS_PENDING,
+            ]);
+
+        return [
+            'request_id' => $requestId,
+            'item_id' => $itemId,
+            'process_id' => (string) $process->id,
+            'process_sort_order' => $processSortOrder,
+            'second_step_id' => (string) $secondStep->id,
+            'second_template_step_id' => (int) $secondStep->step_id,
+            'second_user_id' => (string) $secondReceiverUser->id,
+            'approval_history_id' => (string) $approval->id,
+            'stale_pending_history_id' => $stalePendingHistoryId,
+            'third_pending_history_id' => $thirdPendingHistory?->id,
+            'item_responded_at' => (string) $item->responded_at,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     history: list<array{action: string, template_step_order: int|null}>,
+     *     process_steps: list<array{template_step_order: int, status: string}>,
+     *     request_status: string,
+     *     process_status: string
+     * }
+     */
+    private function legacyWorkflowAuditSnapshot(string $requestId): array
+    {
+        $process = DB::table('processes')
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+
+        return [
+            'history' => DB::table('attachment_request_history')
+                ->where('attachment_request_id', $requestId)
+                ->orderByRaw('sort_order is null')
+                ->orderBy('sort_order')
+                ->orderBy('created_at')
+                ->orderBy('id')
+                ->get()
+                ->map(fn ($history): array => [
+                    'action' => (string) $history->action,
+                    'template_step_order' => $this->historyMetadata($history)['template_step_order'] ?? null,
+                ])
+                ->all(),
+            'process_steps' => DB::table('process_steps')
+                ->where('process_id', $process->id)
+                ->orderBy('template_step_order')
+                ->get()
+                ->map(static fn ($step): array => [
+                    'template_step_order' => (int) $step->template_step_order,
+                    'status' => (string) $step->status,
+                ])
+                ->all(),
+            'request_status' => (string) DB::table('attachment_requests')
+                ->where('id', $requestId)
+                ->value('status'),
+            'process_status' => (string) $process->status,
+        ];
+    }
+
+    private function historyMetadata(object $history): array
+    {
+        if (is_array($history->metadata)) {
+            return $history->metadata;
+        }
+
+        return json_decode((string) $history->metadata, true, flags: JSON_THROW_ON_ERROR);
+    }
+
     private function runLegacyAttachmentApprovalHistoryRepairMigration(): void
     {
         $migration = require database_path(
@@ -3000,8 +4272,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
     private function createProjectProcedure(
         ProjectManagement $project,
         array $receiverCompanyIds = []
-    ): ProjectProcedureSetting
-    {
+    ): ProjectProcedureSetting {
         $workFlow = WorkFlow::query()->withoutGlobalScopes()->firstOrCreate([
             'company_id' => $this->company->id,
             'project_id' => $project->id,
