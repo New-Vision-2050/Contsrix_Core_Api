@@ -282,6 +282,13 @@ return new class extends Migration
         $nextSnapshot = $snapshotSteps[$current['index'] + 1] ?? null;
 
         if ($nextSnapshot !== null) {
+            // Skip when the snapshot references a procedure setting step that has
+            // since been deleted. The foreign key on process_steps.step_id would
+            // otherwise reject the insert, halting the entire migration.
+            if (! $this->snapshotStepExists($nextSnapshot)) {
+                return;
+            }
+
             // Never create a second representation of the next snapshot step.
             // missingAdvanceCurrentStep() already establishes an exact persisted
             // prefix; this explicit check also protects against an unexpected
@@ -587,6 +594,23 @@ return new class extends Migration
             && $assignedUserId === $this->stringValue($snapshot['assigned_user_id'] ?? null)
             && $this->normalizedUserIds($metadata['authorized_user_ids'] ?? null)
                 === $this->normalizedUserIds($snapshot['authorized_user_ids'] ?? null);
+    }
+
+    private function snapshotStepExists(array $snapshot): bool
+    {
+        $stepId = $this->stringValue($snapshot['step_id'] ?? null);
+
+        if ($stepId === null) {
+            return false;
+        }
+
+        if (! Schema::hasTable('procedure_setting_steps')) {
+            return true;
+        }
+
+        return DB::table('procedure_setting_steps')
+            ->where('id', $stepId)
+            ->exists();
     }
 
     private function hasPersistedNextStepConflict($steps, array $snapshot): bool
