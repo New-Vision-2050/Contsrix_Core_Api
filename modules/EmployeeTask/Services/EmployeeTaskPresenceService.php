@@ -86,37 +86,52 @@ class EmployeeTaskPresenceService
     }
 
     /**
-     * Return the distinct Y-m-d dates on which a single user was actively working
-     * (had a task session) within the given range.
+     * Return, for a single user, the tasks that made them present (متواجد) on
+     * each day of the range, keyed by Y-m-d date. Each entry carries enough
+     * metadata for the UI to show which task caused the status.
      *
-     * @return array<int, string>
+     * @return array<string, list<array<string, mixed>>>
      */
-    public function taskDatesForUser(mixed $userId, string $startDate, string $endDate): array
+    public function taskDetailsForUser(mixed $userId, string $startDate, string $endDate): array
     {
         if ($userId === null || $userId === '') {
             return [];
         }
 
-        $taskIdsByUser = $this->taskIdsByUser([(string) $userId]);
-        $taskIds = $taskIdsByUser[(string) $userId] ?? [];
+        $taskIds = $this->taskIdsByUser([(string) $userId])[(string) $userId] ?? [];
 
         if ($taskIds === []) {
             return [];
         }
 
-        $activeDatesByTask = $this->activeDatesByTask($taskIds, $startDate, $endDate);
+        $minutesByTask = $this->activeMinutesByTask($taskIds, $startDate, $endDate);
 
-        $dates = [];
+        if ($minutesByTask === []) {
+            return [];
+        }
+
+        $metadata = $this->taskMetadata($taskIds);
+
+        $byDate = [];
         foreach ($taskIds as $taskId) {
-            foreach ($activeDatesByTask[$taskId] ?? [] as $date) {
-                $dates[$date] = true;
+            $taskId = (string) $taskId;
+
+            foreach ($minutesByTask[$taskId] ?? [] as $date => $minutes) {
+                $minutes = (int) $minutes;
+
+                $byDate[$date][] = array_merge(
+                    $metadata[$taskId] ?? ['id' => $taskId],
+                    [
+                        'minutes' => $minutes,
+                        'hours'   => round($minutes / 60, 2),
+                    ]
+                );
             }
         }
 
-        $dates = array_keys($dates);
-        sort($dates);
+        ksort($byDate);
 
-        return $dates;
+        return $byDate;
     }
 
     /**
@@ -466,50 +481,94 @@ class EmployeeTaskPresenceService
     }
 
     /**
-     * Resolve a display title for each task ID. Falls back to the linked project
-     * notification's description/number when the task itself has no title. Uses
-     * withoutGlobalScopes because project-notification tasks carry a null
-     * company_id and would otherwise be filtered out by the tenant scope.
+     * Resolve a display title for each task ID.
      *
      * @param  list<string>  $taskIds
      * @return array<string, string>  map of taskId => title
      */
     private function taskTitles(array $taskIds): array
     {
+        $titles = [];
+
+        foreach ($this->taskMetadata($taskIds) as $taskId => $meta) {
+            $title = $meta['title'] ?? null;
+            if (is_string($title) && $title !== '') {
+                $titles[$taskId] = $title;
+            }
+        }
+
+        return $titles;
+    }
+
+    /**
+     * Resolve display metadata for each task ID. The title falls back to the
+     * linked project notification's description/number when the task itself has
+     * no title. Uses withoutGlobalScopes because project-notification tasks
+     * carry a null company_id and would otherwise be filtered out by the tenant
+     * scope.
+     *
+     * @param  list<string>  $taskIds
+     * @return array<string, array<string, mixed>>  map of taskId => metadata
+     */
+    private function taskMetadata(array $taskIds): array
+    {
         if ($taskIds === []) {
             return [];
         }
 
-        $titles = [];
+        $meta = [];
+
         EmployeeTaskRequest::query()
             ->withoutGlobalScopes()
             ->whereIn('id', $taskIds)
-            ->get(['id', 'title'])
-            ->each(static function (EmployeeTaskRequest $task) use (&$titles): void {
-                if ($task->title !== null && $task->title !== '') {
-                    $titles[(string) $task->id] = (string) $task->title;
-                }
+            ->get(['id', 'title', 'status', 'task_date', 'project_id', 'is_project_notification'])
+            ->each(static function (EmployeeTaskRequest $task) use (&$meta): void {
+                $meta[(string) $task->id] = [
+                    'id'                  => (string) $task->id,
+                    'title'               => ($task->title !== null && $task->title !== '') ? (string) $task->title : null,
+                    'status'              => $task->status !== null ? (string) $task->status : null,
+                    'task_date'           => $task->task_date?->format('Y-m-d'),
+                    'project_id'          => $task->project_id !== null ? (string) $task->project_id : null,
+                    'source'              => $task->is_project_notification ? 'project_notification' : 'employee_task',
+                    'notification_id'     => null,
+                    'notification_number' => null,
+                    'notification_status' => null,
+                ];
             });
 
-        $missing = array_values(array_filter(
-            $taskIds,
-            static fn (string $id): bool => ! isset($titles[$id])
-        ));
+        ProjectNotification::query()
+            ->whereIn('employee_task_request_id', $taskIds)
+            ->get(['id', 'employee_task_request_id', 'project_id', 'work_description', 'notification_number', 'status'])
+            ->each(static function (ProjectNotification $notification) use (&$meta): void {
+                $taskId = (string) $notification->employee_task_request_id;
 
-        if ($missing !== []) {
-            ProjectNotification::query()
-                ->whereIn('employee_task_request_id', $missing)
-                ->get(['employee_task_request_id', 'work_description', 'notification_number'])
-                ->each(static function (ProjectNotification $notification) use (&$titles): void {
-                    $taskId = (string) $notification->employee_task_request_id;
-                    $title  = $notification->work_description !== null && $notification->work_description !== ''
+                $entry = $meta[$taskId] ?? [
+                    'id'         => $taskId,
+                    'title'      => null,
+                    'status'     => null,
+                    'task_date'  => null,
+                    'project_id' => null,
+                ];
+
+                if (($entry['title'] ?? null) === null) {
+                    $entry['title'] = ($notification->work_description !== null && $notification->work_description !== '')
                         ? (string) $notification->work_description
                         : trim('إشعار ' . (string) $notification->notification_number);
-                    $titles[$taskId] = $title;
-                });
-        }
+                }
 
-        return $titles;
+                $entry['source']              = 'project_notification';
+                $entry['notification_id']     = (string) $notification->id;
+                $entry['notification_number'] = $notification->notification_number !== null
+                    ? (string) $notification->notification_number
+                    : null;
+                $entry['notification_status'] = $notification->status !== null ? (string) $notification->status : null;
+                $entry['project_id']          = $entry['project_id']
+                    ?? ($notification->project_id !== null ? (string) $notification->project_id : null);
+
+                $meta[$taskId] = $entry;
+            });
+
+        return $meta;
     }
 
     private function timezone(): string
