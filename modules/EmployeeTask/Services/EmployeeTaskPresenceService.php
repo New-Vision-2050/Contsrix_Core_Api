@@ -435,8 +435,6 @@ class EmployeeTaskPresenceService
             return;
         }
 
-        $todayStr = CarbonImmutable::now($this->timezone())->format('Y-m-d');
-
         $notifications = ProjectNotification::query()
             ->whereIn('employee_task_request_id', $taskIds)
             ->get(['employee_task_request_id', 'status', 'task_date'])
@@ -448,7 +446,6 @@ class EmployeeTaskPresenceService
             $days = $this->resolveActiveDays(
                 $tasks->get($taskId),
                 $notifications->get($taskId),
-                $todayStr,
             );
 
             foreach ($days as $day) {
@@ -467,38 +464,36 @@ class EmployeeTaskPresenceService
 
     /**
      * Resolve the days an active task makes its assignees present, even without
-     * session rows: the day the task belongs to, the day it ended, and today
-     * while it is still running. Days in between are only counted when they have
-     * a real work session, so a task left open for weeks does not mark every
-     * day in between as "متواجد". Returns [] when the task is not active.
+     * session rows: the day the task belongs to and the day it ended. Any other
+     * day only counts when it has a real work session, so a task that stays
+     * open — or is simply never closed — does not mark unrelated days, today
+     * included, as "متواجد". Returns [] when the task is not active.
      *
      * @return list<string>  Y-m-d days
      */
-    private function resolveActiveDays(?EmployeeTaskRequest $task, ?ProjectNotification $notification, string $todayStr): array
+    private function resolveActiveDays(?EmployeeTaskRequest $task, ?ProjectNotification $notification): array
     {
         $taskDay = $task?->task_date?->format('Y-m-d')
             ?? $task?->time_from?->format('Y-m-d');
         $endDay  = $task?->time_to?->format('Y-m-d');
 
         if ($notification !== null) {
-            $startDay = $notification->task_date?->format('Y-m-d') ?? $taskDay;
-
-            if ($notification->status === 'in_progress') {
-                return $this->uniqueDays([$startDay, $taskDay, $endDay, $todayStr]);
+            if (! in_array($notification->status, ['in_progress', 'completed'], true)) {
+                return [];
             }
 
-            if ($notification->status === 'completed') {
-                return $this->uniqueDays([$startDay, $taskDay, $endDay]);
-            }
-
-            return [];
+            return $this->uniqueDays([
+                $notification->task_date?->format('Y-m-d') ?? $taskDay,
+                $taskDay,
+                $endDay,
+            ]);
         }
 
         if ($task !== null && in_array($task->status, [
             EmployeeTaskStatus::InProgress->value,
             EmployeeTaskStatus::Paused->value,
         ], true)) {
-            return $this->uniqueDays([$taskDay, $endDay, $todayStr]);
+            return $this->uniqueDays([$taskDay, $endDay]);
         }
 
         return [];

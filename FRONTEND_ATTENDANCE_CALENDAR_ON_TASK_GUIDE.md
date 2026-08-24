@@ -69,12 +69,14 @@ The array is `[]` on days with no task activity. All other fields are unchanged.
 A task is attached to a day only when it is really related to it:
 
 - any day on which the task had a work session (partial days included);
-- the task's own day (`task_date`, or the notification's `task_date`) and the day it ended;
-- today, while the task is still `in_progress` / `paused`.
+- the task's own day (`task_date`, or the notification's `task_date`) and the day it ended,
+  while the task is active (`in_progress` / `paused`, or a notification that is
+  `in_progress` / `completed`).
 
-Days in between are **not** covered: a task started weeks ago and still open no longer marks
-every day since then as `متواجد`. A session left open by mistake is credited for at most 24
-hours after it started (or until the task's own end time, whichever comes first).
+Nothing else counts — including today. A task that is still open from an earlier date does
+not make the employee `متواجد` today; without a session or clock-in, today is `غائب`. A
+session left open by mistake is credited for at most 24 hours after it started (or until the
+task's own end time, whichever comes first).
 
 ## Notes for the UI
 

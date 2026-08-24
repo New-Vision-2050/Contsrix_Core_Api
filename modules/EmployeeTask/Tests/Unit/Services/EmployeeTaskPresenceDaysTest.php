@@ -71,33 +71,29 @@ class EmployeeTaskPresenceDaysTest extends TestCase
         $this->assertSame('2026-08-24 15:00:00', $end->format('Y-m-d H:i:s'));
     }
 
-    public function test_in_progress_task_marks_its_own_day_and_today_only(): void
+    public function test_in_progress_task_marks_its_own_day_only(): void
     {
         $task = new EmployeeTaskRequest();
         $task->setAttribute('status', EmployeeTaskStatus::InProgress->value);
         $task->setAttribute('task_date', '2026-07-08');
 
-        $days = $this->activeDays($task, null, '2026-08-24');
-
-        $this->assertSame(['2026-07-08', '2026-08-24'], $days);
+        $this->assertSame(['2026-07-08'], $this->activeDays($task, null));
     }
 
-    public function test_in_progress_notification_marks_its_own_day_and_today_only(): void
+    public function test_in_progress_notification_marks_its_own_day_only(): void
     {
         $task = new EmployeeTaskRequest();
         $task->setAttribute('status', EmployeeTaskStatus::Approved->value);
-        $task->setAttribute('task_date', '2026-07-08');
+        $task->setAttribute('task_date', '2026-08-09');
 
         $notification = new ProjectNotification();
         $notification->setAttribute('status', 'in_progress');
-        $notification->setAttribute('task_date', '2026-07-08');
+        $notification->setAttribute('task_date', '2026-08-09');
 
-        $days = $this->activeDays($task, $notification, '2026-08-24');
-
-        $this->assertSame(['2026-07-08', '2026-08-24'], $days);
+        $this->assertSame(['2026-08-09'], $this->activeDays($task, $notification));
     }
 
-    public function test_completed_notification_does_not_reach_today(): void
+    public function test_completed_notification_marks_its_own_day(): void
     {
         $task = new EmployeeTaskRequest();
         $task->setAttribute('status', EmployeeTaskStatus::Completed->value);
@@ -107,9 +103,7 @@ class EmployeeTaskPresenceDaysTest extends TestCase
         $notification->setAttribute('status', 'completed');
         $notification->setAttribute('task_date', '2026-07-08');
 
-        $days = $this->activeDays($task, $notification, '2026-08-24');
-
-        $this->assertSame(['2026-07-08'], $days);
+        $this->assertSame(['2026-07-08'], $this->activeDays($task, $notification));
     }
 
     public function test_task_that_is_not_active_marks_no_day(): void
@@ -118,7 +112,7 @@ class EmployeeTaskPresenceDaysTest extends TestCase
         $task->setAttribute('status', EmployeeTaskStatus::Completed->value);
         $task->setAttribute('task_date', '2026-07-08');
 
-        $this->assertSame([], $this->activeDays($task, null, '2026-08-24'));
+        $this->assertSame([], $this->activeDays($task, null));
     }
 
     private function sessionEnd(string $start, ?string $end, ?string $taskEnd, string $now): CarbonImmutable
@@ -138,11 +132,11 @@ class EmployeeTaskPresenceDaysTest extends TestCase
     /**
      * @return list<string>
      */
-    private function activeDays(?EmployeeTaskRequest $task, ?ProjectNotification $notification, string $today): array
+    private function activeDays(?EmployeeTaskRequest $task, ?ProjectNotification $notification): array
     {
         $method = new ReflectionMethod($this->service, 'resolveActiveDays');
         $method->setAccessible(true);
 
-        return $method->invoke($this->service, $task, $notification, $today);
+        return $method->invoke($this->service, $task, $notification);
     }
 }
