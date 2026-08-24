@@ -1262,7 +1262,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         }
     }
 
-    public function test_visible_receiver_cannot_replace_attachment_media(): void
+    public function test_visible_receiver_can_replace_attachment_media(): void
     {
         $project = $this->createProject();
         $procedure = $this->createProjectProcedure($project);
@@ -1277,10 +1277,42 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $requestId = $createResponse->json('payload.id');
         $itemId = $createResponse->json('payload.items.0.id');
         $beforeReplacement = AttachmentRequestItem::query()->findOrFail($itemId);
-        $mediaCount = $beforeReplacement->getMedia('attachments')->count();
+        $replacementName = 'receiver-replacement.pdf';
 
         $this->actingAs($receiverUser, 'api')
             ->withHeader('X-Tenant', $receiverCompany->id)
+            ->post('/api/v1/projects/attachment-requests/items/replace-media', [
+                'item_id' => $itemId,
+                'new_file' => UploadedFile::fake()->create($replacementName, 16, 'application/pdf'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.items.0.file_name', $replacementName);
+
+        $replacedItem = $beforeReplacement->fresh();
+
+        $this->assertSame($replacementName, $replacedItem->file_name);
+        $this->assertSame('application/pdf', $replacedItem->file_type);
+        $this->assertSame(1, $replacedItem->getMedia('attachments')->count());
+        $this->assertHistoryCount($requestId, 'media_replaced', 1);
+    }
+
+    public function test_unrelated_company_cannot_replace_attachment_media(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $unrelatedCompany = $this->createCompany();
+        $unrelatedUser = User::factory()->create(['company_id' => $unrelatedCompany->id]);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+        $beforeReplacement = AttachmentRequestItem::query()->findOrFail($itemId);
+        $mediaCount = $beforeReplacement->getMedia('attachments')->count();
+
+        $this->actingAs($unrelatedUser, 'api')
+            ->withHeader('X-Tenant', $unrelatedCompany->id)
             ->post('/api/v1/projects/attachment-requests/items/replace-media', [
                 'item_id' => $itemId,
                 'new_file' => UploadedFile::fake()->create('unauthorized-replacement.pdf', 16, 'application/pdf'),
