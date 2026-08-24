@@ -64,6 +64,18 @@ The array is `[]` on days with no task activity. All other fields are unchanged.
 | `work_hours` | float | `work_minutes / 60`, rounded to 2 |
 | `duration_formatted` | string \| null | `"HHh MMm"`, `null` when `work_minutes = 0` |
 
+## Which days a task appears on
+
+A task is attached to a day only when it is really related to it:
+
+- any day on which the task had a work session (partial days included);
+- the task's own day (`task_date`, or the notification's `task_date`) and the day it ended;
+- today, while the task is still `in_progress` / `paused`.
+
+Days in between are **not** covered: a task started weeks ago and still open no longer marks
+every day since then as `متواجد`. A session left open by mistake is credited for at most 24
+hours after it started (or until the task's own end time, whichever comes first).
+
 ## Notes for the UI
 
 - A day can list more than one task; `work_minutes` is per task per day, clamped to that day.
