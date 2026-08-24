@@ -737,10 +737,6 @@ class AttachmentRequestService
 
         $this->visibilityService->assertCompanyCanView($item->attachmentRequest, $companyId);
 
-        if ((string) $item->attachmentRequest->sender_company_id !== $companyId) {
-            abort(403, 'Only the sending company can replace attachment media.');
-        }
-
         return DB::transaction(function () use ($item, $newFile) {
             // Clear existing media
             $item->clearMediaCollection('attachments');
