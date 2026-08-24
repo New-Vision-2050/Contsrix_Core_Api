@@ -18,6 +18,7 @@ use Modules\Attendance\Models\Attendance;
 use Modules\User\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -650,7 +651,7 @@ class AttendanceConstraintService
                 'additional_locations_count' => count($additionalLocations),
                 'additional_constraint_ids' => $user->relationLoaded('additionalAttendanceConstraints')
                     ? $user->additionalAttendanceConstraints->pluck('id')->all()
-                    : [],
+                    : collect($additionalLocations)->pluck('constraint_id')->filter()->unique()->values()->all(),
                 'tenancy_initialized' => tenancy()->initialized,
                 'tenant_key' => tenancy()->initialized ? tenant()->getTenantKey() : null,
             ],
@@ -975,18 +976,49 @@ class AttendanceConstraintService
 
         $branchLocations = $additionalConstraints
             ->flatMap(function ($constraint) {
-                return collect($constraint->branch_locations ?? [])->map(fn ($loc) => [
-                    'id' => null,
-                    'name' => $loc['name'] ?? $constraint->constraint_name,
-                    'latitude' => isset($loc['latitude']) ? (float) $loc['latitude'] : null,
-                    'longitude' => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
-                    'radius' => isset($loc['radius']) ? (int) $loc['radius'] : null,
-                    'constraint_id' => (string) $constraint->id,
-                    'constraint_name' => $constraint->constraint_name,
-                    'source' => 'branch',
-                    'expires_at' => null,
-                    'reference_id' => null,
-                ]);
+                $fromBranchColumn = collect($constraint->branch_locations ?? [])
+                    ->map(function ($loc, $key) use ($constraint) {
+                        if (! is_array($loc)) {
+                            return null;
+                        }
+
+                        return [
+                            'id' => null,
+                            'name' => $loc['name'] ?? $constraint->constraint_name,
+                            'latitude' => isset($loc['latitude']) ? (float) $loc['latitude'] : null,
+                            'longitude' => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
+                            'radius' => isset($loc['radius']) ? (int) $loc['radius'] : null,
+                            'constraint_id' => (string) $constraint->id,
+                            'constraint_name' => $constraint->constraint_name,
+                            'source' => 'branch',
+                            'expires_at' => null,
+                            'reference_id' => is_string($key) || is_numeric($key) ? (string) ($loc['branch_id'] ?? $key) : null,
+                        ];
+                    })
+                    ->filter();
+
+                $fromAllowedZones = collect($constraint->constraint_config['location_rules']['allowed_zones'] ?? [])
+                    ->map(function ($zone) use ($constraint) {
+                        if (! is_array($zone)) {
+                            return null;
+                        }
+
+                        return [
+                            'id' => null,
+                            'name' => $zone['name'] ?? $constraint->constraint_name,
+                            'latitude' => isset($zone['latitude']) ? (float) $zone['latitude'] : null,
+                            'longitude' => isset($zone['longitude']) ? (float) $zone['longitude'] : null,
+                            'radius' => isset($zone['radius']) ? (int) $zone['radius'] : null,
+                            'constraint_id' => (string) $constraint->id,
+                            'constraint_name' => $constraint->constraint_name,
+                            'source' => 'allowed_zone',
+                            'expires_at' => null,
+                            'reference_id' => null,
+                        ];
+                    })
+                    ->filter();
+
+                return $fromBranchColumn->merge($fromAllowedZones);
             });
 
         $tableLocations = $additionalConstraints
@@ -1226,8 +1258,8 @@ class AttendanceConstraintService
     public function getApplicableConstraintsForDataRetrieval(User $user): Collection
     {
         $ver = $this->getApplicableConstraintsCacheGeneration($user->company_id);
-        // v2: cache keys include pivot additional constraints (primary-only cache was wrong).
-        $cacheKey = sprintf('attendance:constraints:%s:%s:v2:%s', $user->company_id, $user->id, $ver);
+        // v3: pivot lookup uses withoutTenancy + sibling user ids (profile parity).
+        $cacheKey = sprintf('attendance:constraints:%s:%s:v3:%s', $user->company_id, $user->id, $ver);
 
         return Cache::remember($cacheKey, now()->addMinutes(15), function () use ($user) {
             return $this->resolveConstraintsFromDb($user);
@@ -1425,12 +1457,52 @@ class AttendanceConstraintService
     /**
      * Constraints linked via attendance_constraint_user (profile "additional").
      * Their locations must appear in additional_locations / clock-in validation.
+     *
+     * Uses withoutTenancy + direct pivot lookup so we match the profile endpoint,
+     * which loops companyUser->users (all sibling rows for the same global person).
      */
     private function loadAdditionalConstraintsForUser(User $user): Collection
     {
-        return $user->additionalAttendanceConstraints()
-            ->where('attendance_constraints.is_active', true)
-            ->with('additionalLocations')
-            ->get();
+        $userIds = collect([(string) $user->id]);
+
+        if (! empty($user->global_company_user_id)) {
+            $siblingIds = User::withoutTenancy()
+                ->where('global_company_user_id', $user->global_company_user_id)
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id);
+
+            $userIds = $userIds->merge($siblingIds)->unique()->values();
+        }
+
+        $constraintIds = DB::table('attendance_constraint_user')
+            ->whereIn('user_id', $userIds->all())
+            ->pluck('attendance_constraint_id')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values();
+
+        if ($constraintIds->isEmpty()) {
+            return collect();
+        }
+
+        $mainId = (string) (
+            $user->userProfessionalData?->attendance_constraint_id
+            ?? $user->professionalData?->attendance_constraint_id
+            ?? ''
+        );
+
+        return AttendanceConstraint::withoutTenancy()
+            ->with(['additionalLocations' => fn ($q) => $q->withoutTenancy()])
+            ->whereIn('id', $constraintIds->all())
+            ->when($mainId !== '', fn ($q) => $q->where('id', '!=', $mainId))
+            ->get()
+            ->filter(function (AttendanceConstraint $constraint): bool {
+                // Profile lists additional constraints without requiring is_active;
+                // only drop explicitly inactive rows.
+                return $constraint->is_active === null
+                    || $constraint->is_active === true
+                    || (int) $constraint->is_active === 1;
+            })
+            ->values();
     }
 }
