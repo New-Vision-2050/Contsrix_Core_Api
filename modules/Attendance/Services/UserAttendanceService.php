@@ -53,8 +53,10 @@ class UserAttendanceService
             $this->userCache[$userIdString] = User::query()
                 ->with([
                     'professionalData.attendanceConstraint',
+                    'userProfessionalData.attendanceConstraint',
                     'userProfessionalData.branch.address.country.timezones',
                     'userProfessionalData.department',
+                    'additionalAttendanceConstraints.additionalLocations',
                 ])
                 ->findOrFail($userIdString);
         }
@@ -78,6 +80,7 @@ class UserAttendanceService
             'userProfessionalData.attendanceConstraint',
             'userProfessionalData.branch.address.country.timezones',
             'userProfessionalData.department',
+            'additionalAttendanceConstraints.additionalLocations',
         ]);
 
         return $this->userCache[$userIdString] = $user;

@@ -648,6 +648,9 @@ class AttendanceConstraintService
                 'constraint_ids' => $constraintIds,
                 'raw_location_count' => $rawLocationCount,
                 'additional_locations_count' => count($additionalLocations),
+                'additional_constraint_ids' => $user->relationLoaded('additionalAttendanceConstraints')
+                    ? $user->additionalAttendanceConstraints->pluck('id')->all()
+                    : [],
                 'tenancy_initialized' => tenancy()->initialized,
                 'tenant_key' => tenancy()->initialized ? tenant()->getTenantKey() : null,
             ],
@@ -923,85 +926,102 @@ class AttendanceConstraintService
      */
     private function buildAdditionalLocationRules(User $user, ?Collection $applicableConstraints = null): array
     {
-        $user->loadMissing([
-            'additionalAttendanceConstraints.additionalLocations',
-        ]);
+        $additionalConstraints = $this->loadAdditionalConstraintsForUser($user);
 
-        // Every applicable constraint (the user's directly-assigned main constraint,
-        // branch/department-assigned constraints, and any additional constraints)
-        // may have table-backed locations created via
-        // /attendance/constraints/{id}/locations. All of them must appear in the
-        // additional_locations response so the mobile/FE knows every allowed
-        // clock-in location.
+        // Keep the relation warm for any later callers on this user instance.
+        $user->setRelation('additionalAttendanceConstraints', $additionalConstraints);
+
+        $mainConstraintId = $user->userProfessionalData?->attendance_constraint_id
+            ?? $user->professionalData?->attendance_constraint_id
+            ?? null;
+
+        // Table-backed locations from every applicable constraint EXCEPT the main one
+        // (main feeds location_work). Additional constraints must always appear here.
         $applicableTableLocations = collect();
         $constraintIds = [];
         if ($applicableConstraints) {
-            $constraintIds = $applicableConstraints->pluck('id')->all();
-            if (!empty($constraintIds)) {
+            $constraintIds = $applicableConstraints
+                ->pluck('id')
+                ->reject(fn ($id) => $mainConstraintId !== null && (string) $id === (string) $mainConstraintId)
+                ->values()
+                ->all();
+            if (! empty($constraintIds)) {
                 $applicableTableLocations = AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)
                     ->get()
                     ->map(fn ($loc) => [
-                        'id'        => $loc->id,
-                        'name'      => $loc->name,
-                        'latitude'  => (float) $loc->latitude,
+                        'id' => $loc->id,
+                        'name' => $loc->name,
+                        'latitude' => (float) $loc->latitude,
                         'longitude' => (float) $loc->longitude,
-                        'radius'    => (int) $loc->radius,
+                        'radius' => (int) $loc->radius,
+                        'constraint_id' => (string) $loc->attendance_constraint_id,
+                        'source' => 'additional',
+                        'expires_at' => null,
+                        'reference_id' => null,
                     ]);
             }
         }
 
         Log::info('buildAdditionalLocationRules: debug', [
             'user_id' => $user->id,
-            'applicable_constraint_ids' => $constraintIds,
+            'applicable_constraint_ids' => $applicableConstraints?->pluck('id')->all() ?? [],
+            'additional_constraint_ids' => $additionalConstraints->pluck('id')->all(),
             'applicable_table_locations_count' => $applicableTableLocations->count(),
-            'additional_constraints_count' => $user->additionalAttendanceConstraints->count(),
+            'additional_constraints_count' => $additionalConstraints->count(),
             'tenancy_initialized' => tenancy()->initialized,
             'tenant_key' => tenancy()->initialized ? tenant()->getTenantKey() : null,
             'user_company_id' => $user->company_id,
-            'raw_query_sql' => AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)->toSql(),
-            'raw_query_bindings' => $constraintIds,
         ]);
 
-        $branchLocations = $user->additionalAttendanceConstraints
-            ->where('is_active', true)
-            ->flatMap(fn ($c) => collect($c->branch_locations ?? []))
-            ->map(fn ($loc) => [
-                'id'          => null,
-                'name'        => $loc['name'] ?? null,
-                'latitude'    => isset($loc['latitude'])  ? (float) $loc['latitude']  : null,
-                'longitude'   => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
-                'radius'      => isset($loc['radius'])    ? (int)   $loc['radius']    : null,
-                'source'      => 'branch',
-                'expires_at'  => null,
-                'reference_id' => null,
-            ]);
+        $branchLocations = $additionalConstraints
+            ->flatMap(function ($constraint) {
+                return collect($constraint->branch_locations ?? [])->map(fn ($loc) => [
+                    'id' => null,
+                    'name' => $loc['name'] ?? $constraint->constraint_name,
+                    'latitude' => isset($loc['latitude']) ? (float) $loc['latitude'] : null,
+                    'longitude' => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
+                    'radius' => isset($loc['radius']) ? (int) $loc['radius'] : null,
+                    'constraint_id' => (string) $constraint->id,
+                    'constraint_name' => $constraint->constraint_name,
+                    'source' => 'branch',
+                    'expires_at' => null,
+                    'reference_id' => null,
+                ]);
+            });
 
-        $tableLocations = $user->additionalAttendanceConstraints
-            ->where('is_active', true)
-            ->flatMap(fn ($c) => $c->additionalLocations ?? collect())
-            ->map(fn ($loc) => [
-                'id'        => $loc->id,
-                'name'      => $loc->name,
-                'latitude'  => (float) $loc->latitude,
-                'longitude' => (float) $loc->longitude,
-                'radius'    => (int) $loc->radius,
-                'source'      => 'additional',
-                'expires_at'  => null,
-                'reference_id' => null,
-            ])
-            ->merge($applicableTableLocations->map(fn ($loc) => $loc + [
-                'source'      => 'additional',
-                'expires_at'  => null,
-                'reference_id' => null,
-            ]));
+        $tableLocations = $additionalConstraints
+            ->flatMap(function ($constraint) {
+                return collect($constraint->additionalLocations ?? collect())->map(fn ($loc) => [
+                    'id' => $loc->id,
+                    'name' => $loc->name,
+                    'latitude' => (float) $loc->latitude,
+                    'longitude' => (float) $loc->longitude,
+                    'radius' => (int) $loc->radius,
+                    'constraint_id' => (string) $constraint->id,
+                    'constraint_name' => $constraint->constraint_name,
+                    'source' => 'additional',
+                    'expires_at' => null,
+                    'reference_id' => null,
+                ]);
+            })
+            ->merge($applicableTableLocations);
 
-        // Feature 6: temporary geofences from active employee tasks (valid only until the
-        // task time ends). Merged into BOTH this UI path and the clock-in validation path
-        // below — updating one without the other produces a location the user can see but
-        // cannot use (INV-26).
+        // Feature 6: temporary geofences from active employee tasks
         $temporaryLocations = collect($this->temporaryTaskLocationsFor($user));
 
-        return $branchLocations->merge($tableLocations)->merge($temporaryLocations)->values()->all();
+        return $branchLocations
+            ->merge($tableLocations)
+            ->merge($temporaryLocations)
+            ->filter(fn ($loc) => isset($loc['latitude'], $loc['longitude'])
+                && ((float) $loc['latitude'] !== 0.0 || (float) $loc['longitude'] !== 0.0))
+            ->unique(fn ($loc) => sprintf(
+                '%s:%s:%s',
+                round((float) $loc['latitude'], 6),
+                round((float) $loc['longitude'], 6),
+                (int) ($loc['radius'] ?? 0)
+            ))
+            ->values()
+            ->all();
     }
 
     /**
@@ -1206,7 +1226,8 @@ class AttendanceConstraintService
     public function getApplicableConstraintsForDataRetrieval(User $user): Collection
     {
         $ver = $this->getApplicableConstraintsCacheGeneration($user->company_id);
-        $cacheKey = sprintf('attendance:constraints:%s:%s:v%s', $user->company_id, $user->id, $ver);
+        // v2: cache keys include pivot additional constraints (primary-only cache was wrong).
+        $cacheKey = sprintf('attendance:constraints:%s:%s:v2:%s', $user->company_id, $user->id, $ver);
 
         return Cache::remember($cacheKey, now()->addMinutes(15), function () use ($user) {
             return $this->resolveConstraintsFromDb($user);
@@ -1304,10 +1325,7 @@ class AttendanceConstraintService
                 ->all();
         }
 
-        $additionalConstraints = $user->additionalAttendanceConstraints()
-            ->where('is_active', true)
-            ->with('additionalLocations')
-            ->get();
+        $additionalConstraints = $this->loadAdditionalConstraintsForUser($user);
 
         $branchLocs = $additionalConstraints
             ->flatMap(fn($c) => $c->branch_locations ?? [])
@@ -1347,10 +1365,17 @@ class AttendanceConstraintService
     {
         // Check userProfessionalData (tenant-scoped) first, then professionalData (non-tenant-scoped)
         // for a directly assigned attendance_constraint_id.
-        $constraint = $user->userProfessionalData?->attendanceConstraint
+        $main = $user->userProfessionalData?->attendanceConstraint
             ?? $user->professionalData?->attendanceConstraint;
-        if ($constraint) {
-            return collect([$constraint]);
+
+        $additional = $this->loadAdditionalConstraintsForUser($user);
+
+        if ($main || $additional->isNotEmpty()) {
+            return collect([$main])
+                ->filter()
+                ->concat($additional)
+                ->unique('id')
+                ->values();
         }
 
         $userBranchId     = $user->userProfessionalData?->branch?->id;
@@ -1367,12 +1392,12 @@ class AttendanceConstraintService
             ->first();
 
             if ($defaultConstraint) {
-                return collect([$defaultConstraint]);
+                return collect([$defaultConstraint])->concat($additional)->unique('id')->values();
             }
         }
 
         // 2. If No Default, Find All Other Applicable Constraints by user, department, branch, or global
-        return AttendanceConstraint::where('company_id', $user->company_id)
+        $fallback = AttendanceConstraint::where('company_id', $user->company_id)
             ->where('is_active', true)
             ->where(function ($query) use ($user, $userBranchId, $userDepartmentId) {
                 $query->whereJsonContains('user_ids', $user->id)
@@ -1392,6 +1417,20 @@ class AttendanceConstraintService
                       ->where(fn($sub) => $sub->whereNull('branch_ids')->orWhereJsonLength('branch_ids', 0));
                 });
             })
+            ->get();
+
+        return $fallback->concat($additional)->unique('id')->values();
+    }
+
+    /**
+     * Constraints linked via attendance_constraint_user (profile "additional").
+     * Their locations must appear in additional_locations / clock-in validation.
+     */
+    private function loadAdditionalConstraintsForUser(User $user): Collection
+    {
+        return $user->additionalAttendanceConstraints()
+            ->where('attendance_constraints.is_active', true)
+            ->with('additionalLocations')
             ->get();
     }
 }
