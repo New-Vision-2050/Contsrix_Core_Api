@@ -649,9 +649,13 @@ class AttendanceConstraintService
                 'constraint_ids' => $constraintIds,
                 'raw_location_count' => $rawLocationCount,
                 'additional_locations_count' => count($additionalLocations),
-                'additional_constraint_ids' => $user->relationLoaded('additionalAttendanceConstraints')
-                    ? $user->additionalAttendanceConstraints->pluck('id')->all()
-                    : collect($additionalLocations)->pluck('constraint_id')->filter()->unique()->values()->all(),
+                'additional_constraint_ids' => collect($additionalLocations)
+                    ->pluck('constraint_id')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all(),
+                'additional_constraints_diagnostics' => $this->additionalConstraintsDiagnostics($user),
                 'tenancy_initialized' => tenancy()->initialized,
                 'tenant_key' => tenancy()->initialized ? tenant()->getTenantKey() : null,
             ],
@@ -947,7 +951,8 @@ class AttendanceConstraintService
                 ->values()
                 ->all();
             if (! empty($constraintIds)) {
-                $applicableTableLocations = AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)
+                $applicableTableLocations = AttendanceConstraintLocation::withoutTenancy()
+                    ->whereIn('attendance_constraint_id', $constraintIds)
                     ->get()
                     ->map(fn ($loc) => [
                         'id' => $loc->id,
@@ -1258,8 +1263,8 @@ class AttendanceConstraintService
     public function getApplicableConstraintsForDataRetrieval(User $user): Collection
     {
         $ver = $this->getApplicableConstraintsCacheGeneration($user->company_id);
-        // v3: pivot lookup uses withoutTenancy + sibling user ids (profile parity).
-        $cacheKey = sprintf('attendance:constraints:%s:%s:v3:%s', $user->company_id, $user->id, $ver);
+        // v4: pivot lookup uses withoutTenancy + sibling user ids, no is_active filter.
+        $cacheKey = sprintf('attendance:constraints:%s:%s:v4:%s', $user->company_id, $user->id, $ver);
 
         return Cache::remember($cacheKey, now()->addMinutes(15), function () use ($user) {
             return $this->resolveConstraintsFromDb($user);
@@ -1491,18 +1496,61 @@ class AttendanceConstraintService
             ?? ''
         );
 
+        // No is_active filter: the profile and constraint-locations endpoints list these
+        // as soon as an admin assigns them, so today must not silently hide them.
         return AttendanceConstraint::withoutTenancy()
             ->with(['additionalLocations' => fn ($q) => $q->withoutTenancy()])
             ->whereIn('id', $constraintIds->all())
             ->when($mainId !== '', fn ($q) => $q->where('id', '!=', $mainId))
             ->get()
-            ->filter(function (AttendanceConstraint $constraint): bool {
-                // Profile lists additional constraints without requiring is_active;
-                // only drop explicitly inactive rows.
-                return $constraint->is_active === null
-                    || $constraint->is_active === true
-                    || (int) $constraint->is_active === 1;
-            })
             ->values();
+    }
+
+    /**
+     * Why additional_locations may be empty for a user — surfaced in the `_debug`
+     * block of user-constraint/today so this is diagnosable from the API alone.
+     *
+     * @return array<string, mixed>
+     */
+    private function additionalConstraintsDiagnostics(User $user): array
+    {
+        try {
+            $userIds = collect([(string) $user->id]);
+
+            if (! empty($user->global_company_user_id)) {
+                $userIds = $userIds
+                    ->merge(
+                        User::withoutTenancy()
+                            ->where('global_company_user_id', $user->global_company_user_id)
+                            ->pluck('id')
+                            ->map(fn ($id) => (string) $id)
+                    )
+                    ->unique()
+                    ->values();
+            }
+
+            $pivotRows = DB::table('attendance_constraint_user')
+                ->whereIn('user_id', $userIds->all())
+                ->get();
+
+            $constraints = $this->loadAdditionalConstraintsForUser($user);
+
+            return [
+                'checked_user_ids' => $userIds->all(),
+                'pivot_row_count' => $pivotRows->count(),
+                'pivot_constraint_ids' => $pivotRows->pluck('attendance_constraint_id')->unique()->values()->all(),
+                'resolved_constraints' => $constraints->map(fn (AttendanceConstraint $c): array => [
+                    'id' => (string) $c->id,
+                    'name' => $c->constraint_name,
+                    'company_id' => (string) $c->company_id,
+                    'is_active' => $c->is_active,
+                    'branch_locations_count' => is_array($c->branch_locations) ? count($c->branch_locations) : 0,
+                    'table_locations_count' => $c->additionalLocations?->count() ?? 0,
+                    'allowed_zones_count' => count($c->constraint_config['location_rules']['allowed_zones'] ?? []),
+                ])->values()->all(),
+            ];
+        } catch (\Throwable $e) {
+            return ['error' => $e->getMessage()];
+        }
     }
 }

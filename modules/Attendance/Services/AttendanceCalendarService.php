@@ -67,8 +67,8 @@ class AttendanceCalendarService
         // Bulk fetch approved leave requests for the range
         $leaveDates = $this->fetchLeaveDatesForRange($user, $dateStartStr, $dateEndStr);
 
-        // Bulk fetch dates where the user has an assigned/active task (متواجد)
-        $taskDates = $this->taskPresenceService->taskDatesForUser($user->id, $dateStartStr, $dateEndStr);
+        // Bulk fetch the tasks that make the user present (متواجد), keyed by date
+        $taskDetails = $this->taskPresenceService->taskDetailsForUser($user->id, $dateStartStr, $dateEndStr);
 
         // Build calendar day-by-day
         $days = [];
@@ -90,7 +90,8 @@ class AttendanceCalendarService
 
             $dayAttendances = $attendances->get($dateString, collect());
             $hasLeave       = in_array($dateString, $leaveDates, true);
-            $hasTask        = in_array($dateString, $taskDates, true);
+            $dayTasks       = $taskDetails[$dateString] ?? [];
+            $hasTask        = $dayTasks !== [];
 
             $dayData = $this->buildDayData(
                 $user,
@@ -103,6 +104,8 @@ class AttendanceCalendarService
                 $hasTask,
                 $timezone
             );
+
+            $dayData['tasks'] = $dayTasks;
 
             $days[] = $dayData;
 
