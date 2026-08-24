@@ -16,10 +16,26 @@ class CreateAttachmentRequestRequest extends FormRequest
             'date' => 'required|date',
             'project_id' => 'required|string|exists:projects,id',
             'procedure_setting_id' => 'required|string|uuid|exists:procedure_settings,id',
-            'attachments' => 'required|array|min:1',
-            'attachments.*' => 'required|file', // 10MB max
+            // Small files: send directly. Large files: upload via the resumable
+            // upload API and pass the resulting tokens in attachment_upload_ids.
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file',
+            'attachment_upload_ids' => 'nullable|array',
+            'attachment_upload_ids.*' => 'string|uuid',
             'notes' => 'nullable|string',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $hasFiles = !empty($this->input('attachments')) || $this->hasFile('attachments');
+            $hasTokens = !empty($this->input('attachment_upload_ids'));
+
+            if (!$hasFiles && !$hasTokens) {
+                $validator->errors()->add('attachments', 'At least one attachment (file or upload_id) is required.');
+            }
+        });
     }
 
     public function messages(): array
@@ -33,12 +49,10 @@ class CreateAttachmentRequestRequest extends FormRequest
             'procedure_setting_id.required' => 'Procedure setting ID is required',
             'procedure_setting_id.uuid' => 'Procedure setting ID must be a valid UUID',
             'procedure_setting_id.exists' => 'Procedure setting does not exist',
-            'attachments.required' => 'At least one attachment is required',
             'attachments.array' => 'Attachments must be an array',
-            'attachments.min' => 'At least one attachment is required',
-            'attachments.*.required' => 'Attachment file is required',
             'attachments.*.file' => 'Each attachment must be a file',
-            'attachments.*.max' => 'Each attachment must not exceed 10MB',
+            'attachment_upload_ids.array' => 'attachment_upload_ids must be an array',
+            'attachment_upload_ids.*.uuid' => 'Each attachment_upload_id must be a valid UUID',
         ];
     }
 }

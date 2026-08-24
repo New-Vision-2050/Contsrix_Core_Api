@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
+use Modules\Shared\Media\Controllers\ChunkedUploadController;
 use Modules\Project\ProjectManagement\Controllers\ContractorController;
 use Modules\Project\ProjectManagement\Controllers\ProjectContractorController;
 use Modules\Project\ProjectManagement\Controllers\ProjectEmployeeController;
@@ -125,6 +126,16 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
 
         // Get attachment request and requirement submission charts
         Route::get('/charts', [AttachmentRequestController::class, 'charts']);
+
+        // Resumable/chunked file uploads (used before create-request / replace-media
+        // for large files) — see RESUMABLE_UPLOAD_FRONTEND_GUIDE.md
+        Route::prefix('uploads')->group(function () {
+            Route::post('/init', [ChunkedUploadController::class, 'initiate']);
+            Route::post('/{uploadId}/chunk', [ChunkedUploadController::class, 'uploadChunk']);
+            Route::get('/{uploadId}/status', [ChunkedUploadController::class, 'status']);
+            Route::post('/{uploadId}/complete', [ChunkedUploadController::class, 'complete']);
+            Route::delete('/{uploadId}', [ChunkedUploadController::class, 'abort']);
+        });
 
         // Get specific request details
         Route::get('/{id}', [AttachmentRequestController::class, 'getRequest']);

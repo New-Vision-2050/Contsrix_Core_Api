@@ -11,6 +11,7 @@ use Spatie\MediaLibrary\Support\PathGenerator\PathGenerator;
 use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
 use Modules\Shared\Media\Models\CustomMedia;
 use Modules\Shared\Media\Observers\CustomMediaObserver;
+use Modules\Shared\Media\Console\CleanupChunkedUploadsCommand;
 class MediaServiceProvider extends ModuleServiceProvider
 {
     public static function getModuleName(): string
@@ -24,7 +25,17 @@ class MediaServiceProvider extends ModuleServiceProvider
         //$this->registerConfig();
         $this->registerMigrations();
         $this->registerObservers();
+        $this->registerCommands();
         app()->bind(PathGenerator::class, \Modules\Shared\Media\MediaLibrary\CustomPathGenerator::class);
+    }
+
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                CleanupChunkedUploadsCommand::class,
+            ]);
+        }
     }
 
     /**
