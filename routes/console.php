@@ -18,6 +18,12 @@ Schedule::command(CreateWaitingAttendanceCommand::class)
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/attendance-waiting.log'));
 
+// Clean up stale resumable/chunked upload temp files (see ChunkedUploadService)
+Schedule::command('chunked-uploads:cleanup')
+    ->hourly()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/chunked-uploads-cleanup.log'));
+
 // Update attendance statuses at the end of the workday (7:00 PM)
 // This will mark users as absent if they didn't clock in
 Schedule::command(UpdateAttendanceStatusCommand::class)

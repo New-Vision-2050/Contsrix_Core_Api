@@ -45,6 +45,8 @@ class AttachmentRequestController extends Controller
             return Json::item($data);
         } catch (ValidationException $e) {
             throw $e;
+        } catch (HttpExceptionInterface $e) {
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
@@ -364,7 +366,8 @@ class AttachmentRequestController extends Controller
         try {
             $item = $this->service->replaceMedia(
                 $request->item_id,
-                $request->file('new_file')
+                $request->file('new_file'),
+                $request->input('upload_id')
             );
 
             // Return the full request with updated items

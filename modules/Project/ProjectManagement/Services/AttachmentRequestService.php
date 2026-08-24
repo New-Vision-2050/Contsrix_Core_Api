@@ -23,6 +23,7 @@ use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Models\Process;
 use Modules\Process\Models\ProcessStep;
 use Modules\Shared\Media\Services\FileUploadService;
+use Modules\Shared\Media\Services\ChunkedUploadService;
 use Modules\Project\ProjectManagement\Events\AttachmentRequestResponded;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
 use Modules\User\Models\User;
@@ -36,6 +37,7 @@ class AttachmentRequestService
         private AttachmentRequestWorkflowService $workflowService,
         private AttachmentArchiveDeliveryService $archiveDeliveryService,
         private AttachmentRequestVisibilityService $visibilityService,
+        private ChunkedUploadService $chunkedUploadService,
     ) {
     }
 
@@ -66,7 +68,10 @@ class AttachmentRequestService
             'notes' => $data['notes'] ?? null,
         ];
 
-        $items = $this->prepareAttachmentItems($data['attachments']);
+        $items = $this->prepareAttachmentItems(
+            $data['attachments'] ?? [],
+            $data['attachment_upload_ids'] ?? []
+        );
 
         $request = $this->repository->createWithItems($requestData, $items);
 
@@ -559,13 +564,21 @@ class AttachmentRequestService
     }
 
     /**
-     * Prepare attachment items from uploaded files
+     * Prepare attachment items from uploaded files and/or completed chunked
+     * upload tokens (large files uploaded via the resumable upload API).
      */
-    private function prepareAttachmentItems(array $attachments): array
+    private function prepareAttachmentItems(array $attachments, array $uploadIds = []): array
     {
+        $companyId = (string) tenant('id');
+
+        $allFiles = $attachments;
+        foreach ($uploadIds as $uploadId) {
+            $allFiles[] = $this->chunkedUploadService->resolveCompletedUpload((string) $uploadId, $companyId);
+        }
+
         $items = [];
 
-        foreach ($attachments as $attachment) {
+        foreach ($allFiles as $attachment) {
             $items[] = [
                 'file_name' => $attachment->getClientOriginalName(),
                 'file_path' => null, // Will be populated by media library
@@ -728,14 +741,24 @@ class AttachmentRequestService
     }
 
     /**
-     * Replace media in attachment request item
+     * Replace media in attachment request item.
+     *
+     * Accepts either a direct multipart file (small files) or an $uploadId
+     * token from a completed chunked/resumable upload (large files).
      */
-    public function replaceMedia(string $itemId, UploadedFile $newFile): AttachmentRequestItem
+    public function replaceMedia(string $itemId, ?UploadedFile $newFile, ?string $uploadId = null): AttachmentRequestItem
     {
         $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
         $companyId = (string) tenant('id');
 
         $this->visibilityService->assertCompanyCanView($item->attachmentRequest, $companyId);
+
+        if ($newFile === null) {
+            if ($uploadId === null) {
+                abort(422, 'Either new_file or upload_id is required.');
+            }
+            $newFile = $this->chunkedUploadService->resolveCompletedUpload($uploadId, $companyId);
+        }
 
         return DB::transaction(function () use ($item, $newFile) {
             // Clear existing media

@@ -17,7 +17,8 @@ class ReplaceMediaRequest extends FormRequest
     {
         return [
             'item_id' => 'required|string|uuid|exists:attachment_request_items,id',
-            'new_file' => 'required',
+            'new_file' => 'required_without:upload_id|file',
+            'upload_id' => 'required_without:new_file|string|uuid',
         ];
     }
 
@@ -27,9 +28,10 @@ class ReplaceMediaRequest extends FormRequest
             'item_id.required' => 'Item ID is required',
             'item_id.uuid' => 'Item ID must be a valid UUID',
             'item_id.exists' => 'Attachment request item not found',
-            'new_file.required' => 'New file is required',
+            'new_file.required_without' => 'New file or upload_id is required',
             'new_file.file' => 'The uploaded file must be a valid file',
-            'new_file.max' => 'File size must not exceed 10MB',
+            'upload_id.required_without' => 'New file or upload_id is required',
+            'upload_id.uuid' => 'upload_id must be a valid UUID',
         ];
     }
 }

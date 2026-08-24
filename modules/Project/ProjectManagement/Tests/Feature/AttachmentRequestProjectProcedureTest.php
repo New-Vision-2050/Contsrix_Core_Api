@@ -1262,6 +1262,120 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertHistoryCount($requestId, 'media_replaced', 1);
     }
 
+    public function test_replace_media_via_resumable_chunked_upload(): void
+    {
+        Storage::fake('local');
+
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk();
+
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        $content = str_repeat('A', 20) . str_repeat('B', 20);
+        $uploadId = $this->completeChunkedUpload(
+            $this->company->id,
+            'chunked-replacement.pdf',
+            'application/pdf',
+            [substr($content, 0, 20), substr($content, 20, 20)]
+        );
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/replace-media', [
+                'item_id' => $itemId,
+                'upload_id' => $uploadId,
+            ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.items.0.file_name', 'chunked-replacement.pdf');
+
+        $replacedItem = AttachmentRequestItem::query()->findOrFail($itemId);
+        $this->assertSame('chunked-replacement.pdf', $replacedItem->file_name);
+        $this->assertSame(40, $replacedItem->file_size);
+        $this->assertHistoryCount($requestId, 'media_replaced', 1);
+    }
+
+    public function test_create_attachment_request_via_resumable_upload_token(): void
+    {
+        Storage::fake('local');
+
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+
+        $content = str_repeat('X', 15) . str_repeat('Y', 15);
+        $uploadId = $this->completeChunkedUpload(
+            $this->company->id,
+            'chunked-create.pdf',
+            'application/pdf',
+            [substr($content, 0, 15), substr($content, 15, 15)]
+        );
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests', [
+                'name' => 'Resumable Upload Request',
+                'date' => '2026-07-21',
+                'project_id' => $project->id,
+                'procedure_setting_id' => $procedure->procedure_setting_id,
+                'attachment_upload_ids' => [$uploadId],
+            ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.items.0.file_name', 'chunked-create.pdf')
+            ->assertJsonPath('payload.items.0.file_size', 30);
+    }
+
+    /**
+     * Drives the init -> chunk -> complete resumable upload flow via the HTTP
+     * API and returns the resulting upload_id token.
+     *
+     * @param  list<string>  $chunkContents
+     */
+    private function completeChunkedUpload(
+        string $companyId,
+        string $fileName,
+        string $mimeType,
+        array $chunkContents
+    ): string {
+        $totalSize = array_sum(array_map('strlen', $chunkContents));
+
+        $initResponse = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $companyId)
+            ->post('/api/v1/projects/attachment-requests/uploads/init', [
+                'file_name' => $fileName,
+                'file_size' => $totalSize,
+                'total_chunks' => count($chunkContents),
+                'mime_type' => $mimeType,
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $uploadId = $initResponse->json('payload.upload_id');
+
+        foreach ($chunkContents as $index => $chunkContent) {
+            $tmpPath = tempnam(sys_get_temp_dir(), 'chunk');
+            file_put_contents($tmpPath, $chunkContent);
+            $chunkFile = new UploadedFile($tmpPath, "chunk_{$index}", $mimeType, null, true);
+
+            $this->actingAs($this->actor, 'api')
+                ->withHeader('X-Tenant', $companyId)
+                ->post("/api/v1/projects/attachment-requests/uploads/{$uploadId}/chunk", [
+                    'chunk_index' => $index,
+                    'chunk' => $chunkFile,
+                ], ['Accept' => 'application/json'])
+                ->assertOk();
+        }
+
+        $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $companyId)
+            ->post("/api/v1/projects/attachment-requests/uploads/{$uploadId}/complete", [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('payload.upload_id', $uploadId);
+
+        return $uploadId;
+    }
+
     public function test_unrelated_company_cannot_replace_attachment_media(): void
     {
         $project = $this->createProject();
