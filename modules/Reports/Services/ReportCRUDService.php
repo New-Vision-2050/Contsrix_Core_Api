@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Reports\Services;
 
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +17,7 @@ use Modules\Reports\Models\Report;
 use Modules\Reports\Repositories\ReportRepository;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportCRUDService
 {
@@ -242,8 +242,11 @@ class ReportCRUDService
      * built from the report's translated name + correct extension and is
      * sent both as ASCII (`filename=`) and RFC 5987 UTF-8 (`filename*=`)
      * so Arabic names render correctly in the browser's Save dialog.
+     *
+     * Large PDFs must be streamed — never loaded via Storage::get() — or
+     * PHP runs out of memory and the endpoint returns a bare 500.
      */
-    public function download(UuidInterface $id): Response
+    public function download(UuidInterface $id): StreamedResponse
     {
         $report = $this->repository->getReport($id);
 
@@ -262,7 +265,7 @@ class ReportCRUDService
 
         $headers = [
             'Content-Type'                  => $mime,
-            'Content-Disposition'       => sprintf(
+            'Content-Disposition'           => sprintf(
                 'attachment; filename="%s"; filename*=UTF-8\'\'%s',
                 $asciiName,
                 $rfc5987Name,
@@ -282,22 +285,14 @@ class ReportCRUDService
                 abort(404, __('Report file is missing.'));
             }
 
-            try {
-                $contents = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
-            } catch (\Throwable $e) {
-                Log::error('[Reports] download: failed to read file from storage', [
-                    'report_id' => $report->id,
-                    'media_id'  => $media->id,
-                    'disk'      => $media->disk,
-                    'path'      => $media->getPathRelativeToRoot(),
-                    'error'     => $e->getMessage(),
-                ]);
-                abort(404, __('Report file is missing.'));
+            $diskName = (string) $media->disk;
+            $path     = $media->getPathRelativeToRoot();
+
+            if ($report->file_size) {
+                $headers['Content-Length'] = (string) $report->file_size;
             }
 
-            $headers['Content-Length'] = (string) ($report->file_size ?: strlen((string) $contents));
-
-            return response($contents, 200, $headers);
+            return $this->streamFromDisk($diskName, $path, $headers, $report->id);
         }
 
         // Backward compat: legacy reports written directly to a Storage disk
@@ -312,7 +307,46 @@ class ReportCRUDService
 
         $headers['Content-Length'] = (string) ($report->file_size ?: $disk->size($report->file_path));
 
-        return response($disk->get($report->file_path), 200, $headers);
+        return $this->streamFromDisk($report->file_disk, $report->file_path, $headers, $report->id);
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     */
+    private function streamFromDisk(string $diskName, string $path, array $headers, string $reportId): StreamedResponse
+    {
+        return response()->stream(function () use ($diskName, $path, $reportId): void {
+            try {
+                $stream = Storage::disk($diskName)->readStream($path);
+            } catch (\Throwable $e) {
+                Log::error('[Reports] download: failed to open storage stream', [
+                    'report_id' => $reportId,
+                    'disk'      => $diskName,
+                    'path'      => $path,
+                    'error'     => $e->getMessage(),
+                ]);
+
+                return;
+            }
+
+            if ($stream === false) {
+                Log::error('[Reports] download: storage stream unavailable', [
+                    'report_id' => $reportId,
+                    'disk'      => $diskName,
+                    'path'      => $path,
+                ]);
+
+                return;
+            }
+
+            try {
+                fpassthru($stream);
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
+        }, 200, $headers);
     }
 
     /**

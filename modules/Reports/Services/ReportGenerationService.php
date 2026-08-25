@@ -187,13 +187,9 @@ class ReportGenerationService
     }
 
     /**
-     * Pre-resolve each employee's avatar URL once, keyed by global_id.
-     * mPDF caches images by URL internally, so each unique image is downloaded
-     * only once even when the same employee appears in 31 daily rows.
-     */
-    /**
      * Returns [companyName, companyLogoDataUri].
      * Tries Spatie media first, falls back to image_path column.
+     * Logo is downscaled so mPDF does not embed a multi-MB original.
      *
      * @return array{0:string,1:string|null}
      */
@@ -209,12 +205,13 @@ class ReportGenerationService
 
         $media = $company->getFirstMedia('logo');
         if ($media) {
-            $logoUrl = $media->getFullUrl();
+            $logoUrl = $this->toCompactImageDataUri($media, 160) ?? $media->getFullUrl();
         } elseif (!empty($company->image_path)) {
             $path = public_path($company->image_path);
             if (file_exists($path)) {
-                $mime    = mime_content_type($path) ?: 'image/png';
-                $logoUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($path));
+                $bytes   = (string) file_get_contents($path);
+                $logoUrl = $this->bytesToCompactImageDataUri($bytes, 160)
+                    ?? ('data:' . (mime_content_type($path) ?: 'image/png') . ';base64,' . base64_encode($bytes));
             } else {
                 $logoUrl = $company->image_path;
             }
@@ -223,16 +220,86 @@ class ReportGenerationService
         return [$name, $logoUrl];
     }
 
+    /**
+     * Pre-resolve each employee's avatar as a tiny JPEG data-URI.
+     * Remote full-resolution URLs used to inflate PDF size into hundreds of MB
+     * (mPDF embeds originals; thead repeats also re-use the same image).
+     *
+     * @return array<string, string>
+     */
     private function buildAvatarCache($employees): array
     {
         $cache = [];
         foreach ($employees as $emp) {
             $media = $emp->getFirstMedia('upload_user');
-            if ($media) {
-                $cache[(string) $emp->global_id] = $media->getFullUrl();
+            if (!$media) {
+                continue;
+            }
+
+            $dataUri = $this->toCompactImageDataUri($media, 64);
+            if ($dataUri !== null) {
+                $cache[(string) $emp->global_id] = $dataUri;
             }
         }
+
         return $cache;
+    }
+
+    private function toCompactImageDataUri(\Spatie\MediaLibrary\MediaCollections\Models\Media $media, int $maxEdge): ?string
+    {
+        try {
+            $bytes = (string) Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $this->bytesToCompactImageDataUri($bytes, $maxEdge);
+    }
+
+    private function bytesToCompactImageDataUri(string $bytes, int $maxEdge): ?string
+    {
+        if ($bytes === '' || !function_exists('imagecreatefromstring')) {
+            return null;
+        }
+
+        $source = @imagecreatefromstring($bytes);
+        if ($source === false) {
+            return null;
+        }
+
+        $width  = imagesx($source);
+        $height = imagesy($source);
+        if ($width < 1 || $height < 1) {
+            imagedestroy($source);
+
+            return null;
+        }
+
+        $scale  = min(1.0, $maxEdge / max($width, $height));
+        $target = $scale < 1.0
+            ? imagescale($source, max(1, (int) round($width * $scale)), max(1, (int) round($height * $scale)))
+            : $source;
+
+        if ($target === false) {
+            imagedestroy($source);
+
+            return null;
+        }
+
+        ob_start();
+        imagejpeg($target, null, 72);
+        $jpeg = (string) ob_get_clean();
+
+        if ($target !== $source) {
+            imagedestroy($target);
+        }
+        imagedestroy($source);
+
+        if ($jpeg === '') {
+            return null;
+        }
+
+        return 'data:image/jpeg;base64,' . base64_encode($jpeg);
     }
 
     private function storeAsMedia(Report $report, string $contents, string $extension): Media
