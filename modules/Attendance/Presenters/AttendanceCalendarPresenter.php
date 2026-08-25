@@ -39,7 +39,38 @@ class AttendanceCalendarPresenter extends AbstractPresenter
             'duration_formatted' => $day['duration_formatted'] ?? null,
             'dot_color'          => $this->resolveDotColor($statusKey),
             'attendance_count'   => $day['attendance_count'] ?? 0,
+            'tasks'              => $this->presentTasks($day['tasks'] ?? []),
         ];
+    }
+
+    /**
+     * Tasks that kept the employee present (متواجد) on this day.
+     *
+     * @param  array<int, array<string, mixed>>  $tasks
+     * @return array<int, array<string, mixed>>
+     */
+    private function presentTasks(array $tasks): array
+    {
+        return array_values(array_map(function (array $task): array {
+            $minutes = (int) ($task['minutes'] ?? 0);
+
+            return [
+                'id'                  => isset($task['id']) ? (string) $task['id'] : null,
+                'title'               => $task['title'] ?? null,
+                'status'              => $task['status'] ?? null,
+                'source'              => $task['source'] ?? null,
+                'task_date'           => $task['task_date'] ?? null,
+                'project_id'          => $task['project_id'] ?? null,
+                'notification_id'     => $task['notification_id'] ?? null,
+                'notification_number' => $task['notification_number'] ?? null,
+                'notification_status' => $task['notification_status'] ?? null,
+                'work_minutes'        => $minutes,
+                'work_hours'          => isset($task['hours']) ? (float) $task['hours'] : round($minutes / 60, 2),
+                'duration_formatted'  => $minutes > 0
+                    ? sprintf('%02dh %02dm', intdiv($minutes, 60), $minutes % 60)
+                    : null,
+            ];
+        }, $tasks));
     }
 
     private function resolveDotColor(string $statusKey): string
