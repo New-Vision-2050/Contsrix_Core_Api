@@ -409,6 +409,18 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
         if (!$isWithinAnyAllowedBranch) {
             $this->endShiftOutsideZone($attendance, $constraint, $allowedBranchLocations);
 
+            // A blocked clock-in leaves no violation row behind (the record is not
+            // persisted yet), so log the numbers that produced the rejection.
+            if (!$attendance->exists) {
+                Log::warning('Clock-in blocked: outside all assigned locations', [
+                    'user_id'           => $attendance->user_id,
+                    'constraint_id'     => $constraint->id,
+                    'user_location'     => ['latitude' => $userLat, 'longitude' => $userLon],
+                    'checked_locations' => count($allowedBranchLocations),
+                    'nearest_location'  => $this->nearestLocation($userLat, $userLon, $allowedBranchLocations),
+                ]);
+            }
+
             return [
                 'constraint_type' => $constraint->constraint_name,
                 'severity' => $config['severity'] ?? 'high',
@@ -418,7 +430,10 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
                         'latitude' => $userLat,
                         'longitude' => $userLon
                     ],
-
+                    // Without these numbers an "outside" result is impossible to tell apart
+                    // from missing/misconfigured location data.
+                    'checked_locations' => count($allowedBranchLocations),
+                    'nearest_location' => $this->nearestLocation($userLat, $userLon, $allowedBranchLocations),
                 ]
             ];
         }
@@ -455,6 +470,45 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
         }
 
         return false;
+    }
+
+    /**
+     * The closest allowed location to a point, with the distance and radius that
+     * produced the decision.
+     *
+     * @param array<int|string, array<string, mixed>> $allowedLocations
+     * @return array<string, mixed>|null
+     */
+    private function nearestLocation(float $latitude, float $longitude, array $allowedLocations): ?array
+    {
+        $nearest = null;
+
+        foreach ($allowedLocations as $location) {
+            if (!isset($location['latitude'], $location['longitude'], $location['radius'])) {
+                continue;
+            }
+
+            $distanceInMeters = $this->calculateDistance(
+                $latitude,
+                $longitude,
+                (float) $location['latitude'],
+                (float) $location['longitude']
+            ) * 1000;
+
+            if ($nearest !== null && $distanceInMeters >= $nearest['distance_meters']) {
+                continue;
+            }
+
+            $nearest = [
+                'name'            => $location['name'] ?? null,
+                'latitude'        => (float) $location['latitude'],
+                'longitude'       => (float) $location['longitude'],
+                'radius_meters'   => (float) $location['radius'],
+                'distance_meters' => round($distanceInMeters, 1),
+            ];
+        }
+
+        return $nearest;
     }
 
     /**

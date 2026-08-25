@@ -1349,8 +1349,19 @@ class AttendanceConstraintService
             ->pluck('id')
             ->reject(fn ($id) => $id === $mainConstraint->id)
             ->all();
+
+        // Their branch_locations count too: a user assigned to several branches is
+        // allowed at any of them, and today's payload already presents them as one list.
+        $applicableBranchLocs = $applicableConstraints
+            ->reject(fn ($c) => $c->id === $mainConstraint->id)
+            ->flatMap(fn ($c) => $c->branch_locations ?? [])
+            ->values()
+            ->all();
+
         if (!empty($applicableIds)) {
-            $applicableTableLocs = AttendanceConstraintLocation::whereIn('attendance_constraint_id', $applicableIds)
+            // withoutTenancy to match user-constraint/today, which reads these rows unscoped.
+            $applicableTableLocs = AttendanceConstraintLocation::withoutTenancy()
+                ->whereIn('attendance_constraint_id', $applicableIds)
                 ->get()
                 ->map(fn($loc) => [
                     'name'      => $loc->name,
@@ -1380,7 +1391,13 @@ class AttendanceConstraintService
             ->values()
             ->all();
 
-        $additionalLocations = array_merge($mainTableLocs, $applicableTableLocs, $branchLocs, $tableLocs);
+        $additionalLocations = array_merge(
+            $mainTableLocs,
+            $applicableTableLocs,
+            $applicableBranchLocs,
+            $branchLocs,
+            $tableLocs
+        );
 
         // Feature 6: temporary geofences from active employee tasks must also be accepted
         // at clock-in — merged here, not only into the UI payload (INV-26).
