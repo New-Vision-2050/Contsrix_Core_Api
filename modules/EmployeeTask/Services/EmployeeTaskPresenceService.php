@@ -26,6 +26,13 @@ use Modules\Project\ProjectManagement\Models\ProjectNotification;
 class EmployeeTaskPresenceService
 {
     /**
+     * A session left open (no end_time) is credited for at most this many hours
+     * after its start, which covers overnight work while preventing a forgotten
+     * session from marking every later day as worked.
+     */
+    private const MAX_OPEN_SESSION_HOURS = 24;
+
+    /**
      * Statuses that mean the employee is committed to / working on a task.
      * A task in one of these states can make the employee "present" (متواجد)
      * for the days it actually had activity instead of "absent".
@@ -86,37 +93,52 @@ class EmployeeTaskPresenceService
     }
 
     /**
-     * Return the distinct Y-m-d dates on which a single user was actively working
-     * (had a task session) within the given range.
+     * Return, for a single user, the tasks that made them present (متواجد) on
+     * each day of the range, keyed by Y-m-d date. Each entry carries enough
+     * metadata for the UI to show which task caused the status.
      *
-     * @return array<int, string>
+     * @return array<string, list<array<string, mixed>>>
      */
-    public function taskDatesForUser(mixed $userId, string $startDate, string $endDate): array
+    public function taskDetailsForUser(mixed $userId, string $startDate, string $endDate): array
     {
         if ($userId === null || $userId === '') {
             return [];
         }
 
-        $taskIdsByUser = $this->taskIdsByUser([(string) $userId]);
-        $taskIds = $taskIdsByUser[(string) $userId] ?? [];
+        $taskIds = $this->taskIdsByUser([(string) $userId])[(string) $userId] ?? [];
 
         if ($taskIds === []) {
             return [];
         }
 
-        $activeDatesByTask = $this->activeDatesByTask($taskIds, $startDate, $endDate);
+        $minutesByTask = $this->activeMinutesByTask($taskIds, $startDate, $endDate);
 
-        $dates = [];
+        if ($minutesByTask === []) {
+            return [];
+        }
+
+        $metadata = $this->taskMetadata($taskIds);
+
+        $byDate = [];
         foreach ($taskIds as $taskId) {
-            foreach ($activeDatesByTask[$taskId] ?? [] as $date) {
-                $dates[$date] = true;
+            $taskId = (string) $taskId;
+
+            foreach ($minutesByTask[$taskId] ?? [] as $date => $minutes) {
+                $minutes = (int) $minutes;
+
+                $byDate[$date][] = array_merge(
+                    $metadata[$taskId] ?? ['id' => $taskId],
+                    [
+                        'minutes' => $minutes,
+                        'hours'   => round($minutes / 60, 2),
+                    ]
+                );
             }
         }
 
-        $dates = array_keys($dates);
-        sort($dates);
+        ksort($byDate);
 
-        return $dates;
+        return $byDate;
     }
 
     /**
@@ -265,9 +287,8 @@ class EmployeeTaskPresenceService
     /**
      * For the given task IDs, return the worked minutes per Y-m-d date, derived
      * from the portion of each work session that falls within that day (clamped
-     * to [startDate, endDate]). An open session (no end_time) is treated as
-     * active through "now". Days that are only partially overlapped still appear
-     * (possibly with 0 minutes) so callers can treat them as present.
+     * to [startDate, endDate]). Days that are only partially overlapped still
+     * appear (possibly with 0 minutes) so callers can treat them as present.
      *
      * @param  list<string>  $taskIds
      * @return array<string, array<string, int>>  map of taskId => (Y-m-d => minutes)
@@ -300,6 +321,12 @@ class EmployeeTaskPresenceService
         $rangeEnd   = $rangeEndStr !== null ? CarbonImmutable::parse($rangeEndStr) : null;
         $now        = CarbonImmutable::parse(CarbonImmutable::now($this->timezone())->format('Y-m-d H:i:s'));
 
+        $tasks = EmployeeTaskRequest::query()
+            ->withoutGlobalScopes()
+            ->whereIn('id', $taskIds)
+            ->get(['id', 'status', 'time_from', 'time_to', 'task_date'])
+            ->keyBy(static fn ($task) => (string) $task->id);
+
         $map = [];
         foreach ($sessions as $session) {
             $taskId = (string) $session->employee_task_request_id;
@@ -308,14 +335,20 @@ class EmployeeTaskPresenceService
                 continue;
             }
 
-            $start = CarbonImmutable::parse($session->start_time->format('Y-m-d H:i:s'));
-            $end   = $session->end_time !== null
-                ? CarbonImmutable::parse($session->end_time->format('Y-m-d H:i:s'))
-                : $now;
+            $taskEnd = $tasks->get($taskId)?->time_to;
 
-            if ($end->lt($start)) {
-                $end = $start;
-            }
+            $start = CarbonImmutable::parse($session->start_time->format('Y-m-d H:i:s'));
+            $end   = $this->resolveSessionEnd(
+                $start,
+                $session->end_time !== null
+                    ? CarbonImmutable::parse($session->end_time->format('Y-m-d H:i:s'))
+                    : null,
+                $taskEnd !== null
+                    ? CarbonImmutable::parse($taskEnd->format('Y-m-d H:i:s'))
+                    : null,
+                $now
+            );
+
             if ($rangeStart !== null && $start->lt($rangeStart)) {
                 $start = $rangeStart;
             }
@@ -344,39 +377,63 @@ class EmployeeTaskPresenceService
         // Fallback: currently active tasks (in_progress / paused) may have no
         // session rows at all (e.g. multi-assignee project notifications where the
         // task was started once and secondary assignees never produced a session).
-        // Treat such a task as making its assignees present from its start date
-        // through today, so the employee isn't wrongly shown as absent.
-        $this->mergeActiveTaskSpans($map, $taskIds, $startDate, $endDate);
+        // Treat such a task as making its assignees present on the days the task
+        // itself belongs to, so the employee isn't wrongly shown as absent.
+        $this->mergeActiveTaskDays($map, $taskIds, $tasks, $startDate, $endDate);
 
         return $map;
     }
 
     /**
-     * Merge presence day-spans for tasks that are currently active but may lack
-     * session rows. This covers two cases that otherwise show "absent":
+     * Resolve the effective end of a work session. A closed session ends at its
+     * own end_time; an open one is only credited up to MAX_OPEN_SESSION_HOURS
+     * after its start (or the task's own end, when that comes first), because a
+     * session left open by mistake would otherwise mark the employee present on
+     * every single day since it started.
+     */
+    private function resolveSessionEnd(
+        CarbonImmutable $start,
+        ?CarbonImmutable $end,
+        ?CarbonImmutable $taskEnd,
+        CarbonImmutable $now
+    ): CarbonImmutable {
+        if ($end !== null) {
+            return $end->lt($start) ? $start : $end;
+        }
+
+        $cap = $start->addHours(self::MAX_OPEN_SESSION_HOURS);
+
+        if ($taskEnd !== null && $taskEnd->gt($start) && $taskEnd->lt($cap)) {
+            $cap = $taskEnd;
+        }
+
+        return $now->lt($cap) ? $now : $cap;
+    }
+
+    /**
+     * Merge presence days for tasks that are active but may lack session rows.
+     * This covers two cases that otherwise show "absent":
      *   - regular tasks in in_progress / paused status;
      *   - project-notification tasks whose linked notification is in_progress
      *     (received) or completed — the task row itself can lag at "approved" and
-     *     never produce a session, so we drive the span from the notification.
+     *     never produce a session, so we drive the days from the notification.
      * Days already present in $map keep their session minutes; new days are added
      * with 0 minutes so they still count as present without inflating hours.
      *
      * @param  array<string, array<string, int>>  $map  taskId => (Y-m-d => minutes)
      * @param  list<string>  $taskIds
+     * @param  \Illuminate\Support\Collection<string, EmployeeTaskRequest>  $tasks
      */
-    private function mergeActiveTaskSpans(array &$map, array $taskIds, ?string $startDate, ?string $endDate): void
-    {
+    private function mergeActiveTaskDays(
+        array &$map,
+        array $taskIds,
+        Collection $tasks,
+        ?string $startDate,
+        ?string $endDate
+    ): void {
         if ($taskIds === []) {
             return;
         }
-
-        $todayStr = CarbonImmutable::now($this->timezone())->format('Y-m-d');
-
-        $tasks = EmployeeTaskRequest::query()
-            ->withoutGlobalScopes()
-            ->whereIn('id', $taskIds)
-            ->get(['id', 'status', 'time_from', 'time_to', 'task_date'])
-            ->keyBy(static fn ($task) => (string) $task->id);
 
         $notifications = ProjectNotification::query()
             ->whereIn('employee_task_request_id', $taskIds)
@@ -386,130 +443,163 @@ class EmployeeTaskPresenceService
         foreach ($taskIds as $taskId) {
             $taskId = (string) $taskId;
 
-            [$startDay, $endDay] = $this->resolveActiveSpan(
+            $days = $this->resolveActiveDays(
                 $tasks->get($taskId),
                 $notifications->get($taskId),
-                $todayStr,
             );
 
-            if ($startDay === null || $endDay === null) {
-                continue;
-            }
-
-            if ($startDate !== null && $startDay < $startDate) {
-                $startDay = $startDate;
-            }
-            if ($endDate !== null && $endDay > $endDate) {
-                $endDay = $endDate;
-            }
-            if ($startDate !== null && $endDay < $startDate) {
-                continue;
-            }
-            if ($endDate !== null && $startDay > $endDate) {
-                continue;
-            }
-            if ($startDay > $endDay) {
-                continue;
-            }
-
-            $cursor = CarbonImmutable::parse($startDay);
-            $last   = CarbonImmutable::parse($endDay);
-            while ($cursor->lte($last)) {
-                $key = $cursor->format('Y-m-d');
-                if (! isset($map[$taskId][$key])) {
-                    $map[$taskId][$key] = 0;
+            foreach ($days as $day) {
+                if ($startDate !== null && $day < $startDate) {
+                    continue;
                 }
-                $cursor = $cursor->addDay();
+                if ($endDate !== null && $day > $endDate) {
+                    continue;
+                }
+                if (! isset($map[$taskId][$day])) {
+                    $map[$taskId][$day] = 0;
+                }
             }
         }
     }
 
     /**
-     * Resolve the [startDay, endDay] presence span for an active task. When the
-     * task is linked to a project notification, the notification status/date
-     * drive the span (the task row can lag at "approved"); otherwise the regular
-     * task status is used. Returns [null, null] when the task is not active.
+     * Resolve the days an active task makes its assignees present, even without
+     * session rows: the day the task belongs to and the day it ended. Any other
+     * day only counts when it has a real work session, so a task that stays
+     * open — or is simply never closed — does not mark unrelated days, today
+     * included, as "متواجد". Returns [] when the task is not active.
      *
-     * @return array{0: ?string, 1: ?string}  [Y-m-d start, Y-m-d end]
+     * @return list<string>  Y-m-d days
      */
-    private function resolveActiveSpan(?EmployeeTaskRequest $task, ?ProjectNotification $notification, string $todayStr): array
+    private function resolveActiveDays(?EmployeeTaskRequest $task, ?ProjectNotification $notification): array
     {
+        $taskDay = $task?->task_date?->format('Y-m-d')
+            ?? $task?->time_from?->format('Y-m-d');
+        $endDay  = $task?->time_to?->format('Y-m-d');
+
         if ($notification !== null) {
-            $start = $notification->task_date?->format('Y-m-d')
-                ?? $task?->task_date?->format('Y-m-d');
-
-            if ($notification->status === 'in_progress') {
-                return [$start ?? $todayStr, $todayStr];
+            if (! in_array($notification->status, ['in_progress', 'completed'], true)) {
+                return [];
             }
 
-            if ($notification->status === 'completed') {
-                $end = $task?->time_to?->format('Y-m-d') ?? $start;
-
-                return [$start, $end];
-            }
-
-            return [null, null];
+            return $this->uniqueDays([
+                $notification->task_date?->format('Y-m-d') ?? $taskDay,
+                $taskDay,
+                $endDay,
+            ]);
         }
 
         if ($task !== null && in_array($task->status, [
             EmployeeTaskStatus::InProgress->value,
             EmployeeTaskStatus::Paused->value,
         ], true)) {
-            $start = $task->time_from?->format('Y-m-d')
-                ?? $task->task_date?->format('Y-m-d')
-                ?? $todayStr;
-
-            return [$start, $todayStr];
+            return $this->uniqueDays([$taskDay, $endDay]);
         }
 
-        return [null, null];
+        return [];
     }
 
     /**
-     * Resolve a display title for each task ID. Falls back to the linked project
-     * notification's description/number when the task itself has no title. Uses
-     * withoutGlobalScopes because project-notification tasks carry a null
-     * company_id and would otherwise be filtered out by the tenant scope.
+     * @param  list<?string>  $days
+     * @return list<string>
+     */
+    private function uniqueDays(array $days): array
+    {
+        return array_values(array_unique(array_filter(
+            $days,
+            static fn (?string $day): bool => $day !== null && $day !== ''
+        )));
+    }
+
+    /**
+     * Resolve a display title for each task ID.
      *
      * @param  list<string>  $taskIds
      * @return array<string, string>  map of taskId => title
      */
     private function taskTitles(array $taskIds): array
     {
+        $titles = [];
+
+        foreach ($this->taskMetadata($taskIds) as $taskId => $meta) {
+            $title = $meta['title'] ?? null;
+            if (is_string($title) && $title !== '') {
+                $titles[$taskId] = $title;
+            }
+        }
+
+        return $titles;
+    }
+
+    /**
+     * Resolve display metadata for each task ID. The title falls back to the
+     * linked project notification's description/number when the task itself has
+     * no title. Uses withoutGlobalScopes because project-notification tasks
+     * carry a null company_id and would otherwise be filtered out by the tenant
+     * scope.
+     *
+     * @param  list<string>  $taskIds
+     * @return array<string, array<string, mixed>>  map of taskId => metadata
+     */
+    private function taskMetadata(array $taskIds): array
+    {
         if ($taskIds === []) {
             return [];
         }
 
-        $titles = [];
+        $meta = [];
+
         EmployeeTaskRequest::query()
             ->withoutGlobalScopes()
             ->whereIn('id', $taskIds)
-            ->get(['id', 'title'])
-            ->each(static function (EmployeeTaskRequest $task) use (&$titles): void {
-                if ($task->title !== null && $task->title !== '') {
-                    $titles[(string) $task->id] = (string) $task->title;
-                }
+            ->get(['id', 'title', 'status', 'task_date', 'project_id', 'is_project_notification'])
+            ->each(static function (EmployeeTaskRequest $task) use (&$meta): void {
+                $meta[(string) $task->id] = [
+                    'id'                  => (string) $task->id,
+                    'title'               => ($task->title !== null && $task->title !== '') ? (string) $task->title : null,
+                    'status'              => $task->status !== null ? (string) $task->status : null,
+                    'task_date'           => $task->task_date?->format('Y-m-d'),
+                    'project_id'          => $task->project_id !== null ? (string) $task->project_id : null,
+                    'source'              => $task->is_project_notification ? 'project_notification' : 'employee_task',
+                    'notification_id'     => null,
+                    'notification_number' => null,
+                    'notification_status' => null,
+                ];
             });
 
-        $missing = array_values(array_filter(
-            $taskIds,
-            static fn (string $id): bool => ! isset($titles[$id])
-        ));
+        ProjectNotification::query()
+            ->whereIn('employee_task_request_id', $taskIds)
+            ->get(['id', 'employee_task_request_id', 'project_id', 'work_description', 'notification_number', 'status'])
+            ->each(static function (ProjectNotification $notification) use (&$meta): void {
+                $taskId = (string) $notification->employee_task_request_id;
 
-        if ($missing !== []) {
-            ProjectNotification::query()
-                ->whereIn('employee_task_request_id', $missing)
-                ->get(['employee_task_request_id', 'work_description', 'notification_number'])
-                ->each(static function (ProjectNotification $notification) use (&$titles): void {
-                    $taskId = (string) $notification->employee_task_request_id;
-                    $title  = $notification->work_description !== null && $notification->work_description !== ''
+                $entry = $meta[$taskId] ?? [
+                    'id'         => $taskId,
+                    'title'      => null,
+                    'status'     => null,
+                    'task_date'  => null,
+                    'project_id' => null,
+                ];
+
+                if (($entry['title'] ?? null) === null) {
+                    $entry['title'] = ($notification->work_description !== null && $notification->work_description !== '')
                         ? (string) $notification->work_description
                         : trim('إشعار ' . (string) $notification->notification_number);
-                    $titles[$taskId] = $title;
-                });
-        }
+                }
 
-        return $titles;
+                $entry['source']              = 'project_notification';
+                $entry['notification_id']     = (string) $notification->id;
+                $entry['notification_number'] = $notification->notification_number !== null
+                    ? (string) $notification->notification_number
+                    : null;
+                $entry['notification_status'] = $notification->status !== null ? (string) $notification->status : null;
+                $entry['project_id']          = $entry['project_id']
+                    ?? ($notification->project_id !== null ? (string) $notification->project_id : null);
+
+                $meta[$taskId] = $entry;
+            });
+
+        return $meta;
     }
 
     private function timezone(): string
