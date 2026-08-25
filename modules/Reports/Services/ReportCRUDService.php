@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Reports\Services;
 
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -236,16 +235,62 @@ class ReportCRUDService
     }
 
     /**
-     * Download the generated report file.
+     * Resolve a short-lived object-storage URL for SPA downloads.
      *
-     * For Media Library / S3 files we redirect to a short-lived storage URL so
-     * PHP never buffers large PDFs (this report was ~143MB and OOMed with
-     * Storage::get()). Legacy disk files still stream through the app.
-     *
-     * Content-Type / filename are forced via S3 ResponseContent* query params
-     * when temporary URLs are available.
+     * @return array{download_url:string,file_name:string,mime:string,file_size:int|null,expires_in:int}
      */
-    public function download(UuidInterface $id): RedirectResponse|StreamedResponse
+    public function resolveDownloadUrl(UuidInterface $id): array
+    {
+        $report = $this->repository->getReport($id);
+
+        if (!$report->isReady()) {
+            Log::warning('[Reports] download: report not ready', [
+                'report_id' => $report->id,
+                'status'    => $report->status,
+            ]);
+            abort(409, __('Report is not ready for download yet.'));
+        }
+
+        [$mime, $extension] = $this->mimeAndExtensionFor($report->export_format);
+        $downloadName       = $this->buildDownloadFilename($report, $extension);
+        $asciiName          = $this->asciiFallback($downloadName);
+        $disposition        = sprintf(
+            'attachment; filename="%s"; filename*=UTF-8\'\'%s',
+            $asciiName,
+            rawurlencode($downloadName),
+        );
+
+        $media = $report->getFirstMedia('report_file');
+        if ($media === null && $report->file_disk === 'media') {
+            abort(404, __('Report file is missing.'));
+        }
+
+        if ($media !== null) {
+            $url = $this->buildMediaDownloadUrl($media, $mime, $disposition, $report->id);
+            if ($url === null) {
+                abort(404, __('Report file is missing.'));
+            }
+
+            return [
+                'download_url' => $url,
+                'file_name'    => $downloadName,
+                'mime'         => $mime,
+                'file_size'    => $report->file_size,
+                'expires_in'   => 1800,
+            ];
+        }
+
+        // Legacy disk files have no public URL — client must use ?stream=1
+        abort(409, __('Direct download URL is unavailable; use stream=1.'));
+    }
+
+    /**
+     * Download the generated report file (stream or storage redirect).
+     *
+     * Prefer resolveDownloadUrl() for SPA clients. This path is for
+     * ?stream=1 / legacy consumers that need the raw bytes from the API.
+     */
+    public function download(UuidInterface $id): StreamedResponse
     {
         $report = $this->repository->getReport($id);
 
@@ -274,7 +319,6 @@ class ReportCRUDService
             'Access-Control-Expose-Headers' => 'Content-Disposition, Content-Length, Content-Type',
         ];
 
-        // Media Library (current path) — prefer redirect off the app servers
         $media = $report->getFirstMedia('report_file');
         if ($report->file_disk === 'media' || $media !== null) {
             if ($media === null) {
@@ -283,11 +327,6 @@ class ReportCRUDService
                     'status'    => $report->status,
                 ]);
                 abort(404, __('Report file is missing.'));
-            }
-
-            $redirect = $this->redirectToMediaUrl($media, $mime, $disposition, $report->id);
-            if ($redirect !== null) {
-                return $redirect;
             }
 
             if ($report->file_size) {
@@ -302,7 +341,6 @@ class ReportCRUDService
             );
         }
 
-        // Backward compat: legacy reports written directly to a Storage disk
         if (!$report->file_path || !$report->file_disk) {
             abort(409, __('Report is not ready for download yet.'));
         }
@@ -318,15 +356,14 @@ class ReportCRUDService
     }
 
     /**
-     * Build a browser redirect to object storage so large files never pass
-     * through PHP-FPM / nginx as a buffered body.
+     * Build a signed/public object-storage URL (no HTTP redirect).
      */
-    private function redirectToMediaUrl(
+    private function buildMediaDownloadUrl(
         Media $media,
         string $mime,
         string $disposition,
         string $reportId,
-    ): ?RedirectResponse {
+    ): ?string {
         $diskName = (string) $media->disk;
         $path     = $media->getPathRelativeToRoot();
 
@@ -359,11 +396,7 @@ class ReportCRUDService
             }
         }
 
-        if (!is_string($url) || $url === '') {
-            return null;
-        }
-
-        return redirect()->away($url);
+        return is_string($url) && $url !== '' ? $url : null;
     }
 
     /**
