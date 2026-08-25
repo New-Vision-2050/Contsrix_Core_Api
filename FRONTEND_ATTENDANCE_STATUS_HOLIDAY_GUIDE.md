@@ -131,6 +131,30 @@ GET /api/v1/sub_entities/records/list?sub_entity_id=…&registration_form_id=…
 
 ---
 
+## How the range shows up in the attendance screens
+
+A holiday set here is **the employee's own time off**, so the calendar, the history
+endpoint and the attendance report all label it `إجازة` — never `عطلة`. `عطلة` is
+reserved for days the *schedule* does not work.
+
+| Date | Calendar `status_key` / `status` | History `status` | Report `display_status` / PDF badge |
+|---|---|---|---|
+| Inside the range, on a working weekday | `leave` / `إجازة` | `إجازة` | `leave` / `إجازة` |
+| Inside the range, but a weekend or day off in the employee's constraint | `off` / `عطلة` | `عطلة` | `holiday` / `عطلة` |
+| Public holiday (company-wide) | `off` / `عطلة` | `عطلة` | `holiday` / `عطلة` |
+| After `date_to` | back to the employee's constraint (`present` / `late` / `absent` / `required`) | same | same |
+
+A weekend inside the range stays `عطلة` on purpose: a day the employee never works
+cannot spend a leave day.
+
+Endpoints:
+
+- `GET /api/v1/attendance/user-attendance/calendar?month=&year=`
+- `GET /api/v1/user-attendance/history`
+- Attendance & absence report (PDF / Excel) in the reports module
+
+---
+
 ## Frontend checklist
 
 - [ ] Holiday form: require **from** and **to** dates (send as `date_from` / `date_to`).

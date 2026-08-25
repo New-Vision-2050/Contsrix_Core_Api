@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Support\ManualAttendanceStatus;
 use Modules\User\Models\User;
 
 class SubEntityEmployeeAttendanceStatusService
@@ -151,37 +152,7 @@ class SubEntityEmployeeAttendanceStatusService
      */
     private function activeOverrideStatus(?User $user, string $workDate): ?string
     {
-        if (! $user) {
-            return null;
-        }
-
-        $status = $user->manual_attendance_status;
-
-        if (! in_array($status, [self::STATUS_HOLIDAY, self::STATUS_REQUIRED_ATTENDANCE], true)) {
-            return null;
-        }
-
-        $since = $user->manual_attendance_status_since;
-
-        if ($since !== null) {
-            $sinceDate = $since instanceof Carbon ? $since : Carbon::parse((string) $since);
-
-            if ($sinceDate->toDateString() > $workDate) {
-                return null;
-            }
-        }
-
-        $until = $user->manual_attendance_status_until;
-
-        if ($until !== null) {
-            $untilDate = $until instanceof Carbon ? $until : Carbon::parse((string) $until);
-
-            if ($workDate > $untilDate->toDateString()) {
-                return null;
-            }
-        }
-
-        return $status;
+        return ManualAttendanceStatus::activeOn($user, $workDate);
     }
 
     private function syncRequiredHolidayAttendanceRange(
@@ -407,8 +378,8 @@ class SubEntityEmployeeAttendanceStatusService
             'timezone' => $this->attendanceCalendarTimezone(),
             'business_date' => $workDate,
             'notes' => $isHoliday
-                ? 'Manual sub-entity status set to holiday.'
-                : 'Manual sub-entity status set to required attendance.',
+                ? ManualAttendanceStatus::HOLIDAY_ROW_NOTE
+                : ManualAttendanceStatus::REQUIRED_ROW_NOTE,
         ]);
     }
 
@@ -422,6 +393,12 @@ class SubEntityEmployeeAttendanceStatusService
             'is_absent' => 0,
             'day_status' => $isHoliday ? self::STATUS_HOLIDAY : 'work_day',
             'business_date' => $workDate,
+            // Stamped on rows this endpoint rewrote as well as ones it created, so readers
+            // can tell an override holiday from a weekend or public holiday and stop
+            // honouring it once the date leaves the override window.
+            'notes' => $isHoliday
+                ? ManualAttendanceStatus::HOLIDAY_ROW_NOTE
+                : ManualAttendanceStatus::REQUIRED_ROW_NOTE,
         ];
 
         if (! $hasClockTimes) {

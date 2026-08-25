@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\AttendanceService;
+use Modules\Attendance\Support\ManualAttendanceStatus;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -150,32 +151,21 @@ class UserAttendanceService
      */
     private function applyManualAttendanceOverride(User $user, string $targetDate, array $workRules): array
     {
-        $status = $user->manual_attendance_status ?? null;
+        $status = ManualAttendanceStatus::activeOn($user, $targetDate);
 
-        if (! in_array($status, ['holiday', 'required_attendance'], true)) {
+        if ($status === null) {
             return $workRules;
         }
 
-        $since = $user->manual_attendance_status_since;
-        $sinceDate = $since instanceof Carbon ? $since->toDateString() : ($since ? Carbon::parse((string) $since)->toDateString() : null);
-
-        if ($sinceDate !== null && $sinceDate > $targetDate) {
-            return $workRules;
-        }
-
-        $until = $user->manual_attendance_status_until ?? null;
-        $untilDate = $until instanceof Carbon
-            ? $until->toDateString()
-            : ($until ? Carbon::parse((string) $until)->toDateString() : null);
-
-        if ($untilDate !== null && $targetDate > $untilDate) {
-            return $workRules;
-        }
-
-        if ($status === 'holiday') {
+        if ($status === ManualAttendanceStatus::HOLIDAY) {
             $workRules['day_status'] = 'holiday';
             $workRules['is_holiday'] = true;
             $workRules['reason'] = 'Manual holiday override.';
+            // A constraint holiday returns no periods, so a manual one must not either —
+            // otherwise the periods still carry can_clock_in and the app offers a
+            // clock-in button on a day it has just been told is a holiday.
+            $workRules['all_work_periods'] = [];
+            $workRules['current_work_period'] = null;
         } else {
             $workRules['day_status'] = 'work_day';
             $workRules['is_holiday'] = false;
