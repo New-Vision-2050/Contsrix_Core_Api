@@ -9,6 +9,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\LeaveRequest;
+use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
@@ -70,6 +72,10 @@ class AttendanceCalendarService
         // Bulk fetch the tasks that make the user present (متواجد), keyed by date
         $taskDetails = $this->taskPresenceService->taskDetailsForUser($user->id, $dateStartStr, $dateEndStr);
 
+        // Resolved once for the whole range: which dates the constraint schedules work on.
+        // Drives عطلة, which belongs to the schedule rather than to the person (INV-18).
+        $scheduledWorkDays = $this->constraintService->getScheduledWorkDaysForUser($user);
+
         // Build calendar day-by-day
         $days = [];
         $cursor = $rangeStart->copy();
@@ -102,7 +108,9 @@ class AttendanceCalendarService
                 $dayAttendances,
                 $hasLeave,
                 $hasTask,
-                $timezone
+                $timezone,
+                $now,
+                $scheduledWorkDays
             );
 
             $dayData['tasks'] = $dayTasks;
@@ -165,25 +173,52 @@ class AttendanceCalendarService
         Collection $dayAttendances,
         bool $hasLeave,
         bool $hasTask,
-        string $timezone
+        string $timezone,
+        Carbon $now,
+        ScheduledWorkDays $scheduledWorkDays
     ): array {
         $dayName = $this->getDayNameArabic($date);
+
+        // عطلة belongs to the schedule, not to the person: a disabled weekday or a date
+        // listed in the constraint's holidays. It outranks personal time off, so a weekend
+        // falling inside a leave window stays عطلة instead of consuming a leave day.
+        if (! $scheduledWorkDays->isWorkDay($date)) {
+            return $this->formatDay(
+                $dateString,
+                $dayName,
+                'off',
+                'عطلة',
+                null,
+                $dayAttendances
+            );
+        }
+
+        // إجازة is time off granted to the person: an approved leave request, or the
+        // sub-entity attendance-status override while its date window is active. Once that
+        // window ends the day falls back to the constraint (INV-18).
+        if ($hasLeave || ManualAttendanceStatus::isHolidayOn($user, $dateString)) {
+            return $this->formatDay(
+                $dateString,
+                $dayName,
+                'leave',
+                'إجازة',
+                $this->calculateWorkHoursFromAttendances($dayAttendances),
+                $dayAttendances
+            );
+        }
+
+        // Setting the override rewrote every row inside its range, and shortening the range
+        // later does not undo those writes. Past the window the employee is back on their
+        // constraint, so a leftover row is not attendance: drop it and let the day resolve
+        // as if it had no rows at all.
+        $dayAttendances = $dayAttendances->reject(
+            fn ($a) => ManualAttendanceStatus::isHolidayRow($a->notes ?? null)
+        );
 
         // Future dates: status depends on constraints
         if ($isFuture) {
             $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString, $timezone);
             $dayStatus = $workRules['day_status'] ?? 'Undefined';
-
-            if ($hasLeave) {
-                return $this->formatDay(
-                    $dateString,
-                    $dayName,
-                    'leave',
-                    'إجازة',
-                    null,
-                    $dayAttendances
-                );
-            }
 
             if ($dayStatus === 'work_day') {
                 $workHours = $this->calculateTotalScheduledHours($workRules['all_work_periods'] ?? []);
@@ -207,19 +242,6 @@ class AttendanceCalendarService
             );
         }
 
-        // Current or past dates: use actual attendance records
-        if ($hasLeave) {
-            $workHours = $this->calculateWorkHoursFromAttendances($dayAttendances);
-            return $this->formatDay(
-                $dateString,
-                $dayName,
-                'leave',
-                'إجازة',
-                $workHours,
-                $dayAttendances
-            );
-        }
-
         // Determine status from attendance records
         if ($dayAttendances->isEmpty()) {
             // No attendance - check if it was a work day via constraints
@@ -235,6 +257,21 @@ class AttendanceCalendarService
                         'on_task',
                         __('validation.day_status.on_task'),
                         null,
+                        $dayAttendances
+                    );
+                }
+
+                $pending = $isToday
+                    ? $this->resolvePendingClockInDay($user, $dateString, $now)
+                    : null;
+
+                if ($pending !== null) {
+                    return $this->formatDay(
+                        $dateString,
+                        $dayName,
+                        'required',
+                        'مطلوب للحضور',
+                        $pending['work_hours'],
                         $dayAttendances
                     );
                 }
@@ -259,7 +296,9 @@ class AttendanceCalendarService
             );
         }
 
-        // Has attendance records
+        // Has attendance records.
+        // Reached only on scheduled work days with no personal time off, so a holiday row
+        // here is a company-wide public holiday (CreateHolidayAttendanceCommand) — عطلة.
         $hasHoliday = $dayAttendances->contains(fn ($a) =>
             ($a->is_holiday ?? false) || ($a->day_status ?? null) === 'holiday' || ($a->status ?? null) === Attendance::STATUS_HOLIDAY
         );
@@ -298,6 +337,21 @@ class AttendanceCalendarService
                 );
             }
 
+            $pending = $isToday
+                ? $this->resolvePendingClockInDay($user, $dateString, $now)
+                : null;
+
+            if ($pending !== null) {
+                return $this->formatDay(
+                    $dateString,
+                    $dayName,
+                    'required',
+                    'مطلوب للحضور',
+                    $pending['work_hours'],
+                    $dayAttendances
+                );
+            }
+
             return $this->formatDay(
                 $dateString,
                 $dayName,
@@ -329,6 +383,68 @@ class AttendanceCalendarService
             $workHours,
             $dayAttendances
         );
+    }
+
+    /**
+     * A work day with no clock-in is only settled once the employee can no longer arrive.
+     * `AutoAttendanceService` pre-creates the whole month's period rows as absent, so
+     * without this today reads as غائب from midnight onwards.
+     *
+     * The deadline is read from the same payload the mobile app consumes at
+     * `GET /attendance/user-constraint/today` (`can_clock_in_until` per period), so the
+     * calendar cannot disagree with the screen that offers the clock-in button.
+     *
+     * @return array{work_hours: float|null}|null Null when the day is already settled.
+     */
+    private function resolvePendingClockInDay(User $user, string $dateString, Carbon $now): ?array
+    {
+        try {
+            $workRules = $this->userAttendanceService->getUserConstraints($user, $dateString)['work_rules'] ?? [];
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (($workRules['day_status'] ?? null) !== 'work_day') {
+            return null;
+        }
+
+        $periods = is_array($workRules['all_work_periods'] ?? null) ? $workRules['all_work_periods'] : [];
+
+        foreach ($periods as $period) {
+            $deadline = $period['can_clock_in_until'] ?? null;
+            if (empty($deadline)) {
+                continue;
+            }
+
+            try {
+                $deadlineCarbon = Carbon::parse((string) $deadline);
+            } catch (\Exception) {
+                continue;
+            }
+
+            // Any period the employee can still punch into keeps the whole day open.
+            if ($deadlineCarbon->greaterThanOrEqualTo($now)) {
+                return ['work_hours' => $this->sumScheduledPeriodHours($periods)];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Scheduled hours for a day, taken from the per-period totals the constraint service
+     * already computed (they handle cross-midnight periods and flexible required hours).
+     *
+     * @param array<int, array<string, mixed>> $periods
+     */
+    private function sumScheduledPeriodHours(array $periods): ?float
+    {
+        $total = 0.0;
+        foreach ($periods as $period) {
+            $total += (float) ($period['total_work_hours'] ?? 0);
+        }
+
+        return $total > 0 ? round($total, 2) : $this->calculateTotalScheduledHours($periods);
     }
 
     /**

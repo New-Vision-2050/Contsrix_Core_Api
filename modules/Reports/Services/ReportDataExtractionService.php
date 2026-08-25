@@ -7,10 +7,14 @@ namespace Modules\Reports\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
 use Modules\Reports\DTO\ReportWizardConfigDTO;
 use Modules\Reports\Enums\ReportEnums;
 use Modules\Reports\Models\Report;
+use Modules\User\Models\User;
 
 /**
  * Pulls the per-section data slices required by each selected report type.
@@ -46,6 +50,7 @@ class ReportDataExtractionService
 {
     public function __construct(
         private readonly EmployeeTaskPresenceService $taskPresenceService,
+        private readonly AttendanceConstraintService $constraintService,
     ) {}
 
     public function extract(Report $report, ReportWizardConfigDTO $config, Collection $employees): array
@@ -130,6 +135,10 @@ class ReportDataExtractionService
             ->join('users as u', 'u.id', '=', 'a.user_id')
             ->select(
                 'u.global_company_user_id as global_id',
+                'a.user_id',
+                'u.manual_attendance_status',
+                'u.manual_attendance_status_since',
+                'u.manual_attendance_status_until',
                 'a.business_date',
                 'a.status',
                 'a.day_status',
@@ -161,6 +170,7 @@ class ReportDataExtractionService
 
         // Group attendance rows by (global_id → date); accumulate per-session data.
         $groupedDaily = [];
+        $scheduleCache = [];
         foreach ($dailyRows as $d) {
             $gid  = (string) $d->global_id;
             $date = (string) $d->business_date;
@@ -168,8 +178,9 @@ class ReportDataExtractionService
             $isHoliday     = (int) ($d->is_holiday ?? 0) === 1;
             $isAbsent      = (int) ($d->is_absent  ?? 0) === 1;
             $isWaiting     = ($d->status ?? '') === 'waiting' && empty($d->clock_in_time);
-            $displayStatus = $isHoliday ? 'holiday'
-                : ($isAbsent || $isWaiting ? 'absent'
+            $holidayStatus = $isHoliday ? $this->holidayDisplayStatus($d, $date, $scheduleCache) : null;
+            $displayStatus = $holidayStatus
+                ?? ($isAbsent || $isWaiting ? 'absent'
                     : (empty($d->clock_in_time) ? 'absent' : 'present'));
 
             if (!isset($groupedDaily[$gid][$date])) {
@@ -303,15 +314,62 @@ class ReportDataExtractionService
     }
 
     /**
-     * Day status when one date holds several attendance rows: holiday > present > absent.
-     * Mirrors AttendanceCalendarService / UserAttendanceHistoryService, where any real
-     * clock-in outranks a sibling row left flagged absent.
+     * Day status when one date holds several attendance rows: leave > holiday > present >
+     * absent. Mirrors AttendanceCalendarService / UserAttendanceHistoryService, where any
+     * real clock-in outranks a sibling row left flagged absent.
      */
     private function mergeDisplayStatus(string $current, string $incoming): string
     {
-        $rank = ['absent' => 1, 'present' => 2, 'holiday' => 3];
+        $rank = ['absent' => 1, 'present' => 2, 'holiday' => 3, 'leave' => 4];
 
         return ($rank[$incoming] ?? 0) > ($rank[$current] ?? 0) ? $incoming : $current;
+    }
+
+    /**
+     * Splits the single `is_holiday` flag into the two labels the calendar and history
+     * endpoints already use, so the PDF stops printing إجازة over every weekend (INV-18):
+     *
+     * - `leave` (إجازة) — time off granted to this employee by the sub-entity
+     *   attendance-status override, on a date its window still covers.
+     * - `holiday` (عطلة) — the schedule does not work this date: weekend, day off,
+     *   constraint holiday, or a company-wide public holiday.
+     *
+     * Returns null when the flag should be ignored altogether — a row the override wrote
+     * on a date its window no longer covers, where the employee is back on their
+     * constraint and the day must be scored as present or absent like any other.
+     *
+     * A weekend inside an override window stays عطلة, which is why the constraint is
+     * consulted. That lookup only runs for employees whose window covers the date, so a
+     * report over employees with no override costs nothing extra.
+     *
+     * @param array<string, ScheduledWorkDays> $scheduleCache keyed by user id, owned by the
+     *                                                       caller so nothing survives the
+     *                                                       request under Octane
+     */
+    private function holidayDisplayStatus(object $row, string $date, array &$scheduleCache): ?string
+    {
+        $overrideActive = ManualAttendanceStatus::isHolidayFor(
+            $row->manual_attendance_status ?? null,
+            $row->manual_attendance_status_since ?? null,
+            $row->manual_attendance_status_until ?? null,
+            $date
+        );
+
+        if (! $overrideActive) {
+            return ManualAttendanceStatus::isHolidayRow($row->notes ?? null) ? null : 'holiday';
+        }
+
+        $userId = (string) ($row->user_id ?? '');
+
+        if (! array_key_exists($userId, $scheduleCache)) {
+            $user = $userId === '' ? null : User::query()->find($userId);
+
+            $scheduleCache[$userId] = $user
+                ? $this->constraintService->getScheduledWorkDaysForUser($user)
+                : ScheduledWorkDays::unknown();
+        }
+
+        return $scheduleCache[$userId]->isWorkDay($date) ? 'leave' : 'holiday';
     }
 
     /**
