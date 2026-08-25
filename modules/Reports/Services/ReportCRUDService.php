@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Reports\Services;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,7 @@ use Modules\Reports\Models\Report;
 use Modules\Reports\Repositories\ReportRepository;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportCRUDService
@@ -234,19 +236,16 @@ class ReportCRUDService
     }
 
     /**
-     * Stream the generated file to the caller as an HTTP download.
+     * Download the generated report file.
      *
-     * Content-Type is derived from `export_format` (NOT from the storage
-     * driver's MIME guess), so the browser always sees the right type even
-     * if a stale file with a wrong extension lives on disk. The filename is
-     * built from the report's translated name + correct extension and is
-     * sent both as ASCII (`filename=`) and RFC 5987 UTF-8 (`filename*=`)
-     * so Arabic names render correctly in the browser's Save dialog.
+     * For Media Library / S3 files we redirect to a short-lived storage URL so
+     * PHP never buffers large PDFs (this report was ~143MB and OOMed with
+     * Storage::get()). Legacy disk files still stream through the app.
      *
-     * Large PDFs must be streamed — never loaded via Storage::get() — or
-     * PHP runs out of memory and the endpoint returns a bare 500.
+     * Content-Type / filename are forced via S3 ResponseContent* query params
+     * when temporary URLs are available.
      */
-    public function download(UuidInterface $id): StreamedResponse
+    public function download(UuidInterface $id): RedirectResponse|StreamedResponse
     {
         $report = $this->repository->getReport($id);
 
@@ -262,22 +261,23 @@ class ReportCRUDService
         $downloadName       = $this->buildDownloadFilename($report, $extension);
         $asciiName          = $this->asciiFallback($downloadName);
         $rfc5987Name        = rawurlencode($downloadName);
+        $disposition        = sprintf(
+            'attachment; filename="%s"; filename*=UTF-8\'\'%s',
+            $asciiName,
+            $rfc5987Name,
+        );
 
         $headers = [
             'Content-Type'                  => $mime,
-            'Content-Disposition'           => sprintf(
-                'attachment; filename="%s"; filename*=UTF-8\'\'%s',
-                $asciiName,
-                $rfc5987Name,
-            ),
+            'Content-Disposition'           => $disposition,
             'X-Content-Type-Options'        => 'nosniff',
             'Access-Control-Expose-Headers' => 'Content-Disposition, Content-Length, Content-Type',
         ];
 
-        // New: file stored via Spatie Media Library (DigitalOcean Spaces / S3)
-        if ($report->file_disk === 'media') {
-            $media = $report->getFirstMedia('report_file');
-            if (!$media) {
+        // Media Library (current path) — prefer redirect off the app servers
+        $media = $report->getFirstMedia('report_file');
+        if ($report->file_disk === 'media' || $media !== null) {
+            if ($media === null) {
                 Log::warning('[Reports] download: media record missing', [
                     'report_id' => $report->id,
                     'status'    => $report->status,
@@ -285,14 +285,21 @@ class ReportCRUDService
                 abort(404, __('Report file is missing.'));
             }
 
-            $diskName = (string) $media->disk;
-            $path     = $media->getPathRelativeToRoot();
+            $redirect = $this->redirectToMediaUrl($media, $mime, $disposition, $report->id);
+            if ($redirect !== null) {
+                return $redirect;
+            }
 
             if ($report->file_size) {
                 $headers['Content-Length'] = (string) $report->file_size;
             }
 
-            return $this->streamFromDisk($diskName, $path, $headers, $report->id);
+            return $this->streamFromDisk(
+                (string) $media->disk,
+                $media->getPathRelativeToRoot(),
+                $headers,
+                $report->id,
+            );
         }
 
         // Backward compat: legacy reports written directly to a Storage disk
@@ -308,6 +315,55 @@ class ReportCRUDService
         $headers['Content-Length'] = (string) ($report->file_size ?: $disk->size($report->file_path));
 
         return $this->streamFromDisk($report->file_disk, $report->file_path, $headers, $report->id);
+    }
+
+    /**
+     * Build a browser redirect to object storage so large files never pass
+     * through PHP-FPM / nginx as a buffered body.
+     */
+    private function redirectToMediaUrl(
+        Media $media,
+        string $mime,
+        string $disposition,
+        string $reportId,
+    ): ?RedirectResponse {
+        $diskName = (string) $media->disk;
+        $path     = $media->getPathRelativeToRoot();
+
+        try {
+            $url = Storage::disk($diskName)->temporaryUrl(
+                $path,
+                now()->addMinutes(30),
+                [
+                    'ResponseContentType'        => $mime,
+                    'ResponseContentDisposition' => $disposition,
+                ],
+            );
+        } catch (\Throwable $e) {
+            Log::info('[Reports] download: temporaryUrl unavailable, trying public URL', [
+                'report_id' => $reportId,
+                'disk'      => $diskName,
+                'path'      => $path,
+                'error'     => $e->getMessage(),
+            ]);
+
+            try {
+                $url = $media->getFullUrl();
+            } catch (\Throwable $inner) {
+                Log::warning('[Reports] download: media URL resolution failed', [
+                    'report_id' => $reportId,
+                    'error'     => $inner->getMessage(),
+                ]);
+
+                return null;
+            }
+        }
+
+        if (!is_string($url) || $url === '') {
+            return null;
+        }
+
+        return redirect()->away($url);
     }
 
     /**
