@@ -180,9 +180,9 @@ class ReportDataExtractionService
                     'display_status'      => $displayStatus,
                     'start_time'          => (string) ($d->start_time ?? ''),
                     'end_time'            => (string) ($d->end_time   ?? ''),
-                    'late_minutes'        => (int) ($d->late_minutes          ?? 0),
+                    'late_minutes'        => 0,
                     'overtime_minutes'    => 0,
-                    'early_leave_minutes' => (int) ($d->early_departure_minutes ?? 0),
+                    'early_leave_minutes' => 0,
                     'total_work_hours'    => 0.0,
                     'calculated_hours'    => 0.0,
                     'notes'               => (string) ($d->notes ?? ''),
@@ -191,6 +191,19 @@ class ReportDataExtractionService
                 ];
             }
 
+            // A date can carry several rows (one per scheduled period, plus leftover rows the
+            // absence sweep flipped before the employee arrived). Status must reflect the whole
+            // day, not whichever row sorted first — same precedence as the calendar/history
+            // services: a real clock-in beats a stale absence.
+            $groupedDaily[$gid][$date]['display_status'] = $this->mergeDisplayStatus(
+                $groupedDaily[$gid][$date]['display_status'],
+                $displayStatus
+            );
+
+            // Accumulated, not taken from the first row: an empty absence row reports zero
+            // delay and would otherwise hide the lateness recorded on the row that owns the punch.
+            $groupedDaily[$gid][$date]['late_minutes']      += (int) ($d->late_minutes ?? 0);
+            $groupedDaily[$gid][$date]['early_leave_minutes'] += (int) ($d->early_departure_minutes ?? 0);
             $groupedDaily[$gid][$date]['overtime_minutes'] += (int) round((float) ($d->overtime_minutes ?? 0));
             $groupedDaily[$gid][$date]['total_work_hours']  += (float) ($d->total_work_hours ?? 0);
 
@@ -287,6 +300,18 @@ class ReportDataExtractionService
         $base['__daily'] = $dailyMap;
 
         return $base;
+    }
+
+    /**
+     * Day status when one date holds several attendance rows: holiday > present > absent.
+     * Mirrors AttendanceCalendarService / UserAttendanceHistoryService, where any real
+     * clock-in outranks a sibling row left flagged absent.
+     */
+    private function mergeDisplayStatus(string $current, string $incoming): string
+    {
+        $rank = ['absent' => 1, 'present' => 2, 'holiday' => 3];
+
+        return ($rank[$incoming] ?? 0) > ($rank[$current] ?? 0) ? $incoming : $current;
     }
 
     /**

@@ -76,6 +76,9 @@ final class AutoCloseAttendanceService
                 'status'                  => Attendance::STATUS_COMPLETED,
                 'day_status'              => 'clocked_out',
                 'shift_end_method'        => $reason,
+                // Guarded above on clock_in_time !== null: the employee did show up, so a
+                // stale absence flag from the deadline sweep must not survive the close.
+                'is_absent'               => 0,
                 'total_work_hours'        => $result->totalWorkHours,
                 'total_break_hours'       => $result->totalBreakHours,
                 'overtime_hours'          => $result->overtimeHours,

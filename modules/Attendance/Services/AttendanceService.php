@@ -408,7 +408,11 @@ class AttendanceService
             $waitingQuery->where('start_time', $startDateTime->format('Y-m-d H:i:s'));
         }
 
-        $waiting = $waitingQuery->first();
+        // A day can hold several un-clocked-in rows (one per scheduled period, plus rows the
+        // absence sweep already flipped). Without an order, first() picked an arbitrary one and
+        // the punch could activate the wrong period, leaving the real one absent. created_at
+        // breaks the remaining tie when duplicates share the same start_time.
+        $waiting = $waitingQuery->orderBy('start_time')->orderBy('created_at')->first();
 
         if ($waiting) {
             $waiting->update($attendanceData);
@@ -606,6 +610,10 @@ class AttendanceService
             'notes' => $attendance->notes . ($dto->getNotes() ? "\n" . $dto->getNotes() : ''),
             'status' => Attendance::STATUS_COMPLETED,
             'day_status' => 'clocked_out',
+            // The row is reached through getCurrentAttendance(), so it always carries a real
+            // clock-in. Clear any absence flag written before the employee arrived (deadline
+            // sweep / enforcement), otherwise reports keep rendering the day as غياب.
+            'is_absent' => 0,
         ];
     }
 
