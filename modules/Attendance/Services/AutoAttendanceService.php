@@ -88,25 +88,44 @@ class AutoAttendanceService
             ->select([
                 'id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
                 'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',
-                'start_time', 'overtime_hours'
+                'start_time', 'business_date', 'overtime_hours'
             ])
             ->whereIn('user_id', $allRelevantUserIds)
-            ->whereBetween('start_time', [$startDate, $endDate])
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('start_time', [$startDate, $endDate])
+                    ->orWhereBetween('business_date', [$startDate->toDateString(), $endDate->toDateString()]);
+            })
             ->orderBy('start_time')
             ->get();
 
         // Build lookup: [userId][dateKey][timeKey] => true  (for work periods)
         //               [userId][dateKey]['_holiday'] => true  (for holiday rows)
+        //               [userId][dateKey]['_punch']   => true  (employee actually clocked in)
         $existingByUserDate = [];
         foreach ($realAttendanceRecords as $record) {
-            $uid     = (string) $record->user_id;
-            $dateKey = Carbon::parse($record->start_time, $timezone)->format('Y-m-d');
-            $timeKey = Carbon::parse($record->start_time, $timezone)->format('H:i:s');
+            $uid = (string) $record->user_id;
 
-            $existingByUserDate[$uid][$dateKey][$timeKey] = true;
+            // business_date is the day the row belongs to. start_time is not a reliable day key:
+            // a flexible clock-in overwrites it with the punch time, and it is null on rows that
+            // only ever carried a business_date.
+            $dateKey = $record->business_date
+                ? Carbon::parse($record->business_date, $timezone)->format('Y-m-d')
+                : ($record->start_time ? Carbon::parse($record->start_time, $timezone)->format('Y-m-d') : null);
+
+            if ($dateKey === null) {
+                continue;
+            }
+
+            if ($record->start_time) {
+                $existingByUserDate[$uid][$dateKey][Carbon::parse($record->start_time, $timezone)->format('H:i:s')] = true;
+            }
 
             if ($record->is_holiday) {
                 $existingByUserDate[$uid][$dateKey]['_holiday'] = true;
+            }
+
+            if ($record->clock_in_time) {
+                $existingByUserDate[$uid][$dateKey]['_punch'] = true;
             }
         }
 
@@ -131,6 +150,12 @@ class AutoAttendanceService
                     $schedule  = $constraint->constraint_config['time_rules']['weekly_schedule'][$dayOfWeek] ?? null;
 
                     if ($schedule && isset($schedule['enabled']) && $schedule['enabled']) {
+                        // The employee already clocked in that day. Backfilling a period row here
+                        // would sit next to the real one and render the whole day as absent.
+                        if (isset($existingByUserDate[$uid][$dateString]['_punch'])) {
+                            continue;
+                        }
+
                         $dayPeriods = $schedule['periods'] ?? [];
 
                         foreach ($dayPeriods as $index => $periodTime) {
