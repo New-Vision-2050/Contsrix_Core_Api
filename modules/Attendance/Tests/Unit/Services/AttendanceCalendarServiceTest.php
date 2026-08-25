@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Tests\Unit\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Services\AttendanceCalendarService;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\UserAttendanceService;
+use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
+use Modules\User\Models\User;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -157,6 +162,246 @@ class AttendanceCalendarServiceTest extends TestCase
         $this->assertTrue($hasPresence);
         $this->assertFalse($hasAbsent);
         $this->assertFalse($hasLateArrival->invoke($this->service, $dayAttendances));
+    }
+
+    public function test_today_stays_required_while_the_clock_in_deadline_is_still_ahead(): void
+    {
+        $pending = $this->resolvePendingClockInDay(
+            '2026-08-25T08:15:00+03:00',
+            Carbon::parse('2026-08-25T07:40:00+03:00')
+        );
+
+        $this->assertNotNull($pending);
+        $this->assertSame(8.0, $pending['work_hours']);
+    }
+
+    public function test_today_becomes_absent_once_the_clock_in_deadline_has_passed(): void
+    {
+        $this->assertNull($this->resolvePendingClockInDay(
+            '2026-08-25T08:15:00+03:00',
+            Carbon::parse('2026-08-25T09:30:00+03:00')
+        ));
+    }
+
+    public function test_non_work_day_is_never_reported_as_still_required(): void
+    {
+        $this->assertNull($this->resolvePendingClockInDay(
+            '2026-08-25T08:15:00+03:00',
+            Carbon::parse('2026-08-25T07:40:00+03:00'),
+            'day_off_or_weekend'
+        ));
+    }
+
+    /**
+     * A flexible employee has no first-clock-in deadline, so ShiftWindowCalculator reports
+     * end of day as `can_clock_in_until`. The whole day must stay مطلوب للحضور until then.
+     */
+    public function test_flexible_day_stays_required_until_end_of_day(): void
+    {
+        $flexiblePeriod = [
+            'start_time' => '00:00',
+            'end_time' => '23:59',
+            'total_work_hours' => 9.0,
+            'attendance_type' => 'flexible',
+            'can_clock_in_until' => '2026-08-25T23:59:59+03:00',
+            'attendance' => [],
+        ];
+
+        $lateEvening = $this->resolvePendingClockInDay(
+            '2026-08-25T23:59:59+03:00',
+            Carbon::parse('2026-08-25T22:45:00+03:00'),
+            'work_day',
+            $flexiblePeriod
+        );
+
+        $this->assertNotNull($lateEvening);
+        $this->assertSame(9.0, $lateEvening['work_hours']);
+
+        $this->assertNull($this->resolvePendingClockInDay(
+            '2026-08-25T23:59:59+03:00',
+            Carbon::parse('2026-08-26T00:05:00+03:00'),
+            'work_day',
+            $flexiblePeriod
+        ));
+    }
+
+    /**
+     * The reported case: PATCH /sub_entities/records/attendance-status with
+     * status = holiday over 2026-08-25 .. 2026-09-03. Those dates are the employee's own
+     * time off, so the calendar owes إجازة, not the عطلة it used to print.
+     */
+    public function test_override_window_reads_as_leave_on_a_scheduled_work_day(): void
+    {
+        $day = $this->buildDayData('2026-08-25', $this->userWithHolidayWindow(), ['tuesday' => true]);
+
+        $this->assertSame('leave', $day['status_key']);
+        $this->assertSame('إجازة', $day['status']);
+    }
+
+    /**
+     * عطلة belongs to the schedule, so a weekend keeps it even while an override window
+     * covers the date — a day the employee never works cannot spend a leave day.
+     */
+    public function test_weekend_inside_the_override_window_stays_a_day_off(): void
+    {
+        // 2026-08-28 is a Friday.
+        $day = $this->buildDayData('2026-08-28', $this->userWithHolidayWindow(), ['friday' => false]);
+
+        $this->assertSame('off', $day['status_key']);
+        $this->assertSame('عطلة', $day['status']);
+    }
+
+    /**
+     * Past date_to the employee is back on their constraint, and the holiday rows the
+     * override left behind must not keep the day pinned to عطلة.
+     */
+    public function test_day_after_the_override_window_falls_back_to_the_constraint(): void
+    {
+        $leftoverRow = $this->attendance([
+            'is_holiday' => 1,
+            'day_status' => 'holiday',
+            'status'     => Attendance::STATUS_HOLIDAY,
+            'notes'      => ManualAttendanceStatus::HOLIDAY_ROW_NOTE,
+            'start_time' => '2026-09-04 08:00:00',
+        ]);
+
+        $day = $this->buildDayData(
+            '2026-09-04',
+            $this->userWithHolidayWindow(),
+            ['friday' => true],
+            collect([$leftoverRow])
+        );
+
+        $this->assertSame('absent', $day['status_key']);
+        $this->assertSame('غائب', $day['status']);
+    }
+
+    /**
+     * A company-wide public holiday is not written by the override endpoint and is not in
+     * the constraint either, so it is still recognised from its attendance row — عطلة.
+     */
+    public function test_public_holiday_row_on_a_scheduled_work_day_is_a_day_off(): void
+    {
+        $publicHolidayRow = $this->attendance([
+            'is_holiday' => 1,
+            'day_status' => 'holiday',
+            'status'     => Attendance::STATUS_HOLIDAY,
+            'notes'      => 'Auto-generated holiday record: National Day',
+            'start_time' => '2026-09-23 08:00:00',
+        ]);
+
+        $day = $this->buildDayData(
+            '2026-09-23',
+            new User(),
+            ['wednesday' => true],
+            collect([$publicHolidayRow])
+        );
+
+        $this->assertSame('off', $day['status_key']);
+        $this->assertSame('عطلة', $day['status']);
+    }
+
+    /**
+     * Raw attributes: the date casts format through the connection on write, which a plain
+     * PHPUnit TestCase has no container for.
+     */
+    private function userWithHolidayWindow(): User
+    {
+        return (new User())->setRawAttributes([
+            'manual_attendance_status'       => ManualAttendanceStatus::HOLIDAY,
+            'manual_attendance_status_since' => '2026-08-25',
+            'manual_attendance_status_until' => '2026-09-03',
+        ]);
+    }
+
+    /**
+     * @param array<string, bool> $enabledWeekdays
+     * @param Collection<int, Attendance>|null $dayAttendances
+     * @return array<string, mixed>
+     */
+    private function buildDayData(
+        string $dateString,
+        User $user,
+        array $enabledWeekdays,
+        ?Collection $dayAttendances = null
+    ): array {
+        $weekly = [];
+        foreach ($enabledWeekdays as $weekday => $enabled) {
+            $weekly[$weekday] = ['enabled' => $enabled, 'periods' => []];
+        }
+
+        $constraint = new AttendanceConstraint();
+        $constraint->constraint_config = ['time_rules' => ['weekly_schedule' => $weekly]];
+
+        // A day the schedule works, with the clock-in deadline long gone, so anything that
+        // is neither عطلة nor إجازة settles as غائب.
+        $constraintService = $this->createMock(AttendanceConstraintService::class);
+        $constraintService->method('getTodaysWorkRulesForUser')->willReturn([
+            'day_status'       => 'work_day',
+            'all_work_periods' => [['start_time' => '08:00', 'end_time' => '16:00', 'total_work_hours' => 8.0]],
+        ]);
+
+        $service = new AttendanceCalendarService(
+            $constraintService,
+            $this->createMock(UserAttendanceService::class),
+            $this->createMock(EmployeeTaskPresenceService::class),
+        );
+
+        $method = new ReflectionMethod($service, 'buildDayData');
+        $method->setAccessible(true);
+
+        return $method->invoke(
+            $service,
+            $user,
+            Carbon::parse($dateString, 'Asia/Riyadh'),
+            $dateString,
+            false,
+            false,
+            $dayAttendances ?? collect(),
+            false,
+            false,
+            'Asia/Riyadh',
+            Carbon::parse('2026-09-30T12:00:00+03:00'),
+            ScheduledWorkDays::fromConstraint($constraint)
+        );
+    }
+
+    /**
+     * @param array<string, mixed>|null $period
+     * @return array{work_hours: float|null}|null
+     */
+    private function resolvePendingClockInDay(
+        string $canClockInUntil,
+        Carbon $now,
+        string $dayStatus = 'work_day',
+        ?array $period = null
+    ): ?array {
+        $period ??= [
+            'start_time' => '08:00',
+            'end_time' => '16:00',
+            'total_work_hours' => 8.0,
+            'can_clock_in_until' => $canClockInUntil,
+            'attendance' => [],
+        ];
+
+        $userAttendanceService = $this->createMock(UserAttendanceService::class);
+        $userAttendanceService->method('getUserConstraints')->willReturn([
+            'work_rules' => [
+                'day_status' => $dayStatus,
+                'all_work_periods' => [$period],
+            ],
+        ]);
+
+        $service = new AttendanceCalendarService(
+            $this->createMock(AttendanceConstraintService::class),
+            $userAttendanceService,
+            $this->createMock(EmployeeTaskPresenceService::class),
+        );
+
+        $method = new ReflectionMethod($service, 'resolvePendingClockInDay');
+        $method->setAccessible(true);
+
+        return $method->invoke($service, new User(), '2026-08-25', $now);
     }
 
     /**

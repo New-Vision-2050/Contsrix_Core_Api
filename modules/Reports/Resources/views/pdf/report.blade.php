@@ -68,6 +68,7 @@
         .b-present  { background:#dcfce7; color:#166534; }
         .b-absent   { background:#fee2e2; color:#991b1b; }
         .b-holiday  { background:#fef3c7; color:#92400e; }
+        .b-leave    { background:#f3e8ff; color:#6b21a8; }
         /* ── colored time pills ── */
         .tv-in    { display:inline-block; background:#d1fae5; color:#065f46; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
         .tv-out   { display:inline-block; background:#dbeafe; color:#1e40af; border-radius:3px; padding:1px 4px; font-size:8px; font-weight:600; }
@@ -236,6 +237,7 @@
                                         'present' => '#f0fdf4',
                                         'absent'  => '#fef2f2',
                                         'holiday' => '#fffbeb',
+                                        'leave'   => '#faf5ff',
                                         default   => '#ffffff',
                                     };
                                     $dSumDelay   += (int) ($d['late_minutes']    ?? 0);
@@ -298,7 +300,9 @@
                     $sumCalcMin   = 0;
                     $empPresentCount = collect($empDaily)->where('display_status', 'present')->count();
                     $empAbsentCount  = collect($empDaily)->where('display_status', 'absent')->count();
+                    // عطلة (schedule not working) and إجازة (granted to the employee) count apart.
                     $empHolidayCount = collect($empDaily)->where('display_status', 'holiday')->count();
+                    $empLeaveCount   = collect($empDaily)->where('display_status', 'leave')->count();
                 @endphp
                 @if (!empty($empDaily))
                 <div @unless($loop->first) class="page-break" @endunless>
@@ -317,7 +321,9 @@
                                     &nbsp;
                                     <span style="background:#fee2e2; color:#991b1b; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'غياب' : 'Absent' }}: {{ $empAbsentCount }}</span>
                                     &nbsp;
-                                    <span style="background:#fef9c3; color:#854d0e; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'إجازة' : 'Holiday' }}: {{ $empHolidayCount }}</span>
+                                    <span style="background:#fef9c3; color:#854d0e; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'عطلة' : 'Day Off' }}: {{ $empHolidayCount }}</span>
+                                    &nbsp;
+                                    <span style="background:#f3e8ff; color:#6b21a8; border-radius:3px; padding:1px 5px;">{{ $lang === 'ar' ? 'إجازة' : 'Leave' }}: {{ $empLeaveCount }}</span>
                                 </span>
                             </td>
                         </tr>
@@ -355,6 +361,7 @@
                                     'present' => '#f0fdf4',
                                     'absent'  => '#fef2f2',
                                     'holiday' => '#fffbeb',
+                                    'leave'   => '#faf5ff',
                                     default   => '#ffffff',
                                 };
                                 $subRowCount   = (int) ($d['sub_row_count'] ?? 1);
@@ -373,7 +380,8 @@
                                             $statusBadge = match($d['display_status'] ?? '') {
                                                 'present' => ['cls' => 'b-present', 'lbl' => $lang === 'ar' ? 'حضور' : 'Present'],
                                                 'absent'  => ['cls' => 'b-absent',  'lbl' => $lang === 'ar' ? 'غياب' : 'Absent'],
-                                                'holiday' => ['cls' => 'b-holiday', 'lbl' => $lang === 'ar' ? 'إجازة' : 'Holiday'],
+                                                'holiday' => ['cls' => 'b-holiday', 'lbl' => $lang === 'ar' ? 'عطلة' : 'Day Off'],
+                                                'leave'   => ['cls' => 'b-leave',   'lbl' => $lang === 'ar' ? 'إجازة' : 'Leave'],
                                                 default   => ['cls' => '',          'lbl' => '—'],
                                             };
                                         @endphp

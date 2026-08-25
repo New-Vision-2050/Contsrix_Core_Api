@@ -126,6 +126,36 @@ class AttendanceConstraintService
     {
        return $this->getEffectiveConstraintForUser($user);
     }
+
+    /**
+     * The employee's scheduled work days, resolved once so a month-wide consumer can ask
+     * "is this date a weekend?" without building per-day rules. Uses the same winning
+     * time-constraint selection as {@see getTodaysWorkRulesForUser}.
+     */
+    public function getScheduledWorkDaysForUser(User $user): \Modules\Attendance\Support\ScheduledWorkDays
+    {
+        $constraints = $this->getApplicableConstraintsForDataRetrieval($user);
+
+        if ($constraints->isEmpty()) {
+            return \Modules\Attendance\Support\ScheduledWorkDays::unknown();
+        }
+
+        return \Modules\Attendance\Support\ScheduledWorkDays::fromConstraint(
+            $this->selectWinningTimeConstraint($constraints)
+        );
+    }
+
+    /**
+     * Highest priority, then most recent, among constraints that carry time rules.
+     */
+    private function selectWinningTimeConstraint(Collection $constraints): ?AttendanceConstraint
+    {
+        return $constraints
+            ->filter(fn ($c) => isset($c->constraint_config['time_rules']))
+            ->sortByDesc('priority')
+            ->sortByDesc('created_at')
+            ->first();
+    }
     /**
      * Validate a single constraint against attendance.
      *
@@ -573,18 +603,8 @@ class AttendanceConstraintService
             ];
         }
 
-        // Define a reusable closure to select the winning constraint based on priority.
-        // Assuming higher priority number means higher priority, then by creation date.
-        $selectWinningConstraint = function (callable $filter) use ($constraints, $user) {
-            return $constraints
-                ->filter($filter)
-                ->sortByDesc('priority') // Sort by priority if applicable
-                ->sortByDesc('created_at') // Then by creation date for stability
-                ->first();
-        };
-
         // Find the winning TIME constraint.
-        $timeConstraint = $selectWinningConstraint(fn($c) => isset($c->constraint_config['time_rules']));
+        $timeConstraint = $this->selectWinningTimeConstraint($constraints);
 
         // Find the winning LOCATION constraint.
         // Prefer constraints whose branch_locations contain valid (non-zero) coordinates

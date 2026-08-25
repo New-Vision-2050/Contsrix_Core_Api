@@ -1644,6 +1644,90 @@ Per-day numeric fields have the same hazard. Reading `late_minutes` from the fir
 row of a date reports `00:00` when that row is an empty absence row, hiding the
 lateness recorded on the row that owns the punch. Accumulate across the date.
 
+### INV-17: Today is not absent until the clock-in deadline passes
+
+`AutoAttendanceService` pre-creates the whole month's period rows with
+`status = absent`, so a day-status reader that trusts those rows flips today to
+`غائب` at midnight even though the employee can still arrive on time.
+
+A day in progress may only read as absent once the employee can no longer punch
+in. The deadline is `can_clock_in_until` from
+`GET /attendance/user-constraint/today`, which is
+`ShiftWindow::$firstClockInDeadline ?? ShiftWindow::$lastClockInAt` — the same
+value as `absent_at`. Readers should take it from that endpoint's payload rather
+than recomputing `start ± minutes`, so the calendar cannot disagree with the
+screen that offers the clock-in button.
+
+`attendance_type = flexible` has no first-clock-in deadline:
+`ShiftWindowCalculator::computeFlexible` returns
+`firstClockInDeadline = null` and `lastClockInAt = end of day`, so a flexible
+employee only becomes absent at end of day. Reading the deadline from the
+endpoint gets this for free; hardcoding a schedule-period deadline does not.
+
+Current implementations, both applied to the no-rows branch and the
+pre-created-absent-rows branch:
+
+- `AttendanceCalendarService::resolvePendingClockInDay`, in `buildDayData`. Gated
+  on today, because the `$isFuture` branch already reports `required` and past
+  days are settled.
+- `UserAttendanceHistoryService::isStillAwaitingClockIn`, in
+  `buildDayStatusPayload`. Not gated on today, because that endpoint pages over
+  whole months through one branch; it short-circuits on past dates instead, so a
+  month page only pays for the constraint lookup on today and later.
+
+Both emit the literal `مطلوب للحضور` so the two endpoints agree byte-for-byte on
+the same date.
+
+`Modules\Reports\Services\ReportDataExtractionService::mergeDisplayStatus` does
+not apply this rule; reports are read after the fact, where every day is settled.
+
+### INV-18: `عطلة` belongs to the schedule, `إجازة` belongs to the person
+
+Both labels used to come out of the single `attendances.is_holiday` flag, so every
+weekend printed as `إجازة` in the report PDF while a holiday granted through
+`PATCH /api/v1/sub_entities/records/attendance-status` printed as `عطلة` in the
+calendar and the history endpoint — each the opposite of what it meant.
+
+The two are decided from different sources and must not be collapsed:
+
+- `عطلة` — the schedule does not work this date. Either the weekday is disabled in
+  `time_rules.weekly_schedule`, the date is listed in `time_rules.holidays`, or a
+  company-wide `PublicHolidayDay` row exists (written by
+  `CreateHolidayAttendanceCommand`, which no constraint knows about, so it is still
+  recognised from the attendance row).
+- `إجازة` — time off granted to this employee on a date the schedule would
+  otherwise work: an approved `LeaveRequest`, or the attendance-status override
+  while its `manual_attendance_status_since .. _until` window covers the date.
+
+`عطلة` is evaluated first. A weekend falling inside an override window stays
+`عطلة`, because a day the employee never works cannot spend a leave day.
+
+Two support classes hold the shared decision so the three consumers cannot drift:
+
+- `Modules\Attendance\Support\ManualAttendanceStatus` — the only reader of the
+  override window. `activeOn()` for models, `resolve()`/`isHolidayFor()` for raw
+  database rows.
+- `Modules\Attendance\Support\ScheduledWorkDays` — `isWorkDay(date)` from the
+  winning time constraint, resolved once per request via
+  `AttendanceConstraintService::getScheduledWorkDaysForUser` so a month-wide reader
+  does not build per-day rules just to detect a weekend. With no weekly schedule
+  configured every date is schedulable, because there is then no basis to call a day
+  `عطلة`.
+
+Consumers: `AttendanceCalendarService::buildDayData` (`status_key` `off` vs
+`leave`), `UserAttendanceHistoryService::buildDayStatusPayload`
+(`dayOffStatusPayload` vs `leaveStatusPayload`), and
+`ReportDataExtractionService::holidayDisplayStatus` (`display_status` `holiday` vs
+`leave`, rendered by `pdf/report.blade.php` as `عطلة` / `إجازة`).
+
+Setting the override rewrites every attendance row inside its range and shortening
+the range later does not undo those writes, so each of those rows carries
+`ManualAttendanceStatus::HOLIDAY_ROW_NOTE`. Once the window stops covering a row's
+date the reader drops the row and resolves the day from the constraint, which is
+what makes a day revert to normal after `date_to`. Never infer the override from
+`is_holiday`, `day_status` or `status` alone — the weekend, public-holiday and
+override rows are byte-identical on those columns.
+
 INV-15 is intentionally skipped here; it is claimed by the Rules V2 series cited
 in code comments.
 
