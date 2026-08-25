@@ -258,48 +258,79 @@ class ReportGenerationService
 
     private function bytesToCompactImageDataUri(string $bytes, int $maxEdge): ?string
     {
-        if ($bytes === '' || !function_exists('imagecreatefromstring')) {
+        // Queue workers may run PHP without GD, or with GD but without JPEG.
+        // Never throw — skip compaction and let callers fall back / omit avatars.
+        if ($bytes === '' || !\function_exists('imagecreatefromstring')) {
             return null;
         }
 
-        $source = @imagecreatefromstring($bytes);
-        if ($source === false) {
+        $source = null;
+        $target = null;
+
+        try {
+            $source = @\imagecreatefromstring($bytes);
+            if ($source === false) {
+                return null;
+            }
+
+            $width  = \imagesx($source);
+            $height = \imagesy($source);
+            if ($width < 1 || $height < 1) {
+                return null;
+            }
+
+            $scale  = min(1.0, $maxEdge / max($width, $height));
+            $target = $scale < 1.0
+                ? \imagescale($source, max(1, (int) round($width * $scale)), max(1, (int) round($height * $scale)))
+                : $source;
+
+            if ($target === false) {
+                return null;
+            }
+
+            ob_start();
+            if (\function_exists('imagejpeg')) {
+                \imagejpeg($target, null, 72);
+                $encoded = (string) ob_get_clean();
+                $mime    = 'image/jpeg';
+            } elseif (\function_exists('imagepng')) {
+                \imagepng($target, null, 6);
+                $encoded = (string) ob_get_clean();
+                $mime    = 'image/png';
+            } else {
+                ob_end_clean();
+
+                return null;
+            }
+
+            if ($encoded === '') {
+                return null;
+            }
+
+            return 'data:' . $mime . ';base64,' . base64_encode($encoded);
+        } catch (Throwable) {
+            if (\ob_get_level() > 0) {
+                @\ob_end_clean();
+            }
+
             return null;
+        } finally {
+            if (
+                $target !== null
+                && $target !== false
+                && $target !== $source
+                && ($target instanceof \GdImage || \is_resource($target))
+            ) {
+                @\imagedestroy($target);
+            }
+            if (
+                $source !== null
+                && $source !== false
+                && ($source instanceof \GdImage || \is_resource($source))
+            ) {
+                @\imagedestroy($source);
+            }
         }
-
-        $width  = imagesx($source);
-        $height = imagesy($source);
-        if ($width < 1 || $height < 1) {
-            imagedestroy($source);
-
-            return null;
-        }
-
-        $scale  = min(1.0, $maxEdge / max($width, $height));
-        $target = $scale < 1.0
-            ? imagescale($source, max(1, (int) round($width * $scale)), max(1, (int) round($height * $scale)))
-            : $source;
-
-        if ($target === false) {
-            imagedestroy($source);
-
-            return null;
-        }
-
-        ob_start();
-        imagejpeg($target, null, 72);
-        $jpeg = (string) ob_get_clean();
-
-        if ($target !== $source) {
-            imagedestroy($target);
-        }
-        imagedestroy($source);
-
-        if ($jpeg === '') {
-            return null;
-        }
-
-        return 'data:image/jpeg;base64,' . base64_encode($jpeg);
     }
 
     private function storeAsMedia(Report $report, string $contents, string $extension): Media
