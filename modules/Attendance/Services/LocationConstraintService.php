@@ -2,6 +2,7 @@
 
 namespace Modules\Attendance\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Contracts\LocationConstraintServiceInterface;
 use Modules\Attendance\Models\Attendance;
@@ -372,78 +373,196 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
      * @param array $config The constraint to validate
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
      */
-      public function validateMultiLocation(Attendance $attendance, AttendanceConstraint $constraint): bool|array
+    /**
+     * Validate against all allowed work locations (location_work + additional_locations
+     * already merged onto the constraint via AttendanceConstraintService).
+     *
+     * Auto clock-out only after continuous out-of-zone time exceeds out_zone_minutes
+     * (from constraint rules API / out_zone_rules.duration_minutes).
+     */
+    public function validateMultiLocation(Attendance $attendance, AttendanceConstraint $constraint): bool|array
     {
-        // 1. Get the constraint's configuration
         $config = $constraint->constraint_config ?? [];
 
-        // 2. Get the list of allowed branch locations directly from the constraint itself.
-        // This is the main fix: We use the data from the constraint, not from the user.
-        $allowedBranchLocations = $constraint->branch_locations ?? [];
-        // If no branch locations are defined in this constraint, we cannot validate.
-        if (empty($allowedBranchLocations)) {
-            // This is not a violation, it just means this constraint is misconfigured or not applicable.
+        // branch_locations here already includes location_work + additional_locations
+        // when called through validateSingleConstraint → mergeAdditionalLocationsForUser.
+        $allowedLocations = $constraint->branch_locations ?? [];
+        if (empty($allowedLocations)) {
             return false;
         }
-        // 3. Get the user's current location from the clock-in data.
-        // $userLocation = $attendance->clock_in_location;
-        $userLocation  = $this->getLatestUserLocation($attendance);
 
-        // If the user did not provide a location, we must return a violation.
+        $userLocation = $this->getLatestUserLocation($attendance);
+
         if (!$userLocation || !isset($userLocation['latitude'], $userLocation['longitude'])) {
             return [
                 'constraint_type' => $constraint->constraint_name,
                 'severity' => $config['severity'] ?? 'high',
                 'message' => 'Location data is required to validate against branch locations but was not provided.',
-                'details' => ['reason' => 'Missing GPS data from user.']
+                'details' => ['reason' => 'Missing GPS data from user.'],
             ];
         }
+
         $userLat = (float) $userLocation['latitude'];
         $userLon = (float) $userLocation['longitude'];
-        // 4. Loop through each defined branch location and check if the user is within its radius.
-        $isWithinAnyAllowedBranch = false;
-        foreach ($allowedBranchLocations as $branchLocation) {
-            // Ensure the branch location data is complete
-            if (!isset($branchLocation['latitude'], $branchLocation['longitude'], $branchLocation['radius'])) {
-                continue; // Skip misconfigured branch locations
-            }
 
-            $branchLat = (float) $branchLocation['latitude'];
-            $branchLon = (float) $branchLocation['longitude'];
-            $branchRadius = (float) $branchLocation['radius'];
-            // Calculate the distance between the user and the branch center.
-            $distanceInMeters = $this->calculateDistance($userLat, $userLon, $branchLat, $branchLon);
-            // Check if the distance is within the allowed radius for this branch.
-            if ($distanceInMeters <= $branchRadius) {
-                $isWithinAnyAllowedBranch = true;
-                // Since the user is within a valid location, we can stop checking.
-                break;
-            }
+        if ($this->isWithinAnyAllowedLocation($userLat, $userLon, $allowedLocations)) {
+            return false;
         }
-        // 5. If the user was not within the radius of ANY of the defined branches, return a violation.
-        if (!$isWithinAnyAllowedBranch) {
-            if($attendance->clock_in_time && $attendance->clock_out_time){
-                $this->attendanceService->endShiftAutomatically(
-                    (string) $attendance->id,
-                    'auto_multi_location_enforcement', // A specific reason for this type of checkout
-                    "Shift ended: User was not within any assigned branch location.",
-                );
-            }
+
+        $locationDetails = [
+            'user_location' => [
+                'latitude' => $userLat,
+                'longitude' => $userLon,
+            ],
+            'allowed_locations_count' => count($allowedLocations),
+        ];
+
+        // Clock-in / dry-run (unsaved attendance): must be inside immediately — no grace.
+        $isActivePersistedShift = $attendance->exists
+            && $attendance->clock_in_time
+            && !$attendance->clock_out_time;
+
+        if (!$isActivePersistedShift) {
             return [
                 'constraint_type' => $constraint->constraint_name,
                 'severity' => $config['severity'] ?? 'high',
-                'message' => 'Your location is outside of all assigned work branches.',
-                'details' => [
-                    'user_location' => [
-                        'latitude' => $userLat,
-                        'longitude' => $userLon
-                    ],
-
-                ]
+                'message' => 'Your location is outside of all assigned work locations.',
+                'details' => $locationDetails,
             ];
         }
-        // 6. If the user is within at least one allowed branch location, the validation passes.
+
+        $outZoneMinutes = $this->resolveOutZoneMinutes($constraint);
+        $minutesOutside = $this->calculateContinuousMinutesOutside(
+            $attendance,
+            $allowedLocations
+        );
+
+        // Still within the allowed grace period — do not clock out yet.
+        if ($minutesOutside < $outZoneMinutes) {
+            return false;
+        }
+
+        $this->attendanceService->endShiftAutomatically(
+            (string) $attendance->id,
+            'auto_out_zone',
+            "Shift ended: outside all allowed work locations for {$minutesOutside} minutes "
+            . "(threshold: {$outZoneMinutes} minutes).",
+        );
+
+        return [
+            'constraint_type' => $constraint->constraint_name,
+            'severity' => $config['severity'] ?? 'high',
+            'message' => 'Your location is outside of all assigned work locations longer than allowed.',
+            'details' => array_merge($locationDetails, [
+                'minutes_outside' => $minutesOutside,
+                'out_zone_minutes' => $outZoneMinutes,
+                'enforcement_action' => 'auto_out_zone',
+            ]),
+        ];
+    }
+
+    /**
+     * Resolve out_zone grace period (minutes) from constraint rules.
+     * Prefers column → out_zone_rules → time_rules.out_zone_rules → default 30.
+     */
+    private function resolveOutZoneMinutes(AttendanceConstraint $constraint): int
+    {
+        if ($constraint->out_zone_minutes !== null) {
+            return max(0, (int) $constraint->out_zone_minutes);
+        }
+
+        $fromRules = $constraint->out_zone_rules['duration_minutes']
+            ?? $constraint->constraint_config['time_rules']['out_zone_rules']['duration_minutes']
+            ?? null;
+
+        if ($fromRules !== null) {
+            return max(0, (int) $fromRules);
+        }
+
+        return 30;
+    }
+
+    /**
+     * True when the coordinate falls within any allowed location radius (metres).
+     */
+    private function isWithinAnyAllowedLocation(float $lat, float $lon, array $allowedLocations): bool
+    {
+        foreach ($allowedLocations as $location) {
+            if (!isset($location['latitude'], $location['longitude'], $location['radius'])) {
+                continue;
+            }
+
+            $distanceMeters = $this->calculateDistance(
+                $lat,
+                $lon,
+                (float) $location['latitude'],
+                (float) $location['longitude']
+            ) * 1000;
+
+            if ($distanceMeters <= (float) $location['radius']) {
+                return true;
+            }
+        }
+
         return false;
+    }
+
+    /**
+     * Continuous minutes the employee has been outside every allowed location,
+     * based on location_tracking chronology (falls back to "now vs latest point").
+     */
+    private function calculateContinuousMinutesOutside(
+        Attendance $attendance,
+        array $allowedLocations
+    ): int {
+        $timezone = $attendance->timezone ?? config('app.timezone');
+        $tracking = $attendance->location_tracking ?? [];
+
+        if (!is_array($tracking) || empty($tracking)) {
+            // No trail — treat current outside ping as just starting (0 minutes).
+            // Callers with only a single latest point still need a clock; use last_update if present.
+            $latest = $this->getLatestUserLocation($attendance);
+            if ($latest && isset($latest['timestamp'])) {
+                return (int) Carbon::parse($latest['timestamp'], $timezone)
+                    ->diffInMinutes(Carbon::now($timezone));
+            }
+
+            return 0;
+        }
+
+        usort($tracking, static fn ($a, $b) => strtotime($a['timestamp'] ?? '0') <=> strtotime($b['timestamp'] ?? '0'));
+
+        $currentlyOutside = false;
+        $firstOutsideTime = null;
+
+        foreach ($tracking as $point) {
+            if (!isset($point['latitude'], $point['longitude'], $point['timestamp'])) {
+                continue;
+            }
+
+            $pointTime = Carbon::parse($point['timestamp'], $timezone);
+            $inside = $this->isWithinAnyAllowedLocation(
+                (float) $point['latitude'],
+                (float) $point['longitude'],
+                $allowedLocations
+            );
+
+            if (!$inside) {
+                if (!$currentlyOutside) {
+                    $firstOutsideTime = $pointTime;
+                    $currentlyOutside = true;
+                }
+            } else {
+                $currentlyOutside = false;
+                $firstOutsideTime = null;
+            }
+        }
+
+        if (!$currentlyOutside || !$firstOutsideTime) {
+            return 0;
+        }
+
+        return (int) $firstOutsideTime->diffInMinutes(Carbon::now($timezone));
     }
 
     /**
