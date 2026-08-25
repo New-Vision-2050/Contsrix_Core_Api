@@ -7,10 +7,8 @@ namespace Modules\Reports\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Modules\Reports\Presenters\ReportListPresenter;
 use Modules\Reports\Presenters\ReportPresenter;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Modules\Reports\Requests\CreateEmployeeReportRequest;
 use Modules\Reports\Requests\CreateReportRequest;
 use Modules\Reports\Requests\DeleteReportRequest;
@@ -18,6 +16,7 @@ use Modules\Reports\Requests\GetReportListRequest;
 use Modules\Reports\Requests\GetReportRequest;
 use Modules\Reports\Services\ReportCRUDService;
 use Ramsey\Uuid\Uuid;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
@@ -107,8 +106,23 @@ class ReportController extends Controller
         return Json::deleted();
     }
 
-    public function download(GetReportRequest $request): RedirectResponse|StreamedResponse
+    /**
+     * Return a short-lived storage URL for the report file.
+     *
+     * SPA clients must open `download_url` via window.location / window.open /
+     * <a href> — NOT via axios/XHR blob. XHR to DigitalOcean Spaces is blocked
+     * by CORS; a top-level navigation is not.
+     *
+     * Pass ?stream=1 to proxy the bytes through the API (legacy / small files).
+     */
+    public function download(GetReportRequest $request): JsonResponse|StreamedResponse
     {
-        return $this->reportService->download(Uuid::fromString((string) $request->route('id')));
+        $id = Uuid::fromString((string) $request->route('id'));
+
+        if ($request->boolean('stream')) {
+            return $this->reportService->download($id);
+        }
+
+        return Json::item($this->reportService->resolveDownloadUrl($id));
     }
 }
