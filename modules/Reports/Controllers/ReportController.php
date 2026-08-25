@@ -7,8 +7,8 @@ namespace Modules\Reports\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 use Modules\Reports\Presenters\ReportListPresenter;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Modules\Reports\Presenters\ReportPresenter;
 use Modules\Reports\Requests\CreateEmployeeReportRequest;
 use Modules\Reports\Requests\CreateReportRequest;
@@ -106,7 +106,7 @@ class ReportController extends Controller
         return Json::deleted();
     }
 
-    public function download(GetReportRequest $request): Response
+    public function download(GetReportRequest $request): StreamedResponse
     {
         return $this->reportService->download(Uuid::fromString((string) $request->route('id')));
     }
