@@ -94,6 +94,10 @@ class EmployeeTaskRepository
     {
         $query = EmployeeTaskRequest::query()
             ->where('employee_task_requests.status', 'pending')
+            ->where(function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->whereHas('processes', function ($q) use ($adminId) {
                 $q->where('status', ProcessStatus::InProgress)
                   ->whereHas('steps', function ($q) use ($adminId) {
@@ -166,6 +170,10 @@ class EmployeeTaskRepository
         $query = EmployeeTaskRequest::query()
             ->filter($filters)
             ->where('employee_task_requests.status', 'pending')
+            ->where(function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->whereHas('processes', function ($q) use ($adminId) {
                 $q->where('status', ProcessStatus::InProgress)
                   ->whereHas('steps', function ($q) use ($adminId) {
@@ -248,6 +256,10 @@ class EmployeeTaskRepository
         $query = EmployeeTaskExtensionRequest::query()
             ->where('status', 'pending')
             ->whereNotNull('current_procedure_step_id')
+            ->whereHas('task', function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->where(function ($q) use ($adminId) {
                 $q->whereDoesntHave('currentProcedureStep.actionTakers')
                   ->orWhereHas('currentProcedureStep.actionTakers', fn ($at) => $at->where('user_id', $adminId));
@@ -281,6 +293,10 @@ class EmployeeTaskRepository
         $query = EmployeeTaskExtensionRequest::query()
             ->where('status', 'pending')
             ->whereNotNull('current_procedure_step_id')
+            ->whereHas('task', function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->where(function ($q) use ($adminId) {
                 $q->whereDoesntHave('currentProcedureStep.actionTakers')
                   ->orWhereHas('currentProcedureStep.actionTakers', fn ($at) => $at->where('user_id', $adminId));
@@ -311,6 +327,10 @@ class EmployeeTaskRepository
         $query = EmployeeTaskApprovalRequest::query()
             ->where('status', 'pending')
             ->whereNotNull('current_procedure_step_id')
+            ->whereHas('task', function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->where(function ($q) use ($adminId) {
                 $q->whereDoesntHave('currentProcedureStep.actionTakers')
                   ->orWhereHas('currentProcedureStep.actionTakers', fn ($at) => $at->where('user_id', $adminId));
@@ -340,6 +360,10 @@ class EmployeeTaskRepository
         $query = EmployeeTaskEndRequest::query()
             ->where('status', 'pending')
             ->whereNotNull('current_procedure_step_id')
+            ->whereHas('task', function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->where(function ($q) use ($adminId) {
                 $q->whereDoesntHave('currentProcedureStep.actionTakers')
                   ->orWhereHas('currentProcedureStep.actionTakers', fn ($at) => $at->where('user_id', $adminId));
@@ -367,6 +391,10 @@ class EmployeeTaskRepository
         $query = EmployeeTaskStartRequest::query()
             ->where('status', 'pending')
             ->whereNotNull('current_procedure_step_id')
+            ->whereHas('task', function ($q) {
+                $q->where('is_project_notification', false)
+                  ->orWhereNull('is_project_notification');
+            })
             ->where(function ($q) use ($adminId) {
                 $q->whereDoesntHave('currentProcedureStep.actionTakers')
                   ->orWhereHas('currentProcedureStep.actionTakers', fn ($at) => $at->where('user_id', $adminId));
