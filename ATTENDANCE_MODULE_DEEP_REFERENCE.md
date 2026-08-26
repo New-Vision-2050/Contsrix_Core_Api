@@ -1636,7 +1636,6 @@ whichever row it happens to read first. Current implementations of this rule:
   with a clock-in.
 - `AttendanceCalendarService`, `hasPresence` before `hasAbsent`.
 - `UserAttendanceHistoryService::buildDayStatusPayload`, same ordering.
-- `AttendanceTeamPresenter`, absent plus active task renders as on-task.
 - `Modules\Reports\Services\ReportDataExtractionService::mergeDisplayStatus`,
   precedence `holiday > present > absent` across every row of the date.
 
@@ -1727,6 +1726,90 @@ date the reader drops the row and resolves the day from the constraint, which is
 what makes a day revert to normal after `date_to`. Never infer the override from
 `is_holiday`, `day_status` or `status` alone — the weekend, public-holiday and
 override rows are byte-identical on those columns.
+
+### INV-19: A task does not stand in for a punch
+
+Holding a task no longer makes an employee present. Every attendance surface used
+to carry a `متواجد` (`on_task`) overlay: an employee with task activity on a date
+read as present even with no clock-in, and the day's task minutes were added to
+the worked hours. That was a workaround for task sites not being clockable — it is
+obsolete now that an active task publishes a temporary geofence
+(`EmployeeTaskTemporaryLocationProvider`, `source: employee_task`) that the
+employee can genuinely clock in at, which produces a real attendance row that
+every consumer already understands.
+
+Presence therefore has exactly one source: an attendance row. A task without a
+punch leaves the day `غائب` (or `مطلوب للحضور` while INV-17's deadline still
+stands). Removed, and not to be reintroduced:
+
+- `AttendanceCalendarService` — the `on_task` `status_key`, its dot colour and
+  `summary.on_task_count`. The day's `tasks[]` array stays, informational only.
+- `AttendanceStatusService` / `AttendanceTeamPresenter` — `on_task` status,
+  `presentViaTask()`, `usersOnTask()` and the `$hasActiveTask` flags.
+- `ReportDataExtractionService` — the task-presence merge that flipped
+  `display_status` from `absent` to `present`, invented day rows for task-only
+  dates and added task minutes to `total_work_hours` / `calculated_hours`.
+- `AttendanceDashboardService`, `AttendanceReportService` and the
+  `TaskAttendancePresenceService` they shared (deleted) — task days and hours no
+  longer top up `actual_attendance_days` / `actual_worked_hours`.
+- `validation.day_status.on_task` in both `lang/ar` and `lang/en`.
+
+`AbsenceMarkingService` still consults `TemporaryLocationProvider::isEngagedElsewhere()`
+to hold off auto-absence while an employee is on a task. That is a write-side
+grace period, not a display status, and is deliberately left in place.
+
+### INV-20: The matched geofence is only knowable at punch time
+
+A punch taken inside an active task's temporary geofence is ordinary attendance — it
+counts as a present day, its hours accrue normally, and the report prints its time
+in the same `دخول فعلي` / `خروج فعلي` columns as any office punch. There is no
+separate task in/out column in the report.
+
+The punch is still attributed to the task on the row. That attribution cannot be
+recomputed later: validation asks only "is this coordinate inside any allowed
+circle", and the allowed list is a flat merge of branch locations,
+`attendance_constraint_locations`, locations from the user's additional
+constraints, and task geofences; the match discards which circle won. The task
+geofence itself is transient — `EmployeeTaskTemporaryLocationProvider` publishes
+it only while the task is `in_progress` and inside `time_from + duration_hours` —
+so by the time a report runs, the circle that accepted the punch no longer exists.
+It is therefore recorded on the row: `attendances.clock_in_task_id` and
+`attendances.clock_out_task_id`, resolved in
+`AttendanceService::buildClockInAttendanceData` and
+`buildClockOutUpdatePayload` via `TaskLocationPunchResolver`.
+
+Both sides are resolved independently. An employee may start at the office and
+finish at a task site, or the reverse, and each side is attributed on its own.
+
+Two rules the resolver must keep:
+
+- **A constraint location outranks an overlapping task geofence.** An employee
+  standing at their own branch is at work, whatever task they also hold, so
+  `clockInLocationsByKindForUser` returns the two kinds separately and the
+  constraint set is tested first. Task entries are identified by
+  `source = employee_task` — the only tag the merge preserves — and carry the task
+  id in `reference_id`.
+- **Location bookkeeping may never break a punch.** A failed constraint lookup
+  resolves to "no task", leaving a valid attendance row that is simply not
+  attributed.
+
+`Modules\Attendance\Support\GeofenceMatch::first()` holds the predicate for both
+callers, so a punch clock-in accepted cannot be one the resolver rejects.
+
+Because the task punch is printed with the ordinary columns, no task-kind gating is
+needed: the punch shows as soon as it exists. The `clock_in_task_id` /
+`clock_out_task_id` attribution is kept on the row for audit and any future
+breakdown, but it does not change where the time is printed.
+
+**A task belongs to a user in two ways, and the geofence must follow both.**
+`EmployeeTaskTemporaryLocationProvider` matches the task's own `user_id` and, for
+project notifications, any user in the notification's `assigned_user_ids` (via
+`ProjectNotification.employee_task_request_id`) — the same two paths
+`EmployeeTaskPresenceService::taskIdsByUser` used. Project-notification task rows
+are stored with a null `company_id` outside the tenant scope, so their assignees are
+visible only on the notification. Dropping the second path leaves an assignee who
+sees the task on their calendar yet has no geofence to clock in at, which is exactly
+the case INV-19's removal of the `on_task` overlay depends on.
 
 INV-15 is intentionally skipped here; it is claimed by the Rules V2 series cited
 in code comments.

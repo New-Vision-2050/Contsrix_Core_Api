@@ -145,8 +145,6 @@
                 $showOffOut  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OFFICIAL_OUT]);
                 $showActIn   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_IN]);
                 $showActOut  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_OUT]);
-                $showTaskIn  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TASK_IN]);
-                $showTaskOut = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TASK_OUT]);
                 $showDelay   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_DELAY]);
                 $showOT      = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OVERTIME]);
                 $showTotal   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TOTAL_HOURS]);
@@ -156,7 +154,6 @@
                 $empColCount   = 2 + 1 + (int)$showDay + (int)$showBranch + (int)$showMgmt
                                + (int)$showOffIn + (int)$showOffOut
                                + (int)$showActIn + (int)$showActOut
-                               + (int)$showTaskIn + (int)$showTaskOut
                                + (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $empMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $empTotColspan = $empColCount - $empMetricCols;
@@ -165,7 +162,6 @@
                 $dayColCount   = 2 + (int)$showBranch + (int)$showMgmt
                                + (int)$showOffIn + (int)$showOffOut
                                + (int)$showActIn + (int)$showActOut
-                               + (int)$showTaskIn + (int)$showTaskOut
                                + (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $dayMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $dayTotColspan = $dayColCount - $dayMetricCols;
@@ -213,8 +209,6 @@
                             @if ($showOffOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'  : 'Off.Out' }}</th>@endif
                             @if ($showActIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'  : 'Act.In' }}</th>@endif
                             @if ($showActOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'  : 'Act.Out' }}</th>@endif
-                            @if ($showTaskIn)<th class="tcol">{{ $lang === 'ar' ? 'بدء مهمة'   : 'Task In' }}</th>@endif
-                            @if ($showTaskOut)<th class="tcol">{{ $lang === 'ar' ? 'نهاية مهمة' : 'Task Out' }}</th>@endif
                             @if ($showDelay)<th class="tcol">{{ $lang === 'ar' ? 'تأخير'      : 'Delay' }}</th>@endif
                             @if ($showOT)<th class="tcol">{{ $lang === 'ar' ? 'إضافي'      : 'Overtime' }}</th>@endif
                             @if ($showTotal)<th class="hcol">{{ $lang === 'ar' ? 'إجمالي'     : 'Total' }}</th>@endif
@@ -231,8 +225,7 @@
                                     $empBranch    = optional(optional($emp->userProfessionalData)->branch)->name     ?? '';
                                     $empMgmt      = optional(optional($emp->userProfessionalData)->management)->name ?? '';
                                     $attSessions  = $d['attendance_sessions'] ?? [];
-                                    $taskSessions = $d['task_sessions']       ?? [];
-                                    $subRowCount  = max(1, count($attSessions), count($taskSessions));
+                                    $subRowCount  = max(1, count($attSessions));
                                     $rowBg = match($d['display_status'] ?? '') {
                                         'present' => '#f0fdf4',
                                         'absent'  => '#fef2f2',
@@ -249,7 +242,6 @@
                                 @for ($ri = 0; $ri < $subRowCount; $ri++)
                                     @php
                                         $attRow  = $attSessions[$ri]  ?? null;
-                                        $taskRow = $taskSessions[$ri] ?? null;
                                     @endphp
                                     <tr style="background-color:{{ $rowBg }};">
                                         @if ($ri === 0)
@@ -262,8 +254,6 @@
                                         @endif
                                         @if ($showActIn)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>@endif
                                         @if ($showActOut)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
-                                        @if ($showTaskIn)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>@endif
-                                        @if ($showTaskOut)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>@endif
                                         @if ($ri === 0)
                                             @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>@endif
                                             @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif
@@ -338,8 +328,6 @@
                             @if ($showOffOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'      : 'Off.Out' }}</th>@endif
                             @if ($showActIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'      : 'Act.In' }}</th>@endif
                             @if ($showActOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'      : 'Act.Out' }}</th>@endif
-                            @if ($showTaskIn)<th class="tcol">{{ $lang === 'ar' ? 'بدء مهمة'       : 'Task In' }}</th>@endif
-                            @if ($showTaskOut)<th class="tcol">{{ $lang === 'ar' ? 'نهاية مهمة'     : 'Task Out' }}</th>@endif
                             @if ($showDelay)<th class="tcol">{{ $lang === 'ar' ? 'تأخير'          : 'Delay' }}</th>@endif
                             @if ($showOT)<th class="tcol">{{ $lang === 'ar' ? 'إضافي'          : 'Overtime' }}</th>@endif
                             @if ($showTotal)<th class="hcol">{{ $lang === 'ar' ? 'إجمالي ساعات'   : 'Total Hrs' }}</th>@endif
@@ -366,13 +354,11 @@
                                 };
                                 $subRowCount   = (int) ($d['sub_row_count'] ?? 1);
                                 $attSessions   = $d['attendance_sessions'] ?? [];
-                                $taskSessions  = $d['task_sessions']       ?? [];
                                 $dateSeq++;
                             @endphp
                             @for ($ri = 0; $ri < $subRowCount; $ri++)
                                 @php
                                     $attRow  = $attSessions[$ri]  ?? null;
-                                    $taskRow = $taskSessions[$ri] ?? null;
                                 @endphp
                                 <tr style="background-color:{{ $rowBg }};">
                                     @if ($ri === 0)
@@ -398,8 +384,6 @@
                                     @endif
                                     @if ($showActIn)<td class="num tcol">{{ $attRow ? ($fmtTime($attRow['clock_in_time']) ?: '-') : '' }}</td>@endif
                                     @if ($showActOut)<td class="num tcol">{{ $attRow ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
-                                    @if ($showTaskIn)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_in']  ?: '-') : '' }}</td>@endif
-                                    @if ($showTaskOut)<td class="num tcol">{{ $taskRow ? ($taskRow['task_time_out'] ?: '-') : '' }}</td>@endif
                                     @if ($ri === 0)
                                         @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes'] ?? 0) }}</td>@endif
                                         @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif

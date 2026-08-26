@@ -13,7 +13,6 @@ class AttendanceDashboardService
 {
     public function __construct(
         private AttendanceReportRepository $repository,
-        private TaskAttendancePresenceService $taskPresenceService,
     ) {}
 
     /**
@@ -46,15 +45,8 @@ class AttendanceDashboardService
         $requiredHours = AttendanceReportCalculator::contractRequiredHours($attendanceDays, $dailyHours);
 
         $attendanceTotals = $this->repository->getAttendanceTotals($filters);
-        $taskAugmentation = $this->taskPresenceService->augmentation($filters);
-        // On-task days (متواجد) count as attended even without a clock-in record.
-        $actualDays = (int) ($attendanceTotals->actual_attendance_days ?? 0)
-            + (int) $taskAugmentation['extra_days_total'];
-        $workedHours = round(
-            (float) ($attendanceTotals->actual_worked_hours ?? 0)
-            + (float) $taskAugmentation['extra_hours_total'],
-            1
-        );
+        $actualDays = (int) ($attendanceTotals->actual_attendance_days ?? 0);
+        $workedHours = round((float) ($attendanceTotals->actual_worked_hours ?? 0), 1);
         $usedLeaves = $this->repository->sumApprovedLeaveDays(
             $filters->company_id,
             $filters->employee_id,

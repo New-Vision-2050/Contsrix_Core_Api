@@ -534,7 +534,6 @@ return [
         'in_location'=>'في الموقع',
         'clocked_out'=> 'تم الانصراف',
         'absent'=> 'غائب',
-        'on_task'=> 'متواجد',
     ],
 
     'unique_translation' => ':attribute بـ :locale مستخدم بالفعل.',

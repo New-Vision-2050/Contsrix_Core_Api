@@ -366,11 +366,7 @@ class AttendanceController extends Controller
             return Json::items([], message: 'No attendance records found');
         }
 
-        $payload = $this->attendanceStatusService->presentTeamAttendances(
-            $result->items(),
-            $filters['start_date'] ?? null,
-            $filters['end_date'] ?? null,
-        );
+        $payload = $this->attendanceStatusService->presentTeamAttendances($result->items());
 
         return Json::items(
             $payload,

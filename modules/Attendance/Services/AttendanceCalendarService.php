@@ -69,7 +69,8 @@ class AttendanceCalendarService
         // Bulk fetch approved leave requests for the range
         $leaveDates = $this->fetchLeaveDatesForRange($user, $dateStartStr, $dateEndStr);
 
-        // Bulk fetch the tasks that make the user present (متواجد), keyed by date
+        // Tasks active on each date, keyed by date. Informational only: a task no longer
+        // decides the day's status (INV-19), the employee clocks in at its location instead.
         $taskDetails = $this->taskPresenceService->taskDetailsForUser($user->id, $dateStartStr, $dateEndStr);
 
         // Resolved once for the whole range: which dates the constraint schedules work on.
@@ -86,7 +87,6 @@ class AttendanceCalendarService
         $leaveCount   = 0;
         $offCount     = 0;
         $requiredCount = 0;
-        $onTaskCount   = 0;
         $totalWorkHours = $this->calculateTotalWorkHoursFromGroupedAttendances($attendances);
 
         while ($cursor->lte($rangeEnd)) {
@@ -97,7 +97,6 @@ class AttendanceCalendarService
             $dayAttendances = $attendances->get($dateString, collect());
             $hasLeave       = in_array($dateString, $leaveDates, true);
             $dayTasks       = $taskDetails[$dateString] ?? [];
-            $hasTask        = $dayTasks !== [];
 
             $dayData = $this->buildDayData(
                 $user,
@@ -107,7 +106,6 @@ class AttendanceCalendarService
                 $isToday,
                 $dayAttendances,
                 $hasLeave,
-                $hasTask,
                 $timezone,
                 $now,
                 $scheduledWorkDays
@@ -137,9 +135,6 @@ class AttendanceCalendarService
                 case 'required':
                     $requiredCount++;
                     break;
-                case 'on_task':
-                    $onTaskCount++;
-                    break;
             }
 
             $cursor->addDay();
@@ -155,7 +150,6 @@ class AttendanceCalendarService
                 'leave_count'       => $leaveCount,
                 'off_count'         => $offCount,
                 'required_count'    => $requiredCount,
-                'on_task_count'     => $onTaskCount,
                 'total_work_hours'  => $totalWorkHours,
             ],
         ];
@@ -172,7 +166,6 @@ class AttendanceCalendarService
         bool $isToday,
         Collection $dayAttendances,
         bool $hasLeave,
-        bool $hasTask,
         string $timezone,
         Carbon $now,
         ScheduledWorkDays $scheduledWorkDays
@@ -249,18 +242,6 @@ class AttendanceCalendarService
             $dayStatus = $workRules['day_status'] ?? 'Undefined';
 
             if ($dayStatus === 'work_day') {
-                // Employee has an assigned/active task on this day → present (متواجد).
-                if ($hasTask) {
-                    return $this->formatDay(
-                        $dateString,
-                        $dayName,
-                        'on_task',
-                        __('validation.day_status.on_task'),
-                        null,
-                        $dayAttendances
-                    );
-                }
-
                 $pending = $isToday
                     ? $this->resolvePendingClockInDay($user, $dateString, $now)
                     : null;
@@ -325,18 +306,6 @@ class AttendanceCalendarService
         );
 
         if ($hasAbsent && ! $hasLate) {
-            // Employee has an assigned/active task on this day → present (متواجد).
-            if ($hasTask) {
-                return $this->formatDay(
-                    $dateString,
-                    $dayName,
-                    'on_task',
-                    __('validation.day_status.on_task'),
-                    null,
-                    $dayAttendances
-                );
-            }
-
             $pending = $isToday
                 ? $this->resolvePendingClockInDay($user, $dateString, $now)
                 : null;
@@ -519,7 +488,6 @@ class AttendanceCalendarService
     {
         return match ($statusKey) {
             'present'  => '#4CAF50',
-            'on_task'  => '#00BCD4',
             'late'     => '#FF9800',
             'absent'   => '#F44336',
             'leave'    => '#9C27B0',

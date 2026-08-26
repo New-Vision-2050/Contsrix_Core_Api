@@ -44,7 +44,8 @@ class AttendanceCalendarPresenter extends AbstractPresenter
     }
 
     /**
-     * Tasks that kept the employee present (متواجد) on this day.
+     * Tasks active on this day. Informational only — a task does not decide the
+     * day's status; the employee clocks in at the task location instead (INV-19).
      *
      * @param  array<int, array<string, mixed>>  $tasks
      * @return array<int, array<string, mixed>>
@@ -77,7 +78,6 @@ class AttendanceCalendarPresenter extends AbstractPresenter
     {
         return match ($statusKey) {
             'present'  => '#4CAF50',
-            'on_task'  => '#00BCD4',
             'late'     => '#FF9800',
             'absent'   => '#F44336',
             'leave'    => '#9C27B0',
@@ -97,7 +97,6 @@ class AttendanceCalendarPresenter extends AbstractPresenter
             'leave_count'      => $summary['leave_count'] ?? 0,
             'off_count'        => $summary['off_count'] ?? 0,
             'required_count'   => $summary['required_count'] ?? 0,
-            'on_task_count'    => $summary['on_task_count'] ?? 0,
             'total_work_hours' => $summary['total_work_hours'] ?? 0.0,
         ];
     }
