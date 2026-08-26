@@ -9,8 +9,8 @@ final class CreateEmployeeTaskRequestDTO
     public function __construct(
         public readonly string  $userId,
         public readonly string  $title,
-        public readonly string  $employee_task_type_id,
-        public readonly string  $itemType,
+        public readonly ?string $employee_task_type_id,
+        public readonly ?string $itemType,
         public readonly ?string $itemId,
         public readonly float   $durationHours,
         public readonly string  $taskDate,
