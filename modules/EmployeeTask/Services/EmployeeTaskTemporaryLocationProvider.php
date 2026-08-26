@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Modules\Attendance\Contracts\TemporaryLocationProvider;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\Project\ProjectManagement\Models\ProjectNotification;
 use Modules\User\Models\User;
 
 /**
@@ -60,11 +61,29 @@ final class EmployeeTaskTemporaryLocationProvider implements TemporaryLocationPr
      * Company scoping is applied by the model's CustomTenantScope global scope
      * (CustomBelongsToTenant) whenever tenancy is initialized — the same
      * tenancy pattern the other EmployeeTask services rely on.
+     *
+     * A task belongs to a user in two ways, and both must publish a geofence or the
+     * assignee sees the task on their calendar yet cannot clock in at its site:
+     * the task's own `user_id`, and — for project notifications, whose task row is
+     * stored with a null `company_id` outside the tenant scope — any user listed in
+     * the notification's `assigned_user_ids`. Same two paths as
+     * {@see EmployeeTaskPresenceService::taskIdsByUser}.
      */
     private function activeLocatedTasksQuery(User $user): Builder
     {
+        $userId = (string) $user->id;
+
         return EmployeeTaskRequest::query()
-            ->where('user_id', $user->id)
+            ->where(function (Builder $query) use ($userId): void {
+                $query->where('user_id', $userId)
+                    ->orWhereIn(
+                        'id',
+                        ProjectNotification::query()
+                            ->select('employee_task_request_id')
+                            ->whereNotNull('employee_task_request_id')
+                            ->whereJsonContains('assigned_user_ids', $userId)
+                    );
+            })
             ->where('status', EmployeeTaskStatus::InProgress->value)
             ->whereNotNull('time_from')
             ->whereNotNull('task_latitude')

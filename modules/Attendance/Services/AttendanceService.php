@@ -89,7 +89,8 @@ class AttendanceService
             $endDateTime,
             $timezone,
             $window,
-            $isFlexible
+            $isFlexible,
+            app(TaskLocationPunchResolver::class)->taskIdFor($user, $clockInDTO->getLocation())
         );
         $attendance = $this->persistClockInAttendance(
             $clockInDTO->getUserId(),
@@ -341,6 +342,7 @@ class AttendanceService
         string $timezone,
         ShiftWindow $window,
         bool $isFlexible = false,
+        ?string $clockInTaskId = null,
     ): array {
         $flags = \Modules\Attendance\Domain\Calculator\OvertimeFlags::fromArray($constraints['overtime_rules'] ?? null);
         $clockIn = Carbon::parse($dto->getClockInTime(), $timezone);
@@ -356,6 +358,7 @@ class AttendanceService
             'company_id' => $dto->getCompanyId(),
             'clock_in_time' => $dto->getClockInTime(),
             'clock_in_location' => $dto->getLocation(),
+            'clock_in_task_id' => $clockInTaskId,
             'start_time' => $storedStart->format('Y-m-d H:i:s'),
             'end_time' => $storedEnd->format('Y-m-d H:i:s'),
             'notes' => $dto->getNotes(),
@@ -604,9 +607,18 @@ class AttendanceService
      */
     private function buildClockOutUpdatePayload(Attendance $attendance, ClockOutDTO $dto): array
     {
+        // Clock-out does not re-run geofence validation, so the task has to be resolved
+        // here rather than read off the clock-in: an employee can start at the office and
+        // finish at a task site, or the other way round.
+        $user = $attendance->relationLoaded('user') && $attendance->user
+            ? $attendance->user
+            : User::find($dto->getUserId());
+
         return [
             'clock_out_time' => Carbon::parse($dto->getClockOutTime())->setTimezone(getTimeZoneBranchByRequest()),
             'clock_out_location' => $dto->getLocation(),
+            'clock_out_task_id' => app(TaskLocationPunchResolver::class)
+                ->taskIdFor($user, $dto->getLocation()),
             'notes' => $attendance->notes . ($dto->getNotes() ? "\n" . $dto->getNotes() : ''),
             'status' => Attendance::STATUS_COMPLETED,
             'day_status' => 'clocked_out',

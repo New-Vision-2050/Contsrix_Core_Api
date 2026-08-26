@@ -70,9 +70,15 @@ final class AutoCloseAttendanceService
             $closeAtInBranch = $closeAt->setTimezone($branchTz);
 
             $noteLine = '[Auto] Clock-out: ' . $reason . ' at ' . $closeAtInBranch->toIso8601String();
+            $lastLocation = $this->resolveLastLocation($fresh);
             $fresh->update([
                 'clock_out_time'          => $closeAtInBranch->format('Y-m-d H:i:s'),
-                'clock_out_location'      => $this->resolveLastLocation($fresh),
+                'clock_out_location'      => $lastLocation,
+                // Attributed here rather than left to the report: if the shift is closed while
+                // the employee is still standing in a task's geofence, that geofence is gone by
+                // the time anyone reads the row (INV-20).
+                'clock_out_task_id'       => app(TaskLocationPunchResolver::class)
+                    ->taskIdFor($fresh->user, is_array($lastLocation) ? $lastLocation : null),
                 'status'                  => Attendance::STATUS_COMPLETED,
                 'day_status'              => 'clocked_out',
                 'shift_end_method'        => $reason,

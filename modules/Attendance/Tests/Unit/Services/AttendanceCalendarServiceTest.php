@@ -359,7 +359,6 @@ class AttendanceCalendarServiceTest extends TestCase
             false,
             $dayAttendances ?? collect(),
             false,
-            false,
             'Asia/Riyadh',
             Carbon::parse('2026-09-30T12:00:00+03:00'),
             ScheduledWorkDays::fromConstraint($constraint)

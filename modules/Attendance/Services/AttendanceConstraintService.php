@@ -1290,6 +1290,29 @@ class AttendanceConstraintService
             return $mainConstraint;
         }
 
+        $additionalLocations = $this->additionalLocationsForUser($user, $mainConstraint);
+
+        if (empty($additionalLocations)) {
+            return $mainConstraint;
+        }
+
+        $cloned = clone $mainConstraint;
+        $cloned->branch_locations = array_merge($mainConstraint->branch_locations ?? [], $additionalLocations);
+
+        return $cloned;
+    }
+
+    /**
+     * Every geofence beyond the constraint's own `branch_locations` that the user may clock
+     * in at: table-backed locations on the main constraint and on every applicable one,
+     * locations carried by the user's additional constraints, and task temporary geofences.
+     * Task entries are the only ones tagged `source = employee_task`, which is what lets a
+     * caller tell a task site apart from an office (INV-20).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function additionalLocationsForUser(User $user, AttendanceConstraint $mainConstraint): array
+    {
         $mainConstraint->loadMissing('additionalLocations');
 
         $mainTableLocs = $mainConstraint->additionalLocations
@@ -1345,22 +1368,49 @@ class AttendanceConstraintService
             ->values()
             ->all();
 
-        $additionalLocations = array_merge($mainTableLocs, $applicableTableLocs, $branchLocs, $tableLocs);
-
         // Feature 6: temporary geofences from active employee tasks must also be accepted
         // at clock-in — merged here, not only into the UI payload (INV-26).
-        $temporaryLocations = $this->temporaryTaskLocationsFor($user);
+        return array_merge(
+            $mainTableLocs,
+            $applicableTableLocs,
+            $branchLocs,
+            $tableLocs,
+            $this->temporaryTaskLocationsFor($user)
+        );
+    }
 
-        $additionalLocations = array_merge($additionalLocations, $temporaryLocations);
+    /**
+     * The user's allowed clock-in geofences, split into the ones that belong to their
+     * constraints and the temporary ones published by active tasks. Same list clock-in
+     * validation matches against, so a caller cannot accept a punch validation rejected.
+     *
+     * @return array{constraint: list<array<string, mixed>>, task: list<array<string, mixed>>}
+     */
+    public function clockInLocationsByKindForUser(User $user): array
+    {
+        $constraints = $this->getApplicableConstraintsForDataRetrieval($user);
+        $mainConstraint = $constraints->first();
 
-        if (empty($additionalLocations)) {
-            return $mainConstraint;
+        if ($mainConstraint === null) {
+            return ['constraint' => [], 'task' => $this->temporaryTaskLocationsFor($user)];
         }
 
-        $cloned = clone $mainConstraint;
-        $cloned->branch_locations = array_merge($mainConstraint->branch_locations ?? [], $additionalLocations);
+        $constraintLocations = $constraints
+            ->flatMap(fn (AttendanceConstraint $c) => $c->branch_locations ?? [])
+            ->values()
+            ->all();
 
-        return $cloned;
+        $taskLocations = [];
+        foreach ($this->additionalLocationsForUser($user, $mainConstraint) as $location) {
+            if (($location['source'] ?? null) === 'employee_task') {
+                $taskLocations[] = $location;
+                continue;
+            }
+
+            $constraintLocations[] = $location;
+        }
+
+        return ['constraint' => $constraintLocations, 'task' => $taskLocations];
     }
 
     private function resolveConstraintsFromDb(User $user): Collection

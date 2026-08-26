@@ -10,6 +10,7 @@ use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\RadiusEnforcementService;
 use Modules\Attendance\Services\TaskService;
+use Modules\Attendance\Support\GeofenceMatch;
 
 /**
  * Service for location-related attendance constraint validations.
@@ -487,24 +488,7 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
      */
     private function isWithinAnyAllowedLocation(float $lat, float $lon, array $allowedLocations): bool
     {
-        foreach ($allowedLocations as $location) {
-            if (!isset($location['latitude'], $location['longitude'], $location['radius'])) {
-                continue;
-            }
-
-            $distanceMeters = $this->calculateDistance(
-                $lat,
-                $lon,
-                (float) $location['latitude'],
-                (float) $location['longitude']
-            ) * 1000;
-
-            if ($distanceMeters <= (float) $location['radius']) {
-                return true;
-            }
-        }
-
-        return false;
+        return GeofenceMatch::first($lat, $lon, $allowedLocations) !== null;
     }
 
     /**

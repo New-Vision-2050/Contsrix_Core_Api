@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 class AttendanceCalendarPresenterTasksTest extends TestCase
 {
-    public function test_on_task_day_exposes_the_task_that_caused_the_status(): void
+    public function test_a_day_exposes_its_tasks_without_them_changing_the_status(): void
     {
         $presenter = new AttendanceCalendarPresenter([
             'days' => [
@@ -17,8 +17,8 @@ class AttendanceCalendarPresenterTasksTest extends TestCase
                     'date'             => '2026-08-24',
                     'day_name'         => 'الاثنين',
                     'day_number'       => 24,
-                    'status_key'       => 'on_task',
-                    'status'           => 'متواجد',
+                    'status_key'       => 'absent',
+                    'status'           => 'غائب',
                     'work_hours'       => null,
                     'attendance_count' => 2,
                     'tasks'            => [
@@ -43,7 +43,7 @@ class AttendanceCalendarPresenterTasksTest extends TestCase
 
         $day = $presenter->present()['days'][0];
 
-        $this->assertSame('on_task', $day['status_key']);
+        $this->assertSame('absent', $day['status_key']);
         $this->assertCount(1, $day['tasks']);
 
         $task = $day['tasks'][0];

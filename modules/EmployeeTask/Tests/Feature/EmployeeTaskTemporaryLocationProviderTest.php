@@ -141,6 +141,75 @@ final class EmployeeTaskTemporaryLocationProviderTest extends TestCase
         $this->assertSame([], $locations);
     }
 
+    /**
+     * A project-notification task belongs to every user in the notification's
+     * assigned_user_ids, not only the task's own user_id. Without this the assignee saw the
+     * task on their calendar yet had no geofence to clock in at — the exact case INV-19's
+     * removal of the on_task overlay depends on.
+     */
+    public function test_project_notification_assignee_emits_a_location(): void
+    {
+        $assignee = User::factory()->create(['company_id' => $this->company->id]);
+
+        // The task's own user_id is someone else; the assignee only appears on the
+        // notification. Project-notification task rows sit outside the tenant scope.
+        $task = $this->createTask([
+            'company_id'              => null,
+            'user_id'                 => $this->user->id,
+            'is_project_notification' => true,
+            'status'                  => EmployeeTaskStatus::InProgress->value,
+            'time_from'               => CarbonImmutable::now(self::TZ)->subMinutes(30)->format('Y-m-d H:i:s'),
+            'timezone'                => self::TZ,
+            'duration_hours'          => 2,
+        ]);
+
+        \Modules\Project\ProjectManagement\Models\ProjectNotification::create([
+            'company_id'               => $this->company->id,
+            'employee_task_request_id' => $task->id,
+            'notification_number'      => 'PN-' . uniqid(),
+            'status'                   => 'in_progress',
+            'assigned_user_ids'        => [(string) $assignee->id],
+        ]);
+
+        $locations = $this->provider->temporaryLocationsFor($assignee, CarbonImmutable::now(self::TZ));
+
+        $this->assertCount(1, $locations);
+        $this->assertSame((string) $task->id, $locations[0]['reference_id']);
+    }
+
+    /**
+     * The assignee path must not leak across to a user who is on neither the task nor the
+     * notification.
+     */
+    public function test_user_not_on_the_notification_emits_no_location(): void
+    {
+        $assignee   = User::factory()->create(['company_id' => $this->company->id]);
+        $outsider   = User::factory()->create(['company_id' => $this->company->id]);
+
+        $task = $this->createTask([
+            'company_id'              => null,
+            'user_id'                 => $this->user->id,
+            'is_project_notification' => true,
+            'status'                  => EmployeeTaskStatus::InProgress->value,
+            'time_from'               => CarbonImmutable::now(self::TZ)->subMinutes(30)->format('Y-m-d H:i:s'),
+            'timezone'                => self::TZ,
+            'duration_hours'          => 2,
+        ]);
+
+        \Modules\Project\ProjectManagement\Models\ProjectNotification::create([
+            'company_id'               => $this->company->id,
+            'employee_task_request_id' => $task->id,
+            'notification_number'      => 'PN-' . uniqid(),
+            'status'                   => 'in_progress',
+            'assigned_user_ids'        => [(string) $assignee->id],
+        ]);
+
+        $this->assertSame(
+            [],
+            $this->provider->temporaryLocationsFor($outsider, CarbonImmutable::now(self::TZ))
+        );
+    }
+
     public function test_radius_defaults_to_100_when_radius_meters_is_null(): void
     {
         $this->createTask([

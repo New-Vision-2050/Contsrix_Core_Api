@@ -1,4 +1,4 @@
-# Frontend guide: which task made the day "متواجد" (`on_task`)
+# Frontend guide: the `tasks` array on calendar days
 
 **Endpoint**
 - `GET /api/v1/attendance/user-attendance/calendar?month=8&year=2026`
@@ -11,11 +11,25 @@
 
 ## What changed
 
-Every day object in `payload.days` now carries a `tasks` array: the tasks/notifications
-that had activity on that day. On days where `status_key = "on_task"` (`متواجد`), this array
-is exactly the reason the employee is not counted absent, so the UI can show it.
+**The `on_task` / `متواجد` day status has been removed.** Holding a task no longer makes
+an employee present. An active task now publishes a temporary geofence that the employee
+can clock in at, so a task site produces a real attendance row like any other location —
+and presence comes only from that row.
 
-The array is `[]` on days with no task activity. All other fields are unchanged.
+Concretely, for a day where the employee had a task but never clocked in:
+
+| | Before | Now |
+|---|---|---|
+| `status_key` | `on_task` | `absent`, or `required` while the clock-in deadline still stands |
+| `status` | `متواجد` | `غائب` / `مطلوب للحضور` |
+| `dot_color` | `#00BCD4` | `#F44336` / `#2196F3` |
+
+**Removed fields:** `summary.on_task_count` is gone, and `dot_color` no longer returns
+`#00BCD4`. Any UI branch keyed on `status_key === "on_task"` is now dead code.
+
+**Kept:** every day object still carries a `tasks` array. It is now purely informational —
+the tasks that had activity on that day, useful as detail next to whatever status the day
+has. The array is `[]` on days with no task activity.
 
 ## Day shape
 
@@ -24,11 +38,11 @@ The array is `[]` on days with no task activity. All other fields are unchanged.
   "date": "2026-08-24",
   "day_name": "الاثنين",
   "day_number": 24,
-  "status_key": "on_task",
-  "status": "متواجد",
+  "status_key": "absent",
+  "status": "غائب",
   "work_hours": null,
   "duration_formatted": null,
-  "dot_color": "#00BCD4",
+  "dot_color": "#F44336",
   "attendance_count": 2,
   "tasks": [
     {
@@ -73,17 +87,17 @@ A task is attached to a day only when it is really related to it:
   while the task is active (`in_progress` / `paused`, or a notification that is
   `in_progress` / `completed`).
 
-Nothing else counts — including today. A task that is still open from an earlier date does
-not make the employee `متواجد` today; without a session or clock-in, today is `غائب`. A
-session left open by mistake is credited for at most 24 hours after it started (or until the
-task's own end time, whichever comes first).
+A session left open by mistake is credited for at most 24 hours after it started (or until
+the task's own end time, whichever comes first).
 
 ## Notes for the UI
 
 - A day can list more than one task; `work_minutes` is per task per day, clamped to that day.
 - `work_minutes = 0` is normal for a task that is active but never produced a work session
-  (e.g. a multi-assignee notification started by another assignee). The day is still `on_task`.
-- The day-level `work_hours` / `duration_formatted` still reflect **clock-in attendance only**,
-  so they stay `null` on pure `on_task` days. Use the task-level values to show task time.
-- `tasks` is also populated on `present` / `late` days when the employee worked on a task that
-  day, so it can be shown as extra detail there too.
+  (e.g. a multi-assignee notification started by another assignee).
+- The day-level `work_hours` / `duration_formatted` reflect **clock-in attendance only**.
+  A task's own time is only in the task-level values, and never contributes to the day's
+  worked hours.
+- To have a task day count as attendance, the employee must clock in at the task's
+  location. See the task temporary-geofence entries in the constraint payload
+  (`additional_locations[]` with `source: "employee_task"`).

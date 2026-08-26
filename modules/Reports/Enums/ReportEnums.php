@@ -103,8 +103,6 @@ final class ReportEnums
     public const ATT_COL_OFFICIAL_OUT = 'official_out';
     public const ATT_COL_ACTUAL_IN    = 'actual_in';
     public const ATT_COL_ACTUAL_OUT   = 'actual_out';
-    public const ATT_COL_TASK_IN      = 'task_in';
-    public const ATT_COL_TASK_OUT     = 'task_out';
     public const ATT_COL_DELAY        = 'delay';
     public const ATT_COL_OVERTIME     = 'overtime';
     public const ATT_COL_TOTAL_HOURS  = 'total_hours';
@@ -277,8 +275,6 @@ final class ReportEnums
             self::ATT_COL_OFFICIAL_OUT,
             self::ATT_COL_ACTUAL_IN,
             self::ATT_COL_ACTUAL_OUT,
-            self::ATT_COL_TASK_IN,
-            self::ATT_COL_TASK_OUT,
             self::ATT_COL_DELAY,
             self::ATT_COL_OVERTIME,
             self::ATT_COL_TOTAL_HOURS,

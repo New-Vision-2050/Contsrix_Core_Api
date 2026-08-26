@@ -14,7 +14,6 @@ class AttendanceReportService
 {
     public function __construct(
         private AttendanceReportRepository $repository,
-        private TaskAttendancePresenceService $taskPresenceService,
     ) {}
 
     public function getEmployee(AttendanceReportFilterDTO $filters): User
@@ -43,7 +42,6 @@ class AttendanceReportService
         $countryId = $contract?->country_id !== null ? (string) $contract->country_id : null;
 
         $monthlyAggregates = $this->repository->getMonthlyAttendanceAggregates($filters, $months);
-        $taskAugmentation = $this->taskPresenceService->augmentation($filters);
 
         $monthLeaveUsed = [];
         $chronologicalMonths = array_reverse($months);
@@ -68,8 +66,6 @@ class AttendanceReportService
                 $leaveAllowance,
                 $runningPrior,
                 $countryId,
-                (int) ($taskAugmentation['extra_days_by_month'][$monthKey] ?? 0),
-                (float) ($taskAugmentation['extra_hours_by_month'][$monthKey] ?? 0.0),
             );
             $runningPrior += (float) ($monthLeaveUsed[$monthKey] ?? 0);
         }
@@ -96,8 +92,6 @@ class AttendanceReportService
         float $leaveAllowance,
         float $priorLeaveUsed,
         ?string $countryId,
-        int $taskAttendanceDays = 0,
-        float $taskWorkedHours = 0.0,
     ): array {
         [$year, $month] = array_map('intval', explode('-', $monthKey));
         $carbon = Carbon::create($year, $month, 1);
@@ -137,10 +131,8 @@ class AttendanceReportService
         );
 
         $requiredHours = AttendanceReportCalculator::monthlyRequiredHours($requiredAttendanceDays, $dailyHours);
-        // On-task days (متواجد) count as attended even without a clock-in record;
-        // task-only days and their worked hours are added on top of physical attendance.
-        $actualDays = (int) ($monthAggregate->actual_attendance_days ?? 0) + $taskAttendanceDays;
-        $workedHours = round((float) ($monthAggregate->actual_worked_hours ?? 0) + $taskWorkedHours, 1);
+        $actualDays = (int) ($monthAggregate->actual_attendance_days ?? 0);
+        $workedHours = round((float) ($monthAggregate->actual_worked_hours ?? 0), 1);
 
         return [
             'month' => $carbon->format('F Y'),
