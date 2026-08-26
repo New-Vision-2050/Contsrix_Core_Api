@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Support\ManualAttendanceStatus;
 use Modules\Attendance\Support\ScheduledWorkDays;
-use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
 use Modules\Reports\DTO\ReportWizardConfigDTO;
 use Modules\Reports\Enums\ReportEnums;
 use Modules\Reports\Models\Report;
@@ -49,7 +48,6 @@ use Modules\User\Models\User;
 class ReportDataExtractionService
 {
     public function __construct(
-        private readonly EmployeeTaskPresenceService $taskPresenceService,
         private readonly AttendanceConstraintService $constraintService,
     ) {}
 
@@ -162,12 +160,6 @@ class ReportDataExtractionService
             ->orderByRaw('COALESCE(a.clock_in_time, a.start_time) ASC');
         $dailyRows = $dailyQuery->get();
 
-        // Resolve task presence (متواجد) for the same employees, keyed by global id.
-        // This is session-based and covers project-notification tasks (null
-        // company_id) and every assignee in assigned_user_ids — not just the
-        // primary user_id nor a single task_date.
-        $taskByGid = $this->taskPresenceByGlobalId($globalIds, $start, $end);
-
         // Group attendance rows by (global_id → date); accumulate per-session data.
         $groupedDaily = [];
         $scheduleCache = [];
@@ -198,7 +190,6 @@ class ReportDataExtractionService
                     'calculated_hours'    => 0.0,
                     'notes'               => (string) ($d->notes ?? ''),
                     'attendance_sessions' => [],
-                    'task_sessions'       => [],
                 ];
             }
 
@@ -233,52 +224,9 @@ class ReportDataExtractionService
             }
         }
 
-        // Merge task presence into the date groups; create the date key when only tasks exist.
-        foreach ($taskByGid as $gid => $dates) {
-            foreach ($dates as $date => $info) {
-                if (!isset($groupedDaily[$gid][$date])) {
-                    $groupedDaily[$gid][$date] = [
-                        'date'                => $date,
-                        'status'              => '',
-                        'day_status'          => '',
-                        'display_status'      => 'present',
-                        'start_time'          => '',
-                        'end_time'            => '',
-                        'late_minutes'        => 0,
-                        'overtime_minutes'    => 0,
-                        'early_leave_minutes' => 0,
-                        'total_work_hours'    => 0.0,
-                        'calculated_hours'    => 0.0,
-                        'notes'               => '',
-                        'attendance_sessions' => [],
-                        'task_sessions'       => [],
-                    ];
-                }
-
-                // A worked task means the employee was present (متواجد) that day,
-                // even if the attendance record had flagged them absent.
-                if (($groupedDaily[$gid][$date]['display_status'] ?? '') === 'absent') {
-                    $groupedDaily[$gid][$date]['display_status'] = 'present';
-                }
-
-                $hours = round(((int) $info['minutes']) / 60, 2);
-                $groupedDaily[$gid][$date]['total_work_hours'] += $hours;
-                $groupedDaily[$gid][$date]['calculated_hours'] += $hours;
-
-                $titles = $info['titles'] !== [] ? $info['titles'] : [''];
-                foreach ($titles as $title) {
-                    $groupedDaily[$gid][$date]['task_sessions'][] = [
-                        'task_time_in'  => '',
-                        'task_time_out' => '',
-                        'title'         => (string) $title,
-                    ];
-                }
-            }
-        }
-
         // Flatten to per-employee arrays sorted by date; compute sub_row_count per date.
         // Also recompute present/absent day totals from the daily view so the summary
-        // columns (used by Excel/CSV) stay consistent with task-aware presence.
+        // columns (used by Excel/CSV) stay consistent with the per-day view.
         $dailyMap = [];
         foreach ($groupedDaily as $gid => $dates) {
             ksort($dates);
@@ -286,11 +234,7 @@ class ReportDataExtractionService
             $presentDays = 0;
             $absentDays  = 0;
             foreach ($dates as $entry) {
-                $entry['sub_row_count'] = max(
-                    1,
-                    count($entry['attendance_sessions']),
-                    count($entry['task_sessions'])
-                );
+                $entry['sub_row_count'] = max(1, count($entry['attendance_sessions']));
 
                 if (($entry['display_status'] ?? '') === 'present') {
                     $presentDays++;
@@ -730,60 +674,6 @@ class ReportDataExtractionService
     private function globalIds(Collection $employees): array
     {
         return $employees->pluck('global_id')->filter()->map(fn ($v) => (string) $v)->unique()->values()->all();
-    }
-
-    /**
-     * Resolve session-based task presence for the given global ids, folded from
-     * local user ids to global_company_user_id.
-     *
-     * @param  array<int,string>  $globalIds
-     * @return array<string, array<string, array{minutes:int, titles:list<string>}>>
-     *         map: global_id => (Y-m-d => ['minutes' => int, 'titles' => list<string>])
-     */
-    private function taskPresenceByGlobalId(array $globalIds, string $start, string $end): array
-    {
-        if ($globalIds === []) {
-            return [];
-        }
-
-        // local user id => global_company_user_id
-        $localToGlobal = DB::table('users')
-            ->where('company_id', tenant('id'))
-            ->whereIn('global_company_user_id', $globalIds)
-            ->pluck('global_company_user_id', 'id');
-
-        if ($localToGlobal->isEmpty()) {
-            return [];
-        }
-
-        $details = $this->taskPresenceService->taskPresenceDetailsForUsers(
-            $localToGlobal->keys()->all(),
-            $start,
-            $end,
-        );
-
-        $byGid = [];
-        foreach ($details as $localId => $days) {
-            $gid = (string) ($localToGlobal[$localId] ?? '');
-            if ($gid === '') {
-                continue;
-            }
-
-            foreach ($days as $date => $info) {
-                if (!isset($byGid[$gid][$date])) {
-                    $byGid[$gid][$date] = ['minutes' => 0, 'titles' => []];
-                }
-
-                $byGid[$gid][$date]['minutes'] += (int) $info['minutes'];
-                foreach ($info['titles'] as $title) {
-                    if (!in_array($title, $byGid[$gid][$date]['titles'], true)) {
-                        $byGid[$gid][$date]['titles'][] = $title;
-                    }
-                }
-            }
-        }
-
-        return $byGid;
     }
 
     /**

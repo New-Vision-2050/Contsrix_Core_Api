@@ -11,10 +11,8 @@ class AttendanceTeamPresenter extends AbstractPresenter
 {
     private Attendance $attendance;
 
-    public function __construct(
-        Attendance $attendance,
-        private readonly bool $hasActiveTask = false,
-    ) {
+    public function __construct(Attendance $attendance)
+    {
         $this->attendance = $attendance;
     }
 
@@ -33,31 +31,6 @@ class AttendanceTeamPresenter extends AbstractPresenter
 
     public function present(bool $isListing = false): array
     {
-        $isAbsent = (int) $this->attendance->is_absent === 1
-            || ($this->attendance->status ?? null) === Attendance::STATUS_ABSENT;
-
-        // Same rule as calendar / AttendanceStatusService: absent + task → متواجد.
-        if ($isAbsent && $this->hasActiveTask) {
-            $label = $this->onTaskLabel();
-
-            return [
-                'id'      => $this->attendance->id ? (string) $this->attendance->id : null,
-                'user_id' => $this->attendance->user_id ? (string) $this->attendance->user_id : null,
-                'user' => $this->presentUser(),
-                'status'     => 'on_task',
-                'is_late'    => 0,
-                'is_absent'  => 0,
-                'is_holiday' => 0,
-                'start_time' => $this->attendance->start_time,
-                'work_date'  => $this->resolveWorkDate(),
-                'day_status' => $label,
-                'clock_in_time' => null,
-                'attendance_constraint_id' => $this->attendance->user?->userProfessionalData?->attendanceConstraint?->id,
-                'attendance_constraint'    => $this->presentAppliedConstraint(),
-                'professional_data' => $this->presentProfessionalData(),
-            ];
-        }
-
         return [
             'id'      => $this->attendance->id ? (string) $this->attendance->id : null,
             'user_id' => $this->attendance->user_id ? (string) $this->attendance->user_id : null,
@@ -74,19 +47,6 @@ class AttendanceTeamPresenter extends AbstractPresenter
             'attendance_constraint'    => $this->presentAppliedConstraint(),
             'professional_data' => $this->presentProfessionalData(),
         ];
-    }
-
-    private function onTaskLabel(): string
-    {
-        try {
-            $label = __('validation.day_status.on_task');
-            if (is_string($label) && $label !== '' && ! str_starts_with($label, 'validation.')) {
-                return $label;
-            }
-        } catch (\Throwable) {
-        }
-
-        return 'متواجد';
     }
 
     private function translateDayStatus(string $dayStatus): string

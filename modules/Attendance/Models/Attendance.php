@@ -86,6 +86,8 @@ class Attendance extends Model implements Auditable
         'notes',
         'clock_in_location',
         'clock_out_location',
+        'clock_in_task_id',
+        'clock_out_task_id',
         'ip_address',
         'user_agent',
         'approved_by',

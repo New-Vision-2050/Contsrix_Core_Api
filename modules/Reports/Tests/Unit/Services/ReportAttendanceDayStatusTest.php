@@ -6,7 +6,6 @@ namespace Modules\Reports\Tests\Unit\Services;
 
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Support\ManualAttendanceStatus;
-use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
 use Modules\Reports\Services\ReportDataExtractionService;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -28,7 +27,6 @@ class ReportAttendanceDayStatusTest extends TestCase
         parent::setUp();
 
         $this->service = new ReportDataExtractionService(
-            $this->createMock(EmployeeTaskPresenceService::class),
             $this->createMock(AttendanceConstraintService::class)
         );
 
