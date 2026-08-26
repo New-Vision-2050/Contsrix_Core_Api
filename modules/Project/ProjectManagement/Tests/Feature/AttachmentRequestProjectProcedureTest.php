@@ -124,6 +124,40 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertArrayNotHasKey('receiver_company', $response->json('data.0'));
     }
 
+    public function test_attachment_request_list_filters_by_procedure_setting_and_receiver_companies(): void
+    {
+        $project = $this->createProject();
+        $matchingReceiverCompany = $this->createCompany();
+        $otherReceiverCompany = $this->createCompany();
+        $matchingProcedure = $this->createProjectProcedure($project, [$matchingReceiverCompany->id]);
+        $otherProcedure = $this->createProjectProcedure($project, [$otherReceiverCompany->id]);
+
+        $matchingRequestId = $this->postAttachmentRequest($project, $matchingProcedure)
+            ->assertOk()
+            ->json('payload.id');
+        $otherRequestId = $this->postAttachmentRequest($project, $otherProcedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $procedureSettingIds = collect($this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?procedure_setting_id='.$matchingProcedure->procedure_setting_id)
+            ->assertOk()
+            ->json('data'))->pluck('id')->all();
+
+        $this->assertContains($matchingRequestId, $procedureSettingIds);
+        $this->assertNotContains($otherRequestId, $procedureSettingIds);
+
+        $receiverCompanyIds = collect($this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?receiver_company_ids[]='.$matchingReceiverCompany->id)
+            ->assertOk()
+            ->json('data'))->pluck('id')->all();
+
+        $this->assertContains($matchingRequestId, $receiverCompanyIds);
+        $this->assertNotContains($otherRequestId, $receiverCompanyIds);
+    }
+
     public function test_attachment_request_list_history_hides_pending_workflow_steps_after_final_rejection(): void
     {
         $project = $this->createProject();
@@ -2319,6 +2353,107 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             ->count());
     }
 
+    public function test_explicit_attachment_request_workflow_repair_migration_repairs_group_a_only_from_the_allowlist(): void
+    {
+        $legacy = $this->reproduceSuppliedLegacyAttachmentRequest('257');
+        $requestId = $legacy['request_id'];
+        $before = $this->suppliedLegacyAudit($requestId);
+        $approvalBefore = $before['history']['a279eddd-97d7-4976-8c68-3d67096ee2f8'];
+        $thirdPendingBefore = $before['history']['a279a043-86be-4bf8-96f3-7ccfb7a74451'];
+
+        $this->runExplicitAttachmentRequestWorkflowRepairMigration();
+
+        $after = $this->suppliedLegacyAudit($requestId);
+
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'attachment_approved', 'template_step_order' => 2],
+            ['action' => 'workflow_step_pending', 'template_step_order' => 3],
+        ], $this->sourceHistorySummary($after['history']));
+        $this->assertSame([
+            ['step_id' => 43, 'template_step_order' => 1, 'status' => 'approved'],
+            ['step_id' => 44, 'template_step_order' => 2, 'status' => 'approved'],
+            ['step_id' => 45, 'template_step_order' => 3, 'status' => 'pending'],
+        ], $this->sourceStepSummary($after['process_steps']));
+        $this->assertSame(AttachmentRequest::STATUS_PENDING, $after['request']['status']);
+        $this->assertSame(ProcessStatus::InProgress->value, $after['process']['status']);
+        $this->assertArrayNotHasKey('a279a043-8532-47c0-bb54-6b284342f27a', $after['history']);
+
+        $secondStep = $after['process_steps']['a279e89e-c0a3-4654-8bdc-1d3374ce109b'];
+        $thirdStep = collect($after['process_steps'])->firstWhere('template_step_order', 3);
+        $approvalAfter = $after['history']['a279eddd-97d7-4976-8c68-3d67096ee2f8'];
+        $thirdPendingAfter = $after['history']['a279a043-86be-4bf8-96f3-7ccfb7a74451'];
+
+        $this->assertSame($approvalBefore['user_id'], $approvalAfter['user_id']);
+        $this->assertSame($approvalBefore['created_at'], $approvalAfter['created_at']);
+        $this->assertSame('2026-08-11 10:54:45', $secondStep['acted_at']);
+        $this->assertSame('2026-08-11T10:54:45+00:00', $approvalAfter['metadata']['acted_at']);
+        $this->assertSame((string) $secondStep['id'], $approvalAfter['metadata']['process_step_id']);
+        $this->assertSame((string) $thirdStep['id'], $thirdPendingAfter['metadata']['process_step_id']);
+        $this->assertSame($thirdPendingBefore['user_id'], $thirdPendingAfter['user_id']);
+        $this->assertSame($thirdPendingBefore['created_at'], $thirdPendingAfter['created_at']);
+
+        $historyAfterFirstRun = $this->historySnapshot($requestId);
+        $requestAfterFirstRun = $this->requestSnapshot($requestId);
+        $processAfterFirstRun = $this->processSnapshot($requestId);
+        $stepsAfterFirstRun = $this->processStepsSnapshot($requestId);
+
+        $this->runExplicitAttachmentRequestWorkflowRepairMigration();
+
+        $this->assertSame($historyAfterFirstRun, $this->historySnapshot($requestId));
+        $this->assertSame($requestAfterFirstRun, $this->requestSnapshot($requestId));
+        $this->assertSame($processAfterFirstRun, $this->processSnapshot($requestId));
+        $this->assertSame($stepsAfterFirstRun, $this->processStepsSnapshot($requestId));
+    }
+
+    public function test_explicit_attachment_request_workflow_repair_migration_repairs_group_b_without_creating_step_three(): void
+    {
+        $legacy = $this->reproduceSuppliedLegacyAttachmentRequest('246');
+        $requestId = $legacy['request_id'];
+        $before = $this->suppliedLegacyAudit($requestId);
+        $approvalBefore = $before['history']['a27a0148-67be-4602-a4cb-f52a9fa63513'];
+
+        $this->runExplicitAttachmentRequestWorkflowRepairMigration();
+
+        $after = $this->suppliedLegacyAudit($requestId);
+
+        $this->assertSame([
+            ['action' => 'request_created', 'template_step_order' => null],
+            ['action' => 'workflow_step_approved', 'template_step_order' => 1],
+            ['action' => 'attachment_approved', 'template_step_order' => 2],
+        ], $this->sourceHistorySummary($after['history']));
+        $this->assertSame([
+            ['step_id' => 43, 'template_step_order' => 1, 'status' => 'approved'],
+            ['step_id' => 44, 'template_step_order' => 2, 'status' => 'approved'],
+        ], $this->sourceStepSummary($after['process_steps']));
+        $this->assertSame(AttachmentRequest::STATUS_APPROVED, $after['request']['status']);
+        $this->assertSame(ProcessStatus::Completed->value, $after['process']['status']);
+        $this->assertArrayNotHasKey('a279f212-a67d-4ce9-bf2d-4d295e3967bb', $after['history']);
+        $this->assertSame(2, count($after['process_steps']));
+
+        $secondStep = $after['process_steps']['a279f212-5a6e-4d47-907d-fd50a2ea4e28'];
+        $approvalAfter = $after['history']['a27a0148-67be-4602-a4cb-f52a9fa63513'];
+        $this->assertSame($approvalBefore['user_id'], $approvalAfter['user_id']);
+        $this->assertSame($approvalBefore['created_at'], $approvalAfter['created_at']);
+        $this->assertSame('2026-08-11 11:48:34', $secondStep['acted_at']);
+        $this->assertSame('2026-08-11T11:48:34+00:00', $approvalAfter['metadata']['acted_at']);
+        $this->assertSame((string) $secondStep['id'], $approvalAfter['metadata']['process_step_id']);
+    }
+
+    public function test_explicit_attachment_request_workflow_repair_migration_skips_an_allowlisted_request_when_its_shape_changed(): void
+    {
+        $legacy = $this->reproduceSuppliedLegacyAttachmentRequest('246');
+        DB::table('attachment_request_items')
+            ->where('id', $legacy['item_id'])
+            ->update(['status' => AttachmentRequest::STATUS_PENDING]);
+
+        $before = $this->suppliedLegacyAudit($legacy['request_id']);
+        $this->runExplicitAttachmentRequestWorkflowRepairMigration();
+
+        $this->assertSame($before, $this->suppliedLegacyAudit($legacy['request_id']));
+    }
+
     public function test_legacy_attachment_approval_history_migration_reproduces_the_supplied_257_record(): void
     {
         $legacy = $this->reproduceSuppliedLegacyAttachmentRequest('257');
@@ -4150,6 +4285,15 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
     {
         $migration = require database_path(
             'migrations/2026_08_20_000000_repair_legacy_attachment_approval_workflow_history.php'
+        );
+
+        $migration->up();
+    }
+
+    private function runExplicitAttachmentRequestWorkflowRepairMigration(): void
+    {
+        $migration = require database_path(
+            'migrations/2026_08_20_000002_repair_explicit_attachment_request_workflow_history.php'
         );
 
         $migration->up();
