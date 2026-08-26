@@ -28,6 +28,8 @@ class AttachmentRequestRepository extends BaseRepository
      *
      * Accepted filters:
      *   project_id  – filter by project UUID
+     *   procedure_setting_id – filter by procedure setting UUID
+     *   receiver_company_ids – receiver company UUIDs configured for the procedure
      *   type        – filter by status  (pending|approved|declined|semi-approved)
      *   direction   – 'outgoing' (sender) | 'incoming' (workflow-driven, no stored receiver)
      *   name        – partial search on serial_number
@@ -85,6 +87,12 @@ class AttachmentRequestRepository extends BaseRepository
         if (!empty($filters['project_id'])) {
             $query->where('project_id', $filters['project_id']);
         }
+
+        if (!empty($filters['procedure_setting_id'])) {
+            $query->where('procedure_setting_id', $filters['procedure_setting_id']);
+        }
+
+        $this->applyProcedureReceiverCompanyFilter($query, $filters['receiver_company_ids'] ?? []);
 
         if (!empty($filters['contractual_engagement_key'])) {
             $query->whereHas('project.contractualEngagement', function ($q) use ($filters) {
@@ -144,7 +152,104 @@ class AttachmentRequestRepository extends BaseRepository
             $query->where('project_id', $filters['project_id']);
         }
 
+        if (!empty($filters['procedure_setting_id'])) {
+            $query->whereHas('requirement', function ($query) use ($filters): void {
+                $query->where('procedure_setting_id', $filters['procedure_setting_id']);
+            });
+        }
+
+        $this->applySubmissionProcedureReceiverCompanyFilter(
+            $query,
+            $filters['receiver_company_ids'] ?? []
+        );
+
         return $query->orderBy('created_at', 'desc')->get();
+    }
+
+    /**
+     * Limit attachment requests to procedures configured for any supplied
+     * receiver company. Receiver companies live on the project procedure,
+     * not on the attachment request itself.
+     *
+     * @param array<int, string> $receiverCompanyIds
+     */
+    private function applyProcedureReceiverCompanyFilter($query, array $receiverCompanyIds): void
+    {
+        if ($receiverCompanyIds === []) {
+            return;
+        }
+
+        $query->whereExists(function ($receiverQuery) use ($receiverCompanyIds): void {
+            $receiverQuery->selectRaw('1')
+                ->from('project_procedure_settings as receiver_procedure_settings')
+                ->join(
+                    'project_procedure_setting_receiver_companies as procedure_receiver_companies',
+                    'procedure_receiver_companies.project_procedure_setting_id',
+                    '=',
+                    'receiver_procedure_settings.id'
+                )
+                ->whereColumn('receiver_procedure_settings.project_id', 'attachment_requests.project_id')
+                ->whereColumn(
+                    'receiver_procedure_settings.procedure_setting_id',
+                    'attachment_requests.procedure_setting_id'
+                )
+                ->whereExists(static function ($projectQuery): void {
+                    $projectQuery->selectRaw('1')
+                        ->from('projects')
+                        ->whereColumn('projects.id', 'attachment_requests.project_id')
+                        ->whereColumn('projects.company_id', 'receiver_procedure_settings.company_id');
+                })
+                ->whereIn('procedure_receiver_companies.company_id', $receiverCompanyIds);
+        });
+    }
+
+    /**
+     * Apply the same project-procedure receiver-company filter to requirement
+     * submissions in the unified inbox.
+     *
+     * @param array<int, string> $receiverCompanyIds
+     */
+    private function applySubmissionProcedureReceiverCompanyFilter($query, array $receiverCompanyIds): void
+    {
+        if ($receiverCompanyIds === []) {
+            return;
+        }
+
+        $query->whereExists(function ($receiverQuery) use ($receiverCompanyIds): void {
+            $receiverQuery->selectRaw('1')
+                ->from('project_requirements as submission_requirements')
+                ->join(
+                    'project_procedure_settings as receiver_procedure_settings',
+                    function ($join): void {
+                        $join->on(
+                            'receiver_procedure_settings.project_id',
+                            '=',
+                            'submission_requirements.project_id'
+                        )->on(
+                            'receiver_procedure_settings.procedure_setting_id',
+                            '=',
+                            'submission_requirements.procedure_setting_id'
+                        );
+                    }
+                )
+                ->join(
+                    'project_procedure_setting_receiver_companies as procedure_receiver_companies',
+                    'procedure_receiver_companies.project_procedure_setting_id',
+                    '=',
+                    'receiver_procedure_settings.id'
+                )
+                ->whereColumn(
+                    'submission_requirements.id',
+                    'project_requirement_submissions.project_requirement_id'
+                )
+                ->whereExists(static function ($projectQuery): void {
+                    $projectQuery->selectRaw('1')
+                        ->from('projects')
+                        ->whereColumn('projects.id', 'project_requirement_submissions.project_id')
+                        ->whereColumn('projects.company_id', 'receiver_procedure_settings.company_id');
+                })
+                ->whereIn('procedure_receiver_companies.company_id', $receiverCompanyIds);
+        });
     }
 
     /**
