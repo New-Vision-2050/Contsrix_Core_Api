@@ -14,6 +14,7 @@ use Modules\Project\ProjectManagement\Services\AttachmentRequestService;
 use Modules\Project\ProjectManagement\Services\AttachmentRequestChartsService;
 use Modules\Project\ProjectManagement\Services\ProjectRequirementSubmissionService;
 use Modules\Project\ProjectManagement\Requests\CreateAttachmentRequestRequest;
+use Modules\Project\ProjectManagement\Requests\FilterAttachmentRequestListRequest;
 use Modules\Project\ProjectManagement\Requests\FilterAttachmentRequestChartsRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToAttachmentItemRequest;
 use Modules\Project\ProjectManagement\Requests\ReplaceMediaRequest;
@@ -62,25 +63,18 @@ class AttachmentRequestController extends Controller
      *
      * Query params:
      *   project_id  – filter by project
+     *   procedure_setting_id – filter by procedure setting
+     *   receiver_company_ids[] – filter by a receiver company configured for the procedure
      *   type        – filter by status (pending|approved|declined|semi-approved)
      *   direction   – outgoing | incoming
      *   name        – search by serial number (partial match)
      *   page        – page number (default 1)
      *   per_page    – items per page (default 15)
      */
-    public function getAllRequests(Request $request): JsonResponse
+    public function getAllRequests(FilterAttachmentRequestListRequest $request): JsonResponse
     {
         try {
-            $filters = array_filter([
-                'project_id'                 => $request->query('project_id'),
-                'contractual_engagement_key' => $request->query('contractual_engagement_key'),
-                'type'                       => $request->query('type'),
-                'direction'                  => $request->query('direction'),
-                'name'                       => $request->query('name'),
-                'per_page'                   => $request->query('per_page', 15),
-            ], fn ($v) => $v !== null && $v !== '');
-
-            $paginated = $this->service->getAllRequests($filters);
+            $paginated = $this->service->getAllRequests($request->filters());
 
             $data = collect($paginated->items())->map(function ($item) {
                 if ($item instanceof AttachmentRequest) {

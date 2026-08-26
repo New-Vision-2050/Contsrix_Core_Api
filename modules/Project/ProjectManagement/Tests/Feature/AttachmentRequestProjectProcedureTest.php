@@ -124,6 +124,40 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertArrayNotHasKey('receiver_company', $response->json('data.0'));
     }
 
+    public function test_attachment_request_list_filters_by_procedure_setting_and_receiver_companies(): void
+    {
+        $project = $this->createProject();
+        $matchingReceiverCompany = $this->createCompany();
+        $otherReceiverCompany = $this->createCompany();
+        $matchingProcedure = $this->createProjectProcedure($project, [$matchingReceiverCompany->id]);
+        $otherProcedure = $this->createProjectProcedure($project, [$otherReceiverCompany->id]);
+
+        $matchingRequestId = $this->postAttachmentRequest($project, $matchingProcedure)
+            ->assertOk()
+            ->json('payload.id');
+        $otherRequestId = $this->postAttachmentRequest($project, $otherProcedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $procedureSettingIds = collect($this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?procedure_setting_id='.$matchingProcedure->procedure_setting_id)
+            ->assertOk()
+            ->json('data'))->pluck('id')->all();
+
+        $this->assertContains($matchingRequestId, $procedureSettingIds);
+        $this->assertNotContains($otherRequestId, $procedureSettingIds);
+
+        $receiverCompanyIds = collect($this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/attachment-requests?receiver_company_ids[]='.$matchingReceiverCompany->id)
+            ->assertOk()
+            ->json('data'))->pluck('id')->all();
+
+        $this->assertContains($matchingRequestId, $receiverCompanyIds);
+        $this->assertNotContains($otherRequestId, $receiverCompanyIds);
+    }
+
     public function test_attachment_request_list_history_hides_pending_workflow_steps_after_final_rejection(): void
     {
         $project = $this->createProject();
