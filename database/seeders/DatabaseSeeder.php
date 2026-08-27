@@ -162,7 +162,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(LeavePolicySeeder::class);
 
-        $this->call(PublicHolidaysTableSeeder::class);
+        // $this->call(PublicHolidaysTableSeeder::class);
         $this->call(PaymentModulesSeederTableSeeder::class);
         $this->call(InstallmentModulesSeederTableSeeder::class);
         $this->call(DocumentTypeSeederTableSeeder::class);
