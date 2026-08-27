@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Modules\Reports\Tests\Unit\Services;
 
 use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\Attendance\Services\PublicHolidayCalendarService;
 use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\PublicHolidayDates;
+use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\Reports\Services\ReportDataExtractionService;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -21,13 +24,15 @@ class ReportAttendanceDayStatusTest extends TestCase
     private ReportDataExtractionService $service;
     private ReflectionMethod $mergeDisplayStatus;
     private ReflectionMethod $holidayDisplayStatus;
+    private ReflectionMethod $publicHolidayDisplayStatus;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->service = new ReportDataExtractionService(
-            $this->createMock(AttendanceConstraintService::class)
+            $this->createMock(AttendanceConstraintService::class),
+            $this->createMock(PublicHolidayCalendarService::class)
         );
 
         $this->mergeDisplayStatus = new ReflectionMethod($this->service, 'mergeDisplayStatus');
@@ -35,6 +40,40 @@ class ReportAttendanceDayStatusTest extends TestCase
 
         $this->holidayDisplayStatus = new ReflectionMethod($this->service, 'holidayDisplayStatus');
         $this->holidayDisplayStatus->setAccessible(true);
+
+        $this->publicHolidayDisplayStatus = new ReflectionMethod($this->service, 'publicHolidayDisplayStatus');
+        $this->publicHolidayDisplayStatus->setAccessible(true);
+    }
+
+    /**
+     * An official holiday is time off granted on a day the employee would otherwise have
+     * worked, so the report prints إجازة rather than عطلة (INV-21).
+     */
+    public function test_official_public_holiday_on_a_scheduled_work_day_is_leave(): void
+    {
+        $this->assertSame('leave', $this->classifyPublicHoliday($this->plainRow(), '2026-08-27'));
+    }
+
+    /**
+     * The holiday calendar is country-wide and knows nothing about one employee's
+     * instruction, so an admin demanding attendance that date wins and the row is scored
+     * from its punches like any other.
+     */
+    public function test_required_attendance_override_beats_a_public_holiday(): void
+    {
+        $row = (object) [
+            'user_id'                        => 'user-1',
+            'manual_attendance_status'       => ManualAttendanceStatus::REQUIRED_ATTENDANCE,
+            'manual_attendance_status_since' => '2026-08-27',
+            'manual_attendance_status_until' => '2026-08-27',
+        ];
+
+        $this->assertNull($this->classifyPublicHoliday($row, '2026-08-27'));
+    }
+
+    public function test_a_date_that_is_not_an_official_holiday_is_left_alone(): void
+    {
+        $this->assertNull($this->classifyPublicHoliday($this->plainRow(), '2026-08-28'));
     }
 
     public function test_clock_in_row_overrides_earlier_absent_row(): void
@@ -84,17 +123,22 @@ class ReportAttendanceDayStatusTest extends TestCase
         $this->assertSame('holiday', $this->classifyHoliday($row, '2026-08-28'));
     }
 
-    public function test_public_holiday_row_after_an_override_window_is_still_a_day_off(): void
+    /**
+     * Holidays are read live from the holiday table now, so a row left behind by the removed
+     * pre-writing command carries no authority: the day is scored present or absent from its
+     * punches like any other.
+     */
+    public function test_row_left_by_the_removed_holiday_command_is_ignored(): void
     {
         $row = (object) [
             'user_id'                        => 'user-1',
             'notes'                          => 'Auto-generated holiday record: National Day',
-            'manual_attendance_status'       => 'holiday',
-            'manual_attendance_status_since' => '2026-08-25',
-            'manual_attendance_status_until' => '2026-09-03',
+            'manual_attendance_status'       => null,
+            'manual_attendance_status_since' => null,
+            'manual_attendance_status_until' => null,
         ];
 
-        $this->assertSame('holiday', $this->classifyHoliday($row, '2026-09-04'));
+        $this->assertNull($this->classifyHoliday($row, '2026-09-04'));
     }
 
     /**
@@ -125,5 +169,26 @@ class ReportAttendanceDayStatusTest extends TestCase
         $cache = [];
 
         return $this->holidayDisplayStatus->invokeArgs($this->service, [$row, $date, &$cache]);
+    }
+
+    /**
+     * @return object A row carrying no manual override.
+     */
+    private function plainRow(): object
+    {
+        return (object) [
+            'user_id'                        => 'user-1',
+            'manual_attendance_status'       => null,
+            'manual_attendance_status_since' => null,
+            'manual_attendance_status_until' => null,
+        ];
+    }
+
+    private function classifyPublicHoliday(object $row, string $date): ?string
+    {
+        $cache = ['user-1' => ScheduledWorkDays::unknown()];
+        $holidays = ['user-1' => PublicHolidayDates::fromMap(['2026-08-27' => 'المولد النبوي الشريف'])];
+
+        return $this->publicHolidayDisplayStatus->invokeArgs($this->service, [$row, $date, $holidays, &$cache]);
     }
 }

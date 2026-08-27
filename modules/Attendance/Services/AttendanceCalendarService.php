@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Schema;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\LeaveRequest;
 use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\PublicHolidayDates;
 use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
 use Modules\User\Models\User;
@@ -24,6 +25,7 @@ class AttendanceCalendarService
         private AttendanceConstraintService $constraintService,
         private UserAttendanceService $userAttendanceService,
         private EmployeeTaskPresenceService $taskPresenceService,
+        private PublicHolidayCalendarService $publicHolidayCalendar,
     ) {}
 
     /**
@@ -77,6 +79,10 @@ class AttendanceCalendarService
         // Drives عطلة, which belongs to the schedule rather than to the person (INV-18).
         $scheduledWorkDays = $this->constraintService->getScheduledWorkDaysForUser($user);
 
+        // Official holidays for the employee's branch country, read live for the whole
+        // range so no per-day query is needed (INV-21).
+        $publicHolidays = $this->publicHolidayCalendar->forUser($user, $dateStartStr, $dateEndStr);
+
         // Build calendar day-by-day
         $days = [];
         $cursor = $rangeStart->copy();
@@ -108,7 +114,8 @@ class AttendanceCalendarService
                 $hasLeave,
                 $timezone,
                 $now,
-                $scheduledWorkDays
+                $scheduledWorkDays,
+                $publicHolidays
             );
 
             $dayData['tasks'] = $dayTasks;
@@ -168,13 +175,15 @@ class AttendanceCalendarService
         bool $hasLeave,
         string $timezone,
         Carbon $now,
-        ScheduledWorkDays $scheduledWorkDays
+        ScheduledWorkDays $scheduledWorkDays,
+        PublicHolidayDates $publicHolidays
     ): array {
         $dayName = $this->getDayNameArabic($date);
 
         // عطلة belongs to the schedule, not to the person: a disabled weekday or a date
         // listed in the constraint's holidays. It outranks personal time off, so a weekend
-        // falling inside a leave window stays عطلة instead of consuming a leave day.
+        // falling inside a leave window stays عطلة instead of consuming a leave day, and an
+        // official holiday landing on a weekend stays عطلة too (INV-21).
         if (! $scheduledWorkDays->isWorkDay($date)) {
             return $this->formatDay(
                 $dateString,
@@ -186,10 +195,19 @@ class AttendanceCalendarService
             );
         }
 
-        // إجازة is time off granted to the person: an approved leave request, or the
-        // sub-entity attendance-status override while its date window is active. Once that
-        // window ends the day falls back to the constraint (INV-18).
-        if ($hasLeave || ManualAttendanceStatus::isHolidayOn($user, $dateString)) {
+        // إجازة is time off granted to the person: an approved leave request, the
+        // sub-entity attendance-status override while its date window is active, or an
+        // official public holiday for the employee's branch country. Once that window ends
+        // the day falls back to the constraint (INV-18).
+        //
+        // A required-attendance override outranks the holiday calendar, which is country-wide
+        // and knows nothing about this one instruction (INV-21).
+        $isPublicHoliday = $publicHolidays->isHoliday($date)
+            && ! ManualAttendanceStatus::isRequiredAttendanceOn($user, $dateString);
+
+        if ($isPublicHoliday
+            || $hasLeave
+            || ManualAttendanceStatus::isHolidayOn($user, $dateString)) {
             return $this->formatDay(
                 $dateString,
                 $dayName,
@@ -206,11 +224,12 @@ class AttendanceCalendarService
         // as if it had no rows at all.
         $dayAttendances = $dayAttendances->reject(
             fn ($a) => ManualAttendanceStatus::isHolidayRow($a->notes ?? null)
+                || PublicHolidayDates::isLegacyGeneratedRow($a->notes ?? null)
         );
 
         // Future dates: status depends on constraints
         if ($isFuture) {
-            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString, $timezone);
+            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString, $timezone, $publicHolidays);
             $dayStatus = $workRules['day_status'] ?? 'Undefined';
 
             if ($dayStatus === 'work_day') {
@@ -238,7 +257,7 @@ class AttendanceCalendarService
         // Determine status from attendance records
         if ($dayAttendances->isEmpty()) {
             // No attendance - check if it was a work day via constraints
-            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString, $timezone);
+            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString, $timezone, $publicHolidays);
             $dayStatus = $workRules['day_status'] ?? 'Undefined';
 
             if ($dayStatus === 'work_day') {
@@ -278,8 +297,9 @@ class AttendanceCalendarService
         }
 
         // Has attendance records.
-        // Reached only on scheduled work days with no personal time off, so a holiday row
-        // here is a company-wide public holiday (CreateHolidayAttendanceCommand) — عطلة.
+        // Reached only on scheduled work days with no personal time off and no official
+        // holiday, so a surviving holiday row was written by something outside those
+        // sources and is still read as عطلة.
         $hasHoliday = $dayAttendances->contains(fn ($a) =>
             ($a->is_holiday ?? false) || ($a->day_status ?? null) === 'holiday' || ($a->status ?? null) === Attendance::STATUS_HOLIDAY
         );

@@ -58,31 +58,31 @@ php artisan db:seed --class="Modules\Leave\PublicHoliday\Database\Seeders\Calend
 
 ## Usage Examples
 
-### Holiday Validation Service
+### Asking whether a date is a holiday
+
+Ask through the attendance module, which resolves the employee's country from their
+branch and reads the **applied days** in `public_holiday_days` — not the `date_start ..
+date_end` range on the parent, which differs whenever `PublicHolidayDayCalculator` shifts
+a day off a weekend or appends a compensation day.
 
 ```php
-use Modules\Leave\PublicHoliday\Services\HolidayValidationService;
-use Carbon\Carbon;
+use Modules\Attendance\Services\PublicHolidayCalendarService;
 
-$holidayService = new HolidayValidationService();
+$calendar = app(PublicHolidayCalendarService::class);
 
-// Check if October 6th, 2025 is a holiday in Egypt
-$date = Carbon::create(2025, 10, 6);
-$isHoliday = $holidayService->isHolidayByCountryCode($date, 'EG');
+// Every official holiday that applies to this employee in October 2025.
+$holidays = $calendar->forUser($user, '2025-10-01', '2025-10-31');
 
-// Get next working day
-$nextWorkingDay = $holidayService->getNextWorkingDay($date, $countryId);
+$holidays->isHoliday('2025-10-06');   // bool
+$holidays->nameFor('2025-10-06');     // holiday name, or null
 
-// Count working days between dates
-$workingDays = $holidayService->countWorkingDays(
-    Carbon::create(2025, 10, 1),
-    Carbon::create(2025, 10, 31),
-    $countryId
-);
-
-// Get upcoming holidays
-$upcomingHolidays = $holidayService->getUpcomingHolidays($countryId, 30);
+// By country, when there is no specific employee in hand.
+$holidays = $calendar->forCountry($countryId, '2025-10-01', '2025-10-31');
 ```
+
+Resolve a range once and reuse it; the object is designed to be held for a whole month so
+a per-day loop costs no extra queries. See INV-21 in `ATTENDANCE_MODULE_DEEP_REFERENCE.md`
+for how holidays reach the calendar, history, reports and the clock-in gate.
 
 ### Model Queries
 

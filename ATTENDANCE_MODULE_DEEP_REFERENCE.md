@@ -117,7 +117,6 @@ modules/Attendance/
     AutoCloseAttendanceJob.php
     AutoClockOutAtNextShiftStartJob.php
     ProcessClockInAttendanceData.php
-    SyncHolidayAttendanceJob.php
   Listeners/
     HandleAttendanceLateness.php
     HandelAttendanceConstraintUpdate.php
@@ -187,8 +186,6 @@ Main boot responsibilities:
 Scheduled commands registered by the provider:
 
 - `attendance:create-waiting` every six hours.
-- `attendance:create-holiday-attendance` daily at `00:05` in `Asia/Riyadh`, with
-  overlap protection and output appended to `storage/logs/attendance-holiday.log`.
 
 The provider is not the only scheduler. `routes/console.php` schedules attendance
 commands as well, all in `Asia/Riyadh` with overlap protection:
@@ -1141,7 +1138,6 @@ them back.
 - `AutoCloseAttendanceJob`
 - `AutoClockOutAtNextShiftStartJob`
 - `ProcessClockInAttendanceData`
-- `SyncHolidayAttendanceJob`
 - `MarkAbsentIfNoClockInJob`
 
 ### Console commands outside the module folder
@@ -1149,7 +1145,6 @@ them back.
 Attendance commands live in `app/Console/Commands`:
 
 - `CreateWaitingAttendanceCommand`
-- `CreateHolidayAttendanceCommand`
 - `AutoCloseStaleShiftsCommand`
 - `UpdateAttendanceStatusCommand`
 - `SendAttendanceSilentNotificationCommand`
@@ -1690,18 +1685,17 @@ calendar and the history endpoint — each the opposite of what it meant.
 The two are decided from different sources and must not be collapsed:
 
 - `عطلة` — the schedule does not work this date. Either the weekday is disabled in
-  `time_rules.weekly_schedule`, the date is listed in `time_rules.holidays`, or a
-  company-wide `PublicHolidayDay` row exists (written by
-  `CreateHolidayAttendanceCommand`, which no constraint knows about, so it is still
-  recognised from the attendance row).
+  `time_rules.weekly_schedule`, or the date is listed in `time_rules.holidays`.
 - `إجازة` — time off granted to this employee on a date the schedule would
-  otherwise work: an approved `LeaveRequest`, or the attendance-status override
-  while its `manual_attendance_status_since .. _until` window covers the date.
+  otherwise work: an approved `LeaveRequest`, the attendance-status override while
+  its `manual_attendance_status_since .. _until` window covers the date, or an
+  official public holiday for the employee's country (INV-21).
 
-`عطلة` is evaluated first. A weekend falling inside an override window stays
-`عطلة`, because a day the employee never works cannot spend a leave day.
+`عطلة` is evaluated first. A weekend falling inside an override window — or under an
+official public holiday — stays `عطلة`, because a day the employee never works cannot
+spend a leave day.
 
-Two support classes hold the shared decision so the three consumers cannot drift:
+Three support classes hold the shared decision so the three consumers cannot drift:
 
 - `Modules\Attendance\Support\ManualAttendanceStatus` — the only reader of the
   override window. `activeOn()` for models, `resolve()`/`isHolidayFor()` for raw
@@ -1712,12 +1706,16 @@ Two support classes hold the shared decision so the three consumers cannot drift
   does not build per-day rules just to detect a weekend. With no weekly schedule
   configured every date is schedulable, because there is then no basis to call a day
   `عطلة`.
+- `Modules\Attendance\Support\PublicHolidayDates` — `isHoliday(date)` for the official
+  holidays of the employee's country, loaded for a whole range at once by
+  `PublicHolidayCalendarService` (INV-21).
 
 Consumers: `AttendanceCalendarService::buildDayData` (`status_key` `off` vs
 `leave`), `UserAttendanceHistoryService::buildDayStatusPayload`
 (`dayOffStatusPayload` vs `leaveStatusPayload`), and
-`ReportDataExtractionService::holidayDisplayStatus` (`display_status` `holiday` vs
-`leave`, rendered by `pdf/report.blade.php` as `عطلة` / `إجازة`).
+`ReportDataExtractionService` — `publicHolidayDisplayStatus` then
+`holidayDisplayStatus` (`display_status` `holiday` vs `leave`, rendered by
+`pdf/report.blade.php` as `عطلة` / `إجازة`).
 
 Setting the override rewrites every attendance row inside its range and shortening
 the range later does not undo those writes, so each of those rows carries
@@ -1810,6 +1808,98 @@ are stored with a null `company_id` outside the tenant scope, so their assignees
 visible only on the notification. Dropping the second path leaves an assignee who
 sees the task on their calendar yet has no geofence to clock in at, which is exactly
 the case INV-19's removal of the `on_task` overlay depends on.
+
+### INV-21: An official holiday is read, never materialised
+
+A public holiday applies to an employee because of where they work, so the country is
+resolved from their branch — `userProfessionalData.branch.address.country_id`, then
+`user.branch.address.country_id`, then `company.country_id` when the branch has no
+address on file. `PublicHolidayCalendarService::countryIdForUser` owns that order; a
+missing branch address must never silently cancel an employee's holidays, which is why
+the company fallback exists.
+
+`public_holidays` is a central table shared by every tenant and keyed on `country_id`,
+so the applicable dates are read live on each surface. The **applied days** in
+`public_holiday_days` are the only trustworthy source, never the `date_start .. date_end`
+range on the parent: `PublicHolidayDayCalculator` shifts a single-day holiday off a
+weekend (Mon–Wed roll to Thursday, Fri/Sat to Sunday) and appends one compensation day
+per Fri/Sat inside a multi-day range, so the parent range and the days genuinely differ.
+
+**Reading beats pre-writing.** This used to work the other way: creating or updating a
+holiday dispatched `SyncHolidayAttendanceJob`, and `attendance:create-holiday-attendance`
+ran daily, both inserting one `is_holiday = 1` attendance row per user of every company
+in the holiday's country. All of it is deleted, and must not come back:
+
+- it keyed on `companies.country_id`, so an employee posted to a branch in another
+  country got their company's holidays instead of their own;
+- the job only wrote days `>= today`, so a back-dated holiday, and any employee hired
+  after the holiday was created, silently got nothing;
+- nothing ever deleted those rows, so editing a date or deactivating a holiday left the
+  old days off standing forever;
+- it never touched the work rules, so `/attendance/user-constraint/today` still returned
+  periods and an employee could clock in on a holiday;
+- it was scheduled twice, from `app/Console/Kernel.php` and from
+  `AttendanceServiceProvider::registerSchedules()`, onto the same log file.
+
+Rows the old writer left behind are recognised by
+`PublicHolidayDates::isLegacyGeneratedRow()` (`notes` beginning `Auto-generated holiday
+record:`) and dropped by every reader, exactly as a stale override row is
+(`ManualAttendanceStatus::isHolidayRow`). Without that, a deleted holiday would keep its
+days off for as long as those rows exist.
+
+`Modules\Leave\PublicHoliday\Services\HolidayValidationService` is deleted too: it had
+no callers and answered from the parent date range, so it disagreed with the applied
+days by construction.
+
+**Where it is applied.** One seam covers the system:
+`AttendanceConstraintService::getTodaysWorkRulesForUser` sets `day_status = 'holiday'`,
+`is_holiday = true`, `reason` to the holiday's name, and empties `all_work_periods` and
+every `*_period` key. The periods are what carry `can_clock_in_until`, so emptying them
+is what removes the clock-in — the same shape a constraint holiday and a manual holiday
+override already produce (INV-17). Everything downstream of that method inherits the
+behaviour: `/attendance/user-constraint/today`, clock-in validation in
+`AttendanceService` and `ProcessClockInAttendanceData`, and the `allow_on_holidays` /
+`allow_outside_shift` task condition evaluators.
+
+Applied only to a day whose `day_status` is `work_day` or `Undefined`. A weekend already
+answers `is_holiday` with no periods, and relabelling it would call a day the employee
+never works an official holiday, which INV-18 assigns to the schedule.
+
+**A `required_attendance` override outranks the holiday calendar.** The calendar is
+country-wide and knows nothing about one admin's instruction for one employee, so
+`ManualAttendanceStatus::isRequiredAttendanceOn()` (and `isRequiredAttendanceFor()` for raw
+rows) suppresses the holiday on all four surfaces.
+
+The order matters and is the reason `UserAttendanceService::getUserConstraints` resolves the
+override *before* building the rules and passes `PublicHolidayDates::none()`: the holiday
+empties `all_work_periods`, and `applyManualAttendanceOverride` can set `day_status` back to
+`work_day` but cannot rebuild the periods. Applying them the other way round returns a work
+day carrying no `can_clock_in_until`, telling the employee to attend while giving the app
+nothing to clock in against. `applyManualAttendanceOverride` therefore takes the resolved
+status rather than the user, so the ordering is not optional.
+
+The override does not beat an approved `LeaveRequest`, nor a weekend or constraint holiday:
+those days define no periods at all, so there is nothing to attend.
+
+**Range readers pass their own dates.** `getTodaysWorkRulesForUser` takes an optional
+pre-resolved `PublicHolidayDates`; the calendar and history resolve one for the whole
+month and hand it down, so a month view costs one holiday query rather than thirty. The
+report groups its employees by country and queries once per distinct country
+(`ReportDataExtractionService::publicHolidaysByUser`). `PublicHolidayCalendarService`
+holds no state of its own, so nothing survives a request under Octane.
+
+**The aggregate counters resolve their country the same way.**
+`AttendanceReportRepository::countPublicHolidayDaysInPeriod` and
+`countAllPublicHolidayDaysInPeriod` feed `month_holidays` and `required_hours`, and their
+`$countryId` now comes from `countryIdForUser()` in both `AttendanceDashboardService` and
+`AttendanceReportService`. They previously read `employment_contracts.country_id` directly,
+which could disagree with the branch country the day labels use — the same report then
+counted a holiday the day rows did not mark, or the reverse.
+
+The contract country is passed as `countryIdForUser`'s `$fallbackCountryId`, so it is still
+consulted last for records carrying neither a branch address nor a company country, and no
+figure that used to count silently drops to zero. `getEmployeeForCompany` eager-loads
+`userProfessionalData.branch.address` so the resolution adds no queries.
 
 INV-15 is intentionally skipped here; it is claimed by the Rules V2 series cited
 in code comments.

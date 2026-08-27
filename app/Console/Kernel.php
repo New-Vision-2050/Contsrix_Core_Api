@@ -3,7 +3,6 @@
 namespace App\Console;
 
 use App\Console\Commands\AutoCloseStaleShiftsCommand;
-use App\Console\Commands\CreateHolidayAttendanceCommand;
 use App\Console\Commands\CreateWaitingAttendanceCommand;
 use App\Console\Commands\UpdateAttendanceStatusCommand;
 use App\Console\Commands\SendAttendanceSilentNotificationCommand;
@@ -59,12 +58,6 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Riyadh')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/attendance-silent-notifications.log'));
-
-        $schedule->command(CreateHolidayAttendanceCommand::class)
-            ->dailyAt('00:05')
-            ->timezone('Asia/Riyadh')
-            ->withoutOverlapping()
-            ->appendOutputTo(storage_path('logs/attendance-holiday.log'));
 
         // Send FCM push reminders to assigned users when a project notification's
         // last site status update is older than 30 days. Repeats until completed.

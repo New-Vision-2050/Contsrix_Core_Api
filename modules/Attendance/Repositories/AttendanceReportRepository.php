@@ -52,6 +52,10 @@ class AttendanceReportRepository extends BaseRepository
     public function getEmployeeForCompany(string $companyId, string $employeeId): User
     {
         return User::query()
+            // The branch address, then the company, carry the country whose public holidays
+            // apply to this employee (INV-21); eager-loaded so resolving it costs no extra
+            // queries.
+            ->with(['userProfessionalData.branch.address', 'company'])
             ->where('company_id', $companyId)
             ->where('id', $employeeId)
             ->firstOrFail();

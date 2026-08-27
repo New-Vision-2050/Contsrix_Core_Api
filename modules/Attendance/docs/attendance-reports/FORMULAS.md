@@ -80,8 +80,8 @@ Implementation class: `Modules\Attendance\Services\AttendanceReportCalculator`
 - **Formula:** `Carbon::daysInMonth`
 
 ### required_attendance_days
-- **Formula:** Weekday count in month minus active public holiday days for the employee contract country.
-- **Fallback:** If the employment contract has no `country_id`, holidays count as `0`. TODO: extend safely if product adds company-specific holiday scope.
+- **Formula:** Weekday count in month minus active weekday public-holiday days for the employee's holiday country (branch, then company, then contract — INV-21).
+- **Fallback:** If no country resolves at all, holidays count as `0`.
 
 ### used_leaves
 - **Formula:** Approved leave overlap days inside the month only. Example: May 30 to June 3 counts 2 days in May and 3 days in June.
@@ -91,8 +91,8 @@ Implementation class: `Modules\Attendance\Services\AttendanceReportCalculator`
 - **Examples:** `21 / 12 = 1.75`; `30 / 12 = 2.50`.
 
 ### month_holidays
-- **Source:** `public_holiday_days` joined to `public_holidays`
-- **Formula:** `COUNT(DISTINCT public_holiday_days.date)` where day is a weekday inside the month, `public_holidays.is_active = true`, and `public_holidays.country_id = employment_contracts.country_id`
+- **Source:** weekend days in the month plus active `public_holiday_days` for the employee's holiday country (including holidays that fall on a weekend)
+- **Holiday country:** resolved by `PublicHolidayCalendarService::countryIdForUser()` — the country of the branch the employee works at, then their company's country, then `employment_contracts.country_id` as a last resort. This is the same resolution the calendar, history and per-day report labels use, so a counted holiday and a labelled holiday cannot disagree (INV-21).
 
 ### required_hours
 - **Formula:** `required_attendance_days × employment_contracts.working_hours` (default 8)

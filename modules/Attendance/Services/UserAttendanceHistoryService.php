@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Support\HoursFormatter;
 use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\PublicHolidayDates;
 use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
@@ -22,6 +23,7 @@ final class UserAttendanceHistoryService
     public function __construct(
         private AttendanceConstraintService $constraintService,
         private UserAttendanceService $userAttendanceService,
+        private PublicHolidayCalendarService $publicHolidayCalendar,
     ) {}
 
     // =============================================================================
@@ -98,6 +100,7 @@ final class UserAttendanceHistoryService
         $paginatedDates = $allDates->slice($offset, $perPage)->values();
 
         $scheduledWorkDays = $this->constraintService->getScheduledWorkDaysForUser($user);
+        $publicHolidays = $this->publicHolidaysForDates($user, $allDates);
 
         $result = [];
         foreach ($paginatedDates as $dateValue) {
@@ -113,7 +116,8 @@ final class UserAttendanceHistoryService
                 $user,
                 $dateString,
                 $timezone,
-                $scheduledWorkDays
+                $scheduledWorkDays,
+                $publicHolidays
             );
             $dayName = $this->getDayNameArabic($dateCarbon);
 
@@ -212,6 +216,7 @@ final class UserAttendanceHistoryService
         $paginatedDates = $allDates->slice($offset, $perPage)->values();
 
         $scheduledWorkDays = $this->constraintService->getScheduledWorkDaysForUser($user);
+        $publicHolidays = $this->publicHolidaysForDates($user, $allDates);
 
         $result = [];
         foreach ($paginatedDates as $dateValue) {
@@ -227,7 +232,8 @@ final class UserAttendanceHistoryService
                 $user,
                 $dateString,
                 $timezone,
-                $scheduledWorkDays
+                $scheduledWorkDays,
+                $publicHolidays
             );
             $dayName = $this->getDayNameArabic($dateCarbon);
 
@@ -748,6 +754,25 @@ final class UserAttendanceHistoryService
     // =============================================================================
 
     /**
+     * Official holidays covering every date the page can show, resolved in one query so the
+     * per-day loop below does not touch the database (INV-21).
+     *
+     * @param  Collection<int, string>  $dates  Y-m-d keys
+     */
+    private function publicHolidaysForDates(User $user, Collection $dates): PublicHolidayDates
+    {
+        if ($dates->isEmpty()) {
+            return PublicHolidayDates::none();
+        }
+
+        return $this->publicHolidayCalendar->forUser(
+            $user,
+            (string) $dates->min(),
+            (string) $dates->max()
+        );
+    }
+
+    /**
      * @return array{status: string, is_late: int, is_absent: int, is_holiday: int}
      */
     private function buildDayStatusPayload(
@@ -756,19 +781,29 @@ final class UserAttendanceHistoryService
         ?User $user = null,
         ?string $dateString = null,
         ?string $timezone = null,
-        ?ScheduledWorkDays $scheduledWorkDays = null
+        ?ScheduledWorkDays $scheduledWorkDays = null,
+        ?PublicHolidayDates $publicHolidays = null
     ): array {
         // عطلة belongs to the schedule, not to the person: a disabled weekday or a date
         // listed in the constraint's holidays. Checked first so a weekend falling inside a
-        // leave window stays عطلة instead of consuming a leave day.
+        // leave window stays عطلة instead of consuming a leave day, and an official holiday
+        // landing on a weekend stays عطلة too (INV-21).
         if ($scheduledWorkDays !== null && $dateString !== null && ! $scheduledWorkDays->isWorkDay($dateString)) {
             return $this->dayOffStatusPayload((int) $this->hasLateArrival($attendances));
         }
 
-        // إجازة is time off granted to the person, here the attendance-status override
-        // while its date window is active. After the window the day falls back to the
-        // constraint (INV-18).
-        if ($manualLeaveOverride) {
+        // إجازة is time off granted to the person: the attendance-status override while its
+        // date window is active, or an official public holiday for the employee's branch
+        // country. After the window the day falls back to the constraint (INV-18).
+        //
+        // A required-attendance override outranks the holiday calendar, which is country-wide
+        // and knows nothing about this one instruction (INV-21).
+        $isPublicHoliday = $publicHolidays !== null
+            && $dateString !== null
+            && $publicHolidays->isHoliday($dateString)
+            && ! ManualAttendanceStatus::isRequiredAttendanceOn($user, $dateString);
+
+        if ($isPublicHoliday || $manualLeaveOverride) {
             return $this->leaveStatusPayload((int) $this->hasLateArrival($attendances));
         }
 
@@ -778,6 +813,7 @@ final class UserAttendanceHistoryService
         // as if it had no rows at all.
         $attendances = $attendances->reject(
             fn ($a) => ManualAttendanceStatus::isHolidayRow($a->notes ?? null)
+                || PublicHolidayDates::isLegacyGeneratedRow($a->notes ?? null)
         );
 
         $stillAwaitingClockIn = $user !== null
@@ -798,8 +834,6 @@ final class UserAttendanceHistoryService
             ];
         }
 
-        // Reached only on scheduled work days with no active override, so a holiday row
-        // here is a company-wide public holiday (CreateHolidayAttendanceCommand) — عطلة.
         $hasHoliday = $attendances->contains(fn ($a) => $this->isTruthy($a->is_holiday ?? null)
             || ($a->status ?? null) === Attendance::STATUS_HOLIDAY
             || ($a->day_status ?? null) === 'holiday');
@@ -814,8 +848,8 @@ final class UserAttendanceHistoryService
         // Late = clock-in after shift start only (early departure is not late).
         $hasLate = $this->hasLateArrival($attendances);
 
-        // Reached only on scheduled work days with no active override, so a holiday row
-        // here is a company-wide public holiday (CreateHolidayAttendanceCommand) — عطلة.
+        // Reached only on scheduled work days with no override and no official holiday, so a
+        // surviving holiday row was written by something outside those sources — عطلة.
         if ($hasHoliday) {
             return $this->dayOffStatusPayload((int) $hasLate);
         }

@@ -10,6 +10,7 @@ use Modules\Attendance\DTO\AttendanceReportFilterDTO;
 use Modules\Attendance\Models\LeaveRequest;
 use Modules\Attendance\Services\AttendanceDashboardService;
 use Modules\Attendance\Services\AttendanceReportService;
+use Modules\Country\Models\Country;
 use Modules\UserInfo\EmploymentContract\Models\EmploymentContract;
 
 class AttendanceReportServiceTest extends BaseAttendanceReportTestCase
@@ -104,7 +105,13 @@ class AttendanceReportServiceTest extends BaseAttendanceReportTestCase
         $this->assertSame(3, $rowsByMonth['June 2025']['used_leaves']);
     }
 
-    public function test_monthly_required_days_counts_only_active_holidays_for_contract_country(): void
+    /**
+     * May 2025 has 9 Sat/Sun days. The fixture seeds two active holidays for this
+     * employee's country (8 May weekday, 10 May weekend) and one inactive day that
+     * must not count. Required days subtract only the weekday holiday; month_holidays
+     * is weekends plus every official day, including those that fall on a weekend.
+     */
+    public function test_monthly_required_days_counts_only_active_holidays_for_the_employee_country(): void
     {
         $filters = new AttendanceReportFilterDTO(
             company_id: $this->company->id,
@@ -115,11 +122,16 @@ class AttendanceReportServiceTest extends BaseAttendanceReportTestCase
 
         $row = app(AttendanceReportService::class)->listMonthlyReports($filters)['data'][0];
 
-        $this->assertSame(1, $row['month_holidays']);
+        $this->assertSame(11, $row['month_holidays']);
         $this->assertSame(21, $row['required_attendance_days']);
     }
 
-    public function test_missing_contract_country_does_not_count_global_holidays(): void
+    /**
+     * Clearing the contract country used to zero the holiday count. The employee's
+     * company (and branch, when it has an address) still names a country, so the
+     * holidays for that country must keep counting (INV-21).
+     */
+    public function test_missing_contract_country_still_counts_holidays_from_the_company_country(): void
     {
         EmploymentContract::query()
             ->where('company_id', $this->company->id)
@@ -135,7 +147,33 @@ class AttendanceReportServiceTest extends BaseAttendanceReportTestCase
 
         $row = app(AttendanceReportService::class)->listMonthlyReports($filters)['data'][0];
 
-        $this->assertSame(0, $row['month_holidays']);
+        $this->assertSame(11, $row['month_holidays']);
+        $this->assertSame(21, $row['required_attendance_days']);
+    }
+
+    /**
+     * The contract can name a country whose holidays are seeded while the company
+     * sits in another. The counters must follow the company/branch, not the contract.
+     */
+    public function test_contract_country_holidays_are_ignored_when_the_company_country_differs(): void
+    {
+        $otherCountryId = Country::query()->where('id', '!=', $this->country->id)->value('id');
+        if ($otherCountryId === null) {
+            $this->markTestSkipped('Need a second country to prove the contract country is ignored.');
+        }
+
+        $this->company->update(['country_id' => $otherCountryId]);
+
+        $filters = new AttendanceReportFilterDTO(
+            company_id: $this->company->id,
+            employee_id: (string) $this->employee->id,
+            from_date: '2025-05-01',
+            to_date: '2025-05-31',
+        );
+
+        $row = app(AttendanceReportService::class)->listMonthlyReports($filters)['data'][0];
+
+        $this->assertSame(9, $row['month_holidays']);
         $this->assertSame(22, $row['required_attendance_days']);
     }
 

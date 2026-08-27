@@ -23,7 +23,7 @@ GET /api/v1/hr/attendance/reports
 | employee_contracts | `employment_contracts` (`EmploymentContract`) |
 | attendances | `attendances` (`Attendance`) |
 | employee_leaves | `leave_requests` + `leave_balances` |
-| employee_holidays | `attendances.is_holiday` + `public_holiday_days` |
+| employee_holidays | `attendances.is_holiday` + `public_holiday_days` (matched on the employee's branch country — INV-21) |
 
 ## Schema
 
