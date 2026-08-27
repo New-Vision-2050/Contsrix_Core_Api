@@ -66,6 +66,28 @@ final class ManualAttendanceStatus
     }
 
     /**
+     * An admin demanding this employee attend this date. It outranks the official public
+     * holiday calendar, which is country-wide and knows nothing about one person's
+     * instruction, so every surface must consult this before calling a date إجازة for a
+     * public holiday (INV-21).
+     *
+     * It does not override an approved `LeaveRequest`, nor a weekend or constraint holiday:
+     * those days define no periods at all, so there is nothing to attend.
+     */
+    public static function isRequiredAttendanceOn(?User $user, string $date): bool
+    {
+        return self::activeOn($user, $date) === self::REQUIRED_ATTENDANCE;
+    }
+
+    /**
+     * Raw-value variant, for callers holding database rows rather than models.
+     */
+    public static function isRequiredAttendanceFor(?string $status, mixed $since, mixed $until, string $date): bool
+    {
+        return self::resolve($status, $since, $until, $date) === self::REQUIRED_ATTENDANCE;
+    }
+
+    /**
      * Raw-value variant for callers holding database rows rather than models, such as the
      * reports extraction query.
      */

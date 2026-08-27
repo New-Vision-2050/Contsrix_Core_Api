@@ -8,7 +8,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\Attendance\Services\PublicHolidayCalendarService;
 use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\PublicHolidayDates;
 use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\Reports\DTO\ReportWizardConfigDTO;
 use Modules\Reports\Enums\ReportEnums;
@@ -49,6 +51,7 @@ class ReportDataExtractionService
 {
     public function __construct(
         private readonly AttendanceConstraintService $constraintService,
+        private readonly PublicHolidayCalendarService $publicHolidayCalendar,
     ) {}
 
     public function extract(Report $report, ReportWizardConfigDTO $config, Collection $employees): array
@@ -163,6 +166,7 @@ class ReportDataExtractionService
         // Group attendance rows by (global_id → date); accumulate per-session data.
         $groupedDaily = [];
         $scheduleCache = [];
+        $holidaysByUser = $this->publicHolidaysByUser($dailyRows, $start, $end);
         foreach ($dailyRows as $d) {
             $gid  = (string) $d->global_id;
             $date = (string) $d->business_date;
@@ -170,7 +174,8 @@ class ReportDataExtractionService
             $isHoliday     = (int) ($d->is_holiday ?? 0) === 1;
             $isAbsent      = (int) ($d->is_absent  ?? 0) === 1;
             $isWaiting     = ($d->status ?? '') === 'waiting' && empty($d->clock_in_time);
-            $holidayStatus = $isHoliday ? $this->holidayDisplayStatus($d, $date, $scheduleCache) : null;
+            $holidayStatus = $this->publicHolidayDisplayStatus($d, $date, $holidaysByUser, $scheduleCache)
+                ?? ($isHoliday ? $this->holidayDisplayStatus($d, $date, $scheduleCache) : null);
             $displayStatus = $holidayStatus
                 ?? ($isAbsent || $isWaiting ? 'absent'
                     : (empty($d->clock_in_time) ? 'absent' : 'present'));
@@ -275,8 +280,11 @@ class ReportDataExtractionService
      *
      * - `leave` (إجازة) — time off granted to this employee by the sub-entity
      *   attendance-status override, on a date its window still covers.
-     * - `holiday` (عطلة) — the schedule does not work this date: weekend, day off,
-     *   constraint holiday, or a company-wide public holiday.
+     * - `holiday` (عطلة) — the schedule does not work this date: weekend, day off or
+     *   constraint holiday.
+     *
+     * Official public holidays are resolved separately and earlier, from the holiday table
+     * rather than from this flag ({@see publicHolidayDisplayStatus}).
      *
      * Returns null when the flag should be ignored altogether — a row the override wrote
      * on a date its window no longer covers, where the employee is back on their
@@ -300,9 +308,63 @@ class ReportDataExtractionService
         );
 
         if (! $overrideActive) {
-            return ManualAttendanceStatus::isHolidayRow($row->notes ?? null) ? null : 'holiday';
+            if (ManualAttendanceStatus::isHolidayRow($row->notes ?? null)
+                || PublicHolidayDates::isLegacyGeneratedRow($row->notes ?? null)) {
+                return null;
+            }
+
+            return 'holiday';
         }
 
+        return $this->scheduledWorkDaysFor($row, $scheduleCache)->isWorkDay($date) ? 'leave' : 'holiday';
+    }
+
+    /**
+     * An official public holiday for the employee's branch country reads as `leave` (إجازة)
+     * — it is time off granted to them on a date they would otherwise have worked. On a date
+     * the schedule already does not work it stays `holiday` (عطلة), because a day the
+     * employee never works cannot be granted off (INV-21).
+     *
+     * Returns null when the date is not an official holiday, leaving the row to be scored by
+     * the rules that follow. Read live from `public_holiday_days`, so unlike the flag on the
+     * row it is still correct after a holiday is edited or deleted.
+     *
+     * @param array<string, PublicHolidayDates> $holidaysByUser keyed by user id
+     * @param array<string, ScheduledWorkDays>  $scheduleCache  keyed by user id
+     */
+    private function publicHolidayDisplayStatus(
+        object $row,
+        string $date,
+        array $holidaysByUser,
+        array &$scheduleCache
+    ): ?string {
+        $holidays = $holidaysByUser[(string) ($row->user_id ?? '')] ?? null;
+
+        if ($holidays === null || ! $holidays->isHoliday($date)) {
+            return null;
+        }
+
+        // A required-attendance override outranks the holiday calendar, which is country-wide
+        // and knows nothing about this one instruction (INV-21).
+        $requiredByAdmin = ManualAttendanceStatus::isRequiredAttendanceFor(
+            $row->manual_attendance_status ?? null,
+            $row->manual_attendance_status_since ?? null,
+            $row->manual_attendance_status_until ?? null,
+            $date
+        );
+
+        if ($requiredByAdmin) {
+            return null;
+        }
+
+        return $this->scheduledWorkDaysFor($row, $scheduleCache)->isWorkDay($date) ? 'leave' : 'holiday';
+    }
+
+    /**
+     * @param array<string, ScheduledWorkDays> $scheduleCache keyed by user id
+     */
+    private function scheduledWorkDaysFor(object $row, array &$scheduleCache): ScheduledWorkDays
+    {
         $userId = (string) ($row->user_id ?? '');
 
         if (! array_key_exists($userId, $scheduleCache)) {
@@ -313,7 +375,49 @@ class ReportDataExtractionService
                 : ScheduledWorkDays::unknown();
         }
 
-        return $scheduleCache[$userId]->isWorkDay($date) ? 'leave' : 'holiday';
+        return $scheduleCache[$userId];
+    }
+
+    /**
+     * Official holidays for every employee in the report, resolved before the row loop.
+     *
+     * Employees are grouped by the country their branch sits in, so the holiday table is
+     * queried once per distinct country rather than once per employee or once per row.
+     *
+     * @param  Collection<int, object>  $dailyRows
+     * @return array<string, PublicHolidayDates>
+     */
+    private function publicHolidaysByUser(Collection $dailyRows, string $start, string $end): array
+    {
+        $userIds = $dailyRows
+            ->map(fn (object $row) => (string) ($row->user_id ?? ''))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($userIds === []) {
+            return [];
+        }
+
+        $byCountry = [];
+        $byUser = [];
+
+        foreach (User::query()->whereIn('id', $userIds)->get() as $user) {
+            $countryId = $this->publicHolidayCalendar->countryIdForUser($user);
+
+            if ($countryId === null) {
+                continue;
+            }
+
+            $byCountry[$countryId] ??= $this->publicHolidayCalendar->forCountry($countryId, $start, $end);
+
+            if (! $byCountry[$countryId]->isEmpty()) {
+                $byUser[(string) $user->id] = $byCountry[$countryId];
+            }
+        }
+
+        return $byUser;
     }
 
     /**

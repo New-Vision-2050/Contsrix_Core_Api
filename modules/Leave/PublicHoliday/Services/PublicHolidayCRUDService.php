@@ -6,7 +6,6 @@ namespace Modules\Leave\PublicHoliday\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use Modules\Attendance\Jobs\SyncHolidayAttendanceJob;
 use Modules\Leave\PublicHoliday\DTO\CreatePublicHolidayDTO;
 use Modules\Leave\PublicHoliday\Models\PublicHoliday;
 use Modules\Leave\PublicHoliday\Repositories\PublicHolidayRepository;
@@ -31,8 +30,6 @@ class PublicHolidayCRUDService
         $this->repository->syncPublicHolidayDays($holiday, $days);
 
         $holiday->load('days');
-
-        SyncHolidayAttendanceJob::dispatch($holiday->id);
 
         return $holiday;
     }

@@ -13,6 +13,7 @@ class AttendanceDashboardService
 {
     public function __construct(
         private AttendanceReportRepository $repository,
+        private PublicHolidayCalendarService $publicHolidayCalendar,
     ) {}
 
     /**
@@ -23,7 +24,14 @@ class AttendanceDashboardService
         $user = $this->repository->getEmployeeForCompany($filters->company_id, $filters->employee_id);
         $contract = $this->resolveContract($filters->company_id, $user);
         $serviceStartDate = $this->resolveServiceStartDate($filters->company_id, $user);
-        $countryId = $contract?->country_id !== null ? (string) $contract->country_id : null;
+        // Which country's official holidays count is decided by the branch the employee
+        // works at, the same source the calendar and report day labels use, so a figure here
+        // cannot contradict the days shown there (INV-21). The contract country remains the
+        // last-resort fallback for records with no branch or company country on file.
+        $countryId = $this->publicHolidayCalendar->countryIdForUser(
+            $user,
+            $contract?->country_id !== null ? (string) $contract->country_id : null,
+        );
         $publicHolidays = $this->repository->countPublicHolidayDaysInPeriod(
             $filters->periodStart(),
             $filters->periodEnd(),

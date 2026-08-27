@@ -10,6 +10,7 @@ use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\PublicHolidayDates;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -107,8 +108,18 @@ class UserAttendanceService
             $targetDate = $date ?? $this->now()->format('Y-m-d');
             $dateCarbon = $this->parseDateTime($targetDate, $timezone);
 
-            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate, $timezone);
-            $workRules = $this->applyManualAttendanceOverride($user, $targetDate, $workRules);
+            $override = ManualAttendanceStatus::activeOn($user, $targetDate);
+
+            // Resolved before the rules are built, not after: a required-attendance override
+            // needs the day's real periods, and an official holiday empties them. Flipping
+            // day_status back afterwards cannot rebuild them, which would leave the endpoint
+            // reporting a work day that carries no can_clock_in_until (INV-21).
+            $publicHolidays = $override === ManualAttendanceStatus::REQUIRED_ATTENDANCE
+                ? PublicHolidayDates::none()
+                : null;
+
+            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate, $timezone, $publicHolidays);
+            $workRules = $this->applyManualAttendanceOverride($override, $workRules);
             if (\Modules\Attendance\Support\AttendanceType::userIsFlexible($user)) {
                 $workRules = \Modules\Attendance\Support\FlexibleWorkDay::applyToWorkRules(
                     $workRules,
@@ -148,11 +159,13 @@ class UserAttendanceService
      * `manual_attendance_status_since` through `manual_attendance_status_until`
      * (inclusive). When until is null the override stays open-ended until changed.
      * After until expires, holiday automatically falls back to required attendance.
+     *
+     * Takes the already-resolved status rather than the user, because the caller must know
+     * it before building the rules: `required_attendance` has to suppress the public-holiday
+     * override, which this method could not undo.
      */
-    private function applyManualAttendanceOverride(User $user, string $targetDate, array $workRules): array
+    private function applyManualAttendanceOverride(?string $status, array $workRules): array
     {
-        $status = ManualAttendanceStatus::activeOn($user, $targetDate);
-
         if ($status === null) {
             return $workRules;
         }

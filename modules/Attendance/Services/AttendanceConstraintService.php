@@ -15,6 +15,7 @@ use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Models\AttendanceConstraintLocation;
 use Modules\Attendance\Models\AttendanceConstraintViolation;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Support\PublicHolidayDates;
 use Modules\User\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -40,6 +41,12 @@ class AttendanceConstraintService
     protected SecurityConstraintServiceInterface $securityConstraintService;
     protected ComplianceConstraintServiceInterface $complianceConstraintService;
 
+    /**
+     * Null only when the service is built by hand in a unit test; resolved lazily so those
+     * callers keep working without knowing about public holidays.
+     */
+    private ?PublicHolidayCalendarService $publicHolidayCalendar;
+
     public function __construct(
         TimeConstraintServiceInterface $timeConstraintService,
         LocationConstraintServiceInterface $locationConstraintService,
@@ -47,8 +54,10 @@ class AttendanceConstraintService
         RoleConstraintServiceInterface $roleConstraintService,
         BehavioralConstraintServiceInterface $behavioralConstraintService,
         SecurityConstraintServiceInterface $securityConstraintService,
-        ComplianceConstraintServiceInterface $complianceConstraintService
+        ComplianceConstraintServiceInterface $complianceConstraintService,
+        ?PublicHolidayCalendarService $publicHolidayCalendar = null
     ) {
+        $this->publicHolidayCalendar = $publicHolidayCalendar;
         $this->timeConstraintService = $timeConstraintService;
         $this->locationConstraintService = $locationConstraintService;
         $this->deviceConstraintService = $deviceConstraintService;
@@ -562,8 +571,17 @@ class AttendanceConstraintService
             'detected_at' => now(),
         ]);
     }
-    public function getTodaysWorkRulesForUser(User $user, $date = null, ?string $timezone = null): array
-    {
+    /**
+     * @param PublicHolidayDates|null $publicHolidays Pre-resolved holidays covering `$date`.
+     *        Range readers (calendar, history) pass their month so this does not run a
+     *        query per day; single-date callers leave it null and one lookup happens here.
+     */
+    public function getTodaysWorkRulesForUser(
+        User $user,
+        $date = null,
+        ?string $timezone = null,
+        ?PublicHolidayDates $publicHolidays = null
+    ): array {
         // Use the provided timezone or get it once to avoid multiple calls
         $timezone = $timezone ?? getTimeZoneBranchByRequest() ?? config('app.timezone');
         $now = $date
@@ -586,7 +604,7 @@ class AttendanceConstraintService
         $constraints = $this->getApplicableConstraintsForDataRetrieval($user);
 
         if ($constraints->isEmpty()) {
-            return [
+            return $this->applyPublicHoliday([
                 'day_status' => 'Undefined',
                 'day_name' => $now->isoFormat(format: 'dddd'),
                 'is_holiday' => false,
@@ -600,7 +618,7 @@ class AttendanceConstraintService
                 'location_work' => null,
                 'max_over_time' => null,
                 'source_constraint_ids' => ['time' => null, 'location' => null],
-            ];
+            ], $user, $now, $publicHolidays);
         }
 
         // Find the winning TIME constraint.
@@ -633,7 +651,7 @@ class AttendanceConstraintService
             ? AttendanceConstraintLocation::whereIn('attendance_constraint_id', $constraintIds)->count()
             : 0;
 
-        return [
+        return $this->applyPublicHoliday([
             'day_status'              => $timeRulesResult['day_status'],
             'day_name'                => $now->isoFormat(format: 'dddd'),
             'is_holiday'              => $timeRulesResult['is_holiday'],
@@ -671,7 +689,66 @@ class AttendanceConstraintService
                 'tenancy_initialized' => tenancy()->initialized,
                 'tenant_key' => tenancy()->initialized ? tenant()->getTenantKey() : null,
             ],
-        ];
+        ], $user, $now, $publicHolidays);
+    }
+
+    /**
+     * An official public holiday for the employee's country closes the day: no periods, so
+     * no `can_clock_in_until` and no clock-in button, exactly as a constraint holiday or a
+     * manual holiday override does (INV-21).
+     *
+     * Applied only to a day the schedule would otherwise work. A weekend already answers
+     * `is_holiday` with no periods, and overwriting its `day_status` would relabel it as an
+     * official holiday when INV-18 says the schedule wins there.
+     *
+     * @param  array<string, mixed>  $workRules
+     * @return array<string, mixed>
+     */
+    private function applyPublicHoliday(
+        array $workRules,
+        User $user,
+        Carbon $now,
+        ?PublicHolidayDates $publicHolidays
+    ): array {
+        $currentStatus = $workRules['day_status'] ?? null;
+        if ($currentStatus !== 'work_day' && $currentStatus !== 'Undefined') {
+            return $workRules;
+        }
+
+        $dates = $publicHolidays ?? $this->resolvePublicHolidays($user, $now->toDateString());
+        $name = $dates->nameFor($now);
+
+        if ($name === null) {
+            return $workRules;
+        }
+
+        return array_merge($workRules, [
+            'day_status'            => 'holiday',
+            'is_holiday'            => true,
+            'reason'                => $name,
+            'all_work_periods'      => [],
+            'total_work_hours'      => 0.0,
+            'current_work_period'   => null,
+            'next_work_period'      => null,
+            'first_next_period'     => null,
+            'second_next_period'    => null,
+            'active_or_next_period' => null,
+        ]);
+    }
+
+    private function resolvePublicHolidays(User $user, string $date): PublicHolidayDates
+    {
+        $calendar = $this->publicHolidayCalendar;
+
+        if ($calendar === null) {
+            try {
+                $calendar = app(PublicHolidayCalendarService::class);
+            } catch (\Throwable) {
+                return PublicHolidayDates::none();
+            }
+        }
+
+        return $calendar->forUser($user, $date, $date);
     }
 
     /**

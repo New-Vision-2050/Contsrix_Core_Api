@@ -10,8 +10,10 @@ use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Services\AttendanceCalendarService;
 use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\Attendance\Services\PublicHolidayCalendarService;
 use Modules\Attendance\Services\UserAttendanceService;
 use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\PublicHolidayDates;
 use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\EmployeeTask\Services\EmployeeTaskPresenceService;
 use Modules\User\Models\User;
@@ -31,6 +33,7 @@ class AttendanceCalendarServiceTest extends TestCase
             $this->createMock(AttendanceConstraintService::class),
             $this->createMock(UserAttendanceService::class),
             $this->createMock(EmployeeTaskPresenceService::class),
+            $this->createMock(PublicHolidayCalendarService::class),
         );
 
         $this->calculateTotalWorkHours = new ReflectionMethod($this->service, 'calculateTotalWorkHoursFromGroupedAttendances');
@@ -277,12 +280,67 @@ class AttendanceCalendarServiceTest extends TestCase
     }
 
     /**
-     * A company-wide public holiday is not written by the override endpoint and is not in
-     * the constraint either, so it is still recognised from its attendance row — عطلة.
+     * An official holiday is time off granted to the employee on a day they would otherwise
+     * have worked, so it reads إجازة (INV-21).
      */
-    public function test_public_holiday_row_on_a_scheduled_work_day_is_a_day_off(): void
+    public function test_official_public_holiday_on_a_scheduled_work_day_is_leave(): void
     {
-        $publicHolidayRow = $this->attendance([
+        $day = $this->buildDayData(
+            '2026-08-27',
+            new User(),
+            ['thursday' => true],
+            null,
+            PublicHolidayDates::fromMap(['2026-08-27' => 'المولد النبوي الشريف'])
+        );
+
+        $this->assertSame('leave', $day['status_key']);
+        $this->assertSame('إجازة', $day['status']);
+    }
+
+    /**
+     * The holiday calendar is country-wide and knows nothing about one employee's
+     * instruction, so an admin demanding attendance that date wins and the day resolves from
+     * the constraint (INV-21).
+     */
+    public function test_required_attendance_override_beats_a_public_holiday(): void
+    {
+        $day = $this->buildDayData(
+            '2026-08-27',
+            $this->userWithRequiredAttendanceOn('2026-08-27'),
+            ['thursday' => true],
+            null,
+            PublicHolidayDates::fromMap(['2026-08-27' => 'المولد النبوي الشريف'])
+        );
+
+        $this->assertSame('absent', $day['status_key']);
+        $this->assertSame('غائب', $day['status']);
+    }
+
+    /**
+     * A day the schedule never works cannot be granted off, so the weekend keeps عطلة.
+     */
+    public function test_official_public_holiday_on_a_non_working_day_stays_a_day_off(): void
+    {
+        $day = $this->buildDayData(
+            '2026-08-27',
+            new User(),
+            ['thursday' => false],
+            null,
+            PublicHolidayDates::fromMap(['2026-08-27' => 'المولد النبوي الشريف'])
+        );
+
+        $this->assertSame('off', $day['status_key']);
+        $this->assertSame('عطلة', $day['status']);
+    }
+
+    /**
+     * Holidays are now read live from the holiday table, so a row left behind by the removed
+     * pre-writing command must not hold the day off on its own — the date resolves from the
+     * constraint like any other.
+     */
+    public function test_row_left_by_the_removed_holiday_command_is_ignored(): void
+    {
+        $legacyRow = $this->attendance([
             'is_holiday' => 1,
             'day_status' => 'holiday',
             'status'     => Attendance::STATUS_HOLIDAY,
@@ -294,11 +352,11 @@ class AttendanceCalendarServiceTest extends TestCase
             '2026-09-23',
             new User(),
             ['wednesday' => true],
-            collect([$publicHolidayRow])
+            collect([$legacyRow])
         );
 
-        $this->assertSame('off', $day['status_key']);
-        $this->assertSame('عطلة', $day['status']);
+        $this->assertSame('absent', $day['status_key']);
+        $this->assertSame('غائب', $day['status']);
     }
 
     /**
@@ -314,6 +372,15 @@ class AttendanceCalendarServiceTest extends TestCase
         ]);
     }
 
+    private function userWithRequiredAttendanceOn(string $date): User
+    {
+        return (new User())->setRawAttributes([
+            'manual_attendance_status'       => ManualAttendanceStatus::REQUIRED_ATTENDANCE,
+            'manual_attendance_status_since' => $date,
+            'manual_attendance_status_until' => $date,
+        ]);
+    }
+
     /**
      * @param array<string, bool> $enabledWeekdays
      * @param Collection<int, Attendance>|null $dayAttendances
@@ -323,7 +390,8 @@ class AttendanceCalendarServiceTest extends TestCase
         string $dateString,
         User $user,
         array $enabledWeekdays,
-        ?Collection $dayAttendances = null
+        ?Collection $dayAttendances = null,
+        ?PublicHolidayDates $publicHolidays = null
     ): array {
         $weekly = [];
         foreach ($enabledWeekdays as $weekday => $enabled) {
@@ -345,6 +413,7 @@ class AttendanceCalendarServiceTest extends TestCase
             $constraintService,
             $this->createMock(UserAttendanceService::class),
             $this->createMock(EmployeeTaskPresenceService::class),
+            $this->createMock(PublicHolidayCalendarService::class),
         );
 
         $method = new ReflectionMethod($service, 'buildDayData');
@@ -361,7 +430,8 @@ class AttendanceCalendarServiceTest extends TestCase
             false,
             'Asia/Riyadh',
             Carbon::parse('2026-09-30T12:00:00+03:00'),
-            ScheduledWorkDays::fromConstraint($constraint)
+            ScheduledWorkDays::fromConstraint($constraint),
+            $publicHolidays ?? PublicHolidayDates::none()
         );
     }
 
@@ -395,6 +465,7 @@ class AttendanceCalendarServiceTest extends TestCase
             $this->createMock(AttendanceConstraintService::class),
             $userAttendanceService,
             $this->createMock(EmployeeTaskPresenceService::class),
+            $this->createMock(PublicHolidayCalendarService::class),
         );
 
         $method = new ReflectionMethod($service, 'resolvePendingClockInDay');

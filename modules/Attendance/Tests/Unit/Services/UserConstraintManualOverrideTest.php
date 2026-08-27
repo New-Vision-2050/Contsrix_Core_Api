@@ -4,11 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Tests\Unit\Services;
 
+use Carbon\Carbon;
+use Modules\Attendance\Contracts\BehavioralConstraintServiceInterface;
+use Modules\Attendance\Contracts\ComplianceConstraintServiceInterface;
+use Modules\Attendance\Contracts\DeviceConstraintServiceInterface;
+use Modules\Attendance\Contracts\LocationConstraintServiceInterface;
+use Modules\Attendance\Contracts\RoleConstraintServiceInterface;
+use Modules\Attendance\Contracts\SecurityConstraintServiceInterface;
+use Modules\Attendance\Contracts\TimeConstraintServiceInterface;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\UserAttendanceService;
 use Modules\Attendance\Support\FlexibleWorkDay;
 use Modules\Attendance\Support\ManualAttendanceStatus;
+use Modules\Attendance\Support\PublicHolidayDates;
 use Modules\User\Models\User;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -108,12 +117,7 @@ class UserConstraintManualOverrideTest extends TestCase
 
     public function test_user_without_an_override_is_left_untouched(): void
     {
-        $rules = $this->applyManualAttendanceOverride->invoke(
-            $this->service,
-            new User(),
-            '2026-08-25',
-            $this->workDayRules()
-        );
+        $rules = $this->applyManualAttendanceOverride->invoke($this->service, null, $this->workDayRules());
 
         $this->assertSame($this->workDayRules(), $rules);
     }
@@ -140,6 +144,87 @@ class UserConstraintManualOverrideTest extends TestCase
     }
 
     /**
+     * A required-attendance override on a date that is also an official public holiday.
+     *
+     * The holiday empties the periods, and `applyManualAttendanceOverride` can flip
+     * `day_status` back to `work_day` but cannot rebuild them. Resolving the override first
+     * and suppressing the holiday is what keeps a period — and therefore a
+     * `can_clock_in_until` — on the day the admin demanded attendance (INV-21).
+     */
+    public function test_required_attendance_beats_a_public_holiday_and_keeps_its_periods(): void
+    {
+        $rules = $this->todayRules(ManualAttendanceStatus::REQUIRED_ATTENDANCE);
+
+        $this->assertSame('work_day', $rules['day_status']);
+        $this->assertFalse($rules['is_holiday']);
+        $this->assertSame('Manual required-attendance override.', $rules['reason']);
+        $this->assertCount(1, $rules['all_work_periods']);
+        $this->assertNotNull($rules['current_work_period']);
+    }
+
+    public function test_a_public_holiday_closes_the_day_when_no_override_applies(): void
+    {
+        $rules = $this->todayRules(null);
+
+        $this->assertSame('holiday', $rules['day_status']);
+        $this->assertTrue($rules['is_holiday']);
+        $this->assertSame('المولد النبوي الشريف', $rules['reason']);
+        $this->assertSame([], $rules['all_work_periods']);
+    }
+
+    public function test_a_holiday_override_on_a_public_holiday_still_closes_the_day(): void
+    {
+        $rules = $this->todayRules(ManualAttendanceStatus::HOLIDAY);
+
+        $this->assertSame('holiday', $rules['day_status']);
+        $this->assertSame([], $rules['all_work_periods']);
+    }
+
+    /**
+     * Mirrors the order `getUserConstraints` composes the two overrides in: resolve the
+     * manual status, build the rules (public holiday applied unless required attendance
+     * suppresses it), then apply the manual status.
+     *
+     * @return array<string, mixed>
+     */
+    private function todayRules(?string $status): array
+    {
+        $date = '2026-08-27';
+        $user = $status === null
+            ? new User()
+            : $this->userWithWindow($status, $date, $date);
+
+        $override = ManualAttendanceStatus::activeOn($user, $date);
+
+        $publicHolidays = $override === ManualAttendanceStatus::REQUIRED_ATTENDANCE
+            ? PublicHolidayDates::none()
+            : PublicHolidayDates::fromMap([$date => 'المولد النبوي الشريف']);
+
+        $constraintService = new AttendanceConstraintService(
+            $this->createMock(TimeConstraintServiceInterface::class),
+            $this->createMock(LocationConstraintServiceInterface::class),
+            $this->createMock(DeviceConstraintServiceInterface::class),
+            $this->createMock(RoleConstraintServiceInterface::class),
+            $this->createMock(BehavioralConstraintServiceInterface::class),
+            $this->createMock(SecurityConstraintServiceInterface::class),
+            $this->createMock(ComplianceConstraintServiceInterface::class)
+        );
+
+        $applyPublicHoliday = new ReflectionMethod($constraintService, 'applyPublicHoliday');
+        $applyPublicHoliday->setAccessible(true);
+
+        $rules = $applyPublicHoliday->invoke(
+            $constraintService,
+            $this->workDayRules(),
+            $user,
+            Carbon::parse($date, 'Asia/Riyadh'),
+            $publicHolidays
+        );
+
+        return $this->applyManualAttendanceOverride->invoke($this->service, $override, $rules);
+    }
+
+    /**
      * @param array<string, mixed>|null $workRules
      * @return array<string, mixed>
      */
@@ -150,20 +235,24 @@ class UserConstraintManualOverrideTest extends TestCase
         ?string $until = '2026-09-03',
         ?array $workRules = null
     ): array {
-        // Raw attributes: the date casts format through the connection on write, which a
-        // plain PHPUnit TestCase has no container for.
-        $user = (new User())->setRawAttributes([
+        return $this->applyManualAttendanceOverride->invoke(
+            $this->service,
+            ManualAttendanceStatus::activeOn($this->userWithWindow($status, $since, $until), $targetDate),
+            $workRules ?? $this->workDayRules()
+        );
+    }
+
+    /**
+     * Raw attributes: the date casts format through the connection on write, which a plain
+     * PHPUnit TestCase has no container for.
+     */
+    private function userWithWindow(string $status, string $since, ?string $until): User
+    {
+        return (new User())->setRawAttributes([
             'manual_attendance_status'       => $status,
             'manual_attendance_status_since' => $since,
             'manual_attendance_status_until' => $until,
         ]);
-
-        return $this->applyManualAttendanceOverride->invoke(
-            $this->service,
-            $user,
-            $targetDate,
-            $workRules ?? $this->workDayRules()
-        );
     }
 
     /**
