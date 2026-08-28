@@ -30,6 +30,7 @@ use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Modules\Attendance\Models\UserManualAttendanceOverride;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Modules\UserInfo\UserPrivilege\Models\UserPrivilege;
 
@@ -312,6 +313,11 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'user_id',
             'attendance_constraint_id'
         );
+    }
+
+    public function manualAttendanceOverrides(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserManualAttendanceOverride::class, 'user_id');
     }
 
     public function projects(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

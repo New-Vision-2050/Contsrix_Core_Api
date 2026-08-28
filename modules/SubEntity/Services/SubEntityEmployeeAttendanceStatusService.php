@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Services\ManualAttendanceOverrideService;
 use Modules\Attendance\Support\ManualAttendanceStatus;
 use Modules\User\Models\User;
 
@@ -21,6 +22,10 @@ class SubEntityEmployeeAttendanceStatusService
 
     private const LABEL_HOLIDAY = 'اجازه';
 
+    public function __construct(
+        private ManualAttendanceOverrideService $overrideService
+    ) {}
+
     /**
      * @param  Collection<string, User|null>  $usersByKey
      * @return Collection<string, array<string, mixed>>
@@ -32,12 +37,26 @@ class SubEntityEmployeeAttendanceStatusService
             fn (?User $user, string|int $key): array => [(string) $key => $user]
         );
 
+        $userIds = $usersByKey
+            ->filter()
+            ->map(fn (User $user): string => (string) $user->id)
+            ->unique()
+            ->values();
+
+        $overridesByUserId = $this->overrideService->groupedForUsers($userIds);
+        $usersByKey->each(function (?User $user) use ($overridesByUserId): void {
+            if (! $user) {
+                return;
+            }
+
+            $user->setRelation(
+                'manualAttendanceOverrides',
+                $overridesByUserId->get((string) $user->id, collect())
+            );
+        });
+
         $attendanceRowsByUserId = $this->getDailyAttendanceRowsForUsers(
-            $usersByKey
-                ->filter()
-                ->map(fn (User $user): string => (string) $user->id)
-                ->unique()
-                ->values(),
+            $userIds,
             $workDate
         )->groupBy(fn (Attendance $attendance): string => (string) $attendance->user_id);
 
@@ -78,9 +97,13 @@ class SubEntityEmployeeAttendanceStatusService
     /**
      * Sets the employee's attendance requirement status.
      *
-     * Holiday with date_from/date_to stays active only inside that inclusive range.
-     * After date_to the override expires and the employee is treated as مطلوب للحضور again.
-     * Holiday without date_to remains open-ended until manually changed (legacy behaviour).
+     * Each holiday PATCH adds (or merges) that inclusive range. Earlier disjoint
+     * days stay granted: setting the 30th does not drop the 27th. After date_to
+     * of a given range that range expires; other ranges are untouched.
+     * Holiday without date_to remains open-ended until punched by required_attendance.
+     *
+     * required_attendance with a range punches only those days. Without dates it
+     * punches from today onward (open-ended), which is how "clear from today" works.
      *
      * @param  array{date_from?: string|null, date_to?: string|null}  $dates
      */
@@ -103,9 +126,11 @@ class SubEntityEmployeeAttendanceStatusService
                 throw new \InvalidArgumentException('date_to must be on or after date_from.');
             }
 
-            // required_attendance clears any holiday window; until is only meaningful for holiday.
-            $until = $status === self::STATUS_HOLIDAY ? $dateTo : null;
+            $until = $dateTo;
 
+            $this->overrideService->apply($user, $status, $dateFrom, $until);
+
+            // Last PATCH only — not the full grant. Readers use the override table.
             $user->forceFill([
                 'manual_attendance_status' => $status,
                 'manual_attendance_status_since' => $dateFrom,
@@ -267,28 +292,7 @@ class SubEntityEmployeeAttendanceStatusService
      */
     private function overrideHolidayRange(?User $user, string $workDate): ?array
     {
-        if ($this->activeOverrideStatus($user, $workDate) !== self::STATUS_HOLIDAY) {
-            return null;
-        }
-
-        $since = $user?->manual_attendance_status_since;
-        $dateFrom = $since === null
-            ? $workDate
-            : Carbon::parse((string) $since, $this->attendanceCalendarTimezone())->toDateString();
-
-        if ($dateFrom > $workDate) {
-            $dateFrom = $workDate;
-        }
-
-        $until = $user?->manual_attendance_status_until;
-        $dateTo = $until === null
-            ? null
-            : Carbon::parse((string) $until, $this->attendanceCalendarTimezone())->toDateString();
-
-        return [
-            'date_from' => $dateFrom,
-            'date_to' => $dateTo,
-        ];
+        return ManualAttendanceStatus::overridesFor($user)->holidayRangeCovering($workDate);
     }
 
     /**

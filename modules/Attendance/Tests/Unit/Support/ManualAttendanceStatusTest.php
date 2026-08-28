@@ -72,6 +72,19 @@ class ManualAttendanceStatusTest extends TestCase
         $this->assertFalse(ManualAttendanceStatus::isHolidayRow(null));
     }
 
+    public function test_disjoint_ranges_on_the_user_are_read_independently(): void
+    {
+        $user = new \Modules\User\Models\User();
+        $user->setRelation('manualAttendanceOverrides', collect([
+            (object) ['status' => 'holiday', 'starts_on' => '2026-08-27', 'ends_on' => '2026-08-27'],
+            (object) ['status' => 'holiday', 'starts_on' => '2026-08-30', 'ends_on' => '2026-08-30'],
+        ]));
+
+        $this->assertTrue(ManualAttendanceStatus::isHolidayOn($user, '2026-08-27'));
+        $this->assertFalse(ManualAttendanceStatus::isHolidayOn($user, '2026-08-28'));
+        $this->assertTrue(ManualAttendanceStatus::isHolidayOn($user, '2026-08-30'));
+    }
+
     private function isHoliday(string $date): bool
     {
         return ManualAttendanceStatus::isHolidayFor('holiday', '2026-08-25', '2026-09-03', $date);

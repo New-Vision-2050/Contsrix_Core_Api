@@ -1687,19 +1687,29 @@ The two are decided from different sources and must not be collapsed:
 - `عطلة` — the schedule does not work this date. Either the weekday is disabled in
   `time_rules.weekly_schedule`, or the date is listed in `time_rules.holidays`.
 - `إجازة` — time off granted to this employee on a date the schedule would
-  otherwise work: an approved `LeaveRequest`, the attendance-status override while
-  its `manual_attendance_status_since .. _until` window covers the date, or an
+  otherwise work: an approved `LeaveRequest`, any attendance-status override
+  range in `user_manual_attendance_overrides` that covers the date, or an
   official public holiday for the employee's country (INV-21).
 
-`عطلة` is evaluated first. A weekend falling inside an override window — or under an
+`عطلة` is evaluated first. A weekend falling inside an override range — or under an
 official public holiday — stays `عطلة`, because a day the employee never works cannot
 spend a leave day.
 
-Three support classes hold the shared decision so the three consumers cannot drift:
+A later holiday PATCH **adds** a range; it does not replace earlier disjoint days.
+Granting the 27th then the 30th leaves both as `إجازة` and leaves the 28th and 29th
+on the constraint. Adjacent or overlapping ranges of the same status merge.
+`required_attendance` for a range punches only those dates out of holiday coverage.
+The three `users.manual_attendance_status*` columns are a snapshot of the last PATCH
+only — never the full grant.
 
-- `Modules\Attendance\Support\ManualAttendanceStatus` — the only reader of the
-  override window. `activeOn()` for models, `resolve()`/`isHolidayFor()` for raw
-  database rows.
+Support classes hold the shared decision so the consumers cannot drift:
+
+- `Modules\Attendance\Support\ManualAttendanceStatus` — the only reader of granted
+  ranges (`user_manual_attendance_overrides`, falling back to the three `users`
+  columns when the table has no rows yet). `activeOn()` for models,
+  `resolve()`/`isHolidayFor()` for a single legacy window.
+- `Modules\Attendance\Support\ManualAttendanceOverrideSet` — add/punch/merge math
+  for disjoint ranges.
 - `Modules\Attendance\Support\ScheduledWorkDays` — `isWorkDay(date)` from the
   winning time constraint, resolved once per request via
   `AttendanceConstraintService::getScheduledWorkDaysForUser` so a month-wide reader
@@ -1717,11 +1727,11 @@ Consumers: `AttendanceCalendarService::buildDayData` (`status_key` `off` vs
 `holidayDisplayStatus` (`display_status` `holiday` vs `leave`, rendered by
 `pdf/report.blade.php` as `عطلة` / `إجازة`).
 
-Setting the override rewrites every attendance row inside its range and shortening
-the range later does not undo those writes, so each of those rows carries
-`ManualAttendanceStatus::HOLIDAY_ROW_NOTE`. Once the window stops covering a row's
+Setting a range rewrites every attendance row inside it and punching the range later
+does not undo those writes, so each of those rows carries
+`ManualAttendanceStatus::HOLIDAY_ROW_NOTE`. Once no holiday range covers a row's
 date the reader drops the row and resolves the day from the constraint, which is
-what makes a day revert to normal after `date_to`. Never infer the override from
+what makes a punched day revert to normal. Never infer the override from
 `is_holiday`, `day_status` or `status` alone — the weekend, public-holiday and
 override rows are byte-identical on those columns.
 
