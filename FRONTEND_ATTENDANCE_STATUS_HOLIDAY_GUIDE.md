@@ -7,7 +7,10 @@
 **Base URL (production)**
 - `https://core-be-production.constrix-nv.com/api/v1`
 
-**What changed:** setting `holiday` can take a **date range**. After `date_to`, the employee automatically returns to **مطلوب للحضور** (`required_attendance`). No second PATCH is required.
+**What changed:** setting `holiday` can take a **date range**. Each PATCH **adds**
+that range; it does not replace earlier disjoint days. After a range's `date_to`,
+that range expires on its own. Other granted days stay. No follow-up PATCH is
+required just because a range ended.
 
 ---
 
@@ -15,8 +18,8 @@
 
 | `status` | Label (UI) | Meaning |
 |---|---|---|
-| `holiday` | اجازه | Employee is on holiday for the given range |
-| `required_attendance` | مطلوب للحضور | Employee must attend (clears holiday window) |
+| `holiday` | اجازه | Employee is on holiday for the given range (added to any ranges already granted) |
+| `required_attendance` | مطلوب للحضور | Employee must attend on the given range (punches holiday only on those dates) |
 
 ---
 
@@ -34,7 +37,9 @@
 ```
 
 - Inclusive range: holiday applies on every day from `date_from` through `date_to`.
-- Day after `date_to` → list/API treat the employee as `required_attendance` automatically.
+- A second PATCH for another day **keeps** the first. Example: holiday `27` then holiday `30` → 27 and 30 are اجازه, 28 and 29 are not.
+- Adjacent days merge into one range (`27` then `28` → `27`–`28`).
+- Day after `date_to` of that range → that range expires; other ranges are untouched.
 - Max range: **366 days**.
 
 ### Accepted date aliases
@@ -71,10 +76,23 @@ Example with datetime aliases:
 
 ### Clear holiday → مطلوب للحضور
 
+Clear from today onward (does **not** drop earlier disjoint holiday days):
+
 ```json
 {
   "company_user_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "status": "required_attendance"
+}
+```
+
+Clear only one granted day (27 stays if you clear 30):
+
+```json
+{
+  "company_user_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "status": "required_attendance",
+  "date_from": "2026-08-30",
+  "date_to": "2026-08-30"
 }
 ```
 

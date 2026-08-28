@@ -309,11 +309,45 @@ class UserAttendanceHistoryServiceTest extends TestCase
             'notes'      => ManualAttendanceStatus::HOLIDAY_ROW_NOTE,
         ]);
 
-        $payload = $this->classifyDay('2026-09-04', ['friday' => true], false, collect([$leftoverRow]));
+        $payload = $this->classifyDay(
+            '2026-09-04',
+            ['friday' => true],
+            false,
+            collect([$leftoverRow]),
+            null,
+            (new User())->setRawAttributes([
+                'manual_attendance_status'       => ManualAttendanceStatus::HOLIDAY,
+                'manual_attendance_status_since' => '2026-08-25',
+                'manual_attendance_status_until' => '2026-09-03',
+            ])
+        );
 
         $this->assertSame('غائب', $payload['status']);
         $this->assertSame(1, $payload['is_absent']);
         $this->assertSame(0, $payload['is_holiday']);
+    }
+
+    public function test_disjoint_override_holidays_read_as_leave_on_each_granted_day(): void
+    {
+        $user = new User();
+        $user->setRelation('manualAttendanceOverrides', collect([
+            (object) ['status' => ManualAttendanceStatus::HOLIDAY, 'starts_on' => '2026-08-27', 'ends_on' => '2026-08-27'],
+            (object) ['status' => ManualAttendanceStatus::HOLIDAY, 'starts_on' => '2026-08-30', 'ends_on' => '2026-08-30'],
+        ]));
+
+        $payload = $this->classifyDay(
+            '2026-08-27',
+            ['thursday' => true],
+            true,
+            null,
+            null,
+            $user
+        );
+
+        $this->assertSame('إجازة', $payload['status']);
+
+        $gap = $this->classifyDay('2026-08-28', ['friday' => true], false, null, null, $user);
+        $this->assertSame('غائب', $gap['status']);
     }
 
     /**

@@ -280,6 +280,41 @@ class AttendanceCalendarServiceTest extends TestCase
     }
 
     /**
+     * Two holiday PATCHes are two ranges, not one window. The 27th stays إجازة after
+     * the 30th is granted; the days in between do not.
+     */
+    public function test_earlier_override_holiday_stays_leave_after_a_later_holiday_is_set(): void
+    {
+        $user = new User();
+        $user->setRelation('manualAttendanceOverrides', collect([
+            (object) ['status' => ManualAttendanceStatus::HOLIDAY, 'starts_on' => '2026-08-27', 'ends_on' => '2026-08-27'],
+            (object) ['status' => ManualAttendanceStatus::HOLIDAY, 'starts_on' => '2026-08-30', 'ends_on' => '2026-08-30'],
+        ]));
+
+        $aug27Row = $this->attendance([
+            'is_holiday' => 1,
+            'day_status' => 'holiday',
+            'status'     => Attendance::STATUS_HOLIDAY,
+            'notes'      => ManualAttendanceStatus::HOLIDAY_ROW_NOTE,
+            'start_time' => '2026-08-27 08:00:00',
+        ]);
+
+        $day = $this->buildDayData(
+            '2026-08-27',
+            $user,
+            ['thursday' => true],
+            collect([$aug27Row])
+        );
+
+        $this->assertSame('leave', $day['status_key']);
+        $this->assertSame('إجازة', $day['status']);
+
+        $gap = $this->buildDayData('2026-08-28', $user, ['friday' => true]);
+        $this->assertSame('absent', $gap['status_key']);
+        $this->assertSame('غائب', $gap['status']);
+    }
+
+    /**
      * An official holiday is time off granted to the employee on a day they would otherwise
      * have worked, so it reads إجازة (INV-21).
      */

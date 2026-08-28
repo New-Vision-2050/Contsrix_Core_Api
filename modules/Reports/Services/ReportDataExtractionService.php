@@ -8,7 +8,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\Attendance\Services\ManualAttendanceOverrideService;
 use Modules\Attendance\Services\PublicHolidayCalendarService;
+use Modules\Attendance\Support\ManualAttendanceOverrideSet;
 use Modules\Attendance\Support\ManualAttendanceStatus;
 use Modules\Attendance\Support\PublicHolidayDates;
 use Modules\Attendance\Support\ScheduledWorkDays;
@@ -52,6 +54,7 @@ class ReportDataExtractionService
     public function __construct(
         private readonly AttendanceConstraintService $constraintService,
         private readonly PublicHolidayCalendarService $publicHolidayCalendar,
+        private readonly ManualAttendanceOverrideService $overrideService = new ManualAttendanceOverrideService(),
     ) {}
 
     public function extract(Report $report, ReportWizardConfigDTO $config, Collection $employees): array
@@ -167,6 +170,7 @@ class ReportDataExtractionService
         $groupedDaily = [];
         $scheduleCache = [];
         $holidaysByUser = $this->publicHolidaysByUser($dailyRows, $start, $end);
+        $overrideSets = $this->overrideSetsByUser($dailyRows);
         foreach ($dailyRows as $d) {
             $gid  = (string) $d->global_id;
             $date = (string) $d->business_date;
@@ -174,8 +178,8 @@ class ReportDataExtractionService
             $isHoliday     = (int) ($d->is_holiday ?? 0) === 1;
             $isAbsent      = (int) ($d->is_absent  ?? 0) === 1;
             $isWaiting     = ($d->status ?? '') === 'waiting' && empty($d->clock_in_time);
-            $holidayStatus = $this->publicHolidayDisplayStatus($d, $date, $holidaysByUser, $scheduleCache)
-                ?? ($isHoliday ? $this->holidayDisplayStatus($d, $date, $scheduleCache) : null);
+            $holidayStatus = $this->publicHolidayDisplayStatus($d, $date, $holidaysByUser, $scheduleCache, $overrideSets)
+                ?? ($isHoliday ? $this->holidayDisplayStatus($d, $date, $scheduleCache, $overrideSets) : null);
             $displayStatus = $holidayStatus
                 ?? ($isAbsent || $isWaiting ? 'absent'
                     : (empty($d->clock_in_time) ? 'absent' : 'present'));
@@ -297,15 +301,22 @@ class ReportDataExtractionService
      * @param array<string, ScheduledWorkDays> $scheduleCache keyed by user id, owned by the
      *                                                       caller so nothing survives the
      *                                                       request under Octane
+     * @param array<string, ManualAttendanceOverrideSet> $overrideSets keyed by user id
      */
-    private function holidayDisplayStatus(object $row, string $date, array &$scheduleCache): ?string
-    {
-        $overrideActive = ManualAttendanceStatus::isHolidayFor(
-            $row->manual_attendance_status ?? null,
-            $row->manual_attendance_status_since ?? null,
-            $row->manual_attendance_status_until ?? null,
-            $date
-        );
+    private function holidayDisplayStatus(
+        object $row,
+        string $date,
+        array &$scheduleCache,
+        array $overrideSets = []
+    ): ?string {
+        $set = $overrideSets[(string) ($row->user_id ?? '')]
+            ?? ManualAttendanceOverrideSet::fromLegacy(
+                $row->manual_attendance_status ?? null,
+                $row->manual_attendance_status_since ?? null,
+                $row->manual_attendance_status_until ?? null
+            );
+
+        $overrideActive = $set->isHolidayOn($date);
 
         if (! $overrideActive) {
             if (ManualAttendanceStatus::isHolidayRow($row->notes ?? null)
@@ -331,12 +342,14 @@ class ReportDataExtractionService
      *
      * @param array<string, PublicHolidayDates> $holidaysByUser keyed by user id
      * @param array<string, ScheduledWorkDays>  $scheduleCache  keyed by user id
+     * @param array<string, ManualAttendanceOverrideSet> $overrideSets keyed by user id
      */
     private function publicHolidayDisplayStatus(
         object $row,
         string $date,
         array $holidaysByUser,
-        array &$scheduleCache
+        array &$scheduleCache,
+        array $overrideSets = []
     ): ?string {
         $holidays = $holidaysByUser[(string) ($row->user_id ?? '')] ?? null;
 
@@ -346,18 +359,46 @@ class ReportDataExtractionService
 
         // A required-attendance override outranks the holiday calendar, which is country-wide
         // and knows nothing about this one instruction (INV-21).
-        $requiredByAdmin = ManualAttendanceStatus::isRequiredAttendanceFor(
-            $row->manual_attendance_status ?? null,
-            $row->manual_attendance_status_since ?? null,
-            $row->manual_attendance_status_until ?? null,
-            $date
-        );
+        $set = $overrideSets[(string) ($row->user_id ?? '')]
+            ?? ManualAttendanceOverrideSet::fromLegacy(
+                $row->manual_attendance_status ?? null,
+                $row->manual_attendance_status_since ?? null,
+                $row->manual_attendance_status_until ?? null
+            );
 
-        if ($requiredByAdmin) {
+        if ($set->isRequiredAttendanceOn($date)) {
             return null;
         }
 
         return $this->scheduledWorkDaysFor($row, $scheduleCache)->isWorkDay($date) ? 'leave' : 'holiday';
+    }
+
+    /**
+     * @param  Collection<int, object>  $dailyRows
+     * @return array<string, ManualAttendanceOverrideSet>
+     */
+    private function overrideSetsByUser(Collection $dailyRows): array
+    {
+        $userIds = $dailyRows
+            ->pluck('user_id')
+            ->filter()
+            ->map(fn (mixed $id): string => (string) $id)
+            ->unique()
+            ->values();
+
+        $grouped = $this->overrideService->groupedForUsers($userIds);
+        $sets = [];
+
+        foreach ($userIds as $userId) {
+            $rows = $grouped->get($userId);
+            if ($rows === null || $rows->isEmpty()) {
+                continue;
+            }
+
+            $sets[$userId] = ManualAttendanceOverrideSet::fromModels($rows);
+        }
+
+        return $sets;
     }
 
     /**

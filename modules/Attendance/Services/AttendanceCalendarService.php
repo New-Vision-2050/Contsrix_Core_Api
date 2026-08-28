@@ -49,6 +49,8 @@ class AttendanceCalendarService
             ? $userOrId
             : User::findOrFail((string) $userOrId);
 
+        $user->loadMissing('manualAttendanceOverrides');
+
         $timezone = $this->getTimezone();
         $now = Carbon::now($timezone);
 
@@ -195,9 +197,9 @@ class AttendanceCalendarService
             );
         }
 
-        // إجازة is time off granted to the person: an approved leave request, the
-        // sub-entity attendance-status override while its date window is active, or an
-        // official public holiday for the employee's branch country. Once that window ends
+        // إجازة is time off granted to the person: an approved leave request, any
+        // attendance-status override range covering this date, or an official public
+        // holiday for the employee's branch country. Once no range covers the date
         // the day falls back to the constraint (INV-18).
         //
         // A required-attendance override outranks the holiday calendar, which is country-wide
@@ -218,10 +220,9 @@ class AttendanceCalendarService
             );
         }
 
-        // Setting the override rewrote every row inside its range, and shortening the range
-        // later does not undo those writes. Past the window the employee is back on their
-        // constraint, so a leftover row is not attendance: drop it and let the day resolve
-        // as if it had no rows at all.
+        // Setting a range rewrote every row inside it, and punching the range later does
+        // not undo those writes. A leftover row is not attendance once no holiday range
+        // covers the date: drop it and let the day resolve from the constraint (INV-18).
         $dayAttendances = $dayAttendances->reject(
             fn ($a) => ManualAttendanceStatus::isHolidayRow($a->notes ?? null)
                 || PublicHolidayDates::isLegacyGeneratedRow($a->notes ?? null)

@@ -6,6 +6,7 @@ namespace Modules\SubEntity\Tests\Unit;
 
 use Illuminate\Support\Carbon;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Support\ManualAttendanceStatus;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\SubEntity\Services\SubEntityEmployeeAttendanceStatusService;
 
@@ -65,5 +66,59 @@ class SubEntityEmployeeAttendanceStatusServiceTest extends BaseAttendanceReportT
         $this->assertSame('مطلوب للحضور', $after['attendance_status_label']);
         $this->assertNull($after['attendance_date_from']);
         $this->assertNull($after['attendance_date_to']);
+    }
+
+    public function test_second_holiday_day_does_not_drop_an_earlier_disjoint_day(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-28 10:00:00', config('app.timezone')));
+
+        $service = app(SubEntityEmployeeAttendanceStatusService::class);
+
+        $service->setRequiredHolidayStatus($this->employee, 'holiday', [
+            'date_from' => '2026-08-27',
+            'date_to' => '2026-08-27',
+        ]);
+        $service->setRequiredHolidayStatus($this->employee, 'holiday', [
+            'date_from' => '2026-08-30',
+            'date_to' => '2026-08-30',
+        ]);
+
+        $employee = $this->employee->fresh();
+
+        $this->assertSame('holiday', ManualAttendanceStatus::activeOn($employee, '2026-08-27'));
+        $this->assertNull(ManualAttendanceStatus::activeOn($employee, '2026-08-28'));
+        $this->assertNull(ManualAttendanceStatus::activeOn($employee, '2026-08-29'));
+        $this->assertSame('holiday', ManualAttendanceStatus::activeOn($employee, '2026-08-30'));
+
+        foreach (['2026-08-27', '2026-08-30'] as $date) {
+            $this->assertDatabaseHas('attendances', [
+                'user_id' => $this->employee->id,
+                'business_date' => $date,
+                'status' => Attendance::STATUS_HOLIDAY,
+                'is_holiday' => 1,
+            ]);
+        }
+
+        $this->assertDatabaseMissing('attendances', [
+            'user_id' => $this->employee->id,
+            'business_date' => '2026-08-28',
+            'status' => Attendance::STATUS_HOLIDAY,
+        ]);
+
+        $on27 = $service->buildRequiredHolidayStatusesForUsersByKey(
+            collect(['emp' => $employee]),
+            '2026-08-27'
+        )->get('emp');
+
+        $this->assertSame('holiday', $on27['attendance_status_code']);
+        $this->assertSame('2026-08-27', $on27['attendance_date_from']);
+        $this->assertSame('2026-08-27', $on27['attendance_date_to']);
+
+        $on28 = $service->buildRequiredHolidayStatusesForUsersByKey(
+            collect(['emp' => $employee]),
+            '2026-08-28'
+        )->get('emp');
+
+        $this->assertSame('required_attendance', $on28['attendance_status_code']);
     }
 }

@@ -57,6 +57,7 @@ class UserAttendanceService
                     'professionalData.attendanceConstraint',
                     'userProfessionalData.branch.address.country.timezones',
                     'userProfessionalData.department',
+                    'manualAttendanceOverrides',
                 ])
                 ->findOrFail($userIdString);
         }
@@ -80,6 +81,7 @@ class UserAttendanceService
             'userProfessionalData.attendanceConstraint',
             'userProfessionalData.branch.address.country.timezones',
             'userProfessionalData.department',
+            'manualAttendanceOverrides',
         ]);
 
         return $this->userCache[$userIdString] = $user;
@@ -156,8 +158,8 @@ class UserAttendanceService
     /**
      * Applies a persistent manual attendance status override (set via the sub-entity
      * "attendance-status" endpoint) on top of the computed work rules. Active from
-     * `manual_attendance_status_since` through `manual_attendance_status_until`
-     * (inclusive). When until is null the override stays open-ended until changed.
+     * `user_manual_attendance_overrides` (INV-18). When until on a given range
+     * is null that range stays open-ended until punched by required_attendance.
      * After until expires, holiday automatically falls back to required attendance.
      *
      * Takes the already-resolved status rather than the user, because the caller must know

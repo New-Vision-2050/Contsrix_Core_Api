@@ -6,6 +6,7 @@ namespace Modules\Reports\Tests\Unit\Services;
 
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\PublicHolidayCalendarService;
+use Modules\Attendance\Support\ManualAttendanceOverrideSet;
 use Modules\Attendance\Support\ManualAttendanceStatus;
 use Modules\Attendance\Support\PublicHolidayDates;
 use Modules\Attendance\Support\ScheduledWorkDays;
@@ -157,6 +158,33 @@ class ReportAttendanceDayStatusTest extends TestCase
         ];
 
         $this->assertNull($this->classifyHoliday($row, '2026-09-04'));
+    }
+
+    public function test_disjoint_holiday_ranges_are_leave_on_each_granted_day_only(): void
+    {
+        $row = (object) [
+            'user_id'                        => 'user-1',
+            'notes'                          => ManualAttendanceStatus::HOLIDAY_ROW_NOTE,
+            'manual_attendance_status'       => 'holiday',
+            'manual_attendance_status_since' => '2026-08-30',
+            'manual_attendance_status_until' => '2026-08-30',
+        ];
+
+        $set = ManualAttendanceOverrideSet::none()
+            ->withApplied(ManualAttendanceStatus::HOLIDAY, '2026-08-27', '2026-08-27')
+            ->withApplied(ManualAttendanceStatus::HOLIDAY, '2026-08-30', '2026-08-30');
+
+        $cache = ['user-1' => ScheduledWorkDays::unknown()];
+        $sets = ['user-1' => $set];
+
+        $this->assertSame(
+            'leave',
+            $this->holidayDisplayStatus->invokeArgs($this->service, [$row, '2026-08-27', &$cache, $sets])
+        );
+
+        $this->assertNull(
+            $this->holidayDisplayStatus->invokeArgs($this->service, [$row, '2026-08-28', &$cache, $sets])
+        );
     }
 
     private function merge(string $current, string $incoming): string

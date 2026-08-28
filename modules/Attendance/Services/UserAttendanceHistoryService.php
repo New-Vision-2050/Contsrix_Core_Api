@@ -807,10 +807,9 @@ final class UserAttendanceHistoryService
             return $this->leaveStatusPayload((int) $this->hasLateArrival($attendances));
         }
 
-        // Setting the override rewrote every row inside its range, and shortening the range
-        // later does not undo those writes. Past the window the employee is back on their
-        // constraint, so a leftover row is not attendance: drop it and let the day resolve
-        // as if it had no rows at all.
+        // Setting a range rewrote every row inside it, and punching the range later does
+        // not undo those writes. A leftover row is not attendance once no holiday range
+        // covers the date: drop it and let the day resolve from the constraint (INV-18).
         $attendances = $attendances->reject(
             fn ($a) => ManualAttendanceStatus::isHolidayRow($a->notes ?? null)
                 || PublicHolidayDates::isLegacyGeneratedRow($a->notes ?? null)
@@ -1096,6 +1095,7 @@ final class UserAttendanceHistoryService
                 'professionalData.attendanceConstraint',
                 'userProfessionalData.branch.address.country.timezones',
                 'userProfessionalData.department',
+                'manualAttendanceOverrides',
             ])
             ->findOrFail($userIdString);
     }
