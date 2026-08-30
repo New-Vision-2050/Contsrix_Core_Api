@@ -21,36 +21,63 @@ final class ReportWizardStep2DTO
         public readonly array   $contractTypeIds,
         public readonly ?string $nationality,              // country_id or ISO slug
         public readonly ?string $gender,                   // male|female
+        /** @var string[] AttendanceConstraint UUIDs (empty = no constraint filter) */
+        public readonly array   $attendanceConstraintIds,
     ) {
     }
 
     public static function fromArray(array $payload): self
     {
         return new self(
-            employeeScope:   (string) ($payload['employee_scope']    ?? 'all'),
-            employeeUserIds: array_values($payload['employee_user_ids'] ?? []),
-            branchId:        $payload['branch_id']      ?? $payload['location']    ?? null,
-            managementId:    $payload['management_id']  ?? $payload['management']  ?? null,
-            department:      $payload['department']     ?? null,
-            jobTitle:        $payload['job_title']      ?? $payload['jobTitle']    ?? null,
-            contractTypeIds: array_values($payload['contractTypeIds'] ?? []),
-            nationality:     $payload['nationality']    ?? null,
-            gender:          $payload['gender']         ?? null,
+            employeeScope:            (string) ($payload['employee_scope']    ?? 'all'),
+            employeeUserIds:          array_values($payload['employee_user_ids'] ?? []),
+            branchId:                 $payload['branch_id']      ?? $payload['location']    ?? null,
+            managementId:             $payload['management_id']  ?? $payload['management']  ?? null,
+            department:               $payload['department']     ?? null,
+            jobTitle:                 $payload['job_title']      ?? $payload['jobTitle']    ?? null,
+            contractTypeIds:          array_values($payload['contractTypeIds'] ?? []),
+            nationality:              $payload['nationality']    ?? null,
+            gender:                   $payload['gender']         ?? null,
+            attendanceConstraintIds:  self::normalizeIds(
+                $payload['attendance_constraint_ids'] ?? $payload['attendanceConstraintIds'] ?? []
+            ),
         );
     }
 
     public function toArray(): array
     {
         return [
-            'employee_scope'    => $this->employeeScope,
-            'employee_user_ids' => $this->employeeUserIds,
-            'branch_id'         => $this->branchId,
-            'management_id'     => $this->managementId,
-            'department'        => $this->department,
-            'job_title'         => $this->jobTitle,
-            'contractTypeIds'   => $this->contractTypeIds,
-            'nationality'       => $this->nationality,
-            'gender'            => $this->gender,
+            'employee_scope'             => $this->employeeScope,
+            'employee_user_ids'          => $this->employeeUserIds,
+            'branch_id'                  => $this->branchId,
+            'management_id'              => $this->managementId,
+            'department'                 => $this->department,
+            'job_title'                  => $this->jobTitle,
+            'contractTypeIds'            => $this->contractTypeIds,
+            'nationality'                => $this->nationality,
+            'gender'                     => $this->gender,
+            'attendance_constraint_ids'  => $this->attendanceConstraintIds,
         ];
+    }
+
+    /**
+     * @param mixed $ids
+     * @return string[]
+     */
+    private static function normalizeIds(mixed $ids): array
+    {
+        if (!is_array($ids)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($ids as $id) {
+            $value = is_string($id) ? trim($id) : (string) $id;
+            if ($value !== '') {
+                $out[] = $value;
+            }
+        }
+
+        return array_values(array_unique($out));
     }
 }

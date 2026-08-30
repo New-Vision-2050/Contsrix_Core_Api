@@ -19,6 +19,7 @@ namespace Modules\Reports\Enums;
  *   - step1.printOrientation             -> printOrientations()
  *   - step2.employeeStatus               -> employeeStatuses()
  *   - step2.contractTypeIds[]            -> contractTypes()
+ *   - step2.attendance_constraint_ids[]  -> GET /lookups → attendance_constraints (live list)
  *   - step3.attendanceDataTypeIds[]      -> attendanceDataTypes()
  *   - step3.attendancePattern            -> attendancePatterns()
  *   - step3.attendanceRateMin            -> attendanceRateOptions()

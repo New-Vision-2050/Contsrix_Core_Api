@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Reports\Services;
 
+use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Reports\Enums\ReportEnums;
 
 /**
@@ -39,8 +40,35 @@ class ReportLookupService
             'sort_directions'       => $this->sortDirections(),
             'group_by'              => $this->groupByOptions(),
             'employees_per_page'    => $this->employeesPerPageOptions(),
-            'visual_elements'       => $this->visualElements(),
+            'visual_elements'        => $this->visualElements(),
+            'attendance_constraints' => $this->attendanceConstraints(),
         ];
+    }
+
+    /**
+     * Live tenant list for the Step 2 constraint multi-select.
+     * Unlike the other lookup groups this is not a static enum — it is the
+     * company's attendance constraints (`id` + display name).
+     *
+     * @return list<array{id:string,constraint_name:string,is_active:bool,label:array{ar:string,en:string}}>
+     */
+    public function attendanceConstraints(): array
+    {
+        return AttendanceConstraint::query()
+            ->orderBy('constraint_name')
+            ->get(['id', 'constraint_name', 'is_active'])
+            ->map(static function (AttendanceConstraint $constraint): array {
+                $name = (string) $constraint->constraint_name;
+
+                return [
+                    'id'               => (string) $constraint->id,
+                    'constraint_name'  => $name,
+                    'is_active'        => (bool) $constraint->is_active,
+                    'label'            => ['ar' => $name, 'en' => $name],
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     public function reportTypes(): array
