@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Services;
 
 use Modules\Project\ProjectManagement\Repositories\ProjectEmployeeRepository;
+use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectRole;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class ProjectEmployeeService
 {
@@ -83,7 +85,9 @@ class ProjectEmployeeService
         );
 
         if ($mandatoryReason !== null) {
-            throw new \Exception('Cannot remove mandatory project employee: '.$mandatoryReason, 422);
+            throw new UnprocessableEntityHttpException(
+                'Cannot remove mandatory project employee: '.$mandatoryReason
+            );
         }
 
         return $this->repository->delete($contractEmployeeId);
@@ -102,7 +106,7 @@ class ProjectEmployeeService
         );
     }
 
-    public function assignRoleToEmployee(string $projectEmployeeId, string $projectRoleId)
+    public function assignRoleToEmployee(string $projectEmployeeId, string $projectRoleId): ProjectEmployee
     {
         $projectEmployee = $this->repository->findOneOrFail($projectEmployeeId);
 
@@ -117,15 +121,20 @@ class ProjectEmployeeService
             ->exists();
 
         if (! $roleBelongsToProject) {
-            throw new \Exception('Project role does not belong to this project', 422);
+            throw new UnprocessableEntityHttpException('Project role does not belong to this project');
         }
 
-        $updated = $this->repository->update($projectEmployeeId, [
+        $this->repository->update($projectEmployeeId, [
             'project_role_id' => $projectRoleId,
         ]);
 
-        // Reload with relationships
-        return $this->repository->findOneOrFail($projectEmployeeId, ['user', 'assignedBy', 'projectRole', 'company']);
+        return $this->repository->findOneWithRelationsOrFail($projectEmployeeId, [
+            'user',
+            'assignedBy',
+            'projectRole',
+            'company',
+            'project',
+        ]);
     }
 
     private function getMandatoryReason(string $userId, ProjectManagement $project): ?string
