@@ -294,6 +294,59 @@ final class EmployeeTaskTemporaryLocationProviderTest extends TestCase
         );
     }
 
+    public function test_approved_task_on_this_day_is_a_field_assignment(): void
+    {
+        $today = CarbonImmutable::now(self::TZ)->toDateString();
+
+        $this->createTask([
+            'status'    => EmployeeTaskStatus::Approved->value,
+            'task_date' => $today,
+            'time_from' => null,
+        ]);
+
+        $this->assertTrue($this->provider->hasFieldAssignmentOn($this->user, $today));
+        $this->assertFalse($this->provider->hasFieldAssignmentOn($this->user, '2020-01-01'));
+    }
+
+    public function test_sent_project_notification_on_this_day_is_a_field_assignment(): void
+    {
+        $assignee = User::factory()->create(['company_id' => $this->company->id]);
+        $today = CarbonImmutable::now(self::TZ)->toDateString();
+
+        $task = $this->createTask([
+            'company_id'              => null,
+            'user_id'                 => $this->user->id,
+            'is_project_notification' => true,
+            'status'                  => EmployeeTaskStatus::Approved->value,
+            'task_date'               => $today,
+            'time_from'               => null,
+        ]);
+
+        \Modules\Project\ProjectManagement\Models\ProjectNotification::create([
+            'company_id'               => $this->company->id,
+            'employee_task_request_id' => $task->id,
+            'notification_number'      => 'PN-' . uniqid(),
+            'status'                   => 'pending',
+            'task_date'                => $today,
+            'assigned_user_ids'        => [(string) $assignee->id],
+        ]);
+
+        $this->assertTrue($this->provider->hasFieldAssignmentOn($assignee, $today));
+        $this->assertFalse($this->provider->hasFieldAssignmentOn($assignee, '2020-01-01'));
+    }
+
+    public function test_rejected_task_is_not_a_field_assignment(): void
+    {
+        $today = CarbonImmutable::now(self::TZ)->toDateString();
+
+        $this->createTask([
+            'status'    => EmployeeTaskStatus::Rejected->value,
+            'task_date' => $today,
+        ]);
+
+        $this->assertFalse($this->provider->hasFieldAssignmentOn($this->user, $today));
+    }
+
     public function test_expiry_honours_fractional_duration_hours(): void
     {
         $timeFrom = CarbonImmutable::now(self::TZ)->subMinutes(30);

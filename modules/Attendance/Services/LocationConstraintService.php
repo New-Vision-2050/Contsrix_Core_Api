@@ -5,6 +5,7 @@ namespace Modules\Attendance\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Contracts\LocationConstraintServiceInterface;
+use Modules\Attendance\Contracts\OutOfZoneClockOutExemption;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Services\AttendanceService;
@@ -23,7 +24,8 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
     public function __construct(
         private AttendanceService $attendanceService,
         private RadiusEnforcementService $radiusEnforcementService,
-        private TaskService $taskService
+        private TaskService $taskService,
+        private ?OutOfZoneClockOutExemption $fieldWorkOutOfZoneExemption = null,
     ) {}
 
     /**
@@ -380,6 +382,10 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
      *
      * Auto clock-out only after continuous out-of-zone time exceeds out_zone_minutes
      * (from constraint rules API / out_zone_rules.duration_minutes).
+     *
+     * Skipped when the employee has an accepted task or a sent/accepted project
+     * notification on this work day — they are expected at a field site, not the
+     * office geofence (INV-19 write-side exemption).
      */
     public function validateMultiLocation(Attendance $attendance, AttendanceConstraint $constraint): bool|array
     {
@@ -440,6 +446,10 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
 
         // Still within the allowed grace period — do not clock out yet.
         if ($minutesOutside < $outZoneMinutes) {
+            return false;
+        }
+
+        if ($this->fieldWorkOutOfZoneExemption?->appliesTo($attendance)) {
             return false;
         }
 

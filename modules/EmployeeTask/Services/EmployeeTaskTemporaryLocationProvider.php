@@ -57,6 +57,12 @@ final class EmployeeTaskTemporaryLocationProvider implements TemporaryLocationPr
         return false;
     }
 
+    public function hasFieldAssignmentOn(User $user, string $date): bool
+    {
+        return $this->hasAcceptedEmployeeTaskOn($user, $date)
+            || $this->hasSentOrAcceptedProjectNotificationOn($user, $date);
+    }
+
     /**
      * Company scoping is applied by the model's CustomTenantScope global scope
      * (CustomBelongsToTenant) whenever tenancy is initialized — the same
@@ -105,6 +111,65 @@ final class EmployeeTaskTemporaryLocationProvider implements TemporaryLocationPr
             $task->getRawOriginal('time_from'),
             $task->timezone ?: config('app.timezone'),
         )->addMinutes((int) round(((float) $task->duration_hours) * 60));
+    }
+
+    /**
+     * Accepted field work for this employee on `$date`: approved (accepted),
+     * in_progress, or paused. Matches `task_date`, the `time_from` calendar day,
+     * or any day inside `time_from`..`time_to`.
+     */
+    private function hasAcceptedEmployeeTaskOn(User $user, string $date): bool
+    {
+        return EmployeeTaskRequest::query()
+            ->where('user_id', (string) $user->id)
+            ->whereIn('status', [
+                EmployeeTaskStatus::Approved->value,
+                EmployeeTaskStatus::InProgress->value,
+                EmployeeTaskStatus::Paused->value,
+            ])
+            ->where($this->taskFallsOnDate($date))
+            ->exists();
+    }
+
+    /**
+     * A project notification that has been sent (`pending`) or accepted/received
+     * (`in_progress`) and is assigned to this user on `$date`.
+     */
+    private function hasSentOrAcceptedProjectNotificationOn(User $user, string $date): bool
+    {
+        $userId = (string) $user->id;
+
+        return ProjectNotification::query()
+            ->whereJsonContains('assigned_user_ids', $userId)
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->where(function (Builder $query) use ($date): void {
+                $query->whereDate('task_date', $date)
+                    ->orWhereIn(
+                        'employee_task_request_id',
+                        EmployeeTaskRequest::query()
+                            ->withoutGlobalScopes()
+                            ->select('id')
+                            ->where($this->taskFallsOnDate($date))
+                    );
+            })
+            ->exists();
+    }
+
+    /**
+     * @return \Closure(Builder): void
+     */
+    private function taskFallsOnDate(string $date): \Closure
+    {
+        return static function (Builder $query) use ($date): void {
+            $query->whereDate('task_date', $date)
+                ->orWhereDate('time_from', $date)
+                ->orWhere(function (Builder $range) use ($date): void {
+                    $range->whereNotNull('time_from')
+                        ->whereNotNull('time_to')
+                        ->whereDate('time_from', '<=', $date)
+                        ->whereDate('time_to', '>=', $date);
+                });
+        };
     }
 
     private function displayName(EmployeeTaskRequest $task): string

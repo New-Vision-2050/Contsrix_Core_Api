@@ -94,6 +94,10 @@ class AttendanceServiceProvider extends ServiceProvider
         $this->app->singleton(AutoCloseAttendanceService::class);
         $this->app->singleton(ClockInService::class);
         $this->app->singleton(ClockOutService::class);
+        $this->app->singleton(
+            \Modules\Attendance\Contracts\OutOfZoneClockOutExemption::class,
+            \Modules\Attendance\Services\FieldWorkOutOfZoneExemption::class
+        );
     }
 
     /**

@@ -21,4 +21,11 @@ interface TemporaryLocationProvider
 
     /** True when this user is legitimately working elsewhere at $at (used to suppress auto-absence). */
     public function isEngagedElsewhere(User $user, CarbonImmutable $at): bool;
+
+    /**
+     * True when this user has an accepted employee task, or a sent/accepted project
+     * notification, whose date is `$date` (Y-m-d). Used to suppress out-of-zone
+     * auto clock-out while they are expected to be at a field site, not the office.
+     */
+    public function hasFieldAssignmentOn(User $user, string $date): bool;
 }
