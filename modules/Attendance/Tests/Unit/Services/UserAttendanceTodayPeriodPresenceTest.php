@@ -106,6 +106,67 @@ class UserAttendanceTodayPeriodPresenceTest extends TestCase
         $this->assertSame('[Auto] Clock-out: auto_max_ot at 2026-08-30T19:00:00+03:00', $row['notes']);
     }
 
+    public function test_legacy_out_zone_row_fills_clock_out_location_from_tracking(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-30 18:47:00', 'Asia/Riyadh'));
+
+        $periods = $this->enhancePeriods(collect([
+            $this->punch([
+                'id' => 'eb771932-cf60-4774-9be7-c24bab56e036',
+                'clock_in_time' => '2026-08-30 11:11:00',
+                'clock_out_time' => '2026-08-30 11:13:03',
+                'start_time' => '2026-08-30 00:00:00',
+                'end_time' => '2026-08-30 23:59:59',
+                'status' => Attendance::STATUS_COMPLETED,
+                'shift_end_method' => 'auto_out_zone',
+                'clock_out_location' => null,
+                'location_tracking' => [
+                    [
+                        'latitude' => 21.61000000,
+                        'longitude' => 39.11000000,
+                        'timestamp' => '2026-08-30 11:12:50',
+                    ],
+                    [
+                        'latitude' => 21.99999999,
+                        'longitude' => 39.99999999,
+                        'timestamp' => '2026-08-30 12:00:00',
+                    ],
+                ],
+                'notes' => '[2026-08-30 11:13:03] Auto-ended: Shift ended: outside all allowed work locations for 180 minutes (threshold: 30 minutes).',
+            ]),
+        ]));
+
+        $this->assertSame([
+            'latitude' => 21.61000000,
+            'longitude' => 39.11000000,
+        ], $periods[0]['attendance'][0]['clock_out_location']);
+    }
+
+    public function test_open_shift_does_not_invent_clock_out_location(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-30 18:47:00', 'Asia/Riyadh'));
+
+        $periods = $this->enhancePeriods(collect([
+            $this->punch([
+                'clock_in_time' => '2026-08-30 18:12:00',
+                'clock_out_time' => null,
+                'start_time' => '2026-08-30 00:00:00',
+                'end_time' => '2026-08-30 23:59:59',
+                'status' => Attendance::STATUS_ACTIVE,
+                'clock_out_location' => null,
+                'location_tracking' => [
+                    [
+                        'latitude' => 21.61000000,
+                        'longitude' => 39.11000000,
+                        'timestamp' => '2026-08-30 18:20:00',
+                    ],
+                ],
+            ]),
+        ]));
+
+        $this->assertNull($periods[0]['attendance'][0]['clock_out_location']);
+    }
+
     public function test_early_clock_in_attaches_even_when_start_time_is_the_punch_time(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-08-30 16:55:00', 'Asia/Riyadh'));
