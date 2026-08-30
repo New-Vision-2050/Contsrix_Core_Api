@@ -606,13 +606,16 @@ class UserAttendanceService
     /**
      * Prefer the location persisted at close. Older auto_out_zone rows never wrote
      * clock_out_location, so fall back to the last tracking ping at or before clock-out.
+     * Skip GPS-default / Null Island samples (near 0,0) and points impossibly far
+     * from clock-in — those are bad device pings, not a real clock-out location.
      *
      * @return array{latitude: float, longitude: float}|null
      */
     private function resolveClockOutLocation(Attendance $attendance): ?array
     {
+        $anchor = $this->normalizeLatLng($attendance->clock_in_location);
         $stored = $this->normalizeLatLng($attendance->clock_out_location);
-        if ($stored !== null) {
+        if ($stored !== null && $this->isPlausibleClockOutLocation($stored, $anchor)) {
             return $stored;
         }
 
@@ -623,16 +626,22 @@ class UserAttendanceService
         return $this->lastTrackingPointAtOrBefore(
             is_array($attendance->location_tracking) ? $attendance->location_tracking : [],
             $attendance->clock_out_time,
-            $attendance->timezone ?? $this->getTimezone()
+            $attendance->timezone ?? $this->getTimezone(),
+            $anchor
         );
     }
 
     /**
      * @param  list<array<string, mixed>>  $points
+     * @param  array{latitude: float, longitude: float}|null  $anchor
      * @return array{latitude: float, longitude: float}|null
      */
-    private function lastTrackingPointAtOrBefore(array $points, mixed $clockOutTime, string $timezone): ?array
-    {
+    private function lastTrackingPointAtOrBefore(
+        array $points,
+        mixed $clockOutTime,
+        string $timezone,
+        ?array $anchor = null
+    ): ?array {
         $deadline = $clockOutTime instanceof Carbon
             ? $clockOutTime->copy()->setTimezone($timezone)
             : Carbon::parse((string) $clockOutTime, $timezone);
@@ -642,7 +651,7 @@ class UserAttendanceService
 
         foreach ($points as $point) {
             $coords = $this->normalizeLatLng($point);
-            if ($coords === null) {
+            if ($coords === null || ! $this->isPlausibleClockOutLocation($coords, $anchor)) {
                 continue;
             }
 
@@ -666,6 +675,39 @@ class UserAttendanceService
         }
 
         return $lastWithTime ?? $lastWithoutTime;
+    }
+
+    /**
+     * Reject GPS-default "Null Island" (~0,0) and points more than 500 km from clock-in.
+     *
+     * @param  array{latitude: float, longitude: float}  $coords
+     * @param  array{latitude: float, longitude: float}|null  $anchor
+     */
+    private function isPlausibleClockOutLocation(array $coords, ?array $anchor): bool
+    {
+        $lat = $coords['latitude'];
+        $lng = $coords['longitude'];
+
+        if ($lat < -90.0 || $lat > 90.0 || $lng < -180.0 || $lng > 180.0) {
+            return false;
+        }
+
+        if (abs($lat) < 1.0 && abs($lng) < 1.0) {
+            return false;
+        }
+
+        if ($anchor === null) {
+            return true;
+        }
+
+        $metres = \Modules\Attendance\Support\GeofenceMatch::distanceInMetres(
+            $anchor['latitude'],
+            $anchor['longitude'],
+            $lat,
+            $lng
+        );
+
+        return $metres <= 500_000;
     }
 
     /**
