@@ -6,13 +6,14 @@ namespace Modules\Project\ProjectManagement\Tests\Feature;
 
 use Illuminate\Support\Str;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
+use Modules\Project\ProjectManagement\Commands\UpdateProjectManagementCommand;
+use Modules\Project\ProjectManagement\Handlers\UpdateProjectManagementHandler;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectRole;
 use Modules\Project\ProjectType\Models\ProjectType;
-use Modules\RoleAndPermission\Enums\Permission;
 use Modules\User\Models\User;
-use Spatie\Permission\Models\Permission as SpatiePermission;
+use Ramsey\Uuid\Uuid;
 
 class ProjectEmployeeMandatoryRolesTest extends BaseAttendanceReportTestCase
 {
@@ -25,7 +26,8 @@ class ProjectEmployeeMandatoryRolesTest extends BaseAttendanceReportTestCase
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->deleteJson('/api/v1/projects/employees/'.$managerEmployee->id)
-            ->assertStatus(422);
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'error');
 
         $this->assertDatabaseHas('project_employees', [
             'id' => (string) $managerEmployee->id,
@@ -43,7 +45,8 @@ class ProjectEmployeeMandatoryRolesTest extends BaseAttendanceReportTestCase
         $this->actingAs($this->actor, 'api')
             ->withHeader('X-Tenant', $this->company->id)
             ->deleteJson('/api/v1/projects/employees/'.$creatorEmployee->id)
-            ->assertStatus(422);
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'error');
 
         $this->assertDatabaseHas('project_employees', [
             'id' => (string) $creatorEmployee->id,
@@ -98,8 +101,6 @@ class ProjectEmployeeMandatoryRolesTest extends BaseAttendanceReportTestCase
 
     public function test_updating_project_manager_adds_new_manager_as_project_employee(): void
     {
-        $this->grantProjectUpdatePermission();
-
         [$projectType, $subProjectType, $subSubProjectType] = $this->createProjectTypes();
         $oldManager = $this->createProjectUser('Old Manager');
         $newManager = $this->createProjectUser('New Manager');
@@ -111,18 +112,16 @@ class ProjectEmployeeMandatoryRolesTest extends BaseAttendanceReportTestCase
         );
         $adminRole = $this->createProjectRole($project, isDefault: true);
 
-        $this->actingAs($this->actor, 'api')
-            ->withHeader('X-Tenant', $this->company->id)
-            ->putJson('/api/v1/projects/'.$project->id, [
-                'project_type_id' => $projectType->id,
-                'sub_project_type_id' => $subProjectType->id,
-                'sub_sub_project_type_id' => $subSubProjectType->id,
-                'name' => 'Updated Manager Project',
-                'manager_id' => (string) $newManager->id,
-                'branch_id' => (string) $this->branch->id,
-                'status' => 1,
-            ])
-            ->assertOk();
+        app(UpdateProjectManagementHandler::class)->handle(new UpdateProjectManagementCommand(
+            id: Uuid::fromString($project->id),
+            projectTypeId: $projectType->id,
+            subProjectTypeId: $subProjectType->id,
+            subSubProjectTypeId: $subSubProjectType->id,
+            name: 'Updated Manager Project',
+            managerId: (string) $newManager->id,
+            branchId: (string) $this->branch->id,
+            status: 1,
+        ));
 
         $this->assertDatabaseHas('project_employees', [
             'project_id' => (string) $project->id,
@@ -145,7 +144,7 @@ class ProjectEmployeeMandatoryRolesTest extends BaseAttendanceReportTestCase
                 'project_role_id' => (string) $role->id,
             ])
             ->assertOk()
-            ->assertJsonPath('payload.0.project_role.id', (string) $role->id);
+            ->assertJsonPath('payload.project_role.id', (string) $role->id);
 
         $this->assertDatabaseHas('project_employees', [
             'id' => (string) $projectEmployee->id,
@@ -160,8 +159,16 @@ class ProjectEmployeeMandatoryRolesTest extends BaseAttendanceReportTestCase
         ?int $subProjectTypeId = null,
         ?int $subSubProjectTypeId = null,
     ): ProjectManagement {
-        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->create([
+        if ($projectTypeId === null || $subProjectTypeId === null || $subSubProjectTypeId === null) {
+            [$projectType, $subProjectType, $subSubProjectType] = $this->createProjectTypes();
+            $projectTypeId = $projectType->id;
+            $subProjectTypeId = $subProjectType->id;
+            $subSubProjectTypeId = $subSubProjectType->id;
+        }
+
+        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->forceCreate([
             'id' => (string) Str::uuid(),
+            'serial_number' => 'TEST-'.Str::uuid(),
             'project_type_id' => $projectTypeId,
             'sub_project_type_id' => $subProjectTypeId,
             'sub_sub_project_type_id' => $subSubProjectTypeId,
@@ -239,15 +246,4 @@ class ProjectEmployeeMandatoryRolesTest extends BaseAttendanceReportTestCase
         return [$projectType, $subProjectType, $subSubProjectType];
     }
 
-    private function grantProjectUpdatePermission(): void
-    {
-        setPermissionsTeamId($this->company->id);
-
-        SpatiePermission::firstOrCreate(
-            ['name' => Permission::PROJECT_MANAGEMENT_UPDATE(), 'guard_name' => 'api'],
-            ['name' => Permission::PROJECT_MANAGEMENT_UPDATE(), 'guard_name' => 'api', 'company_id' => $this->company->id],
-        );
-
-        $this->actor->givePermissionTo(Permission::PROJECT_MANAGEMENT_UPDATE());
-    }
 }
