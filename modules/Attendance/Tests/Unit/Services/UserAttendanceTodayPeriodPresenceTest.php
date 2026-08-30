@@ -142,6 +142,44 @@ class UserAttendanceTodayPeriodPresenceTest extends TestCase
         ], $periods[0]['attendance'][0]['clock_out_location']);
     }
 
+    public function test_null_island_tracking_point_is_not_used_as_clock_out_location(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-30 18:47:00', 'Asia/Riyadh'));
+
+        $periods = $this->enhancePeriods(collect([
+            $this->punch([
+                'clock_in_time' => '2026-08-30 16:08:00',
+                'clock_out_time' => '2026-08-30 17:32:55',
+                'clock_in_location' => [
+                    'latitude' => 21.62671028806533,
+                    'longitude' => 39.12821531295776,
+                ],
+                'start_time' => '2026-08-30 00:00:00',
+                'end_time' => '2026-08-30 23:59:59',
+                'status' => Attendance::STATUS_COMPLETED,
+                'shift_end_method' => 'auto_out_zone',
+                'clock_out_location' => null,
+                'location_tracking' => [
+                    [
+                        'latitude' => 21.61769845055973,
+                        'longitude' => 39.12814579677232,
+                        'timestamp' => '2026-08-30 16:10:00',
+                    ],
+                    [
+                        'latitude' => -0.01578874283118821,
+                        'longitude' => 0.1815678982057548,
+                        'timestamp' => '2026-08-30 17:32:50',
+                    ],
+                ],
+            ]),
+        ]));
+
+        $this->assertSame([
+            'latitude' => 21.61769845055973,
+            'longitude' => 39.12814579677232,
+        ], $periods[0]['attendance'][0]['clock_out_location']);
+    }
+
     public function test_open_shift_does_not_invent_clock_out_location(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-08-30 18:47:00', 'Asia/Riyadh'));
