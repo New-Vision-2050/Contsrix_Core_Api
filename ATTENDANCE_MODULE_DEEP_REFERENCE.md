@@ -1636,6 +1636,13 @@ whichever row it happens to read first. Current implementations of this rule:
   with a clock-in.
 - `AttendanceCalendarService`, `hasPresence` before `hasAbsent`.
 - `UserAttendanceHistoryService::buildDayStatusPayload`, same ordering.
+- `UserAttendanceService::enhancePeriodsWithAttendance` on
+  `GET /attendance/user-constraint/today`: attach a punch in the allowed window
+  (early + extension) or whose stored `start_time` is the scheduled period start;
+  `is_absent` is only true when that period has no clock-in and `absent_at` is
+  past. Matching only the scheduled block (08:30–17:30) dropped an 08:00 early
+  punch, so today reported `is_absent: true` / `attendance: []` while the
+  calendar — keyed on `business_date` — showed حاضر.
 - `Modules\Reports\Services\ReportDataExtractionService::mergeDisplayStatus`,
   precedence `holiday > present > absent` across every row of the date.
 
@@ -1988,6 +1995,29 @@ Check:
 - `UserAttendanceHistoryService` schedule merge.
 - orphan attendance rows.
 - whether clock-in falls inside the scheduled period window.
+
+### Today says absent, calendar says present, clock-in button hidden
+
+`GET /attendance/user-constraint/today` and
+`GET /attendance/user-attendance/calendar` are not the same reader.
+
+The calendar groups by `business_date` and applies INV-16: any `clock_in_time`
+on that date is حاضر. Today used to attach a punch only when `clock_in_time`
+sat inside the scheduled period (08:30–17:30), then set period `is_absent`
+once `can_clock_in_until` / `absent_at` passed and `attendance` was empty.
+
+An allowed early clock-in (08:00 for an 08:30 start, `early_period` 30) is
+outside that block. After 10:30 the period flipped to `is_absent: true`,
+`can_clock_in: false`, `attendance: []`, while the calendar still showed the
+7h punch as حاضر. The app hides the button from those flags; the write-side
+clock-in path keys the same row by scheduled `start_time` and may still allow
+a re-entry until `lastClockInAt`.
+
+Check:
+
+- punch `clock_in_time` versus scheduled `start_time` (early window / extension).
+- whether today now attaches that punch (`attendance` not empty, `is_absent` false).
+- leftover `is_absent` rows on the same `business_date` (INV-16).
 
 ### Day shows absent but has clock-in and clock-out times
 
