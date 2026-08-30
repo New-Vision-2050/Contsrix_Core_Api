@@ -1211,15 +1211,30 @@ class AttendanceService
      * @param string $method The method used to end the shift (e.g., 'auto_radius_enforcement', 'auto_time_limit')
      * @param string $notes Additional notes about why the shift was ended
      * @param bool $markAbsent Whether to mark the day as absent in attendance records
+     * @param array{latitude?: float|int|string, longitude?: float|int|string}|null $clockOutLocation User GPS at close
      * @return Attendance|bool The updated attendance record or false if the operation failed
      */
-    public function endShiftAutomatically(string $attendanceId, string $method, string $notes, bool $markAbsent = false): Attendance|bool
-    {
+    public function endShiftAutomatically(
+        string $attendanceId,
+        string $method,
+        string $notes,
+        bool $markAbsent = false,
+        ?array $clockOutLocation = null,
+    ): Attendance|bool {
         $uuid = Uuid::fromString($attendanceId);
         $attendance = $this->attendanceRepository->getAttendance($uuid);
 
         if (!$attendance || !$attendance->isActive()) {
             return false; // Cannot end an inactive or already completed shift
+        }
+
+        $storedLocation = $this->normalizeClockOutLocation($clockOutLocation);
+        if ($storedLocation !== null) {
+            $notes .= sprintf(
+                ' Clock-out location: latitude %.8f, longitude %.8f.',
+                $storedLocation['latitude'],
+                $storedLocation['longitude']
+            );
         }
 
         // Set clock out time to current time in UTC for database storage
@@ -1229,8 +1244,11 @@ class AttendanceService
             'status' => Attendance::STATUS_COMPLETED,
             'shift_end_method' => $method,
             'notes' => ($attendance->notes ? $attendance->notes . "\n\n" : '') .
-                      "[{$timestamp->format('Y-m-d H:i:s')}] Auto-ended: {$notes}"
+                      "[{$timestamp->format('Y-m-d H:i:s')}] Auto-ended: {$notes}",
         ];
+        if ($storedLocation !== null) {
+            $updateData['clock_out_location'] = $storedLocation;
+        }
 
         // If configured to mark day as absent
         if ($markAbsent) {
@@ -1247,6 +1265,26 @@ class AttendanceService
         }
 
         return $attendance;
+    }
+
+    /**
+     * @param  array{latitude?: mixed, longitude?: mixed}|null  $location
+     * @return array{latitude: float, longitude: float}|null
+     */
+    private function normalizeClockOutLocation(?array $location): ?array
+    {
+        if ($location === null || ! isset($location['latitude'], $location['longitude'])) {
+            return null;
+        }
+
+        if (! is_numeric($location['latitude']) || ! is_numeric($location['longitude'])) {
+            return null;
+        }
+
+        return [
+            'latitude' => (float) $location['latitude'],
+            'longitude' => (float) $location['longitude'],
+        ];
     }
 
     /**

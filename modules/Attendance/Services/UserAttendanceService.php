@@ -597,6 +597,7 @@ class UserAttendanceService
             'clock_out_cause' => $this->resolveClockOutCause($attendance),
             'shift_end_method' => $attendance->shift_end_method ?: null,
             'expected_clock_out_time' => $this->formatStoredWallClock($attendance->expected_clock_out_time),
+            'clock_out_location' => is_array($attendance->clock_out_location) ? $attendance->clock_out_location : null,
             'notes' => $attendance->notes ?: null,
         ];
     }
