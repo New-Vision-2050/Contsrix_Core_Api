@@ -217,8 +217,12 @@ class UserAttendanceService
     // =============================================================================
 
     /**
-     * One query: attendances for the target day (by start_time / clock_in_time) plus any still-open shift
+     * One query: attendances for the target day plus any still-open shift
      * (clock_in set, clock_out null) so overnight sessions are included without a second DB round-trip.
+     *
+     * Day membership is the same key the calendar uses: `business_date`, then
+     * `start_time` / `clock_in_time` for rows that never received a business date
+     * (flexible stores start_time = clock-in, so a start_time-only filter misses them).
      *
      * @return array{0: Collection<int, Attendance>, 1: Attendance|null}
      */
@@ -226,6 +230,7 @@ class UserAttendanceService
     {
         $timezone = $this->getTimezone();
         $dateInTz = $date->copy()->setTimezone($timezone);
+        $businessDate = $dateInTz->toDateString();
 
         $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
         $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
@@ -236,6 +241,8 @@ class UserAttendanceService
             'status',
             'timezone',
             'start_time',
+            'end_time',
+            'business_date',
             'clock_in_time',
             'clock_out_time',
             'late_minutes',
@@ -249,8 +256,9 @@ class UserAttendanceService
         $dayRecords = Attendance::query()
             ->select($columns)
             ->where('user_id', $user->id)
-            ->where(function ($query) use ($dayStartUtc, $dayEndUtc) {
-                $query->whereBetween('start_time', [$dayStartUtc, $dayEndUtc])
+            ->where(function ($query) use ($dayStartUtc, $dayEndUtc, $businessDate) {
+                $query->whereDate('business_date', $businessDate)
+                    ->orWhereBetween('start_time', [$dayStartUtc, $dayEndUtc])
                     ->orWhere(function ($inner) use ($dayStartUtc, $dayEndUtc) {
                         $inner->whereNull('start_time')
                             ->whereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);
@@ -297,12 +305,19 @@ class UserAttendanceService
     ): array {
         $timezone = $this->getTimezone();
         $now = Carbon::now($timezone);
+        [$earlyMinutes, $extensionMinutes] = $this->earlyAndExtensionMinutes($workRules);
 
         $periodBounds = [];
         foreach ($periods as $idx => $period) {
+            $start = $this->parsePeriodTime($period, 'start', $date);
+            $end = $this->parsePeriodTime($period, 'end', $date);
             $periodBounds[$idx] = [
-                'start' => $this->parsePeriodTime($period, 'start', $date),
-                'end' => $this->parsePeriodTime($period, 'end', $date),
+                'start' => $start,
+                'end' => $end,
+                // Allowed punch window, not the scheduled block. Early clock-in at 08:00
+                // for an 08:30 start is valid and must still attach to this period (INV-16).
+                'matchStart' => $start->copy()->subMinutes($earlyMinutes),
+                'matchEnd' => $end->copy()->addMinutes($extensionMinutes),
             ];
         }
 
@@ -324,7 +339,13 @@ class UserAttendanceService
             $totalWorkHours = $isFlexiblePeriod
                 ? round(\Modules\Attendance\Support\FlexibleWorkDay::requiredMinutesFromWorkRules($workRules) / 60, 2)
                 : $this->calculatePeriodWorkHours($periodStart, $periodEnd);
-            $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
+            $periodAttendances = $this->findAttendancesInPeriod(
+                $attendances,
+                $periodStart,
+                $periodEnd,
+                $periodBounds[$idx]['matchStart'],
+                $periodBounds[$idx]['matchEnd']
+            );
 
             // Net minutes already credited in this scheduled period (in-memory — rows were
             // already loaded), so window boundaries account for completed attendances.
@@ -341,8 +362,8 @@ class UserAttendanceService
             $window = $this->computePeriodWindow($periodStart, $periodEnd, $now, $workRules, $timezone, $alreadyWorked);
             $hasAnyClockIn = collect($periodAttendances)->contains(fn ($att) => !empty($att['clock_in_time']));
             $hasActiveAttendance = collect($periodAttendances)->contains(fn ($att) => ($att['status'] ?? null) === 'active');
-            $periodIsAbsent = collect($periodAttendances)->contains(fn ($att) => ($att['status'] ?? null) === 'absent')
-                || ($window->absentAt->isPast() && !$hasAnyClockIn);
+            // A real punch on this period outranks a leftover absent status (INV-16).
+            $periodIsAbsent = ! $hasAnyClockIn && $window->absentAt->isPast();
 
             $isFirstClockIn = !$hasAnyClockIn && !$hasActiveAttendance;
             $latestAllowed = $isFirstClockIn
@@ -375,7 +396,7 @@ class UserAttendanceService
      * Pick exactly one "current" period for {@see mergePeriodData} `is_active`:
      * open shift (clock in, no clock out) → period whose bounds contain that clock-in; else first period where now falls (incl. early window).
      *
-     * @param array<int, array{start: Carbon, end: Carbon}> $periodBounds
+     * @param array<int, array{start: Carbon, end: Carbon, matchStart?: Carbon, matchEnd?: Carbon}> $periodBounds
      */
     private function resolveSingleActivePeriodIndex(
         array $periodBounds,
@@ -385,7 +406,13 @@ class UserAttendanceService
     ): ?int {
         if ($currentAttendance !== null) {
             foreach ($periodBounds as $idx => $bounds) {
-                if ($this->isAttendanceClockInWithinPeriod($currentAttendance, $bounds['start'], $bounds['end'])) {
+                if ($this->attendanceBelongsToPeriod(
+                    $currentAttendance,
+                    $bounds['start'],
+                    $bounds['end'],
+                    $bounds['matchStart'] ?? $bounds['start'],
+                    $bounds['matchEnd'] ?? $bounds['end']
+                )) {
                     return $idx;
                 }
             }
@@ -419,6 +446,47 @@ class UserAttendanceService
     }
 
     /**
+     * Regular clock-in stores start_time = scheduled period start, even when the
+     * punch is in the early window. Match that row to the period, or match any
+     * punch whose clock-in falls in the allowed window (early + extension).
+     */
+    private function attendanceBelongsToPeriod(
+        Attendance $attendance,
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        ?Carbon $matchStart = null,
+        ?Carbon $matchEnd = null
+    ): bool {
+        if (empty($attendance->clock_in_time)) {
+            return false;
+        }
+
+        if ($this->attendanceScheduledStartMatches($attendance, $periodStart)) {
+            return true;
+        }
+
+        return $this->isAttendanceClockInWithinPeriod(
+            $attendance,
+            $matchStart ?? $periodStart,
+            $matchEnd ?? $periodEnd
+        );
+    }
+
+    private function attendanceScheduledStartMatches(Attendance $attendance, Carbon $periodStart): bool
+    {
+        if (empty($attendance->start_time)) {
+            return false;
+        }
+
+        $attendanceTz = $attendance->timezone ?? $periodStart->getTimezone();
+        $storedStart = $attendance->start_time instanceof Carbon
+            ? $attendance->start_time->copy()->setTimezone($attendanceTz)
+            : Carbon::parse((string) $attendance->start_time, $attendanceTz);
+
+        return $storedStart->copy()->setTimezone($periodStart->getTimezone())->equalTo($periodStart);
+    }
+
+    /**
      * Parse period time from period data
      *
      * @param array $period
@@ -443,19 +511,31 @@ class UserAttendanceService
     }
 
     /**
-     * Find attendances that fall within a period
-     * Only matches attendance if clock_in_time is within the period boundaries
+     * Find punches that belong to a scheduled period.
+     *
+     * Matches a real clock-in in the allowed window (early + extension), or a
+     * regular row whose stored start_time is this period's scheduled start.
+     * Leftover absent/waiting rows with no punch stay out of the payload.
      *
      * @param Collection $attendances
-     * @param Carbon $periodStart
-     * @param Carbon $periodEnd
      * @return array
      */
-    private function findAttendancesInPeriod(Collection $attendances, Carbon $periodStart, Carbon $periodEnd): array
-    {
+    private function findAttendancesInPeriod(
+        Collection $attendances,
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        ?Carbon $matchStart = null,
+        ?Carbon $matchEnd = null
+    ): array {
         return $attendances
-            ->filter(fn (Attendance $attendance) => $this->isAttendanceClockInWithinPeriod($attendance, $periodStart, $periodEnd))
-            ->map(fn($attendance) => $this->formatAttendanceForPeriod($attendance, $periodStart, $periodEnd))
+            ->filter(fn (Attendance $attendance) => $this->attendanceBelongsToPeriod(
+                $attendance,
+                $periodStart,
+                $periodEnd,
+                $matchStart,
+                $matchEnd
+            ))
+            ->map(fn ($attendance) => $this->formatAttendanceForPeriod($attendance, $periodStart, $periodEnd))
             ->values()
             ->toArray();
     }
@@ -593,22 +673,7 @@ class UserAttendanceService
         string $timezone,
         int $alreadyWorkedMinutesInPeriod = 0
     ): \Modules\Attendance\Domain\Time\ShiftWindow {
-        $earlyMinutes = max(
-            (int) ($workRules['early_clock_in_minutes'] ?? 0),
-            \Modules\Attendance\Support\EarlyClockInRules::minutes(
-                is_array($workRules['early_clock_in_rules'] ?? null) ? $workRules['early_clock_in_rules'] : null
-            ),
-        );
-
-        $extensionMinutes = (int) ($workRules['extension_minutes'] ?? 0);
-        if ($extensionMinutes <= 0) {
-            $extRules = is_array($workRules['extension_rules'] ?? null) ? $workRules['extension_rules'] : [];
-            if (isset($extRules['extension_minutes'])) {
-                $extensionMinutes = (int) $extRules['extension_minutes'];
-            } else {
-                $extensionMinutes = (int) round(((float) ($extRules['extension_hours'] ?? 0)) * 60);
-            }
-        }
+        [$earlyMinutes, $extensionMinutes] = $this->earlyAndExtensionMinutes($workRules);
 
         $canClockInBefore = array_key_exists('can_clock_in_before_minutes', $workRules)
             ? (isset($workRules['can_clock_in_before_minutes']) ? (int) $workRules['can_clock_in_before_minutes'] : null)
@@ -765,9 +830,36 @@ class UserAttendanceService
      *
      * @return string
      */
+    /**
+     * @return array{0: int, 1: int} early minutes, extension minutes
+     */
+    private function earlyAndExtensionMinutes(array $workRules): array
+    {
+        $earlyMinutes = max(
+            (int) ($workRules['early_clock_in_minutes'] ?? 0),
+            \Modules\Attendance\Support\EarlyClockInRules::minutes(
+                is_array($workRules['early_clock_in_rules'] ?? null) ? $workRules['early_clock_in_rules'] : null
+            ),
+        );
+
+        $extensionMinutes = (int) ($workRules['extension_minutes'] ?? 0);
+        if ($extensionMinutes <= 0) {
+            $extRules = is_array($workRules['extension_rules'] ?? null) ? $workRules['extension_rules'] : [];
+            if (isset($extRules['extension_minutes'])) {
+                $extensionMinutes = (int) $extRules['extension_minutes'];
+            } else {
+                $extensionMinutes = (int) round(((float) ($extRules['extension_hours'] ?? 0)) * 60);
+            }
+        }
+
+        return [$earlyMinutes, $extensionMinutes];
+    }
+
     private function getTimezone(): string
     {
-        return getTimeZoneBranchByRequest() ?? config('app.timezone');
+        return $this->requestTimezoneOverride
+            ?? getTimeZoneBranchByRequest()
+            ?? config('app.timezone');
     }
 
     /**

@@ -91,6 +91,11 @@ class ProjectEmployeeRepository extends BaseRepository
         return $this->create($data);
     }
 
+    public function findOneWithRelationsOrFail(string $id, array $relations): ProjectEmployee
+    {
+        return $this->model->with($relations)->findOrFail($id);
+    }
+
     public function isEmployeeAssigned(string $projectId, string $userId): bool
     {
         return $this->model

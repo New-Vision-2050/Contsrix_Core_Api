@@ -13,12 +13,15 @@ use Illuminate\Support\Facades\Mail;
 use Modules\Attendance\Services\AttendanceStatusService;
 use Modules\Project\ProjectManagement\Services\ProjectEmployeeService;
 use Modules\Project\ProjectManagement\Requests\AssignEmployeesRequest;
+use Modules\Project\ProjectManagement\Requests\RemoveProjectEmployeeRequest;
+use Modules\Project\ProjectManagement\Requests\UpdateProjectEmployeeRoleRequest;
 use Modules\Project\ProjectManagement\Presenters\ProjectEmployeePresenter;
 use Modules\User\Presenters\EmployeePresenter;
 use Modules\Project\ProjectManagement\Mail\EmployeeAssignedMail;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class ProjectEmployeeController extends Controller
 {
@@ -208,24 +211,20 @@ class ProjectEmployeeController extends Controller
     /**
      * Remove an employee from a project
      */
-    public function removeEmployee(Request $request): JsonResponse
+    public function removeEmployee(RemoveProjectEmployeeRequest $request): JsonResponse
     {
         try {
-            $projectEmployeeId = $request->route('id');
-
-            if (!$projectEmployeeId) {
-                return Json::error('Project Employee ID is required', 400);
-            }
-
-            $result = $this->service->removeEmployeeFromProject($projectEmployeeId);
+            $result = $this->service->removeEmployeeFromProject($request->projectEmployeeId());
 
             if ($result) {
                 return Json::deleted();
             }
 
-            return Json::error('Failed to remove employee', 400);
+            return Json::error('Failed to remove employee', 400, httpStatus: 400);
+        } catch (HttpExceptionInterface $e) {
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), 400);
+            return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
     }
 
@@ -256,25 +255,21 @@ class ProjectEmployeeController extends Controller
     /**
      * Assign or update project role for an employee
      */
-    public function assignRole(Request $request): JsonResponse
+    public function assignRole(UpdateProjectEmployeeRoleRequest $request): JsonResponse
     {
         try {
-            $projectEmployeeId = $request->route('id');
-
-            $validated = $request->validate([
-                'project_role_id' => 'required|string|exists:project_roles,id',
-            ]);
-
             $employee = $this->service->assignRoleToEmployee(
-                $projectEmployeeId,
-                $validated['project_role_id']
+                $request->projectEmployeeId(),
+                $request->projectRoleId(),
             );
 
             $data = (new ProjectEmployeePresenter($employee))->getData();
 
             return Json::item($data);
+        } catch (HttpExceptionInterface $e) {
+            return Json::error($e->getMessage(), $e->getStatusCode(), httpStatus: $e->getStatusCode());
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), 400);
+            return Json::error($e->getMessage(), 400, httpStatus: 400);
         }
     }
 
