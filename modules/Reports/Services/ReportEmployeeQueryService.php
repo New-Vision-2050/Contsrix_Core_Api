@@ -42,6 +42,7 @@ class ReportEmployeeQueryService
         $this->applyContractTypes($query, $step2);
         $this->applyNationality($query, $step2);
         $this->applyGender($query, $step2);
+        $this->applyAttendanceConstraints($query, $step2);
 
         return $query;
     }
@@ -128,5 +129,30 @@ class ReportEmployeeQueryService
         }
 
         $query->where('gender', $s->gender);
+    }
+
+    /**
+     * Restrict to employees assigned to any of the selected constraints, either
+     * as their main constraint (`user_professional_datas.attendance_constraint_id`)
+     * or as an additional constraint (`attendance_constraint_user` pivot).
+     */
+    private function applyAttendanceConstraints(Builder $query, ReportWizardStep2DTO $s): void
+    {
+        if ($s->attendanceConstraintIds === []) {
+            return;
+        }
+
+        $ids = $s->attendanceConstraintIds;
+
+        $query->where(function (Builder $q) use ($ids): void {
+            $q->whereHas('userProfessionalData', function ($q2) use ($ids) {
+                $q2->whereIn('attendance_constraint_id', $ids);
+            })->orWhereHas('users', function ($q2) use ($ids) {
+                $q2->where('company_id', tenant('id'))
+                    ->whereHas('additionalAttendanceConstraints', function ($q3) use ($ids) {
+                        $q3->whereIn('attendance_constraints.id', $ids);
+                    });
+            });
+        });
     }
 }

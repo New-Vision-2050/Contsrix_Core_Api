@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Reports\Requests\Traits;
 
+use Illuminate\Validation\Rule;
 use Modules\Reports\DTO\ReportWizardConfigDTO;
 use Modules\Reports\Enums\ReportEnums;
 
@@ -54,6 +55,20 @@ trait ValidatesWizardConfig
             "{$p}step2.contractTypeIds.*"        => ['string', $enum(ReportEnums::contractTypes())],
             "{$p}step2.nationality"              => 'nullable|string|max:255',
             "{$p}step2.gender"                   => ['nullable', 'string', $enum(ReportEnums::genders())],
+            "{$p}step2.attendance_constraint_ids"   => 'nullable|array',
+            "{$p}step2.attendance_constraint_ids.*" => [
+                'uuid',
+                Rule::exists('attendance_constraints', 'id')->where(function ($query) {
+                    $query->where('company_id', tenant('id'))->whereNull('deleted_at');
+                }),
+            ],
+            "{$p}step2.attendanceConstraintIds"   => 'nullable|array',
+            "{$p}step2.attendanceConstraintIds.*" => [
+                'uuid',
+                Rule::exists('attendance_constraints', 'id')->where(function ($query) {
+                    $query->where('company_id', tenant('id'))->whereNull('deleted_at');
+                }),
+            ],
 
             // ---- Step 3 --------------------------------------------------
             "{$p}step3"                             => 'required|array',
