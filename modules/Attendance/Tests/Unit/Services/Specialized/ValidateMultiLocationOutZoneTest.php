@@ -138,7 +138,14 @@ class ValidateMultiLocationOutZoneTest extends TestCase
             ->with(
                 'c5778c77-b689-44e3-a634-fcab3c044ea8',
                 'auto_out_zone',
-                $this->stringContains('threshold: 30 minutes')
+                $this->stringContains('threshold: 30 minutes'),
+                false,
+                $this->callback(static function ($location): bool {
+                    return is_array($location)
+                        && isset($location['latitude'], $location['longitude'])
+                        && abs((float) $location['latitude'] - 21.62870000) < 0.0000001
+                        && abs((float) $location['longitude'] - 39.12831480) < 0.0000001;
+                }),
             );
 
         $result = $this->service->validateMultiLocation($attendance, $constraint);

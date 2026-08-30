@@ -86,6 +86,10 @@ class UserAttendanceTodayPeriodPresenceTest extends TestCase
                 'total_work_hours' => 8.0,
                 'shift_end_method' => 'auto_max_ot',
                 'expected_clock_out_time' => '2026-08-30 19:00:00',
+                'clock_out_location' => [
+                    'latitude' => 21.62870000,
+                    'longitude' => 39.12831480,
+                ],
                 'notes' => "[Auto] Clock-out: auto_max_ot at 2026-08-30T19:00:00+03:00",
             ]),
         ]));
@@ -95,6 +99,10 @@ class UserAttendanceTodayPeriodPresenceTest extends TestCase
         $this->assertSame('auto_max_ot', $row['clock_out_cause']);
         $this->assertSame('auto_max_ot', $row['shift_end_method']);
         $this->assertSame('2026-08-30 19:00:00', $row['expected_clock_out_time']);
+        $this->assertSame([
+            'latitude' => 21.62870000,
+            'longitude' => 39.12831480,
+        ], $row['clock_out_location']);
         $this->assertSame('[Auto] Clock-out: auto_max_ot at 2026-08-30T19:00:00+03:00', $row['notes']);
     }
 

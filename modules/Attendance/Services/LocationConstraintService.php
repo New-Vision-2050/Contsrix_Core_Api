@@ -458,6 +458,11 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
             'auto_out_zone',
             "Shift ended: outside all allowed work locations for {$minutesOutside} minutes "
             . "(threshold: {$outZoneMinutes} minutes).",
+            false,
+            [
+                'latitude' => $userLat,
+                'longitude' => $userLon,
+            ],
         );
 
         return [
@@ -885,12 +890,16 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
             // If configured to end shift automatically
             if ($endShiftIfViolated) {
                 // End the shift automatically based on configuration using the service
+                $lastTrack = is_array($locationTracking) && $locationTracking !== []
+                    ? end($locationTracking)
+                    : null;
                 $this->attendanceService->endShiftAutomatically(
                     $attendance->id,
                     'auto_radius_enforcement',
                     'Shift automatically ended due to being outside allowed radius for ' .
                     $timeOutsideRadius . ' minutes (threshold: ' . $timeThreshold . ' minutes)',
-                    $markAbsentIfViolated // Pass the mark absent configuration directly to the service
+                    $markAbsentIfViolated,
+                    is_array($lastTrack) ? $lastTrack : null,
                 );
             }
 
