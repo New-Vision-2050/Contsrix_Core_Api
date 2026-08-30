@@ -253,6 +253,7 @@ class UserAttendanceService
             'total_work_hours',
             'clock_in_location',
             'clock_out_location',
+            'location_tracking',
         ];
 
         // Keep this query range-based and narrow to avoid large filesort memory pressure.
@@ -597,8 +598,92 @@ class UserAttendanceService
             'clock_out_cause' => $this->resolveClockOutCause($attendance),
             'shift_end_method' => $attendance->shift_end_method ?: null,
             'expected_clock_out_time' => $this->formatStoredWallClock($attendance->expected_clock_out_time),
-            'clock_out_location' => is_array($attendance->clock_out_location) ? $attendance->clock_out_location : null,
+            'clock_out_location' => $this->resolveClockOutLocation($attendance),
             'notes' => $attendance->notes ?: null,
+        ];
+    }
+
+    /**
+     * Prefer the location persisted at close. Older auto_out_zone rows never wrote
+     * clock_out_location, so fall back to the last tracking ping at or before clock-out.
+     *
+     * @return array{latitude: float, longitude: float}|null
+     */
+    private function resolveClockOutLocation(Attendance $attendance): ?array
+    {
+        $stored = $this->normalizeLatLng($attendance->clock_out_location);
+        if ($stored !== null) {
+            return $stored;
+        }
+
+        if (empty($attendance->clock_out_time)) {
+            return null;
+        }
+
+        return $this->lastTrackingPointAtOrBefore(
+            is_array($attendance->location_tracking) ? $attendance->location_tracking : [],
+            $attendance->clock_out_time,
+            $attendance->timezone ?? $this->getTimezone()
+        );
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $points
+     * @return array{latitude: float, longitude: float}|null
+     */
+    private function lastTrackingPointAtOrBefore(array $points, mixed $clockOutTime, string $timezone): ?array
+    {
+        $deadline = $clockOutTime instanceof Carbon
+            ? $clockOutTime->copy()->setTimezone($timezone)
+            : Carbon::parse((string) $clockOutTime, $timezone);
+
+        $lastWithTime = null;
+        $lastWithoutTime = null;
+
+        foreach ($points as $point) {
+            $coords = $this->normalizeLatLng($point);
+            if ($coords === null) {
+                continue;
+            }
+
+            if (empty($point['timestamp'])) {
+                $lastWithoutTime = $coords;
+                continue;
+            }
+
+            try {
+                $at = Carbon::parse((string) $point['timestamp'], $timezone);
+            } catch (\Throwable) {
+                $lastWithoutTime = $coords;
+                continue;
+            }
+
+            if ($at->greaterThan($deadline)) {
+                continue;
+            }
+
+            $lastWithTime = $coords;
+        }
+
+        return $lastWithTime ?? $lastWithoutTime;
+    }
+
+    /**
+     * @return array{latitude: float, longitude: float}|null
+     */
+    private function normalizeLatLng(mixed $location): ?array
+    {
+        if (! is_array($location) || ! isset($location['latitude'], $location['longitude'])) {
+            return null;
+        }
+
+        if (! is_numeric($location['latitude']) || ! is_numeric($location['longitude'])) {
+            return null;
+        }
+
+        return [
+            'latitude' => (float) $location['latitude'],
+            'longitude' => (float) $location['longitude'],
         ];
     }
 
