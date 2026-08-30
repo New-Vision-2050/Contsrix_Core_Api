@@ -245,6 +245,9 @@ class UserAttendanceService
             'business_date',
             'clock_in_time',
             'clock_out_time',
+            'expected_clock_out_time',
+            'shift_end_method',
+            'notes',
             'late_minutes',
             'overtime_hours',
             'total_work_hours',
@@ -583,6 +586,7 @@ class UserAttendanceService
         }
 
         return [
+            'id' => $attendance->id !== null ? (string) $attendance->id : null,
             'status' => $attendance->status ?? 'scheduled',
             'date' => $clockInCarbon?->format('Y-m-d') ?? $periodStart->format('Y-m-d'),
             'start_time' => $periodStart->format('H:i'),
@@ -590,7 +594,43 @@ class UserAttendanceService
             'clock_in_time' => $clock['clock_in_time'],
             'clock_out_time' => $clock['clock_out_time'],
             'total_hours_present' => $totalHoursPresent,
+            'clock_out_cause' => $this->resolveClockOutCause($attendance),
+            'shift_end_method' => $attendance->shift_end_method ?: null,
+            'expected_clock_out_time' => $this->formatStoredWallClock($attendance->expected_clock_out_time),
+            'notes' => $attendance->notes ?: null,
         ];
+    }
+
+    /**
+     * One field for the app: null while still open, the stored method for auto closes,
+     * `manual` when the employee clocked out and shift_end_method was never written.
+     */
+    private function resolveClockOutCause(Attendance $attendance): ?string
+    {
+        if (empty($attendance->clock_out_time)) {
+            return null;
+        }
+
+        $method = is_string($attendance->shift_end_method) ? trim($attendance->shift_end_method) : '';
+
+        return $method !== '' ? $method : 'manual';
+    }
+
+    private function formatStoredWallClock(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($value instanceof Carbon) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        try {
+            return Carbon::parse((string) $value, $this->getTimezone())->format('Y-m-d H:i:s');
+        } catch (\Throwable) {
+            return (string) $value;
+        }
     }
 
     /**
