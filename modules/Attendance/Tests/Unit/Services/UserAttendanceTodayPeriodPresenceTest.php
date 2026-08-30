@@ -67,6 +67,35 @@ class UserAttendanceTodayPeriodPresenceTest extends TestCase
         $this->assertNotEmpty($periods[0]['attendance']);
         $this->assertSame('08:00', $periods[0]['attendance'][0]['clock_in_time']);
         $this->assertSame(7.07, $periods[0]['total_hours_present']);
+        $this->assertSame('manual', $periods[0]['attendance'][0]['clock_out_cause']);
+        $this->assertNull($periods[0]['attendance'][0]['shift_end_method']);
+    }
+
+    public function test_attendance_object_exposes_auto_clock_out_cause_columns(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-30 19:10:00', 'Asia/Riyadh'));
+
+        $periods = $this->enhancePeriods(collect([
+            $this->punch([
+                'id' => 'att-flex-1',
+                'clock_in_time' => '2026-08-30 11:00:00',
+                'clock_out_time' => '2026-08-30 19:00:00',
+                'start_time' => '2026-08-30 11:00:00',
+                'end_time' => '2026-08-30 23:59:59',
+                'status' => Attendance::STATUS_COMPLETED,
+                'total_work_hours' => 8.0,
+                'shift_end_method' => 'auto_max_ot',
+                'expected_clock_out_time' => '2026-08-30 19:00:00',
+                'notes' => "[Auto] Clock-out: auto_max_ot at 2026-08-30T19:00:00+03:00",
+            ]),
+        ]));
+
+        $row = $periods[0]['attendance'][0];
+        $this->assertSame('att-flex-1', $row['id']);
+        $this->assertSame('auto_max_ot', $row['clock_out_cause']);
+        $this->assertSame('auto_max_ot', $row['shift_end_method']);
+        $this->assertSame('2026-08-30 19:00:00', $row['expected_clock_out_time']);
+        $this->assertSame('[Auto] Clock-out: auto_max_ot at 2026-08-30T19:00:00+03:00', $row['notes']);
     }
 
     public function test_early_clock_in_attaches_even_when_start_time_is_the_punch_time(): void
