@@ -1002,6 +1002,11 @@ When returning user constraint locations, include the same merged locations that
 clock-in validation would use. A mismatch causes mobile clients to show a user
 that they can clock in where the backend later rejects them, or the reverse.
 
+When those locations exist, staying outside them past `out_zone_minutes` normally
+auto clock-outs the open shift. That close is not applied on a day the employee
+has an accepted employee task or a sent/accepted project notification
+(`FieldWorkOutOfZoneExemption`).
+
 ### Violations
 
 Violations should preserve:
@@ -1765,6 +1770,16 @@ stands). Removed, and not to be reintroduced:
 `AbsenceMarkingService` still consults `TemporaryLocationProvider::isEngagedElsewhere()`
 to hold off auto-absence while an employee is on a task. That is a write-side
 grace period, not a display status, and is deliberately left in place.
+
+Out-of-zone auto clock-out (`LocationConstraintService::validateMultiLocation`,
+`enforcement_action: auto_out_zone`) is skipped for the same reason when the
+constraint has locations and the employee has field work **that calendar day**:
+an accepted employee task (`approved` / `in_progress` / `paused`), or a project
+notification that has been sent (`pending`) or accepted/received (`in_progress`).
+`TemporaryLocationProvider::hasFieldAssignmentOn()` is the shared reader;
+`FieldWorkOutOfZoneExemption` is the write-side guard. The live task geofence is
+not required — a task can be accepted, or a notification sent, before it publishes
+coordinates. This does not make the day `متواجد` without a punch (INV-19).
 
 ### INV-20: The matched geofence is only knowable at punch time
 

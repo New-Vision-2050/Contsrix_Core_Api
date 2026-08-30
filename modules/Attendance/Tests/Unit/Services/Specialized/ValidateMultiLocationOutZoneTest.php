@@ -7,6 +7,7 @@ namespace Modules\Attendance\Tests\Unit\Services\Specialized;
 use Carbon\Carbon;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
+use Modules\Attendance\Contracts\OutOfZoneClockOutExemption;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\LocationConstraintService;
 use Modules\Attendance\Services\RadiusEnforcementService;
@@ -145,6 +146,50 @@ class ValidateMultiLocationOutZoneTest extends TestCase
         $this->assertIsArray($result);
         $this->assertSame('auto_out_zone', $result['details']['enforcement_action']);
         $this->assertGreaterThanOrEqual(30, $result['details']['minutes_outside']);
+    }
+
+    /**
+     * An accepted task or sent/accepted project notification that day means the
+     * employee is expected at a field site, so out-of-zone must not close the shift.
+     */
+    public function test_field_assignment_on_this_day_skips_out_of_zone_clock_out(): void
+    {
+        $attendance = $this->makeActiveAttendance([
+            [
+                'latitude' => 21.62870000,
+                'longitude' => 39.12831480,
+                'timestamp' => '2026-08-25 15:25:00',
+            ],
+            [
+                'latitude' => 21.62870000,
+                'longitude' => 39.12831480,
+                'timestamp' => '2026-08-25 16:00:00',
+            ],
+        ]);
+        $attendance->id = 'c5778c77-b689-44e3-a634-fcab3c044ea8';
+
+        $constraint = $this->makeConstraint([
+            [
+                'name' => 'Work',
+                'latitude' => self::WORK_LAT,
+                'longitude' => self::WORK_LON,
+                'radius' => 50,
+            ],
+        ], 30);
+
+        $exemption = $this->createMock(OutOfZoneClockOutExemption::class);
+        $exemption->method('appliesTo')->willReturn(true);
+
+        $service = new LocationConstraintService(
+            $this->attendanceService,
+            $this->createMock(RadiusEnforcementService::class),
+            $this->createMock(TaskService::class),
+            $exemption,
+        );
+
+        $this->attendanceService->expects($this->never())->method('endShiftAutomatically');
+
+        $this->assertFalse($service->validateMultiLocation($attendance, $constraint));
     }
 
     public function test_additional_location_keeps_employee_inside(): void
