@@ -19,53 +19,30 @@ class TwilioVoice
 
     public function __construct()
     {
-        $this->accountSid = config('services.twilio_voice.sid', '');
-        $this->authToken = config('services.twilio.auth_token', '');
-        $this->apiKeySid = config('services.twilio_voice.api_key_sid', '');
-        $this->apiKeySecret = config('services.twilio_voice.api_key_secret', '');
-        $this->from = config('services.twilio_voice.from', '');
+        $this->accountSid = (string) config('services.twilio_voice.sid', '');
+        $this->authToken = (string) config('services.twilio.auth_token', '');
+        $this->apiKeySid = (string) config('services.twilio_voice.api_key_sid', '');
+        $this->apiKeySecret = (string) config('services.twilio_voice.api_key_secret', '');
+        $this->from = (string) config('services.twilio_voice.from', '');
 
-        if (empty($this->accountSid) || (empty($this->authToken) && (empty($this->apiKeySid) || empty($this->apiKeySecret)))) {
-            try {
-                $driver = Driver::query()
-                    ->where('driver_type', 'voice')
-                    ->where('name', 'twilio')
-                    ->first();
-
-                if ($driver && ! empty($driver->config['TWILIO_SID'])) {
-                    if (empty($this->accountSid)) {
-                        $this->accountSid = $driver->config['TWILIO_SID'];
-                    }
-                    if (empty($this->authToken)) {
-                        $this->authToken = $driver->config['TWILIO_AUTH_TOKEN'] ?? '';
-                    }
-                    if (empty($this->apiKeySid)) {
-                        $this->apiKeySid = $driver->config['TWILIO_VOICE_API_KEY_SID'] ?? '';
-                    }
-                    if (empty($this->apiKeySecret)) {
-                        $this->apiKeySecret = $driver->config['TWILIO_VOICE_API_KEY_SECRET'] ?? '';
-                    }
-                    if (empty($this->from)) {
-                        $this->from = $driver->config['TWILIO_VOICE_FROM'] ?? '';
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning('TwilioVoice: could not query drivers table', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
+        if ($this->needsDriverHydration()) {
+            $this->hydrateFromDrivers();
         }
+
+        $this->from = $this->normalizePhone($this->from);
     }
 
     public function to(string $to): self
     {
-        $this->to = $to;
+        $this->to = $this->normalizePhone($to);
+
         return $this;
     }
 
     public function from(string $from): self
     {
-        $this->from = $from;
+        $this->from = $this->normalizePhone($from);
+
         return $this;
     }
 
@@ -85,7 +62,16 @@ class TwilioVoice
     {
         $missingAuth = empty($this->authToken) && (empty($this->apiKeySid) || empty($this->apiKeySecret));
         if (empty($this->accountSid) || $missingAuth || empty($this->from) || empty($this->to)) {
-            Log::error('Twilio Voice is not configured. Account SID, From, To, and either Auth Token or API Key are required.');
+            Log::error('Twilio Voice is not configured. Account SID, From, To, and either Auth Token or API Key are required.', [
+                'has_sid' => $this->accountSid !== '',
+                'has_auth_token' => $this->authToken !== '',
+                'has_api_key' => $this->apiKeySid !== '' && $this->apiKeySecret !== '',
+                'has_from' => $this->from !== '',
+                'has_to' => $this->to !== '',
+                'from' => $this->from,
+                'to' => $this->to,
+            ]);
+
             return false;
         }
 
@@ -136,5 +122,65 @@ class TwilioVoice
         }
 
         return new Client($this->accountSid, $this->authToken);
+    }
+
+    private function needsDriverHydration(): bool
+    {
+        $missingAuth = empty($this->authToken) && (empty($this->apiKeySid) || empty($this->apiKeySecret));
+
+        return empty($this->accountSid) || $missingAuth || empty($this->from) || str_starts_with(strtolower($this->from), 'whatsapp:');
+    }
+
+    private function hydrateFromDrivers(): void
+    {
+        try {
+            $drivers = Driver::query()
+                ->where('name', 'twilio')
+                ->whereIn('driver_type', ['voice', 'whatsapp'])
+                ->get();
+
+            foreach ($drivers->sortBy(fn (Driver $driver) => $driver->driver_type === 'voice' ? 0 : 1) as $driver) {
+                $config = $driver->config ?? [];
+                if (! is_array($config) || $config === []) {
+                    continue;
+                }
+
+                if (empty($this->accountSid) && ! empty($config['TWILIO_SID'])) {
+                    $this->accountSid = (string) $config['TWILIO_SID'];
+                }
+                if (empty($this->authToken) && ! empty($config['TWILIO_AUTH_TOKEN'])) {
+                    $this->authToken = (string) $config['TWILIO_AUTH_TOKEN'];
+                }
+                if (empty($this->apiKeySid) && ! empty($config['TWILIO_VOICE_API_KEY_SID'])) {
+                    $this->apiKeySid = (string) $config['TWILIO_VOICE_API_KEY_SID'];
+                }
+                if (empty($this->apiKeySecret) && ! empty($config['TWILIO_VOICE_API_KEY_SECRET'])) {
+                    $this->apiKeySecret = (string) $config['TWILIO_VOICE_API_KEY_SECRET'];
+                }
+                if (empty($this->from) || str_starts_with(strtolower($this->from), 'whatsapp:')) {
+                    $voiceFrom = (string) ($config['TWILIO_VOICE_FROM'] ?? '');
+                    $whatsappFrom = (string) ($config['TWILIO_WHATSAPP_FROM'] ?? '');
+                    if ($voiceFrom !== '') {
+                        $this->from = $voiceFrom;
+                    } elseif ($this->from === '' && $whatsappFrom !== '') {
+                        $this->from = $whatsappFrom;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('TwilioVoice: could not query drivers table', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function normalizePhone(string $number): string
+    {
+        $number = trim($number);
+        if (str_starts_with(strtolower($number), 'whatsapp:')) {
+            $number = substr($number, strlen('whatsapp:'));
+        }
+
+        return trim($number);
     }
 }
