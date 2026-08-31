@@ -6,9 +6,11 @@ namespace Modules\EmployeeTask\Services;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskSession;
+use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 
 /**
  * Single writer for all automatic task-close paths.
@@ -22,6 +24,9 @@ use Modules\EmployeeTask\Models\EmployeeTaskSession;
  */
 final class EmployeeTaskAutoCloseService
 {
+    public function __construct(
+        private readonly EmployeeTaskRepository $repository,
+    ) {}
     /**
      * Atomically close the task if it is still in_progress.
      *
@@ -47,6 +52,17 @@ final class EmployeeTaskAutoCloseService
             // Project notification tasks are never auto-closed. The employee
             // must manually end the task via the project notification lifecycle.
             if ($fresh->is_project_notification) {
+                return false;
+            }
+
+            // If the employee submitted an end request that's still pending
+            // admin review, don't auto-reject the task here. The end request
+            // (and the task) will be auto-rejected at midnight by
+            // AutoRejectStaleTaskJob when the day passes.
+            if ($this->repository->hasPendingEndRequest($fresh->id)) {
+                Log::info('AutoCloseTaskAtDurationExpiry: skipping, pending end request exists', [
+                    'task_id' => $fresh->id,
+                ]);
                 return false;
             }
 

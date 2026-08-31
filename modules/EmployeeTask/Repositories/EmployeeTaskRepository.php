@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Modules\EmployeeTask\Repositories;
 
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
+use Modules\EmployeeTask\Models\EmployeeTaskSession;
 use Modules\EmployeeTask\Models\EmployeeTaskStartRequest;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
@@ -435,6 +437,92 @@ class EmployeeTaskRepository
     public function delete(EmployeeTaskRequest $task): bool
     {
         return (bool) $task->delete();
+    }
+
+    /**
+     * Reject all pending sub-requests (end, start, approval, extension)
+     * for a given task. Called when a task is auto-rejected so that
+     * orphaned pending sub-requests don't remain in the admin inbox.
+     */
+    public function cancelPendingSubRequests(string $taskId, string $reason): void
+    {
+        $now = now()->toDateTimeString();
+
+        EmployeeTaskEndRequest::query()
+            ->where('employee_task_request_id', $taskId)
+            ->where('status', 'pending')
+            ->update([
+                'status'        => 'rejected',
+                'reviewed_at'   => $now,
+                'review_notes'  => $reason,
+            ]);
+
+        EmployeeTaskStartRequest::query()
+            ->where('employee_task_request_id', $taskId)
+            ->where('status', 'pending')
+            ->update([
+                'status'        => 'rejected',
+                'reviewed_at'   => $now,
+                'review_notes'  => $reason,
+            ]);
+
+        EmployeeTaskApprovalRequest::query()
+            ->where('employee_task_request_id', $taskId)
+            ->where('status', 'pending')
+            ->update([
+                'status'        => 'rejected',
+                'reviewed_at'   => $now,
+                'review_notes'  => $reason,
+            ]);
+
+        EmployeeTaskExtensionRequest::query()
+            ->where('employee_task_request_id', $taskId)
+            ->where('status', 'pending')
+            ->update([
+                'status'        => 'rejected',
+                'reviewed_at'   => $now,
+                'review_notes'  => $reason,
+            ]);
+    }
+
+    /**
+     * Check if a task has any pending end request.
+     */
+    public function hasPendingEndRequest(string $taskId): bool
+    {
+        return EmployeeTaskEndRequest::query()
+            ->where('employee_task_request_id', $taskId)
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    /**
+     * Close any active (open) session for a task when it is auto-rejected
+     * while in_progress. Calculates duration from start_time to $closedAt.
+     */
+    public function closeActiveSessionForTask(string $taskId, string $closedAt): void
+    {
+        $activeSession = EmployeeTaskSession::query()
+            ->where('employee_task_request_id', $taskId)
+            ->whereNull('end_time')
+            ->first();
+
+        if (!$activeSession) {
+            return;
+        }
+
+        $task = EmployeeTaskRequest::query()->find($taskId);
+        $timezone = $task?->timezone ?: config('app.timezone', 'Asia/Riyadh');
+
+        $sessionStart = CarbonImmutable::parse($activeSession->start_time, $timezone);
+        $closeCarbon = CarbonImmutable::parse($closedAt, $timezone);
+        $durationMinutes = max(0, (int) $sessionStart->diffInMinutes($closeCarbon));
+
+        $activeSession->update([
+            'end_time' => $closeCarbon->format('Y-m-d H:i:s'),
+            'duration_minutes' => $durationMinutes,
+            'source' => 'auto_duration',
+        ]);
     }
 
     public function getFilterMetadata(string $userId, array $filters = []): array
