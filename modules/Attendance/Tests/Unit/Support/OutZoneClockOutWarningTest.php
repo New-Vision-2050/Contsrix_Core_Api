@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Modules\Attendance\Tests\Unit\Support;
 
 use Carbon\Carbon;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Notifications\OutZoneClockOutWarningNotification;
 use Modules\Attendance\Support\OutZoneClockOutWarning;
 use PHPUnit\Framework\TestCase;
 
@@ -54,5 +56,27 @@ class OutZoneClockOutWarningTest extends TestCase
         $attendance->out_zone_warning_at = '2026-08-31 12:00:00';
 
         $this->assertTrue(OutZoneClockOutWarning::graceExpired($attendance));
+    }
+
+    public function test_voice_notification_is_not_queued(): void
+    {
+        $this->assertFalse(
+            is_subclass_of(OutZoneClockOutWarningNotification::class, ShouldQueue::class),
+            'Out-zone voice must dial in-request like project site-status calls'
+        );
+    }
+
+    public function test_voice_phone_adds_country_code_and_avoids_double_prefix(): void
+    {
+        $notification = new OutZoneClockOutWarningNotification();
+
+        $user = new \stdClass();
+        $user->phone = '05 1234-5678';
+        $user->phone_code = '966';
+        $this->assertSame('+966512345678', $notification->buildInternationalPhoneNumber($user));
+
+        $user->phone = '966512345678';
+        $user->phone_code = '966';
+        $this->assertSame('+966512345678', $notification->buildInternationalPhoneNumber($user));
     }
 }

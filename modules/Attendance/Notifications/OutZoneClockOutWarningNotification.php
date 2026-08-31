@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace Modules\Attendance\Notifications;
 
 use App\Notifications\Drivers\Voice\TwilioVoice;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Support\OutZoneClockOutWarning;
 
-class OutZoneClockOutWarningNotification extends Notification implements ShouldQueue
+/**
+ * Same pattern as SiteStatusUpdateRequiredVoiceNotification: send Twilio
+ * immediately (not queued). Queued voice never dials here — queue workers
+ * lose tenant Twilio config, and QUEUE_CONNECTION=database needs queue:work.
+ */
+class OutZoneClockOutWarningNotification extends Notification
 {
-    use Queueable;
-
     public function via(object $notifiable): array
     {
         return ['voice'];
@@ -22,7 +24,14 @@ class OutZoneClockOutWarningNotification extends Notification implements ShouldQ
     public function toVoice(object $notifiable): TwilioVoice
     {
         $driver = new TwilioVoice;
+        $fullPhone = $this->buildInternationalPhoneNumber($notifiable);
         $message = htmlspecialchars(OutZoneClockOutWarning::VOICE_MESSAGE, ENT_XML1, 'UTF-8');
+
+        Log::info('OutZoneClockOutWarningNotification: preparing voice call', [
+            'notifiable_id' => $notifiable->id ?? null,
+            'notifiable_phone' => $notifiable->phone ?? null,
+            'full_phone' => $fullPhone,
+        ]);
 
         $twiml = <<<TWIML
 <?xml version="1.0" encoding="UTF-8"?>
@@ -34,13 +43,13 @@ class OutZoneClockOutWarningNotification extends Notification implements ShouldQ
 TWIML;
 
         return $driver
-            ->to($this->buildInternationalPhoneNumber($notifiable))
+            ->to($fullPhone)
             ->twiml($twiml);
     }
 
-    private function buildInternationalPhoneNumber(object $notifiable): string
+    public function buildInternationalPhoneNumber(object $notifiable): string
     {
-        $phone = trim((string) ($notifiable->phone ?? ''));
+        $phone = preg_replace('/[\s\-]/', '', trim((string) ($notifiable->phone ?? ''))) ?? '';
         $phoneCode = trim((string) ($notifiable->phone_code ?? ''));
 
         if ($phone === '') {
@@ -55,6 +64,10 @@ TWIML;
         if ($code !== '') {
             if (str_starts_with($phone, '0')) {
                 $phone = substr($phone, 1);
+            }
+
+            if (str_starts_with($phone, $code)) {
+                return '+' . $phone;
             }
 
             return '+' . $code . $phone;
