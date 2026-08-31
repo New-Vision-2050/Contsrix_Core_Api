@@ -9,6 +9,7 @@ use Modules\Attendance\Controllers\LeaveBalanceController;
 use Modules\Attendance\Controllers\LeaveRequestController;
 use Modules\Attendance\Controllers\LeaveTypeController;
 use Modules\Attendance\Controllers\LocationTrackingController;
+use Modules\Attendance\Controllers\OutZoneWarningController;
 use Modules\Attendance\Controllers\UserAttendanceController;
 use Modules\RoleAndPermission\Enums\Permission;
 use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
@@ -43,6 +44,12 @@ Route::post('test', [AttendanceController::class, 'test'])
 
     Route::post('track-location', [LocationTrackingController::class, 'store'])
         ->name('attendance.track-location');
+
+    Route::get('out-zone-warning', [OutZoneWarningController::class, 'status'])
+        ->name('attendance.out-zone-warning.status');
+
+    Route::post('out-zone-warning/confirm-location', [OutZoneWarningController::class, 'confirmLocation'])
+        ->name('attendance.out-zone-warning.confirm-location');
 
     Route::post('start-break', [AttendanceController::class, 'startBreak'])
         ->name('attendance.start-break');

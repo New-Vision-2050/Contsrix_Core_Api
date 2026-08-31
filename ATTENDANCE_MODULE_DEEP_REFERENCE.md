@@ -1002,10 +1002,14 @@ When returning user constraint locations, include the same merged locations that
 clock-in validation would use. A mismatch causes mobile clients to show a user
 that they can clock in where the backend later rejects them, or the reverse.
 
-When those locations exist, staying outside them past `out_zone_minutes` normally
-auto clock-outs the open shift. That close is not applied on a day the employee
-has an accepted employee task or a sent/accepted project notification
-(`FieldWorkOutOfZoneExemption`).
+When those locations exist, staying outside them past `out_zone_minutes` starts a
+voice-call warning rather than closing immediately. The employee has 5 more
+minutes to open the app and confirm GPS
+(`GET /attendance/out-zone-warning`, `POST /attendance/out-zone-warning/confirm-location`,
+and `work_rules.out_zone_warning` on today). If they are still outside when that
+window ends, `enforcement_action: auto_out_zone` clocks them out. That close is
+not applied on a day the employee has an accepted employee task or a
+sent/accepted project notification (`FieldWorkOutOfZoneExemption`).
 
 ### Violations
 
@@ -1779,7 +1783,7 @@ to hold off auto-absence while an employee is on a task. That is a write-side
 grace period, not a display status, and is deliberately left in place.
 
 Out-of-zone auto clock-out (`LocationConstraintService::validateMultiLocation`,
-`enforcement_action: auto_out_zone`) is skipped for the same reason when the
+`enforcement_action: auto_out_zone`, after the 5-minute voice warning) is skipped for the same reason when the
 constraint has locations and the employee has field work **that calendar day**:
 an accepted employee task (`approved` / `in_progress` / `paused`), or a project
 notification that has been sent (`pending`) or accepted/received (`in_progress`).
