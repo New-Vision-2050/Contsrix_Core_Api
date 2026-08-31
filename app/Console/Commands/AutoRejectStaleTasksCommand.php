@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Stancl\Tenancy\Tenancy;
 
 class AutoRejectStaleTasksCommand extends Command
@@ -21,12 +22,13 @@ class AutoRejectStaleTasksCommand extends Command
                             {--date= : Reference date in Y-m-d format (defaults to today in app timezone)}';
 
     protected $description = 'Auto-reject employee tasks whose task_date has passed. '
-        . 'Handles two cases: (1) tasks still pending in approval workflow, '
-        . '(2) approved tasks that were never started. '
-        . 'Runs every 5 minutes. In-progress/paused tasks are NOT touched '
-        . '(handled by AutoCloseTaskAtDurationExpiryJob).';
+        . 'Handles three cases: (1) tasks still pending in approval workflow, '
+        . '(2) approved tasks that were never started, '
+        . '(3) in_progress tasks whose duration expired with a pending end request. '
+        . 'Pending sub-requests (end, start, approval, extension) are also rejected. '
+        . 'Runs every 5 minutes.';
 
-    public function handle(Tenancy $tenancy): int
+    public function handle(Tenancy $tenancy, EmployeeTaskRepository $repository): int
     {
         $isDryRun = $this->option('dry-run');
         $timezone = config('app.timezone', 'Asia/Riyadh');
@@ -50,7 +52,7 @@ class AutoRejectStaleTasksCommand extends Command
             $tenancy->initialize($company);
 
             try {
-                $count = $this->processCompany($today, $isDryRun, $timezone, $company->id);
+                $count = $this->processCompany($today, $isDryRun, $timezone, $company->id, $repository);
                 $rejected += $count;
             } catch (\Throwable $e) {
                 $this->error("  Error processing company {$company->id}: {$e->getMessage()}");
@@ -68,12 +70,13 @@ class AutoRejectStaleTasksCommand extends Command
         return self::SUCCESS;
     }
 
-    private function processCompany(Carbon $today, bool $isDryRun, string $timezone, string $companyId): int
+    private function processCompany(Carbon $today, bool $isDryRun, string $timezone, string $companyId, EmployeeTaskRepository $repository): int
     {
         $staleTasks = EmployeeTaskRequest::query()
             ->whereIn('status', [
                 EmployeeTaskStatus::Pending->value,
                 EmployeeTaskStatus::Approved->value,
+                EmployeeTaskStatus::InProgress->value,
             ])
             ->whereDate('task_date', '<', $today->toDateString())
             ->where(function ($q) {
@@ -91,9 +94,11 @@ class AutoRejectStaleTasksCommand extends Command
         $rejected = 0;
 
         foreach ($staleTasks as $task) {
-            $reason = $task->status === EmployeeTaskStatus::Pending->value
-                ? 'Task auto-rejected: task date passed while still pending approval.'
-                : 'Task auto-rejected: task date passed without the employee starting the task.';
+            $reason = match ($task->status) {
+                EmployeeTaskStatus::Pending->value    => 'Task auto-rejected: task date passed while still pending approval.',
+                EmployeeTaskStatus::InProgress->value => 'Task auto-rejected: duration expired without manual end.',
+                default                               => 'Task auto-rejected: task date passed without the employee starting the task.',
+            };
 
             if ($isDryRun) {
                 $this->line("    WOULD REJECT task {$task->id} (status: {$task->status}, task_date: {$task->task_date}) — {$reason}");
@@ -101,7 +106,7 @@ class AutoRejectStaleTasksCommand extends Command
                 continue;
             }
 
-            DB::transaction(function () use ($task, $reason, $today, $timezone, &$rejected) {
+            DB::transaction(function () use ($task, $reason, $today, $timezone, $repository, &$rejected) {
                 $fresh = EmployeeTaskRequest::query()
                     ->lockForUpdate()
                     ->find($task->id);
@@ -110,17 +115,27 @@ class AutoRejectStaleTasksCommand extends Command
                     return;
                 }
 
-                if (!in_array($fresh->status, [EmployeeTaskStatus::Pending->value, EmployeeTaskStatus::Approved->value], true)) {
+                if (!in_array($fresh->status, [
+                    EmployeeTaskStatus::Pending->value,
+                    EmployeeTaskStatus::Approved->value,
+                    EmployeeTaskStatus::InProgress->value,
+                ], true)) {
                     return;
                 }
 
                 $now = CarbonImmutable::now($timezone);
+
+                if ($fresh->status === EmployeeTaskStatus::InProgress->value) {
+                    $repository->closeActiveSessionForTask($fresh->id, $now->toDateTimeString());
+                }
 
                 $fresh->update([
                     'status'            => EmployeeTaskStatus::Rejected->value,
                     'rejected_at'       => $now->toDateTimeString(),
                     'rejection_reason'  => $reason,
                 ]);
+
+                $repository->cancelPendingSubRequests($fresh->id, $reason);
 
                 $rejected++;
 
