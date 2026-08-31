@@ -132,27 +132,15 @@ class ValidateMultiLocationOutZoneTest extends TestCase
             ],
         ], 30);
 
-        $this->attendanceService
-            ->expects($this->once())
-            ->method('endShiftAutomatically')
-            ->with(
-                'c5778c77-b689-44e3-a634-fcab3c044ea8',
-                'auto_out_zone',
-                $this->stringContains('threshold: 30 minutes'),
-                false,
-                $this->callback(static function ($location): bool {
-                    return is_array($location)
-                        && isset($location['latitude'], $location['longitude'])
-                        && abs((float) $location['latitude'] - 21.62870000) < 0.0000001
-                        && abs((float) $location['longitude'] - 39.12831480) < 0.0000001;
-                }),
-            );
+        $this->attendanceService->expects($this->never())->method('endShiftAutomatically');
 
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
         $this->assertIsArray($result);
-        $this->assertSame('auto_out_zone', $result['details']['enforcement_action']);
+        $this->assertSame('out_zone_warning', $result['details']['enforcement_action']);
         $this->assertGreaterThanOrEqual(30, $result['details']['minutes_outside']);
+        $this->assertNotNull($attendance->out_zone_warning_at);
+        $this->assertTrue($result['details']['out_zone_warning']['needs_location_confirm']);
     }
 
     /**
@@ -287,13 +275,92 @@ class ValidateMultiLocationOutZoneTest extends TestCase
             ],
         ], 30);
 
-        $this->attendanceService
-            ->expects($this->once())
-            ->method('endShiftAutomatically');
+        $this->attendanceService->expects($this->never())->method('endShiftAutomatically');
 
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
         $this->assertIsArray($result);
+        $this->assertSame('out_zone_warning', $result['details']['enforcement_action']);
+    }
+
+    public function test_warning_window_does_not_clock_out_until_five_minutes_pass(): void
+    {
+        $attendance = $this->makeActiveAttendance([
+            [
+                'latitude' => 21.62870000,
+                'longitude' => 39.12831480,
+                'timestamp' => '2026-08-25 15:25:00',
+            ],
+            [
+                'latitude' => 21.62870000,
+                'longitude' => 39.12831480,
+                'timestamp' => '2026-08-25 16:00:00',
+            ],
+        ]);
+        $attendance->id = 'c5778c77-b689-44e3-a634-fcab3c044ea8';
+        $attendance->out_zone_warning_at = '2026-08-25 15:56:00';
+
+        $constraint = $this->makeConstraint([
+            [
+                'name' => 'Work',
+                'latitude' => self::WORK_LAT,
+                'longitude' => self::WORK_LON,
+                'radius' => 50,
+            ],
+        ], 30);
+
+        $this->attendanceService->expects($this->never())->method('endShiftAutomatically');
+
+        $result = $this->service->validateMultiLocation($attendance, $constraint);
+
+        $this->assertSame('out_zone_warning', $result['details']['enforcement_action']);
+    }
+
+    public function test_warning_expired_auto_clocks_out(): void
+    {
+        $attendance = $this->makeActiveAttendance([
+            [
+                'latitude' => 21.62870000,
+                'longitude' => 39.12831480,
+                'timestamp' => '2026-08-25 15:25:00',
+            ],
+            [
+                'latitude' => 21.62870000,
+                'longitude' => 39.12831480,
+                'timestamp' => '2026-08-25 16:00:00',
+            ],
+        ]);
+        $attendance->id = 'c5778c77-b689-44e3-a634-fcab3c044ea8';
+        $attendance->out_zone_warning_at = '2026-08-25 15:50:00';
+
+        $constraint = $this->makeConstraint([
+            [
+                'name' => 'Work',
+                'latitude' => self::WORK_LAT,
+                'longitude' => self::WORK_LON,
+                'radius' => 50,
+            ],
+        ], 30);
+
+        $this->attendanceService
+            ->expects($this->once())
+            ->method('endShiftAutomatically')
+            ->with(
+                'c5778c77-b689-44e3-a634-fcab3c044ea8',
+                'auto_out_zone',
+                $this->stringContains('threshold: 30 minutes'),
+                false,
+                $this->callback(static function ($location): bool {
+                    return is_array($location)
+                        && isset($location['latitude'], $location['longitude'])
+                        && abs((float) $location['latitude'] - 21.62870000) < 0.0000001
+                        && abs((float) $location['longitude'] - 39.12831480) < 0.0000001;
+                }),
+            );
+
+        $result = $this->service->validateMultiLocation($attendance, $constraint);
+
+        $this->assertSame('auto_out_zone', $result['details']['enforcement_action']);
     }
 
     private function makeActiveAttendance(array $tracking): Attendance

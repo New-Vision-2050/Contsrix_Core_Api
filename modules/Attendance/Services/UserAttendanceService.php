@@ -145,6 +145,8 @@ class UserAttendanceService
                 );
             }
 
+            $workRules['out_zone_warning'] = \Modules\Attendance\Support\OutZoneClockOutWarning::payload($currentAttendance);
+
             return [
                 'user_id' => (string) $user->id,
                 'user_name' => $user->name,
@@ -247,6 +249,7 @@ class UserAttendanceService
             'clock_out_time',
             'expected_clock_out_time',
             'shift_end_method',
+            'out_zone_warning_at',
             'notes',
             'late_minutes',
             'overtime_hours',
@@ -920,6 +923,7 @@ class UserAttendanceService
                 $workRules['attendance_type'] ?? null
             ),
             'flexible_required_work_minutes' => $workRules['flexible_required_work_minutes'] ?? null,
+            'out_zone_warning' => $workRules['out_zone_warning'] ?? null,
             '_debug' => $workRules['_debug'] ?? null,
         ];
     }

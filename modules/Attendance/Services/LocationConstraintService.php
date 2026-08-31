@@ -9,9 +9,11 @@ use Modules\Attendance\Contracts\OutOfZoneClockOutExemption;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Services\AttendanceService;
+use Modules\Attendance\Services\OutZoneClockOutWarningService;
 use Modules\Attendance\Services\RadiusEnforcementService;
 use Modules\Attendance\Services\TaskService;
 use Modules\Attendance\Support\GeofenceMatch;
+use Modules\Attendance\Support\OutZoneClockOutWarning;
 
 /**
  * Service for location-related attendance constraint validations.
@@ -26,6 +28,7 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
         private RadiusEnforcementService $radiusEnforcementService,
         private TaskService $taskService,
         private ?OutOfZoneClockOutExemption $fieldWorkOutOfZoneExemption = null,
+        private ?OutZoneClockOutWarningService $outZoneWarning = null,
     ) {}
 
     /**
@@ -413,6 +416,8 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
         $userLon = (float) $userLocation['longitude'];
 
         if ($this->isWithinAnyAllowedLocation($userLat, $userLon, $allowedLocations)) {
+            $this->clearOutZoneWarning($attendance);
+
             return false;
         }
 
@@ -450,7 +455,26 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
         }
 
         if ($this->fieldWorkOutOfZoneExemption?->appliesTo($attendance)) {
+            $this->clearOutZoneWarning($attendance);
+
             return false;
+        }
+
+        // Extra 5 minutes + Arabic voice call before auto clock-out.
+        if (! OutZoneClockOutWarning::graceExpired($attendance)) {
+            $this->issueOutZoneWarning($attendance);
+
+            return [
+                'constraint_type' => $constraint->constraint_name,
+                'severity' => $config['severity'] ?? 'high',
+                'message' => OutZoneClockOutWarning::CONFIRM_PROMPT,
+                'details' => array_merge($locationDetails, [
+                    'minutes_outside' => $minutesOutside,
+                    'out_zone_minutes' => $outZoneMinutes,
+                    'enforcement_action' => 'out_zone_warning',
+                    'out_zone_warning' => OutZoneClockOutWarning::payload($attendance),
+                ]),
+            ];
         }
 
         $this->attendanceService->endShiftAutomatically(
@@ -475,6 +499,31 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
                 'enforcement_action' => 'auto_out_zone',
             ]),
         ];
+    }
+
+    private function issueOutZoneWarning(Attendance $attendance): void
+    {
+        if ($this->outZoneWarning !== null) {
+            $this->outZoneWarning->issue($attendance);
+
+            return;
+        }
+
+        if (empty($attendance->out_zone_warning_at)) {
+            $tz = $attendance->timezone ?: date_default_timezone_get();
+            $attendance->out_zone_warning_at = Carbon::now($tz)->format('Y-m-d H:i:s');
+        }
+    }
+
+    private function clearOutZoneWarning(Attendance $attendance): void
+    {
+        if ($this->outZoneWarning !== null) {
+            $this->outZoneWarning->clear($attendance);
+
+            return;
+        }
+
+        $attendance->out_zone_warning_at = null;
     }
 
     /**
