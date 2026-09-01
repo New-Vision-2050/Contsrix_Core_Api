@@ -347,6 +347,10 @@ class EmployeeTaskRequestService
         }
 
         if ($task->status !== EmployeeTaskStatus::Pending->value) {
+            if ($this->engine->hasActiveProcess($task->procedureSettingType()->value, $task->id)) {
+                return $this->approveWorkflowStep($id, $adminId);
+            }
+
             throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
         }
 
@@ -376,6 +380,10 @@ class EmployeeTaskRequestService
         }
 
         if ($task->status !== EmployeeTaskStatus::Pending->value) {
+            if ($this->engine->hasActiveProcess($task->procedureSettingType()->value, $task->id)) {
+                return $this->rejectWorkflowStep($id, $adminId, $reason);
+            }
+
             throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
         }
 
