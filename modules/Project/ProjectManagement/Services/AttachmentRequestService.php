@@ -312,8 +312,9 @@ class AttachmentRequestService
                         $item,
                         AttachmentRequest::STATUS_APPROVED
                     );
-                    // Save attachment to ArchiveLibrary folder
-                    $this->saveAttachmentToFolder($item);
+                    // Archive delivery is intentionally deferred until
+                    // completeWorkflowApproval(), which runs only after the
+                    // final workflow step has completed.
 
                     if ($pendingWorkflowStep !== null) {
                         $process = $this->workflowService->actOnPendingStepForCurrentUser(

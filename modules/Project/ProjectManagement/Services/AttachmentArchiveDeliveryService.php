@@ -109,6 +109,8 @@ final class AttachmentArchiveDeliveryService
 
         $this->deliverMediaRows(
             mediaItems: $mediaItems,
+            source: $source,
+            sourceModelType: $sourceModelType,
             projectId: $projectId,
             receiverCompanyId: $receiverCompanyId,
             fileName: $fileName,
@@ -123,6 +125,8 @@ final class AttachmentArchiveDeliveryService
      */
     private function deliverMediaRows(
         Collection $mediaItems,
+        Model $source,
+        string $sourceModelType,
         string $projectId,
         string $receiverCompanyId,
         string $fileName,
@@ -144,16 +148,33 @@ final class AttachmentArchiveDeliveryService
         // Prefer the real (source-tenant) media file name so cross-tenant delivery
         // does not fall back to a generic placeholder name.
         $firstMedia = $mediaItems->first();
-        $resolvedName = (string) ($firstMedia?->file_name ?: $firstMedia?->name ?: $fileName);
+        if (! $firstMedia instanceof CustomMedia) {
+            return;
+        }
 
-        $file = File::create([
-            'name' => pathinfo($resolvedName, PATHINFO_FILENAME) ?: $resolvedName,
-            'folder_id' => $folderId,
-            'project_id' => $projectId,
-            'company_id' => $receiverCompanyId,
-            'access_type' => 'public',
-            'status' => 1,
-        ]);
+        $resolvedName = (string) ($firstMedia->file_name ?: $firstMedia->name ?: $fileName);
+
+        // Workflow completion handling may be retried. Store the source identity
+        // on the archive record so each uploaded media row is delivered exactly
+        // once per receiving company.
+        $file = File::query()
+            ->withoutTenancy()
+            ->firstOrCreate([
+                'company_id' => $receiverCompanyId,
+                'source_model_type' => $sourceModelType,
+                'source_model_id' => (string) $source->getKey(),
+                'source_media_id' => $firstMedia->id,
+            ], [
+                'name' => pathinfo($resolvedName, PATHINFO_FILENAME) ?: $resolvedName,
+                'folder_id' => $folderId,
+                'project_id' => $projectId,
+                'access_type' => 'public',
+                'status' => 1,
+            ]);
+
+        if (! $file->wasRecentlyCreated) {
+            return;
+        }
 
         foreach ($mediaItems as $mediaItem) {
             $attrs = collect($mediaItem->getAttributes())
