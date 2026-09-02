@@ -162,6 +162,72 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertNotContains($otherRequestId, $receiverCompanyIds);
     }
 
+    public function test_attachment_request_list_filters_direction_before_pagination(): void
+    {
+        $project = $this->createProject();
+        $receiverCompany = $this->createCompany(['serial_no' => 'ATT-DIR-RECEIVER']);
+        $receiverUser = User::factory()->create(['company_id' => $receiverCompany->id]);
+        $this->createAcceptedShare($project, $receiverCompany);
+
+        $procedure = $this->createProjectProcedure($project, [$receiverCompany->id]);
+        $this->createProcedureStep($procedure, $receiverUser, 1);
+
+        $incomingRequestId = $this->postAttachmentRequest($project, $procedure)
+            ->assertOk()
+            ->json('payload.id');
+
+        $outgoingRequest = AttachmentRequest::withoutEvents(fn (): AttachmentRequest => AttachmentRequest::query()
+            ->withoutGlobalScopes()
+            ->forceCreate([
+                'id' => (string) Str::uuid(),
+                'serial_number' => 'ATT-DIR-'.Str::upper(Str::random(8)),
+                'name' => 'Receiver company outgoing request',
+                'date' => now()->toDateString(),
+                'project_id' => $project->id,
+                'procedure_setting_id' => $procedure->procedure_setting_id,
+                'sender_company_id' => $receiverCompany->id,
+                'status' => AttachmentRequest::STATUS_PENDING,
+            ]));
+
+        $incomingIds = collect($this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&direction=incoming')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->json('data'))->pluck('id')->all();
+        $this->assertSame([$incomingRequestId], $incomingIds);
+
+        $outgoingIds = collect($this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&direction=outgoing')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->json('data'))->pluck('id')->all();
+        $this->assertSame([$outgoingRequest->id], $outgoingIds);
+
+        $allResponse = $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=1&per_page=1')
+            ->assertOk()
+            ->assertJsonPath('total', 2)
+            ->assertJsonPath('last_page', 2);
+        $secondPageResponse = $this->actingAs($receiverUser, 'api')
+            ->withHeader('X-Tenant', $receiverCompany->id)
+            ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&page=2&per_page=1')
+            ->assertOk()
+            ->assertJsonPath('total', 2)
+            ->assertJsonPath('last_page', 2);
+
+        $allPageIds = [
+            $allResponse->json('data.0.id'),
+            $secondPageResponse->json('data.0.id'),
+        ];
+        sort($allPageIds);
+        $expectedIds = [$incomingRequestId, $outgoingRequest->id];
+        sort($expectedIds);
+        $this->assertSame($expectedIds, $allPageIds);
+    }
+
     public function test_attachment_request_list_history_hides_pending_workflow_steps_after_final_rejection(): void
     {
         $project = $this->createProject();
