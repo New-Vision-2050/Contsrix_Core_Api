@@ -53,6 +53,12 @@ Schedule::command('attendance:auto-close-stale-shifts')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/attendance-auto-close-stale-shifts.log'));
 
+Schedule::command('attendance:auto-close-stale-location')
+    ->everyFiveMinutes()
+    ->timezone('Asia/Riyadh')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/attendance-auto-close-stale-location.log'));
+
 
 Schedule::command('attendance:mark-missed-clock-ins-absent')
     ->everyFiveMinutes()

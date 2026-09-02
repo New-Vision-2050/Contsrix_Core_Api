@@ -35,4 +35,8 @@ return [
     // Rollout phase 5: automatic absence marking at the can_clock_in_before deadline.
     // Disable to run the sweep in report-only mode before enabling per tenant.
     'absence_marking_enabled' => env('ATTENDANCE_ABSENCE_MARKING_ENABLED', true),
+
+    // Clocked-in employees must keep sending GPS. After this many minutes with no
+    // ping (clock-in counts as the first heartbeat), auto clock-out.
+    'stale_location_minutes' => (int) env('ATTENDANCE_STALE_LOCATION_MINUTES', 45),
 ];

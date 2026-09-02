@@ -192,6 +192,7 @@ commands as well, all in `Asia/Riyadh` with overlap protection:
 
 - `CreateWaitingAttendanceCommand` every three hours.
 - `attendance:auto-close-stale-shifts` every five minutes.
+- `attendance:auto-close-stale-location` every five minutes.
 - `attendance:mark-missed-clock-ins-absent` every five minutes.
 - `attendance:send-silent-notifications` every five minutes.
 
@@ -1011,6 +1012,13 @@ window ends, `enforcement_action: auto_out_zone` clocks them out. That close is
 not applied on a day the employee has an accepted employee task or a
 sent/accepted project notification (`FieldWorkOutOfZoneExemption`).
 
+Separately, while the employee is clocked in the app must keep sending GPS
+(`POST /attendance/track-location`). Clock-in counts as the first heartbeat. If
+no later ping arrives for 45 minutes, `attendance:auto-close-stale-location`
+closes the shift with `shift_end_method: auto_no_location`. Clock-out time is
+last heartbeat + 45 minutes, not the cron run time. This path is about a dead
+app, not about being outside a geofence, so field-work exemption does not apply.
+
 ### Violations
 
 Violations should preserve:
@@ -1155,6 +1163,7 @@ Attendance commands live in `app/Console/Commands`:
 
 - `CreateWaitingAttendanceCommand`
 - `AutoCloseStaleShiftsCommand`
+- `AutoCloseStaleLocationCommand`
 - `UpdateAttendanceStatusCommand`
 - `SendAttendanceSilentNotificationCommand`
 - `MarkMissedClockInsAbsentCommand`

@@ -37,7 +37,7 @@ final class AutoCloseAttendanceService
      *
      * @param  Attendance      $attendance  The row to close (used for its ID; state is re-read inside the lock).
      * @param  CarbonImmutable $closeAt     Stored as clock_out_time — the deterministic boundary time.
-     * @param  string          $reason      shift_end_method value ('auto_next_shift'|'auto_max_ot'|'manual'…).
+     * @param  string          $reason      shift_end_method value ('auto_next_shift'|'auto_max_ot'|'auto_no_location'|'manual'…).
      * @return bool  true when the row was closed; false when it was already closed or not active.
      */
     public function closeIfExpired(
