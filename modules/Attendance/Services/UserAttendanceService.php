@@ -735,6 +735,7 @@ class UserAttendanceService
     /**
      * One field for the app: null while still open, the stored method for auto closes,
      * `manual` when the employee clocked out and shift_end_method was never written.
+     * Auto values include auto_max_ot, auto_next_shift, auto_out_zone, auto_no_location.
      */
     private function resolveClockOutCause(Attendance $attendance): ?string
     {

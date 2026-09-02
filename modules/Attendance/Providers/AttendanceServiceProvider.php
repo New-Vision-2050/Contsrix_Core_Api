@@ -92,6 +92,7 @@ class AttendanceServiceProvider extends ServiceProvider
 
         // Application services — stateless, Octane-safe.
         $this->app->singleton(AutoCloseAttendanceService::class);
+        $this->app->singleton(\Modules\Attendance\Services\StaleLocationClockOutService::class);
         $this->app->singleton(ClockInService::class);
         $this->app->singleton(ClockOutService::class);
         $this->app->singleton(\Modules\Attendance\Services\OutZoneClockOutWarningService::class);

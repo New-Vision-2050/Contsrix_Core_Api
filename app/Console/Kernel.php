@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Console\Commands\AutoCloseStaleLocationCommand;
 use App\Console\Commands\AutoCloseStaleShiftsCommand;
 use App\Console\Commands\CreateWaitingAttendanceCommand;
 use App\Console\Commands\UpdateAttendanceStatusCommand;
@@ -51,6 +52,12 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Riyadh')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/attendance-auto-close.log'));
+
+        $schedule->command(AutoCloseStaleLocationCommand::class)
+            ->everyFiveMinutes()
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/attendance-auto-close-stale-location.log'));
 
         // FCM silent pings so mobile clients stay in sync while the user is clocked in.
         $schedule->command(SendAttendanceSilentNotificationCommand::class)
