@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
+use Modules\ArchiveLibrary\File\Models\File as ArchiveFile;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
@@ -27,9 +28,12 @@ use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
 use Modules\Project\ProjectManagement\Models\AttachmentRequestItem;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Models\ProjectProcedureSetting;
+use Modules\Project\ProjectManagement\Services\AttachmentArchiveDeliveryService;
+use Modules\Project\ProjectManagement\Services\AttachmentRequestService;
 use Modules\Project\ProjectManagement\Services\ProjectProcedureService;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\Shared\ResourceShare\Models\ResourceShare;
+use Modules\Shared\Media\Models\CustomMedia;
 use Modules\User\Models\User;
 
 class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
@@ -896,6 +900,204 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
 
         $this->assertHistoryCount($requestId, 'attachment_approved', 1);
         $this->assertHistoryCount($requestId, 'media_replaced', 0);
+    }
+
+    public function test_document_is_delivered_to_archive_only_after_final_workflow_approval(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $firstReceiverUser = User::factory()->create(['company_id' => $this->company->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $this->company->id]);
+        $thirdReceiverUser = User::factory()->create(['company_id' => $this->company->id]);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+        $this->createProcedureStep($procedure, $thirdReceiverUser, 3);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        tenancy()->initialize($this->company);
+        $this->createProjectArchiveRootFolder($project);
+        $sourceItem = AttachmentRequestItem::query()->findOrFail($itemId);
+        $sourceMedia = $sourceItem->getFirstMedia('attachments');
+        $this->assertNotNull($sourceMedia);
+
+        $archiveFiles = fn () => ArchiveFile::query()
+            ->withoutTenancy()
+            ->where('company_id', $this->company->id)
+            ->where('project_id', $project->id)
+            ->where('folder_id', $procedure->attachment_sub_sub_type_id);
+
+        $this->assertSame(0, $archiveFiles()->count());
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        tenancy()->initialize($this->company);
+        $this->assertSame(0, $archiveFiles()->count());
+
+        $this->actingAs($secondReceiverUser, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+                'notes' => 'Approved with notes',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        tenancy()->initialize($this->company);
+        $this->assertSame(0, $archiveFiles()->count());
+
+        $this->actingAs($thirdReceiverUser, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        tenancy()->initialize($this->company);
+        $completedProcess = Process::query()
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->where('processable_id', $requestId)
+            ->firstOrFail();
+        $this->assertSame(ProcessStatus::Completed, $completedProcess->status);
+        $this->assertTrue(AttachmentRequest::query()->findOrFail($requestId)->isApproved());
+        $this->assertSame(1, $archiveFiles()->count());
+        $firstArchiveFile = $archiveFiles()->firstOrFail();
+        $this->assertSame(AttachmentRequestItem::class, $firstArchiveFile->source_model_type);
+        $this->assertSame($itemId, $firstArchiveFile->source_model_id);
+        $this->assertSame($sourceMedia->id, $firstArchiveFile->source_media_id);
+        $this->assertSame(1, CustomMedia::query()
+            ->where('model_type', ArchiveFile::class)
+            ->where('model_id', $firstArchiveFile->id)
+            ->where('collection_name', 'upload')
+            ->count());
+        $firstArchiveMedia = CustomMedia::query()
+            ->where('model_type', ArchiveFile::class)
+            ->where('model_id', $firstArchiveFile->id)
+            ->where('collection_name', 'upload')
+            ->firstOrFail();
+        $this->assertSame($sourceMedia->disk, $firstArchiveMedia->disk);
+        $this->assertSame($sourceMedia->file_name, $firstArchiveMedia->file_name);
+        $this->assertSame(
+            $sourceMedia->getCustomProperty('file_path'),
+            $firstArchiveMedia->getCustomProperty('file_path')
+        );
+
+        app(AttachmentRequestService::class)->completeWorkflowApproval(
+            AttachmentRequest::query()->findOrFail($requestId)
+        );
+        app(AttachmentArchiveDeliveryService::class)->deliverAttachmentRequestItem(
+            AttachmentRequestItem::query()
+                ->with('attachmentRequest.projectProcedureSetting')
+                ->findOrFail($itemId)
+        );
+        $this->assertSame(1, $archiveFiles()->count());
+        $this->assertSame(1, CustomMedia::query()
+            ->where('model_type', ArchiveFile::class)
+            ->whereIn('model_id', $archiveFiles()->pluck('id'))
+            ->where('collection_name', 'upload')
+            ->count());
+
+        $newUploadResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $newUploadItemId = $newUploadResponse->json('payload.items.0.id');
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $newUploadItemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        tenancy()->initialize($this->company);
+        $this->assertSame(1, $archiveFiles()->count());
+
+        $this->actingAs($secondReceiverUser, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $newUploadItemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        tenancy()->initialize($this->company);
+        $this->assertSame(1, $archiveFiles()->count());
+
+        $this->actingAs($thirdReceiverUser, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $newUploadItemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        tenancy()->initialize($this->company);
+        $this->assertSame(2, $archiveFiles()->count());
+        $this->assertSame(1, $archiveFiles()
+            ->where('source_model_type', AttachmentRequestItem::class)
+            ->where('source_model_id', $newUploadItemId)
+            ->count());
+    }
+
+    public function test_rejected_attachment_request_is_not_delivered_to_the_archive_library(): void
+    {
+        $project = $this->createProject();
+        $procedure = $this->createProjectProcedure($project);
+        $firstReceiverUser = User::factory()->create(['company_id' => $this->company->id]);
+        $secondReceiverUser = User::factory()->create(['company_id' => $this->company->id]);
+        $this->createProcedureStep($procedure, $firstReceiverUser, 1);
+        $this->createProcedureStep($procedure, $secondReceiverUser, 2);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        tenancy()->initialize($this->company);
+        $this->createProjectArchiveRootFolder($project);
+
+        $archiveFiles = fn () => ArchiveFile::query()
+            ->withoutTenancy()
+            ->where('company_id', $this->company->id)
+            ->where('project_id', $project->id)
+            ->where('folder_id', $procedure->attachment_sub_sub_type_id);
+
+        $this->assertSame(0, $archiveFiles()->count());
+
+        $this->actingAs($firstReceiverUser, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        tenancy()->initialize($this->company);
+        $this->assertSame(0, $archiveFiles()->count());
+
+        $this->actingAs($secondReceiverUser, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'decline',
+                'notes' => 'Rejected before final approval',
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        tenancy()->initialize($this->company);
+        $failedProcess = Process::query()
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->where('processable_id', $requestId)
+            ->firstOrFail();
+        $this->assertSame(ProcessStatus::Failed, $failedProcess->status);
+        $this->assertSame(0, $archiveFiles()->count());
     }
 
     public function test_item_approval_hides_frontend_media_replacement_history_but_preserves_audit_rows(): void
@@ -4623,6 +4825,21 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
             'access_type' => 'private',
             'status' => 1,
         ]);
+    }
+
+    private function createProjectArchiveRootFolder(ProjectManagement $project): Folder
+    {
+        return Folder::withoutEvents(fn (): Folder => Folder::query()
+            ->withoutGlobalScopes()
+            ->forceCreate([
+                'id' => $project->id,
+                'name' => 'Archive Root',
+                'parent_id' => null,
+                'project_id' => $project->id,
+                'company_id' => $this->company->id,
+                'access_type' => 'private',
+                'status' => 1,
+            ]));
     }
 
     private function createCompany(array $overrides = []): Company
