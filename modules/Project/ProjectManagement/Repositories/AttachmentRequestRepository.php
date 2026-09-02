@@ -79,6 +79,7 @@ class AttachmentRequestRepository extends BaseRepository
             $query->where('sender_company_id', $companyId);
         } elseif ($direction === 'incoming') {
             $this->applyIncomingScope($query, $companyId);
+            $query->where('sender_company_id', '!=', $companyId);
         } else {
             // Default: both outgoing (sent by me) and incoming (visible to my company).
             $this->visibilityService->applyVisibleToCompany($query, $companyId);
@@ -138,6 +139,7 @@ class AttachmentRequestRepository extends BaseRepository
             $this->applyUploaderScope($query, $companyId);
         } elseif ($direction === 'incoming') {
             $this->applyActionTakerScope($query, $companyUserIds);
+            $this->applyNotUploaderScope($query, $companyId);
         } else {
             $query->where(function ($q) use ($companyId, $companyUserIds): void {
                 $q->where(function ($q) use ($companyId): void {
@@ -483,6 +485,17 @@ class AttachmentRequestRepository extends BaseRepository
     private function applyUploaderScope($query, string $companyId): void
     {
         $query->whereHas('processes', function ($q) use ($companyId): void {
+            $q->where('metadata->uploader_company_id', $companyId);
+        });
+    }
+
+    /**
+     * Exclude submissions uploaded by the current company from its incoming
+     * list, even when one of its users is also a workflow action-taker.
+     */
+    private function applyNotUploaderScope($query, string $companyId): void
+    {
+        $query->whereDoesntHave('processes', function ($q) use ($companyId): void {
             $q->where('metadata->uploader_company_id', $companyId);
         });
     }
