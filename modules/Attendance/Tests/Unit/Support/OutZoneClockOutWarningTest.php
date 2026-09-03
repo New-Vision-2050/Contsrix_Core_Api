@@ -43,8 +43,9 @@ class OutZoneClockOutWarningTest extends TestCase
         $this->assertTrue($payload['needs_location_confirm']);
         $this->assertSame(OutZoneClockOutWarning::CONFIRM_PROMPT, $payload['message']);
         $this->assertSame(OutZoneClockOutWarning::VOICE_MESSAGE, $payload['voice_message']);
-        $this->assertSame(120, $payload['remaining_seconds']);
-        $this->assertFalse(OutZoneClockOutWarning::graceExpired($attendance));
+        $this->assertSame('att-1', $payload['attendance_id']);
+        $this->assertArrayNotHasKey('clock_out_at', $payload);
+        $this->assertSame(3, OutZoneClockOutWarning::NOTIFICATION_COUNT);
     }
 
     public function test_grace_expires_after_five_minutes(): void

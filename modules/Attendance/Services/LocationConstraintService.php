@@ -443,6 +443,19 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
             ];
         }
 
+        if ($this->fieldWorkOutOfZoneExemption?->appliesTo($attendance)) {
+            $this->clearOutZoneWarning($attendance);
+
+            return false;
+        }
+
+        // Clocked in + GPS outside: ask them to confirm location. Do not clock out.
+        if ($this->isOutZoneConfirmEnabled()) {
+            $this->issueOutZoneWarning($attendance);
+
+            return false;
+        }
+
         $outZoneMinutes = $this->resolveOutZoneMinutes($constraint);
         $minutesOutside = $this->calculateContinuousMinutesOutside(
             $attendance,
@@ -451,12 +464,6 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
 
         // Still within the allowed grace period — do not clock out yet.
         if ($minutesOutside < $outZoneMinutes) {
-            return false;
-        }
-
-        if ($this->fieldWorkOutOfZoneExemption?->appliesTo($attendance)) {
-            $this->clearOutZoneWarning($attendance);
-
             return false;
         }
 
@@ -989,6 +996,15 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
             return (bool) config('attendance.out_zone_auto_clock_out_enabled', false);
         } catch (\Throwable) {
             return false;
+        }
+    }
+
+    private function isOutZoneConfirmEnabled(): bool
+    {
+        try {
+            return (bool) config('attendance.out_zone_confirm_enabled', true);
+        } catch (\Throwable) {
+            return true;
         }
     }
 }

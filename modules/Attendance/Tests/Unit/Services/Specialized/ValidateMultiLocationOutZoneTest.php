@@ -104,6 +104,7 @@ class ValidateMultiLocationOutZoneTest extends TestCase
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
         $this->assertFalse($result);
+        $this->assertNotNull($attendance->out_zone_warning_at);
     }
 
     public function test_outside_beyond_grace_does_not_clock_out(): void
@@ -137,7 +138,7 @@ class ValidateMultiLocationOutZoneTest extends TestCase
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
         $this->assertFalse($result);
-        $this->assertNull($attendance->out_zone_warning_at);
+        $this->assertNotNull($attendance->out_zone_warning_at);
     }
 
     /**
@@ -277,6 +278,7 @@ class ValidateMultiLocationOutZoneTest extends TestCase
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
         $this->assertFalse($result);
+        $this->assertNotNull($attendance->out_zone_warning_at);
     }
 
     public function test_warning_window_does_not_clock_out_when_auto_close_is_disabled(): void
@@ -343,7 +345,7 @@ class ValidateMultiLocationOutZoneTest extends TestCase
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
         $this->assertFalse($result);
-        $this->assertNull($attendance->out_zone_warning_at);
+        $this->assertSame('2026-08-25 15:50:00', $attendance->out_zone_warning_at);
     }
 
     private function makeActiveAttendance(array $tracking): Attendance

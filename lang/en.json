@@ -74,7 +74,9 @@
             "early_departure_title": "Early Departure",
             "early_departure_body": "You left early by {minutes} minutes.",
             "unexcused_absence_title": "Unexcused Absence",
-            "unexcused_absence_body": "You have been marked absent today."
+            "unexcused_absence_body": "You have been marked absent today.",
+            "confirm_location_title": "Confirm your location",
+            "confirm_location_body": "You are outside the allowed site. Open the app and confirm your location."
         }
     }
 }

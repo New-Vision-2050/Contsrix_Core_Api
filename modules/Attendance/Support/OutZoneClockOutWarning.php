@@ -8,20 +8,22 @@ use Carbon\Carbon;
 use Modules\Attendance\Models\Attendance;
 
 /**
- * Extra 5-minute window after out_zone_minutes: voice call, then auto clock-out
- * unless the employee confirms they are back inside a work location.
+ * While clocked in, a GPS ping outside allowed locations asks the employee to
+ * open the app and POST confirm-location. Auto clock-out is a separate flag.
  */
 final class OutZoneClockOutWarning
 {
     public const GRACE_MINUTES = 5;
 
-    public const VOICE_MESSAGE = 'تحذير سيتم انصرافك آليا بسبب الخروج من الموقع. يرجى فتح التطبيق على وجه السرعة.';
+    public const NOTIFICATION_COUNT = 3;
 
-    public const CONFIRM_PROMPT = 'تحذير: سيتم انصرافك بسبب الخروج من الموقع. يرجى تأكيد موقعك الآن.';
+    public const VOICE_MESSAGE = 'تحذير أنت خارج نطاق الموقع. يرجى فتح التطبيق وتأكيد موقعك على وجه السرعة.';
 
-    public const CONFIRMED_INSIDE = 'تم تأكيد موقعك. لن يتم انصرافك.';
+    public const CONFIRM_PROMPT = 'أنت خارج نطاق الموقع. يرجى فتح التطبيق وتأكيد موقعك الآن.';
 
-    public const STILL_OUTSIDE = 'ما زلت خارج نطاق الموقع. سيتم انصرافك تلقائياً خلال دقائق. يرجى العودة إلى الموقع.';
+    public const CONFIRMED_INSIDE = 'تم تأكيد موقعك.';
+
+    public const STILL_OUTSIDE = 'ما زلت خارج نطاق الموقع. يرجى تأكيد موقعك بعد العودة.';
 
     public const ALREADY_CLOCKED_OUT = 'تم انصرافك بسبب الخروج من الموقع.';
 
@@ -33,9 +35,7 @@ final class OutZoneClockOutWarning
      *     message: string,
      *     voice_message: string,
      *     attendance_id: string,
-     *     warned_at: string,
-     *     clock_out_at: string,
-     *     remaining_seconds: int
+     *     warned_at: string
      * }|null
      */
     public static function payload(?Attendance $attendance): ?array
@@ -49,8 +49,6 @@ final class OutZoneClockOutWarning
 
         $now = Carbon::now($attendance->timezone ?: date_default_timezone_get());
         $warnedAt = self::warnedAt($attendance, $now);
-        $clockOutAt = $warnedAt->copy()->addMinutes(self::GRACE_MINUTES);
-        $remaining = max(0, $clockOutAt->getTimestamp() - $now->getTimestamp());
 
         return [
             'needs_location_confirm' => true,
@@ -58,8 +56,6 @@ final class OutZoneClockOutWarning
             'voice_message' => self::VOICE_MESSAGE,
             'attendance_id' => (string) $attendance->id,
             'warned_at' => $warnedAt->toIso8601String(),
-            'clock_out_at' => $clockOutAt->toIso8601String(),
-            'remaining_seconds' => $remaining,
         ];
     }
 

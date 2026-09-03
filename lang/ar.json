@@ -78,7 +78,9 @@
             "early_departure_title": "خروج مبكر",
             "early_departure_body": "لقد غادرت مبكراً بمقدار {minutes} دقيقة.",
             "unexcused_absence_title": "غياب غير مبرر",
-            "unexcused_absence_body": "لقد تم تسجيل غيابك اليوم."
+            "unexcused_absence_body": "لقد تم تسجيل غيابك اليوم.",
+            "confirm_location_title": "تأكيد الموقع",
+            "confirm_location_body": "أنت خارج نطاق الموقع. يرجى فتح التطبيق وتأكيد موقعك."
         }
     }
 }
