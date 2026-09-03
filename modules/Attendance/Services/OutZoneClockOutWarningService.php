@@ -21,6 +21,11 @@ class OutZoneClockOutWarningService
      */
     public function issue(Attendance $attendance): void
     {
+        if (! $this->isEnabled()) {
+            $this->clear($attendance);
+
+            return;
+        }
         $isNew = empty($attendance->out_zone_warning_at);
 
         if ($isNew) {
@@ -72,6 +77,15 @@ class OutZoneClockOutWarningService
      */
     public function status(?Attendance $attendance): array
     {
+        if (! $this->isEnabled()) {
+            return [
+                'needs_location_confirm' => false,
+                'message' => null,
+                'attendance_id' => $attendance?->id !== null ? (string) $attendance->id : null,
+                'already_clocked_out' => (bool) $attendance?->clock_out_time,
+            ];
+        }
+
         $payload = OutZoneClockOutWarning::payload($attendance);
 
         if ($payload === null) {
@@ -195,6 +209,15 @@ class OutZoneClockOutWarningService
             Cache::forget($key);
         } catch (\Throwable) {
             // ignore
+        }
+    }
+
+    private function isEnabled(): bool
+    {
+        try {
+            return (bool) config('attendance.out_zone_auto_clock_out_enabled', false);
+        } catch (\Throwable) {
+            return false;
         }
     }
 }

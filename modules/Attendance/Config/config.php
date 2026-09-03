@@ -39,4 +39,10 @@ return [
     // Clocked-in employees must keep sending GPS. After this many minutes with no
     // ping (clock-in counts as the first heartbeat), auto clock-out.
     'stale_location_minutes' => (int) env('ATTENDANCE_STALE_LOCATION_MINUTES', 45),
+
+    // Location auto clock-out is off: staying outside a geofence, or sending no
+    // GPS for 45 minutes, must not close the shift. Clock-in still requires GPS
+    // inside an allowed location. Scheduled auto_max_ot / next-shift close is separate.
+    'out_zone_auto_clock_out_enabled' => (bool) env('ATTENDANCE_OUT_ZONE_AUTO_CLOCK_OUT', false),
+    'stale_location_auto_clock_out_enabled' => (bool) env('ATTENDANCE_STALE_LOCATION_AUTO_CLOCK_OUT', false),
 ];

@@ -19,6 +19,11 @@ class AutoCloseStaleLocationCommand extends Command
 
     public function handle(StaleLocationClockOutService $staleLocationClockOut): int
     {
+        if (! config('attendance.stale_location_auto_clock_out_enabled', false)) {
+            $this->info('Stale-location auto clock-out is disabled. No shifts will be closed.');
+
+            return self::SUCCESS;
+        }
         $isDryRun = $this->option('dry-run');
 
         if ($isDryRun) {

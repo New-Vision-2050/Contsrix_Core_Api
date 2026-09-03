@@ -44,6 +44,7 @@ class ClockOutAfterOutZoneWarningJob implements ShouldQueue
             if ($attendance === null
                 || $attendance->clock_out_time
                 || empty($attendance->out_zone_warning_at)
+                || ! config('attendance.out_zone_auto_clock_out_enabled', false)
                 || ! OutZoneClockOutWarning::graceExpired($attendance)
             ) {
                 return;

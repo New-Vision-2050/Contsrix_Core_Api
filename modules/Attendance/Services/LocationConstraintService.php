@@ -460,6 +460,12 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
             return false;
         }
 
+        if (! $this->isOutZoneAutoClockOutEnabled()) {
+            $this->clearOutZoneWarning($attendance);
+
+            return false;
+        }
+
         // Extra 5 minutes + Arabic voice call before auto clock-out.
         if (! OutZoneClockOutWarning::graceExpired($attendance)) {
             $this->issueOutZoneWarning($attendance);
@@ -975,5 +981,14 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
 
         // No violation
         return false;
+    }
+
+    private function isOutZoneAutoClockOutEnabled(): bool
+    {
+        try {
+            return (bool) config('attendance.out_zone_auto_clock_out_enabled', false);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

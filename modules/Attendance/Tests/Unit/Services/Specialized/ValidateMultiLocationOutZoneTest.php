@@ -106,9 +106,9 @@ class ValidateMultiLocationOutZoneTest extends TestCase
         $this->assertFalse($result);
     }
 
-    public function test_outside_beyond_grace_auto_clocks_out(): void
+    public function test_outside_beyond_grace_does_not_clock_out(): void
     {
-        // Continuous outside for 35 minutes (>= 30)
+        // Continuous outside for 35 minutes (>= 30) — auto clock-out is disabled.
         $attendance = $this->makeActiveAttendance([
             [
                 'latitude' => 21.62870000,
@@ -136,11 +136,8 @@ class ValidateMultiLocationOutZoneTest extends TestCase
 
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
-        $this->assertIsArray($result);
-        $this->assertSame('out_zone_warning', $result['details']['enforcement_action']);
-        $this->assertGreaterThanOrEqual(30, $result['details']['minutes_outside']);
-        $this->assertNotNull($attendance->out_zone_warning_at);
-        $this->assertTrue($result['details']['out_zone_warning']['needs_location_confirm']);
+        $this->assertFalse($result);
+        $this->assertNull($attendance->out_zone_warning_at);
     }
 
     /**
@@ -279,11 +276,10 @@ class ValidateMultiLocationOutZoneTest extends TestCase
 
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
-        $this->assertIsArray($result);
-        $this->assertSame('out_zone_warning', $result['details']['enforcement_action']);
+        $this->assertFalse($result);
     }
 
-    public function test_warning_window_does_not_clock_out_until_five_minutes_pass(): void
+    public function test_warning_window_does_not_clock_out_when_auto_close_is_disabled(): void
     {
         $attendance = $this->makeActiveAttendance([
             [
@@ -313,10 +309,10 @@ class ValidateMultiLocationOutZoneTest extends TestCase
 
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
-        $this->assertSame('out_zone_warning', $result['details']['enforcement_action']);
+        $this->assertFalse($result);
     }
 
-    public function test_warning_expired_auto_clocks_out(): void
+    public function test_warning_expired_does_not_clock_out_when_auto_close_is_disabled(): void
     {
         $attendance = $this->makeActiveAttendance([
             [
@@ -342,25 +338,12 @@ class ValidateMultiLocationOutZoneTest extends TestCase
             ],
         ], 30);
 
-        $this->attendanceService
-            ->expects($this->once())
-            ->method('endShiftAutomatically')
-            ->with(
-                'c5778c77-b689-44e3-a634-fcab3c044ea8',
-                'auto_out_zone',
-                $this->stringContains('threshold: 30 minutes'),
-                false,
-                $this->callback(static function ($location): bool {
-                    return is_array($location)
-                        && isset($location['latitude'], $location['longitude'])
-                        && abs((float) $location['latitude'] - 21.62870000) < 0.0000001
-                        && abs((float) $location['longitude'] - 39.12831480) < 0.0000001;
-                }),
-            );
+        $this->attendanceService->expects($this->never())->method('endShiftAutomatically');
 
         $result = $this->service->validateMultiLocation($attendance, $constraint);
 
-        $this->assertSame('auto_out_zone', $result['details']['enforcement_action']);
+        $this->assertFalse($result);
+        $this->assertNull($attendance->out_zone_warning_at);
     }
 
     private function makeActiveAttendance(array $tracking): Attendance
