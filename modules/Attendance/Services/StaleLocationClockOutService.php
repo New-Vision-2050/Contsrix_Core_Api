@@ -20,6 +20,10 @@ final class StaleLocationClockOutService
      */
     public function closeIfStale(Attendance $attendance): bool
     {
+        if (! $this->isEnabled()) {
+            return false;
+        }
+
         if (! StaleLocationClockOut::isStale($attendance)) {
             return false;
         }
@@ -34,5 +38,14 @@ final class StaleLocationClockOutService
             $closeAt,
             StaleLocationClockOut::METHOD,
         );
+    }
+
+    private function isEnabled(): bool
+    {
+        try {
+            return (bool) config('attendance.stale_location_auto_clock_out_enabled', false);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

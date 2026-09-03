@@ -1003,21 +1003,12 @@ When returning user constraint locations, include the same merged locations that
 clock-in validation would use. A mismatch causes mobile clients to show a user
 that they can clock in where the backend later rejects them, or the reverse.
 
-When those locations exist, staying outside them past `out_zone_minutes` starts a
-voice-call warning rather than closing immediately. The employee has 5 more
-minutes to open the app and confirm GPS
-(`GET /attendance/out-zone-warning`, `POST /attendance/out-zone-warning/confirm-location`,
-and `work_rules.out_zone_warning` on today). If they are still outside when that
-window ends, `enforcement_action: auto_out_zone` clocks them out. That close is
-not applied on a day the employee has an accepted employee task or a
-sent/accepted project notification (`FieldWorkOutOfZoneExemption`).
-
-Separately, while the employee is clocked in the app must keep sending GPS
-(`POST /attendance/track-location`). Clock-in counts as the first heartbeat. If
-no later ping arrives for 45 minutes, `attendance:auto-close-stale-location`
-closes the shift with `shift_end_method: auto_no_location`. Clock-out time is
-last heartbeat + 45 minutes, not the cron run time. This path is about a dead
-app, not about being outside a geofence, so field-work exemption does not apply.
+When those locations exist, out-of-zone auto clock-out is **disabled**
+(`attendance.out_zone_auto_clock_out_enabled`, default false). Staying outside
+after `out_zone_minutes` does not warn, call, or close the shift. Clock-in still
+requires GPS inside an allowed location. The 45-minute no-GPS close is also
+disabled (`attendance.stale_location_auto_clock_out_enabled`, default false).
+Scheduled `auto_max_ot` / next-shift close is unchanged.
 
 ### Violations
 
@@ -1791,8 +1782,10 @@ stands). Removed, and not to be reintroduced:
 to hold off auto-absence while an employee is on a task. That is a write-side
 grace period, not a display status, and is deliberately left in place.
 
-Out-of-zone auto clock-out (`LocationConstraintService::validateMultiLocation`,
-`enforcement_action: auto_out_zone`, after the 5-minute voice warning) is skipped for the same reason when the
+Out-of-zone auto clock-out is currently disabled
+(`attendance.out_zone_auto_clock_out_enabled`, default false). When that flag is
+on, `LocationConstraintService::validateMultiLocation` (`enforcement_action: auto_out_zone`,
+after the 5-minute voice warning) is skipped for the same reason when the
 constraint has locations and the employee has field work **that calendar day**:
 an accepted employee task (`approved` / `in_progress` / `paused`), or a project
 notification that has been sent (`pending`) or accepted/received (`in_progress`).
