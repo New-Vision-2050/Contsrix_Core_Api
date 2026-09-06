@@ -110,6 +110,11 @@ class ProjectNotificationFilter extends SearchModelFilter
         return $this->where('notification_type', $type);
     }
 
+    public function type($type)
+    {
+        return $this->where('project_notifications.type', $type);
+    }
+
     public function workType($workType)
     {
         return $this->where('work_type', $workType);

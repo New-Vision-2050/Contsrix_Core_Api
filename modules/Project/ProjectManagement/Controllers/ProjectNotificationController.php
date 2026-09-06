@@ -58,9 +58,9 @@ class ProjectNotificationController extends Controller
      *
      * Returns distinct notification types from existing records for dropdown/filter.
      */
-    public function notificationTypes(Request $request): JsonResponse
+    public function notificationTypes(FilterProjectNotificationsRequest $request): JsonResponse
     {
-        $types = $this->notificationService->listNotificationTypes();
+        $types = $this->notificationService->listNotificationTypes($request->validated('type'));
 
         return Json::items(
             $types,

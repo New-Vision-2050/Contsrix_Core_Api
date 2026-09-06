@@ -9,6 +9,7 @@ final class UpdateProjectNotificationDTO
     public function __construct(
         public readonly ?string $notificationNumber        = null,
         public readonly ?string $notificationType          = null,
+        public readonly ?string $type                      = null,
         public readonly ?string $severity                  = null,
         public readonly ?string $workType                  = null,
         public readonly ?string $feederNumber              = null,
@@ -18,6 +19,8 @@ final class UpdateProjectNotificationDTO
         public readonly ?string $contractorName            = null,
         public readonly ?string $contractorNumber          = null,
         public readonly ?string $contractorRepresentativeId = null,
+        public readonly ?string $contractorTechnicianId     = null,
+        public readonly ?string $contractorTechnicianNumber = null,
         public readonly ?string $contractorCategory        = null,
         public readonly ?string $contractorNotes           = null,
         public readonly ?string $contractorMobile          = null,
@@ -29,6 +32,7 @@ final class UpdateProjectNotificationDTO
         public readonly ?string $locationLink              = null,
         public readonly ?string $repairPoint               = null,
         public readonly ?string $permitSource               = null,
+        public readonly ?string $poleNumber                 = null,
         public readonly ?string $permitRecipient            = null,
         public readonly ?array  $assignedUserIds           = null,
         public readonly ?bool   $allUsersCanApprove        = null,
@@ -43,6 +47,7 @@ final class UpdateProjectNotificationDTO
         public readonly ?string $assignmentResponsibleId   = null,
         public readonly ?string $siteStatusTypeId          = null,
         public readonly ?array  $siteStatusTypeValues      = null,
+        public readonly ?string $updateSiteStatusId         = null,
         public readonly bool    $isDraft                   = false,
     ) {}
 
@@ -51,6 +56,7 @@ final class UpdateProjectNotificationDTO
         return array_filter([
             'notification_number'         => $this->notificationNumber,
             'notification_type'           => $this->notificationType,
+            'type'                        => $this->type,
             'severity'                    => $this->severity,
             'work_type'                   => $this->workType,
             'feeder_number'               => $this->feederNumber,
@@ -60,6 +66,8 @@ final class UpdateProjectNotificationDTO
             'contractor_name'             => $this->contractorName,
             'contractor_number'           => $this->contractorNumber,
             'contractor_representative_id' => $this->contractorRepresentativeId,
+            'contractor_technician_id'     => $this->contractorTechnicianId,
+            'contractor_technician_number' => $this->contractorTechnicianNumber,
             'contractor_category'         => $this->contractorCategory,
             'contractor_notes'            => $this->contractorNotes,
             'contractor_mobile'           => $this->contractorMobile,
@@ -71,6 +79,7 @@ final class UpdateProjectNotificationDTO
             'location_link'               => $this->locationLink,
             'repair_point'                => $this->repairPoint,
             'permit_source'               => $this->permitSource,
+            'pole_number'                 => $this->poleNumber,
             'permit_recipient'            => $this->permitRecipient,
             'assigned_user_ids'           => $this->assignedUserIds,
             'all_users_can_approve'        => $this->allUsersCanApprove ?? false,
@@ -82,6 +91,7 @@ final class UpdateProjectNotificationDTO
             'approval_responsible_id'     => $this->approvalResponsibleId,
             'assignment_responsible_id'   => $this->assignmentResponsibleId,
             'site_status_type_id'         => $this->siteStatusTypeId,
+            'update_site_status_id'       => $this->updateSiteStatusId,
         ], fn ($value) => $value !== null);
     }
 
@@ -94,6 +104,7 @@ final class UpdateProjectNotificationDTO
         return [
             'notification_number'         => $this->notificationNumber,
             'notification_type'           => $this->notificationType,
+            'type'                        => $this->type,
             'severity'                    => $this->severity,
             'work_type'                   => $this->workType,
             'feeder_number'               => $this->feederNumber,
@@ -103,6 +114,8 @@ final class UpdateProjectNotificationDTO
             'contractor_name'             => $this->contractorName,
             'contractor_number'           => $this->contractorNumber,
             'contractor_representative_id' => $this->contractorRepresentativeId,
+            'contractor_technician_id'     => $this->contractorTechnicianId,
+            'contractor_technician_number' => $this->contractorTechnicianNumber,
             'contractor_category'         => $this->contractorCategory,
             'contractor_notes'            => $this->contractorNotes,
             'contractor_mobile'           => $this->contractorMobile,
@@ -114,6 +127,7 @@ final class UpdateProjectNotificationDTO
             'location_link'               => $this->locationLink,
             'repair_point'                => $this->repairPoint,
             'permit_source'               => $this->permitSource,
+            'pole_number'                 => $this->poleNumber,
             'permit_recipient'            => $this->permitRecipient,
             'assigned_user_ids'           => $this->assignedUserIds,
             'all_users_can_approve'        => $this->allUsersCanApprove ?? false,
@@ -125,6 +139,7 @@ final class UpdateProjectNotificationDTO
             'approval_responsible_id'     => $this->approvalResponsibleId,
             'assignment_responsible_id'   => $this->assignmentResponsibleId,
             'site_status_type_id'         => $this->siteStatusTypeId,
+            'update_site_status_id'       => $this->updateSiteStatusId,
         ];
     }
 }
