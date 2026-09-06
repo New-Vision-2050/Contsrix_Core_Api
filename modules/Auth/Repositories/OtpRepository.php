@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Auth\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
+use Carbon\CarbonInterface;
 use Ichtrojan\Otp\Models\Otp;
 
 /**
@@ -22,5 +23,27 @@ class OtpRepository extends BaseRepository
         return $this->findOneBy([
            "identifier" =>$identifier,
         ]);
+    }
+
+    /**
+     * Return the send time of the most recently generated OTP for the supplied
+     * delivery identifiers. OTP records are keyed by email address or phone
+     * number rather than by the application's user ID.
+     *
+     * @param array<int, string|null> $identifiers
+     */
+    public function getLastSentAtForIdentifiers(array $identifiers): ?CarbonInterface
+    {
+        $identifiers = array_values(array_filter($identifiers, static fn (?string $identifier): bool => filled($identifier)));
+
+        if ($identifiers === []) {
+            return null;
+        }
+
+        return $this->model
+            ->newQuery()
+            ->whereIn('identifier', $identifiers)
+            ->latest('created_at')
+            ->first()?->created_at;
     }
 }

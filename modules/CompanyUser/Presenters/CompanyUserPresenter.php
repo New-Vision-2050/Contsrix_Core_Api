@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Presenters;
 
+use Carbon\CarbonInterface;
 use Modules\CompanyUser\Models\CompanyUser;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Country\Presenters\CountryCurrencyPresenter;
@@ -18,12 +19,19 @@ class CompanyUserPresenter extends AbstractPresenter
     private CompanyUser $companyUser;
     private ?string $userId;
     private ?int $role;
+    private ?CarbonInterface $lastOtpSentAt;
 
-    public function __construct(CompanyUser $companyUser, string $userId = null, ?int $role = null)
+    public function __construct(
+        CompanyUser $companyUser,
+        ?string $userId = null,
+        ?int $role = null,
+        ?CarbonInterface $lastOtpSentAt = null,
+    )
     {
         $this->companyUser = $companyUser;
         $this->userId = $userId;
         $this->role   = $role;
+        $this->lastOtpSentAt = $lastOtpSentAt;
     }
 
     public static function collection(iterable $collection, ...$additionalParams): array
@@ -133,6 +141,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'user_id' => $this->companyUser->users()->where("company_id",tenant("id"))->first()?->id,
             'name' => $this->companyUser->name,
             'email' => $this->companyUser->email,
+            'last_otp_sent_at' => $this->lastOtpSentAt?->toDateTimeString(),
             "residence" => $this->companyUser->residence,
             "passport" => $this->companyUser->passport,
             "identity" => $this->companyUser->identity,

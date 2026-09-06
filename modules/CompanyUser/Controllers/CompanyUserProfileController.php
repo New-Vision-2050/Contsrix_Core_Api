@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Requests\ValidateOtpRequest;
 use Modules\Auth\Services\AuthService;
+use Modules\Auth\Services\LastOtpSentAtService;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserContactInfoHandler;
@@ -55,7 +56,8 @@ class CompanyUserProfileController extends Controller
         private IdentityDataService                  $identityDataService,
         private CompanyUserWidgetService             $companyUserWidgetService,
         private CompanyUserDatatatusService          $companyUserDatatatusService,
-        private UserRepository                       $userRepository
+        private UserRepository                       $userRepository,
+        private LastOtpSentAtService                 $lastOtpSentAtService,
     )
     {
     }
@@ -70,7 +72,14 @@ class CompanyUserProfileController extends Controller
             Uuid::fromString($userData->global_company_user_id),
         );
 
-        $presenter = new CompanyUserPresenter($user, (string)$userId);
+        $presenter = new CompanyUserPresenter(
+            companyUser: $user,
+            userId: (string) $userId,
+            lastOtpSentAt: $this->lastOtpSentAtService->getForIdentifiers([
+                $userData->email,
+                $userData->phone,
+            ]),
+        );
 
         return Json::item($presenter->getData());
     }
