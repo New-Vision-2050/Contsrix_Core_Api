@@ -215,6 +215,9 @@ class ProjectNotificationRepository
         if (! empty($filters['notification_type'])) {
             $query->where('notification_type', $filters['notification_type']);
         }
+        if (! empty($filters['type'])) {
+            $query->where('project_notifications.type', $filters['type']);
+        }
         if (! empty($filters['work_type'])) {
             $query->where('work_type', $filters['work_type']);
         }

@@ -32,6 +32,7 @@ class EmployeePresenter extends AbstractPresenter
             'name' => $this->user->name,
             'email' => $this->user->email,
             'phone' => $this->user->phone,
+            'imei' => $this->user->imei,
             'job_title' => $this->formatJobTitle($this->user->companyUser?->jobTitle),
             'country' => $this->formatCountry($this->user->companyUser?->country),
             'status' => $this->user->status,
