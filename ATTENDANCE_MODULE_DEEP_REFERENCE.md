@@ -1003,11 +1003,13 @@ When returning user constraint locations, include the same merged locations that
 clock-in validation would use. A mismatch causes mobile clients to show a user
 that they can clock in where the backend later rejects them, or the reverse.
 
-When those locations exist, out-of-zone auto clock-out is **disabled**
-(`attendance.out_zone_auto_clock_out_enabled`, default false). Staying outside
-after `out_zone_minutes` does not warn, call, or close the shift. Clock-in still
-requires GPS inside an allowed location. The 45-minute no-GPS close is also
-disabled (`attendance.stale_location_auto_clock_out_enabled`, default false).
+When those locations exist and the employee is already clocked in, a GPS ping
+outside them starts confirm-location (`attendance.out_zone_confirm_enabled`,
+default true): three FCM pushes tell them to open the app, `work_rules.out_zone_warning`
+and `GET /attendance/out-zone-warning` set `needs_location_confirm`, and mobile
+POSTs current GPS to `/attendance/out-zone-warning/confirm-location`. That path
+does **not** clock them out. Clock-in still requires GPS inside an allowed
+location. Out-of-zone auto clock-out and the 45-minute no-GPS close stay off.
 Scheduled `auto_max_ot` / next-shift close is unchanged.
 
 ### Violations

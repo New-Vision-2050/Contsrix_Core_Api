@@ -14,16 +14,16 @@ use Modules\Attendance\Requests\LiveTrackingRequest;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\LocationTrackingService;
+use Modules\Attendance\Services\OutZoneClockOutWarningService;
 
 class LocationTrackingController
 {
-    // This constructor is correct.
     public function __construct(
         private LocationTrackingService $trackingService,
-          private AttendanceService $attendanceService,
-        private AttendanceConstraintService $constraintService
-        )
-    {
+        private AttendanceService $attendanceService,
+        private AttendanceConstraintService $constraintService,
+        private OutZoneClockOutWarningService $warningService,
+    ) {
     }
 
     public function getLiveTrackingData(LiveTrackingRequest $request)//: JsonResponse
@@ -128,10 +128,13 @@ class LocationTrackingController
 
         $this->constraintService->validateAttendance($attendance, $request->all());
 
+        $fresh = $attendance->fresh() ?? $attendance;
+
         return Json::success('Location data stored successfully.', [
             'payload' => method_exists($request, 'getOriginalPayload') ? $request->getOriginalPayload() : $request->all(),
             'processed_count' => count($processedData),
             'processed_data' => $processedData,
+            'out_zone_warning' => $this->warningService->status($fresh),
         ]);
     }
 

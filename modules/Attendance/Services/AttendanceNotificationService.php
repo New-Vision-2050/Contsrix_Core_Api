@@ -118,6 +118,55 @@ class AttendanceNotificationService
         ]);
     }
 
+    /**
+     * Ask the employee to open the app and confirm GPS. Sent three times so
+     * the phone surfaces it even if the first push is dismissed.
+     */
+    public function notifyConfirmLocation(Attendance $attendance, int $times = 3): int
+    {
+        $user = $attendance->relationLoaded('user') ? $attendance->user : $attendance->user()->first();
+        if (! $user?->fcm_token) {
+            Log::warning('Confirm-location notification skipped: user has no FCM token', [
+                'attendance_id' => $attendance->id,
+                'user_id' => $attendance->user_id,
+            ]);
+
+            return 0;
+        }
+
+        $times = max(1, $times);
+        $sent = 0;
+        $title = __('attendance.notifications.confirm_location_title');
+        $body = __('attendance.notifications.confirm_location_body');
+
+        for ($sequence = 1; $sequence <= $times; $sequence++) {
+            $ok = FirebaseNotificationService::send(
+                $user->fcm_token,
+                $title,
+                $body,
+                [
+                    'type' => 'out_zone_confirm_location',
+                    'action' => 'confirm_location',
+                    'attendance_id' => (string) $attendance->id,
+                    'sequence' => (string) $sequence,
+                ]
+            );
+
+            if ($ok) {
+                $sent++;
+            }
+        }
+
+        Log::info('Confirm-location notifications sent', [
+            'user_id' => $user->id,
+            'attendance_id' => $attendance->id,
+            'sent' => $sent,
+            'requested' => $times,
+        ]);
+
+        return $sent;
+    }
+
     private function resolveConstraint(Attendance $attendance): ?AttendanceConstraint
     {
         $user = $attendance->user;

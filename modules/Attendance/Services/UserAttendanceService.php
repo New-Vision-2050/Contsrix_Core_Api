@@ -145,7 +145,7 @@ class UserAttendanceService
                 );
             }
 
-            $workRules['out_zone_warning'] = config('attendance.out_zone_auto_clock_out_enabled', false)
+            $workRules['out_zone_warning'] = config('attendance.out_zone_confirm_enabled', true)
                 ? \Modules\Attendance\Support\OutZoneClockOutWarning::payload($currentAttendance)
                 : null;
 

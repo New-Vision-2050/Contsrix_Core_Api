@@ -278,9 +278,10 @@ class AuthService
             if ($user->imei === null) {
                 $this->userRepository->updateUser($user->id, ['imei' => $imei]);
                 $user->imei = $imei;
-            } elseif ($user->imei !== $imei) {
-                throw new \ErrorException(__("validation.imei-mismatch"), 403);
             }
+//            elseif ($user->imei !== $imei) {
+//                throw new \ErrorException(__("validation.imei-mismatch"), 403);
+//            }
         }
 
         //current step

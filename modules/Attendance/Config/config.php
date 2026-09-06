@@ -45,4 +45,10 @@ return [
     // inside an allowed location. Scheduled auto_max_ot / next-shift close is separate.
     'out_zone_auto_clock_out_enabled' => (bool) env('ATTENDANCE_OUT_ZONE_AUTO_CLOCK_OUT', false),
     'stale_location_auto_clock_out_enabled' => (bool) env('ATTENDANCE_STALE_LOCATION_AUTO_CLOCK_OUT', false),
+
+    // When track-location is outside allowed sites, ask the employee to open the
+    // app and POST /attendance/out-zone-warning/confirm-location. Sends this many
+    // FCM pushes once per warning. Does not clock them out.
+    'out_zone_confirm_enabled' => (bool) env('ATTENDANCE_OUT_ZONE_CONFIRM', true),
+    'out_zone_confirm_notification_count' => (int) env('ATTENDANCE_OUT_ZONE_CONFIRM_NOTIFICATION_COUNT', 3),
 ];
