@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Auth;
 
-use Carbon\CarbonImmutable;
 use Ichtrojan\Otp\Models\Otp;
 use Mockery;
 use Modules\Auth\Repositories\OtpRepository;
@@ -19,10 +18,9 @@ class OtpRepositoryTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_it_returns_the_newest_otp_send_time_for_the_employee_identifiers(): void
+    public function test_it_returns_the_newest_otp_for_the_employee_identifiers(): void
     {
-        $sentAt = CarbonImmutable::parse('2026-09-06 14:35:00');
-        $otp = (object) ['created_at' => $sentAt];
+        $otp = Mockery::mock(Otp::class);
 
         $query = Mockery::mock();
         $query->shouldReceive('whereIn')
@@ -44,14 +42,14 @@ class OtpRepositoryTest extends TestCase
 
         $repository = new OtpRepository($model);
 
-        $lastSentAt = $repository->getLastSentAtForIdentifiers([
+        $lastOtp = $repository->getLatestForIdentifiers([
             'employee@example.test',
             null,
             '',
             '+201000000000',
         ]);
 
-        $this->assertSame('2026-09-06 14:35:00', $lastSentAt?->toDateTimeString());
+        $this->assertSame($otp, $lastOtp);
     }
 
     public function test_it_does_not_query_when_the_employee_has_no_identifiers(): void
@@ -61,6 +59,6 @@ class OtpRepositoryTest extends TestCase
 
         $repository = new OtpRepository($model);
 
-        $this->assertNull($repository->getLastSentAtForIdentifiers([null, '']));
+        $this->assertNull($repository->getLatestForIdentifiers([null, '']));
     }
 }

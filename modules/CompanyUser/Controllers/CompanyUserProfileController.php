@@ -9,7 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Requests\ValidateOtpRequest;
 use Modules\Auth\Services\AuthService;
-use Modules\Auth\Services\LastOtpSentAtService;
+use Modules\Auth\Services\LastOtpService;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserContactInfoHandler;
@@ -57,7 +57,7 @@ class CompanyUserProfileController extends Controller
         private CompanyUserWidgetService             $companyUserWidgetService,
         private CompanyUserDatatatusService          $companyUserDatatatusService,
         private UserRepository                       $userRepository,
-        private LastOtpSentAtService                 $lastOtpSentAtService,
+        private LastOtpService                       $lastOtpService,
     )
     {
     }
@@ -75,7 +75,7 @@ class CompanyUserProfileController extends Controller
         $presenter = new CompanyUserPresenter(
             companyUser: $user,
             userId: (string) $userId,
-            lastOtpSentAt: $this->lastOtpSentAtService->getForIdentifiers([
+            lastOtp: $this->lastOtpService->getForIdentifiers([
                 $userData->email,
                 $userData->phone,
             ]),

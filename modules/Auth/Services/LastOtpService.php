@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Auth\Services;
 
-use Carbon\CarbonInterface;
+use Ichtrojan\Otp\Models\Otp;
 use Modules\Auth\Repositories\OtpRepository;
 
-class LastOtpSentAtService
+class LastOtpService
 {
     public function __construct(private OtpRepository $otpRepository)
     {
@@ -16,8 +16,8 @@ class LastOtpSentAtService
     /**
      * @param array<int, string|null> $identifiers
      */
-    public function getForIdentifiers(array $identifiers): ?CarbonInterface
+    public function getForIdentifiers(array $identifiers): ?Otp
     {
-        return $this->otpRepository->getLastSentAtForIdentifiers($identifiers);
+        return $this->otpRepository->getLatestForIdentifiers($identifiers);
     }
 }
