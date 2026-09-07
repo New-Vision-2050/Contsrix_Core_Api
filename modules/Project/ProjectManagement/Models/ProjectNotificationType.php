@@ -20,6 +20,7 @@ class ProjectNotificationType extends Model
     protected $fillable = [
         'name_ar',
         'name_en',
+        'type',
         'sort_order',
         'is_active',
     ];

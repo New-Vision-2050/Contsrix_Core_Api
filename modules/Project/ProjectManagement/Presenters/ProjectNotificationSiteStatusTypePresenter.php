@@ -23,6 +23,7 @@ class ProjectNotificationSiteStatusTypePresenter
                     'id' => $nt->id,
                     'name_ar' => $nt->name_ar,
                     'name_en' => $nt->name_en,
+                    'type' => $nt->type,
                 ])->all()
                 : [],
             'created_at' => $type->created_at,

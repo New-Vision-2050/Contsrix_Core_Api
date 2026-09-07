@@ -841,10 +841,11 @@ class ProjectNotificationService
      *
      * @return list<array{id: string, value: string, name_ar: string, name_en: string, sort_order: int, is_active: bool}>
      */
-    public function listNotificationTypes(): array
+    public function listNotificationTypes(?string $type = null): array
     {
         return ProjectNotificationType::query()
             ->where('is_active', true)
+            ->when($type, fn ($query) => $query->where('type', $type))
             ->orderBy('sort_order')
             ->get()
             ->map(fn ($type) => [
@@ -852,6 +853,7 @@ class ProjectNotificationService
                 'value' => $type->name_ar,
                 'name_ar' => $type->name_ar,
                 'name_en' => $type->name_en,
+                'type' => $type->type,
                 'sort_order' => $type->sort_order,
                 'is_active' => $type->is_active,
             ])
