@@ -10,6 +10,11 @@ class AttendanceConstraintFilter extends SearchModelFilter
 {
     public $relations = ['users', 'company', 'branch'];
 
+    public function search($search)
+    {
+        return $this->where('constraint_name', 'LIKE', "%{$search}%");
+    }
+
     public function name($name)
     {
         return $this->where('name', 'LIKE', "%{$name}%");
@@ -42,7 +47,70 @@ class AttendanceConstraintFilter extends SearchModelFilter
 
     public function branchId($branchId)
     {
-        return $this->where('branch_id', $branchId);
+        return $this->where(function ($query) use ($branchId) {
+            $query->whereJsonContains('branch_ids', (string) $branchId)
+                ->orWhereHas('managementHierarchies', function ($relation) use ($branchId) {
+                    $relation->where('management_hierarchies.id', $branchId);
+                });
+        });
+    }
+
+    public function managementId($managementId)
+    {
+        return $this->where(function ($query) use ($managementId) {
+            $query->whereExists(function ($professionalData) use ($managementId) {
+                $professionalData->selectRaw('1')
+                    ->from('user_professional_datas')
+                    ->whereColumn(
+                        'user_professional_datas.attendance_constraint_id',
+                        'attendance_constraints.id'
+                    )
+                    ->where('user_professional_datas.management_id', $managementId);
+            })->orWhereExists(function ($additionalAssignment) use ($managementId) {
+                $additionalAssignment->selectRaw('1')
+                    ->from('attendance_constraint_user')
+                    ->join(
+                        'user_professional_datas',
+                        'user_professional_datas.user_id',
+                        '=',
+                        'attendance_constraint_user.user_id'
+                    )
+                    ->whereColumn(
+                        'attendance_constraint_user.attendance_constraint_id',
+                        'attendance_constraints.id'
+                    )
+                    ->where('user_professional_datas.management_id', $managementId);
+            });
+        });
+    }
+
+    public function jobTitleId($jobTitleId)
+    {
+        return $this->where(function ($query) use ($jobTitleId) {
+            $query->whereExists(function ($professionalData) use ($jobTitleId) {
+                $professionalData->selectRaw('1')
+                    ->from('user_professional_datas')
+                    ->whereColumn(
+                        'user_professional_datas.attendance_constraint_id',
+                        'attendance_constraints.id'
+                    )
+                    ->where('user_professional_datas.job_title_id', $jobTitleId);
+            })->orWhereExists(function ($additionalAssignment) use ($jobTitleId) {
+                $additionalAssignment->selectRaw('1')
+                    ->from('attendance_constraint_user')
+                    ->join(
+                        'user_professional_datas',
+                        'user_professional_datas.user_id',
+                        '=',
+                        'attendance_constraint_user.user_id'
+                    )
+                    ->whereColumn(
+                        'attendance_constraint_user.attendance_constraint_id',
+                        'attendance_constraints.id'
+                    )
+                    ->where('user_professional_datas.job_title_id', $jobTitleId);
+            });
+        });
     }
 
     public function branchName($branchName)
