@@ -68,4 +68,50 @@ class AttendanceExceptionTest extends TestCase
             $e->getMessage()
         );
     }
+
+    public function test_no_profile_photo_is_a_422(): void
+    {
+        $e = AttendanceException::noProfilePhoto();
+
+        $this->assertSame(422, $e->getStatusCode());
+        $this->assertStringContainsString('No profile photo found', $e->getMessage());
+    }
+
+    public function test_face_not_matched_includes_similarity_in_message(): void
+    {
+        $e = AttendanceException::faceNotMatched(42.5);
+
+        $this->assertSame(422, $e->getStatusCode());
+        $this->assertStringContainsString('42.5%', $e->getMessage());
+    }
+
+    public function test_face_not_matched_without_similarity_still_readable(): void
+    {
+        $e = AttendanceException::faceNotMatched();
+
+        $this->assertSame(422, $e->getStatusCode());
+        $this->assertStringContainsString('does not match your profile photo', $e->getMessage());
+    }
+
+    public function test_face_not_detected_is_a_422(): void
+    {
+        $e = AttendanceException::faceNotDetected();
+
+        $this->assertSame(422, $e->getStatusCode());
+    }
+
+    public function test_face_verification_misconfigured_is_a_500(): void
+    {
+        $e = AttendanceException::faceVerificationMisconfigured();
+
+        $this->assertSame(500, $e->getStatusCode());
+    }
+
+    public function test_face_verification_failed_wraps_reason(): void
+    {
+        $e = AttendanceException::faceVerificationFailed('Rekognition timeout');
+
+        $this->assertSame(502, $e->getStatusCode());
+        $this->assertStringContainsString('Rekognition timeout', $e->getMessage());
+    }
 }

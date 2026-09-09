@@ -191,4 +191,54 @@ class AttendanceException extends CustomException
             409
         );
     }
+
+    /**
+     * Thrown when the employee has no profile photo on file to compare against.
+     */
+    public static function noProfilePhoto(): self
+    {
+        return new self(
+            'No profile photo found on your account. Please upload a profile photo before using face verification.',
+            422
+        );
+    }
+
+    /**
+     * Thrown when the captured photo does not match the stored profile photo closely enough.
+     */
+    public static function faceNotMatched(?float $similarity = null): self
+    {
+        $message = $similarity !== null
+            ? sprintf('Face verification failed. The captured photo does not match your profile photo (similarity: %.1f%%).', $similarity)
+            : 'Face verification failed. The captured photo does not match your profile photo.';
+
+        return new self($message, 422);
+    }
+
+    /**
+     * Thrown when AWS Rekognition cannot detect a comparable face in either image.
+     */
+    public static function faceNotDetected(): self
+    {
+        return new self(
+            'No face could be detected in the photo. Please retake the photo with your face clearly visible.',
+            422
+        );
+    }
+
+    /**
+     * Thrown when the face verification credentials are missing/misconfigured.
+     */
+    public static function faceVerificationMisconfigured(): self
+    {
+        return new self('Face verification is not configured on the server.', 500);
+    }
+
+    /**
+     * Thrown when the AWS Rekognition call fails for a reason other than face detection.
+     */
+    public static function faceVerificationFailed(string $reason): self
+    {
+        return new self('Face verification failed: ' . $reason, 502);
+    }
 }

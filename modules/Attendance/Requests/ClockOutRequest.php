@@ -62,7 +62,13 @@ class ClockOutRequest extends FormRequest
                 'sometimes',
                 'string',
                 'max:500'
-            ]
+            ],
+            'photo' => [
+                config('services.rekognition.enabled') ? 'required' : 'sometimes',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:5120',
+            ],
         ];
     }
 
@@ -76,6 +82,8 @@ class ClockOutRequest extends FormRequest
             'location.latitude.between' => 'Latitude must be between -90 and 90 degrees.',
             'location.longitude.between' => 'Longitude must be between -180 and 180 degrees.',
             'notes.max' => 'Notes cannot exceed 1000 characters.',
+            'photo.required' => 'A live photo is required to verify your identity before clocking out.',
+            'photo.image' => 'The uploaded file must be an image.',
         ];
     }
 
