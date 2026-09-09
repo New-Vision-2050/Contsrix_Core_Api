@@ -8,11 +8,14 @@ class FilterAttendanceConstraintDTO
 {
     public function __construct(
         public string $company_id,
+        public ?string $search = null,
         public ?string $constraint_type = null,
         public ?string $name = null,
         public ?string $user_id = null,
         public ?string $department_id = null,
-        public ?int $branch_id = null,
+        public ?string $branch_id = null,
+        public ?string $management_id = null,
+        public ?string $job_title_id = null,
         public ?string $branch_name = null,
         public ?int $priority_from = null,
         public ?int $priority_to = null,
@@ -30,6 +33,9 @@ class FilterAttendanceConstraintDTO
     {
         $data = ['company_id' => $this->company_id];
 
+        if ($this->search !== null) {
+            $data['search'] = $this->search;
+        }
         if ($this->constraint_type !== null) {
             $data['constraint_type'] = $this->constraint_type;
         }
@@ -44,6 +50,12 @@ class FilterAttendanceConstraintDTO
         }
         if ($this->branch_id !== null) {
             $data['branch_id'] = $this->branch_id;
+        }
+        if ($this->management_id !== null) {
+            $data['management_id'] = $this->management_id;
+        }
+        if ($this->job_title_id !== null) {
+            $data['job_title_id'] = $this->job_title_id;
         }
         if ($this->branch_name !== null) {
             $data['branch_name'] = $this->branch_name;
@@ -81,6 +93,11 @@ class FilterAttendanceConstraintDTO
         return $this->company_id;
     }
 
+    public function getSearch(): ?string
+    {
+        return $this->search;
+    }
+
     public function getConstraintType(): ?string
     {
         return $this->constraint_type;
@@ -101,9 +118,19 @@ class FilterAttendanceConstraintDTO
         return $this->department_id;
     }
 
-    public function getBranchId(): ?int
+    public function getBranchId(): ?string
     {
         return $this->branch_id;
+    }
+
+    public function getManagementId(): ?string
+    {
+        return $this->management_id;
+    }
+
+    public function getJobTitleId(): ?string
+    {
+        return $this->job_title_id;
     }
 
     public function getBranchName(): ?string

@@ -65,6 +65,21 @@ class UserFilter extends SearchModelFilter
         });
     }
 
+    /**
+     * Limit employees to anyone assigned to at least one of the selected attendance
+     * constraints. Both a primary assignment and an additional assignment qualify.
+     */
+    public function constraintsIds(array $constraintIds)
+    {
+        return $this->where(function ($query) use ($constraintIds) {
+            $query->whereHas('professionalData', function ($professionalDataQuery) use ($constraintIds) {
+                $professionalDataQuery->whereIn('attendance_constraint_id', $constraintIds);
+            })->orWhereHas('additionalAttendanceConstraints', function ($constraintQuery) use ($constraintIds) {
+                $constraintQuery->whereIn('attendance_constraints.id', $constraintIds);
+            });
+        });
+    }
+
     public function typeAllowanceCode(string $code)
     {
         return $this->whereHas('userPrivileges', function ($query) use ($code) {

@@ -23,10 +23,14 @@ class FilterConstraintsRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'search' => ['sometimes', 'string'],
             'constraint_type' => ['sometimes', 'string'],
             'name' => ['sometimes', 'string'],
             'user_id' => ['sometimes', 'string', 'exists:users,id'],
             'department_id' => ['sometimes', 'string', 'exists:departments,id'],
+            'branch_id' => ['sometimes', 'string', 'exists:management_hierarchies,id'],
+            'management_id' => ['sometimes', 'string', 'exists:management_hierarchies,id'],
+            'job_title_id' => ['sometimes', 'string', 'exists:job_titles,id'],
             'priority_from' => ['sometimes', 'integer', 'min:1', 'max:10', 'lte:priority_to'],
             'priority_to' => ['sometimes', 'integer', 'min:1', 'max:10', 'gte:priority_from'],
             'effective_from' => ['sometimes', 'date', 'before_or_equal:effective_to'],
@@ -66,10 +70,14 @@ class FilterConstraintsRequest extends FormRequest
 
         return new FilterAttendanceConstraintDTO(
             company_id: $companyId,
+            search: $validated['search'] ?? null,
             constraint_type: $validated['constraint_type'] ?? null,
             name: $validated['name'] ?? null,
             user_id: $validated['user_id'] ?? null,
             department_id: $validated['department_id'] ?? null,
+            branch_id: $validated['branch_id'] ?? null,
+            management_id: $validated['management_id'] ?? null,
+            job_title_id: $validated['job_title_id'] ?? null,
             priority_from: $validated['priority_from'] ?? null,
             priority_to: $validated['priority_to'] ?? null,
             effective_from: $validated['effective_from'] ?? null,
