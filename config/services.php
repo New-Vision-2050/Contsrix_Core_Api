@@ -63,4 +63,25 @@ return [
     'firebase' => [
         'credentials' => env('FIREBASE_CREDENTIALS', public_path('firebase_credentials.json')),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | AWS Rekognition (Face Verification for Attendance)
+    |--------------------------------------------------------------------------
+    |
+    | These are DEDICATED AWS credentials for the Rekognition face-compare
+    | API and are intentionally separate from AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+    | above, because those are actually DigitalOcean Spaces credentials used
+    | for file storage (see config/filesystems.php + devops/deploy.sh). Rekognition
+    | only exists on real AWS, so it needs its own real AWS IAM user/keys.
+    |
+    */
+    'rekognition' => [
+        'enabled' => env('FACE_RECOGNITION_ENABLED', false),
+        'key' => env('AWS_REKOGNITION_ACCESS_KEY_ID'),
+        'secret' => env('AWS_REKOGNITION_SECRET_ACCESS_KEY'),
+        'region' => env('AWS_REKOGNITION_REGION', 'us-east-1'),
+        // Minimum % similarity (0-100) required to consider it a match.
+        'similarity_threshold' => (float) env('FACE_MATCH_SIMILARITY_THRESHOLD', 80),
+    ],
 ];

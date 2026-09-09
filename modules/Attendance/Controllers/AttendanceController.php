@@ -17,6 +17,7 @@ use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\AttendanceStatusService;
 use Modules\Attendance\Services\ClockInService;
 use Modules\Attendance\Services\ClockOutService;
+use Modules\Attendance\Services\FaceVerificationService;
 use Modules\Attendance\Requests\ClockInRequest;
 use Modules\Attendance\Requests\ClockOutRequest;
 use Modules\Attendance\Requests\GetAttendanceRequest;
@@ -46,6 +47,7 @@ class AttendanceController extends Controller
         private ClockInService $clockInService,
         private ClockOutService $clockOutService,
         private AttendanceStatusService $attendanceStatusService,
+        private FaceVerificationService $faceVerificationService,
     ) {}
     public function test(Request $request): JsonResponse
     {
@@ -59,7 +61,19 @@ class AttendanceController extends Controller
     public function clockIn(ClockInRequest $request): JsonResponse
     {
         try {
+            $faceVerification = null;
+            if ($request->hasFile('photo')) {
+                $faceVerification = $this->faceVerificationService->verify($request->user(), $request->file('photo'));
+            }
+
             $attendance = $this->clockInService->execute($request->toDTO(), $request->all());
+
+            if ($faceVerification !== null) {
+                $attendance->verification_data = array_merge($attendance->verification_data ?? [], [
+                    'face_recognition' => $faceVerification,
+                ]);
+                $attendance->save();
+            }
 
             return Json::item(
                 (new AttendancePresenter($attendance))->present(),
@@ -76,7 +90,19 @@ class AttendanceController extends Controller
     public function clockOut(ClockOutRequest $request): JsonResponse
     {
         try {
+            $faceVerification = null;
+            if ($request->hasFile('photo')) {
+                $faceVerification = $this->faceVerificationService->verify($request->user(), $request->file('photo'));
+            }
+
             $attendance = $this->clockOutService->execute($request->toDTO());
+
+            if ($faceVerification !== null) {
+                $attendance->verification_data = array_merge($attendance->verification_data ?? [], [
+                    'face_recognition' => $faceVerification,
+                ]);
+                $attendance->save();
+            }
 
             // Non-blocking post-clock-out constraint logging.
             $violations = $this->constraintService->validateAttendance($attendance, $request->all());

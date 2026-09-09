@@ -108,6 +108,7 @@ class AttendancePresenter extends AbstractPresenter
             // Additional info
             'notes' => $this->attendance->notes,
             'ip_address' => $this->attendance->ip_address,
+            'face_verification' => $this->attendance->verification_data['face_recognition'] ?? null,
 
             // Timestamps
             'created_at' => $this->attendance->created_at?->format('Y-m-d H:i:s'),
