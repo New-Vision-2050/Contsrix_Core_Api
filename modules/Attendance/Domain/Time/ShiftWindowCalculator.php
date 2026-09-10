@@ -6,6 +6,7 @@ namespace Modules\Attendance\Domain\Time;
 
 use Carbon\CarbonImmutable;
 use Modules\Attendance\Domain\Calculator\OvertimeFlags;
+use Modules\Attendance\Support\AutoCloseGrace;
 
 /**
  * Computes every clock-in / clock-out boundary for a scheduled period.
@@ -67,19 +68,17 @@ final class ShiftWindowCalculator
             $expectedClockOutAt = $lastClockOutAt;
         }
 
-        $autoCloseTriggerAt = $expectedClockOutAt->addMinutes($maxOtMin);
-
-        return new ShiftWindow(
-            requiredWorkMinutes:  $requiredMinutes,
-            workWindowStart:      $workWindowStart,
-            workWindowEnd:        $workWindowEnd,
-            earliestClockIn:      $earliestClockIn,
+        return $this->window(
+            requiredMinutes: $requiredMinutes,
+            workWindowStart: $workWindowStart,
+            workWindowEnd: $workWindowEnd,
+            earliestClockIn: $earliestClockIn,
             firstClockInDeadline: $firstClockInDeadline,
-            lastClockInAt:        $lastClockInAt,
-            lastClockOutAt:       $lastClockOutAt,
-            expectedClockOutAt:   $expectedClockOutAt,
-            autoCloseTriggerAt:   $autoCloseTriggerAt,
-            absentAt:             $absentAt,
+            lastClockInAt: $lastClockInAt,
+            lastClockOutAt: $lastClockOutAt,
+            expectedClockOutAt: $expectedClockOutAt,
+            absentAt: $absentAt,
+            in: $in,
         );
     }
 
@@ -119,17 +118,50 @@ final class ShiftWindowCalculator
             $lastClockInAt = $dayEnd;
         }
 
+        return $this->window(
+            requiredMinutes: $requiredMinutes,
+            workWindowStart: $dayStart,
+            workWindowEnd: $dayEnd,
+            earliestClockIn: $dayStart,
+            firstClockInDeadline: null,
+            lastClockInAt: $lastClockInAt,
+            lastClockOutAt: $dayEnd,
+            expectedClockOutAt: $expectedClockOutAt,
+            absentAt: $dayEnd,
+            in: $in,
+        );
+    }
+
+    private function window(
+        int $requiredMinutes,
+        CarbonImmutable $workWindowStart,
+        CarbonImmutable $workWindowEnd,
+        CarbonImmutable $earliestClockIn,
+        ?CarbonImmutable $firstClockInDeadline,
+        CarbonImmutable $lastClockInAt,
+        CarbonImmutable $lastClockOutAt,
+        CarbonImmutable $expectedClockOutAt,
+        CarbonImmutable $absentAt,
+        ShiftWindowInput $in,
+    ): ShiftWindow {
         return new ShiftWindow(
             requiredWorkMinutes:  $requiredMinutes,
-            workWindowStart:      $dayStart,
-            workWindowEnd:        $dayEnd,
-            earliestClockIn:      $dayStart,
-            firstClockInDeadline: null,
+            workWindowStart:      $workWindowStart,
+            workWindowEnd:        $workWindowEnd,
+            earliestClockIn:      $earliestClockIn,
+            firstClockInDeadline: $firstClockInDeadline,
             lastClockInAt:        $lastClockInAt,
-            lastClockOutAt:       $dayEnd,
+            lastClockOutAt:       $lastClockOutAt,
             expectedClockOutAt:   $expectedClockOutAt,
-            autoCloseTriggerAt:   $expectedClockOutAt,
-            absentAt:             $dayEnd,
+            autoCloseStoredAt:    AutoCloseGrace::storedClockOutAt(
+                $expectedClockOutAt,
+                $in->extensionMinutes,
+                $in->clockIn,
+            ),
+            autoCloseTriggerAt:   $expectedClockOutAt->addMinutes(
+                AutoCloseGrace::delayMinutes($in->maxOverTimeHours, $in->extensionMinutes)
+            ),
+            absentAt:             $absentAt,
         );
     }
 }

@@ -16,9 +16,9 @@ class AutoCloseStaleShiftsCommand extends Command
     protected $signature = 'attendance:auto-close-stale-shifts
                             {--dry-run : Show which shifts would be closed without writing to DB}';
 
-    protected $description = 'Auto clock-out shifts whose deadline (end_time + max_over_time) has passed. '
-        . 'Runs every 5 minutes. clock_out_time is set to the exact deadline, not now(), so overtime '
-        . 'is capped deterministically regardless of cron jitter.';
+    protected $description = 'Auto clock-out shifts after expected end plus constraint extension_minutes '
+        . '(or max_over_time if longer). clock_out_time is expected end minus extension_minutes, '
+        . 'a penalty for never punching out.';
 
     public function handle(AutoCloseAttendanceService $autoCloseService): int
     {
@@ -58,32 +58,52 @@ class AutoCloseStaleShiftsCommand extends Command
                 ? $closeAtRaw->format('Y-m-d H:i:s')
                 : (string) $closeAtRaw;
 
-            // Stored as branch-TZ wall clock; max_over_time is HOURS (decimal).
-            $closeAtCarbon    = Carbon::parse($closeAtRaw, $timezone);
+            // Trigger waits extension after expected end. Stored time is expected
+            // minus those minutes — the employee did not punch out themselves.
+            $expectedCarbon   = Carbon::parse($closeAtRaw, $timezone);
             $maxOverTimeHours = (float) ($attendance->max_over_time ?? 0);
-            $triggerAt        = $closeAtCarbon->copy()->addMinutes((int) round($maxOverTimeHours * 60));
+            $extensionMinutes = (int) ($attendance->extension_minutes ?? 0);
+            $triggerAt        = $expectedCarbon->copy()->addMinutes(
+                \Modules\Attendance\Support\AutoCloseGrace::delayMinutes(
+                    $maxOverTimeHours,
+                    $extensionMinutes,
+                )
+            );
             $now              = Carbon::now($timezone);
 
             if (! $now->gte($triggerAt)) {
                 continue;
             }
 
+            $clockIn = $attendance->clock_in_time
+                ? CarbonImmutable::parse(
+                    $attendance->clock_in_time instanceof \DateTimeInterface
+                        ? $attendance->clock_in_time->format('Y-m-d H:i:s')
+                        : (string) $attendance->clock_in_time,
+                    $timezone,
+                )
+                : null;
+            $storedClose = \Modules\Attendance\Support\AutoCloseGrace::storedClockOutAt(
+                CarbonImmutable::parse($expectedCarbon->toDateTimeString(), $timezone),
+                $extensionMinutes,
+                $clockIn,
+            );
+
             if ($isDryRun) {
                 $this->line("  WOULD CLOSE attendance {$attendance->id} (user: {$user->name})"
-                    . " — deadline: {$triggerAt->toDateTimeString()} TZ={$timezone}");
+                    . " — deadline: {$triggerAt->toDateTimeString()} store: {$storedClose->toDateTimeString()} TZ={$timezone}");
                 $closed++;
                 continue;
             }
 
-            $closeAt   = CarbonImmutable::parse($closeAtCarbon->toDateTimeString(), $timezone);
-            $didClose  = $autoCloseService->closeIfExpired($attendance, $closeAt, 'auto_max_ot');
+            $didClose  = $autoCloseService->closeIfExpired($attendance, $storedClose, 'auto_max_ot');
 
             if ($didClose) {
                 $closed++;
                 Log::info('Auto close stale shift', [
                     'attendance_id'  => $attendance->id,
                     'user_id'        => $user->id,
-                    'clock_out_time' => $closeAtCarbon->format('Y-m-d H:i:s'),
+                    'clock_out_time' => $storedClose->format('Y-m-d H:i:s'),
                     'timezone'       => $timezone,
                 ]);
                 $this->line("  closed attendance {$attendance->id} (user: {$user->name})");
