@@ -1104,7 +1104,13 @@ Key clock-out rules:
 - Clock-out cannot precede clock-in.
 - Completed rows should not be mutated as if active.
 - Overtime is capped by the row snapshot, not by whatever the current constraint
-  row says after edits.
+  row says after edits. The snapshot is `attendances.overtime_flags` plus
+  `max_over_time`, taken from the role/job constraint at clock-in.
+- If the employee clocks out themselves after shift end and that snapshot does
+  not allow post-shift overtime (`is_after_finish_working_hours` /
+  `is_overtime_after_extension_hours_shift` off, or `max_over_time` is 0),
+  `clock_out_time` is the shift end (`expected_clock_out_time` ?? `end_time`),
+  not now. A role that is allowed overtime keeps the real punch.
 - Breaks must be read from `attendance_breaks`.
 - Auto-close must write the intended close instant, not worker execution time.
 - Closing a row clears `is_absent`. Both `buildClockOutUpdatePayload` and
@@ -1166,6 +1172,15 @@ See section 3 for the full schedule, which spans both the provider and
 
 Auto-close jobs should pass datetimes using ISO 8601 strings. This preserves the
 instant across serialization and avoids positive/negative timezone offset bugs.
+
+End-of-shift auto clock-out (`auto_max_ot`) does not fire at shift end. The wait
+is the constraint's `extension_minutes` (`extension_hours_shift` on
+`GET /api/v1/attendance/constraints/{id}/rules`), or `max_over_time` if that is
+longer. If the employee never punches out, stored `clock_out_time` is the expected
+end minus those minutes (a 08:30–17:30 shift with a 120-minute extension stores
+15:30). A manual clock-out during the wait is not penalized that way. If overtime
+is not allowed, a manual punch after shift end is still stored as the shift end.
+`attendance:auto-close-stale-shifts` is the same auto-close rule.
 
 ### Absence marking
 

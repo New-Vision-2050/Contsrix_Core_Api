@@ -30,6 +30,7 @@ use Modules\Attendance\Jobs\ProcessClockInAttendanceData;
 use Modules\Attendance\Presenters\AttendanceTeamPresenter;
 use Modules\Attendance\Services\AttendanceNotificationService;
 use Modules\Attendance\Support\ConstraintRuleReader;
+use Modules\Attendance\Support\ManualClockOutTime;
 
 class AttendanceService
 {
@@ -133,10 +134,9 @@ class AttendanceService
     }
 
     /**
-     * Dispatch AutoCloseAttendanceJob: fires at expectedClockOutAt + max_over_time and stores
-     * expectedClockOutAt as clock_out_time (INV-14 generalised — trigger time ≠ stored time).
-     * The stored time is the moment the required working hours complete, so an early clock-in
-     * produces an early auto clock-out (R1).
+     * Dispatch AutoCloseAttendanceJob after the constraint extension wait.
+     * If the employee never punches out, stored clock_out_time is expected
+     * end minus extension_minutes (not the fire time, not the shift end).
      */
     private function scheduleAutoClose(Attendance $attendance, ShiftWindow $window): void
     {
@@ -147,7 +147,7 @@ class AttendanceService
         AutoCloseAttendanceJob::dispatch(
             (string) $attendance->id,
             (string) $attendance->company_id,
-            $window->expectedClockOutAt->toIso8601String(),
+            $window->autoCloseStoredAt->toIso8601String(),
         )->delay($window->autoCloseTriggerAt);
     }
 
@@ -216,7 +216,7 @@ class AttendanceService
             scheduledEnd: CarbonImmutable::parse($endTimeStr, $timezone),
             clockIn: $clockIn,
             earlyWindowMinutes: $earlyMinutes,
-            extensionMinutes: (int) ($constraints['extension_minutes'] ?? 0),
+            extensionMinutes: (int) ($constraints['extension_minutes'] ?? $constraints['extension_hours_shift'] ?? 0),
             canClockInBeforeMinutes: isset($constraints['can_clock_in_before_minutes'])
                 ? (int) $constraints['can_clock_in_before_minutes']
                 : null,
@@ -378,7 +378,7 @@ class AttendanceService
             // Rules V2 — per-row snapshots (INV-23) and computed boundaries (branch-TZ wall clock).
             'required_work_minutes' => $window->requiredWorkMinutes,
             'early_clock_in_minutes' => (int) ($constraints['early_clock_in_minutes'] ?? 0),
-            'extension_minutes' => (int) ($constraints['extension_minutes'] ?? 0),
+            'extension_minutes' => (int) ($constraints['extension_minutes'] ?? $constraints['extension_hours_shift'] ?? 0),
             'can_clock_in_before_minutes' => isset($constraints['can_clock_in_before_minutes'])
                 ? (int) $constraints['can_clock_in_before_minutes']
                 : null,
@@ -484,7 +484,8 @@ class AttendanceService
      * Behaviour (preserved):
      *  1. Reject if the user has no active attendance.
      *  2. Reject if the attendance already has a clock_out_time.
-     *  3. Persist clock_out_time (normalised to branch timezone), clock_out_location,
+     *  3. Persist clock_out_time (branch timezone). After shift end, roles that
+     *     are not allowed overtime are stored at shift end, not now.
      *     appended notes, and mark the row completed + day_status=clocked_out.
      *  4. Re-run the calculator so total_work_hours / overtime_hours / early_departure
      *     are recomputed from the final clock-in/clock-out pair.
@@ -614,8 +615,10 @@ class AttendanceService
             ? $attendance->user
             : User::find($dto->getUserId());
 
+        $clockOutAt = ManualClockOutTime::resolve($attendance, $dto->getClockOutTime());
+
         return [
-            'clock_out_time' => Carbon::parse($dto->getClockOutTime())->setTimezone(getTimeZoneBranchByRequest()),
+            'clock_out_time' => $clockOutAt->format('Y-m-d H:i:s'),
             'clock_out_location' => $dto->getLocation(),
             'clock_out_task_id' => app(TaskLocationPunchResolver::class)
                 ->taskIdFor($user, $dto->getLocation()),

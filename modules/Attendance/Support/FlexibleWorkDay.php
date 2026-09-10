@@ -47,7 +47,8 @@ final class FlexibleWorkDay
             'early_period' => 0,
             'early_unit' => 'minutes',
         ];
-        $workRules['extension_minutes'] = 0;
+        // Keep constraint extension_minutes: flexible windows are already 00:00–23:59,
+        // but auto-close still waits this long after required hours complete.
         $workRules['can_clock_in_before_minutes'] = null;
         $workRules['flexible_required_work_minutes'] = $requiredMinutes;
         $workRules['total_work_hours'] = $hours;

@@ -27,9 +27,14 @@ final readonly class ShiftWindow
         public CarbonImmutable $lastClockInAt,
         /** Latest allowed clock-out; the shift is auto-closed after this. */
         public CarbonImmutable $lastClockOutAt,
-        /** When the required working hours complete — stored as clock_out_time on auto-close. */
+        /** When the required working hours complete. */
         public CarbonImmutable $expectedClockOutAt,
-        /** When the auto-close job fires (expectedClockOutAt + max overtime). */
+        /**
+         * clock_out_time written by auto-close when the employee never punched out
+         * (expectedClockOutAt − extension_minutes). Not used for a manual punch.
+         */
+        public CarbonImmutable $autoCloseStoredAt,
+        /** When the auto-close job fires (expectedClockOutAt + max(max OT, extension)). */
         public CarbonImmutable $autoCloseTriggerAt,
         /** When the period flips to absent if the employee never clocked in. */
         public CarbonImmutable $absentAt,
