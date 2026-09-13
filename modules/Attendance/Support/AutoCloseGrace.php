@@ -7,34 +7,33 @@ namespace Modules\Attendance\Support;
 use Carbon\CarbonImmutable;
 
 /**
- * Auto-close wait after expected shift end. Minutes come from the constraint
- * rules payload (`extension_minutes` / `extension_hours_shift`).
- *
- * If the employee never clocks out, the job waits that long, then stores
- * expected end minus those minutes — a penalty for not punching out.
- * Manual clock-out is a separate path and is not penalized here.
+ * Auto-close wait and penalty are a fixed 2 hours, not constraint
+ * `extension_minutes`. If the employee never clocks out, the job waits 2 hours
+ * after expected end (or after max_over_time if that is longer), then stores
+ * expected end minus 2 hours. Manual clock-out is not penalized here.
  */
 final class AutoCloseGrace
 {
+    public const MINUTES = 120;
+
     /**
      * Minutes after expected clock-out before auto-close may fire.
-     * max_over_time is hours; extension_minutes is minutes (rules API).
+     * Always at least 2 hours; longer when max_over_time exceeds that.
      */
-    public static function delayMinutes(float $maxOverTimeHours, int $extensionMinutes): int
+    public static function delayMinutes(float $maxOverTimeHours = 0.0): int
     {
-        return max((int) round($maxOverTimeHours * 60), max(0, $extensionMinutes));
+        return max((int) round($maxOverTimeHours * 60), self::MINUTES);
     }
 
     /**
-     * Stored clock_out_time when auto-close fires: expected end minus
-     * extension_minutes, never before clock-in.
+     * Stored clock_out_time when auto-close fires: expected end minus 2 hours,
+     * never before clock-in.
      */
     public static function storedClockOutAt(
         CarbonImmutable $expectedClockOutAt,
-        int $extensionMinutes,
         ?CarbonImmutable $notBefore = null,
     ): CarbonImmutable {
-        $stored = $expectedClockOutAt->subMinutes(max(0, $extensionMinutes));
+        $stored = $expectedClockOutAt->subMinutes(self::MINUTES);
         if ($notBefore !== null && $stored->lessThan($notBefore)) {
             return $notBefore;
         }

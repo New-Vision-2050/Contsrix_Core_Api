@@ -15,9 +15,9 @@ use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AutoCloseAttendanceService;
 
 /**
- * Closes a shift after the constraint extension wait (or max_over_time if longer).
- * closeAtIso is expected end minus extension_minutes — a penalty for never
- * punching out — not the fire time and not the scheduled shift end.
+ * Closes a shift after a fixed 2-hour wait (or max_over_time if longer).
+ * closeAtIso is expected end minus 2 hours — a penalty for never punching out —
+ * not the fire time and not the scheduled shift end.
  *
  * Dispatched with a future delay at clock-in time so the exact deadline is honoured
  * regardless of cron-command jitter.  The AutoCloseStaleShiftsCommand acts as a
@@ -37,7 +37,7 @@ class AutoCloseAttendanceJob implements ShouldQueue
     public function __construct(
         public readonly string $attendanceId,
         public readonly string $companyId,
-        /** ISO 8601 instant — expected end minus extension_minutes. Stored as clock_out_time. */
+        /** ISO 8601 instant — expected end minus 2 hours. Stored as clock_out_time. */
         public readonly string $closeAtIso,
     ) {}
 

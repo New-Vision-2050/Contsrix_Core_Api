@@ -31,10 +31,10 @@ final readonly class ShiftWindow
         public CarbonImmutable $expectedClockOutAt,
         /**
          * clock_out_time written by auto-close when the employee never punched out
-         * (expectedClockOutAt − extension_minutes). Not used for a manual punch.
+         * (expectedClockOutAt − 2 hours). Not used for a manual punch.
          */
         public CarbonImmutable $autoCloseStoredAt,
-        /** When the auto-close job fires (expectedClockOutAt + max(max OT, extension)). */
+        /** When the auto-close job fires (expectedClockOutAt + max(max OT, 2 hours)). */
         public CarbonImmutable $autoCloseTriggerAt,
         /** When the period flips to absent if the employee never clocked in. */
         public CarbonImmutable $absentAt,

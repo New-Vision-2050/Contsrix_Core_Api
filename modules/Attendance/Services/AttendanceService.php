@@ -134,9 +134,9 @@ class AttendanceService
     }
 
     /**
-     * Dispatch AutoCloseAttendanceJob after the constraint extension wait.
+     * Dispatch AutoCloseAttendanceJob after a fixed 2-hour wait.
      * If the employee never punches out, stored clock_out_time is expected
-     * end minus extension_minutes (not the fire time, not the shift end).
+     * end minus 2 hours (not the fire time, not the shift end).
      */
     private function scheduleAutoClose(Attendance $attendance, ShiftWindow $window): void
     {

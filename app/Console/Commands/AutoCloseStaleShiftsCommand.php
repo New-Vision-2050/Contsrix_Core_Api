@@ -16,9 +16,8 @@ class AutoCloseStaleShiftsCommand extends Command
     protected $signature = 'attendance:auto-close-stale-shifts
                             {--dry-run : Show which shifts would be closed without writing to DB}';
 
-    protected $description = 'Auto clock-out shifts after expected end plus constraint extension_minutes '
-        . '(or max_over_time if longer). clock_out_time is expected end minus extension_minutes, '
-        . 'a penalty for never punching out.';
+    protected $description = 'Auto clock-out shifts 2 hours after expected end (or after max_over_time if longer). '
+        . 'clock_out_time is expected end minus 2 hours, a penalty for never punching out.';
 
     public function handle(AutoCloseAttendanceService $autoCloseService): int
     {
@@ -58,16 +57,12 @@ class AutoCloseStaleShiftsCommand extends Command
                 ? $closeAtRaw->format('Y-m-d H:i:s')
                 : (string) $closeAtRaw;
 
-            // Trigger waits extension after expected end. Stored time is expected
-            // minus those minutes — the employee did not punch out themselves.
+            // Trigger waits a fixed 2 hours after expected end. Stored time is
+            // expected minus 2 hours — the employee did not punch out themselves.
             $expectedCarbon   = Carbon::parse($closeAtRaw, $timezone);
             $maxOverTimeHours = (float) ($attendance->max_over_time ?? 0);
-            $extensionMinutes = (int) ($attendance->extension_minutes ?? 0);
             $triggerAt        = $expectedCarbon->copy()->addMinutes(
-                \Modules\Attendance\Support\AutoCloseGrace::delayMinutes(
-                    $maxOverTimeHours,
-                    $extensionMinutes,
-                )
+                \Modules\Attendance\Support\AutoCloseGrace::delayMinutes($maxOverTimeHours)
             );
             $now              = Carbon::now($timezone);
 
@@ -85,7 +80,6 @@ class AutoCloseStaleShiftsCommand extends Command
                 : null;
             $storedClose = \Modules\Attendance\Support\AutoCloseGrace::storedClockOutAt(
                 CarbonImmutable::parse($expectedCarbon->toDateTimeString(), $timezone),
-                $extensionMinutes,
                 $clockIn,
             );
 
