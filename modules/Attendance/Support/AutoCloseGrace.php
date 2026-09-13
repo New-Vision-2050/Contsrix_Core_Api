@@ -7,32 +7,49 @@ namespace Modules\Attendance\Support;
 use Carbon\CarbonImmutable;
 
 /**
- * Auto-close wait and penalty are a fixed 2 hours, not constraint
- * `extension_minutes`. If the employee never clocks out, the job waits 2 hours
- * after expected end (or after max_over_time if that is longer), then stores
- * expected end minus 2 hours. Manual clock-out is not penalized here.
+ * Parked 2-hour auto-close wait + penalty. Off by default: close at shift end
+ * and store that time. Flip `attendance.auto_close_grace_enabled` to restore
+ * wait-2h-then-store-expected-minus-2h without rewriting callers.
  */
 final class AutoCloseGrace
 {
     public const MINUTES = 120;
 
+    public static function enabledFromConfig(): bool
+    {
+        try {
+            return (bool) config('attendance.auto_close_grace_enabled', false);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
     /**
      * Minutes after expected clock-out before auto-close may fire.
-     * Always at least 2 hours; longer when max_over_time exceeds that.
+     * Off: 0 (shift end). On: max(max_over_time, 2 hours).
      */
-    public static function delayMinutes(float $maxOverTimeHours = 0.0): int
+    public static function delayMinutes(float $maxOverTimeHours = 0.0, bool $enabled = false): int
     {
+        if (! $enabled) {
+            return 0;
+        }
+
         return max((int) round($maxOverTimeHours * 60), self::MINUTES);
     }
 
     /**
-     * Stored clock_out_time when auto-close fires: expected end minus 2 hours,
-     * never before clock-in.
+     * Stored clock_out_time when auto-close fires.
+     * Off: expected end. On: expected end minus 2 hours, never before clock-in.
      */
     public static function storedClockOutAt(
         CarbonImmutable $expectedClockOutAt,
         ?CarbonImmutable $notBefore = null,
+        bool $enabled = false,
     ): CarbonImmutable {
+        if (! $enabled) {
+            return $expectedClockOutAt;
+        }
+
         $stored = $expectedClockOutAt->subMinutes(self::MINUTES);
         if ($notBefore !== null && $stored->lessThan($notBefore)) {
             return $notBefore;

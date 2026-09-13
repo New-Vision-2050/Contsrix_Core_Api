@@ -241,4 +241,64 @@ class AttendanceException extends CustomException
     {
         return new self('Face verification failed: ' . $reason, 502);
     }
+
+    /**
+     * Thrown when the liveness session ID does not exist or has expired server-side.
+     */
+    public static function livenessSessionNotFound(): self
+    {
+        return new self(
+            'Your liveness check session was not found or has expired. Please restart the face check and try again.',
+            422
+        );
+    }
+
+    /**
+     * Thrown when the liveness session has not finished yet (client hasn't completed
+     * the challenge-response video with AWS, or is still mid-session).
+     */
+    public static function livenessSessionNotReady(): self
+    {
+        return new self(
+            'Your liveness check has not finished yet. Please complete the on-screen face check and try again.',
+            422
+        );
+    }
+
+    /**
+     * Thrown when the liveness session expired before the client completed the check.
+     */
+    public static function livenessSessionExpired(): self
+    {
+        return new self(
+            'Your liveness check session expired. Please restart the face check and try again.',
+            422
+        );
+    }
+
+    /**
+     * Thrown when AWS completed the liveness session but did not consider it a live
+     * person (spoof suspected: photo of a photo, video replay, mask, etc.) or the
+     * confidence score fell below the configured threshold.
+     */
+    public static function livenessCheckFailed(?float $confidence = null): self
+    {
+        $message = $confidence !== null
+            ? sprintf('Liveness check failed. We could not confirm this is a live person (confidence: %.1f%%). Please try again in better lighting, facing the camera directly.', $confidence)
+            : 'Liveness check failed. We could not confirm this is a live person. Please try again.';
+
+        return new self($message, 422);
+    }
+
+    /**
+     * Thrown when AWS reports the liveness session succeeded but did not return a
+     * reference image to compare against the stored profile photo.
+     */
+    public static function noLivenessReferenceImage(): self
+    {
+        return new self(
+            'Liveness check succeeded but no reference image was captured. Please try again.',
+            422
+        );
+    }
 }

@@ -1173,14 +1173,13 @@ See section 3 for the full schedule, which spans both the provider and
 Auto-close jobs should pass datetimes using ISO 8601 strings. This preserves the
 instant across serialization and avoids positive/negative timezone offset bugs.
 
-End-of-shift auto clock-out (`auto_max_ot`) does not fire at shift end. It waits
-a fixed 2 hours after `expected_clock_out_time` (or after `max_over_time` if that
-is longer). That wait is not taken from `extension_minutes`. If the employee
-never punches out, stored `clock_out_time` is the expected end minus 2 hours
-(a 08:30–17:30 shift stores 15:30). A manual clock-out during the wait is not
-penalized that way. If overtime is not allowed, a manual punch after shift end
-is still stored as the shift end. `attendance:auto-close-stale-shifts` is the
-same auto-close rule.
+End-of-shift auto clock-out (`auto_max_ot`) fires at `expected_clock_out_time`
+(shift end / hours complete) and stores that time. No wait, no −2 hour penalty.
+The previous wait-2h-then-store-expected-minus-2h behaviour is parked behind
+`config('attendance.auto_close_grace_enabled')` /
+`ATTENDANCE_AUTO_CLOSE_GRACE_ENABLED`. If overtime is not allowed, a manual
+punch after shift end is still stored as the shift end.
+`attendance:auto-close-stale-shifts` is the same auto-close rule.
 
 ### Absence marking
 

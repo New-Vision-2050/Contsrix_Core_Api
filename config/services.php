@@ -83,5 +83,8 @@ return [
         'region' => env('AWS_REKOGNITION_REGION', 'us-east-1'),
         // Minimum % similarity (0-100) required to consider it a match.
         'similarity_threshold' => (float) env('FACE_MATCH_SIMILARITY_THRESHOLD', 80),
+        // Minimum % confidence (0-100) AWS Face Liveness must report that the captured
+        // frames came from a live person (not a photo/video replay). AWS recommends 90.
+        'liveness_confidence_threshold' => (float) env('FACE_LIVENESS_CONFIDENCE_THRESHOLD', 90),
     ],
 ];

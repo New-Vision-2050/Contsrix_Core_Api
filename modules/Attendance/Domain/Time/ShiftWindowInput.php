@@ -43,5 +43,10 @@ final readonly class ShiftWindowInput
          * auto-close when required hours complete (not after max OT).
          */
         public bool $flexibleDay = false,
+        /**
+         * When true, auto-close waits 2 hours and stores expected end minus 2 hours.
+         * When false (default), auto-close fires at shift end with no penalty.
+         */
+        public bool $autoCloseGraceEnabled = false,
     ) {}
 }

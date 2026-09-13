@@ -156,9 +156,10 @@ final class ShiftWindowCalculator
             autoCloseStoredAt:    AutoCloseGrace::storedClockOutAt(
                 $expectedClockOutAt,
                 $in->clockIn,
+                $in->autoCloseGraceEnabled,
             ),
             autoCloseTriggerAt:   $expectedClockOutAt->addMinutes(
-                AutoCloseGrace::delayMinutes($in->maxOverTimeHours)
+                AutoCloseGrace::delayMinutes($in->maxOverTimeHours, $in->autoCloseGraceEnabled)
             ),
             absentAt:             $absentAt,
         );

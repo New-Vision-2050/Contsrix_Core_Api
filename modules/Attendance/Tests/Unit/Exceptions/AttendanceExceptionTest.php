@@ -114,4 +114,48 @@ class AttendanceExceptionTest extends TestCase
         $this->assertSame(502, $e->getStatusCode());
         $this->assertStringContainsString('Rekognition timeout', $e->getMessage());
     }
+
+    public function test_liveness_session_not_found_is_a_422(): void
+    {
+        $e = AttendanceException::livenessSessionNotFound();
+
+        $this->assertSame(422, $e->getStatusCode());
+    }
+
+    public function test_liveness_session_not_ready_is_a_422(): void
+    {
+        $e = AttendanceException::livenessSessionNotReady();
+
+        $this->assertSame(422, $e->getStatusCode());
+    }
+
+    public function test_liveness_session_expired_is_a_422(): void
+    {
+        $e = AttendanceException::livenessSessionExpired();
+
+        $this->assertSame(422, $e->getStatusCode());
+    }
+
+    public function test_liveness_check_failed_includes_confidence_in_message(): void
+    {
+        $e = AttendanceException::livenessCheckFailed(55.2);
+
+        $this->assertSame(422, $e->getStatusCode());
+        $this->assertStringContainsString('55.2%', $e->getMessage());
+    }
+
+    public function test_liveness_check_failed_without_confidence_still_readable(): void
+    {
+        $e = AttendanceException::livenessCheckFailed();
+
+        $this->assertSame(422, $e->getStatusCode());
+        $this->assertStringContainsString('could not confirm this is a live person', $e->getMessage());
+    }
+
+    public function test_no_liveness_reference_image_is_a_422(): void
+    {
+        $e = AttendanceException::noLivenessReferenceImage();
+
+        $this->assertSame(422, $e->getStatusCode());
+    }
 }

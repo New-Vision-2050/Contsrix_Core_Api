@@ -134,9 +134,8 @@ class AttendanceService
     }
 
     /**
-     * Dispatch AutoCloseAttendanceJob after a fixed 2-hour wait.
-     * If the employee never punches out, stored clock_out_time is expected
-     * end minus 2 hours (not the fire time, not the shift end).
+     * Dispatch AutoCloseAttendanceJob at shift end (or after the parked 2-hour
+     * grace when attendance.auto_close_grace_enabled is true).
      */
     private function scheduleAutoClose(Attendance $attendance, ShiftWindow $window): void
     {
@@ -228,6 +227,7 @@ class AttendanceService
                 ? \Modules\Attendance\Support\FlexibleWorkDay::requiredMinutesFromWorkRules($constraints)
                 : null,
             flexibleDay: $isFlexible,
+            autoCloseGraceEnabled: \Modules\Attendance\Support\AutoCloseGrace::enabledFromConfig(),
         ));
     }
 
