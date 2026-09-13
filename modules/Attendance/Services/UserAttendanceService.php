@@ -273,7 +273,6 @@ class UserAttendanceService
                             ->whereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);
                     });
             })
-            ->orderByRaw('COALESCE(start_time, clock_in_time) ASC')
             ->get();
 
         // Fetch latest open attendance separately to avoid combining it in a broad OR query.
