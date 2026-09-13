@@ -30,11 +30,11 @@ final readonly class ShiftWindow
         /** When the required working hours complete. */
         public CarbonImmutable $expectedClockOutAt,
         /**
-         * clock_out_time written by auto-close when the employee never punched out
-         * (expectedClockOutAt − 2 hours). Not used for a manual punch.
+         * clock_out_time written by auto-close. Equals expectedClockOutAt unless
+         * the parked 2-hour grace/penalty is enabled.
          */
         public CarbonImmutable $autoCloseStoredAt,
-        /** When the auto-close job fires (expectedClockOutAt + max(max OT, 2 hours)). */
+        /** When the auto-close job fires. Equals expectedClockOutAt unless grace is on. */
         public CarbonImmutable $autoCloseTriggerAt,
         /** When the period flips to absent if the employee never clocked in. */
         public CarbonImmutable $absentAt,

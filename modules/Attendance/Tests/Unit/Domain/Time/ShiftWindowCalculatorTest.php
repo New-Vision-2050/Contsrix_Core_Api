@@ -36,6 +36,7 @@ final class ShiftWindowCalculatorTest extends TestCase
         int $alreadyWorkedMinutesInPeriod = 0,
         ?OvertimeFlags $flags = null,
         string $tz = 'Asia/Riyadh',
+        bool $autoCloseGraceEnabled = false,
     ): ShiftWindowInput {
         return new ShiftWindowInput(
             scheduledStart: CarbonImmutable::parse($scheduledStart, $tz),
@@ -49,6 +50,7 @@ final class ShiftWindowCalculatorTest extends TestCase
             alreadyWorkedMinutesInPeriod: $alreadyWorkedMinutesInPeriod,
             overtimeFlags: $flags,
             timezone: $tz,
+            autoCloseGraceEnabled: $autoCloseGraceEnabled,
         );
     }
 
@@ -218,62 +220,32 @@ final class ShiftWindowCalculatorTest extends TestCase
         $this->assertSame('2026-07-27 22:30', $w->expectedClockOutAt->format('Y-m-d H:i'));
     }
 
-    // 11. auto-close wait and stored punch are a fixed 2 hours, not extension_minutes
-    public function test_trigger_waits_two_hours_even_when_extension_is_zero(): void
-    {
-        $w = $this->calc->compute($this->input(
-            scheduledStart: '2026-07-27 12:00',
-            scheduledEnd:   '2026-07-27 21:00',
-            clockIn:        '2026-07-27 12:00',
-            maxOverTimeHours: 0.0,
-            extensionMinutes: 0,
-        ));
-
-        $this->assertSame('2026-07-27 21:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
-        $this->assertSame('2026-07-27 23:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
-        $this->assertSame('2026-07-27 19:00', $w->autoCloseStoredAt->format('Y-m-d H:i'));
-    }
-
-    public function test_auto_close_does_not_follow_constraint_extension_minutes(): void
-    {
-        $w = $this->calc->compute($this->input(
-            scheduledStart: '2026-07-27 12:00',
-            scheduledEnd:   '2026-07-27 21:00',
-            clockIn:        '2026-07-27 12:00',
-            maxOverTimeHours: 0.0,
-            extensionMinutes: 30,
-        ));
-
-        $this->assertSame('2026-07-27 21:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
-        $this->assertSame('2026-07-27 23:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
-        $this->assertSame('2026-07-27 19:00', $w->autoCloseStoredAt->format('Y-m-d H:i'));
-    }
-
-    public function test_two_hour_wait_wins_over_shorter_max_overtime(): void
-    {
-        $w = $this->calc->compute($this->input(
-            scheduledStart: '2026-07-27 12:00',
-            scheduledEnd:   '2026-07-27 21:00',
-            clockIn:        '2026-07-27 12:00',
-            maxOverTimeHours: 1.0,
-            extensionMinutes: 0,
-        ));
-
-        $this->assertSame('2026-07-27 21:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
-        $this->assertSame('2026-07-27 23:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
-    }
-
-    public function test_auto_close_stores_two_hours_before_shift_end(): void
+    // 11. Default: auto-close at shift end, no wait, no penalty
+    public function test_auto_close_fires_at_shift_end_with_no_penalty(): void
     {
         $w = $this->calc->compute($this->input(
             scheduledStart: '2026-09-10 08:30',
             scheduledEnd:   '2026-09-10 17:30',
             clockIn:        '2026-09-10 08:30',
             earlyWindowMinutes: 30,
-            extensionMinutes: 0,
             canClockInBeforeMinutes: 120,
             maxOverTimeHours: 0.0,
             flags: new OvertimeFlags(),
+        ));
+
+        $this->assertSame('2026-09-10 17:30', $w->expectedClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-09-10 17:30', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-09-10 17:30', $w->autoCloseStoredAt->format('Y-m-d H:i'));
+    }
+
+    public function test_parked_grace_waits_two_hours_and_stores_minus_two_hours(): void
+    {
+        $w = $this->calc->compute($this->input(
+            scheduledStart: '2026-09-10 08:30',
+            scheduledEnd:   '2026-09-10 17:30',
+            clockIn:        '2026-09-10 08:30',
+            maxOverTimeHours: 0.0,
+            autoCloseGraceEnabled: true,
         ));
 
         $this->assertSame('2026-09-10 17:30', $w->expectedClockOutAt->format('Y-m-d H:i'));
@@ -299,7 +271,7 @@ final class ShiftWindowCalculatorTest extends TestCase
         $this->assertSame('2026-08-13 00:00', $w->earliestClockIn->format('Y-m-d H:i'));
         $this->assertNull($w->firstClockInDeadline);
         $this->assertSame('2026-08-13 19:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
-        $this->assertSame('2026-08-13 21:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 19:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
         $this->assertSame('2026-08-13 23:59', $w->absentAt->format('Y-m-d H:i'));
     }
 

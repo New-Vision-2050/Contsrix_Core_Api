@@ -109,4 +109,68 @@ class FaceRecognitionService
             'threshold' => $threshold,
         ];
     }
+
+    /**
+     * Start a new AWS Face Liveness session. The returned session ID is handed to the
+     * client app, which uses an AWS Amplify/Rekognition Liveness SDK to stream a short
+     * challenge-response video directly to AWS (never through our servers) for that
+     * session ID.
+     *
+     * @throws AttendanceException
+     */
+    public function createLivenessSession(): string
+    {
+        try {
+            $result = $this->client()->createFaceLivenessSession([]);
+        } catch (AwsException $e) {
+            Log::error('Rekognition CreateFaceLivenessSession failed', [
+                'aws_error_code' => $e->getAwsErrorCode(),
+                'message' => $e->getAwsErrorMessage() ?? $e->getMessage(),
+            ]);
+
+            throw AttendanceException::faceVerificationFailed($e->getAwsErrorMessage() ?? $e->getMessage());
+        }
+
+        return $result['SessionId'];
+    }
+
+    /**
+     * Fetch the result of a previously created liveness session.
+     *
+     * @return array{status: string, confidence: float, reference_image_bytes: ?string}
+     * @throws AttendanceException
+     */
+    public function getLivenessSessionResult(string $sessionId): array
+    {
+        try {
+            $result = $this->client()->getFaceLivenessSessionResults([
+                'SessionId' => $sessionId,
+            ]);
+        } catch (AwsException $e) {
+            Log::error('Rekognition GetFaceLivenessSessionResults failed', [
+                'aws_error_code' => $e->getAwsErrorCode(),
+                'message' => $e->getAwsErrorMessage() ?? $e->getMessage(),
+            ]);
+
+            $code = $e->getAwsErrorCode();
+
+            if (in_array($code, ['ResourceNotFoundException', 'SessionNotFoundException'], true)) {
+                throw AttendanceException::livenessSessionNotFound();
+            }
+
+            throw AttendanceException::faceVerificationFailed($e->getAwsErrorMessage() ?? $e->getMessage());
+        }
+
+        $referenceImageBytes = null;
+        $referenceImage = $result['ReferenceImage'] ?? null;
+        if ($referenceImage && isset($referenceImage['Bytes'])) {
+            $referenceImageBytes = (string) $referenceImage['Bytes'];
+        }
+
+        return [
+            'status' => (string) ($result['Status'] ?? 'UNKNOWN'),
+            'confidence' => (float) ($result['Confidence'] ?? 0),
+            'reference_image_bytes' => $referenceImageBytes,
+        ];
+    }
 }

@@ -15,9 +15,9 @@ use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AutoCloseAttendanceService;
 
 /**
- * Closes a shift after a fixed 2-hour wait (or max_over_time if longer).
- * closeAtIso is expected end minus 2 hours — a penalty for never punching out —
- * not the fire time and not the scheduled shift end.
+ * Closes a shift at the precomputed closeAtIso (shift end by default).
+ * When attendance.auto_close_grace_enabled is on, closeAtIso is expected end
+ * minus 2 hours and the job is delayed 2 hours after shift end.
  *
  * Dispatched with a future delay at clock-in time so the exact deadline is honoured
  * regardless of cron-command jitter.  The AutoCloseStaleShiftsCommand acts as a
@@ -37,7 +37,7 @@ class AutoCloseAttendanceJob implements ShouldQueue
     public function __construct(
         public readonly string $attendanceId,
         public readonly string $companyId,
-        /** ISO 8601 instant — expected end minus 2 hours. Stored as clock_out_time. */
+        /** ISO 8601 instant stored as clock_out_time (shift end, or expected minus 2h if grace is on). */
         public readonly string $closeAtIso,
     ) {}
 

@@ -32,6 +32,10 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
 Route::post('test', [AttendanceController::class, 'test'])
         ->name('attendance.test');
 
+    // Face liveness session (anti-spoofing pre-check before clock-in/out)
+    Route::post('face-liveness-session', [AttendanceController::class, 'createFaceLivenessSession'])
+        ->name('attendance.face-liveness-session');
+
     // Employee Attendance Actions
     Route::post('clock-in', [AttendanceController::class, 'clockIn'])
         ->name('attendance.clock-in');

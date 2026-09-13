@@ -51,4 +51,9 @@ return [
     // FCM pushes once per warning. Does not clock them out.
     'out_zone_confirm_enabled' => (bool) env('ATTENDANCE_OUT_ZONE_CONFIRM', true),
     'out_zone_confirm_notification_count' => (int) env('ATTENDANCE_OUT_ZONE_CONFIRM_NOTIFICATION_COUNT', 3),
+
+    // Parked: wait 2 hours after shift end, then store expected end minus 2 hours
+    // if the employee never punched out. Off = close at shift end, no penalty.
+    // Restore with ATTENDANCE_AUTO_CLOSE_GRACE_ENABLED=true (or ask to flip this).
+    'auto_close_grace_enabled' => (bool) env('ATTENDANCE_AUTO_CLOSE_GRACE_ENABLED', false),
 ];

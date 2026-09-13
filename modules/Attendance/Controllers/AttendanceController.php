@@ -55,6 +55,23 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Create an AWS Face Liveness session. The client app uses the returned
+     * session_id with an AWS Rekognition/Amplify Liveness SDK to record a short
+     * challenge-response video directly with AWS, then passes the same session_id
+     * as `liveness_session_id` on clockIn/clockOut for anti-spoofed face verification.
+     */
+    public function createFaceLivenessSession(Request $request): JsonResponse
+    {
+        try {
+            $session = $this->faceVerificationService->createLivenessSession();
+
+            return Json::item($session, message: 'Liveness session created.');
+        } catch (AttendanceException $e) {
+            return $this->attendanceErrorResponse($e);
+        }
+    }
+
+    /**
      * Clock in employee.
      * Validates work period and constraints, then persists attendance.
      */
@@ -62,7 +79,9 @@ class AttendanceController extends Controller
     {
         try {
             $faceVerification = null;
-            if ($request->hasFile('photo')) {
+            if ($request->filled('liveness_session_id')) {
+                $faceVerification = $this->faceVerificationService->verifyViaLiveness($request->user(), $request->input('liveness_session_id'));
+            } elseif ($request->hasFile('photo')) {
                 $faceVerification = $this->faceVerificationService->verify($request->user(), $request->file('photo'));
             }
 
@@ -91,7 +110,9 @@ class AttendanceController extends Controller
     {
         try {
             $faceVerification = null;
-            if ($request->hasFile('photo')) {
+            if ($request->filled('liveness_session_id')) {
+                $faceVerification = $this->faceVerificationService->verifyViaLiveness($request->user(), $request->input('liveness_session_id'));
+            } elseif ($request->hasFile('photo')) {
                 $faceVerification = $this->faceVerificationService->verify($request->user(), $request->file('photo'));
             }
 
