@@ -85,7 +85,7 @@ class UserAttendanceController extends Controller
             ]);
 
             return Json::error(
-                'An unexpected error occurred. Please try again later.',
+                $e->getMessage() ?: 'An unexpected error occurred. Please try again later.',
                 500
             );
         }
