@@ -77,6 +77,13 @@ class UserAttendanceController extends Controller
                 400
             );
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('getMyConstraintForToday failed', [
+                'user_id' => $request->user()?->id,
+                'date' => $request->input('date'),
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
             return Json::error(
                 'An unexpected error occurred. Please try again later.',
                 500
