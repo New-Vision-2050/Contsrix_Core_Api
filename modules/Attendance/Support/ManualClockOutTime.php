@@ -9,9 +9,9 @@ use Modules\Attendance\Domain\Calculator\OvertimeFlags;
 use Modules\Attendance\Models\Attendance;
 
 /**
- * Manual clock-out after shift end: if the row's snapshotted overtime flags
- * (from the role/job constraint) do not allow post-shift overtime, store the
- * shift end instead of now so the employee does not take extra hours.
+ * Parked: when auto_close_grace_enabled is on, a manual punch after shift end
+ * is stored as shift end if overtime is not allowed. Off (default): callers
+ * store now in the branch timezone instead.
  */
 final class ManualClockOutTime
 {
