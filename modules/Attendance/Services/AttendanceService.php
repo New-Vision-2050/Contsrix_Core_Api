@@ -30,6 +30,7 @@ use Modules\Attendance\Jobs\ProcessClockInAttendanceData;
 use Modules\Attendance\Presenters\AttendanceTeamPresenter;
 use Modules\Attendance\Services\AttendanceNotificationService;
 use Modules\Attendance\Support\ConstraintRuleReader;
+use Modules\Attendance\Support\AutoCloseGrace;
 use Modules\Attendance\Support\ManualClockOutTime;
 
 class AttendanceService
@@ -484,8 +485,9 @@ class AttendanceService
      * Behaviour (preserved):
      *  1. Reject if the user has no active attendance.
      *  2. Reject if the attendance already has a clock_out_time.
-     *  3. Persist clock_out_time (branch timezone). After shift end, roles that
-     *     are not allowed overtime are stored at shift end, not now.
+     *  3. Persist clock_out_time as now in the branch timezone. The parked
+     *     shift-end cap (ManualClockOutTime) only runs when
+     *     attendance.auto_close_grace_enabled is on.
      *     appended notes, and mark the row completed + day_status=clocked_out.
      *  4. Re-run the calculator so total_work_hours / overtime_hours / early_departure
      *     are recomputed from the final clock-in/clock-out pair.
@@ -615,7 +617,11 @@ class AttendanceService
             ? $attendance->user
             : User::find($dto->getUserId());
 
-        $clockOutAt = ManualClockOutTime::resolve($attendance, $dto->getClockOutTime());
+        $timezone = $attendance->timezone ?: getTimeZoneBranchByRequest();
+        $clockOutAt = Carbon::parse($dto->getClockOutTime(), $timezone);
+        if (AutoCloseGrace::enabledFromConfig()) {
+            $clockOutAt = ManualClockOutTime::resolve($attendance, $dto->getClockOutTime());
+        }
 
         return [
             'clock_out_time' => $clockOutAt->format('Y-m-d H:i:s'),

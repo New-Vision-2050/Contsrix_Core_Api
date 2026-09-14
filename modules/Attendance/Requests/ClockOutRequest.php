@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Requests;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Attendance\DTO\ClockOutDTO;
 use Ramsey\Uuid\Uuid;
@@ -95,10 +96,10 @@ class ClockOutRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Set default clock out time to now if not provided
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         if (!$this->has('clock_out_time')) {
             $this->merge([
-                'clock_out_time' => now()->toDateTimeString()
+                'clock_out_time' => Carbon::now($timezone)->toDateTimeString(),
             ]);
         }
 

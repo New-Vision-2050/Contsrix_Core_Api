@@ -1106,11 +1106,9 @@ Key clock-out rules:
 - Overtime is capped by the row snapshot, not by whatever the current constraint
   row says after edits. The snapshot is `attendances.overtime_flags` plus
   `max_over_time`, taken from the role/job constraint at clock-in.
-- If the employee clocks out themselves after shift end and that snapshot does
-  not allow post-shift overtime (`is_after_finish_working_hours` /
-  `is_overtime_after_extension_hours_shift` off, or `max_over_time` is 0),
-  `clock_out_time` is the shift end (`expected_clock_out_time` ?? `end_time`),
-  not now. A role that is allowed overtime keeps the real punch.
+- If the employee clocks out themselves, `clock_out_time` is now in the branch
+  timezone. The old cap-to-shift-end (when overtime is not allowed) is parked
+  behind `attendance.auto_close_grace_enabled` with the auto-close wait/penalty.
 - Breaks must be read from `attendance_breaks`.
 - Auto-close must write the intended close instant, not worker execution time.
 - Closing a row clears `is_absent`. Both `buildClockOutUpdatePayload` and
@@ -1177,8 +1175,8 @@ End-of-shift auto clock-out (`auto_max_ot`) fires at `expected_clock_out_time`
 (shift end / hours complete) and stores that time. No wait, no −2 hour penalty.
 The previous wait-2h-then-store-expected-minus-2h behaviour is parked behind
 `config('attendance.auto_close_grace_enabled')` /
-`ATTENDANCE_AUTO_CLOSE_GRACE_ENABLED`. If overtime is not allowed, a manual
-punch after shift end is still stored as the shift end.
+`ATTENDANCE_AUTO_CLOSE_GRACE_ENABLED`. That same flag also restores the manual
+clock-out cap (store shift end when overtime is not allowed).
 `attendance:auto-close-stale-shifts` is the same auto-close rule.
 
 ### Absence marking
