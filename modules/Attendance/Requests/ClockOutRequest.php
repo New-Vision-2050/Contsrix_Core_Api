@@ -28,11 +28,17 @@ class ClockOutRequest extends FormRequest
         $faceVerificationRequired = config('services.rekognition.enabled')
             && !(bool) (auth()->user()->face_verification_exempt ?? false);
 
+        $nowInBranch = Carbon::now($this->branchTimezone())->toDateTimeString();
+
         return [
+            // Compare against branch wall-clock now, not app UTC now. A Riyadh
+            // 16:50 string is "in the future" vs UTC 13:50 and was 422ing
+            // clock-out when the client omitted clock_out_time.
             'clock_out_time' => [
                 'sometimes',
+                'nullable',
                 'date',
-                'before_or_equal:now'
+                'before_or_equal:'.$nowInBranch,
             ],
             'location' => [
                 'sometimes',
@@ -101,14 +107,10 @@ class ClockOutRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
-        if (!$this->has('clock_out_time')) {
-            $this->merge([
-                'clock_out_time' => Carbon::now($timezone)->toDateTimeString(),
-            ]);
-        }
+        // Do not invent clock_out_time here. Merging branch-local now() made
+        // Laravel's before_or_equal:now (app TZ / UTC) reject the request as
+        // "in the future". Default it in createClockOutDTO() after validation.
 
-        // Add request metadata
         $this->merge([
             'ip_address' => $this->ip(),
             'user_agent' => $this->userAgent(),
@@ -141,12 +143,18 @@ class ClockOutRequest extends FormRequest
         return new ClockOutDTO(
             user_id: Uuid::fromString((string)$validated['user_id']),
             company_id: Uuid::fromString((string) $validated['company_id']),
-            clock_out_time: $validated['clock_out_time'],
+            clock_out_time: $validated['clock_out_time']
+                ?? Carbon::now($this->branchTimezone())->toDateTimeString(),
             location: $validated['location'] ?? null,
             notes: $validated['notes'] ?? null,
             ip_address: $validated['ip_address'] ?? null,
             user_agent: $validated['user_agent'] ?? null,
         );
+    }
+
+    private function branchTimezone(): string
+    {
+        return getTimeZoneBranchByRequest() ?? config('app.timezone') ?? 'Asia/Riyadh';
     }
 
     /** Standard DTO factory — delegates to createClockOutDTO(). */
