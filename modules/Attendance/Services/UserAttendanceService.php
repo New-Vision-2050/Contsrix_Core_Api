@@ -30,7 +30,8 @@ class UserAttendanceService
 
     public function __construct(
         private AttendanceConstraintService $constraintService,
-        private AttendanceService $attendanceService
+        private AttendanceService $attendanceService,
+        private FaceVerificationService $faceVerificationService
     ) {}
 
     // =============================================================================
@@ -153,6 +154,7 @@ class UserAttendanceService
                 'user_id' => (string) $user->id,
                 'user_name' => $user->name,
                 'date' => $targetDate,
+                'has_face_verification_exception' => $this->faceVerificationService->isExempt($user),
                 'work_rules' => $this->filterWorkRules($workRules),
             ];
         } finally {

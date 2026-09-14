@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\AttendanceService;
+use Modules\Attendance\Services\FaceVerificationService;
 use Modules\Attendance\Services\UserAttendanceService;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -31,7 +32,8 @@ class UserAttendanceTodayPeriodPresenceTest extends TestCase
 
         $this->service = new UserAttendanceService(
             $this->createMock(AttendanceConstraintService::class),
-            $this->createMock(AttendanceService::class)
+            $this->createMock(AttendanceService::class),
+            $this->createMock(FaceVerificationService::class)
         );
 
         $tz = new ReflectionProperty(UserAttendanceService::class, 'requestTimezoneOverride');

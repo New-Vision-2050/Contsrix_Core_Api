@@ -25,6 +25,9 @@ class ClockInRequest extends FormRequest
      */
     public function rules(): array
     {
+        $faceVerificationRequired = config('services.rekognition.enabled')
+            && !(bool) (auth()->user()->face_verification_exempt ?? false);
+
         return [
             'clock_in_time' => [
                 'sometimes',
@@ -63,13 +66,13 @@ class ClockInRequest extends FormRequest
                 'max:500'
             ],
             'photo' => [
-                config('services.rekognition.enabled') ? 'required_without:liveness_session_id' : 'sometimes',
+                $faceVerificationRequired ? 'required_without:liveness_session_id' : 'sometimes',
                 'image',
                 'mimes:jpg,jpeg,png',
                 'max:5120',
             ],
             'liveness_session_id' => [
-                config('services.rekognition.enabled') ? 'required_without:photo' : 'sometimes',
+                $faceVerificationRequired ? 'required_without:photo' : 'sometimes',
                 'string',
             ],
         ];

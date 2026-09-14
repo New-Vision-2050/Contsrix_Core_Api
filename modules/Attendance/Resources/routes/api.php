@@ -139,6 +139,12 @@ Route::post('test', [AttendanceController::class, 'test'])
         Route::delete('{attendanceId}', [AttendanceController::class, 'destroy'])
             ->permission(Permission::EMPLOYEE_ATTENDANCE_DELETE())
             ->name('attendance.destroy');
+
+        Route::get('users/{userId}/face-verification-exception', [AttendanceController::class, 'getFaceVerificationException'])
+            ->name('attendance.users.face-verification-exception.show');
+
+        Route::put('users/{userId}/face-verification-exception', [AttendanceController::class, 'updateFaceVerificationException'])
+            ->name('attendance.users.face-verification-exception.update');
     // });
 });
 
