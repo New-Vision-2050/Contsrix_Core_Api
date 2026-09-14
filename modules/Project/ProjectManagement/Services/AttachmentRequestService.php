@@ -771,7 +771,8 @@ class AttachmentRequestService
                 $newFile,
                 'attachment-requests/items',
                 'attachments',
-                'public'
+                'public',
+                preserveOriginalFileName: true,
             );
 
             // Preserve the item's decision state while replacing only the file metadata.

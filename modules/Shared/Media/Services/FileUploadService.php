@@ -3,6 +3,7 @@
 namespace Modules\Shared\Media\Services;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Modules\Shared\PCloud\Services\PCloudArchiveSyncService;
 
@@ -33,6 +34,7 @@ class FileUploadService
         string $visibility = 'public',
         ?string $folderId = null,
         string|array|null $fileId = null,
+        bool $preserveOriginalFileName = false,
 
     ) {
         $disk = $this->resolveStorageDisk($visibility);
@@ -57,12 +59,22 @@ class FileUploadService
 
             $currentFileId = $fileIds[$index] ?? null;
 
-            $fileName = sprintf(
-                '%s_%s.%s',
-                pathinfo($singleFile->getClientOriginalName(), PATHINFO_FILENAME),
-                uniqid(),
-                $singleFile->getClientOriginalExtension()
-            );
+            $storagePath = $filePath;
+
+            if ($preserveOriginalFileName) {
+                // Document codes are part of the business identifier. Keep them in
+                // the media filename and isolate each upload in its own directory
+                // instead of appending a random suffix to the document code.
+                $fileName = basename(str_replace('\\', '/', $singleFile->getClientOriginalName()));
+                $storagePath = trim($filePath, '/') . '/' . Str::uuid()->toString();
+            } else {
+                $fileName = sprintf(
+                    '%s_%s.%s',
+                    pathinfo($singleFile->getClientOriginalName(), PATHINFO_FILENAME),
+                    uniqid(),
+                    $singleFile->getClientOriginalExtension()
+                );
+            }
 
             $media = $model->addMedia($singleFile)
                 ->usingFileName($fileName)
@@ -70,7 +82,7 @@ class FileUploadService
                 ->withCustomProperties([
                     'folder_id' => $folderId,
                     'file_id'=>$currentFileId,
-                    'file_path' => $filePath,
+                    'file_path' => $storagePath,
                     'disk' => $disk,
                 ])
                 ->preservingOriginal()
