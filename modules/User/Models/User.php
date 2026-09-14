@@ -84,6 +84,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "manual_attendance_status",
         "manual_attendance_status_since",
         "manual_attendance_status_until",
+        "face_verification_exempt",
     ];
 
     protected $casts = [
@@ -104,6 +105,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'password' => 'hashed',
             'manual_attendance_status_since' => 'date',
             'manual_attendance_status_until' => 'date',
+            'face_verification_exempt' => 'boolean',
         ];
     }
 

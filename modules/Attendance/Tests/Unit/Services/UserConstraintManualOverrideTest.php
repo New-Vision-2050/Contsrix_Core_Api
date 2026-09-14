@@ -14,6 +14,7 @@ use Modules\Attendance\Contracts\SecurityConstraintServiceInterface;
 use Modules\Attendance\Contracts\TimeConstraintServiceInterface;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\AttendanceService;
+use Modules\Attendance\Services\FaceVerificationService;
 use Modules\Attendance\Services\UserAttendanceService;
 use Modules\Attendance\Support\FlexibleWorkDay;
 use Modules\Attendance\Support\ManualAttendanceStatus;
@@ -40,7 +41,8 @@ class UserConstraintManualOverrideTest extends TestCase
 
         $this->service = new UserAttendanceService(
             $this->createMock(AttendanceConstraintService::class),
-            $this->createMock(AttendanceService::class)
+            $this->createMock(AttendanceService::class),
+            $this->createMock(FaceVerificationService::class)
         );
 
         $this->applyManualAttendanceOverride = new ReflectionMethod($this->service, 'applyManualAttendanceOverride');

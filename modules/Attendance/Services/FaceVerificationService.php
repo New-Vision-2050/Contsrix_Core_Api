@@ -23,6 +23,16 @@ class FaceVerificationService
     ) {}
 
     /**
+     * Users flagged as exempt (e.g. VIPs, users without a suitable profile photo,
+     * or approved special cases) bypass face/liveness verification entirely on
+     * clock-in and clock-out.
+     */
+    public function isExempt(User $user): bool
+    {
+        return (bool) ($user->face_verification_exempt ?? false);
+    }
+
+    /**
      * Legacy path: verify a plain uploaded photo against the profile photo.
      * No liveness/anti-spoofing guarantee — a photo of a photo will match.
      * Prefer verifyViaLiveness() for new integrations.
@@ -32,12 +42,12 @@ class FaceVerificationService
      */
     public function verify(User $user, UploadedFile $capturedPhoto): array
     {
-        if (!$this->faceRecognitionService->isEnabled()) {
+        if (!$this->faceRecognitionService->isEnabled() || $this->isExempt($user)) {
             return [
                 'matched' => true,
                 'similarity' => null,
                 'threshold' => null,
-                'provider' => 'disabled',
+                'provider' => $this->isExempt($user) ? 'exempt' : 'disabled',
             ];
         }
 
@@ -87,13 +97,13 @@ class FaceVerificationService
      */
     public function verifyViaLiveness(User $user, string $sessionId): array
     {
-        if (!$this->faceRecognitionService->isEnabled()) {
+        if (!$this->faceRecognitionService->isEnabled() || $this->isExempt($user)) {
             return [
                 'matched' => true,
                 'similarity' => null,
                 'threshold' => null,
                 'liveness_confidence' => null,
-                'provider' => 'disabled',
+                'provider' => $this->isExempt($user) ? 'exempt' : 'disabled',
             ];
         }
 

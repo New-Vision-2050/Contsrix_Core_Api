@@ -18,6 +18,7 @@ use Modules\Attendance\Services\AttendanceStatusService;
 use Modules\Attendance\Services\ClockInService;
 use Modules\Attendance\Services\ClockOutService;
 use Modules\Attendance\Services\FaceVerificationService;
+use Modules\User\Models\User;
 use Modules\Attendance\Requests\ClockInRequest;
 use Modules\Attendance\Requests\ClockOutRequest;
 use Modules\Attendance\Requests\GetAttendanceRequest;
@@ -83,6 +84,8 @@ class AttendanceController extends Controller
                 $faceVerification = $this->faceVerificationService->verifyViaLiveness($request->user(), $request->input('liveness_session_id'));
             } elseif ($request->hasFile('photo')) {
                 $faceVerification = $this->faceVerificationService->verify($request->user(), $request->file('photo'));
+            } elseif ($this->faceVerificationService->isExempt($request->user())) {
+                $faceVerification = ['matched' => true, 'similarity' => null, 'threshold' => null, 'provider' => 'exempt'];
             }
 
             $attendance = $this->clockInService->execute($request->toDTO(), $request->all());
@@ -114,6 +117,8 @@ class AttendanceController extends Controller
                 $faceVerification = $this->faceVerificationService->verifyViaLiveness($request->user(), $request->input('liveness_session_id'));
             } elseif ($request->hasFile('photo')) {
                 $faceVerification = $this->faceVerificationService->verify($request->user(), $request->file('photo'));
+            } elseif ($this->faceVerificationService->isExempt($request->user())) {
+                $faceVerification = ['matched' => true, 'similarity' => null, 'threshold' => null, 'provider' => 'exempt'];
             }
 
             $attendance = $this->clockOutService->execute($request->toDTO());
@@ -144,6 +149,51 @@ class AttendanceController extends Controller
         } catch (AttendanceException $e) {
             return $this->attendanceErrorResponse($e);
         }
+    }
+
+    /**
+     * HR/Admin: check whether a user is currently exempt from face/liveness
+     * verification on clock-in and clock-out.
+     */
+    public function getFaceVerificationException(string $userId): JsonResponse
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return $this->attendanceErrorResponse(AttendanceException::userNotFound());
+        }
+
+        return Json::item([
+            'user_id' => (string) $user->id,
+            'user_name' => $user->name,
+            'has_face_verification_exception' => (bool) $user->face_verification_exempt,
+        ], message: 'Face verification exception retrieved successfully.');
+    }
+
+    /**
+     * HR/Admin: grant or revoke a user's exemption from face/liveness verification
+     * on clock-in and clock-out (e.g. users without a suitable profile photo, or
+     * approved special cases).
+     */
+    public function updateFaceVerificationException(Request $request, string $userId): JsonResponse
+    {
+        $request->validate([
+            'has_exception' => ['required', 'boolean'],
+        ]);
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            return $this->attendanceErrorResponse(AttendanceException::userNotFound());
+        }
+
+        $user->face_verification_exempt = $request->boolean('has_exception');
+        $user->save();
+
+        return Json::item([
+            'user_id' => (string) $user->id,
+            'has_face_verification_exception' => $user->face_verification_exempt,
+        ], message: 'Face verification exception updated successfully.');
     }
 
     /**
