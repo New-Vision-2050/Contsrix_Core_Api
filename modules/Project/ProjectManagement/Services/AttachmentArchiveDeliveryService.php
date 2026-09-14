@@ -145,14 +145,17 @@ final class AttachmentArchiveDeliveryService
             return;
         }
 
-        // Prefer the real (source-tenant) media file name so cross-tenant delivery
-        // does not fall back to a generic placeholder name.
+        // AttachmentRequestItem::file_name is the user-supplied document name.
+        // Prefer it over the storage filename so archive search and ordering retain
+        // the document code even for records uploaded before storage was separated.
         $firstMedia = $mediaItems->first();
         if (! $firstMedia instanceof CustomMedia) {
             return;
         }
 
-        $resolvedName = (string) ($firstMedia->file_name ?: $firstMedia->name ?: $fileName);
+        $resolvedName = trim($fileName) !== ''
+            ? $fileName
+            : (string) ($firstMedia->file_name ?: $firstMedia->name);
 
         // Workflow completion handling may be retried. Store the source identity
         // on the archive record so each uploaded media row is delivered exactly

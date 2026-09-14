@@ -439,6 +439,77 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertContains((string) $receiverUser->id, $step->authorized_user_ids);
     }
 
+    public function test_three_authorized_receiver_companies_can_act_in_their_workflow_steps(): void
+    {
+        $project = $this->createProject();
+        $companyA = $this->createCompany(['serial_no' => 'ATT-ACTION-A']);
+        $companyB = $this->createCompany(['serial_no' => 'ATT-ACTION-B']);
+        $companyC = $this->createCompany(['serial_no' => 'ATT-ACTION-C']);
+        $userA = User::factory()->create(['company_id' => $companyA->id]);
+        $userB = User::factory()->create(['company_id' => $companyB->id]);
+        $userC = User::factory()->create(['company_id' => $companyC->id]);
+
+        foreach ([$companyA, $companyB, $companyC] as $company) {
+            $this->createAcceptedShare($project, $company);
+        }
+
+        $procedure = $this->createProjectProcedure($project, [
+            $companyA->id,
+            $companyB->id,
+            $companyC->id,
+        ]);
+        $this->createReceiverCompanyProcedureStep($procedure, 1, [$companyA->id]);
+        $this->createReceiverCompanyProcedureStep($procedure, 2, [$companyB->id]);
+        $this->createReceiverCompanyProcedureStep($procedure, 3, [$companyC->id]);
+
+        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $requestId = $createResponse->json('payload.id');
+        $itemId = $createResponse->json('payload.items.0.id');
+
+        foreach ([[$userA, $companyA], [$userB, $companyB], [$userC, $companyC]] as [$user, $company]) {
+            $requestIds = collect($this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->getJson('/api/v1/projects/attachment-requests?project_id='.$project->id.'&direction=incoming')
+                ->assertOk()
+                ->json('data'))->pluck('id')->all();
+
+            $this->assertContains($requestId, $requestIds);
+        }
+
+        // A company may see the request, but cannot act before its workflow step is pending.
+        $this->actingAs($userB, 'api')
+            ->withHeader('X-Tenant', $companyB->id)
+            ->post('/api/v1/projects/attachment-requests/items/respond', [
+                'item_id' => $itemId,
+                'action' => 'approve',
+            ], ['Accept' => 'application/json'])
+            ->assertUnprocessable();
+
+        foreach ([[$userA, $companyA], [$userB, $companyB], [$userC, $companyC]] as $index => [$user, $company]) {
+            $response = $this->actingAs($user, 'api')
+                ->withHeader('X-Tenant', $company->id)
+                ->post('/api/v1/projects/attachment-requests/items/respond', [
+                    'item_id' => $itemId,
+                    'action' => 'approve',
+                    'notes' => 'Approved by receiver company '.($index + 1),
+                ], ['Accept' => 'application/json'])
+                ->assertOk();
+
+            $response->assertJsonPath(
+                'payload.status',
+                $index === 2 ? AttachmentRequest::STATUS_APPROVED : AttachmentRequest::STATUS_PENDING
+            );
+        }
+
+        $process = Process::query()
+            ->where('processable_id', $requestId)
+            ->where('processable_type', AttachmentRequest::PROCESSABLE_TYPE)
+            ->firstOrFail();
+
+        $this->assertSame(ProcessStatus::Completed, $process->status);
+        $this->assertSame(AttachmentRequest::STATUS_APPROVED, AttachmentRequest::query()->findOrFail($requestId)->status);
+    }
+
     public function test_workflow_approve_advances_steps_before_final_attachment_approval(): void
     {
         $project = $this->createProject();
@@ -979,7 +1050,8 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->createProcedureStep($procedure, $secondReceiverUser, 2);
         $this->createProcedureStep($procedure, $thirdReceiverUser, 3);
 
-        $createResponse = $this->postAttachmentRequest($project, $procedure)->assertOk();
+        $documentFileName = 'KDC-VD-ABN-WIR-ELEC-OCC-058-00.pdf';
+        $createResponse = $this->postAttachmentRequest($project, $procedure, 1, $documentFileName)->assertOk();
         $requestId = $createResponse->json('payload.id');
         $itemId = $createResponse->json('payload.items.0.id');
 
@@ -988,6 +1060,12 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $sourceItem = AttachmentRequestItem::query()->findOrFail($itemId);
         $sourceMedia = $sourceItem->getFirstMedia('attachments');
         $this->assertNotNull($sourceMedia);
+        $this->assertSame($documentFileName, $sourceItem->file_name);
+        $this->assertSame($documentFileName, $sourceMedia->file_name);
+        $this->assertMatchesRegularExpression(
+            '/^attachment-requests\\/[0-9a-f-]{36}$/',
+            (string) $sourceMedia->getCustomProperty('file_path')
+        );
 
         $archiveFiles = fn () => ArchiveFile::query()
             ->withoutTenancy()
@@ -1040,6 +1118,7 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
         $this->assertSame(AttachmentRequestItem::class, $firstArchiveFile->source_model_type);
         $this->assertSame($itemId, $firstArchiveFile->source_model_id);
         $this->assertSame($sourceMedia->id, $firstArchiveFile->source_media_id);
+        $this->assertSame('KDC-VD-ABN-WIR-ELEC-OCC-058-00', $firstArchiveFile->name);
         $this->assertSame(1, CustomMedia::query()
             ->where('model_type', ArchiveFile::class)
             ->where('model_id', $firstArchiveFile->id)
@@ -4946,11 +5025,14 @@ class AttachmentRequestProjectProcedureTest extends BaseAttendanceReportTestCase
     private function postAttachmentRequest(
         ProjectManagement $project,
         ProjectProcedureSetting $procedure,
-        int $attachmentCount = 1
+        int $attachmentCount = 1,
+        ?string $singleAttachmentFileName = null,
     ) {
         $attachments = collect(range(1, $attachmentCount))
             ->map(static fn (int $index): UploadedFile => UploadedFile::fake()->create(
-                $attachmentCount === 1 ? 'workflow-file.pdf' : "workflow-file-{$index}.pdf",
+                $attachmentCount === 1
+                    ? ($singleAttachmentFileName ?? 'workflow-file.pdf')
+                    : "workflow-file-{$index}.pdf",
                 12,
                 'application/pdf'
             ))
