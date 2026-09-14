@@ -373,7 +373,8 @@ class AttachmentRequestRepository extends BaseRepository
                     $uploadedFile,
                     'attachment-requests',
                     'attachments',
-                    'public'
+                    'public',
+                    preserveOriginalFileName: true,
                 );
 
                 $media = $item->getFirstMedia('attachments');
