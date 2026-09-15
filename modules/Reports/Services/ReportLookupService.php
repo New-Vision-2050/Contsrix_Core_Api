@@ -29,6 +29,7 @@ class ReportLookupService
             'contract_types'        => $this->contractTypes(),
             'genders'               => $this->genders(),
             'attendance_data_types' => $this->attendanceDataTypes(),
+            'attendance_detail_columns' => $this->attendanceDetailColumns(),
             'attendance_patterns'   => $this->attendancePatterns(),
             'attendance_rate_min'   => $this->attendanceRateOptions(),
             'delay_limits'          => $this->delayLimitOptions(),
@@ -171,6 +172,26 @@ class ReportLookupService
             ReportEnums::ATT_DATA_OVERTIME        => ['ar' => 'الساعات الإضافية',  'en' => 'Overtime'],
             ReportEnums::ATT_DATA_SICK_LEAVES     => ['ar' => 'الإجازات المرضية',  'en' => 'Sick leaves'],
             ReportEnums::ATT_DATA_EARLY_DEPARTURE => ['ar' => 'الانصراف المبكر',   'en' => 'Early departure'],
+        ]);
+    }
+
+    public function attendanceDetailColumns(): array
+    {
+        return $this->build(ReportEnums::attendanceDetailColumns(), [
+            ReportEnums::ATT_COL_DAY                  => ['ar' => 'اليوم',              'en' => 'Day'],
+            ReportEnums::ATT_COL_BRANCH               => ['ar' => 'الفرع',              'en' => 'Branch'],
+            ReportEnums::ATT_COL_MANAGEMENT           => ['ar' => 'الإدارة',            'en' => 'Management'],
+            ReportEnums::ATT_COL_OFFICIAL_IN          => ['ar' => 'دخول رسمي',          'en' => 'Official in'],
+            ReportEnums::ATT_COL_OFFICIAL_OUT         => ['ar' => 'خروج رسمي',          'en' => 'Official out'],
+            ReportEnums::ATT_COL_ACTUAL_IN            => ['ar' => 'دخول فعلي',          'en' => 'Actual in'],
+            ReportEnums::ATT_COL_ACTUAL_OUT           => ['ar' => 'خروج فعلي',          'en' => 'Actual out'],
+            ReportEnums::ATT_COL_CLOCK_OUT_CAUSE      => ['ar' => 'سبب الانصراف',       'en' => 'Clock-out cause'],
+            ReportEnums::ATT_COL_CLOCK_IN_LOCATION    => ['ar' => 'موقع الدخول',        'en' => 'Clock-in location'],
+            ReportEnums::ATT_COL_CLOCK_OUT_LOCATION   => ['ar' => 'موقع الخروج',        'en' => 'Clock-out location'],
+            ReportEnums::ATT_COL_DELAY                => ['ar' => 'تأخير',              'en' => 'Delay'],
+            ReportEnums::ATT_COL_OVERTIME             => ['ar' => 'إضافي',              'en' => 'Overtime'],
+            ReportEnums::ATT_COL_TOTAL_HOURS          => ['ar' => 'إجمالي الساعات',     'en' => 'Total hours'],
+            ReportEnums::ATT_COL_CALCULATED_HOURS     => ['ar' => 'ساعات قانونية',      'en' => 'Calculated hours'],
         ]);
     }
 

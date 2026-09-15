@@ -17,6 +17,7 @@ use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\Reports\DTO\ReportWizardConfigDTO;
 use Modules\Reports\Enums\ReportEnums;
 use Modules\Reports\Models\Report;
+use Modules\Reports\Support\ReportPunchPresentation;
 use Modules\User\Models\User;
 
 /**
@@ -152,6 +153,9 @@ class ReportDataExtractionService
                 'a.end_time',
                 'a.clock_in_time',
                 'a.clock_out_time',
+                'a.clock_in_location',
+                'a.clock_out_location',
+                'a.shift_end_method',
                 'a.late_minutes',
                 'a.early_departure_minutes',
                 DB::raw('COALESCE(CAST(a.overtime_hours AS DECIMAL(10,2)) * 60, 0) as overtime_minutes'),
@@ -227,8 +231,14 @@ class ReportDataExtractionService
 
             if (!empty($d->clock_in_time)) {
                 $groupedDaily[$gid][$date]['attendance_sessions'][] = [
-                    'clock_in_time'  => (string) $d->clock_in_time,
-                    'clock_out_time' => (string) ($d->clock_out_time ?? ''),
+                    'clock_in_time'           => (string) $d->clock_in_time,
+                    'clock_out_time'          => (string) ($d->clock_out_time ?? ''),
+                    'clock_out_cause'         => ReportPunchPresentation::clockOutCauseCode(
+                        isset($d->shift_end_method) ? (string) $d->shift_end_method : null,
+                        $d->clock_out_time ?? null,
+                    ),
+                    'clock_in_location_label'  => ReportPunchPresentation::locationLabel($d->clock_in_location ?? null),
+                    'clock_out_location_label' => ReportPunchPresentation::locationLabel($d->clock_out_location ?? null),
                 ];
             }
         }
