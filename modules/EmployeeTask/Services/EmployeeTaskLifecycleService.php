@@ -52,13 +52,6 @@ final class EmployeeTaskLifecycleService
             throw EmployeeTaskException::pendingStartRequestExists();
         }
 
-        if (! $task->is_project_notification) {
-            $activeTask = $this->taskRepo->findActiveTaskForUser((string) $user->id);
-            if ($activeTask && $activeTask->id !== $task->id) {
-                throw EmployeeTaskException::hasOtherOpenTask();
-            }
-        }
-
         // Project-notification tasks are created from the dashboard and their
         // creation-time conditions (e.g. InsideCustomLocations) have already been
         // enforced. On confirm-receive/start they should move straight to in_progress
