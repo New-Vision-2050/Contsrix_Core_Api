@@ -36,6 +36,10 @@
         . '</svg>'
     );
     $fmtTime = fn ($ts) => ($ts && $ts !== '') ? substr($ts, 11, 5) ?: substr($ts, 0, 5) : '';
+    $fmtCause = function ($code) use ($lang) {
+        $label = \Modules\Reports\Support\ReportPunchPresentation::clockOutCauseLabel((string) ($code ?? ''), $lang);
+        return $label !== '' ? $label : '';
+    };
 @endphp
 <!doctype html>
 <html lang="{{ $lang }}" dir="{{ $dir }}">
@@ -53,6 +57,8 @@
         .num      { text-align: center; direction: ltr; }
         .tcol     { width: 36px; min-width: 34px; max-width: 40px; }
         .hcol     { width: 44px; min-width: 40px; max-width: 50px; }
+        .lcol     { width: 72px; min-width: 60px; max-width: 90px; font-size: 7.5px; }
+        .ccol     { width: 58px; min-width: 50px; max-width: 70px; font-size: 7.5px; }
         .stats-bar td { border: 1px solid #cbd5e1; padding: 5px 10px; text-align: center; font-weight: 700; font-size: 9px; }
         .s-emp    { background: #e2e8f0; color: #1e293b; }
         .s-pres   { background: #dcfce7; color: #166534; }
@@ -145,23 +151,28 @@
                 $showOffOut  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OFFICIAL_OUT]);
                 $showActIn   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_IN]);
                 $showActOut  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_OUT]);
+                $showCause   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_CLOCK_OUT_CAUSE]);
+                $showInLoc   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_CLOCK_IN_LOCATION]);
+                $showOutLoc  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_CLOCK_OUT_LOCATION]);
                 $showDelay   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_DELAY]);
                 $showOT      = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OVERTIME]);
                 $showTotal   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TOTAL_HOURS]);
                 $showCalculated = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_CALCULATED_HOURS]);
 
-                // employee_per_page: always 2 (#, date) + 1 status badge + up to 13 optional
+                $sessionCols   = (int)$showActIn + (int)$showActOut + (int)$showCause + (int)$showInLoc + (int)$showOutLoc;
+
+                // employee_per_page: always 2 (#, date) + 1 status badge + optional
                 $empColCount   = 2 + 1 + (int)$showDay + (int)$showBranch + (int)$showMgmt
                                + (int)$showOffIn + (int)$showOffOut
-                               + (int)$showActIn + (int)$showActOut
+                               + $sessionCols
                                + (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $empMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $empTotColspan = $empColCount - $empMetricCols;
 
-                // by_day: always 2 (#, employee) + up to 12 optional (no day col)
+                // by_day: always 2 (#, employee) + optional (no day col)
                 $dayColCount   = 2 + (int)$showBranch + (int)$showMgmt
                                + (int)$showOffIn + (int)$showOffOut
-                               + (int)$showActIn + (int)$showActOut
+                               + $sessionCols
                                + (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $dayMetricCols = (int)$showDelay + (int)$showOT + (int)$showTotal + (int)$showCalculated;
                 $dayTotColspan = $dayColCount - $dayMetricCols;
@@ -209,6 +220,9 @@
                             @if ($showOffOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'  : 'Off.Out' }}</th>@endif
                             @if ($showActIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'  : 'Act.In' }}</th>@endif
                             @if ($showActOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'  : 'Act.Out' }}</th>@endif
+                            @if ($showCause)<th class="ccol">{{ $lang === 'ar' ? 'سبب الانصراف' : 'Out cause' }}</th>@endif
+                            @if ($showInLoc)<th class="lcol">{{ $lang === 'ar' ? 'موقع الدخول' : 'In loc.' }}</th>@endif
+                            @if ($showOutLoc)<th class="lcol">{{ $lang === 'ar' ? 'موقع الخروج' : 'Out loc.' }}</th>@endif
                             @if ($showDelay)<th class="tcol">{{ $lang === 'ar' ? 'تأخير'      : 'Delay' }}</th>@endif
                             @if ($showOT)<th class="tcol">{{ $lang === 'ar' ? 'إضافي'      : 'Overtime' }}</th>@endif
                             @if ($showTotal)<th class="hcol">{{ $lang === 'ar' ? 'إجمالي'     : 'Total' }}</th>@endif
@@ -254,6 +268,9 @@
                                         @endif
                                         @if ($showActIn)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_in_time'])  ?: '-') : '' }}</td>@endif
                                         @if ($showActOut)<td class="num tcol">{{ $attRow  ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
+                                        @if ($showCause)<td class="num ccol">{{ $attRow ? ($fmtCause($attRow['clock_out_cause'] ?? '') ?: '-') : '' }}</td>@endif
+                                        @if ($showInLoc)<td class="lcol">{{ $attRow ? (($attRow['clock_in_location_label'] ?? '') !== '' ? $attRow['clock_in_location_label'] : '-') : '' }}</td>@endif
+                                        @if ($showOutLoc)<td class="lcol">{{ $attRow ? (($attRow['clock_out_location_label'] ?? '') !== '' ? $attRow['clock_out_location_label'] : '-') : '' }}</td>@endif
                                         @if ($ri === 0)
                                             @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes']    ?? 0) }}</td>@endif
                                             @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif
@@ -328,6 +345,9 @@
                             @if ($showOffOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج رسمي'      : 'Off.Out' }}</th>@endif
                             @if ($showActIn)<th class="tcol">{{ $lang === 'ar' ? 'دخول فعلي'      : 'Act.In' }}</th>@endif
                             @if ($showActOut)<th class="tcol">{{ $lang === 'ar' ? 'خروج فعلي'      : 'Act.Out' }}</th>@endif
+                            @if ($showCause)<th class="ccol">{{ $lang === 'ar' ? 'سبب الانصراف'   : 'Out cause' }}</th>@endif
+                            @if ($showInLoc)<th class="lcol">{{ $lang === 'ar' ? 'موقع الدخول'    : 'In loc.' }}</th>@endif
+                            @if ($showOutLoc)<th class="lcol">{{ $lang === 'ar' ? 'موقع الخروج'    : 'Out loc.' }}</th>@endif
                             @if ($showDelay)<th class="tcol">{{ $lang === 'ar' ? 'تأخير'          : 'Delay' }}</th>@endif
                             @if ($showOT)<th class="tcol">{{ $lang === 'ar' ? 'إضافي'          : 'Overtime' }}</th>@endif
                             @if ($showTotal)<th class="hcol">{{ $lang === 'ar' ? 'إجمالي ساعات'   : 'Total Hrs' }}</th>@endif
@@ -384,6 +404,9 @@
                                     @endif
                                     @if ($showActIn)<td class="num tcol">{{ $attRow ? ($fmtTime($attRow['clock_in_time']) ?: '-') : '' }}</td>@endif
                                     @if ($showActOut)<td class="num tcol">{{ $attRow ? ($fmtTime($attRow['clock_out_time']) ?: '-') : '' }}</td>@endif
+                                    @if ($showCause)<td class="num ccol">{{ $attRow ? ($fmtCause($attRow['clock_out_cause'] ?? '') ?: '-') : '' }}</td>@endif
+                                    @if ($showInLoc)<td class="lcol">{{ $attRow ? (($attRow['clock_in_location_label'] ?? '') !== '' ? $attRow['clock_in_location_label'] : '-') : '' }}</td>@endif
+                                    @if ($showOutLoc)<td class="lcol">{{ $attRow ? (($attRow['clock_out_location_label'] ?? '') !== '' ? $attRow['clock_out_location_label'] : '-') : '' }}</td>@endif
                                     @if ($ri === 0)
                                         @if ($showDelay)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['late_minutes'] ?? 0) }}</td>@endif
                                         @if ($showOT)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>@endif

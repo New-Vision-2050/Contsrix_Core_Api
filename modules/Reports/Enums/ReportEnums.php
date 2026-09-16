@@ -20,7 +20,7 @@ namespace Modules\Reports\Enums;
  *   - step2.employeeStatus               -> employeeStatuses()
  *   - step2.contractTypeIds[]            -> contractTypes()
  *   - step2.attendance_constraint_ids[]  -> GET /lookups → attendance_constraints (live list)
- *   - step3.attendanceDataTypeIds[]      -> attendanceDataTypes()
+ *   - step3.attendanceDataTypeIds[]      -> attendanceDetailColumns()
  *   - step3.attendancePattern            -> attendancePatterns()
  *   - step3.attendanceRateMin            -> attendanceRateOptions()
  *   - step3.delayLimitMinutes            -> delayLimitOptions()
@@ -104,6 +104,9 @@ final class ReportEnums
     public const ATT_COL_OFFICIAL_OUT = 'official_out';
     public const ATT_COL_ACTUAL_IN    = 'actual_in';
     public const ATT_COL_ACTUAL_OUT   = 'actual_out';
+    public const ATT_COL_CLOCK_OUT_CAUSE = 'clock_out_cause';
+    public const ATT_COL_CLOCK_IN_LOCATION = 'clock_in_location';
+    public const ATT_COL_CLOCK_OUT_LOCATION = 'clock_out_location';
     public const ATT_COL_DELAY        = 'delay';
     public const ATT_COL_OVERTIME     = 'overtime';
     public const ATT_COL_TOTAL_HOURS  = 'total_hours';
@@ -276,6 +279,9 @@ final class ReportEnums
             self::ATT_COL_OFFICIAL_OUT,
             self::ATT_COL_ACTUAL_IN,
             self::ATT_COL_ACTUAL_OUT,
+            self::ATT_COL_CLOCK_OUT_CAUSE,
+            self::ATT_COL_CLOCK_IN_LOCATION,
+            self::ATT_COL_CLOCK_OUT_LOCATION,
             self::ATT_COL_DELAY,
             self::ATT_COL_OVERTIME,
             self::ATT_COL_TOTAL_HOURS,

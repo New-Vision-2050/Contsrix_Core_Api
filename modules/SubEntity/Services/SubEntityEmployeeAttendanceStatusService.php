@@ -217,11 +217,14 @@ class SubEntityEmployeeAttendanceStatusService
             return collect();
         }
 
+        $dayStart = $workDate.' 00:00:00';
+        $dayEnd = $workDate.' 23:59:59';
+
         return Attendance::query()
             ->whereIn('user_id', $ids->all())
-            ->where(function ($query) use ($workDate) {
-                $query->whereDate('business_date', $workDate)
-                    ->orWhereDate('start_time', $workDate);
+            ->where(function ($query) use ($workDate, $dayStart, $dayEnd) {
+                $query->where('business_date', $workDate)
+                    ->orWhereBetween('start_time', [$dayStart, $dayEnd]);
             })
             ->orderBy('start_time')
             ->get();
