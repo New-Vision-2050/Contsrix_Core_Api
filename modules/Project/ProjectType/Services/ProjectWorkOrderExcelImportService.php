@@ -114,31 +114,22 @@ final class ProjectWorkOrderExcelImportService
             throw new \DomainException("المهندس غير موجود أو غير محدد بشكل فريد في المشروع: {$employeeName}");
         }
 
-        $departmentId = $workOrder->order_permit_department_id
-            ?? $workOrder->orderPermit?->order_permit_department_id;
-
-        $phaseQuery = ProjectCompletionPhase::query()->where('name', $phaseName);
-        if ($departmentId !== null) {
-            $phaseQuery->where('order_permit_department_id', $departmentId);
-        }
-
-        $phases = $phaseQuery->get(['id', 'name'])
-            ->filter(static fn (ProjectCompletionPhase $phase): bool => (string) $phase->name === $phaseName)
-            ->values();
-        if ($phases->count() !== 1) {
-            throw new \DomainException("مرحلة التنفيذ غير موجودة أو غير محددة بشكل فريد: {$phaseName}");
-        }
-
-        $phaseId = $phases->first()->id;
-        $statuses = ProjectPhaseStatus::query()
-            ->where('project_completion_phase_id', $phaseId)
-            ->where('name', $statusName)
+        $phase = ProjectCompletionPhase::query()
+            ->where('name', $phaseName)
             ->get(['id', 'name'])
-            ->filter(static fn (ProjectPhaseStatus $status): bool => (string) $status->name === $statusName)
-            ->values();
+            ->filter(static fn (ProjectCompletionPhase $phase): bool => (string) $phase->name === $phaseName)
+            ->first();
+        $phaseId = $phase?->id;
+        $statusId = null;
 
-        if ($statuses->count() !== 1) {
-            throw new \DomainException("حالة المرحلة غير موجودة للمرحلة المحددة: {$statusName}");
+        if ($phaseId !== null) {
+            $status = ProjectPhaseStatus::query()
+                ->where('project_completion_phase_id', $phaseId)
+                ->where('name', $statusName)
+                ->get(['id', 'name'])
+                ->filter(static fn (ProjectPhaseStatus $status): bool => (string) $status->name === $statusName)
+                ->first();
+            $statusId = $status?->id;
         }
 
         $workOrder->update([
@@ -146,7 +137,7 @@ final class ProjectWorkOrderExcelImportService
             'note_from_departments_to_permit' => $this->nullableText($row, 2),
             'employee_id' => $employeeIds->first(),
             'project_completion_phase_id' => $phaseId,
-            'project_phase_status_id' => $statuses->first()->id,
+            'project_phase_status_id' => $statusId,
             'target_drilling' => $this->nullableNumber($row, 6, 'الحفر المستهدف'),
             'achieved_drilling' => $this->nullableNumber($row, 7, 'الحفر المنفذ'),
             'target_extention' => $this->nullableNumber($row, 8, 'التمديد المستهدف'),

@@ -95,13 +95,16 @@ final class ProjectWorkOrderExcelImportTest extends TestCase
         $department = OrderPermitDepartment::query()->firstOrCreate([
             'name' => 'مشاريع',
         ]);
+        $differentDepartment = OrderPermitDepartment::query()->create([
+            'name' => 'قسم اختبار '.Str::random(8),
+        ]);
 
         $exactPermit->update(['order_permit_department_id' => $department->id]);
 
         $phaseName = 'مرحلة اختبار '.Str::random(8);
         $statusName = 'حالة اختبار '.Str::random(8);
         $phase = ProjectCompletionPhase::query()->create([
-            'order_permit_department_id' => $department->id,
+            'order_permit_department_id' => $differentDepartment->id,
             'name' => $phaseName,
         ]);
         $status = ProjectPhaseStatus::query()->create([
@@ -152,6 +155,39 @@ final class ProjectWorkOrderExcelImportTest extends TestCase
         $this->assertSame((string) $employee->id, (string) $exact->fresh()->employee_id);
         $this->assertSame($phase->id, $exact->fresh()->project_completion_phase_id);
         $this->assertSame($status->id, $exact->fresh()->project_phase_status_id);
+        $this->assertSame('before wrong code', $wrongCode->fresh()->description_details);
+
+        $missingPhaseRow = $row;
+        $missingPhaseRow[4] = 'مرحلة غير موجودة '.Str::random(8);
+        $missingPhaseRow[10] = 'updated with null phase';
+
+        $missingPhaseResult = app(ProjectWorkOrderExcelImportService::class)->importRows(
+            [WorkOrderExcelOfficialHeader::COLUMNS, $missingPhaseRow],
+            (string) $projectEmployee->project_id,
+            (string) $projectEmployee->company_id,
+        );
+
+        $this->assertSame(1, $missingPhaseResult['updated']);
+        $this->assertSame(0, $missingPhaseResult['skipped']);
+        $this->assertSame('updated with null phase', $exact->fresh()->description_details);
+        $this->assertNull($exact->fresh()->project_completion_phase_id);
+        $this->assertNull($exact->fresh()->project_phase_status_id);
+
+        $missingStatusRow = $row;
+        $missingStatusRow[5] = 'حالة غير موجودة '.Str::random(8);
+        $missingStatusRow[10] = 'updated with null status';
+
+        $missingStatusResult = app(ProjectWorkOrderExcelImportService::class)->importRows(
+            [WorkOrderExcelOfficialHeader::COLUMNS, $missingStatusRow],
+            (string) $projectEmployee->project_id,
+            (string) $projectEmployee->company_id,
+        );
+
+        $this->assertSame(1, $missingStatusResult['updated']);
+        $this->assertSame(0, $missingStatusResult['skipped']);
+        $this->assertSame('updated with null status', $exact->fresh()->description_details);
+        $this->assertSame($phase->id, $exact->fresh()->project_completion_phase_id);
+        $this->assertNull($exact->fresh()->project_phase_status_id);
         $this->assertSame('before wrong code', $wrongCode->fresh()->description_details);
 
         $invalidEmployeeRow = $row;
