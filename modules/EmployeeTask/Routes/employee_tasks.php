@@ -53,6 +53,8 @@ Route::prefix('employee-tasks')->group(function () {
 */
 Route::prefix('admin/employee-tasks')->group(function () {
     Route::get('/',       [AdminEmployeeTaskController::class, 'index']);
+    Route::get('/report', [AdminEmployeeTaskController::class, 'report']);
+    Route::get('/report/{id}', [AdminEmployeeTaskController::class, 'reportShow']);
     Route::get('/inbox',  [AdminEmployeeTaskController::class, 'inbox']);
     Route::get('/inbox-counts',  [AdminEmployeeTaskController::class, 'inboxCounts']);
     Route::get('/assigned-inbox', [AdminEmployeeTaskController::class, 'assignedInbox']);

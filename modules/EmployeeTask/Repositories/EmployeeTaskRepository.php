@@ -165,6 +165,86 @@ class EmployeeTaskRepository
     }
 
     /**
+     * Table listing for the employee-tasks detailed report/dashboard.
+     * Filterable by employee (user_id), status, and task_date range.
+     */
+    public function paginateReportForAdmin(array $filters, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = EmployeeTaskRequest::query()
+            ->with(['user', 'employeeTaskType', 'sessions'])
+            ->orderByDesc('created_at');
+
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['task_date'])) {
+            $query->whereDate('task_date', $filters['task_date']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('task_date', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('task_date', '<=', $filters['date_to']);
+        }
+
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('serial_number', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Full detail load for the report "click for details" view — includes
+     * every lifecycle request (start/end/approval/extension), their linked
+     * Process/ProcessStep approval chains (who accepted/rejected each step),
+     * and the physical work sessions (with locations and timestamps).
+     */
+    public function findByIdWithFullReport(string $id): ?EmployeeTaskRequest
+    {
+        return EmployeeTaskRequest::query()
+            ->with([
+                'user',
+                'employeeTaskType',
+                'project',
+                'sessions',
+                'approvedByUser',
+                'rejectedByUser',
+                'cancelledByUser',
+                'processes.steps.actionByUser',
+                'processes.steps.assignedUser',
+                'processes.steps.procedureSettingStep',
+                'processes.procedureSetting',
+                'startRequests.requestedByUser',
+                'startRequests.reviewedByUser',
+                'startRequests.process.steps.actionByUser',
+                'startRequests.process.steps.assignedUser',
+                'startRequests.process.steps.procedureSettingStep',
+                'endRequests.requestedByUser',
+                'endRequests.reviewedByUser',
+                'endRequests.process.steps.actionByUser',
+                'endRequests.process.steps.assignedUser',
+                'endRequests.process.steps.procedureSettingStep',
+                'approvalRequests.requestedByUser',
+                'approvalRequests.reviewedByUser',
+                'extensionRequests.requestedByUser',
+                'extensionRequests.reviewedByUser',
+            ])
+            ->find($id);
+    }
+
+    /**
      * Non-paginated version of paginateInboxForAdmin — used by the combined inbox.
      */
     public function allInboxForAdmin(string $adminId, array $filters): Collection

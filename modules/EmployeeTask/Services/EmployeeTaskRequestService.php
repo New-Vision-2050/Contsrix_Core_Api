@@ -522,6 +522,29 @@ class EmployeeTaskRequestService
         return $this->repository->paginateForAdmin($filters, $perPage);
     }
 
+    /**
+     * Detailed report table (dashboard) — paginated, filterable by employee/date/status.
+     */
+    public function reportList(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->repository->paginateReportForAdmin($filters, $perPage);
+    }
+
+    /**
+     * Full detail for a single task — every lifecycle request, process/approval
+     * chain, and work session, for the report's "click for details" view.
+     */
+    public function reportDetail(string $id): EmployeeTaskRequest
+    {
+        $task = $this->repository->findByIdWithFullReport($id);
+
+        if (! $task) {
+            throw EmployeeTaskException::notFound();
+        }
+
+        return $task;
+    }
+
     public function inbox(string $adminId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->paginateInboxForAdmin($adminId, $filters, $perPage);
