@@ -16,6 +16,7 @@ use Modules\EmployeeTask\Models\EmployeeTaskStartRequest;
 use Modules\EmployeeTask\Presenters\EmployeeTaskApprovalPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskExtensionPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
+use Modules\EmployeeTask\Presenters\EmployeeTaskReportPresenter;
 use Modules\EmployeeTask\Presenters\InboxItemPresenter;
 use Modules\EmployeeTask\Requests\AdminCancelTaskRequest;
 use Modules\EmployeeTask\Requests\ApproveExtensionRequest;
@@ -477,5 +478,45 @@ class AdminEmployeeTaskController extends Controller
             'pending_start_requests' => $startRequestCount,
             'total'                  => $taskCount + $extCount + $approvalCount + $endRequestCount + $startRequestCount,
         ], message: 'Inbox counts retrieved successfully');
+    }
+
+    /**
+     * Detailed employee-tasks report table (dashboard).
+     * Filters: user_id (employee), status, task_date, date_from, date_to, search.
+     */
+    public function report(): JsonResponse
+    {
+        $filters = request()->only(['user_id', 'status', 'task_date', 'date_from', 'date_to', 'search']);
+        $perPage = (int) request()->input('per_page', 15);
+
+        $paginator = $this->requestService->reportList($filters, $perPage);
+
+        return Json::items(
+            mainItems: EmployeeTaskReportPresenter::rows($paginator->items()),
+            paginationSettings: [
+                'page'         => $paginator->currentPage(),
+                'next_page'    => min($paginator->currentPage() + 1, $paginator->lastPage()),
+                'last_page'    => $paginator->lastPage(),
+                'result_count' => $paginator->total(),
+            ],
+            message: 'Task report retrieved successfully',
+        );
+    }
+
+    /**
+     * Full detail for a single task (report "click for details" view).
+     * Includes locations, timestamps, and the complete process/approval
+     * chain (who accepted/rejected each step) for create/start/end/
+     * approval/extension, plus the final resolved status.
+     */
+    public function reportShow(string $id): JsonResponse
+    {
+        try {
+            $task = $this->requestService->reportDetail($id);
+
+            return Json::item(EmployeeTaskReportPresenter::detail($task), message: 'Task report detail retrieved successfully');
+        } catch (EmployeeTaskException $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 422);
+        }
     }
 }
