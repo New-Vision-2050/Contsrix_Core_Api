@@ -238,6 +238,8 @@ Route::group(['middleware' => ['auth:api', InitializeTenancyByRequestData::class
         Route::post('/', [ProjectOrderPermitController::class, 'store']);
         Route::get('/export-uds-template', [ProjectOrderPermitController::class, 'downloadImportTemplate']);
         Route::post('/import', [ProjectOrderPermitController::class, 'importExcel']);
+        Route::get('/export-order-permit-template', [ProjectOrderPermitController::class, 'downloadWorkOrderImportTemplate']);
+        Route::post('/import-order-permits', [ProjectOrderPermitController::class, 'importWorkOrdersExcel']);
         Route::get('/{name}/update-from-uds', [ProjectOrderPermitController::class, 'updateFromUds']);
         Route::get('/{id}', [ProjectOrderPermitController::class, 'show']);
         Route::put('/{id}', [ProjectOrderPermitController::class, 'update']);
