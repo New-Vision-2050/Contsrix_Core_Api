@@ -40,9 +40,13 @@ class ProjectNotificationLocationService
         float $notificationLng,
         ?float $radiusMeters = null,
     ): array {
+        \Log::info('DEBUG: Starting getProjectEmployeesWithLocations', ['project_id' => $projectId]);
+        
         $companyId = (string) tenant('id');
+        \Log::info('DEBUG: Got tenant ID', ['company_id' => $companyId]);
 
         // 1. Get user IDs assigned to the project.
+        \Log::info('DEBUG: Querying ProjectEmployee');
         $userIds = ProjectEmployee::withoutGlobalScopes()
             ->where('project_id', $projectId)
             ->when($companyId, fn ($q) => $q->where('company_id', $companyId))
@@ -50,8 +54,11 @@ class ProjectNotificationLocationService
             ->filter()
             ->unique()
             ->values();
+        
+        \Log::info('DEBUG: Got user IDs', ['count' => $userIds->count()]);
 
         if ($userIds->isEmpty()) {
+            \Log::info('DEBUG: No users found, returning empty array');
             return [];
         }
 
@@ -59,27 +66,37 @@ class ProjectNotificationLocationService
         //    The track-location API always writes to user_locations, even when
         //    the user has active attendance, so this is the most reliable source.
         //    Note: id is a UUID, so MAX(id) is meaningless; order by recorded_at.
+        \Log::info('DEBUG: Querying latestUserLocationsByUserId');
         $latestUserLocations = $this->latestUserLocationsByUserId($userIds);
+        \Log::info('DEBUG: Got latestUserLocations', ['count' => $latestUserLocations->count()]);
 
         // 3. Batch-query the latest attendance per user for today (for status).
+        \Log::info('DEBUG: Querying latestAttendancesByUserId');
         $attendances = $this->latestAttendancesByUserId($userIds);
+        \Log::info('DEBUG: Got attendances', ['count' => $attendances->count()]);
 
         // 4. Get users with names.
+        \Log::info('DEBUG: Querying User model');
         $users = User::whereIn('id', $userIds)->get()->keyBy('id');
+        \Log::info('DEBUG: Got users', ['count' => $users->count()]);
 
         // 5. Get busy users (tasks in_progress or approved today).
+        \Log::info('DEBUG: Querying EmployeeTaskRequest');
         $busyUserIds = EmployeeTaskRequest::whereIn('user_id', $userIds)
             ->whereIn('status', ['in_progress', 'approved'])
             ->whereDate('task_date', today())
             ->pluck('user_id')
             ->unique()
             ->toArray();
+        \Log::info('DEBUG: Got busy user IDs', ['count' => count($busyUserIds)]);
 
+        \Log::info('DEBUG: Calling locationTrackingFallbackByUserId');
         $trackingFallbackByUserId = $this->locationTrackingFallbackByUserId(
             $userIds,
             $latestUserLocations,
             $attendances,
         );
+        \Log::info('DEBUG: Got tracking fallback', ['count' => count($trackingFallbackByUserId)]);
 
         // 6. Build result per user.
         $results = [];
@@ -156,6 +173,7 @@ class ProjectNotificationLocationService
             $results = array_values($results);
         }
 
+        \Log::info('DEBUG: Returning results', ['count' => count($results)]);
         return $results;
     }
 
