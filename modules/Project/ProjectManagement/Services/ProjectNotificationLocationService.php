@@ -5,15 +5,35 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Services;
 
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\UserLocation;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Support\GeoDistance;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\User\Models\User;
+use Throwable;
 
 class ProjectNotificationLocationService
 {
+    /**
+     * Slim attendance projection. Never select location_tracking / verification_data /
+     * overtime_flags / business_date here: those JSON/date casts OOM or throw on
+     * a single bad production row and 500 the whole employees-with-locations list.
+     *
+     * @var list<string>
+     */
+    private const ATTENDANCE_LIST_COLUMNS = [
+        'attendances.id',
+        'attendances.user_id',
+        'attendances.status',
+        'attendances.clock_in_time',
+        'attendances.clock_out_time',
+        'attendances.timezone',
+        'attendances.clock_in_location',
+    ];
+
     public function getProjectEmployeesWithLocations(
         string $projectId,
         float $notificationLat,
@@ -39,34 +59,10 @@ class ProjectNotificationLocationService
         //    The track-location API always writes to user_locations, even when
         //    the user has active attendance, so this is the most reliable source.
         //    Note: id is a UUID, so MAX(id) is meaningless; order by recorded_at.
-        $latestLocationSubquery = UserLocation::whereIn('user_id', $userIds)
-            ->select('user_id', \DB::raw('MAX(recorded_at) as max_recorded_at'))
-            ->groupBy('user_id');
-
-        $latestUserLocations = UserLocation::joinSub($latestLocationSubquery, 'latest_locations', function ($join) {
-            $join->on('user_locations.user_id', '=', 'latest_locations.user_id')
-                ->on('user_locations.recorded_at', '=', 'latest_locations.max_recorded_at');
-        })
-            ->select('user_locations.*')
-            ->orderByDesc('user_locations.created_at')
-            ->orderByDesc('user_locations.id')
-            ->get()
-            ->keyBy('user_id');
+        $latestUserLocations = $this->latestUserLocationsByUserId($userIds);
 
         // 3. Batch-query the latest attendance per user for today (for status).
-        $latestAttendanceSubquery = Attendance::whereIn('user_id', $userIds)
-            ->whereBetween('clock_in_time', [now()->startOfDay(), now()->endOfDay()])
-            ->where('is_absent', false)
-            ->where('is_holiday', false)
-            ->select('user_id', \DB::raw('MAX(clock_in_time) as latest_clock_in'))
-            ->groupBy('user_id');
-
-        $attendances = Attendance::joinSub($latestAttendanceSubquery, 'latest_attendance', function ($join) {
-            $join->on('attendances.user_id', '=', 'latest_attendance.user_id')
-                ->on('attendances.clock_in_time', '=', 'latest_attendance.latest_clock_in');
-        })
-            ->get()
-            ->keyBy('user_id');
+        $attendances = $this->latestAttendancesByUserId($userIds);
 
         // 4. Get users with names.
         $users = User::whereIn('id', $userIds)->get()->keyBy('id');
@@ -79,6 +75,12 @@ class ProjectNotificationLocationService
             ->unique()
             ->toArray();
 
+        $trackingFallbackByUserId = $this->locationTrackingFallbackByUserId(
+            $userIds,
+            $latestUserLocations,
+            $attendances,
+        );
+
         // 6. Build result per user.
         $results = [];
         foreach ($userIds as $userId) {
@@ -88,41 +90,11 @@ class ProjectNotificationLocationService
             }
 
             $attendance = $attendances->get($userId);
-
-            // Primary: latest user_locations record (from track-location API).
-            $latestPoint = null;
-            $userLoc = $latestUserLocations->get($userId);
-            if ($userLoc) {
-                $latestPoint = [
-                    'latitude' => $userLoc->latitude,
-                    'longitude' => $userLoc->longitude,
-                    'accuracy' => $userLoc->accuracy,
-                    'timestamp' => $userLoc->recorded_at
-                        ? $userLoc->recorded_at->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d H:i:s')
-                        : null,
-                    'location_source' => $userLoc->location_source ?? 'GPS',
-                ];
-            }
-
-            // Fallback 1: attendance.location_tracking (last tracking point).
-            if (! $latestPoint && $attendance && ! empty($attendance->location_tracking)) {
-                $trackingData = $attendance->location_tracking;
-                $tracking = end($trackingData);
-                if (is_array($tracking)) {
-                    $latestPoint = $tracking;
-                }
-            }
-
-            // Fallback 2: attendance.clock_in_location.
-            if (! $latestPoint && $attendance && ! empty($attendance->clock_in_location)) {
-                $latestPoint = array_merge($attendance->clock_in_location, [
-                    'timestamp' => $attendance->clock_in_time
-                        ? Carbon::parse($attendance->clock_in_time, $attendance->timezone ?? getTimeZoneBranchByRequest())->format('Y-m-d H:i:s')
-                        : null,
-                    'type' => 'clock_in',
-                    'location_source' => 'clock_in',
-                ]);
-            }
+            $latestPoint = $this->resolveLatestPoint(
+                $latestUserLocations->get($userId),
+                $trackingFallbackByUserId[$userId] ?? null,
+                $attendance,
+            );
 
             $employeeLat = $latestPoint['latitude'] ?? null;
             $employeeLng = $latestPoint['longitude'] ?? null;
@@ -139,7 +111,6 @@ class ProjectNotificationLocationService
                 $attendance,
                 $latestPoint !== null,
                 in_array($userId, $busyUserIds, true),
-                $latestPoint['timestamp'] ?? null,
             );
 
             $results[] = [
@@ -159,9 +130,10 @@ class ProjectNotificationLocationService
                 'attendance' => $attendance ? [
                     'id' => $attendance->id,
                     'status' => $attendance->status,
-                    'clock_in_time' => $attendance->clock_in_time
-                        ? Carbon::parse($attendance->clock_in_time, $attendance->timezone ?? getTimeZoneBranchByRequest())->format('H:i:s')
-                        : null,
+                    'clock_in_time' => $this->formatClockInTime(
+                        $attendance->clock_in_time,
+                        $attendance->timezone,
+                    ),
                 ] : null,
             ];
         }
@@ -192,11 +164,255 @@ class ProjectNotificationLocationService
         return GeoDistance::metres($lat1, $lon1, $lat2, $lon2);
     }
 
+    /**
+     * @param  Collection<int, string>  $userIds
+     * @return Collection<string, UserLocation>
+     */
+    private function latestUserLocationsByUserId(Collection $userIds): Collection
+    {
+        $latestLocationSubquery = UserLocation::whereIn('user_id', $userIds)
+            ->select('user_id', DB::raw('MAX(recorded_at) as max_recorded_at'))
+            ->groupBy('user_id');
+
+        return UserLocation::joinSub($latestLocationSubquery, 'latest_locations', function ($join) {
+            $join->on('user_locations.user_id', '=', 'latest_locations.user_id')
+                ->on('user_locations.recorded_at', '=', 'latest_locations.max_recorded_at');
+        })
+            ->select('user_locations.*')
+            ->orderByDesc('user_locations.recorded_at')
+            ->orderByDesc('user_locations.created_at')
+            ->orderByDesc('user_locations.id')
+            ->get()
+            ->unique('user_id')
+            ->keyBy('user_id');
+    }
+
+    /**
+     * @param  Collection<int, string>  $userIds
+     * @return Collection<string, Attendance>
+     */
+    private function latestAttendancesByUserId(Collection $userIds): Collection
+    {
+        $latestAttendanceSubquery = Attendance::whereIn('user_id', $userIds)
+            ->whereBetween('clock_in_time', [now()->startOfDay(), now()->endOfDay()])
+            ->where('is_absent', false)
+            ->where('is_holiday', false)
+            ->select('user_id', DB::raw('MAX(clock_in_time) as latest_clock_in'))
+            ->groupBy('user_id');
+
+        try {
+            return Attendance::joinSub($latestAttendanceSubquery, 'latest_attendance', function ($join) {
+                $join->on('attendances.user_id', '=', 'latest_attendance.user_id')
+                    ->on('attendances.clock_in_time', '=', 'latest_attendance.latest_clock_in');
+            })
+                ->select(self::ATTENDANCE_LIST_COLUMNS)
+                ->orderByDesc('attendances.clock_in_time')
+                ->orderByDesc('attendances.created_at')
+                ->get()
+                ->unique('user_id')
+                ->keyBy('user_id');
+        } catch (Throwable) {
+            // A single corrupt clock_in_location JSON must not 500 the list.
+            return Attendance::joinSub($latestAttendanceSubquery, 'latest_attendance', function ($join) {
+                $join->on('attendances.user_id', '=', 'latest_attendance.user_id')
+                    ->on('attendances.clock_in_time', '=', 'latest_attendance.latest_clock_in');
+            })
+                ->select([
+                    'attendances.id',
+                    'attendances.user_id',
+                    'attendances.status',
+                    'attendances.clock_in_time',
+                    'attendances.clock_out_time',
+                    'attendances.timezone',
+                ])
+                ->orderByDesc('attendances.clock_in_time')
+                ->orderByDesc('attendances.created_at')
+                ->get()
+                ->unique('user_id')
+                ->keyBy('user_id');
+        }
+    }
+
+    /**
+     * Load location_tracking only for employees who have no user_locations row.
+     * Production track-location always writes user_locations, so this stays empty there.
+     *
+     * @param  Collection<int, string>  $userIds
+     * @param  Collection<string, UserLocation>  $latestUserLocations
+     * @param  Collection<string, Attendance>  $attendances
+     * @return array<string, array<string, mixed>>
+     */
+    private function locationTrackingFallbackByUserId(
+        Collection $userIds,
+        Collection $latestUserLocations,
+        Collection $attendances,
+    ): array {
+        $attendanceIds = [];
+        foreach ($userIds as $userId) {
+            if ($latestUserLocations->has($userId)) {
+                continue;
+            }
+
+            $attendance = $attendances->get($userId);
+            if ($attendance?->id) {
+                $attendanceIds[] = $attendance->id;
+            }
+        }
+
+        if ($attendanceIds === []) {
+            return [];
+        }
+
+        try {
+            $rows = Attendance::query()
+                ->whereIn('id', $attendanceIds)
+                ->select('id', 'user_id', 'location_tracking')
+                ->get();
+        } catch (Throwable) {
+            return [];
+        }
+
+        $points = [];
+        foreach ($rows as $row) {
+            try {
+                $tracking = $row->location_tracking;
+                if (! is_array($tracking) || $tracking === []) {
+                    continue;
+                }
+
+                $last = end($tracking);
+                if (is_array($last)) {
+                    $points[(string) $row->user_id] = $last;
+                }
+            } catch (Throwable) {
+                continue;
+            }
+        }
+
+        return $points;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $trackingPoint
+     * @return array<string, mixed>|null
+     */
+    private function resolveLatestPoint(
+        ?UserLocation $userLoc,
+        ?array $trackingPoint,
+        ?Attendance $attendance,
+    ): ?array {
+        if ($userLoc) {
+            return [
+                'latitude' => $userLoc->latitude,
+                'longitude' => $userLoc->longitude,
+                'accuracy' => $userLoc->accuracy,
+                'timestamp' => $this->formatRecordedAt($userLoc->recorded_at),
+                'location_source' => $userLoc->location_source ?? 'GPS',
+            ];
+        }
+
+        if (is_array($trackingPoint)) {
+            return $trackingPoint;
+        }
+
+        if ($attendance && ! empty($attendance->clock_in_location) && is_array($attendance->clock_in_location)) {
+            return array_merge($attendance->clock_in_location, [
+                'timestamp' => $this->formatStoredDateTime(
+                    $attendance->clock_in_time,
+                    $attendance->timezone,
+                ),
+                'type' => 'clock_in',
+                'location_source' => 'clock_in',
+            ]);
+        }
+
+        return null;
+    }
+
+    private function formatRecordedAt(mixed $recordedAt): ?string
+    {
+        if ($recordedAt === null || $recordedAt === '') {
+            return null;
+        }
+
+        try {
+            $carbon = $recordedAt instanceof Carbon
+                ? $recordedAt->copy()
+                : Carbon::parse($recordedAt);
+
+            return $carbon->format('Y-m-d H:i:s');
+        } catch (Throwable) {
+            if ($recordedAt instanceof \DateTimeInterface) {
+                return $recordedAt->format('Y-m-d H:i:s');
+            }
+
+            return is_string($recordedAt) ? $recordedAt : null;
+        }
+    }
+
+    private function formatClockInTime(mixed $clockInTime, mixed $timezone): ?string
+    {
+        $formatted = $this->formatStoredDateTime($clockInTime, $timezone);
+
+        if ($formatted === null) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($formatted)->format('H:i:s');
+        } catch (Throwable) {
+            return $formatted;
+        }
+    }
+
+    private function formatStoredDateTime(mixed $value, mixed $timezone = null): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value, $this->safeTimezone(is_string($timezone) ? $timezone : null))
+                ->format('Y-m-d H:i:s');
+        } catch (Throwable) {
+            try {
+                return Carbon::parse($value)->format('Y-m-d H:i:s');
+            } catch (Throwable) {
+                return is_string($value) ? $value : null;
+            }
+        }
+    }
+
+    private function safeTimezone(?string $timezone = null): string
+    {
+        $candidates = [
+            $timezone,
+            getTimeZoneBranchByRequest(),
+            config('app.timezone'),
+            'Asia/Riyadh',
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (! is_string($candidate) || $candidate === '') {
+                continue;
+            }
+
+            try {
+                new \DateTimeZone($candidate);
+
+                return $candidate;
+            } catch (Throwable) {
+                continue;
+            }
+        }
+
+        return 'UTC';
+    }
+
     private function deriveEmployeeStatus(
         ?Attendance $attendance,
         bool $hasLocation,
         bool $isBusy,
-        ?string $lastUpdateTimestamp,
     ): string {
         if (! $attendance) {
             if ($isBusy) {
