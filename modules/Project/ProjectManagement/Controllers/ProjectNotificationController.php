@@ -556,16 +556,29 @@ class ProjectNotificationController extends Controller
 
     public function employeesWithLocations(GetProjectNotificationEmployeesRequest $request): JsonResponse
     {
-        $employees = $this->locationService->getProjectEmployeesWithLocations(
-            $request->input('project_id'),
-            (float) $request->input('latitude'),
-            (float) $request->input('longitude'),
-            $request->filled('radius') ? (float) $request->input('radius') : null,
-        );
+        try {
+            $employees = $this->locationService->getProjectEmployeesWithLocations(
+                $request->input('project_id'),
+                (float) $request->input('latitude'),
+                (float) $request->input('longitude'),
+                $request->filled('radius') ? (float) $request->input('radius') : null,
+            );
 
-        return Json::items(
-            ProjectNotificationEmployeeLocationPresenter::collection($employees),
-        );
+            return Json::items(
+                ProjectNotificationEmployeeLocationPresenter::collection($employees),
+            );
+        } catch (Throwable $e) {
+            \Log::error('employees-with-locations error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'project_id' => $request->input('project_id'),
+            ]);
+            
+            return Json::error(
+                'Failed to retrieve employees with locations: '.$e->getMessage(),
+                500
+            );
+        }
     }
 
     public function approve(Request $request): JsonResponse
