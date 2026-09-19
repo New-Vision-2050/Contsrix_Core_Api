@@ -188,21 +188,18 @@ class ProjectNotificationLocationService
      */
     private function latestUserLocationsByUserId(Collection $userIds): Collection
     {
-        $latestLocationSubquery = UserLocation::whereIn('user_id', $userIds)
-            ->select('user_id', DB::raw('MAX(recorded_at) as max_recorded_at'))
-            ->groupBy('user_id');
+        // Optimized: Use a simple approach instead of complex join
+        // Get all locations for these users, ordered by recorded_at DESC
+        $allLocations = UserLocation::whereIn('user_id', $userIds)
+            ->orderByDesc('recorded_at')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
 
-        return UserLocation::joinSub($latestLocationSubquery, 'latest_locations', function ($join) {
-            $join->on('user_locations.user_id', '=', 'latest_locations.user_id')
-                ->on('user_locations.recorded_at', '=', 'latest_locations.max_recorded_at');
-        })
-            ->select('user_locations.*')
-            ->orderByDesc('user_locations.recorded_at')
-            ->orderByDesc('user_locations.created_at')
-            ->orderByDesc('user_locations.id')
-            ->get()
-            ->unique('user_id')
-            ->keyBy('user_id');
+        // Group by user_id and take the first (latest) for each user
+        return $allLocations->groupBy('user_id')
+            ->map(fn ($locations) => $locations->first())
+            ->filter();
     }
 
     /**
