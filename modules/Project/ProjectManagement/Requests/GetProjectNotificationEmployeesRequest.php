@@ -16,7 +16,7 @@ class GetProjectNotificationEmployeesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_id' => ['required', 'uuid', 'exists:projects,id'],
+            'project_id' => ['required', 'uuid'], // Temporarily removed 'exists:projects,id' to debug timeout
             'latitude'   => ['required', 'numeric', 'between:-90,90'],
             'longitude'  => ['required', 'numeric', 'between:-180,180'],
             'radius'     => ['nullable', 'integer', 'min:1'],
