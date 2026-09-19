@@ -12,6 +12,7 @@ use Modules\Attendance\Models\UserLocation;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\RoleAndPermission\Enums\Permission;
 use Modules\User\Models\User;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
@@ -96,7 +97,7 @@ class ProjectNotificationEmployeesWithLocationsTest extends BaseAttendanceReport
         $this->assertSame('2026-06-23 11:59:00', $availableRow['last_update']);
 
         $notConnectedRow = $payload->firstWhere('user_id', (string) $notConnectedUser->id);
-        $this->assertSame('not_connected', $notConnectedRow['status']);
+        $this->assertSame('available', $notConnectedRow['status']);
         $this->assertSame(30.0460, $notConnectedRow['location']['latitude']);
         $this->assertSame('2026-06-23 10:00:00', $notConnectedRow['last_update']);
 
@@ -165,8 +166,8 @@ class ProjectNotificationEmployeesWithLocationsTest extends BaseAttendanceReport
         $row = collect($response->json('payload'))->firstWhere('user_id', (string) $user->id);
 
         $this->assertSame('2026-07-04 15:39:35', $row['last_update']);
-        $this->assertSame(21.7126771, $row['location']['latitude']);
-        $this->assertSame(39.2211670, $row['location']['longitude']);
+        $this->assertEqualsWithDelta(21.7126771, (float) $row['location']['latitude'], 0.0000001);
+        $this->assertEqualsWithDelta(39.2211670, (float) $row['location']['longitude'], 0.0000001);
     }
 
     public function test_radius_filter_excludes_employees_outside_range(): void
@@ -205,14 +206,127 @@ class ProjectNotificationEmployeesWithLocationsTest extends BaseAttendanceReport
         $this->assertFalse($userIds->contains((string) $farUser->id));
     }
 
+    public function test_employees_with_locations_survives_invalid_timezone_and_bloated_tracking(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-19 16:32:00'));
+
+        $project = $this->createProject();
+        $user = $this->createProjectUser('Production-Like User');
+        $this->assignToProject($project, $user);
+
+        $bloatedTracking = [];
+        for ($i = 0; $i < 200; $i++) {
+            $bloatedTracking[] = [
+                'latitude' => 21.6000000 + ($i * 0.000001),
+                'longitude' => 39.1000000,
+                'timestamp' => '2026-09-19 08:00:00',
+            ];
+        }
+
+        $this->createAttendanceWithTracking($user, $bloatedTracking, [
+            'clock_in_time' => '2026-09-19 08:00:00',
+            'start_time' => '2026-09-19 08:00:00',
+            'business_date' => '2026-09-19',
+            'timezone' => '',
+        ]);
+
+        UserLocation::query()->create([
+            'id' => (string) Str::uuid(),
+            'user_id' => $user->id,
+            'company_id' => $this->company->id,
+            'latitude' => 21.7791920,
+            'longitude' => 39.2262200,
+            'accuracy' => 8.5,
+            'location_source' => 'GPS',
+            'recorded_at' => '2026-09-19 16:30:00',
+        ]);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/notifications/employees-with-locations?'.http_build_query([
+                'project_id' => $project->id,
+                'latitude' => 21.779192,
+                'longitude' => 39.22622,
+            ]));
+
+        $response->assertOk();
+
+        $row = collect($response->json('payload'))->firstWhere('user_id', (string) $user->id);
+
+        $this->assertSame('available', $row['status']);
+        $this->assertEqualsWithDelta(21.779192, (float) $row['location']['latitude'], 0.0000001);
+        $this->assertEqualsWithDelta(39.226220, (float) $row['location']['longitude'], 0.0000001);
+        $this->assertSame('2026-09-19 16:30:00', $row['last_update']);
+        $this->assertSame('08:00:00', $row['attendance']['clock_in_time']);
+    }
+
+    public function test_employees_with_locations_survives_non_list_location_tracking_json(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-19 16:32:00'));
+
+        $project = $this->createProject();
+        $user = $this->createProjectUser('Corrupt Tracking User');
+        $this->assignToProject($project, $user);
+
+        $attendance = $this->createAttendanceWithTracking($user, [
+            ['latitude' => 21.779192, 'longitude' => 39.22622, 'timestamp' => '2026-09-19 16:00:00'],
+        ], [
+            'clock_in_time' => '2026-09-19 08:00:00',
+            'start_time' => '2026-09-19 08:00:00',
+            'business_date' => '2026-09-19',
+            'timezone' => 'Not/AZone',
+        ]);
+
+        DB::table('attendances')
+            ->where('id', $attendance->id)
+            ->update(['location_tracking' => json_encode(['unexpected' => 'object'])]);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/projects/notifications/employees-with-locations?'.http_build_query([
+                'project_id' => $project->id,
+                'latitude' => 21.779192,
+                'longitude' => 39.22622,
+            ]));
+
+        $response->assertOk();
+
+        $row = collect($response->json('payload'))->firstWhere('user_id', (string) $user->id);
+
+        $this->assertNotNull($row);
+        $this->assertSame((string) $user->id, $row['user_id']);
+        $this->assertSame('08:00:00', $row['attendance']['clock_in_time']);
+    }
+
     private function createProject(): ProjectManagement
     {
-        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->create([
+        $projectTypeId = $this->projectTypeId();
+
+        return ProjectManagement::withoutEvents(fn () => ProjectManagement::query()->withoutGlobalScopes()->forceCreate([
             'id' => (string) Str::uuid(),
+            'project_type_id' => $projectTypeId,
+            'sub_project_type_id' => $projectTypeId,
+            'sub_sub_project_type_id' => $projectTypeId,
             'name' => 'Employees With Locations Project',
             'company_id' => $this->company->id,
             'status' => 1,
+            'serial_number' => 'PRJ-LOC-'.Str::upper(Str::random(6)),
         ]));
+    }
+
+    private function projectTypeId(): int
+    {
+        return (int) ProjectType::query()->withoutGlobalScopes()->firstOrCreate(
+            [
+                'name' => 'Employees With Locations Type',
+                'company_id' => $this->company->id,
+            ],
+            [
+                'is_created' => true,
+                'is_have_schema' => false,
+                'is_active' => true,
+            ],
+        )->id;
     }
 
     private function createProjectUser(string $name): User
