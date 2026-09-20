@@ -556,10 +556,10 @@ class ProjectNotificationController extends Controller
 
     public function employeesWithLocations(GetProjectNotificationEmployeesRequest $request): JsonResponse
     {
+        // DEBUG MARKER: v2026-09-20-001 - VERY FIRST LINE - If you see this, new code is running
+        \Log::info('EMP-LOC MARKER 2026-09-20-001 - controller entered');
+        
         try {
-            // DEBUG MARKER: v2026-09-19-001 - If you see this, code is deployed
-            \Log::info('employees-with-locations called - CODE VERSION 2026-09-19-001');
-            
             $employees = $this->locationService->getProjectEmployeesWithLocations(
                 $request->input('project_id'),
                 (float) $request->input('latitude'),
