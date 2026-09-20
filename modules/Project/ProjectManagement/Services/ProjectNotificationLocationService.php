@@ -188,18 +188,34 @@ class ProjectNotificationLocationService
      */
     private function latestUserLocationsByUserId(Collection $userIds): Collection
     {
-        // Optimized: Use a simple approach instead of complex join
-        // Get all locations for these users, ordered by recorded_at DESC
-        $allLocations = UserLocation::whereIn('user_id', $userIds)
-            ->orderByDesc('recorded_at')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->get();
+        // Per-user LIMIT 1 queries. The tenant global scope adds company_id to the
+        // WHERE clause, which makes MySQL pick the (company_id, recorded_at) index
+        // and scan EVERY location row of the company -> the request hangs.
+        // user_ids are already tenant-verified via the ProjectEmployee query, so
+        // dropping the scope is safe and forces the (user_id, recorded_at) index.
+        $locations = collect();
 
-        // Group by user_id and take the first (latest) for each user
-        return $allLocations->groupBy('user_id')
-            ->map(fn ($locations) => $locations->first())
-            ->filter();
+        foreach ($userIds as $userId) {
+            $location = UserLocation::withoutGlobalScopes()
+                ->where('user_id', $userId)
+                ->orderByDesc('recorded_at')
+                ->orderByDesc('id')
+                ->first([
+                    'id',
+                    'user_id',
+                    'latitude',
+                    'longitude',
+                    'accuracy',
+                    'location_source',
+                    'recorded_at',
+                ]);
+
+            if ($location) {
+                $locations->put($userId, $location);
+            }
+        }
+
+        return $locations;
     }
 
     /**
@@ -208,44 +224,49 @@ class ProjectNotificationLocationService
      */
     private function latestAttendancesByUserId(Collection $userIds): Collection
     {
-        $latestAttendanceSubquery = Attendance::whereIn('user_id', $userIds)
-            ->whereBetween('clock_in_time', [now()->startOfDay(), now()->endOfDay()])
-            ->where('is_absent', false)
-            ->where('is_holiday', false)
-            ->select('user_id', DB::raw('MAX(clock_in_time) as latest_clock_in'))
-            ->groupBy('user_id');
+        // Per-user LIMIT 1 queries (same reasoning as latestUserLocationsByUserId:
+        // the tenant-scoped joinSub mega query makes MySQL scan whole-company rows).
+        $attendances = collect();
 
-        try {
-            return Attendance::joinSub($latestAttendanceSubquery, 'latest_attendance', function ($join) {
-                $join->on('attendances.user_id', '=', 'latest_attendance.user_id')
-                    ->on('attendances.clock_in_time', '=', 'latest_attendance.latest_clock_in');
-            })
-                ->select(self::ATTENDANCE_LIST_COLUMNS)
-                ->orderByDesc('attendances.clock_in_time')
-                ->orderByDesc('attendances.created_at')
-                ->get()
-                ->unique('user_id')
-                ->keyBy('user_id');
-        } catch (Throwable) {
-            // A single corrupt clock_in_location JSON must not 500 the list.
-            return Attendance::joinSub($latestAttendanceSubquery, 'latest_attendance', function ($join) {
-                $join->on('attendances.user_id', '=', 'latest_attendance.user_id')
-                    ->on('attendances.clock_in_time', '=', 'latest_attendance.latest_clock_in');
-            })
-                ->select([
-                    'attendances.id',
-                    'attendances.user_id',
-                    'attendances.status',
-                    'attendances.clock_in_time',
-                    'attendances.clock_out_time',
-                    'attendances.timezone',
-                ])
-                ->orderByDesc('attendances.clock_in_time')
-                ->orderByDesc('attendances.created_at')
-                ->get()
-                ->unique('user_id')
-                ->keyBy('user_id');
+        foreach ($userIds as $userId) {
+            try {
+                $attendance = Attendance::withoutGlobalScopes()
+                    ->where('user_id', $userId)
+                    ->whereBetween('clock_in_time', [now()->startOfDay(), now()->endOfDay()])
+                    ->where('is_absent', false)
+                    ->where('is_holiday', false)
+                    ->orderByDesc('clock_in_time')
+                    ->orderByDesc('created_at')
+                    ->first(self::ATTENDANCE_LIST_COLUMNS);
+            } catch (Throwable) {
+                // A single corrupt clock_in_location JSON must not 500 the list.
+                try {
+                    $attendance = Attendance::withoutGlobalScopes()
+                        ->where('user_id', $userId)
+                        ->whereBetween('clock_in_time', [now()->startOfDay(), now()->endOfDay()])
+                        ->where('is_absent', false)
+                        ->where('is_holiday', false)
+                        ->orderByDesc('clock_in_time')
+                        ->orderByDesc('created_at')
+                        ->first([
+                            'attendances.id',
+                            'attendances.user_id',
+                            'attendances.status',
+                            'attendances.clock_in_time',
+                            'attendances.clock_out_time',
+                            'attendances.timezone',
+                        ]);
+                } catch (Throwable) {
+                    $attendance = null;
+                }
+            }
+
+            if ($attendance) {
+                $attendances->put($userId, $attendance);
+            }
         }
+
+        return $attendances;
     }
 
     /**
