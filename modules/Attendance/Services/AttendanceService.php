@@ -30,7 +30,7 @@ use Modules\Attendance\Jobs\ProcessClockInAttendanceData;
 use Modules\Attendance\Presenters\AttendanceTeamPresenter;
 use Modules\Attendance\Services\AttendanceNotificationService;
 use Modules\Attendance\Support\ConstraintRuleReader;
-use Modules\Attendance\Support\AutoCloseGrace;
+use Modules\Attendance\Support\AutoClockOutRules;
 use Modules\Attendance\Support\ManualClockOutTime;
 
 class AttendanceService
@@ -135,8 +135,10 @@ class AttendanceService
     }
 
     /**
-     * Dispatch AutoCloseAttendanceJob at shift end (or after the parked 2-hour
-     * grace when attendance.auto_close_grace_enabled is true).
+     * Dispatch AutoCloseAttendanceJob at the window's auto-close trigger instant.
+     * With rule-based auto clock-out enabled that is expected clock-out +
+     * extension_minutes, storing expected minus the penalty; otherwise it fires
+     * at expected clock-out and stores that time unchanged.
      */
     private function scheduleAutoClose(Attendance $attendance, ShiftWindow $window): void
     {
@@ -228,7 +230,8 @@ class AttendanceService
                 ? \Modules\Attendance\Support\FlexibleWorkDay::requiredMinutesFromWorkRules($constraints)
                 : null,
             flexibleDay: $isFlexible,
-            autoCloseGraceEnabled: \Modules\Attendance\Support\AutoCloseGrace::enabledFromConfig(),
+            ruleBasedAutoClockOutEnabled: AutoClockOutRules::enabledFromConfig(),
+            autoClockOutPenaltyPercent: AutoClockOutRules::penaltyPercent(),
         ));
     }
 
@@ -485,9 +488,10 @@ class AttendanceService
      * Behaviour (preserved):
      *  1. Reject if the user has no active attendance.
      *  2. Reject if the attendance already has a clock_out_time.
-     *  3. Persist clock_out_time as now in the branch timezone. The parked
-     *     shift-end cap (ManualClockOutTime) only runs when
-     *     attendance.auto_close_grace_enabled is on.
+     *  3. Persist clock_out_time as now in the branch timezone, capped to the
+     *     snapshotted rules (ManualClockOutTime) when
+     *     attendance.manual_clock_out_cap_enabled is on: shift end, or shift
+     *     end + max_over_time when post-shift overtime is allowed.
      *     appended notes, and mark the row completed + day_status=clocked_out.
      *  4. Re-run the calculator so total_work_hours / overtime_hours / early_departure
      *     are recomputed from the final clock-in/clock-out pair.
@@ -619,7 +623,10 @@ class AttendanceService
 
         $timezone = $attendance->timezone ?: getTimeZoneBranchByRequest();
         $clockOutAt = Carbon::parse($dto->getClockOutTime(), $timezone);
-        if (AutoCloseGrace::enabledFromConfig()) {
+        if (AutoClockOutRules::manualCapEnabledFromConfig()) {
+            // Cap the stored punch to the snapshotted rules: shift end when
+            // post-shift overtime is not allowed, shift end + max_over_time when
+            // it is. Never a penalty — penalties only apply to auto clock-out.
             $clockOutAt = ManualClockOutTime::resolve($attendance, $dto->getClockOutTime());
         }
 

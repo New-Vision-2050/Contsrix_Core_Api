@@ -53,6 +53,48 @@ class ManualClockOutTimeTest extends TestCase
         $this->assertSame('2026-09-10 19:00:00', $resolved->format('Y-m-d H:i:s'));
     }
 
+    public function test_overtime_punch_beyond_max_over_time_is_capped_at_shift_end_plus_cap(): void
+    {
+        $attendance = $this->shift('2026-09-10 08:30:00', '2026-09-10 17:30:00');
+        $attendance->overtime_flags = [
+            'is_after_finish_working_hours' => true,
+        ];
+        $attendance->max_over_time = 2.0;
+
+        // Shift end 17:30 + 2h cap = 19:30. A 19:45 punch is stored as 19:30.
+        $resolved = ManualClockOutTime::resolve($attendance, '2026-09-10 19:45:00');
+
+        $this->assertSame('2026-09-10 19:30:00', $resolved->format('Y-m-d H:i:s'));
+    }
+
+    public function test_twenty_minute_max_over_time_caps_at_twenty_past_shift_end(): void
+    {
+        // Production example: shift ends 20:00, max_over_time = 20 minutes
+        // (stored on the row as decimal hours, 20/60 ≈ 0.3333).
+        $attendance = $this->shift('2026-09-10 11:00:00', '2026-09-10 20:00:00');
+        $attendance->overtime_flags = [
+            'is_after_finish_working_hours' => true,
+        ];
+        $attendance->max_over_time = 0.3333;
+
+        $resolved = ManualClockOutTime::resolve($attendance, '2026-09-10 20:30:00');
+
+        $this->assertSame('2026-09-10 20:20:00', $resolved->format('Y-m-d H:i:s'));
+    }
+
+    public function test_after_extension_flag_also_allows_overtime_cap(): void
+    {
+        $attendance = $this->shift('2026-09-10 11:00:00', '2026-09-10 20:00:00');
+        $attendance->overtime_flags = [
+            'is_overtime_after_extension_hours_shift' => true,
+        ];
+        $attendance->max_over_time = 0.3333;
+
+        $resolved = ManualClockOutTime::resolve($attendance, '2026-09-10 20:30:00');
+
+        $this->assertSame('2026-09-10 20:20:00', $resolved->format('Y-m-d H:i:s'));
+    }
+
     public function test_overtime_flag_without_max_over_time_is_still_capped(): void
     {
         $attendance = $this->shift('2026-09-10 08:30:00', '2026-09-10 17:30:00');

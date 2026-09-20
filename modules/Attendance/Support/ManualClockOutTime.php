@@ -9,9 +9,17 @@ use Modules\Attendance\Domain\Calculator\OvertimeFlags;
 use Modules\Attendance\Models\Attendance;
 
 /**
- * Parked: when auto_close_grace_enabled is on, a manual punch after shift end
- * is stored as shift end if overtime is not allowed. Off (default): callers
- * store now in the branch timezone instead.
+ * Caps a manual clock-out punch to the rules snapshotted on the attendance row
+ * (applied when attendance.manual_clock_out_cap_enabled is on). A manual punch
+ * is never penalised — penalties only apply to auto clock-out (AutoClockOutRules).
+ *
+ * Cap rules:
+ *  - Post-shift overtime NOT allowed (is_after_finish_working_hours and
+ *    is_overtime_after_extension_hours_shift both off, or max_over_time = 0)
+ *    → at most the shift end (expected_clock_out_time ?? end_time).
+ *    e.g. a 20:30 punch on a shift ending 20:00 is stored as 20:00.
+ *  - Post-shift overtime allowed → at most shift end + max_over_time.
+ *    e.g. max_over_time = 20 min and a 20:30 punch is stored as 20:20.
  */
 final class ManualClockOutTime
 {
@@ -20,13 +28,9 @@ final class ManualClockOutTime
         $tz = $attendance->timezone ?: date_default_timezone_get();
         $requested = self::parse($requestedClockOut, $tz);
 
-        if (self::allowsPostShiftOvertime($attendance)) {
-            return $requested;
-        }
-
         $shiftEnd = self::shiftEnd($attendance, $tz);
-        if ($shiftEnd === null || $requested->lte($shiftEnd)) {
-            return $requested;
+        if ($shiftEnd === null || $requested === null || $requested->lte($shiftEnd)) {
+            return $requested ?? Carbon::now($tz);
         }
 
         $clockIn = self::parse($attendance->clock_in_time, $tz);
@@ -34,7 +38,13 @@ final class ManualClockOutTime
             return $requested;
         }
 
-        return $shiftEnd;
+        $cap = $shiftEnd->copy();
+        if (self::allowsPostShiftOvertime($attendance)) {
+            // max_over_time is snapshotted on the row in HOURS (decimal).
+            $cap->addMinutes((int) round(((float) ($attendance->max_over_time ?? 0)) * 60));
+        }
+
+        return $requested->gt($cap) ? $cap : $requested;
     }
 
     public static function allowsPostShiftOvertime(Attendance $attendance): bool

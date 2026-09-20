@@ -6,7 +6,7 @@ namespace Modules\Attendance\Domain\Time;
 
 use Carbon\CarbonImmutable;
 use Modules\Attendance\Domain\Calculator\OvertimeFlags;
-use Modules\Attendance\Support\AutoCloseGrace;
+use Modules\Attendance\Support\AutoClockOutRules;
 
 /**
  * Computes every clock-in / clock-out boundary for a scheduled period.
@@ -79,6 +79,7 @@ final class ShiftWindowCalculator
             expectedClockOutAt: $expectedClockOutAt,
             absentAt: $absentAt,
             in: $in,
+            ruleBasedAutoClose: $in->ruleBasedAutoClockOutEnabled,
         );
     }
 
@@ -86,6 +87,9 @@ final class ShiftWindowCalculator
      * Flexible: clock-in any time during the calendar day. Required hours come from
      * constraint working_hours. Auto-close when those hours complete. If overtime after
      * finish is allowed, a later session can run up to max_over_time.
+     *
+     * Rule-based auto clock-out (extension wait + penalty) does not apply: a flexible
+     * day has no fixed shift end to extend or to penalise against.
      */
     private function computeFlexible(ShiftWindowInput $in): ShiftWindow
     {
@@ -129,6 +133,7 @@ final class ShiftWindowCalculator
             expectedClockOutAt: $expectedClockOutAt,
             absentAt: $dayEnd,
             in: $in,
+            ruleBasedAutoClose: false,
         );
     }
 
@@ -143,6 +148,7 @@ final class ShiftWindowCalculator
         CarbonImmutable $expectedClockOutAt,
         CarbonImmutable $absentAt,
         ShiftWindowInput $in,
+        bool $ruleBasedAutoClose,
     ): ShiftWindow {
         return new ShiftWindow(
             requiredWorkMinutes:  $requiredMinutes,
@@ -153,13 +159,17 @@ final class ShiftWindowCalculator
             lastClockInAt:        $lastClockInAt,
             lastClockOutAt:       $lastClockOutAt,
             expectedClockOutAt:   $expectedClockOutAt,
-            autoCloseStoredAt:    AutoCloseGrace::storedClockOutAt(
+            autoCloseStoredAt:    AutoClockOutRules::storedClockOutAt(
                 $expectedClockOutAt,
                 $in->clockIn,
-                $in->autoCloseGraceEnabled,
+                $requiredMinutes,
+                $ruleBasedAutoClose,
+                $in->autoClockOutPenaltyPercent,
             ),
-            autoCloseTriggerAt:   $expectedClockOutAt->addMinutes(
-                AutoCloseGrace::delayMinutes($in->maxOverTimeHours, $in->autoCloseGraceEnabled)
+            autoCloseTriggerAt:   AutoClockOutRules::triggerAt(
+                $expectedClockOutAt,
+                $in->extensionMinutes,
+                $ruleBasedAutoClose,
             ),
             absentAt:             $absentAt,
         );

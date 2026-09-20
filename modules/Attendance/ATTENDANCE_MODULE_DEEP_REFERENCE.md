@@ -1098,6 +1098,11 @@ Key clock-out rules:
 - Completed rows should not be mutated as if active.
 - Overtime is capped by the row snapshot, not by whatever the current constraint
   row says after edits.
+- A manual clock-out is capped to the snapshotted rules when
+  `attendance.manual_clock_out_cap_enabled` is on (default true): at the shift
+  end (`expected_clock_out_time ?? end_time`) when post-shift overtime is not
+  allowed, otherwise at shift end + `max_over_time`. A manual punch is never
+  penalised — the penalty only applies to auto clock-out.
 - Breaks must be read from `attendance_breaks`.
 - Auto-close must write the intended close instant, not worker execution time.
 - Closing a row clears `is_absent`. Both `buildClockOutUpdatePayload` and
@@ -1160,6 +1165,27 @@ See section 3 for the full schedule, which spans both the provider and
 
 Auto-close jobs should pass datetimes using ISO 8601 strings. This preserves the
 instant across serialization and avoids positive/negative timezone offset bugs.
+
+### Rule-based auto clock-out with penalty
+
+When `attendance.rule_based_auto_clock_out_enabled` is on (default true), a shift
+the employee forgot to close is auto-closed at
+`expected_clock_out_time + extension_minutes` (the constraint's extension rule,
+snapshotted on the row at clock-in) and the stored `clock_out_time` is
+`expected_clock_out_time` minus a penalty of
+`attendance.auto_clock_out_penalty_percent` % (default 25) of the required shift
+minutes. Example: a 9h shift ending 20:00 with a 120-minute extension fires at
+22:00 and stores 17:45, so the day pays 6.75h. Penalty closes are recorded with
+`shift_end_method = 'auto_extension_penalty'`; plain boundary closes keep
+`'auto_max_ot'`. Flexible days are exempt (no fixed shift end). When the flag is
+off, auto-close fires at `expected_clock_out_time` and stores it unchanged.
+
+The rule lives in `Support/AutoClockOutRules` (pure methods take every input as a
+parameter; only application services/commands call the `*FromConfig` helpers) and
+is applied by `ShiftWindowCalculator` (scheduled close) and
+`AutoCloseStaleShiftsCommand` (safety net). `AutoClockOutAtNextShiftStartJob`
+deliberately does NOT penalise: it fires when the employee moved into the next
+scheduled period, so it stores the next period's start unchanged.
 
 ### Absence marking
 
