@@ -145,20 +145,20 @@
                     ? array_flip($config->step3->attendanceDataTypeIds)
                     : array_flip(\Modules\Reports\Enums\ReportEnums::attendanceDetailColumns());
                 $showDay     = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_DAY]);
-                // Design update (Sep 2026): branch / management / official in-out are
-                // no longer table columns. Branch & management are rendered next to the
-                // employee identity instead, official in-out are dropped entirely.
-                // Flags are hard-forced off so they are hidden even if a stale config
-                // still carries their ids.
+                // Design update (Sep 2026): branch / management / official in-out /
+                // clock in-out locations are no longer table columns. Branch & management
+                // are rendered next to the employee identity instead; the remaining ones
+                // are dropped entirely. Flags are hard-forced off so they are hidden even
+                // if a stale config still carries their ids.
                 $showBranch  = false;
                 $showMgmt    = false;
                 $showOffIn   = false;
                 $showOffOut  = false;
+                $showInLoc   = false;
+                $showOutLoc  = false;
                 $showActIn   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_IN]);
                 $showActOut  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_OUT]);
                 $showCause   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_CLOCK_OUT_CAUSE]);
-                $showInLoc   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_CLOCK_IN_LOCATION]);
-                $showOutLoc  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_CLOCK_OUT_LOCATION]);
                 $showDelay   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_DELAY]);
                 $showOT      = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OVERTIME]);
                 $showTotal   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_TOTAL_HOURS]);
