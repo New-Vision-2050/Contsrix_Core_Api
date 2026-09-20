@@ -9,7 +9,9 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Modules\Project\ProjectManagement\Models\ProjectContractor;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Presenters\ProjectContractorPresenter;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitPresenter;
 use Modules\Project\ProjectType\Presenters\ProjectOrderPermitNoteLogPresenter;
@@ -18,11 +20,16 @@ use Modules\Project\ProjectType\Requests\SearchProjectOrderPermitUdsRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitStatusRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
+use Modules\Project\ProjectType\Jobs\ImportProjectWorkOrdersJob;
 use Modules\Project\ProjectType\Jobs\ImportProjectOrderPermitUdsJob;
+use Modules\Project\ProjectType\Imports\InvalidWorkOrderExcelHeaderException;
 use Modules\Project\ProjectType\Imports\InvalidUdsExcelHeaderException;
 use Modules\Project\ProjectType\Imports\UdsExcelHeaderReader;
 use Modules\Project\ProjectType\Imports\UdsExcelHeaderValidator;
 use Modules\Project\ProjectType\Imports\UdsExcelOfficialHeader;
+use Modules\Project\ProjectType\Imports\WorkOrderExcelHeaderReader;
+use Modules\Project\ProjectType\Imports\WorkOrderExcelHeaderValidator;
+use Modules\Project\ProjectType\Imports\WorkOrderExcelOfficialHeader;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProjectOrderPermitController extends Controller
@@ -189,6 +196,58 @@ class ProjectOrderPermitController extends Controller
                 $e->getMessage(),
                 422,
                 'InvalidUdsTemplate',
+                ['mismatches' => $e->mismatches()],
+                422,
+            );
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function downloadWorkOrderImportTemplate(): BinaryFileResponse
+    {
+        $path = WorkOrderExcelOfficialHeader::templateAbsolutePath();
+
+        abort_unless(is_file($path), 404, 'Official Project Work Orders template is missing.');
+
+        return response()->download($path, WorkOrderExcelOfficialHeader::DOWNLOAD_NAME, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function importWorkOrdersExcel(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:102400',
+        ]);
+
+        $projectId = (string) $request->route('project');
+        $companyId = (string) tenant('id');
+        ProjectManagement::query()->findOrFail($projectId);
+
+        try {
+            $file = $request->file('file');
+            $headerRow = (new WorkOrderExcelHeaderReader())->readFirstRow((string) $file->getRealPath());
+            (new WorkOrderExcelHeaderValidator())->validate($headerRow);
+
+            $path = $file->store('temp_imports', 'public');
+
+            try {
+                dispatch(new ImportProjectWorkOrdersJob($path, $projectId, $companyId));
+            } catch (\Throwable $e) {
+                Storage::disk('public')->delete($path);
+
+                throw $e;
+            }
+
+            return response()->json([
+                'message' => 'جاري تحديث أوامر العمل في الخلفية',
+            ]);
+        } catch (InvalidWorkOrderExcelHeaderException $e) {
+            return Json::error(
+                $e->getMessage(),
+                422,
+                'InvalidWorkOrdersTemplate',
                 ['mismatches' => $e->mismatches()],
                 422,
             );
