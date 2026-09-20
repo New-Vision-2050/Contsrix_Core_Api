@@ -12,15 +12,17 @@
 
 ### Removed table columns (PDF)
 
-The following 4 columns are **no longer rendered** in the detailed attendance table, in both
+The following 6 columns are **no longer rendered** in the detailed attendance table, in both
 display modes (`employee_per_page` and `by_day`), regardless of what the report config contains:
 
-| Column ID (step3)    | Arabic label | English label |
-| -------------------- | ------------ | ------------- |
-| `branch`             | الفرع        | Branch        |
-| `management`         | الادارة      | Management    |
-| `official_in`        | دخول رسمي    | Official in   |
-| `official_out`       | خروج رسمي    | Official out  |
+| Column ID (step3)     | Arabic label | English label |
+| --------------------- | ------------ | ------------- |
+| `branch`              | الفرع        | Branch        |
+| `management`          | الادارة      | Management    |
+| `official_in`         | دخول رسمي    | Official in   |
+| `official_out`        | خروج رسمي    | Official out  |
+| `clock_in_location`   | موقع الدخول  | Clock-in location  |
+| `clock_out_location`  | موقع الخروج  | Clock-out location |
 
 ### Added to the employee header
 
@@ -42,14 +44,16 @@ In the report wizard **Step 3** ("Attendance data / column selection"):
   - `management`
   - `official_in`
   - `official_out`
+  - `clock_in_location`
+  - `clock_out_location`
 
 Sending them is **harmless** — the backend ignores these IDs when rendering the PDF — but they
 should be hidden from the UI so users don't expect them to affect the output.
 
 ### Still-valid step-3 column IDs (unchanged)
 
-`day`, `actual_in`, `actual_out`, `clock_out_cause`, `clock_in_location`, `clock_out_location`,
-`delay`, `overtime`, `total_hours`, `calculated_hours`
+`day`, `actual_in`, `actual_out`, `clock_out_cause`, `delay`, `overtime`, `total_hours`,
+`calculated_hours`
 
 ---
 
@@ -57,7 +61,7 @@ should be hidden from the UI so users don't expect them to affect the output.
 
 - The `GET /api/v1/reports/lookups` response may still include the removed IDs under the
   attendance detail columns list until the backend cleans them up. Do **not** render checkboxes
-  for the 4 removed IDs.
+  for the 6 removed IDs.
 - No changes to the `downloadUrl` / media response shape.
 
 ---
