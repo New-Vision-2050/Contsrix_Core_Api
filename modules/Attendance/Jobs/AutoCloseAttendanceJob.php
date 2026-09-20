@@ -15,9 +15,10 @@ use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AutoCloseAttendanceService;
 
 /**
- * Closes a shift at the precomputed closeAtIso (shift end by default).
- * When attendance.auto_close_grace_enabled is on, closeAtIso is expected end
- * minus 2 hours and the job is delayed 2 hours after shift end.
+ * Closes a shift at the precomputed closeAtIso (expected clock-out by default).
+ * When attendance.rule_based_auto_clock_out_enabled is on, the job is delayed
+ * until expected clock-out + extension_minutes and closeAtIso is expected
+ * clock-out minus the auto-clock-out penalty (percent of required minutes).
  *
  * Dispatched with a future delay at clock-in time so the exact deadline is honoured
  * regardless of cron-command jitter.  The AutoCloseStaleShiftsCommand acts as a
@@ -62,7 +63,23 @@ class AutoCloseAttendanceJob implements ShouldQueue
             }
 
             $closeAt = CarbonImmutable::parse($this->closeAtIso);
-            $closed  = $autoCloseService->closeIfExpired($attendance, $closeAt, 'auto_max_ot');
+
+            // Audit trail: a close stored BEFORE the expected clock-out is a penalty
+            // close (rule-based auto clock-out); anything else is a plain boundary close.
+            $expectedRaw = $attendance->expected_clock_out_time;
+            $expected    = $expectedRaw !== null && $expectedRaw !== ''
+                ? CarbonImmutable::parse(
+                    $expectedRaw instanceof \DateTimeInterface
+                        ? $expectedRaw->format('Y-m-d H:i:s')
+                        : (string) $expectedRaw,
+                    $attendance->timezone ?: config('app.timezone'),
+                )
+                : null;
+            $reason = $expected !== null && $closeAt->lessThan($expected)
+                ? 'auto_extension_penalty'
+                : 'auto_max_ot';
+
+            $closed  = $autoCloseService->closeIfExpired($attendance, $closeAt, $reason);
 
             if (!$closed) {
                 Log::debug('AutoCloseAttendanceJob: attendance already closed or not active', [

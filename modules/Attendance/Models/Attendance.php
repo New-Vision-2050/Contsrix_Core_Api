@@ -129,7 +129,7 @@ class Attendance extends Model implements Auditable
         'total_work_hours' => 'decimal:2',
         'total_break_hours' => 'decimal:2',
         'overtime_hours' => 'decimal:2',
-        'max_over_time' => 'decimal:1',
+        'max_over_time' => 'decimal:4',
         'late_minutes' => 'integer',
         'early_departure_minutes' => 'integer',
         'is_late' => 'boolean',

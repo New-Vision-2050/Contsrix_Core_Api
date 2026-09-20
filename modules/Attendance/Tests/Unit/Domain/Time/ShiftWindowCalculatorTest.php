@@ -36,7 +36,8 @@ final class ShiftWindowCalculatorTest extends TestCase
         int $alreadyWorkedMinutesInPeriod = 0,
         ?OvertimeFlags $flags = null,
         string $tz = 'Asia/Riyadh',
-        bool $autoCloseGraceEnabled = false,
+        bool $ruleBasedAutoClockOutEnabled = false,
+        int $autoClockOutPenaltyPercent = 25,
     ): ShiftWindowInput {
         return new ShiftWindowInput(
             scheduledStart: CarbonImmutable::parse($scheduledStart, $tz),
@@ -50,7 +51,8 @@ final class ShiftWindowCalculatorTest extends TestCase
             alreadyWorkedMinutesInPeriod: $alreadyWorkedMinutesInPeriod,
             overtimeFlags: $flags,
             timezone: $tz,
-            autoCloseGraceEnabled: $autoCloseGraceEnabled,
+            ruleBasedAutoClockOutEnabled: $ruleBasedAutoClockOutEnabled,
+            autoClockOutPenaltyPercent: $autoClockOutPenaltyPercent,
         );
     }
 
@@ -238,19 +240,62 @@ final class ShiftWindowCalculatorTest extends TestCase
         $this->assertSame('2026-09-10 17:30', $w->autoCloseStoredAt->format('Y-m-d H:i'));
     }
 
-    public function test_parked_grace_waits_two_hours_and_stores_minus_two_hours(): void
+    // 12. Rule-based auto clock-out: fire at expected + extension, store expected − 25% penalty.
+    //     Production scenario: 9h shift 11:00–20:00, extension 120 → fires 22:00, stores 17:45.
+    public function test_rule_based_auto_close_waits_for_extension_and_stores_minus_penalty(): void
     {
         $w = $this->calc->compute($this->input(
-            scheduledStart: '2026-09-10 08:30',
-            scheduledEnd:   '2026-09-10 17:30',
-            clockIn:        '2026-09-10 08:30',
+            scheduledStart: '2026-09-10 11:00',
+            scheduledEnd:   '2026-09-10 20:00',
+            clockIn:        '2026-09-10 11:00',
+            extensionMinutes: 120,
             maxOverTimeHours: 0.0,
-            autoCloseGraceEnabled: true,
+            ruleBasedAutoClockOutEnabled: true,
         ));
 
-        $this->assertSame('2026-09-10 17:30', $w->expectedClockOutAt->format('Y-m-d H:i'));
-        $this->assertSame('2026-09-10 19:30', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
-        $this->assertSame('2026-09-10 15:30', $w->autoCloseStoredAt->format('Y-m-d H:i'));
+        $this->assertSame(540, $w->requiredWorkMinutes);
+        $this->assertSame('2026-09-10 20:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-09-10 22:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
+        // 25% of 540 min = 135 min = 2h15m → 20:00 − 2:15 = 17:45.
+        $this->assertSame('2026-09-10 17:45', $w->autoCloseStoredAt->format('Y-m-d H:i'));
+    }
+
+    // 13. Rule-based auto clock-out: the stored penalty never precedes the clock-in.
+    public function test_rule_based_auto_close_penalty_clamps_to_clock_in(): void
+    {
+        $w = $this->calc->compute($this->input(
+            scheduledStart: '2026-09-10 11:00',
+            scheduledEnd:   '2026-09-10 20:00',
+            clockIn:        '2026-09-10 19:50',
+            extensionMinutes: 120,
+            ruleBasedAutoClockOutEnabled: true,
+        ));
+
+        // anchor 19:50 + 540 min = 04:50 next day → expected clamps to lastClockOutAt 22:00.
+        // Penalty 135 min → 22:00 − 2:15 = 19:45, before the 19:50 clock-in → clamp to 19:50.
+        $this->assertSame('2026-09-10 22:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-09-10 19:50', $w->autoCloseStoredAt->format('Y-m-d H:i'));
+    }
+
+    // 14. Flexible days never wait out an extension and never apply the penalty.
+    public function test_flexible_day_ignores_rule_based_auto_clock_out(): void
+    {
+        $tz = 'Asia/Riyadh';
+        $w = $this->calc->compute(new ShiftWindowInput(
+            scheduledStart: CarbonImmutable::parse('2026-08-13 00:00:00', $tz),
+            scheduledEnd: CarbonImmutable::parse('2026-08-13 23:59:59', $tz),
+            clockIn: CarbonImmutable::parse('2026-08-13 11:00:00', $tz),
+            extensionMinutes: 120,
+            overtimeFlags: new OvertimeFlags(),
+            timezone: $tz,
+            requiredWorkMinutesOverride: 480,
+            flexibleDay: true,
+            ruleBasedAutoClockOutEnabled: true,
+        ));
+
+        $this->assertSame('2026-08-13 19:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 19:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 19:00', $w->autoCloseStoredAt->format('Y-m-d H:i'));
     }
 
     public function test_flexible_day_clock_in_anytime_auto_closes_after_required_hours(): void
