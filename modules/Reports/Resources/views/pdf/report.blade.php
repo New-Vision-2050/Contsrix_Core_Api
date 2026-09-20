@@ -145,10 +145,15 @@
                     ? array_flip($config->step3->attendanceDataTypeIds)
                     : array_flip(\Modules\Reports\Enums\ReportEnums::attendanceDetailColumns());
                 $showDay     = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_DAY]);
-                $showBranch  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_BRANCH]);
-                $showMgmt    = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_MANAGEMENT]);
-                $showOffIn   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OFFICIAL_IN]);
-                $showOffOut  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_OFFICIAL_OUT]);
+                // Design update (Sep 2026): branch / management / official in-out are
+                // no longer table columns. Branch & management are rendered next to the
+                // employee identity instead, official in-out are dropped entirely.
+                // Flags are hard-forced off so they are hidden even if a stale config
+                // still carries their ids.
+                $showBranch  = false;
+                $showMgmt    = false;
+                $showOffIn   = false;
+                $showOffOut  = false;
                 $showActIn   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_IN]);
                 $showActOut  = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_ACTUAL_OUT]);
                 $showCause   = isset($_dc[\Modules\Reports\Enums\ReportEnums::ATT_COL_CLOCK_OUT_CAUSE]);
@@ -260,7 +265,10 @@
                                     <tr style="background-color:{{ $rowBg }};">
                                         @if ($ri === 0)
                                             <td rowspan="{{ $subRowCount }}" class="num" style="vertical-align:middle;">{{ $dSeq }}</td>
-                                            <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $emp->name }}</td>
+                                            <td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">
+                                                {{ $emp->name }}
+                                                @if ($empBranch)<div style="font-size:7.5px; font-weight:400; opacity:0.75;">{{ $empBranch }}@if ($empMgmt) &nbsp;/&nbsp; {{ $empMgmt }}@endif</div>@elseif ($empMgmt)<div style="font-size:7.5px; font-weight:400; opacity:0.75;">{{ $empMgmt }}</div>@endif
+                                            </td>
                                             @if ($showBranch)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empBranch }}</td>@endif
                                             @if ($showMgmt)<td rowspan="{{ $subRowCount }}" style="vertical-align:middle;">{{ $empMgmt }}</td>@endif
                                             @if ($showOffIn)<td rowspan="{{ $subRowCount }}" class="num tcol" style="vertical-align:middle;">{{ $fmtTime($d['start_time']) ?: '-' }}</td>@endif
