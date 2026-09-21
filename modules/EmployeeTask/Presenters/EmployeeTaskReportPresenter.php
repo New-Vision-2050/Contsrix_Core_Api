@@ -127,7 +127,9 @@ final class EmployeeTaskReportPresenter
         $processes[] = [
             'type'          => 'create',
             'type_label'    => $this->typeLabel('create', $locale),
-            'status'        => $task->status === EmployeeTaskStatus::Pending->value ? 'pending' : ($task->status === EmployeeTaskStatus::Rejected->value ? 'rejected' : 'approved'),
+            'status'        => $createProcess
+                ? $this->processStatusLabel($createProcess)
+                : ($task->approved_at !== null ? 'approved' : ($task->status === EmployeeTaskStatus::Rejected->value ? 'rejected' : 'pending')),
             'requested_by'  => $this->userSummary($task->relationLoaded('user') ? $task->user : null),
             'requested_at'  => $this->formatInTimezone($task->created_at),
             'reviewed_by'   => $this->userSummary($task->relationLoaded('approvedByUser') ? $task->approvedByUser : ($task->relationLoaded('rejectedByUser') ? $task->rejectedByUser : null)),
