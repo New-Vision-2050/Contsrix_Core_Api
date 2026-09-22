@@ -19,7 +19,7 @@ class ExportPublicHolidayRequest extends FormRequest
         return [
             'format' => ['sometimes', Rule::in(['xlsx', 'csv'])],
             'name' => ['sometimes', 'string', 'max:255'],
-            'country_id' => ['sometimes', 'exists:countries,id'],
+            'branch_id' => ['sometimes', 'integer', Rule::exists('management_hierarchies', 'id')->where('type', 'branch')->where('company_id', tenant('id'))],
             'date_start' => ['sometimes', 'date', 'date_format:Y-m-d'],
             'date_end' => ['sometimes', 'date', 'date_format:Y-m-d'],
             'ids' => ['sometimes', 'array'],
@@ -36,7 +36,7 @@ class ExportPublicHolidayRequest extends FormRequest
     {
         return array_filter([
             'name' => $this->get('name'),
-            'country_id' => $this->get('country_id'),
+            'branch_id' => $this->get('branch_id'),
             'date_start' => $this->get('date_start'),
             'date_end' => $this->get('date_end'),
             'ids' => $this->get('ids'),
@@ -54,7 +54,7 @@ class ExportPublicHolidayRequest extends FormRequest
             'format.in' => __('leave.export.format.invalid'),
             'name.string' => __('leave.export.name.string'),
             'name.max' => __('leave.export.name.max'),
-            'country_id.exists' => __('leave.export.country_id.exists'),
+            'branch_id.exists' => __('leave.public_holiday.branch_id.exists'),
             'date_start.date' => __('leave.export.date_start.date'),
             'date_start.date_format' => __('leave.export.date_start.date_format'),
             'date_end.date' => __('leave.export.date_end.date'),

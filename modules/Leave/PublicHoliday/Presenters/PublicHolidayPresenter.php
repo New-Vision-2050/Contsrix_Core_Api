@@ -21,9 +21,14 @@ class PublicHolidayPresenter extends AbstractPresenter
         return [
             'id' => $this->publicHoliday->id,
             'name' => $this->publicHoliday->name_ar ?? $this->publicHoliday->name,
-            'country_id' => $this->publicHoliday->country_id,
-            'date_start' => $this->publicHoliday->date_start?->format('Y-m-d'),
-            'date_end' => $this->publicHoliday->date_end?->format('Y-m-d'),
+            'branch_id' => $this->publicHoliday->branch_id,
+            'date_start' => $this->publicHoliday->date_start?->format('m-d'),
+            'date_end' => $this->publicHoliday->date_end?->format('m-d'),
+            'year' => $this->publicHoliday->year,
+            'is_recurring' => $this->publicHoliday->is_recurring,
+            'count_days' => $this->publicHoliday->relationLoaded('days')
+                ? $this->publicHoliday->days->count()
+                : $this->publicHoliday->days()->count(),
             'days' => $this->publicHoliday->relationLoaded('days')
                 ? $this->publicHoliday->days->map(static function ($day) {
                     return [
@@ -33,9 +38,9 @@ class PublicHolidayPresenter extends AbstractPresenter
                     ];
                 })->values()->all()
                 : [],
-            'country' => $this->publicHoliday->country ? [
-                'id' => $this->publicHoliday->country->id,
-                'name' => $this->publicHoliday->country->name,
+            'branch' => $this->publicHoliday->branch ? [
+                'id' => $this->publicHoliday->branch->id,
+                'name' => $this->publicHoliday->branch->name,
             ] : null,
         ];
     }

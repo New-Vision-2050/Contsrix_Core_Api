@@ -12,7 +12,7 @@ class UpdatePublicHolidayCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
-        private string $country_id,
+        private int $branch_id,
         private DateTime $date_start,
         private DateTime $date_end,
     ) {
@@ -28,9 +28,9 @@ class UpdatePublicHolidayCommand
         return $this->name;
     }
 
-    public function getCountryId(): string
+    public function getBranchId(): int
     {
-        return $this->country_id;
+        return $this->branch_id;
     }
 
     public function getDateStart(): DateTime
@@ -47,7 +47,7 @@ class UpdatePublicHolidayCommand
     {
         return [
             'name' => $this->name,
-            'country_id' => $this->country_id,
+            'branch_id' => $this->branch_id,
             'date_start' => $this->date_start->format('Y-m-d'),
             'date_end' => $this->date_end->format('Y-m-d'),
         ];

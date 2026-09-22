@@ -74,6 +74,7 @@ class AttendanceReportService
                 $leaveAllowance,
                 $runningPrior,
                 $countryId,
+                $this->publicHolidayCalendar->branchIdForUser($user),
             );
             $runningPrior += (float) ($monthLeaveUsed[$monthKey] ?? 0);
         }
@@ -100,6 +101,7 @@ class AttendanceReportService
         float $leaveAllowance,
         float $priorLeaveUsed,
         ?string $countryId,
+        ?int $branchId,
     ): array {
         [$year, $month] = array_map('intval', explode('-', $monthKey));
         $carbon = Carbon::create($year, $month, 1);
@@ -112,14 +114,15 @@ class AttendanceReportService
         $officialHolidaysAll = $this->repository->countAllPublicHolidayDaysInPeriod(
             $carbon->toDateString(),
             $carbon->copy()->endOfMonth()->toDateString(),
-            $countryId
+            $countryId,
+            $branchId,
         );
 
         // 3. إجمالي أيام العطل الشهرية = نهاية الأسبوع + العطل الرسمية
         $monthHolidays = $weekendDays + $officialHolidaysAll;
 
         // 4. أيام الحضور المطلوبة تبقى معتمدة على الدالة القديمة التي تستثني نهاية الأسبوع
-        $officialHolidaysWorkdays = $this->repository->countPublicHolidayDaysInMonth($year, $month, $countryId);
+        $officialHolidaysWorkdays = $this->repository->countPublicHolidayDaysInMonth($year, $month, $countryId, $branchId);
         $requiredAttendanceDays = AttendanceReportCalculator::requiredAttendanceDays(
             $carbon->toDateString(),
             $carbon->copy()->endOfMonth()->toDateString(),
