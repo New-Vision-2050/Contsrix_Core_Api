@@ -36,6 +36,7 @@ class AttendanceDashboardService
             $filters->periodStart(),
             $filters->periodEnd(),
             $countryId,
+            $this->publicHolidayCalendar->branchIdForUser($user),
         );
 
         $attendanceDays = AttendanceReportCalculator::requiredAttendanceDays(

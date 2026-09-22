@@ -34,10 +34,16 @@ class PublicHolidayController extends Controller
     {
         $list = $this->publicHolidayService->list(
             (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int) $request->get('per_page', 10),
+            $request->validated(),
         );
 
         return Json::items(PublicHolidayPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function branches(GetPublicHolidayListRequest $request): JsonResponse
+    {
+        return Json::items($this->publicHolidayService->branchCards());
     }
 
     public function show(GetPublicHolidayRequest $request): JsonResponse

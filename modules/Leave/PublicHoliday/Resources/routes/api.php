@@ -12,6 +12,9 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/export', [PublicHolidayController::class, 'export'])
         ->permission(Permission::PUBLIC_HOLIDAY_EXPORT());
 
+    Route::get('/branches', [PublicHolidayController::class, 'branches'])
+        ->permission(Permission::PUBLIC_HOLIDAY_LIST());
+
     Route::get('/{id}', [PublicHolidayController::class, 'show'])
         ->permission(Permission::PUBLIC_HOLIDAY_VIEW(),Permission::PUBLIC_HOLIDAY_UPDATE());
     Route::put('/{id}', [PublicHolidayController::class, 'update'])
