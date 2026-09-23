@@ -61,9 +61,9 @@ php artisan db:seed --class="Modules\Leave\PublicHoliday\Database\Seeders\Calend
 ### Asking whether a date is a holiday
 
 Ask through the attendance module, which resolves the employee's country from their
-branch and reads the **applied days** in `public_holiday_days` — not the `date_start ..
-date_end` range on the parent, which differs whenever `PublicHolidayDayCalculator` shifts
-a day off a weekend or appends a compensation day.
+branch and reads the **applied days** in `public_holiday_days`. `PublicHolidayDayCalculator`
+simply expands `date_start .. date_end` into one row per calendar day, with no shifting
+or compensation days — the applied days always match the raw range.
 
 ```php
 use Modules\Attendance\Services\PublicHolidayCalendarService;

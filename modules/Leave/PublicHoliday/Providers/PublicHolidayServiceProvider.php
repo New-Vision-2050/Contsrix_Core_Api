@@ -11,6 +11,7 @@ use Modules\Leave\PublicHoliday\Commands\TestApiCommand;
 use Modules\Leave\PublicHoliday\Commands\TestTranslationsCommand;
 use Modules\Leave\PublicHoliday\Commands\UpdateTranslationsCommand;
 use Modules\Leave\PublicHoliday\Commands\UpdateSeederWithArabicCommand;
+use Modules\Leave\PublicHoliday\Commands\RecalculatePublicHolidayDaysCommand;
 
 class PublicHolidayServiceProvider extends ModuleServiceProvider
 {
@@ -50,6 +51,7 @@ class PublicHolidayServiceProvider extends ModuleServiceProvider
                 TestApiCommand::class,
                 TestTranslationsCommand::class,
                 UpdateTranslationsCommand::class,
+                RecalculatePublicHolidayDaysCommand::class,
             ]);
         }
     }
