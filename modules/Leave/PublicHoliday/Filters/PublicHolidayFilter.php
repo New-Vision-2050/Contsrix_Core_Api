@@ -18,19 +18,21 @@ class PublicHolidayFilter extends SearchModelFilter
 
     public function dateStart($date)
     {
-        return $this->where('date_start',$date );
+        [$month, $day] = explode('-', $date);
+        return $this->whereMonth('date_start', $month)->whereDay('date_start', $day);
     }
 
 
 
     public function dateEnd($date)
     {
-        return $this->where('date_end',$date );
+        [$month, $day] = explode('-', $date);
+        return $this->whereMonth('date_end', $month)->whereDay('date_end', $day);
     }
 
 
-    public function country($country_id)
+    public function branch($branch_id)
     {
-        return $this->where('country_id',$country_id );
+        return $this->where('branch_id',$branch_id );
     }
 }

@@ -81,3 +81,10 @@ Schedule::command(SendSiteStatusUpdateRemindersCommand::class)
     ->timezone('Asia/Riyadh')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/project-notification-site-status-reminders.log'));
+
+// Generate the new year's recurring holidays before daily holiday attendance.
+Schedule::command(\App\Console\Commands\GenerateAnnualPublicHolidaysCommand::class)
+    ->yearlyOn(1, 1, '00:01')
+    ->timezone('Asia/Riyadh')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/public-holidays-annual.log'));

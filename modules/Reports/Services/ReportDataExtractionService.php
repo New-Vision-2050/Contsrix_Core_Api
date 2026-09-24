@@ -432,8 +432,8 @@ class ReportDataExtractionService
     /**
      * Official holidays for every employee in the report, resolved before the row loop.
      *
-     * Employees are grouped by the country their branch sits in, so the holiday table is
-     * queried once per distinct country rather than once per employee or once per row.
+     * Employees are grouped by branch and legacy country, so holidays from another
+     * branch cannot leak through the per-request memo.
      *
      * @param  Collection<int, object>  $dailyRows
      * @return array<string, PublicHolidayDates>
@@ -451,20 +451,22 @@ class ReportDataExtractionService
             return [];
         }
 
-        $byCountry = [];
+        $byBranchAndCountry = [];
         $byUser = [];
 
         foreach (User::query()->whereIn('id', $userIds)->get() as $user) {
             $countryId = $this->publicHolidayCalendar->countryIdForUser($user);
 
-            if ($countryId === null) {
+            $branchId = $this->publicHolidayCalendar->branchIdForUser($user);
+            if ($countryId === null && $branchId === null) {
                 continue;
             }
 
-            $byCountry[$countryId] ??= $this->publicHolidayCalendar->forCountry($countryId, $start, $end);
+            $key = json_encode([$countryId, $branchId]);
+            $byBranchAndCountry[$key] ??= $this->publicHolidayCalendar->forCountry($countryId, $start, $end, $branchId);
 
-            if (! $byCountry[$countryId]->isEmpty()) {
-                $byUser[(string) $user->id] = $byCountry[$countryId];
+            if (! $byBranchAndCountry[$key]->isEmpty()) {
+                $byUser[(string) $user->id] = $byBranchAndCountry[$key];
             }
         }
 

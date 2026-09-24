@@ -11,7 +11,7 @@ class CreatePublicHolidayDTO
 {
     public function __construct(
         public readonly string $name,
-        public readonly string $country_id,
+        public readonly int $branch_id,
         public readonly DateTime $date_start,
         public readonly DateTime $date_end,
     ) {
@@ -22,9 +22,9 @@ class CreatePublicHolidayDTO
         return $this->name;
     }
 
-    public function getCountryId(): string
+    public function getBranchId(): int
     {
-        return $this->country_id;
+        return $this->branch_id;
     }
 
     public function getDateStart(): DateTime
@@ -41,7 +41,7 @@ class CreatePublicHolidayDTO
     {
         return [
             'name' => $this->name,
-            'country_id' => $this->country_id,
+            'branch_id' => $this->branch_id,
             'date_start' => $this->date_start->format('Y-m-d'),
             'date_end' => $this->date_end->format('Y-m-d'),
         ];

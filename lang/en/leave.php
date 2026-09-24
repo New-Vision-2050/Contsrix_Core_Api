@@ -13,10 +13,17 @@ return [
 
     // PublicHoliday validation messages
     'public_holiday' => [
+        'invalid_year' => 'These dates do not exist in the holiday year.',
+        'month_day' => 'The date must be a valid month and day in MM-DD format.',
         'name' => [
             'required' => 'The holiday name is required.',
             'string' => 'The holiday name must be a string.',
             'max' => 'The holiday name must not exceed 255 characters.',
+        ],
+        'branch_id' => [
+            'required' => 'The branch ID is required.',
+            'integer' => 'The branch ID must be an integer.',
+            'exists' => 'The selected branch does not exist.',
         ],
         'country_id' => [
             'required' => 'The country ID is required.',

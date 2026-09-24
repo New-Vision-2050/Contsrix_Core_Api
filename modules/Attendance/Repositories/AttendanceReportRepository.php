@@ -219,15 +219,24 @@ class AttendanceReportRepository extends BaseRepository
 
         return $this->sumApprovedLeaveDays($companyId, $userId, $start, $end);
     }
-    public function countAllPublicHolidayDaysInPeriod(string $fromDate, string $toDate, ?string $countryId): int
+    public function countAllPublicHolidayDaysInPeriod(string $fromDate, string $toDate, ?string $countryId, ?int $branchId = null): int
     {
-        if ($countryId === null || $countryId === '') {
+        if (($countryId === null || $countryId === '') && $branchId === null) {
             return 0;
         }
 
         return PublicHolidayDay::query()
             ->join('public_holidays', 'public_holiday_days.public_holiday_id', '=', 'public_holidays.id')
-            ->where('public_holidays.country_id', $countryId)
+            ->where(function ($query) use ($countryId, $branchId) {
+                $query->where(function ($legacy) use ($countryId) {
+                    $legacy->whereNull('public_holidays.branch_id')
+                        ->where('public_holidays.country_id', $countryId)
+                        ->whereNotNull('public_holidays.country_id');
+                });
+                if ($branchId !== null) {
+                    $query->orWhere('public_holidays.branch_id', $branchId);
+                }
+            })
             ->where('public_holidays.is_active', true)
             ->whereBetween('public_holiday_days.date', [$fromDate, $toDate])
             ->distinct()
@@ -235,12 +244,12 @@ class AttendanceReportRepository extends BaseRepository
             ->unique(fn ($date) => Carbon::parse($date)->toDateString())
             ->count();
     }
-    public function countPublicHolidayDaysInMonth(int $year, int $month, ?string $countryId): int
+    public function countPublicHolidayDaysInMonth(int $year, int $month, ?string $countryId, ?int $branchId = null): int
     {
         $start = sprintf('%04d-%02d-01', $year, $month);
         $end = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
 
-        return $this->countPublicHolidayDaysInPeriod($start, $end, $countryId);
+        return $this->countPublicHolidayDaysInPeriod($start, $end, $countryId, $branchId);
     }
     public function countWeekendDaysInMonth(int $year, int $month): int
     {
@@ -255,15 +264,24 @@ class AttendanceReportRepository extends BaseRepository
         }
         return $weekendDays;
     }
-    public function countPublicHolidayDaysInPeriod(string $fromDate, string $toDate, ?string $countryId): int
+    public function countPublicHolidayDaysInPeriod(string $fromDate, string $toDate, ?string $countryId, ?int $branchId = null): int
     {
-        if ($countryId === null || $countryId === '') {
+        if (($countryId === null || $countryId === '') && $branchId === null) {
             return 0;
         }
 
         return PublicHolidayDay::query()
             ->join('public_holidays', 'public_holiday_days.public_holiday_id', '=', 'public_holidays.id')
-            ->where('public_holidays.country_id', $countryId)
+            ->where(function ($query) use ($countryId, $branchId) {
+                $query->where(function ($legacy) use ($countryId) {
+                    $legacy->whereNull('public_holidays.branch_id')
+                        ->where('public_holidays.country_id', $countryId)
+                        ->whereNotNull('public_holidays.country_id');
+                });
+                if ($branchId !== null) {
+                    $query->orWhere('public_holidays.branch_id', $branchId);
+                }
+            })
             ->where('public_holidays.is_active', true)
             ->whereBetween('public_holiday_days.date', [$fromDate, $toDate])
             ->distinct()
