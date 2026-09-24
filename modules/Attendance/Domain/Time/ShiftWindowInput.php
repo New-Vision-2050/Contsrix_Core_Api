@@ -44,9 +44,12 @@ final readonly class ShiftWindowInput
          */
         public bool $flexibleDay = false,
         /**
-         * When true, auto-close waits 2 hours and stores expected end minus 2 hours.
-         * When false (default), auto-close fires at shift end with no penalty.
+         * When true, auto-close fires at expected clock-out + extension minutes and
+         * stores expected clock-out minus the penalty (percent of required minutes).
+         * When false, auto-close fires at expected clock-out and stores it unchanged.
          */
-        public bool $autoCloseGraceEnabled = false,
+        public bool $ruleBasedAutoClockOutEnabled = false,
+        /** Auto-close penalty as a percent of requiredWorkMinutes (0–100). */
+        public int $autoClockOutPenaltyPercent = 25,
     ) {}
 }

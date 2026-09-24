@@ -52,9 +52,19 @@ return [
     'out_zone_confirm_enabled' => (bool) env('ATTENDANCE_OUT_ZONE_CONFIRM', true),
     'out_zone_confirm_notification_count' => (int) env('ATTENDANCE_OUT_ZONE_CONFIRM_NOTIFICATION_COUNT', 3),
 
-    // Parked: wait 2 hours after shift end, then store expected end minus 2 hours
-    // if the employee never punched out; also cap a late manual punch to shift end
-    // when overtime is not allowed. Off = close at shift end, manual punch uses now.
-    // Restore with ATTENDANCE_AUTO_CLOSE_GRACE_ENABLED=true (or ask to flip this).
-    'auto_close_grace_enabled' => (bool) env('ATTENDANCE_AUTO_CLOSE_GRACE_ENABLED', false),
+    // Rule-based auto clock-out (replaces the parked auto_close_grace_enabled).
+    // When the employee never punches out, the shift is auto-closed at
+    // expected_clock_out + extension_minutes (the constraint's extension rule) and
+    // the stored clock_out_time is expected_clock_out minus a penalty of
+    // auto_clock_out_penalty_percent % of the required shift minutes.
+    // Example: 9h shift ending 20:00, extension 120, penalty 25% → fires 22:00,
+    // stores 17:45 (20:00 − 2h15m), so the day pays 6.75h.
+    'rule_based_auto_clock_out_enabled' => (bool) env('ATTENDANCE_RULE_BASED_AUTO_CLOCK_OUT', true),
+    'auto_clock_out_penalty_percent'    => (int) env('ATTENDANCE_AUTO_CLOCK_OUT_PENALTY_PERCENT', 25),
+
+    // Manual clock-out is never penalised, but the stored time is capped by the
+    // rules snapshotted on the row: at the shift end when post-shift overtime is
+    // not allowed (is_after_finish_working_hours / is_overtime_after_extension_hours_shift
+    // off, or max_over_time = 0), otherwise at shift end + max_over_time.
+    'manual_clock_out_cap_enabled' => (bool) env('ATTENDANCE_MANUAL_CLOCK_OUT_CAP', true),
 ];

@@ -1107,8 +1107,12 @@ Key clock-out rules:
   row says after edits. The snapshot is `attendances.overtime_flags` plus
   `max_over_time`, taken from the role/job constraint at clock-in.
 - If the employee clocks out themselves, `clock_out_time` is now in the branch
-  timezone. The old cap-to-shift-end (when overtime is not allowed) is parked
-  behind `attendance.auto_close_grace_enabled` with the auto-close wait/penalty.
+  timezone, capped to the snapshotted rules when
+  `attendance.manual_clock_out_cap_enabled` is on (default true): at the shift
+  end (`expected_clock_out_time ?? end_time`) when post-shift overtime is not
+  allowed (`is_after_finish_working_hours` /
+  `is_overtime_after_extension_hours_shift` off, or `max_over_time = 0`),
+  otherwise at shift end + `max_over_time`. A manual punch is never penalised.
 - Breaks must be read from `attendance_breaks`.
 - Auto-close must write the intended close instant, not worker execution time.
 - Closing a row clears `is_absent`. Both `buildClockOutUpdatePayload` and
@@ -1171,13 +1175,18 @@ See section 3 for the full schedule, which spans both the provider and
 Auto-close jobs should pass datetimes using ISO 8601 strings. This preserves the
 instant across serialization and avoids positive/negative timezone offset bugs.
 
-End-of-shift auto clock-out (`auto_max_ot`) fires at `expected_clock_out_time`
-(shift end / hours complete) and stores that time. No wait, no −2 hour penalty.
-The previous wait-2h-then-store-expected-minus-2h behaviour is parked behind
-`config('attendance.auto_close_grace_enabled')` /
-`ATTENDANCE_AUTO_CLOSE_GRACE_ENABLED`. That same flag also restores the manual
-clock-out cap (store shift end when overtime is not allowed).
-`attendance:auto-close-stale-shifts` is the same auto-close rule.
+End-of-shift auto clock-out is rule-based when
+`config('attendance.rule_based_auto_clock_out_enabled')` /
+`ATTENDANCE_RULE_BASED_AUTO_CLOCK_OUT` is on (default true): the close fires at
+`expected_clock_out_time + extension_minutes` (the constraint's extension rule,
+snapshotted on the row at clock-in) and stores `expected_clock_out_time` minus
+a penalty of `attendance.auto_clock_out_penalty_percent` % (default 25) of the
+required shift minutes — e.g. a 9h shift ending 20:00 with a 120-minute
+extension fires at 22:00 and stores 17:45. Penalty closes are recorded with
+`shift_end_method = 'auto_extension_penalty'`; plain boundary closes keep
+`'auto_max_ot'`. Flexible days are exempt (no fixed shift end). When the flag
+is off, auto-close fires at `expected_clock_out_time` and stores it unchanged.
+`attendance:auto-close-stale-shifts` applies the same auto-close rule.
 
 ### Absence marking
 

@@ -98,10 +98,15 @@ final class UpdateProjectNotificationDTO
     /**
      * Return every writable field so a draft update can overwrite and clear
      * fields that were not supplied by the frontend.
+     *
+     * Exception: `type` is a NOT NULL enum column and `severity` has a
+     * create-time default; neither is managed by the draft form. When the
+     * request omits them they must be left out entirely so the stored values
+     * are preserved instead of being overwritten with null.
      */
     public function toDraftArray(): array
     {
-        return [
+        $data = [
             'notification_number'         => $this->notificationNumber,
             'notification_type'           => $this->notificationType,
             'type'                        => $this->type,
@@ -141,5 +146,15 @@ final class UpdateProjectNotificationDTO
             'site_status_type_id'         => $this->siteStatusTypeId,
             'update_site_status_id'       => $this->updateSiteStatusId,
         ];
+
+        if ($data['type'] === null) {
+            unset($data['type']);
+        }
+
+        if ($data['severity'] === null) {
+            unset($data['severity']);
+        }
+
+        return $data;
     }
 }
