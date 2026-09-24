@@ -9,15 +9,8 @@ use Modules\Leave\PublicHoliday\Models\PublicHolidayDay;
 use Modules\User\Models\User;
 
 /**
- * Answers "which of these dates is an official public holiday for this employee".
- *
- * `public_holidays` is a central table keyed by `country_id`, shared by every tenant, and
- * the employee's country comes from the branch they work at. Read live on every surface
- * rather than materialised into attendance rows — see INV-21 for why the previous
- * pre-writing command was removed.
- *
- * Deliberately stateless: callers that need more than one employee (the report) hold their
- * own per-country memo, so nothing here survives between requests under Octane.
+ * Resolves applied holidays live by employee branch and legacy country, without
+ * materialising attendance records. Callers may memoize by branch and country.
  */
 class PublicHolidayCalendarService
 {
@@ -60,21 +53,53 @@ class PublicHolidayCalendarService
         return null;
     }
 
-    public function forUser(?User $user, string $fromDate, string $toDate): PublicHolidayDates
+    public function branchIdForUser(?User $user): ?int
     {
-        return $this->forCountry($this->countryIdForUser($user), $fromDate, $toDate);
+        if ($user === null) {
+            return null;
+        }
+
+        foreach ([
+            fn () => $user->userProfessionalData?->branch_id,
+            fn () => $user->branch?->id,
+        ] as $candidate) {
+            try {
+                $id = $candidate();
+            } catch (\Throwable) {
+                continue;
+            }
+            if ($id !== null && (int) $id > 0) {
+                return (int) $id;
+            }
+        }
+
+        return null;
     }
 
-    public function forCountry(?string $countryId, string $fromDate, string $toDate): PublicHolidayDates
+    public function forUser(?User $user, string $fromDate, string $toDate): PublicHolidayDates
     {
-        if ($countryId === null || $countryId === '') {
+        return $this->forCountry($this->countryIdForUser($user), $fromDate, $toDate, $this->branchIdForUser($user));
+    }
+
+    public function forCountry(?string $countryId, string $fromDate, string $toDate, ?int $branchId = null): PublicHolidayDates
+    {
+        if (($countryId === null || $countryId === '') && $branchId === null) {
             return PublicHolidayDates::none();
         }
 
         try {
             $rows = PublicHolidayDay::query()
                 ->join('public_holidays', 'public_holiday_days.public_holiday_id', '=', 'public_holidays.id')
-                ->where('public_holidays.country_id', $countryId)
+                ->where(function ($query) use ($countryId, $branchId) {
+                    $query->where(function ($legacy) use ($countryId) {
+                        $legacy->whereNull('public_holidays.branch_id')
+                            ->whereNotNull('public_holidays.country_id')
+                            ->where('public_holidays.country_id', $countryId);
+                    });
+                    if ($branchId !== null) {
+                        $query->orWhere('public_holidays.branch_id', $branchId);
+                    }
+                })
                 ->where('public_holidays.is_active', true)
                 ->whereBetween('public_holiday_days.date', [$fromDate, $toDate])
                 ->orderBy('public_holiday_days.date')

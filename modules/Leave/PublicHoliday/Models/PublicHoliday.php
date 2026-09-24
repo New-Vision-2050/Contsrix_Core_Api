@@ -31,12 +31,14 @@ class PublicHoliday extends Model
         'name',
         'name_ar',
         'country_id',
+        'branch_id',
         'country_code',
         'date_start',
         'date_end',
         'year',
         'holiday_type',
         'is_recurring',
+        'recurrence_source_id',
         'description',
         'description_ar',
         'external_api_id',
@@ -48,6 +50,7 @@ class PublicHoliday extends Model
     protected $casts = [
         'id' => 'string',
         'country_id' => 'string',
+        'branch_id' => 'integer',
         'date_start' => 'date',
         'date_end' => 'date',
         'year' => 'integer',
@@ -65,6 +68,11 @@ class PublicHoliday extends Model
         return $this->belongsTo(\Modules\Country\Models\Country::class, 'country_id');
     }
 
+
+    public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\Modules\Company\ManagementHierarchy\Models\ManagementHierarchy::class, 'branch_id');
+    }
 
     public function days(): HasMany
     {
