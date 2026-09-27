@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+use Modules\Project\ProjectType\Exports\ProjectOrderPermitExport;
 use Modules\Project\ProjectManagement\Models\ProjectContractor;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Presenters\ProjectContractorPresenter;
@@ -47,6 +49,24 @@ class ProjectOrderPermitController extends Controller
             return Json::items(
                 $items->map(fn ($item) => (new ProjectOrderPermitPresenter($item))->getData(true))->toArray()
             );
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    public function exportConstructionData(Request $request, string $project)
+    {
+        try {
+            return Excel::download(
+                new ProjectOrderPermitExport(
+                    $this->service,
+                    $project,
+                    $request->only('order_permit_department_id'),
+                ),
+                'order-permits.xlsx',
+            );
+        } catch (ModelNotFoundException $e) {
+            return Json::error($e->getMessage(), 404);
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }
