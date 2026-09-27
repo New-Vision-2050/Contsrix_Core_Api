@@ -67,6 +67,12 @@ return [
     // clock_out_time to the expected clock-out and consumes one exception.
     'penalty_exceptions_monthly_limit'  => (int) env('ATTENDANCE_PENALTY_EXCEPTIONS_MONTHLY_LIMIT', 3),
 
+    // Hard geofence on manual clock-out: the request GPS must be inside the
+    // employee's allowed locations (location_work + additional_locations) or the
+    // punch is rejected with 422. Off → clock-out succeeds anywhere and the
+    // out-of-zone violation is only logged after the fact (previous behavior).
+    'clock_out_geofence_enabled' => (bool) env('ATTENDANCE_CLOCK_OUT_GEOFENCE_ENABLED', true),
+
     // Manual clock-out is never penalised, but the stored time is capped by the
     // rules snapshotted on the row: at the shift end when post-shift overtime is
     // not allowed (is_after_finish_working_hours / is_overtime_after_extension_hours_shift
