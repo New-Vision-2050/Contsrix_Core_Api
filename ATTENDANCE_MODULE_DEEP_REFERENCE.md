@@ -1102,6 +1102,17 @@ High-level request flow:
 Key clock-out rules:
 
 - Clock-out cannot precede clock-in.
+- Manual clock-out is geofenced when `attendance.clock_out_geofence_enabled` is on
+  (default true, `ATTENDANCE_CLOCK_OUT_GEOFENCE_ENABLED`): `ClockOutService::execute`
+  runs `ClockOutLocationGuard` before anything is written, and the request GPS must
+  fall inside the same merged allowed list the app sees in `user-constraint/today`
+  (`location_work` + `additional_locations`, including task geofences) or the punch
+  is rejected with 422. No configured locations → nothing to enforce; field work
+  that day (`FieldWorkOutOfZoneExemption`) → allowed from anywhere. When the flag
+  is off, clock-out succeeds from anywhere and the out-of-zone violation is only
+  logged after the fact (the old behavior). The pure yes/no lives in
+  `Support/ClockOutGeofence` and matches through `GeofenceMatch`, so a punch
+  clock-in accepts can never be one clock-out rejects.
 - Completed rows should not be mutated as if active.
 - Overtime is capped by the row snapshot, not by whatever the current constraint
   row says after edits. The snapshot is `attendances.overtime_flags` plus
