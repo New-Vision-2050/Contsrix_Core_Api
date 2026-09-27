@@ -186,6 +186,7 @@ class ReportLookupService
             ReportEnums::ATT_COL_ACTUAL_IN            => ['ar' => 'دخول فعلي',          'en' => 'Actual in'],
             ReportEnums::ATT_COL_ACTUAL_OUT           => ['ar' => 'خروج فعلي',          'en' => 'Actual out'],
             ReportEnums::ATT_COL_CLOCK_OUT_CAUSE      => ['ar' => 'سبب الانصراف',       'en' => 'Clock-out cause'],
+            ReportEnums::ATT_COL_PENALTY              => ['ar' => 'الجزاء',              'en' => 'Penalty'],
             ReportEnums::ATT_COL_CLOCK_IN_LOCATION    => ['ar' => 'موقع الدخول',        'en' => 'Clock-in location'],
             ReportEnums::ATT_COL_CLOCK_OUT_LOCATION   => ['ar' => 'موقع الخروج',        'en' => 'Clock-out location'],
             ReportEnums::ATT_COL_DELAY                => ['ar' => 'تأخير',              'en' => 'Delay'],

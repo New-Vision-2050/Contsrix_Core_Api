@@ -1188,6 +1188,37 @@ extension fires at 22:00 and stores 17:45. Penalty closes are recorded with
 is off, auto-close fires at `expected_clock_out_time` and stores it unchanged.
 `attendance:auto-close-stale-shifts` applies the same auto-close rule.
 
+### Penalty day exceptions (استثناء اليوم)
+
+An employee may waive an applied `auto_extension_penalty` by spending a monthly
+day exception. The quota is `attendance.penalty_exceptions_monthly_limit`
+(`ATTENDANCE_PENALTY_EXCEPTIONS_MONTHLY_LIMIT`, default 3) per calendar month.
+
+- `GET /api/v1/attendance/penalty-exceptions/current-month` — employee
+  self-service status: `month`, `limit`, `used`, `remaining`, the mobile flags
+  `show_exception_message` (true only while a penalized day awaits a decision —
+  a manual self clock-out has no penalty, so no message) and `can_use_exception`
+  (false once the quota is exhausted), plus `pending_days`
+  (this month's penalized rows awaiting a decision: `attendance_id`,
+  `business_date`, `clock_out_time`, `expected_clock_out_time`,
+  `penalty_minutes`) and `decisions` already made. The app polls this the day
+  after a penalty to show the استثناء اليوم message.
+- `POST /api/v1/attendance/penalty-exceptions/{attendanceId}` with
+  `action: use_exception | accept_penalty` — records the decision in
+  `attendance_penalty_exceptions`. `use_exception` requires remaining quota and
+  restores the row: `clock_out_time = expected_clock_out_time`,
+  `shift_end_method = 'auto_extension_penalty_waived'`, and all calculator
+  fields are recomputed via `AttendanceCalculator`. `accept_penalty` only
+  records the decision (no quota consumed, row untouched).
+
+Rules (enforced by `PenaltyExceptionService::decide` under a row lock, and by
+the pure `Support/PenaltyDayException`): only the row owner may decide, only
+rows with `shift_end_method = 'auto_extension_penalty'` are decidable, only
+days inside the current calendar month, one decision per attendance row
+(`attendance_id` is unique), and `use_exception` fails with 422 once the quota
+is exhausted. Reports label the waived method and show no penalty minutes for
+it.
+
 ### Absence marking
 
 Two writers can flip a row to absent, and both delegate to the same service:

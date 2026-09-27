@@ -153,6 +153,7 @@ class ReportDataExtractionService
                 'a.end_time',
                 'a.clock_in_time',
                 'a.clock_out_time',
+                'a.expected_clock_out_time',
                 'a.clock_in_location',
                 'a.clock_out_location',
                 'a.shift_end_method',
@@ -235,6 +236,13 @@ class ReportDataExtractionService
                     'clock_out_time'          => (string) ($d->clock_out_time ?? ''),
                     'clock_out_cause'         => ReportPunchPresentation::clockOutCauseCode(
                         isset($d->shift_end_method) ? (string) $d->shift_end_method : null,
+                        $d->clock_out_time ?? null,
+                    ),
+                    // Minutes deducted by the rule-based auto clock-out penalty
+                    // (0 for any other close reason) — see ReportPunchPresentation.
+                    'penalty_minutes'         => ReportPunchPresentation::penaltyMinutes(
+                        isset($d->shift_end_method) ? (string) $d->shift_end_method : null,
+                        $d->expected_clock_out_time ?? null,
                         $d->clock_out_time ?? null,
                     ),
                     'clock_in_location_label'  => ReportPunchPresentation::locationLabel($d->clock_in_location ?? null),

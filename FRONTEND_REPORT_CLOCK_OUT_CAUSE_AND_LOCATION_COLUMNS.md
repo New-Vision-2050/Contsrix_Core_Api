@@ -21,10 +21,16 @@ The JSON field is still `config.step3.attendanceDataTypeIds` even if the wizard 
 | `id` | Arabic | English | Source |
 |---|---|---|---|
 | `clock_out_cause` | سبب الانصراف | Clock-out cause | `attendances.shift_end_method` (falls back to `manual` when the employee clocked out and the method was never written) |
+| `penalty` | الجزاء | Penalty | `expected_clock_out_time − clock_out_time` when `shift_end_method = auto_extension_penalty`; prints a human value like `2 hours` / `2 ساعتان`, `-` otherwise |
 | `clock_in_location` | موقع الدخول | Clock-in location | `attendances.clock_in_location` |
 | `clock_out_location` | موقع الخروج | Clock-out location | `attendances.clock_out_location` |
 
 Place them in the picker **after** `actual_out` (خروج فعلي) and **before** `delay` (تأخير). That matches lookup order.
+
+> **Restored (Sep 2026):** `official_in` / `official_out` (دخول رسمي / خروج رسمي) print
+> again as table columns — they show the scheduled shift start/end (`start_time` /
+> `end_time`). Branch, management and the two location columns stay hidden from the
+> table (branch/management render next to the employee name instead).
 
 Do **not** mix these with `payload.attendance_data_types` (`attendance_days`, `delays`, …). Those are attendance **filters**, not table columns.
 
@@ -65,7 +71,7 @@ Full legal ID set (send any subset):
 
 ```
 day, branch, management, official_in, official_out, actual_in, actual_out,
-clock_out_cause, clock_in_location, clock_out_location,
+clock_out_cause, penalty, clock_in_location, clock_out_location,
 delay, overtime, total_hours, calculated_hours
 ```
 
@@ -121,6 +127,8 @@ Empty while the shift is still open (no clock-out). After clock-out:
 | *(empty / null)* | الموظف | Employee |
 | `manual` | الموظف | Employee |
 | `auto_max_ot` | تلقائي — نهاية الوردية | Auto — shift end |
+| `auto_extension_penalty` | تلقائي — جزاء التمديد | Auto — extension penalty |
+| `auto_extension_penalty_waived` | تلقائي — جزاء معفى | Auto — penalty waived |
 | `auto_next_shift` | تلقائي — الوردية التالية | Auto — next shift |
 | `auto_out_zone` | تلقائي — خارج النطاق | Auto — out of zone |
 | `auto_no_location` | تلقائي — بدون موقع | Auto — no GPS |
@@ -152,9 +160,19 @@ If you inspect extracted report data, each `attendance_sessions[]` item is now:
   "clock_in_time": "2026-09-15 08:02:00",
   "clock_out_time": "2026-09-15 17:00:00",
   "clock_out_cause": "manual",
+  "penalty_minutes": 0,
   "clock_in_location_label": "King Fahd Rd",
   "clock_out_location_label": "24.71360, 46.67530"
 }
 ```
 
 `clock_out_cause` is the **code** (`manual`, `auto_max_ot`, …). The PDF maps it to Arabic/English from `step1.reportLanguage`.
+
+`penalty_minutes` is the deducted minutes when `clock_out_cause = auto_extension_penalty`
+(e.g. `135`), otherwise `0`. The PDF prints it as a human duration (`2.25 hours` /
+`2.25 ساعات`); render your own format from the minutes if you show a preview.
+
+> **Day exception (استثناء اليوم):** when the employee spends a monthly exception to
+> waive a penalty, the row's `shift_end_method` becomes `auto_extension_penalty_waived`
+> and `clock_out_time` is restored to the expected clock-out — so the cause prints
+> "جزاء معفى / penalty waived" and the penalty column shows `-`.

@@ -62,6 +62,11 @@ return [
     'rule_based_auto_clock_out_enabled' => (bool) env('ATTENDANCE_RULE_BASED_AUTO_CLOCK_OUT', true),
     'auto_clock_out_penalty_percent'    => (int) env('ATTENDANCE_AUTO_CLOCK_OUT_PENALTY_PERCENT', 25),
 
+    // Day exceptions (استثناء اليوم): how many applied auto clock-out penalties an
+    // employee may waive per calendar month. Each waive restores that day's
+    // clock_out_time to the expected clock-out and consumes one exception.
+    'penalty_exceptions_monthly_limit'  => (int) env('ATTENDANCE_PENALTY_EXCEPTIONS_MONTHLY_LIMIT', 3),
+
     // Manual clock-out is never penalised, but the stored time is capped by the
     // rules snapshotted on the row: at the shift end when post-shift overtime is
     // not allowed (is_after_finish_working_hours / is_overtime_after_extension_hours_shift
