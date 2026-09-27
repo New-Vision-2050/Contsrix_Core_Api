@@ -10,6 +10,7 @@ use Modules\Attendance\Controllers\LeaveRequestController;
 use Modules\Attendance\Controllers\LeaveTypeController;
 use Modules\Attendance\Controllers\LocationTrackingController;
 use Modules\Attendance\Controllers\OutZoneWarningController;
+use Modules\Attendance\Controllers\PenaltyExceptionController;
 use Modules\Attendance\Controllers\UserAttendanceController;
 use Modules\RoleAndPermission\Enums\Permission;
 use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
@@ -54,6 +55,14 @@ Route::post('test', [AttendanceController::class, 'test'])
 
     Route::post('out-zone-warning/confirm-location', [OutZoneWarningController::class, 'confirmLocation'])
         ->name('attendance.out-zone-warning.confirm-location');
+
+    // Penalty day-exception (استثناء اليوم): waive an applied auto clock-out
+    // penalty by spending one of the monthly exceptions (default 3).
+    Route::get('penalty-exceptions/current-month', [PenaltyExceptionController::class, 'currentMonth'])
+        ->name('attendance.penalty-exceptions.current-month');
+
+    Route::post('penalty-exceptions/{attendanceId}', [PenaltyExceptionController::class, 'decide'])
+        ->name('attendance.penalty-exceptions.decide');
 
     Route::post('start-break', [AttendanceController::class, 'startBreak'])
         ->name('attendance.start-break');

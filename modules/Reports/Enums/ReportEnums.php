@@ -105,6 +105,7 @@ final class ReportEnums
     public const ATT_COL_ACTUAL_IN    = 'actual_in';
     public const ATT_COL_ACTUAL_OUT   = 'actual_out';
     public const ATT_COL_CLOCK_OUT_CAUSE = 'clock_out_cause';
+    public const ATT_COL_PENALTY      = 'penalty';
     public const ATT_COL_CLOCK_IN_LOCATION = 'clock_in_location';
     public const ATT_COL_CLOCK_OUT_LOCATION = 'clock_out_location';
     public const ATT_COL_DELAY        = 'delay';
@@ -280,6 +281,7 @@ final class ReportEnums
             self::ATT_COL_ACTUAL_IN,
             self::ATT_COL_ACTUAL_OUT,
             self::ATT_COL_CLOCK_OUT_CAUSE,
+            self::ATT_COL_PENALTY,
             self::ATT_COL_CLOCK_IN_LOCATION,
             self::ATT_COL_CLOCK_OUT_LOCATION,
             self::ATT_COL_DELAY,
