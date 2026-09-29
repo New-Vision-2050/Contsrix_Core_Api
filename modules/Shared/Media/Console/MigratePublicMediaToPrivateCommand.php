@@ -23,7 +23,11 @@ class MigratePublicMediaToPrivateCommand extends Command
 {
     protected $signature = 'media:migrate-to-private
         {--apply : Actually perform the migration. Without this flag, only a dry-run report is printed.}
-        {--chunk=100 : Number of media rows to process per chunk.}';
+        {--delete-source : Also delete the old public-bucket copy after it is verified on the private bucket. Without this flag, --apply only copies + repoints the DB, leaving the old public file intact as a safety net.}
+        {--cleanup-orphans : Instead of migrating, sweep leftover public-bucket copies for rows already migrated (disk already s3_private). Run this as a final step after verifying the app works correctly on private storage.}
+        {--chunk=100 : Number of media rows to process per chunk.}
+        {--only= : Comma-separated list of fully-qualified model class names to restrict this run to (for controlled testing).}
+        {--limit=0 : Stop after migrating this many rows in total (0 = no limit). Useful for a small first test batch.}';
 
     protected $description = 'Migrate sensitive media currently stored on the public disk to the private disk (post-breach remediation)';
 
@@ -62,10 +66,26 @@ class MigratePublicMediaToPrivateCommand extends Command
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
+        $deleteSource = (bool) $this->option('delete-source');
         $chunkSize = (int) $this->option('chunk');
+        $limit = (int) $this->option('limit');
+        $onlyOption = $this->option('only');
+        $only = $onlyOption ? array_map('trim', explode(',', (string) $onlyOption)) : null;
+
+        if ((bool) $this->option('cleanup-orphans')) {
+            return $this->cleanupOrphans($apply, $chunkSize, $limit, $only);
+        }
 
         if (! $apply) {
             $this->warn('DRY RUN — no files will be moved and no DB rows changed. Pass --apply to execute.');
+        } elseif (! $deleteSource) {
+            $this->warn('--apply without --delete-source: old public copies will be KEPT as a safety net. Copy + DB repoint only.');
+        } else {
+            $this->warn('--apply WITH --delete-source: old public copies will be permanently removed after verification.');
+        }
+
+        if ($limit > 0) {
+            $this->comment("Limiting this run to {$limit} migrated row(s).");
         }
 
         $publicBucket = config('filesystems.disks.s3_public.bucket');
@@ -81,8 +101,17 @@ class MigratePublicMediaToPrivateCommand extends Command
         $totalMigrated = 0;
         $totalFailed = 0;
         $totalSkippedMissing = 0;
+        $stop = false;
 
         foreach (self::TARGETS as $modelType => $collections) {
+            if ($stop) {
+                break;
+            }
+
+            if ($only !== null && ! in_array($modelType, $only, true)) {
+                continue;
+            }
+
             if (! class_exists($modelType)) {
                 $this->warn("Skipping unknown model class: {$modelType}");
 
@@ -100,10 +129,16 @@ class MigratePublicMediaToPrivateCommand extends Command
 
             $this->line("Model {$modelType} [".implode(',', $collections)."]: {$count} public media row(s) found.");
 
-            $query->chunkById($chunkSize, function ($mediaItems) use (&$totalMigrated, &$totalFailed, &$totalSkippedMissing, $apply) {
+            $query->chunkById($chunkSize, function ($mediaItems) use (&$totalMigrated, &$totalFailed, &$totalSkippedMissing, &$stop, $apply, $deleteSource, $limit) {
                 /** @var Media $media */
                 foreach ($mediaItems as $media) {
-                    $result = $this->migrateOne($media, $apply);
+                    if ($limit > 0 && $totalMigrated >= $limit) {
+                        $stop = true;
+
+                        return false; // stop chunking
+                    }
+
+                    $result = $this->migrateOne($media, $apply, $deleteSource);
 
                     match ($result) {
                         'migrated' => $totalMigrated++,
@@ -111,11 +146,15 @@ class MigratePublicMediaToPrivateCommand extends Command
                         default => $totalFailed++,
                     };
                 }
+
+                return true;
             });
         }
 
         // Folder module: only migrate files belonging to folders with access_type = 'private'.
-        $this->migratePrivateFolders($apply, $chunkSize, $totalMatched, $totalMigrated, $totalFailed, $totalSkippedMissing);
+        if (! $stop && ($only === null || in_array('Modules\ArchiveLibrary\Folder\Models\Folder', $only, true))) {
+            $this->migratePrivateFolders($apply, $deleteSource, $chunkSize, $limit, $totalMatched, $totalMigrated, $totalFailed, $totalSkippedMissing);
+        }
 
         $this->newLine();
         $this->info("Matched: {$totalMatched} | Migrated: {$totalMigrated} | Missing source file: {$totalSkippedMissing} | Failed: {$totalFailed}");
@@ -127,7 +166,7 @@ class MigratePublicMediaToPrivateCommand extends Command
         return $totalFailed > 0 ? self::FAILURE : self::SUCCESS;
     }
 
-    private function migratePrivateFolders(bool $apply, int $chunkSize, int &$totalMatched, int &$totalMigrated, int &$totalFailed, int &$totalSkippedMissing): void
+    private function migratePrivateFolders(bool $apply, bool $deleteSource, int $chunkSize, int $limit, int &$totalMatched, int &$totalMigrated, int &$totalFailed, int &$totalSkippedMissing): void
     {
         $folderModel = 'Modules\ArchiveLibrary\Folder\Models\Folder';
 
@@ -154,9 +193,13 @@ class MigratePublicMediaToPrivateCommand extends Command
 
         $this->line("Model {$folderModel} [upload] (private folders only): {$count} public media row(s) found.");
 
-        $query->chunkById($chunkSize, function ($mediaItems) use (&$totalMigrated, &$totalFailed, &$totalSkippedMissing, $apply) {
+        $query->chunkById($chunkSize, function ($mediaItems) use (&$totalMigrated, &$totalFailed, &$totalSkippedMissing, $apply, $deleteSource, $limit) {
             foreach ($mediaItems as $media) {
-                $result = $this->migrateOne($media, $apply);
+                if ($limit > 0 && $totalMigrated >= $limit) {
+                    return false;
+                }
+
+                $result = $this->migrateOne($media, $apply, $deleteSource);
 
                 match ($result) {
                     'migrated' => $totalMigrated++,
@@ -164,13 +207,15 @@ class MigratePublicMediaToPrivateCommand extends Command
                     default => $totalFailed++,
                 };
             }
+
+            return true;
         });
     }
 
     /**
      * @return 'migrated'|'missing'|'failed'
      */
-    private function migrateOne(Media $media, bool $apply): string
+    private function migrateOne(Media $media, bool $apply, bool $deleteSource): string
     {
         $relativePath = $media->getPathRelativeToRoot();
 
@@ -187,18 +232,195 @@ class MigratePublicMediaToPrivateCommand extends Command
                 return 'migrated';
             }
 
-            $contents = Storage::disk('s3_public')->get($relativePath);
-            Storage::disk('s3_private')->put($relativePath, $contents);
-            Storage::disk('s3_public')->delete($relativePath);
+            // 1. Copy to the private bucket first. The public original is
+            //    left untouched at this point no matter what happens next.
+            if (! Storage::disk('s3_private')->exists($relativePath)) {
+                $contents = Storage::disk('s3_public')->get($relativePath);
+                Storage::disk('s3_private')->put($relativePath, $contents);
+            }
 
+            // 2. Verify the copy landed correctly (byte-size match) before
+            //    touching anything else. If this fails, nothing else happens.
+            $publicSize = Storage::disk('s3_public')->size($relativePath);
+            $privateSize = Storage::disk('s3_private')->size($relativePath);
+
+            if ($publicSize !== $privateSize) {
+                $this->error("  [error] {$media->id} {$relativePath}: size mismatch after copy (public={$publicSize}, private={$privateSize}). Public copy left intact.");
+
+                return 'failed';
+            }
+
+            // 3. Only now repoint the DB row to the verified private copy.
             $media->forceFill([
                 'disk' => 's3_private',
                 'conversions_disk' => 's3_private',
             ])->save();
 
-            $this->line("  [ok] migrated {$media->id} {$relativePath}");
+            // 4. Only delete the old public object if explicitly requested,
+            //    and only after the DB repoint above succeeded.
+            if ($deleteSource) {
+                Storage::disk('s3_public')->delete($relativePath);
+                $this->line("  [ok] migrated + deleted public copy: {$media->id} {$relativePath}");
+            } else {
+                $this->line("  [ok] migrated (public copy kept): {$media->id} {$relativePath}");
+            }
 
             return 'migrated';
+        } catch (\Throwable $e) {
+            $this->error("  [error] {$media->id} {$relativePath}: {$e->getMessage()}");
+
+            return 'failed';
+        }
+    }
+
+    /**
+     * Sweep leftover public-bucket copies for media rows that are ALREADY
+     * migrated (disk = s3_private), left there intentionally by a prior
+     * --apply run without --delete-source. Only deletes the public copy
+     * after confirming the private copy exists and matches in size.
+     */
+    private function cleanupOrphans(bool $apply, int $chunkSize, int $limit, ?array $only): int
+    {
+        if (! $apply) {
+            $this->warn('DRY RUN — no files will be deleted. Pass --apply to execute.');
+        } else {
+            $this->warn('--apply: leftover public copies of already-migrated rows will be permanently deleted.');
+        }
+
+        $totalMatched = 0;
+        $totalCleaned = 0;
+        $totalFailed = 0;
+        $totalSkippedMissing = 0;
+
+        foreach (self::TARGETS as $modelType => $collections) {
+            if ($only !== null && ! in_array($modelType, $only, true)) {
+                continue;
+            }
+
+            if (! class_exists($modelType)) {
+                continue;
+            }
+
+            $query = Media::query()
+                ->where('model_type', $modelType)
+                ->where('disk', 's3_private')
+                ->whereIn('collection_name', $collections);
+
+            $count = $query->count();
+            $totalMatched += $count;
+
+            if ($count === 0) {
+                continue;
+            }
+
+            $this->line("Model {$modelType} [".implode(',', $collections)."]: {$count} already-migrated row(s) to check for orphaned public copies.");
+
+            $query->chunkById($chunkSize, function ($mediaItems) use (&$totalCleaned, &$totalFailed, &$totalSkippedMissing, $apply, $limit) {
+                foreach ($mediaItems as $media) {
+                    if ($limit > 0 && $totalCleaned >= $limit) {
+                        return false;
+                    }
+
+                    $result = $this->cleanupOne($media, $apply);
+
+                    match ($result) {
+                        'cleaned' => $totalCleaned++,
+                        'missing' => $totalSkippedMissing++,
+                        default => $totalFailed++,
+                    };
+                }
+
+                return true;
+            });
+        }
+
+        $folderModel = 'Modules\ArchiveLibrary\Folder\Models\Folder';
+
+        if (($only === null || in_array($folderModel, $only, true)) && class_exists($folderModel)) {
+            $privateFolderIds = $folderModel::query()->where('access_type', 'private')->pluck('id');
+
+            if ($privateFolderIds->isNotEmpty()) {
+                $query = Media::query()
+                    ->where('model_type', $folderModel)
+                    ->where('disk', 's3_private')
+                    ->where('collection_name', 'upload')
+                    ->whereIn('model_id', $privateFolderIds);
+
+                $count = $query->count();
+                $totalMatched += $count;
+
+                if ($count > 0) {
+                    $this->line("Model {$folderModel} [upload] (private folders): {$count} already-migrated row(s) to check.");
+
+                    $query->chunkById($chunkSize, function ($mediaItems) use (&$totalCleaned, &$totalFailed, &$totalSkippedMissing, $apply, $limit) {
+                        foreach ($mediaItems as $media) {
+                            if ($limit > 0 && $totalCleaned >= $limit) {
+                                return false;
+                            }
+
+                            $result = $this->cleanupOne($media, $apply);
+
+                            match ($result) {
+                                'cleaned' => $totalCleaned++,
+                                'missing' => $totalSkippedMissing++,
+                                default => $totalFailed++,
+                            };
+                        }
+
+                        return true;
+                    });
+                }
+            }
+        }
+
+        $this->newLine();
+        $this->info("Checked: {$totalMatched} | Cleaned: {$totalCleaned} | No orphan found: {$totalSkippedMissing} | Failed: {$totalFailed}");
+
+        if (! $apply) {
+            $this->comment('Re-run with --apply to actually delete orphaned public copies.');
+        }
+
+        return $totalFailed > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * @return 'cleaned'|'missing'|'failed'
+     */
+    private function cleanupOne(Media $media, bool $apply): string
+    {
+        $relativePath = $media->getPathRelativeToRoot();
+
+        try {
+            if (! Storage::disk('s3_public')->exists($relativePath)) {
+                // Nothing left to clean up — already gone or never existed there.
+                return 'missing';
+            }
+
+            if (! Storage::disk('s3_private')->exists($relativePath)) {
+                $this->error("  [skip] {$media->id} {$relativePath}: private copy missing, refusing to delete public original.");
+
+                return 'failed';
+            }
+
+            $publicSize = Storage::disk('s3_public')->size($relativePath);
+            $privateSize = Storage::disk('s3_private')->size($relativePath);
+
+            if ($publicSize !== $privateSize) {
+                $this->error("  [skip] {$media->id} {$relativePath}: size mismatch (public={$publicSize}, private={$privateSize}), refusing to delete.");
+
+                return 'failed';
+            }
+
+            if (! $apply) {
+                $this->line("  [dry-run] would delete orphaned public copy: {$media->id} {$relativePath}");
+
+                return 'cleaned';
+            }
+
+            Storage::disk('s3_public')->delete($relativePath);
+            $this->line("  [ok] deleted orphaned public copy: {$media->id} {$relativePath}");
+
+            return 'cleaned';
         } catch (\Throwable $e) {
             $this->error("  [error] {$media->id} {$relativePath}: {$e->getMessage()}");
 
