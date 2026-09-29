@@ -110,7 +110,7 @@ class EmployeeTaskRequestService
                     file: $dto->files,
                     filePath: 'employee-tasks/attachments',
                     collectionName: 'attachments',
-                    visibility: 'public',
+                    visibility: 'private',
                 );
             }
 
@@ -130,7 +130,7 @@ class EmployeeTaskRequestService
                 file: $dto->files,
                 filePath: 'employee-tasks/attachments',
                 collectionName: 'attachments',
-                visibility: 'public',
+                visibility: 'private',
             );
         }
 

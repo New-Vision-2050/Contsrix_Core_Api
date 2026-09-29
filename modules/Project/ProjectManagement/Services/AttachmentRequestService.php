@@ -771,7 +771,7 @@ class AttachmentRequestService
                 $newFile,
                 'attachment-requests/items',
                 'attachments',
-                'public',
+                'private',
                 preserveOriginalFileName: true,
             );
 

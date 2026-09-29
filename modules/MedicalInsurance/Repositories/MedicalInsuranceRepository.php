@@ -86,7 +86,7 @@ class MedicalInsuranceRepository extends BaseRepository
                 $attachment,
                 $path,
                 'attachments',
-                'public'
+                'private'
             );
         }
     }

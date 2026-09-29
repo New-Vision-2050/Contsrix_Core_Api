@@ -44,7 +44,7 @@ class QualificationCRUDService
 
     public function uploadFile($qualification, $request)
     {
-        $visibility = 'public';
+        $visibility = 'private';
         $uploadedFiles = [];
 
         $fieldIds = collect($request->input('file', []))

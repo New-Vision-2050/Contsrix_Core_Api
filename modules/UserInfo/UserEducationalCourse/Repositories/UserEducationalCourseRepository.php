@@ -62,7 +62,7 @@ class UserEducationalCourseRepository extends BaseRepository
                 $file,
                 $path,
                 'upload',
-                "public"
+                "private"
             );
             $this->employeeArchiveFileService->archiveUploadedFiles(
                 companyId: (string) $data['company_id'],
@@ -94,7 +94,7 @@ class UserEducationalCourseRepository extends BaseRepository
                 $file,
                 $path,
                 'upload',
-                "public"
+                "private"
             );
             $this->employeeArchiveFileService->archiveUploadedFiles(
                 companyId: (string) $educationalCourse->company_id,

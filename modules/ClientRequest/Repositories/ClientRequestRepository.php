@@ -72,7 +72,7 @@ class ClientRequestRepository extends BaseRepository
                         'term_ids' => $termSetting['term_ids'],
                         'company_id' => $data['company_id'],
                     ]);
-                    
+
                     // Also sync to the old relationship for backward compatibility
                     $clientRequest->termSettings()->syncWithoutDetaching($termSetting['term_ids']);
                 }
@@ -94,7 +94,7 @@ class ClientRequestRepository extends BaseRepository
                     $attachment,
                     'client-requests/attachments',
                     'attachments',
-                    'public'
+                    'private'
                 );
             }
         }
@@ -119,7 +119,7 @@ class ClientRequestRepository extends BaseRepository
             if (!empty($termSettingIds)) {
                 // Delete existing service-term relationships
                 $clientRequest->serviceTerms()->delete();
-                
+
                 // Check if it's the new structure (array of objects)
                 if (isset($termSettingIds[0]['term_service_id']) && isset($termSettingIds[0]['term_ids'])) {
                     // New structure: [{term_service_id: "", term_ids: []}]
@@ -132,7 +132,7 @@ class ClientRequestRepository extends BaseRepository
                             'company_id' => $clientRequest->company_id,
                         ]);
                     }
-                    
+
                     // Update the old relationship for backward compatibility
                     $allTermIds = [];
                     foreach ($termSettingIds as $termSetting) {

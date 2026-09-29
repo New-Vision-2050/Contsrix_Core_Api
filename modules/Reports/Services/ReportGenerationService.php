@@ -335,8 +335,8 @@ class ReportGenerationService
 
     private function storeAsMedia(Report $report, string $contents, string $extension): Media
     {
-        $bucket = config('filesystems.disks.s3_public.bucket');
-        $disk   = (is_string($bucket) && $bucket !== '') ? 's3_public' : 'public';
+        $bucket = config('filesystems.disks.s3_private.bucket');
+        $disk   = (is_string($bucket) && $bucket !== '') ? 's3_private' : 'local';
 
         return $report
             ->addMediaFromString($contents)

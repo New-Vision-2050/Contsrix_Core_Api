@@ -28,7 +28,7 @@ class IdentityDataService
     }
     public function uploadFile($request, $globalId)
     {
-        $visibility = 'public';
+        $visibility = 'private';
         $companyUser = $this->repository->getCompanyUserGlobalId($globalId);
         $companyId = (string) auth()->user()->company_id;
         $path = Company::find($companyId)->name . '/' . $companyUser->name;

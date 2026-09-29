@@ -90,7 +90,7 @@ class AdminRequestRepository extends BaseRepository
             ]);
             if($file)
             {
-                $this->fileUploadService->uploadFile($adminRequest, $file, "admin-request");
+                $this->fileUploadService->uploadFile($adminRequest, $file, "admin-request", visibility: 'private');
 
             }
 

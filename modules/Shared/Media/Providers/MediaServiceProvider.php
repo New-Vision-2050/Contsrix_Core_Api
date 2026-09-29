@@ -12,6 +12,7 @@ use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
 use Modules\Shared\Media\Models\CustomMedia;
 use Modules\Shared\Media\Observers\CustomMediaObserver;
 use Modules\Shared\Media\Console\CleanupChunkedUploadsCommand;
+use Modules\Shared\Media\Console\MigratePublicMediaToPrivateCommand;
 class MediaServiceProvider extends ModuleServiceProvider
 {
     public static function getModuleName(): string
@@ -34,6 +35,7 @@ class MediaServiceProvider extends ModuleServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 CleanupChunkedUploadsCommand::class,
+                MigratePublicMediaToPrivateCommand::class,
             ]);
         }
     }

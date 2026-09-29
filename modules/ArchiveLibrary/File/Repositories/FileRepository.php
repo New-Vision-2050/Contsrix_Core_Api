@@ -55,7 +55,7 @@ class FileRepository extends BaseRepository
             request()->attributes->set('archive_file_upload_size', $file->getSize());
             $fileModel = $this->create($data);
             request()->attributes->remove('archive_file_upload_size');
-            $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
+            $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "private");
 
             DB::commit();
 
@@ -83,7 +83,7 @@ class FileRepository extends BaseRepository
                 $this->checkStorageLimitForUpdate($fileModel, $file);
 
                 $fileModel->clearMediaCollection('upload');
-                $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
+                $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "private");
             }
 
             DB::commit();
