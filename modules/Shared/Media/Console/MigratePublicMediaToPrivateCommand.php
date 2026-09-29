@@ -267,10 +267,23 @@ class MigratePublicMediaToPrivateCommand extends Command
 
             return 'migrated';
         } catch (\Throwable $e) {
-            $this->error("  [error] {$media->id} {$relativePath}: {$e->getMessage()}");
+            $this->error("  [error] {$media->id} {$relativePath}: " . $this->fullExceptionMessage($e));
 
             return 'failed';
         }
+    }
+
+    private function fullExceptionMessage(\Throwable $e): string
+    {
+        $parts = [$e->getMessage()];
+        $previous = $e->getPrevious();
+
+        while ($previous !== null) {
+            $parts[] = get_class($previous) . ': ' . $previous->getMessage();
+            $previous = $previous->getPrevious();
+        }
+
+        return implode(' <= caused by: ', $parts);
     }
 
     /**
@@ -422,7 +435,7 @@ class MigratePublicMediaToPrivateCommand extends Command
 
             return 'cleaned';
         } catch (\Throwable $e) {
-            $this->error("  [error] {$media->id} {$relativePath}: {$e->getMessage()}");
+            $this->error("  [error] {$media->id} {$relativePath}: " . $this->fullExceptionMessage($e));
 
             return 'failed';
         }
