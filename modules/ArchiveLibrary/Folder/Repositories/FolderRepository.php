@@ -106,7 +106,7 @@ class FolderRepository extends BaseRepository
             $folder = $this->create($data);
             $folder->users()->attach($userIds);
             if ($file)
-                $this->uploadedFile->uploadFile($folder, $file, 'upload');
+                $this->uploadedFile->uploadFile($folder, $file, 'upload', visibility: $folder->access_type === 'private' ? 'private' : 'public');
 
         } catch (Exception $e) {
             throw new CustomException(__("validation.create-not-successful"));
@@ -133,7 +133,7 @@ class FolderRepository extends BaseRepository
             }
             if ($file != null) {
                 $folder->clearMediaCollection('upload');
-                $this->uploadedFile->uploadFile($folder, $file, 'upload');
+                $this->uploadedFile->uploadFile($folder, $file, 'upload', visibility: $folder->access_type === 'private' ? 'private' : 'public');
             }
 
             return $updated;

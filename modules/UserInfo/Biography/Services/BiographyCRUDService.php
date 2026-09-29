@@ -31,7 +31,7 @@ class BiographyCRUDService
         $company_id = $createBiographyDTO->company_id;
         $global_id = $createBiographyDTO->global_id;
 
-        $visibility = 'public';
+        $visibility = 'private';
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
         if ($file) {

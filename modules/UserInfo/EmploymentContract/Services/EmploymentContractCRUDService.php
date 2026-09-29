@@ -35,7 +35,7 @@ class EmploymentContractCRUDService
         $company_id = $createEmploymentContractDTO->company_id;
         $global_id = $createEmploymentContractDTO->global_id;
 
-        $visibility = 'public';
+        $visibility = 'private';
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
 //        $this->fileDeletedService->deleteFile(

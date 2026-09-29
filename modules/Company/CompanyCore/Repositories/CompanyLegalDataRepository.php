@@ -81,6 +81,7 @@ class CompanyLegalDataRepository extends BaseRepository
                             model: $companyLegalData,
                             file: $file,
                             filePath: "company",
+                            visibility: 'private',
                             fileId: $fileModel->id
                         );
                     }
@@ -186,7 +187,7 @@ class CompanyLegalDataRepository extends BaseRepository
                                 'end_date' => $legalData->end_date,
                             ]);
 
-                            $this->fileUploadService->uploadFile($legalData, $file, 'upload', fileId: $fileModel->id);
+                            $this->fileUploadService->uploadFile($legalData, $file, 'upload', visibility: 'private', fileId: $fileModel->id);
                         }
                     }
                 }

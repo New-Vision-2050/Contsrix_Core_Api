@@ -76,7 +76,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
 
 
                     ]);
-                    $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','public',null, $fileModel->id);
+                    $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','private',null, $fileModel->id);
                 }
             }
             if ($deletedFiles) {

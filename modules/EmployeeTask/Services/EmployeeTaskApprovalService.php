@@ -290,7 +290,7 @@ final class EmployeeTaskApprovalService
             $file,
             'employee-task-approvals/attachments',
             'attachments',
-            'public',
+            'private',
         );
     }
 
