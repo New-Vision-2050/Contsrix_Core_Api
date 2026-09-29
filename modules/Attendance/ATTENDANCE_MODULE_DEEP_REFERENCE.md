@@ -1188,7 +1188,9 @@ snapshotted on the row at clock-in) and the stored `clock_out_time` is
 minutes. Example: a 9h shift ending 20:00 with a 120-minute extension fires at
 22:00 and stores 17:45, so the day pays 6.75h. Penalty closes are recorded with
 `shift_end_method = 'auto_extension_penalty'`; plain boundary closes keep
-`'auto_max_ot'`. Flexible days are exempt (no fixed shift end). When the flag is
+`'auto_max_ot'`. Flexible days follow the same rule — their expected clock-out
+floats with the clock-in (clock-in + required hours) instead of a fixed shift
+end, but the extension wait and the penalty are identical. When the flag is
 off, auto-close fires at `expected_clock_out_time` and stores it unchanged.
 
 The rule lives in `Support/AutoClockOutRules` (pure methods take every input as a
@@ -1206,8 +1208,10 @@ day exception. The quota is `attendance.penalty_exceptions_monthly_limit`
 
 - `GET /api/v1/attendance/penalty-exceptions/current-month` — employee
   self-service status: `month`, `limit`, `used`, `remaining`, the mobile flags
-  `show_exception_message` (true only while a penalized day awaits a decision —
-  a manual self clock-out has no penalty, so no message) and `can_use_exception`
+  `show_exception_message` (true only on the employee's first clock-in of today
+  when his last worked attendance before today is penalized, undecided and in
+  the current month; `message_day` carries that day, null when hidden — a manual
+  self clock-out has no penalty, so no message) and `can_use_exception`
   (false once the quota is exhausted), plus `pending_days`
   (this month's penalized rows awaiting a decision: `attendance_id`,
   `business_date`, `clock_out_time`, `expected_clock_out_time`,

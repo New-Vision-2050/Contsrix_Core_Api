@@ -277,8 +277,10 @@ final class ShiftWindowCalculatorTest extends TestCase
         $this->assertSame('2026-09-10 19:50', $w->autoCloseStoredAt->format('Y-m-d H:i'));
     }
 
-    // 14. Flexible days never wait out an extension and never apply the penalty.
-    public function test_flexible_day_ignores_rule_based_auto_clock_out(): void
+    // 14. Flexible days apply the same rule-based auto clock-out as fixed shifts:
+    //     fire at expected + extension, store expected − 25% penalty.
+    //     Clock-in 11:00 + 480 required → expected 19:00; trigger 21:00; store 17:00.
+    public function test_flexible_day_applies_rule_based_auto_clock_out(): void
     {
         $tz = 'Asia/Riyadh';
         $w = $this->calc->compute(new ShiftWindowInput(
@@ -291,6 +293,28 @@ final class ShiftWindowCalculatorTest extends TestCase
             requiredWorkMinutesOverride: 480,
             flexibleDay: true,
             ruleBasedAutoClockOutEnabled: true,
+        ));
+
+        $this->assertSame('2026-08-13 19:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 21:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
+        // 25% of 480 min = 120 min → 19:00 − 2:00 = 17:00.
+        $this->assertSame('2026-08-13 17:00', $w->autoCloseStoredAt->format('Y-m-d H:i'));
+    }
+
+    // 14b. With the rule flag off, a flexible day auto-closes at expected, unchanged.
+    public function test_flexible_day_without_rule_closes_at_expected_unchanged(): void
+    {
+        $tz = 'Asia/Riyadh';
+        $w = $this->calc->compute(new ShiftWindowInput(
+            scheduledStart: CarbonImmutable::parse('2026-08-13 00:00:00', $tz),
+            scheduledEnd: CarbonImmutable::parse('2026-08-13 23:59:59', $tz),
+            clockIn: CarbonImmutable::parse('2026-08-13 11:00:00', $tz),
+            extensionMinutes: 120,
+            overtimeFlags: new OvertimeFlags(),
+            timezone: $tz,
+            requiredWorkMinutesOverride: 480,
+            flexibleDay: true,
+            ruleBasedAutoClockOutEnabled: false,
         ));
 
         $this->assertSame('2026-08-13 19:00', $w->expectedClockOutAt->format('Y-m-d H:i'));

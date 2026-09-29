@@ -88,8 +88,10 @@ final class ShiftWindowCalculator
      * constraint working_hours. Auto-close when those hours complete. If overtime after
      * finish is allowed, a later session can run up to max_over_time.
      *
-     * Rule-based auto clock-out (extension wait + penalty) does not apply: a flexible
-     * day has no fixed shift end to extend or to penalise against.
+     * Rule-based auto clock-out applies the same as fixed shifts: the close fires at
+     * expected clock-out (clock-in + required hours) + extension_minutes and stores
+     * expected minus the penalty. The expected time floats with the clock-in instead
+     * of a fixed shift end, but the extension wait and penalty are identical.
      */
     private function computeFlexible(ShiftWindowInput $in): ShiftWindow
     {
@@ -133,7 +135,7 @@ final class ShiftWindowCalculator
             expectedClockOutAt: $expectedClockOutAt,
             absentAt: $dayEnd,
             in: $in,
-            ruleBasedAutoClose: false,
+            ruleBasedAutoClose: $in->ruleBasedAutoClockOutEnabled,
         );
     }
 

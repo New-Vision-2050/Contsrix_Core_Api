@@ -38,6 +38,31 @@ class PenaltyDayExceptionTest extends TestCase
         $this->assertFalse(PenaltyDayException::isWaived('auto_extension_penalty'));
     }
 
+    public function test_message_shows_only_on_first_clock_in_after_a_penalized_last_day(): void
+    {
+        $this->assertTrue(PenaltyDayException::shouldShowMessage(1, 'auto_extension_penalty', false, true));
+    }
+
+    public function test_message_hidden_before_clock_in_and_on_later_clock_ins(): void
+    {
+        $this->assertFalse(PenaltyDayException::shouldShowMessage(0, 'auto_extension_penalty', false, true));
+        $this->assertFalse(PenaltyDayException::shouldShowMessage(2, 'auto_extension_penalty', false, true));
+    }
+
+    public function test_message_hidden_when_last_day_has_no_penalty(): void
+    {
+        // The employee clocked out by himself yesterday → no penalty → no message.
+        $this->assertFalse(PenaltyDayException::shouldShowMessage(1, 'manual', false, true));
+        $this->assertFalse(PenaltyDayException::shouldShowMessage(1, null, false, true));
+        $this->assertFalse(PenaltyDayException::shouldShowMessage(1, 'auto_extension_penalty_waived', false, true));
+    }
+
+    public function test_message_hidden_once_decided_or_outside_window(): void
+    {
+        $this->assertFalse(PenaltyDayException::shouldShowMessage(1, 'auto_extension_penalty', true, true));
+        $this->assertFalse(PenaltyDayException::shouldShowMessage(1, 'auto_extension_penalty', false, false));
+    }
+
     public function test_decision_window_covers_the_current_month_only(): void
     {
         $now = Carbon::parse('2026-09-27 12:00:00');

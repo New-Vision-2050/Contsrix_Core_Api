@@ -55,6 +55,26 @@ final class PenaltyDayException
         return $day->format('Y-m') === $now->format('Y-m');
     }
 
+    /**
+     * The استثناء اليوم message is shown only on the employee's first clock-in of
+     * the day, and only when his last worked attendance before today still carries
+     * an undecided, in-window penalty. Before clocking in, on later clock-ins that
+     * day, or once the last day is decided (or had no penalty), it stays hidden.
+     *
+     * @param int $todayClockIns attendance rows with a clock-in on today's business date
+     */
+    public static function shouldShowMessage(
+        int $todayClockIns,
+        ?string $lastShiftEndMethod,
+        bool $lastAlreadyDecided,
+        bool $lastInDecisionWindow,
+    ): bool {
+        return $todayClockIns === 1
+            && self::isPenalized($lastShiftEndMethod)
+            && ! $lastAlreadyDecided
+            && $lastInDecisionWindow;
+    }
+
     public static function isPenalized(?string $shiftEndMethod): bool
     {
         return trim((string) $shiftEndMethod) === self::PENALTY_METHOD;

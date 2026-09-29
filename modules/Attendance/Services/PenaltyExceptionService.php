@@ -69,17 +69,20 @@ class PenaltyExceptionService
             ->orderBy('business_date')
             ->get(['id', 'business_date', 'clock_out_time', 'expected_clock_out_time']);
 
+        $messageDay = $this->messageDay($user, $decidedIds);
+
         return [
             'month'     => $now->format('Y-m'),
             'limit'     => $limit,
             'used'      => $used,
             'remaining' => $remaining,
-            // Mobile flags. show_exception_message: true only while a penalized day
-            // is still awaiting a decision — a manual self clock-out has no penalty,
-            // so pending_days is empty and the app shows no message.
+            // show_exception_message: see PenaltyDayException::shouldShowMessage —
+            // first clock-in of today + last worked day penalized and undecided.
+            // message_day is the day the message is about (null when hidden).
             // can_use_exception: false once the monthly quota is exhausted, so the
             // app disables the "use exception" button and only offers "accept".
-            'show_exception_message' => $pending->isNotEmpty(),
+            'show_exception_message' => $messageDay !== null,
+            'message_day'            => $messageDay,
             'can_use_exception'      => $remaining > 0,
             'pending_days' => $pending->map(fn (Attendance $a) => [
                 'attendance_id'          => (string) $a->id,
@@ -179,23 +182,15 @@ class PenaltyExceptionService
                 'decided_at'      => $now,
             ]);
 
-            // Any other penalized days still awaiting a decision this month?
-            // Lets the app keep or dismiss the استثناء اليوم message without a
-            // follow-up GET.
-            $stillPending = Attendance::query()
-                ->where('user_id', (string) $user->id)
-                ->where('shift_end_method', PenaltyDayException::PENALTY_METHOD)
-                ->whereYear('business_date', $now->year)
-                ->whereMonth('business_date', $now->month)
-                ->whereNotIn(
-                    'id',
-                    AttendancePenaltyException::query()
-                        ->where('user_id', (string) $user->id)
-                        ->select('attendance_id')
-                )
-                ->count();
-
             $remaining = PenaltyDayException::remaining($limit, $used);
+
+            $messageDay = $this->messageDay(
+                $user,
+                AttendancePenaltyException::query()
+                    ->where('user_id', (string) $user->id)
+                    ->pluck('attendance_id')
+                    ->all()
+            );
 
             return [
                 'decision' => [
@@ -212,9 +207,75 @@ class PenaltyExceptionService
                 'used'      => $used,
                 'remaining' => $remaining,
                 'can_use_exception'      => $remaining > 0,
-                'show_exception_message' => $stillPending > 0,
+                'show_exception_message' => $messageDay !== null,
+                'message_day'            => $messageDay,
             ];
         });
+    }
+
+    /**
+     * The penalized day the استثناء اليوم message should be about, or null when
+     * the message is hidden (see PenaltyDayException::shouldShowMessage).
+     *
+     * "Today" is the branch business date, taken from the employee's most recent
+     * row timezone. "Last attendance" is the most recent worked row (has a
+     * clock-in and clock-out) before today — absent rows are skipped.
+     *
+     * @param list<string> $decidedIds attendance ids that already have a decision
+     * @return array<string, mixed>|null
+     */
+    private function messageDay(User $user, array $decidedIds): ?array
+    {
+        $userId = (string) $user->id;
+
+        $timezone = Attendance::query()
+            ->where('user_id', $userId)
+            ->whereNotNull('timezone')
+            ->orderByDesc('business_date')
+            ->value('timezone') ?: config('app.timezone') ?: 'Asia/Riyadh';
+
+        $now   = Carbon::now($timezone);
+        $today = $now->toDateString();
+
+        $todayClockIns = Attendance::query()
+            ->where('user_id', $userId)
+            ->whereDate('business_date', $today)
+            ->whereNotNull('clock_in_time')
+            ->count();
+
+        $last = Attendance::query()
+            ->where('user_id', $userId)
+            ->whereDate('business_date', '<', $today)
+            ->whereNotNull('clock_in_time')
+            ->whereNotNull('clock_out_time')
+            ->orderByDesc('business_date')
+            ->orderByDesc('clock_in_time')
+            ->first(['id', 'business_date', 'clock_out_time', 'expected_clock_out_time', 'shift_end_method']);
+
+        if (! $last) {
+            return null;
+        }
+
+        $show = PenaltyDayException::shouldShowMessage(
+            $todayClockIns,
+            $last->shift_end_method,
+            in_array((string) $last->id, array_map('strval', $decidedIds), true),
+            PenaltyDayException::inDecisionWindow($last->business_date, $now),
+        );
+
+        if (! $show) {
+            return null;
+        }
+
+        return [
+            'attendance_id'           => (string) $last->id,
+            'business_date'           => $last->business_date instanceof \DateTimeInterface
+                ? $last->business_date->format('Y-m-d')
+                : (string) $last->business_date,
+            'clock_out_time'          => (string) ($last->clock_out_time ?? ''),
+            'expected_clock_out_time' => (string) ($last->expected_clock_out_time ?? ''),
+            'penalty_minutes'         => $this->penaltyMinutesOf($last),
+        ];
     }
 
     /**

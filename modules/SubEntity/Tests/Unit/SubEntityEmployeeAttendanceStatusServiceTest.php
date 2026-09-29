@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\SubEntity\Tests\Unit;
 
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Support\ManualAttendanceStatus;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
@@ -120,5 +121,34 @@ class SubEntityEmployeeAttendanceStatusServiceTest extends BaseAttendanceReportT
         )->get('emp');
 
         $this->assertSame('required_attendance', $on28['attendance_status_code']);
+    }
+
+    public function test_attendance_queries_stay_narrow_to_avoid_out_of_sort_memory(): void
+    {
+        $service = app(SubEntityEmployeeAttendanceStatusService::class);
+
+        $attendanceQueries = [];
+        DB::listen(function ($query) use (&$attendanceQueries): void {
+            if (str_contains($query->sql, '`attendances`')) {
+                $attendanceQueries[] = $query->sql;
+            }
+        });
+
+        // 2025-05-10 is the seeded holiday row, so both the daily-rows query and the
+        // full-history holiday-ranges query run for this date. attendances rows carry
+        // large JSON payloads (location_tracking, ...); SELECT * + ORDER BY start_time
+        // used to die in production with "1038 Out of sort memory".
+        $payload = $service->buildRequiredHolidayStatusesForUsersByKey(
+            collect(['emp' => $this->employee]),
+            '2025-05-10'
+        )->get('emp');
+
+        $this->assertSame('holiday', $payload['attendance_status_code']);
+        $this->assertNotEmpty($attendanceQueries);
+
+        foreach ($attendanceQueries as $sql) {
+            $this->assertStringNotContainsString('select *', $sql);
+            $this->assertStringNotContainsString('order by', strtolower($sql));
+        }
     }
 }
