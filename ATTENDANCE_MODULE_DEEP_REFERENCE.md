@@ -1195,7 +1195,9 @@ a penalty of `attendance.auto_clock_out_penalty_percent` % (default 25) of the
 required shift minutes — e.g. a 9h shift ending 20:00 with a 120-minute
 extension fires at 22:00 and stores 17:45. Penalty closes are recorded with
 `shift_end_method = 'auto_extension_penalty'`; plain boundary closes keep
-`'auto_max_ot'`. Flexible days are exempt (no fixed shift end). When the flag
+`'auto_max_ot'`. Flexible days follow the same rule — their expected clock-out
+floats with the clock-in (clock-in + required hours) instead of a fixed shift
+end, but the extension wait and the penalty are identical. When the flag
 is off, auto-close fires at `expected_clock_out_time` and stores it unchanged.
 `attendance:auto-close-stale-shifts` applies the same auto-close rule.
 

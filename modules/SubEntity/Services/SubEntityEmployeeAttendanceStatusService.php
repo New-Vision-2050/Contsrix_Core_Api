@@ -220,14 +220,35 @@ class SubEntityEmployeeAttendanceStatusService
         $dayStart = $workDate.' 00:00:00';
         $dayEnd = $workDate.' 23:59:59';
 
+        // Narrow column list and no SQL ORDER BY on purpose: attendances rows carry
+        // large JSON payloads (location_tracking, verification_data, ...), and the OR
+        // across business_date/start_time cannot be served by a single index, so
+        // SELECT * + ORDER BY start_time forced MySQL to filesort rows wider than
+        // sort_buffer_size and died with "1038 Out of sort memory". The result set is
+        // a handful of rows per user/day, so sorting in PHP is cheap.
         return Attendance::query()
+            ->select([
+                'id',
+                'user_id',
+                'company_id',
+                'business_date',
+                'start_time',
+                'status',
+                'day_status',
+                'is_holiday',
+                'clock_in_time',
+                'clock_out_time',
+            ])
             ->whereIn('user_id', $ids->all())
             ->where(function ($query) use ($workDate, $dayStart, $dayEnd) {
                 $query->where('business_date', $workDate)
                     ->orWhereBetween('start_time', [$dayStart, $dayEnd]);
             })
-            ->orderBy('start_time')
-            ->get();
+            ->get()
+            // Matches ORDER BY start_time ASC (NULLs first); start_time is a raw
+            // "Y-m-d H:i:s" string, so lexicographic order is chronological.
+            ->sortBy(fn (Attendance $attendance): string => $attendance->start_time ?? '')
+            ->values();
     }
 
     /**
@@ -314,7 +335,19 @@ class SubEntityEmployeeAttendanceStatusService
             return collect();
         }
 
+        // This scans the users' full attendance history, so keep the column list
+        // narrow — selecting * would load every location_tracking/verification_data
+        // JSON payload they ever generated into PHP memory.
         $rowsByUserId = Attendance::query()
+            ->select([
+                'id',
+                'user_id',
+                'business_date',
+                'start_time',
+                'is_holiday',
+                'status',
+                'day_status',
+            ])
             ->whereIn('user_id', $ids->all())
             ->where(function ($query) {
                 $query->where('is_holiday', 1)
