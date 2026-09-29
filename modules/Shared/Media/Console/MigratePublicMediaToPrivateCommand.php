@@ -220,7 +220,7 @@ class MigratePublicMediaToPrivateCommand extends Command
         $relativePath = $media->getPathRelativeToRoot();
 
         try {
-            if (! Storage::disk('s3_public')->exists($relativePath)) {
+            if (! $this->diskFileExists('s3_public', $relativePath)) {
                 $this->warn("  [missing] {$media->id} {$relativePath}");
 
                 return 'missing';
@@ -234,7 +234,7 @@ class MigratePublicMediaToPrivateCommand extends Command
 
             // 1. Copy to the private bucket first. The public original is
             //    left untouched at this point no matter what happens next.
-            if (! Storage::disk('s3_private')->exists($relativePath)) {
+            if (! $this->diskFileExists('s3_private', $relativePath)) {
                 $contents = Storage::disk('s3_public')->get($relativePath);
                 Storage::disk('s3_private')->put($relativePath, $contents);
             }
@@ -267,10 +267,40 @@ class MigratePublicMediaToPrivateCommand extends Command
 
             return 'migrated';
         } catch (\Throwable $e) {
-            $this->error("  [error] {$media->id} {$relativePath}: {$e->getMessage()}");
+            $this->error("  [error] {$media->id} {$relativePath}: " . $this->fullExceptionMessage($e));
 
             return 'failed';
         }
+    }
+
+    /**
+     * Safe existence check that avoids Storage::exists()/Flysystem's
+     * directoryExists() fallback, which throws UnableToCheckDirectoryExistence
+     * on DigitalOcean Spaces for nonexistent nested paths instead of
+     * returning false. size() maps to a direct HeadObject call instead.
+     */
+    private function diskFileExists(string $disk, string $path): bool
+    {
+        try {
+            Storage::disk($disk)->size($path);
+
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private function fullExceptionMessage(\Throwable $e): string
+    {
+        $parts = [$e->getMessage()];
+        $previous = $e->getPrevious();
+
+        while ($previous !== null) {
+            $parts[] = get_class($previous) . ': ' . $previous->getMessage();
+            $previous = $previous->getPrevious();
+        }
+
+        return implode(' <= caused by: ', $parts);
     }
 
     /**
@@ -391,12 +421,12 @@ class MigratePublicMediaToPrivateCommand extends Command
         $relativePath = $media->getPathRelativeToRoot();
 
         try {
-            if (! Storage::disk('s3_public')->exists($relativePath)) {
+            if (! $this->diskFileExists('s3_public', $relativePath)) {
                 // Nothing left to clean up — already gone or never existed there.
                 return 'missing';
             }
 
-            if (! Storage::disk('s3_private')->exists($relativePath)) {
+            if (! $this->diskFileExists('s3_private', $relativePath)) {
                 $this->error("  [skip] {$media->id} {$relativePath}: private copy missing, refusing to delete public original.");
 
                 return 'failed';
@@ -422,7 +452,7 @@ class MigratePublicMediaToPrivateCommand extends Command
 
             return 'cleaned';
         } catch (\Throwable $e) {
-            $this->error("  [error] {$media->id} {$relativePath}: {$e->getMessage()}");
+            $this->error("  [error] {$media->id} {$relativePath}: " . $this->fullExceptionMessage($e));
 
             return 'failed';
         }
