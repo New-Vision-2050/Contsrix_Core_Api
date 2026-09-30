@@ -362,7 +362,7 @@ class AttachmentRequestService
                     'item_id' => $item->id,
                     'file_name' => $item->file_name,
                     'file_path' => $item->file_path,
-                    'file_url' => $item->file_path ? asset('storage/' . $item->file_path) : null,
+                    'file_url' => $item->getFirstMedia('attachments')?->getFullUrl() ?: null,
                     'file_type' => $item->file_type,
                     'file_size' => $item->file_size,
                     'file_size_formatted' => $this->formatFileSize($item->file_size),

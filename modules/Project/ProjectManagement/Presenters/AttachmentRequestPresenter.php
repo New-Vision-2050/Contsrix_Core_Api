@@ -107,7 +107,7 @@ class AttachmentRequestPresenter extends AbstractPresenter
                     return [
                         'id' => $item->id,
                         'file_name' => $item->file_name,
-                        'file_url' => $item->getFirstMediaUrl('attachments') ?: null,
+                        'file_url' => $item->getFirstMedia('attachments')?->getFullUrl() ?: null,
                         'file_size' => $item->file_size,
                         'file_size_formatted' => $this->formatFileSize($item->file_size),
                         'file_type' => $item->file_type,
