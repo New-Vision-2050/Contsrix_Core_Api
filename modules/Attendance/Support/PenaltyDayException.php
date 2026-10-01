@@ -37,8 +37,10 @@ final class PenaltyDayException
 
     /**
      * A row is decidable while its penalty is still applied (not yet waived) and the
-     * penalized day belongs to the current calendar month — the app surfaces the
-     * message the day after the close, so the window always covers "yesterday".
+     * penalized day belongs to the current or the previous calendar month — the app
+     * surfaces the message the day after the close, and "the day after" the last day
+     * of a month falls in a new month, which must not close the window. A waive made
+     * in the new month consumes the new month's quota.
      *
      * @param mixed $businessDate Y-m-d string (or Carbon) of the penalized day
      */
@@ -52,14 +54,19 @@ final class PenaltyDayException
             ? Carbon::parse($businessDate)
             : Carbon::parse((string) $businessDate);
 
-        return $day->format('Y-m') === $now->format('Y-m');
+        return $day->greaterThanOrEqualTo($now->copy()->startOfMonth()->subMonthNoOverflow()->startOfDay())
+            && $day->lessThanOrEqualTo($now->copy()->endOfDay());
     }
 
     /**
-     * The استثناء اليوم message is shown only on the employee's first clock-in of
-     * the day, and only when his last worked attendance before today still carries
-     * an undecided, in-window penalty. Before clocking in, on later clock-ins that
-     * day, or once the last day is decided (or had no penalty), it stays hidden.
+     * The استثناء اليوم message is shown once the employee has clocked in today
+     * (i.e. from his first clock-in onward), and only when his last worked day
+     * before today still carries an undecided, in-window penalty. Before the first
+     * clock-in, or once the last day is decided (or had no penalty), it stays hidden.
+     *
+     * Note: >= 1, not === 1 — flexible employees clock in/out several times a day
+     * (one row per session), so a "first row only" rule would hide the message from
+     * their second session on. The app shows it from the first clock-in until decided.
      *
      * @param int $todayClockIns attendance rows with a clock-in on today's business date
      */
@@ -69,7 +76,7 @@ final class PenaltyDayException
         bool $lastAlreadyDecided,
         bool $lastInDecisionWindow,
     ): bool {
-        return $todayClockIns === 1
+        return $todayClockIns >= 1
             && self::isPenalized($lastShiftEndMethod)
             && ! $lastAlreadyDecided
             && $lastInDecisionWindow;

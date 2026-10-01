@@ -248,7 +248,11 @@ class PenaltyExceptionService
             ->whereDate('business_date', '<', $today)
             ->whereNotNull('clock_in_time')
             ->whereNotNull('clock_out_time')
+            // The last day as a whole, not the last row: a flexible day has several
+            // sessions, and the penalized auto-close is usually the first one — a
+            // later session the employee closed himself must not hide it.
             ->orderByDesc('business_date')
+            ->orderByRaw("CASE WHEN shift_end_method = ? THEN 0 ELSE 1 END", [PenaltyDayException::PENALTY_METHOD])
             ->orderByDesc('clock_in_time')
             ->first(['id', 'business_date', 'clock_out_time', 'expected_clock_out_time', 'shift_end_method']);
 

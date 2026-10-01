@@ -38,15 +38,17 @@ class PenaltyDayExceptionTest extends TestCase
         $this->assertFalse(PenaltyDayException::isWaived('auto_extension_penalty'));
     }
 
-    public function test_message_shows_only_on_first_clock_in_after_a_penalized_last_day(): void
+    public function test_message_shows_from_the_first_clock_in_after_a_penalized_last_day(): void
     {
         $this->assertTrue(PenaltyDayException::shouldShowMessage(1, 'auto_extension_penalty', false, true));
+        // Flexible employees clock in several times a day (one row per session) —
+        // the message stays visible on later sessions until the day is decided.
+        $this->assertTrue(PenaltyDayException::shouldShowMessage(3, 'auto_extension_penalty', false, true));
     }
 
-    public function test_message_hidden_before_clock_in_and_on_later_clock_ins(): void
+    public function test_message_hidden_before_the_first_clock_in(): void
     {
         $this->assertFalse(PenaltyDayException::shouldShowMessage(0, 'auto_extension_penalty', false, true));
-        $this->assertFalse(PenaltyDayException::shouldShowMessage(2, 'auto_extension_penalty', false, true));
     }
 
     public function test_message_hidden_when_last_day_has_no_penalty(): void
@@ -63,16 +65,18 @@ class PenaltyDayExceptionTest extends TestCase
         $this->assertFalse(PenaltyDayException::shouldShowMessage(1, 'auto_extension_penalty', false, false));
     }
 
-    public function test_decision_window_covers_the_current_month_only(): void
+    public function test_decision_window_covers_current_and_previous_month(): void
     {
-        $now = Carbon::parse('2026-09-27 12:00:00');
+        $now = Carbon::parse('2026-10-01 12:00:00');
 
         // Yesterday's penalty is decidable (the app shows the message the next day).
-        $this->assertTrue(PenaltyDayException::inDecisionWindow('2026-09-26', $now));
-        $this->assertTrue(PenaltyDayException::inDecisionWindow('2026-09-01', $now));
-        $this->assertTrue(PenaltyDayException::inDecisionWindow('2026-09-27', $now));
+        $this->assertTrue(PenaltyDayException::inDecisionWindow('2026-09-30', $now));
+        // Last month's penalty is still decidable — a penalty on the last day of a
+        // month would otherwise lose its window the very next morning.
+        $this->assertTrue(PenaltyDayException::inDecisionWindow('2026-09-28', $now));
+        $this->assertTrue(PenaltyDayException::inDecisionWindow('2026-10-01', $now));
 
-        // Last month's penalty is not.
+        // Two months back is not.
         $this->assertFalse(PenaltyDayException::inDecisionWindow('2026-08-31', $now));
         $this->assertFalse(PenaltyDayException::inDecisionWindow(null, $now));
         $this->assertFalse(PenaltyDayException::inDecisionWindow('', $now));
