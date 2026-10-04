@@ -2288,7 +2288,7 @@ class ProjectNotificationService
                 file: $dto->files,
                 filePath: 'employee-tasks/end-attachments',
                 collectionName: 'end_attachments',
-                visibility: 'public',
+                visibility: 'private',
             );
         }
 
@@ -3164,7 +3164,7 @@ class ProjectNotificationService
             file: $files,
             filePath: 'project-notifications/work-stoppage-reports',
             collectionName: 'work_stoppage_report_attachments',
-            visibility: 'public',
+            visibility: 'private',
         );
 
         return $media->pluck('id')->all();
@@ -3184,7 +3184,7 @@ class ProjectNotificationService
             file: $files,
             filePath: 'project-notifications/work-stoppage-reports',
             collectionName: 'attachments',
-            visibility: 'public',
+            visibility: 'private',
         );
     }
 
@@ -3227,7 +3227,7 @@ class ProjectNotificationService
             file: $files,
             filePath: 'project-notifications/work-resumptions',
             collectionName: 'work_resumption_attachments',
-            visibility: 'public',
+            visibility: 'private',
         );
 
         return $media->pluck('id')->all();
@@ -3247,7 +3247,7 @@ class ProjectNotificationService
             file: $files,
             filePath: 'project-notifications/work-resumptions',
             collectionName: 'attachments',
-            visibility: 'public',
+            visibility: 'private',
         );
     }
 
@@ -3324,7 +3324,7 @@ class ProjectNotificationService
             file: $files,
             filePath: 'project-notifications/fines',
             collectionName: 'fine_attachments',
-            visibility: 'public',
+            visibility: 'private',
         );
 
         return $media->pluck('id')->all();
@@ -3344,7 +3344,7 @@ class ProjectNotificationService
             file: $files,
             filePath: 'project-notifications/fines',
             collectionName: 'attachments',
-            visibility: 'public',
+            visibility: 'private',
         );
     }
 
@@ -3399,7 +3399,7 @@ class ProjectNotificationService
                 file: $files,
                 filePath: "project-notifications/site-status-updates/{$notificationNumber}/{$folderName}",
                 collectionName: 'site_status_update_attachments',
-                visibility: 'public',
+                visibility: 'private',
                 folderId: $archiveFolder->id,
                 fileId: $fileIds,
             );
@@ -3439,7 +3439,7 @@ class ProjectNotificationService
                 file: $files,
                 filePath: "project-notifications/site-status-updates/{$notificationNumber}/{$folderName}",
                 collectionName: 'attachments',
-                visibility: 'public',
+                visibility: 'private',
                 folderId: $archiveFolder->id,
                 fileId: $fileIds,
             );
@@ -3569,7 +3569,7 @@ class ProjectNotificationService
             file: $files,
             filePath: 'project-notifications/updates',
             collectionName: 'update_attachments',
-            visibility: 'public',
+            visibility: 'private',
         );
 
         return $media->pluck('id')->all();
@@ -3589,7 +3589,7 @@ class ProjectNotificationService
             file: $files,
             filePath: 'project-notifications/attachments',
             collectionName: 'attachments',
-            visibility: 'public',
+            visibility: 'private',
         );
     }
 

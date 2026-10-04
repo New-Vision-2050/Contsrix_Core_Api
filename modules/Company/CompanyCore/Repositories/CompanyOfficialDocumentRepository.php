@@ -44,7 +44,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
 
 
                 ]);
-                $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','public',null, $fileModel->id);
+                $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','private',null, $fileModel->id);
             }
             $this->activityLogRepository->createActivityLog(["action" => ["ar" => "إنشاء", "en" => "create"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
             DB::commit();

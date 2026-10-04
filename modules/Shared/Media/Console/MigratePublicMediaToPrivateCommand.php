@@ -41,6 +41,7 @@ class MigratePublicMediaToPrivateCommand extends Command
         'Modules\Company\CompanyCore\Models\CompanyOfficialDocument' => ['upload'],
         'Modules\Company\CompanyCore\Models\CompanyLegalData' => ['upload'],
         'Modules\CompanyUser\Models\CompanyUser' => [
+            'upload_user',
             'file_passport',
             'file_identity',
             'file_border_number',
@@ -56,11 +57,26 @@ class MigratePublicMediaToPrivateCommand extends Command
         'Modules\MedicalInsurance\Models\MedicalInsurance' => ['attachments'],
         'Modules\AdminRequest\Models\AdminRequest' => ['upload'],
         'Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest' => ['attachments'],
-        'Modules\EmployeeTask\Models\EmployeeTaskRequest' => ['attachments'],
+        'Modules\EmployeeTask\Models\EmployeeTaskRequest' => ['attachments', 'end_attachments'],
         'Modules\ClientRequest\Models\ClientRequest' => ['attachments'],
         'Modules\ArchiveLibrary\File\Models\File' => ['upload'],
         'Modules\Reports\Models\Report' => ['report_file'],
         'Modules\Project\ProjectType\Models\SafetyWeeklyReport' => ['weekly_report_file'],
+        'Modules\Project\ProjectType\Models\SafetyRecord' => ['violation_evidence'],
+        'Modules\UserInfo\JobOffer\Models\JobOffer' => ['upload_offerjob'],
+        'Modules\Project\ProjectManagement\Models\ProjectManagement' => ['stamp'],
+        'Modules\Project\ProjectManagement\Models\ProjectNotification' => [
+            'attachments',
+            'update_attachments',
+            'site_status_update_attachments',
+            'fine_attachments',
+            'work_stoppage_report_attachments',
+            'work_resumption_attachments',
+        ],
+        'Modules\Project\ProjectManagement\Models\ProjectNotificationSiteStatusUpdate' => ['attachments'],
+        'Modules\Project\ProjectManagement\Models\ProjectNotificationWorkStoppageReport' => ['attachments'],
+        'Modules\Project\ProjectManagement\Models\ProjectNotificationWorkResumption' => ['attachments'],
+        'Modules\Project\ProjectManagement\Models\ProjectNotificationFine' => ['attachments'],
     ];
 
     public function handle(): int

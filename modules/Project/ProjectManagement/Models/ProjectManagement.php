@@ -126,9 +126,7 @@ class ProjectManagement extends Model implements HasMedia
 
     public function stampUrl(): ?string
     {
-        $url = $this->getFirstMediaUrl(self::STAMP_COLLECTION);
-
-        return $url === '' ? null : $url;
+        return $this->getFirstMedia(self::STAMP_COLLECTION)?->getFullUrl();
     }
 
     // Relationships
