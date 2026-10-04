@@ -117,6 +117,7 @@ class MigratePublicMediaToPrivateCommand extends Command
         $totalMigrated = 0;
         $totalFailed = 0;
         $totalSkippedMissing = 0;
+        $totalRepointed = 0;
         $stop = false;
 
         foreach (self::TARGETS as $modelType => $collections) {
@@ -145,10 +146,10 @@ class MigratePublicMediaToPrivateCommand extends Command
 
             $this->line("Model {$modelType} [".implode(',', $collections)."]: {$count} public media row(s) found.");
 
-            $query->chunkById($chunkSize, function ($mediaItems) use (&$totalMigrated, &$totalFailed, &$totalSkippedMissing, &$stop, $apply, $deleteSource, $limit) {
+            $query->chunkById($chunkSize, function ($mediaItems) use (&$totalMigrated, &$totalFailed, &$totalSkippedMissing, &$totalRepointed, &$stop, $apply, $deleteSource, $limit) {
                 /** @var Media $media */
                 foreach ($mediaItems as $media) {
-                    if ($limit > 0 && $totalMigrated >= $limit) {
+                    if ($limit > 0 && ($totalMigrated + $totalRepointed) >= $limit) {
                         $stop = true;
 
                         return false; // stop chunking
@@ -158,6 +159,7 @@ class MigratePublicMediaToPrivateCommand extends Command
 
                     match ($result) {
                         'migrated' => $totalMigrated++,
+                        'repointed' => $totalRepointed++,
                         'missing' => $totalSkippedMissing++,
                         default => $totalFailed++,
                     };
@@ -169,11 +171,11 @@ class MigratePublicMediaToPrivateCommand extends Command
 
         // Folder module: only migrate files belonging to folders with access_type = 'private'.
         if (! $stop && ($only === null || in_array('Modules\ArchiveLibrary\Folder\Models\Folder', $only, true))) {
-            $this->migratePrivateFolders($apply, $deleteSource, $chunkSize, $limit, $totalMatched, $totalMigrated, $totalFailed, $totalSkippedMissing);
+            $this->migratePrivateFolders($apply, $deleteSource, $chunkSize, $limit, $totalMatched, $totalMigrated, $totalFailed, $totalSkippedMissing, $totalRepointed);
         }
 
         $this->newLine();
-        $this->info("Matched: {$totalMatched} | Migrated: {$totalMigrated} | Missing source file: {$totalSkippedMissing} | Failed: {$totalFailed}");
+        $this->info("Matched: {$totalMatched} | Migrated: {$totalMigrated} | Repointed (already on private): {$totalRepointed} | Missing source file: {$totalSkippedMissing} | Failed: {$totalFailed}");
 
         if (! $apply) {
             $this->comment('Re-run with --apply to perform the migration.');
@@ -182,7 +184,7 @@ class MigratePublicMediaToPrivateCommand extends Command
         return $totalFailed > 0 ? self::FAILURE : self::SUCCESS;
     }
 
-    private function migratePrivateFolders(bool $apply, bool $deleteSource, int $chunkSize, int $limit, int &$totalMatched, int &$totalMigrated, int &$totalFailed, int &$totalSkippedMissing): void
+    private function migratePrivateFolders(bool $apply, bool $deleteSource, int $chunkSize, int $limit, int &$totalMatched, int &$totalMigrated, int &$totalFailed, int &$totalSkippedMissing, int &$totalRepointed): void
     {
         $folderModel = 'Modules\ArchiveLibrary\Folder\Models\Folder';
 
@@ -209,9 +211,9 @@ class MigratePublicMediaToPrivateCommand extends Command
 
         $this->line("Model {$folderModel} [upload] (private folders only): {$count} public media row(s) found.");
 
-        $query->chunkById($chunkSize, function ($mediaItems) use (&$totalMigrated, &$totalFailed, &$totalSkippedMissing, $apply, $deleteSource, $limit) {
+        $query->chunkById($chunkSize, function ($mediaItems) use (&$totalMigrated, &$totalFailed, &$totalSkippedMissing, &$totalRepointed, $apply, $deleteSource, $limit) {
             foreach ($mediaItems as $media) {
-                if ($limit > 0 && $totalMigrated >= $limit) {
+                if ($limit > 0 && ($totalMigrated + $totalRepointed) >= $limit) {
                     return false;
                 }
 
@@ -219,6 +221,7 @@ class MigratePublicMediaToPrivateCommand extends Command
 
                 match ($result) {
                     'migrated' => $totalMigrated++,
+                    'repointed' => $totalRepointed++,
                     'missing' => $totalSkippedMissing++,
                     default => $totalFailed++,
                 };
@@ -229,7 +232,7 @@ class MigratePublicMediaToPrivateCommand extends Command
     }
 
     /**
-     * @return 'migrated'|'missing'|'failed'
+     * @return 'migrated'|'repointed'|'missing'|'failed'
      */
     private function migrateOne(Media $media, bool $apply, bool $deleteSource): string
     {
@@ -237,6 +240,36 @@ class MigratePublicMediaToPrivateCommand extends Command
 
         try {
             if (! $this->diskFileExists('s3_public', $relativePath)) {
+                // Source is gone from the public bucket. It may already sit on
+                // the private bucket — e.g. an earlier interrupted run moved it
+                // but crashed before repointing the DB row. If a private copy
+                // exists with the recorded size, just repoint instead of
+                // skipping the row as lost.
+                if ($this->diskFileExists('s3_private', $relativePath)) {
+                    $privateSize = Storage::disk('s3_private')->size($relativePath);
+
+                    if ((int) $media->size === $privateSize) {
+                        if (! $apply) {
+                            $this->line("  [dry-run] would repoint {$media->id} {$relativePath} (already on private)");
+
+                            return 'repointed';
+                        }
+
+                        $media->forceFill([
+                            'disk' => 's3_private',
+                            'conversions_disk' => 's3_private',
+                        ])->save();
+
+                        $this->line("  [ok] repointed to existing private copy: {$media->id} {$relativePath}");
+
+                        return 'repointed';
+                    }
+
+                    $this->warn("  [missing] {$media->id} {$relativePath} (private copy exists but size differs: db={$media->size}, private={$privateSize})");
+
+                    return 'missing';
+                }
+
                 $this->warn("  [missing] {$media->id} {$relativePath}");
 
                 return 'missing';
