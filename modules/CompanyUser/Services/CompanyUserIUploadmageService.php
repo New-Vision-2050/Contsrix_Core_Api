@@ -27,7 +27,7 @@ class CompanyUserIUploadmageService
     {
         $file = $request->image;
 
-        $visibility = 'public';
+        $visibility = 'private';
 
         $user = $this->userRepository->getUser($userId);
 

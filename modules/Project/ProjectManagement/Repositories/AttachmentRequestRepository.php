@@ -373,7 +373,7 @@ class AttachmentRequestRepository extends BaseRepository
                     $uploadedFile,
                     'attachment-requests',
                     'attachments',
-                    'public',
+                    'private',
                     preserveOriginalFileName: true,
                 );
 

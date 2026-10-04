@@ -153,7 +153,7 @@ class ClientRequestPresenter extends AbstractPresenter
                     'mime_type' => $media->mime_type,
                     'size' => $media->size,
                     'human_readable_size' => $this->formatBytes($media->size),
-                    'url' => $media->getUrl(),
+                    'url' => $media->getFullUrl(),
                     'created_at' => $media->created_at?->toDateTimeString(),
                 ];
             })->toArray();

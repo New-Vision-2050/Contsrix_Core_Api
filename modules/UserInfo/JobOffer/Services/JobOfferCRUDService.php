@@ -36,7 +36,7 @@ class JobOfferCRUDService
         $company_id = $createJobOfferDTO->company_id;
         $global_id = $createJobOfferDTO->global_id;
 
-        $visibility = 'public';
+        $visibility = 'private';
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
 

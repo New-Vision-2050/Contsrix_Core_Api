@@ -691,6 +691,7 @@ class SafetyService
                 $images,
                 filePath: 'safety/violation-evidence/'.$violationId,
                 collectionName: 'violation_evidence',
+                visibility: 'private',
             );
 
             foreach ($mediaItems as $media) {

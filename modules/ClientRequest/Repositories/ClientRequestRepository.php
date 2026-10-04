@@ -157,7 +157,7 @@ class ClientRequestRepository extends BaseRepository
                         $attachment,
                         'client-requests/attachments',
                         'attachments',
-                        'public'
+                        'private'
                     );
                 }
             }

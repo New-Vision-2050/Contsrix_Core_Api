@@ -57,7 +57,7 @@ class ProjectManagementCRUDService
             file: $stamp,
             filePath: 'projects/'.$project->id.'/stamp',
             collectionName: ProjectManagement::STAMP_COLLECTION,
-            visibility: 'public',
+            visibility: 'private',
         );
 
         return $project->fresh() ?? $project;
