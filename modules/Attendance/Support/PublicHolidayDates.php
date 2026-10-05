@@ -20,14 +20,15 @@ use Carbon\Carbon;
 final readonly class PublicHolidayDates
 {
     /**
-     * Note stamped on the attendance rows the removed `attendance:create-holiday-attendance`
-     * command and its job used to pre-write. Those rows are no longer authoritative — they
-     * were keyed on the company's country, were never cleaned up when a holiday was edited
-     * or deleted, and the holiday is now read live instead. A leftover row must therefore
-     * not keep a day off on its own, exactly as a stale override row must not
+     * Note stamped on attendance rows written ahead of the day. Two writers share the
+     * stem: the removed `attendance:create-holiday-attendance` command
+     * (`Auto-generated holiday record: National Day`) and {@see \Modules\Attendance\Services\AutoAttendanceService}
+     * (`Auto-generated holiday record.`). Neither is authoritative once the date is a
+     * scheduled work day — the holiday is read live, and a weekend row left behind after
+     * the schedule changed must not keep the day عطلة
      * ({@see ManualAttendanceStatus::isHolidayRow}).
      */
-    public const LEGACY_ROW_NOTE_PREFIX = 'Auto-generated holiday record:';
+    public const LEGACY_ROW_NOTE_PREFIX = 'Auto-generated holiday record';
 
     /**
      * @param array<string, string> $names Y-m-d => holiday name

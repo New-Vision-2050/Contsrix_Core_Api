@@ -41,6 +41,37 @@ final class ManualAttendanceStatus
         return is_string($notes) && trim($notes) === self::HOLIDAY_ROW_NOTE;
     }
 
+    /**
+     * A holiday-flagged attendance row that must not decide the calendar day.
+     *
+     * A row with a clock-in is kept: the employee is actually there, and a sibling
+     * placeholder must not paint the day عطلة. Known leftover notes (the override,
+     * or an auto-generated holiday row) are dropped once no holiday range covers the
+     * date. `required_attendance` drops every remaining holiday placeholder, because
+     * that instruction already outranks the holiday the row was written for (INV-21).
+     */
+    public static function shouldIgnoreHolidayAttendance(object $attendance, bool $requiredAttendance): bool
+    {
+        if (! empty($attendance->clock_in_time ?? null)) {
+            return false;
+        }
+
+        $notes = $attendance->notes ?? null;
+        if (self::isHolidayRow($notes) || PublicHolidayDates::isLegacyGeneratedRow($notes)) {
+            return true;
+        }
+
+        if (! $requiredAttendance) {
+            return false;
+        }
+
+        $flag = $attendance->is_holiday ?? null;
+
+        return $flag === true || $flag === 1 || $flag === '1'
+            || ($attendance->day_status ?? null) === 'holiday'
+            || ($attendance->status ?? null) === 'holiday';
+    }
+
     public static function overridesFor(?User $user): ManualAttendanceOverrideSet
     {
         return ManualAttendanceOverrideSet::fromUser($user);

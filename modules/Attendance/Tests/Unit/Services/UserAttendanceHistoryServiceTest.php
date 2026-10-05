@@ -410,6 +410,69 @@ class UserAttendanceHistoryServiceTest extends TestCase
         $this->assertSame(1, $payload['is_holiday']);
     }
 
+    public function test_clock_in_beats_a_sibling_holiday_row(): void
+    {
+        $holidayRow = new Attendance([
+            'status'     => Attendance::STATUS_HOLIDAY,
+            'day_status' => 'holiday',
+            'is_holiday' => 1,
+            'notes'      => ManualAttendanceStatus::HOLIDAY_ROW_NOTE,
+        ]);
+        $punch = new Attendance([
+            'status'         => Attendance::STATUS_ACTIVE,
+            'is_holiday'     => 0,
+            'day_status'     => 'work_day',
+            'clock_in_time'  => '2026-10-05 07:30:00',
+            'clock_out_time' => null,
+            'start_time'     => '2026-10-05 07:30:00',
+            'timezone'       => 'Asia/Riyadh',
+        ]);
+
+        $payload = $this->classifyDay(
+            '2026-10-05',
+            ['monday' => true],
+            false,
+            collect([$holidayRow, $punch]),
+            null,
+            (new User())->setRawAttributes([
+                'manual_attendance_status'       => ManualAttendanceStatus::REQUIRED_ATTENDANCE,
+                'manual_attendance_status_since' => '2026-10-05',
+                'manual_attendance_status_until' => '2026-10-05',
+            ])
+        );
+
+        $this->assertSame('نشط', $payload['status']);
+        $this->assertSame(0, $payload['is_holiday']);
+        $this->assertSame(0, $payload['is_absent']);
+    }
+
+    public function test_required_attendance_drops_a_holiday_placeholder(): void
+    {
+        $holidayRow = new Attendance([
+            'status'     => Attendance::STATUS_HOLIDAY,
+            'day_status' => 'holiday',
+            'is_holiday' => 1,
+            'notes'      => null,
+        ]);
+
+        $payload = $this->classifyDay(
+            '2026-10-04',
+            ['sunday' => true],
+            false,
+            collect([$holidayRow]),
+            null,
+            (new User())->setRawAttributes([
+                'manual_attendance_status'       => ManualAttendanceStatus::REQUIRED_ATTENDANCE,
+                'manual_attendance_status_since' => '2026-10-04',
+                'manual_attendance_status_until' => '2026-10-04',
+            ])
+        );
+
+        $this->assertSame('غائب', $payload['status']);
+        $this->assertSame(1, $payload['is_absent']);
+        $this->assertSame(0, $payload['is_holiday']);
+    }
+
     /**
      * Holidays are read live now, so a row left behind by the removed pre-writing command
      * must not hold the day off on its own.

@@ -57,6 +57,7 @@ class PublicHolidayDatesTest extends TestCase
     {
         $this->assertTrue(PublicHolidayDates::isLegacyGeneratedRow('Auto-generated holiday record: National Day'));
         $this->assertTrue(PublicHolidayDates::isLegacyGeneratedRow('  Auto-generated holiday record: عيد  '));
+        $this->assertTrue(PublicHolidayDates::isLegacyGeneratedRow('Auto-generated holiday record.'));
     }
 
     public function test_other_notes_are_not_mistaken_for_a_generated_row(): void

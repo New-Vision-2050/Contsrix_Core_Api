@@ -223,9 +223,11 @@ class AttendanceCalendarService
         // Setting a range rewrote every row inside it, and punching the range later does
         // not undo those writes. A leftover row is not attendance once no holiday range
         // covers the date: drop it and let the day resolve from the constraint (INV-18).
+        // required_attendance also drops a holiday placeholder that has no clock-in, so
+        // the day the admin demanded cannot stay عطلة beside an active punch (INV-21).
+        $requiredAttendance = ManualAttendanceStatus::isRequiredAttendanceOn($user, $dateString);
         $dayAttendances = $dayAttendances->reject(
-            fn ($a) => ManualAttendanceStatus::isHolidayRow($a->notes ?? null)
-                || PublicHolidayDates::isLegacyGeneratedRow($a->notes ?? null)
+            fn ($a) => ManualAttendanceStatus::shouldIgnoreHolidayAttendance($a, $requiredAttendance)
         );
 
         // Future dates: status depends on constraints
@@ -300,12 +302,17 @@ class AttendanceCalendarService
         // Has attendance records.
         // Reached only on scheduled work days with no personal time off and no official
         // holiday, so a surviving holiday row was written by something outside those
-        // sources and is still read as عطلة.
+        // sources and is still read as عطلة — unless someone actually clocked in.
+        // A real punch wins over that sibling, the same way it wins over a leftover
+        // absent period row.
+        $hasPresence = $dayAttendances->contains(fn ($a) => ! empty($a->clock_in_time));
         $hasHoliday = $dayAttendances->contains(fn ($a) =>
-            ($a->is_holiday ?? false) || ($a->day_status ?? null) === 'holiday' || ($a->status ?? null) === Attendance::STATUS_HOLIDAY
+            $this->isTruthy($a->is_holiday ?? null)
+            || ($a->day_status ?? null) === 'holiday'
+            || ($a->status ?? null) === Attendance::STATUS_HOLIDAY
         );
 
-        if ($hasHoliday) {
+        if ($hasHoliday && ! $hasPresence) {
             return $this->formatDay(
                 $dateString,
                 $dayName,
@@ -319,9 +326,6 @@ class AttendanceCalendarService
         // Late = clock-in AFTER shift start only.
         // Early clock-out (before required hours) is NOT late — show present + hours worked.
         $hasLate = $this->hasLateArrival($dayAttendances);
-        // Real clock-in always wins over leftover absent period rows (early clock-in
-        // often leaves a second period marked absent while the active one has clock_in).
-        $hasPresence = $dayAttendances->contains(fn ($a) => ! empty($a->clock_in_time));
         $hasAbsent = ! $hasPresence && $dayAttendances->contains(fn ($a) =>
             $this->isTruthy($a->is_absent ?? null) || ($a->status ?? null) === Attendance::STATUS_ABSENT
         );
@@ -706,7 +710,7 @@ class AttendanceCalendarService
             'id', 'user_id', 'company_id', 'status', 'timezone',
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours', 'total_break_hours',
-            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday', 'notes',
         ];
 
         foreach (['worked_minutes', 'work_duration'] as $durationColumn) {
