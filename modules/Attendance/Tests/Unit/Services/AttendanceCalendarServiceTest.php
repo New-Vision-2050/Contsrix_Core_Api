@@ -333,6 +333,122 @@ class AttendanceCalendarServiceTest extends TestCase
     }
 
     /**
+     * The reported day: Monday is a scheduled work day, the employee is clocked in, and a
+     * sibling row is still flagged holiday. The punch is the day; the placeholder is not.
+     */
+    public function test_clock_in_beats_a_sibling_holiday_row(): void
+    {
+        $holidayRow = $this->attendance([
+            'is_holiday' => 1,
+            'day_status' => 'holiday',
+            'status'     => Attendance::STATUS_HOLIDAY,
+            'notes'      => ManualAttendanceStatus::HOLIDAY_ROW_NOTE,
+            'start_time' => '2026-10-05 00:00:00',
+        ]);
+        $punch = $this->attendance([
+            'status'        => Attendance::STATUS_ACTIVE,
+            'is_holiday'    => 0,
+            'day_status'    => 'work_day',
+            'clock_in_time' => '2026-10-05 07:30:00',
+            'start_time'    => '2026-10-05 07:30:00',
+            'timezone'      => 'Asia/Riyadh',
+        ]);
+
+        $day = $this->buildDayData(
+            '2026-10-05',
+            $this->userWithRequiredAttendanceOn('2026-10-05'),
+            ['monday' => true],
+            collect([$holidayRow, $punch])
+        );
+
+        $this->assertSame('present', $day['status_key']);
+        $this->assertSame('حاضر', $day['status']);
+    }
+
+    /**
+     * A holiday placeholder with no recognised note still must not hide a clock-in
+     * on the same scheduled work day.
+     */
+    public function test_clock_in_beats_an_unrecognised_holiday_row(): void
+    {
+        $holidayRow = $this->attendance([
+            'is_holiday' => 1,
+            'day_status' => 'holiday',
+            'status'     => Attendance::STATUS_HOLIDAY,
+            'notes'      => null,
+            'start_time' => '2026-10-05 00:00:00',
+        ]);
+        $punch = $this->attendance([
+            'status'        => Attendance::STATUS_ACTIVE,
+            'is_holiday'    => 0,
+            'day_status'    => 'work_day',
+            'clock_in_time' => '2026-10-05 07:30:00',
+            'start_time'    => '2026-10-05 07:30:00',
+            'timezone'      => 'Asia/Riyadh',
+        ]);
+
+        $day = $this->buildDayData(
+            '2026-10-05',
+            new User(),
+            ['monday' => true],
+            collect([$holidayRow, $punch])
+        );
+
+        $this->assertSame('present', $day['status_key']);
+        $this->assertSame('حاضر', $day['status']);
+    }
+
+    /**
+     * required_attendance with no punch yet still must not stay عطلة just because a
+     * holiday placeholder was written before the override.
+     */
+    public function test_required_attendance_drops_a_holiday_placeholder(): void
+    {
+        $holidayRow = $this->attendance([
+            'is_holiday' => 1,
+            'day_status' => 'holiday',
+            'status'     => Attendance::STATUS_HOLIDAY,
+            'notes'      => null,
+            'start_time' => '2026-10-04 00:00:00',
+        ]);
+
+        $day = $this->buildDayData(
+            '2026-10-04',
+            $this->userWithRequiredAttendanceOn('2026-10-04'),
+            ['sunday' => true],
+            collect([$holidayRow])
+        );
+
+        $this->assertSame('absent', $day['status_key']);
+        $this->assertSame('غائب', $day['status']);
+    }
+
+    /**
+     * Auto-attendance stamps disabled weekdays with this note. Once the weekday is a
+     * work day, that row must not keep the calendar on عطلة.
+     */
+    public function test_auto_generated_weekend_row_does_not_pin_a_scheduled_work_day(): void
+    {
+        $row = $this->attendance([
+            'is_holiday' => 1,
+            'day_status' => 'holiday',
+            'status'     => Attendance::STATUS_HOLIDAY,
+            'notes'      => 'Auto-generated holiday record.',
+            'start_time' => '2026-10-05 00:00:00',
+        ]);
+
+        $day = $this->buildDayData(
+            '2026-10-05',
+            new User(),
+            ['monday' => true],
+            collect([$row])
+        );
+
+        $this->assertSame('absent', $day['status_key']);
+        $this->assertSame('غائب', $day['status']);
+    }
+
+    /**
      * The holiday calendar is country-wide and knows nothing about one employee's
      * instruction, so an admin demanding attendance that date wins and the day resolves from
      * the constraint (INV-21).

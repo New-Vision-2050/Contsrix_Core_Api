@@ -56,7 +56,7 @@ final class UserAttendanceHistoryService
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
-            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday', 'notes',
         ];
 
         $allAttendances = Attendance::query()
@@ -172,7 +172,7 @@ final class UserAttendanceHistoryService
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
-            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday',
+            'business_date', 'day_status', 'attendance_type', 'is_late', 'is_absent', 'is_holiday', 'notes',
         ];
 
         $allAttendances = Attendance::query()
@@ -810,9 +810,12 @@ final class UserAttendanceHistoryService
         // Setting a range rewrote every row inside it, and punching the range later does
         // not undo those writes. A leftover row is not attendance once no holiday range
         // covers the date: drop it and let the day resolve from the constraint (INV-18).
+        // Same rule as the calendar, including required_attendance dropping a holiday
+        // placeholder that has no clock-in (INV-21).
+        $requiredAttendance = $dateString !== null
+            && ManualAttendanceStatus::isRequiredAttendanceOn($user, $dateString);
         $attendances = $attendances->reject(
-            fn ($a) => ManualAttendanceStatus::isHolidayRow($a->notes ?? null)
-                || PublicHolidayDates::isLegacyGeneratedRow($a->notes ?? null)
+            fn ($a) => ManualAttendanceStatus::shouldIgnoreHolidayAttendance($a, $requiredAttendance)
         );
 
         $stillAwaitingClockIn = $user !== null
@@ -833,13 +836,11 @@ final class UserAttendanceHistoryService
             ];
         }
 
+        // Real clock-in always wins over a leftover holiday or absent period row.
+        $hasPresence = $attendances->contains(fn ($a) => ! empty($a->clock_in_time));
         $hasHoliday = $attendances->contains(fn ($a) => $this->isTruthy($a->is_holiday ?? null)
             || ($a->status ?? null) === Attendance::STATUS_HOLIDAY
             || ($a->day_status ?? null) === 'holiday');
-
-        // Real clock-in always wins over leftover absent/waiting period rows
-        // (common when early clock-in creates/uses one period while another stays absent).
-        $hasPresence = $attendances->contains(fn ($a) => ! empty($a->clock_in_time));
 
         $hasAbsent = ! $hasPresence && $attendances->contains(fn ($a) => $this->isTruthy($a->is_absent ?? null)
             || ($a->status ?? null) === Attendance::STATUS_ABSENT);
@@ -849,7 +850,8 @@ final class UserAttendanceHistoryService
 
         // Reached only on scheduled work days with no override and no official holiday, so a
         // surviving holiday row was written by something outside those sources — عطلة.
-        if ($hasHoliday) {
+        // A real clock-in on the same day wins, matching the calendar.
+        if ($hasHoliday && ! $hasPresence) {
             return $this->dayOffStatusPayload((int) $hasLate);
         }
 
