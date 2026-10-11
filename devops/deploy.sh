@@ -152,6 +152,8 @@ APP_NAME="${APP_NAME}"
 APP_ENV="${APP_ENV}"
 APP_URL="${APP_URL}"
 APP_DEBUG="${APP_DEBUG}"
+LOG_CHANNEL=daily
+LOG_DAILY_DAYS="${LOG_DAILY_DAYS:-14}"
 DB_CONNECTION=mysql
 DB_HOST="${DB_HOST}"
 DB_PORT="${DB_PORT}"
@@ -282,6 +284,8 @@ cleanup_server() {
     docker volume prune -f
     # Remove all dangling images
     docker image prune -f
+    # Remove BuildKit build cache (accumulates indefinitely with --no-cache builds)
+    docker builder prune -af
 
     # Clean up system temp files
     echo "Cleaning up system temporary files..."
