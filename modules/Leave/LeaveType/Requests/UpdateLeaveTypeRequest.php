@@ -17,9 +17,7 @@ class UpdateLeaveTypeRequest extends FormRequest
             'name' => 'required|string|max:255|unique:leave_types,name,' . $this->route('id') . ',id,company_id,' . tenant('id'),
             'is_payed' => 'sometimes|boolean',
             'is_deduct_from_balance' => 'sometimes|boolean',
-            'conditions' => 'nullable|string|max:1000',
-            'branch_ids' => 'nullable|array',
-            'branch_ids.*' => 'required_with:branch_ids|integer|exists:management_hierarchies,id',
+            'requires_attachment' => 'sometimes|boolean',
         ];
     }
 
@@ -31,12 +29,7 @@ class UpdateLeaveTypeRequest extends FormRequest
             'name.max' => __('leave.leave_type.name.max'),
             'is_payed.boolean' => __('leave.leave_type.is_payed.boolean'),
             'is_deduct_from_balance.boolean' => __('leave.leave_type.is_deduct_from_balance.boolean'),
-            'conditions.string' => __('leave.leave_type.conditions.string'),
-            'conditions.max' => __('leave.leave_type.conditions.max'),
-            'branch_ids.array' => __('leave.leave_type.branch_ids.array'),
-            'branch_ids.*.required' => __('leave.leave_type.branch_ids.required'),
-            'branch_ids.*.integer' => __('leave.leave_type.branch_ids.integer'),
-            'branch_ids.*.exists' => __('leave.leave_type.branch_ids.exists'),
+            'requires_attachment.boolean' => __('leave.leave_type.requires_attachment.boolean'),
         ];
     }
 
@@ -47,8 +40,7 @@ class UpdateLeaveTypeRequest extends FormRequest
             name: $this->get('name'),
             is_payed: (bool) $this->get('is_payed', false),
             is_deduct_from_balance: (bool) $this->get('is_deduct_from_balance', false),
-            conditions: $this->get('conditions'),
-            branch_ids: $this->get('branch_ids', []),
+            requires_attachment: (bool) $this->get('requires_attachment', false),
         );
     }
 }

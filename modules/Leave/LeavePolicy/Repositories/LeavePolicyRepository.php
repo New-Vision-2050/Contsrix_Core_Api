@@ -29,9 +29,9 @@ class LeavePolicyRepository extends BaseRepository
 
     public function getLeavePolicy(UuidInterface $id): LeavePolicy
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->with('leaveType')
+            ->where('id', $id->toString())
+            ->firstOrFail();
     }
 
     public function createLeavePolicy(array $data): LeavePolicy
@@ -54,11 +54,6 @@ class LeavePolicyRepository extends BaseRepository
         return $this->update($id, ['is_rollover_allowed' => $isRolloverAllowed]);
     }
 
-    public function updateHalfDayAllowed(UuidInterface $id, bool $isAllowHalfDay): bool
-    {
-        return $this->update($id, ['is_allow_half_day' => $isAllowHalfDay]);
-    }
-
     public function getForExport(array $filters = []): SupportCollection
     {
         $query = $this->model->newQuery()
@@ -74,9 +69,14 @@ class LeavePolicyRepository extends BaseRepository
             $query->where('total_days', $filters['total_days']);
         }
 
-        // Apply day_type filter if provided
-        if (!empty($filters['day_type'])) {
-            $query->where('day_type', $filters['day_type']);
+        // Apply day_calculation_type filter if provided
+        if (!empty($filters['day_calculation_type'])) {
+            $query->where('day_calculation_type', $filters['day_calculation_type']);
+        }
+
+        // Apply leave_type_id filter if provided
+        if (!empty($filters['leave_type_id'])) {
+            $query->where('leave_type_id', $filters['leave_type_id']);
         }
 
         // Apply specific IDs filter if provided

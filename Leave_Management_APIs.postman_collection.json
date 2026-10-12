@@ -176,16 +176,20 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/leave-types",
+							"raw": "{{base_url}}/api/v1/leave-types",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-types"]
+							"path": ["api", "v1", "leave-types"]
 						},
-						"description": "Retrieve all leave types with payment and balance deduction settings."
+						"description": "Retrieve all leave types with payment, balance deduction and attachment requirement settings."
 					}
 				},
 				{
@@ -202,16 +206,20 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/leave-types/{{leave_type_id}}",
+							"raw": "{{base_url}}/api/v1/leave-types/{{leave_type_id}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-types", "{{leave_type_id}}"]
+							"path": ["api", "v1", "leave-types", "{{leave_type_id}}"]
 						},
-						"description": "Get specific leave type details including payment and balance settings."
+						"description": "Get specific leave type details including payment, balance and attachment settings."
 					}
 				},
 				{
@@ -232,20 +240,24 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Annual Leave\",\n    \"is_payed\": true,\n    \"is_deduct_from_balance\": true\n}"
+							"raw": "{\n    \"name\": \"Annual Leave\",\n    \"is_payed\": true,\n    \"is_deduct_from_balance\": true,\n    \"requires_attachment\": false\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/leave-types",
+							"raw": "{{base_url}}/api/v1/leave-types",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-types"]
+							"path": ["api", "v1", "leave-types"]
 						},
-						"description": "Create new leave type with enhanced fields:\n- name: Leave type name (required, max 255 chars)\n- is_payed: Whether leave is paid (optional boolean, default false)\n- is_deduct_from_balance: Whether to deduct from balance (optional boolean, default false)"
+						"description": "Create new leave type with enhanced fields:\n- name: Leave type name (required, max 255 chars)\n- is_payed: Whether leave is paid (optional boolean, default false)\n- is_deduct_from_balance: Whether to deduct from balance (optional boolean, default false)\n- requires_attachment: Whether requesting this leave type requires attaching a document (optional boolean, default false)"
 					}
 				},
 				{
@@ -266,20 +278,24 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Paid Annual Leave\",\n    \"is_payed\": true,\n    \"is_deduct_from_balance\": false\n}"
+							"raw": "{\n    \"name\": \"Paid Annual Leave\",\n    \"is_payed\": true,\n    \"is_deduct_from_balance\": false,\n    \"requires_attachment\": true\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/leave-types/{{leave_type_id}}",
+							"raw": "{{base_url}}/api/v1/leave-types/{{leave_type_id}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-types", "{{leave_type_id}}"]
+							"path": ["api", "v1", "leave-types", "{{leave_type_id}}"]
 						},
-						"description": "Update existing leave type with payment and balance deduction settings."
+						"description": "Update existing leave type with payment, balance deduction and attachment requirement settings."
 					}
 				},
 				{
@@ -296,14 +312,18 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/leave-types/{{leave_type_id}}",
+							"raw": "{{base_url}}/api/v1/leave-types/{{leave_type_id}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-types", "{{leave_type_id}}"]
+							"path": ["api", "v1", "leave-types", "{{leave_type_id}}"]
 						},
 						"description": "Delete specific leave type by UUID."
 					}
@@ -328,14 +348,18 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/leave-policies",
+							"raw": "{{base_url}}/api/v1/leave-policies",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-policies"]
+							"path": ["api", "v1", "leave-policies"]
 						},
 						"description": "Retrieve all leave policies with comprehensive policy settings."
 					}
@@ -354,20 +378,24 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/leave-policies/{{leave_policy_id}}",
+							"raw": "{{base_url}}/api/v1/leave-policies/{{leave_policy_id}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-policies", "{{leave_policy_id}}"]
+							"path": ["api", "v1", "leave-policies", "{{leave_policy_id}}"]
 						},
 						"description": "Get specific leave policy with all enhanced settings."
 					}
 				},
 				{
-					"name": "Create Leave Policy",
+					"name": "Create Leave Policy (With Balance)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -384,20 +412,62 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Standard Annual Leave Policy\",\n    \"total_days\": 21,\n    \"day_type\": \"working_days\",\n    \"is_rollover_allowed\": true,\n    \"max_days_per_request\": 10,\n    \"upgrade_condition\": \"After 2 years of service\",\n    \"is_allow_half_day\": true\n}"
+							"raw": "{\n    \"name\": \"Standard Annual Leave Policy\",\n    \"leave_type_id\": \"{{leave_type_id}}\",\n    \"max_balance_days\": 40,\n    \"total_days\": 21,\n    \"min_notice_days\": 0,\n    \"day_calculation_type\": \"work_day\",\n    \"entitlement_type\": \"upfront\",\n    \"entitlement_start_from\": \"hire_date\",\n    \"promotion_type\": \"after_duration\",\n    \"promotion_duration_months\": 24,\n    \"is_rollover_allowed\": true,\n    \"rollover_duration_months\": 4,\n    \"allow_exceed_balance\": false\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/leave-policies",
+							"raw": "{{base_url}}/api/v1/leave-policies",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-policies"]
+							"path": ["api", "v1", "leave-policies"]
 						},
-						"description": "Create comprehensive leave policy with enhanced fields:\n- name: Policy name (required, max 255 chars)\n- total_days: Total leave days allowance (optional integer, min 0)\n- day_type: Type of days (optional string, max 100 chars)\n- is_rollover_allowed: Allow rollover to next year (optional boolean, default false)\n- max_days_per_request: Max days per single request (optional integer, min 0)\n- upgrade_condition: Conditions for policy upgrade (optional string)\n- is_allow_half_day: Allow half-day leave (optional boolean, default false)"
+						"description": "Create a balance-based leave policy (leave type must have is_deduct_from_balance = true).\n\nFields:\n- name: Policy name (required, max 255 chars, unique per company)\n- leave_type_id: UUID of the leave type (required)\n- max_balance_days: Max balance cap (optional integer)\n- total_days: Annual entitlement days (required for balance policies)\n- min_notice_days: Min days notice before leave (optional integer)\n- day_calculation_type: work_day | calendar (required for balance policies)\n- entitlement_type: upfront | monthly (required for balance policies)\n- entitlement_start_from: hire_date (optional)\n- promotion_type: after_duration (optional)\n- promotion_duration_months: required if promotion_type = after_duration\n- is_rollover_allowed: boolean (optional)\n- rollover_duration_months: months rollover balance stays valid (optional)\n- allow_exceed_balance: boolean (optional)"
+					}
+				},
+				{
+					"name": "Create Leave Policy (Without Balance)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Sick Leave Policy\",\n    \"leave_type_id\": \"{{leave_type_id}}\",\n    \"max_days\": 10\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/leave-policies",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "leave-policies"]
+						},
+						"description": "Create a non-balance leave policy (leave type must have is_deduct_from_balance = false).\n\nFields:\n- name: Policy name (required, max 255 chars, unique per company)\n- leave_type_id: UUID of the leave type (required)\n- max_days: Maximum days allowed (required for non-balance policies)"
 					}
 				},
 				{
@@ -418,20 +488,100 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Enhanced Annual Leave Policy\",\n    \"total_days\": 25,\n    \"day_type\": \"calendar_days\",\n    \"is_rollover_allowed\": false,\n    \"max_days_per_request\": 15,\n    \"upgrade_condition\": \"Senior employees with 3+ years\",\n    \"is_allow_half_day\": true\n}"
+							"raw": "{\n    \"name\": \"Enhanced Annual Leave Policy\",\n    \"max_balance_days\": 50,\n    \"total_days\": 25,\n    \"min_notice_days\": 3,\n    \"day_calculation_type\": \"calendar\",\n    \"entitlement_type\": \"monthly\",\n    \"entitlement_start_from\": \"hire_date\",\n    \"promotion_type\": \"after_duration\",\n    \"promotion_duration_months\": 36,\n    \"is_rollover_allowed\": false,\n    \"rollover_duration_months\": null,\n    \"allow_exceed_balance\": true\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/leave-policies/{{leave_policy_id}}",
+							"raw": "{{base_url}}/api/v1/leave-policies/{{leave_policy_id}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-policies", "{{leave_policy_id}}"]
+							"path": ["api", "v1", "leave-policies", "{{leave_policy_id}}"]
 						},
-						"description": "Update existing leave policy with all enhanced settings and validation."
+						"description": "Update existing leave policy with all enhanced settings and validation. Note: leave_type_id is immutable on update."
+					}
+				},
+				{
+					"name": "Update Rollover Allowed",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"is_rollover_allowed\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/leave-policies/{{leave_policy_id}}/rollover-allowed",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "leave-policies", "{{leave_policy_id}}", "rollover-allowed"]
+						},
+						"description": "Toggle rollover-allowed flag on a leave policy."
+					}
+				},
+				{
+					"name": "Export Leave Policies",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"format\": \"xlsx\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/leave-policies/export",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "leave-policies", "export"]
+						},
+						"description": "Export leave policies to a file (xlsx/csv). Optional filters: name, total_days, day_calculation_type, leave_type_id, ids."
 					}
 				},
 				{
@@ -448,20 +598,24 @@
 								"value": "Bearer {{auth_token}}"
 							},
 							{
+								"key": "X-Tenant",
+								"value": "{{tenant_id}}"
+							},
+							{
 								"key": "Accept-Language",
 								"value": "{{language}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/leave-policies/{{leave_policy_id}}",
+							"raw": "{{base_url}}/api/v1/leave-policies/{{leave_policy_id}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "leave-policies", "{{leave_policy_id}}"]
+							"path": ["api", "v1", "leave-policies", "{{leave_policy_id}}"]
 						},
 						"description": "Delete specific leave policy by UUID."
 					}
 				}
 			],
-			"description": "Comprehensive Leave Policy APIs with enhanced fields for day allowances, rollover settings, upgrade conditions, and half-day support."
+			"description": "Comprehensive Leave Policy APIs with balance/non-balance variants driven by the linked leave type's is_deduct_from_balance flag."
 		}
 	],
 	"event": [
@@ -530,6 +684,11 @@
 			"key": "leave_type_id",
 			"value": "",
 			"description": "Leave type UUID for testing - Set after creating a leave type"
+		},
+		{
+			"key": "tenant_id",
+			"value": "",
+			"description": "Company/tenant UUID required by the X-Tenant header"
 		},
 		{
 			"key": "leave_policy_id",
