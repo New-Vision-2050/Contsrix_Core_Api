@@ -19,6 +19,7 @@ use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\User\Database\Seeders\GenaralAdminSeedTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
+use Modules\Leave\LeaveRequest\Database\Seeders\AssignDefaultLeavePolicySeeder;
 use Modules\Leave\LeaveType\Database\Seeders\LeaveTypeBranchSeeder;
 use Modules\WebsiteCMS\WebsiteContactInfo\Database\Seeders\WebsiteContactInfoSeeder;
 use Modules\WebsiteCMS\WebsiteOurService\Database\Seeders\WebsiteOurServiceSeeder;
@@ -64,6 +65,8 @@ class TenantDatabaseSeeder extends Seeder
 
         // Create default Annual Year leave policy for new companies
         $this->call(LeavePolicySeeder::class);
+        // Assign the default 21-day leave policy to every user of the company
+        $this->call(AssignDefaultLeavePolicySeeder::class);
         $this->call(DocumentTypeSeederTableSeeder::class);
 
         $this->call(DefaultNotificationSettingsSeeder::class);

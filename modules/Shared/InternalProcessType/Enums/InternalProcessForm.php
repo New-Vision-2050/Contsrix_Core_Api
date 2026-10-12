@@ -31,6 +31,7 @@ enum InternalProcessForm: string
     case ProjectNotificationTaskPostponement   = 'projectNotificationTaskPostponement';
     case ProjectNotificationSafetyViolation    = 'projectNotificationSafetyViolation';
     case EndProjectNotificationTask         = 'endProjectNotificationTask';
+    case CreateLeaveRequest                 = 'createLeaveRequest';
 
     /**
      * Stable key used by the mobile inbox to decide which UI flow to open.
@@ -81,6 +82,7 @@ enum InternalProcessForm: string
             self::ProjectNotificationTaskPostponement   => 'تأجيل المهمة',
             self::ProjectNotificationSafetyViolation    => 'تقييم المخالفات الأمنية',
             self::EndProjectNotificationTask         => 'إنهاء المهمة',
+            self::CreateLeaveRequest                 => 'إنشاء طلب إجازة',
         };
     }
 
@@ -194,6 +196,7 @@ enum InternalProcessForm: string
             self::ProjectNotificationSafetyViolation => ['project_notification_task'],
             self::EndProjectNotificationTask => ['project_notification_task'],
             self::AttachAttachments   => ['client_request', 'price_offer', 'contract'],
+            self::CreateLeaveRequest  => ['leave_request'],
         };
     }
 
@@ -234,6 +237,7 @@ enum InternalProcessForm: string
             self::ProjectNotificationTaskPostponement,
             self::ProjectNotificationSafetyViolation,
             self::EndProjectNotificationTask => ProcedureSettingType::ProjectNotificationTask,
+            self::CreateLeaveRequest => ProcedureSettingType::LeaveRequest,
             default => ProcedureSettingType::EmployeeTask,
         };
     }

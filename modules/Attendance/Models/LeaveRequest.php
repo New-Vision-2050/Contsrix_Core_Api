@@ -36,6 +36,7 @@ class LeaveRequest extends Model implements Auditable
         'user_id',
         'company_id',
         'leave_type_id',
+        'leave_policy_id',
         'start_date',
         'end_date',
         'total_days',
@@ -57,6 +58,7 @@ class LeaveRequest extends Model implements Auditable
         'user_id' => UuidCast::class,
         'company_id' => UuidCast::class,
         'leave_type_id' => UuidCast::class,
+        'leave_policy_id' => UuidCast::class,
         'requested_by' => UuidCast::class,
         'approved_by' => UuidCast::class,
         'rejected_by' => UuidCast::class,
@@ -107,6 +109,22 @@ class LeaveRequest extends Model implements Auditable
     public function leaveType(): BelongsTo
     {
         return $this->belongsTo(LeaveType::class, 'leave_type_id');
+    }
+
+    /**
+     * Get the leave policy this request consumes balance from.
+     */
+    public function leavePolicy(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Leave\LeavePolicy\Models\LeavePolicy::class, 'leave_policy_id');
+    }
+
+    /**
+     * Workflow processes attached to this request (polymorphic).
+     */
+    public function processes(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\Modules\Process\Models\Process::class, 'processable');
     }
 
     /**
@@ -263,5 +281,46 @@ class LeaveRequest extends Model implements Auditable
         $endDate = Carbon::parse($this->end_date);
 
         return $today->between($startDate, $endDate);
+    }
+
+    /**
+     * Workflow hook (ProcessWorkflowService): every process for this request
+     * completed — final approval. The approved date range now shows as إجازة
+     * in the attendance calendar, the today-constraint API and reports.
+     */
+    public function onAllProcessesCompleted(\Modules\Process\Models\Process $process): void
+    {
+        $lastActorId = $process->steps()
+            ->whereNotNull('action_by')
+            ->orderByDesc('acted_at')
+            ->value('action_by');
+
+        $this->forceFill([
+            'status' => self::STATUS_APPROVED,
+            'approved_by' => $lastActorId,
+            'approved_at' => now(),
+            'rejected_by' => null,
+            'rejected_at' => null,
+            'rejection_reason' => null,
+        ])->save();
+    }
+
+    /**
+     * Workflow hook (ProcessWorkflowService): the process failed on rejection.
+     * rejection_reason is set by the leave-request service before the step is
+     * rejected, so it is preserved here.
+     */
+    public function onProcessFailed(\Modules\Process\Models\Process $process): void
+    {
+        $lastActorId = $process->steps()
+            ->whereNotNull('action_by')
+            ->orderByDesc('acted_at')
+            ->value('action_by');
+
+        $this->forceFill([
+            'status' => self::STATUS_REJECTED,
+            'rejected_by' => $lastActorId,
+            'rejected_at' => now(),
+        ])->save();
     }
 }

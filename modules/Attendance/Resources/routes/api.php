@@ -5,9 +5,6 @@ use Modules\Attendance\Controllers\AttendanceAttachmentController;
 use Modules\Attendance\Controllers\AttendanceController;
 use Modules\Attendance\Controllers\DashboardOverviewController;
 use Modules\Attendance\Controllers\AttendanceReportController;
-use Modules\Attendance\Controllers\LeaveBalanceController;
-use Modules\Attendance\Controllers\LeaveRequestController;
-use Modules\Attendance\Controllers\LeaveTypeController;
 use Modules\Attendance\Controllers\LocationTrackingController;
 use Modules\Attendance\Controllers\OutZoneWarningController;
 use Modules\Attendance\Controllers\PenaltyExceptionController;
@@ -157,83 +154,10 @@ Route::post('test', [AttendanceController::class, 'test'])
     // });
 });
 
-// Leave Management Routes
-Route::prefix('leave')->group(function () {
-
-    // Leave Requests
-    Route::apiResource('requests', LeaveRequestController::class, [
-        'names' => [
-            'index' => 'leave-requests.index',
-            'store' => 'leave-requests.store',
-            'show' => 'leave-requests.show',
-            'update' => 'leave-requests.update',
-            'destroy' => 'leave-requests.destroy',
-        ]
-    ]);
-
-    // My Leave Requests
-    Route::get('my-requests', [LeaveRequestController::class, 'myRequests'])
-        ->name('leave-requests.my-requests');
-
-    // Leave Request Actions
-    Route::post('requests/{leaveRequestId}/cancel', [LeaveRequestController::class, 'cancel'])
-        ->name('leave-requests.cancel');
-
-    // Leave Approvals (for supervisors/HR)
-    Route::middleware('permission:approve-leave-requests')->group(function () {
-        Route::get('pending-approvals', [LeaveRequestController::class, 'pendingApprovals'])
-            ->name('leave-requests.pending-approvals');
-
-        Route::post('requests/{leaveRequestId}/approve', [LeaveRequestController::class, 'approve'])
-            ->name('leave-requests.approve');
-
-        Route::post('requests/{leaveRequestId}/reject', [LeaveRequestController::class, 'reject'])
-            ->name('leave-requests.reject');
-    });
-
-    // Leave Calendar and Conflicts
-    Route::get('calendar', [LeaveRequestController::class, 'calendar'])
-        ->name('leave-requests.calendar');
-
-    Route::post('check-conflicts', [LeaveRequestController::class, 'checkConflicts'])
-        ->name('leave-requests.check-conflicts');
-
-        // Leave Types Management
-        // Route::apiResource('types', LeaveTypeController::class, [
-        //     'names' => [
-        //         'index' => 'leave-types.index',
-        //         'store' => 'leave-types.store',
-        //         'show' => 'leave-types.show',
-        //         'update' => 'leave-types.update',
-        //         'destroy' => 'leave-types.destroy',
-        //     ]
-        // ])->middleware('permission:manage-leave-types');
-
-        // Leave Balances
-        Route::prefix('balances')->group(function () {
-            // Route::get('/', [LeaveBalanceController::class, 'index'])
-            //     ->name('leave-balances.index');
-
-            // Route::get('my-balances', [LeaveBalanceController::class, 'myBalances'])
-            //     ->name('leave-balances.my-balances');
-
-            // Route::get('{userId}', [LeaveBalanceController::class, 'userBalances'])
-            //     ->middleware('permission:view-user-leave-balances')
-            //     ->name('leave-balances.user-balances');
-
-            // // Balance Management (HR/Admin)
-            // Route::middleware('permission:manage-leave-balances')->group(function () {
-            //     Route::post('initialize', [LeaveBalanceController::class, 'initializeBalances'])
-            //         ->name('leave-balances.initialize');
-
-            //     Route::post('adjust', [LeaveBalanceController::class, 'adjustBalance'])
-            //         ->name('leave-balances.adjust');
-
-            //     Route::post('reset-year', [LeaveBalanceController::class, 'resetForNewYear'])
-            //         ->name('leave-balances.reset-year');
-            // });
-        });
-    });
+// Leave Management lives in the Leave module (Modules\Leave\LeaveRequest):
+// employee requests + workflow approval under api/v1/leave-requests,
+// policy assignment and balances under api/v1/users/{userId}/leave-policies
+// and api/v1/my/leave-policies.
 
     // HR Attendance & Contract Reports
     Route::prefix('hr/attendance/reports')->group(function () {

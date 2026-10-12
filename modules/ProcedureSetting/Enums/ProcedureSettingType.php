@@ -9,7 +9,7 @@ namespace Modules\ProcedureSetting\Enums;
  * Sub-actions (extend, approve, cancel…) are InternalProcedureSettings (child rows
  * in the same table) linked via parent_id, distinguished by the `form` column.
  *
- * Allowed API / DB values: employee_task | project_notification_task | client_request | price_offer | contract | meeting
+ * Allowed API / DB values: employee_task | project_notification_task | client_request | price_offer | contract | meeting | leave_request
  */
 enum ProcedureSettingType: string
 {
@@ -19,6 +19,7 @@ enum ProcedureSettingType: string
     case PriceOffer            = 'price_offer';
     case Contract              = 'contract';
     case Meeting               = 'meeting';
+    case LeaveRequest          = 'leave_request';
 
     public function labelAr(): string
     {
@@ -29,6 +30,7 @@ enum ProcedureSettingType: string
             self::PriceOffer            => 'عرض سعر',
             self::Contract              => 'عقد',
             self::Meeting               => 'اجتماع',
+            self::LeaveRequest          => 'طلب إجازة',
         };
     }
 
