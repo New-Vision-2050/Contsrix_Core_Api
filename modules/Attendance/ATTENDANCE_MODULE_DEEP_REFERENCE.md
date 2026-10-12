@@ -81,7 +81,6 @@ modules/Attendance/
     LocationTrackingController.php
     ManagementHierarchyController.php
     UserAttendanceController.php
-    LeaveRequestController.php
   Database/migrations/
     attendance, constraint, leave, break, task, location migrations
   DataClasses/
@@ -1366,30 +1365,32 @@ Distance calculations use haversine-style logic in data classes/services.
 
 ## 17. Leave Request Subsystem
 
-Controller:
+> **Moved (2026-10-12).** Leave request APIs, policy assignment and balances now
+> live in the Leave module: `Modules\Leave\LeaveRequest` (routes under
+> `api/v1/leave-requests`, `api/v1/users/{userId}/leave-policies`,
+> `api/v1/my/leave-policies`). Approval runs through the procedure workflow
+> (`leave_request` / `createLeaveRequest`). See `docs/LEAVE_REQUEST_API_SPEC.md`.
+>
+> The old `LeaveRequestController`, its routes (`/leave/requests`, …), requests,
+> DTOs and presenter were removed; `LeaveRequestService` was never implemented.
 
-- `LeaveRequestController`
+What remains in this module — and keeps working unchanged:
 
 Models:
 
-- `LeaveType`
-- `LeaveRequest`
+- `LeaveType` (legacy model over the shared `leave_types` table)
+- `LeaveRequest` (shared data model; gained `leave_policy_id`, a `leavePolicy()`
+  relation, a `processes()` morph relation, and the workflow hooks
+  `onAllProcessesCompleted()` / `onProcessFailed()`)
 - `LeaveBalance`
 
-Routes:
+Consumers of approved leave (`status = approved`):
 
-- `GET /leave/requests`
-- `POST /leave/requests`
-- `GET /leave/requests/{id}`
-- `PUT /leave/requests/{id}`
-- `DELETE /leave/requests/{id}`
-- `GET /leave/my-requests`
-- `POST /leave/requests/{id}/cancel`
-- `GET /leave/pending-approvals`
-- `POST /leave/requests/{id}/approve`
-- `POST /leave/requests/{id}/reject`
-- `GET /leave/calendar`
-- `POST /leave/check-conflicts`
+- `AttendanceCalendarService` — marks those dates `leave` / `إجازة`.
+- `UserAttendanceHistoryService` — same label in the mobile history API.
+- `UserAttendanceService::getUserConstraints()` — the today API reports
+  `day_status = leave` with no clock-in periods on an approved leave day.
+- `AttendanceReportRepository` — counts approved leave days as used leaves.
 
 Leave status values:
 
@@ -1397,15 +1398,6 @@ Leave status values:
 - `approved`
 - `rejected`
 - `cancelled`
-
-Leave requests can carry:
-
-- date range.
-- total days.
-- reason.
-- emergency flag.
-- attachments.
-- approval/rejection metadata.
 
 ## 18. Presenters And Response Shaping
 
@@ -1420,7 +1412,6 @@ Important presenters:
 - `AppliedAttendanceConstraintPresenter`
 - `ConstraintPresenter`
 - `ConstraintListPresenter`
-- `LeaveRequestPresenter`
 - `LiveTrackingPresenter`
 - `UserAttendanceHistoryPresenter`
 

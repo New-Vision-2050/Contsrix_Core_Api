@@ -7,6 +7,7 @@ namespace Modules\Attendance\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Models\LeaveRequest;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Support\ManualAttendanceStatus;
@@ -132,6 +133,8 @@ class UserAttendanceService
             } else {
                 $workRules['attendance_type'] = \Modules\Attendance\Support\AttendanceType::REGULAR;
             }
+
+            $workRules = $this->applyApprovedLeaveOverride($user, $targetDate, $override, $workRules);
             [$attendances, $currentAttendance] = $this->fetchDayAttendancesAndCurrentOpen($user, $dateCarbon);
 
             if (isset($workRules['all_work_periods']) && is_array($workRules['all_work_periods'])) {
@@ -194,6 +197,53 @@ class UserAttendanceService
         }
 
         return $workRules;
+    }
+
+    /**
+     * Marks a day as إجازة when an approved leave request covers it.
+     *
+     * Same shape as the holiday overrides: no clock-in periods, so the app does not
+     * offer a clock-in button on a leave day. Only a day the schedule would otherwise
+     * work is converted — a weekend inside the leave window stays day_off_or_weekend
+     * (INV-18/INV-21), and a required-attendance override outranks the leave window.
+     *
+     * @param array<string, mixed> $workRules
+     * @return array<string, mixed>
+     */
+    private function applyApprovedLeaveOverride(User $user, string $targetDate, ?string $manualStatus, array $workRules): array
+    {
+        if ($manualStatus === ManualAttendanceStatus::REQUIRED_ATTENDANCE) {
+            return $workRules;
+        }
+
+        $currentStatus = $workRules['day_status'] ?? null;
+        if ($currentStatus !== 'work_day' && $currentStatus !== 'Undefined') {
+            return $workRules;
+        }
+
+        $onLeave = LeaveRequest::query()
+            ->where('user_id', (string) $user->id)
+            ->approved()
+            ->whereDate('start_date', '<=', $targetDate)
+            ->whereDate('end_date', '>=', $targetDate)
+            ->exists();
+
+        if (! $onLeave) {
+            return $workRules;
+        }
+
+        return array_merge($workRules, [
+            'day_status'            => 'leave',
+            'is_holiday'            => true,
+            'reason'                => 'Approved leave (إجازة).',
+            'all_work_periods'      => [],
+            'total_work_hours'      => 0.0,
+            'current_work_period'   => null,
+            'next_work_period'      => null,
+            'first_next_period'     => null,
+            'second_next_period'    => null,
+            'active_or_next_period' => null,
+        ]);
     }
 
     /**

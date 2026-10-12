@@ -1,0 +1,176 @@
+{
+	"info": {
+		"_postman_id": "leave-request-mobile-collection",
+		"name": "Leave Request Mobile API",
+		"description": "Mobile flow for employee leave requests.\n\n== THE LEAVE DROPDOWN ==\nThe \"available leaves\" dropdown in the create-request screen is fed by request #1 (GET /my/leave-policies). It returns ONLY the leave policies assigned to the logged-in employee, each with its live yearly balance. Use \"name\" as the dropdown label (recommended: show \"available_days\" next to it, e.g. \"Annual Year — 14 days\") and submit that item's \"leave_policy_id\" when creating the request (#2). Policies the employee is NOT assigned to will never appear here — assignment is done by HR from the user profile (web).\n\n== FLOW ==\n1) GET /my/leave-policies → fill the dropdown (also gives you per-policy flags: requires_attachment, min_notice_days, day_calculation_type)\n2) POST /leave-requests with the chosen leave_policy_id → request enters the approval workflow (auto-approved instantly if the company has no approval steps configured)\n3) GET /leave-requests/my → track status (pending قيد الانتظار / approved مقبول / rejected مرفوض / cancelled ملغي)\n4) GET /leave-requests/{id} → details incl. workflow.in_progress + rejection_reason\n5) POST /leave-requests/{id}/cancel → cancel while still pending (owner only)\n\n== NOTES ==\n- Balances renew every calendar year automatically: pass ?year= to request #1 to see another year's balance. No reset action is ever needed.\n- Once approved, the leave days show as \"اجازه\" in the attendance calendar / today API and count as used in reports — nothing extra to call.\n- Response envelope: { \"code\", \"message\", \"payload\" } (+ \"pagination\" on paginated lists).\n- Errors: 422 with { \"message\" } for business-rule failures (insufficient balance, overlap, min notice, missing attachment, policy not assigned) — display \"message\" to the user.\n\nHeaders: Authorization: Bearer {{auth_token}}, X-Tenant: {{tenant_id}}, Accept: application/json, Accept-Language: {{language}}",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "base_url", "value": "https://core-be-dev.constrix-nv.com" },
+		{ "key": "auth_token", "value": "" },
+		{ "key": "tenant_id", "value": "" },
+		{ "key": "language", "value": "ar" },
+		{ "key": "year", "value": "2026" },
+		{ "key": "leave_policy_id", "value": "" },
+		{ "key": "leave_request_id", "value": "" }
+	],
+	"item": [
+		{
+			"name": "1. My Leave Policies (dropdown source)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/my/leave-policies?year={{year}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "my", "leave-policies"],
+					"query": [
+						{ "key": "year", "value": "{{year}}", "description": "Optional. Integer 2000-2100, default current year. Balances are per-year and renew every January automatically." }
+					]
+				},
+				"description": "THE DROPDOWN SOURCE. Returns the leave policies ASSIGNED to the authenticated employee with live yearly balances — this is exactly the set of leaves available for him to request. Map each item: dropdown label = \"name\" (+ \"available_days\"), submitted value = \"leave_policy_id\". Read the flags per selected policy to adjust the form: requires_attachment=1 → show upload field; min_notice_days>0 → disable too-early dates; day_calculation_type (work_day|calendar) → hint how days are counted."
+			},
+			"response": [
+				{
+					"name": "200 - Assigned policies with balances",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Your leave policies retrieved successfully\",\n  \"payload\": [\n    {\n      \"leave_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n      \"name\": \"Annual Year\",\n      \"is_default\": 1,\n      \"assigned_at\": \"2026-01-05 09:00:00\",\n      \"leave_type_id\": \"8e0b1a6c-2a3c-4d5e-9f8a-222222222222\",\n      \"leave_type_name\": \"Annual Leave\",\n      \"requires_attachment\": 0,\n      \"is_deduct_from_balance\": 1,\n      \"day_calculation_type\": \"work_day\",\n      \"entitlement_type\": \"upfront\",\n      \"min_notice_days\": 0,\n      \"allow_exceed_balance\": 0,\n      \"year\": 2026,\n      \"entitled_days\": 21,\n      \"used_days\": 5,\n      \"pending_days\": 2,\n      \"available_days\": 14\n    },\n    {\n      \"leave_policy_id\": \"7d0a9b5c-1f2e-4a3b-8c7d-333333333333\",\n      \"name\": \"Sick Leave\",\n      \"is_default\": 0,\n      \"assigned_at\": \"2026-01-05 09:00:00\",\n      \"leave_type_id\": \"6c9f8a4b-0e1d-4b2a-7d6c-444444444444\",\n      \"leave_type_name\": \"Sick Leave\",\n      \"requires_attachment\": 1,\n      \"is_deduct_from_balance\": 1,\n      \"day_calculation_type\": \"calendar\",\n      \"entitlement_type\": \"upfront\",\n      \"min_notice_days\": 0,\n      \"allow_exceed_balance\": 0,\n      \"year\": 2026,\n      \"entitled_days\": 10,\n      \"used_days\": 0,\n      \"pending_days\": 0,\n      \"available_days\": 10\n    }\n  ]\n}"
+				}
+			]
+		},
+		{
+			"name": "2. Create Leave Request",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" },
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"leave_policy_id\": \"{{leave_policy_id}}\",\n  \"start_date\": \"2026-11-02\",\n  \"end_date\": \"2026-11-05\",\n  \"reason\": \"إجازة سنوية - سفر عائلي\",\n  \"attachments\": [],\n  \"is_emergency\": false,\n  \"notes\": null\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-requests",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-requests"]
+				},
+				"description": "Creates the request for the authenticated employee using the leave_policy_id picked from the dropdown (#1). total_days is computed server-side per the policy day_calculation_type. The approval workflow starts immediately: if the company configured approval steps, status stays \"pending\" (workflow.in_progress=true); otherwise it is auto-approved. On 422, display the returned \"message\" (insufficient balance / overlap with existing request / min notice / missing required attachment / policy not assigned)."
+			},
+			"response": [
+				{
+					"name": "200 - Created (pending approval)",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Leave request created successfully\",\n  \"payload\": {\n    \"id\": \"aa11bb22-cc33-4dd4-9e5f-555555555555\",\n    \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n    \"user_name\": \"أحمد محمد\",\n    \"leave_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n    \"leave_policy_name\": \"Annual Year\",\n    \"leave_type_id\": \"8e0b1a6c-2a3c-4d5e-9f8a-222222222222\",\n    \"leave_type_name\": \"Annual Leave\",\n    \"start_date\": \"2026-11-02\",\n    \"end_date\": \"2026-11-05\",\n    \"total_days\": 4,\n    \"reason\": \"إجازة سنوية - سفر عائلي\",\n    \"status\": \"pending\",\n    \"status_label_ar\": \"قيد الانتظار\",\n    \"is_emergency\": 0,\n    \"attachments\": [],\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"workflow\": { \"in_progress\": true, \"pending_step_order\": 1 },\n    \"created_at\": \"2026-10-13 00:20:00\"\n  }\n}"
+				},
+				{
+					"name": "422 - Insufficient balance",
+					"status": "Unprocessable Entity",
+					"code": 422,
+					"body": "{\n  \"message\": \"Insufficient leave balance: requested 6 day(s), available 4 day(s) in 2026.\"\n}"
+				},
+				{
+					"name": "422 - Validation errors",
+					"status": "Unprocessable Entity",
+					"code": 422,
+					"body": "{\n  \"message\": \"The leave policy id field is required. (and 1 more error)\",\n  \"errors\": {\n    \"leave_policy_id\": [\"The leave policy id field is required.\"],\n    \"end_date\": [\"The end date must be a date after or equal to start date.\"]\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "3. My Leave Requests",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-requests/my?page=1&per_page=10",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-requests", "my"],
+					"query": [
+						{ "key": "page", "value": "1" },
+						{ "key": "per_page", "value": "10", "description": "Max 100" },
+						{ "key": "status", "value": "pending", "description": "Optional: pending|approved|rejected|cancelled", "disabled": true },
+						{ "key": "leave_policy_id", "value": "{{leave_policy_id}}", "description": "Optional filter", "disabled": true },
+						{ "key": "year", "value": "{{year}}", "description": "Optional: requests overlapping this year", "disabled": true }
+					]
+				},
+				"description": "Paginated list of the authenticated employee's own requests, newest first. Use status_label_ar for Arabic UI; workflow.in_progress tells you it is still moving through approval steps."
+			},
+			"response": [
+				{
+					"name": "200 - My requests",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Your leave requests retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 2 },\n  \"payload\": [\n    {\n      \"id\": \"aa11bb22-cc33-4dd4-9e5f-555555555555\",\n      \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n      \"user_name\": \"أحمد محمد\",\n      \"leave_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n      \"leave_policy_name\": \"Annual Year\",\n      \"leave_type_id\": \"8e0b1a6c-2a3c-4d5e-9f8a-222222222222\",\n      \"leave_type_name\": \"Annual Leave\",\n      \"start_date\": \"2026-11-02\",\n      \"end_date\": \"2026-11-05\",\n      \"total_days\": 4,\n      \"reason\": \"إجازة سنوية - سفر عائلي\",\n      \"status\": \"pending\",\n      \"status_label_ar\": \"قيد الانتظار\",\n      \"is_emergency\": 0,\n      \"attachments\": [],\n      \"notes\": null,\n      \"rejection_reason\": null,\n      \"approved_at\": null,\n      \"rejected_at\": null,\n      \"workflow\": { \"in_progress\": true, \"pending_step_order\": 1 },\n      \"created_at\": \"2026-10-13 00:20:00\"\n    },\n    {\n      \"id\": \"cc33dd44-ee55-4ff6-8a7b-777777777777\",\n      \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n      \"user_name\": \"أحمد محمد\",\n      \"leave_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n      \"leave_policy_name\": \"Annual Year\",\n      \"leave_type_id\": \"8e0b1a6c-2a3c-4d5e-9f8a-222222222222\",\n      \"leave_type_name\": \"Annual Leave\",\n      \"start_date\": \"2026-06-10\",\n      \"end_date\": \"2026-06-14\",\n      \"total_days\": 5,\n      \"reason\": \"ظروف عائلية\",\n      \"status\": \"approved\",\n      \"status_label_ar\": \"مقبول\",\n      \"is_emergency\": 0,\n      \"attachments\": [],\n      \"notes\": null,\n      \"rejection_reason\": null,\n      \"approved_at\": \"2026-06-08 11:30:00\",\n      \"rejected_at\": null,\n      \"workflow\": { \"in_progress\": false, \"pending_step_order\": null },\n      \"created_at\": \"2026-06-07 09:00:00\"\n    }\n  ]\n}"
+				}
+			]
+		},
+		{
+			"name": "4. Leave Request Details",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-requests/{{leave_request_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-requests", "{{leave_request_id}}"]
+				},
+				"description": "Single request details — same object shape as the create response payload. Shows rejection_reason when status = rejected."
+			},
+			"response": [
+				{
+					"name": "200 - Rejected example",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Leave request retrieved successfully\",\n  \"payload\": {\n    \"id\": \"dd44ee55-ff66-4aa7-9b8c-888888888888\",\n    \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n    \"user_name\": \"أحمد محمد\",\n    \"leave_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n    \"leave_policy_name\": \"Annual Year\",\n    \"leave_type_id\": \"8e0b1a6c-2a3c-4d5e-9f8a-222222222222\",\n    \"leave_type_name\": \"Annual Leave\",\n    \"start_date\": \"2026-08-01\",\n    \"end_date\": \"2026-08-03\",\n    \"total_days\": 3,\n    \"reason\": \"موعد طبي\",\n    \"status\": \"rejected\",\n    \"status_label_ar\": \"مرفوض\",\n    \"is_emergency\": 0,\n    \"attachments\": [],\n    \"notes\": null,\n    \"rejection_reason\": \"فترة ضغط عمل، يرجى إعادة الجدولة\",\n    \"approved_at\": null,\n    \"rejected_at\": \"2026-07-30 14:00:00\",\n    \"workflow\": { \"in_progress\": false, \"pending_step_order\": null },\n    \"created_at\": \"2026-07-28 10:00:00\"\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "5. Cancel Leave Request",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-requests/{{leave_request_id}}/cancel",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-requests", "{{leave_request_id}}", "cancel"]
+				},
+				"description": "Cancels a PENDING request owned by the authenticated employee. Any open approval steps are closed. Errors: 422 if not pending, 403 if not the owner."
+			},
+			"response": [
+				{
+					"name": "200 - Cancelled",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Leave request cancelled successfully\",\n  \"payload\": {\n    \"id\": \"aa11bb22-cc33-4dd4-9e5f-555555555555\",\n    \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n    \"user_name\": \"أحمد محمد\",\n    \"leave_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n    \"leave_policy_name\": \"Annual Year\",\n    \"leave_type_id\": \"8e0b1a6c-2a3c-4d5e-9f8a-222222222222\",\n    \"leave_type_name\": \"Annual Leave\",\n    \"start_date\": \"2026-11-02\",\n    \"end_date\": \"2026-11-05\",\n    \"total_days\": 4,\n    \"reason\": \"إجازة سنوية - سفر عائلي\",\n    \"status\": \"cancelled\",\n    \"status_label_ar\": \"ملغي\",\n    \"is_emergency\": 0,\n    \"attachments\": [],\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"workflow\": { \"in_progress\": false, \"pending_step_order\": null },\n    \"created_at\": \"2026-10-13 00:20:00\"\n  }\n}"
+				}
+			]
+		}
+	]
+}

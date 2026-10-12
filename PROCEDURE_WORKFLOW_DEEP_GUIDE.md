@@ -2,7 +2,9 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-07-10 — Reassignment endpoint now accepts multiple users via `assigned_user_ids` (§9.6). `ProjectNotificationService::reassignTask()` replaces the assigned-user list, cancels all stale processes, and creates per-user `CreateProjectNotificationTask` processes for every supplied user. Also clarified reassignment in §9.6 and §9.7 and added six common procedure-setting/reassignment traps for AI assistants.
+> **Last updated:** 2026-10-12 — **LeaveRequest module registered.** New `ProcedureSettingType::LeaveRequest` (`leave_request`), new `InternalProcessForm::CreateLeaveRequest` (`createLeaveRequest`, no conditions), morph map entry `'leave_request' => Modules\Attendance\Models\LeaveRequest`. The Leave module's `LeaveRequestService` starts a workflow on request creation; final status is set by `LeaveRequest::onAllProcessesCompleted()`/`onProcessFailed()` model hooks. Approve/reject routes authorize via step `authorized_user_ids` (no permission middleware). Balances live in `user_leave_policies` and renew every calendar year automatically (computed live, no reset job). See §40.8. Mobile spec: `docs/LEAVE_REQUEST_API_SPEC.md`.
+>
+> **Previous:** 2026-07-10 — Reassignment endpoint now accepts multiple users via `assigned_user_ids` (§9.6). `ProjectNotificationService::reassignTask()` replaces the assigned-user list, cancels all stale processes, and creates per-user `CreateProjectNotificationTask` processes for every supplied user. Also clarified reassignment in §9.6 and §9.7 and added six common procedure-setting/reassignment traps for AI assistants.
 >
 > **Previous:** 2026-07-08 — Independent progress support added. `Process` and `InternalProcedureTaken` now have nullable `user_id` column. When `ProjectNotification.independent_progress = true`, lifecycle workflow processes are created per-user (each assigned user gets their own `Process` with `user_id` set). `ProcedureWorkflowService::getTakenProcedureIds()` and `isProcedureTaken()` accept optional `?string $userId` — when provided, includes shared (`user_id = null`) + user-scoped records, excludes other users' records. `WorkflowEngine::startWorkflow()` and `startLifecycleWorkflow()` accept optional `?string $independentUserId`. `EmployeeTaskRequestService::createLifecycleProcess()` accepts `?string $independentUserId`. `EmployeeTaskLifecycleService::start()`/`end()` accept `?string $independentUserId`. `EmployeeTaskAvailableActionsService::forTask()` and `InternalProcedureAvailableActionsService::forProcessable()` accept `?string $userId`. `EmployeeTaskRequestService::approveWorkflowStep()`/`rejectWorkflowStep()` iterate multiple in-progress processes (independent mode) preferring user-scoped. `ProjectNotificationService` adds `createLifecycleProcessForNotification()` helper, `availableActions()`/`takeAction()`/`endTask()` accept `?string $userId`. Unique constraint on `internal_procedure_takens` now includes `user_id`. Unique constraint on `processes` now includes `user_id`. See §Independent Progress.
 >
@@ -3281,6 +3283,7 @@ Any module (e.g. ClientRequest) can reuse the central engine with 5 steps:
 | **EmployeeTask** | `employee_task` | `employee_task` | `createTask`, `startTask`, `endTask`, `extendTaskTime`, `sendForApproval`, `confirmLocation` | `WorkflowEngine`, `ProcessWorkflowService`, `ProcedureWorkflowService`, `EmployeeTaskFormConditionService` | Yes — `EmployeeTaskRepository::paginateInboxForAdmin()` |
 | **EmployeeTask** (project notifications) | `project_notification_task` | `project_notification_task` | `createProjectNotificationTask`, `endProjectNotificationTask`, `updateProjectNotificationTask`, `updateProjectNotificationSiteStatus`, `projectNotificationFine`, `confirmProjectNotificationLocation`, `projectNotificationWorkStoppageReport`, `projectNotificationWorkResumption`, `projectNotificationTaskPostponement` | `WorkflowEngine`, `ProcessWorkflowService`, `ProcedureWorkflowService` (via `EmployeeTaskRequestService`) | Yes — `ProjectNotificationRepository::paginatedForInbox()` via `WorkflowEngine::pendingProcessScopeForUser()` |
 | **ClientRequest** | `client_request` | `client_request` | `createClientRequest`, `endClientRequest`, `attachAttachments` | `WorkflowEngine` | No (placeholder notifier returns zero counts) |
+| **LeaveRequest** (Leave module) | `leave_request` | `leave_request` | `createLeaveRequest` | `WorkflowEngine`, `ProcessWorkflowService` (via `LeaveRequestWorkflowService`) | No (placeholder notifier returns zero counts) |
 | **PriceOffer** | `price_offer` | _(not yet implemented)_ | `createPriceOffer`, `endPriceOffer` | _(enum registered, no service yet)_ | No |
 | **Contract** | `contract` | _(not yet implemented)_ | `createContract`, `endContract` | _(enum registered, no service yet)_ | No |
 | **Meeting** | `meeting` | _(not yet implemented)_ | `createMeeting`, `endMeeting` | _(enum registered, no service yet)_ | No |
@@ -3301,6 +3304,7 @@ ProcessWorkflowService
   ├─ injected by: EmployeeTaskRequestService
   ├─ injected by: EmployeeTaskStartRequestService
   ├─ injected by: EmployeeTaskEndRequestService
+  ├─ injected by: LeaveRequestWorkflowService (approveStep/rejectStep; model hooks finalize status)
   └─ injected by: ClientRequestWorkflowService (legacy — has own initializeProcessSteps)
 
 ProcedureWorkflowService
@@ -3327,6 +3331,7 @@ ConditionEvaluationService (shared central engine)
 WorkflowNotifierRegistry
   ├─ registers: EmployeeTaskWorkflowNotifier → 'employee_task'
   ├─ registers: ClientRequestWorkflowNotifier → 'client_request'
+  ├─ registers: LeaveRequestWorkflowNotifier → 'leave_request' (no-op placeholder)
   └─ registers: ProjectNotificationWorkflowNotifier → 'project_notification_task' (if exists)
 ```
 
@@ -3373,6 +3378,11 @@ employee_task_requests (FK: procedure_setting_id, current_procedure_step_id, is_
 
 project_notifications (FK: employee_task_request_id)
   └─ inherits workflow via employeeTask.processes
+
+leave_requests (FK: user_id, leave_type_id, leave_policy_id — status finalized by model hooks)
+  └─ hasMany processes (polymorphic via processable_id)
+
+user_leave_policies (pivot: user_id × leave_policy_id, is_default — balances computed live per year)
 ```
 
 ---
@@ -4165,7 +4175,45 @@ Conditions per form:
 | 1 | `createMeeting` | إنشاء اجتماع | _(none)_ |
 | 2 | `endMeeting` | انهاء اجتماع | _(none)_ |
 
-### 40.8 All Conditions Reference (what each condition does)
+### 40.8 LeaveRequest Module (Leave module, 2026-10-12)
+
+**Type**: `leave_request`
+**Morph string**: `'leave_request'` → `Modules\Attendance\Models\LeaveRequest` (registered in `Process::boot()`)
+**Controller**: `Modules\Leave\LeaveRequest\Controllers\LeaveRequestController`
+**Service**: `Modules\Leave\LeaveRequest\Services\LeaveRequestService` + `LeaveRequestWorkflowService`
+**Notifier**: `LeaveRequestWorkflowNotifier` (registered in `LeaveRequestServiceProvider`)
+
+| # | Form Key | Label AR | Conditions |
+|---|----------|----------|------------|
+| 1 | `createLeaveRequest` | إنشاء طلب إجازة | _(none)_ |
+
+**How it flows:**
+1. Employee creates a request (`POST api/v1/leave-requests`) → `LeaveRequestService::create()`
+   validates the assigned policy (balance via `UserLeavePolicyService`, min notice,
+   overlap, attachment, day counting per `day_calculation_type`), then
+   `LeaveRequestWorkflowService::startForLeaveRequest()` calls
+   `WorkflowEngine::startWorkflow(..., formKey: 'createLeaveRequest', branchId: creator's branch)`.
+2. Auto-approve (no setting / no resolvable steps) → status flips to `approved` immediately.
+3. Otherwise `POST /{id}/approve` / `/{id}/reject` act on the caller's pending step via
+   `ProcessWorkflowService::approveStep()/rejectStep()` — authorization comes from the
+   step's `authorized_user_ids`, so the routes carry **no permission middleware**.
+4. Final state is set by model hooks: `LeaveRequest::onAllProcessesCompleted()` →
+   `approved`; `LeaveRequest::onProcessFailed()` → `rejected` (`rejection_reason` is
+   written by the service before the step is rejected so the hook preserves it).
+5. Approved requests surface as **إجازة** in `AttendanceCalendarService`,
+   `UserAttendanceHistoryService`, the today-constraint API
+   (`UserAttendanceService::applyApprovedLeaveOverride()` → `day_status = leave`,
+   no clock-in periods) and count as used leave in `AttendanceReportRepository`.
+6. Cancel (`POST /{id}/cancel`, owner only, pending only) fails open processes via
+   `LeaveRequestWorkflowService::cancelOpenProcesses()` — it is **not** workflow-gated.
+
+**Balances**: `user_leave_policies` pivot (sync via `PUT api/v1/users/{userId}/leave-policies`);
+entitled/used/pending/available computed **live per calendar year** by
+`UserLeavePolicyService` — balances renew every January automatically (no reset job).
+`AssignDefaultLeavePolicySeeder` assigns the 21-day "Annual Year" default policy to all
+users; new users get it via a `User::created` listener in `LeaveRequestServiceProvider`.
+
+### 40.9 All Conditions Reference (what each condition does)
 
 | Condition Key | Group | Category | Label AR | What It Checks | Settings |
 |---|---|---|---|---|---|
@@ -4186,7 +4234,7 @@ Conditions per form:
 | `max_duration_hours` | **in** | duration | أقصى مدة بالساعات | Duration ≤ configured max hours | integer value |
 | `max_attachments` | **in** | attachment | أقصى عدد مرفقات | Attachment count ≤ configured max | integer value |
 
-### 40.9 "I want to apply procedure to my module" — Quick Decision
+### 40.10 "I want to apply procedure to my module" — Quick Decision
 
 ```
 Q: What module am I working in?
@@ -4220,11 +4268,18 @@ Q: What module am I working in?
   │    → forms = [create*, end*] (enum registered, services NOT yet implemented)
   │    → Follow §36 cookbook to implement
   │
+  ├── LeaveRequest (leave approvals)
+  │    → type = 'leave_request'
+  │    → forms = [createLeaveRequest]
+  │    → controller = Modules\Leave\LeaveRequest\Controllers\LeaveRequestController
+  │    → service = LeaveRequestService + LeaveRequestWorkflowService
+  │    → status finalized by LeaveRequest model hooks (onAllProcessesCompleted/onProcessFailed)
+  │
   └── New module (not yet registered)
        → Follow §36 (10-step cookbook) from scratch
 ```
 
-### 40.10 "I want to add a condition to a form" — Quick Decision
+### 40.11 "I want to add a condition to a form" — Quick Decision
 
 ```
 Q: Is the condition a GATEKEEPER (checked before the form is accepted)?
@@ -4254,5 +4309,5 @@ Q: What do I need to do? (7 steps — see §28.6 / §34.9 for full details)
   4. Create evaluator class implementing ConditionEvaluator
   5. Register evaluator in EmployeeTaskServiceProvider
   6. Add exception case to EmployeeTaskExceptionResolver::throwFromResult()
-  7. Update §40.8 (this table) with the new condition
+  7. Update §40.9 (this table) with the new condition
 ```

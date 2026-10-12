@@ -24,6 +24,12 @@ return [
         'LEAVE_POLICY_DELETE' => 'human-resources.settings*leave-policy.delete',
 //        'LEAVE_POLICY_ACTIVATE' => 'human-resources.settings*leave-policy.activate',
         'LEAVE_POLICY_EXPORT' => 'human-resources.settings*leave-policy.export',
+        'LEAVE_POLICY_ASSIGN' => 'human-resources.settings*leave-policy.assign',
+
+        // Leave Request Management (admin list/view; create/approve/reject are
+        // self-service + workflow-authorization gated, not permission gated)
+        'LEAVE_REQUEST_LIST' => 'human-resources.leave-requests*leave-request.list',
+        'LEAVE_REQUEST_VIEW' => 'human-resources.leave-requests*leave-request.view',
 
         // Public Holiday Management
         'PUBLIC_HOLIDAY_LIST' => 'human-resources.settings*public-holiday.list',

@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
 use Modules\DocumentType\Database\Seeders\DocumentTypeSeederTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
+use Modules\Leave\LeaveRequest\Database\Seeders\AssignDefaultLeavePolicySeeder;
 use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
 use Modules\ProcedureSetting\Database\Seeders\ProjectNotificationProcedureSeeder;
 use Modules\Project\ProjectManagement\Database\Seeders\ContractorSeeder;
@@ -161,6 +162,7 @@ class DatabaseSeeder extends Seeder
         $this->call(WarehousSeederTableSeeder::class);
 
         $this->call(LeavePolicySeeder::class);
+        $this->call(AssignDefaultLeavePolicySeeder::class);
 
         // $this->call(PublicHolidaysTableSeeder::class);
         $this->call(PaymentModulesSeederTableSeeder::class);

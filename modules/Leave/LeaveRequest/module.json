@@ -1,0 +1,14 @@
+{
+    "name": "LeaveRequest",
+    "alias": "leaverequest",
+    "description": "Employee leave requests with policy assignment, balances and procedure workflow approval.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Leave\\LeaveRequest\\Providers\\LeaveRequestServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Leave"
+}

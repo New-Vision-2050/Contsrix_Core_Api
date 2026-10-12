@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Modules\Attendance\Services;
 
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Models\LeaveRequest;
 use Modules\Attendance\Support\HoursFormatter;
 use Modules\Attendance\Support\ManualAttendanceStatus;
 use Modules\Attendance\Support\PublicHolidayDates;
@@ -101,6 +103,7 @@ final class UserAttendanceHistoryService
 
         $scheduledWorkDays = $this->constraintService->getScheduledWorkDaysForUser($user);
         $publicHolidays = $this->publicHolidaysForDates($user, $allDates);
+        $approvedLeaveDates = $this->approvedLeaveDatesForRange($user, (string) $allDates->min(), (string) $allDates->max());
 
         $result = [];
         foreach ($paginatedDates as $dateValue) {
@@ -117,7 +120,8 @@ final class UserAttendanceHistoryService
                 $dateString,
                 $timezone,
                 $scheduledWorkDays,
-                $publicHolidays
+                $publicHolidays,
+                isset($approvedLeaveDates[$dateString])
             );
             $dayName = $this->getDayNameArabic($dateCarbon);
 
@@ -217,6 +221,7 @@ final class UserAttendanceHistoryService
 
         $scheduledWorkDays = $this->constraintService->getScheduledWorkDaysForUser($user);
         $publicHolidays = $this->publicHolidaysForDates($user, $allDates);
+        $approvedLeaveDates = $this->approvedLeaveDatesForRange($user, (string) $allDates->min(), (string) $allDates->max());
 
         $result = [];
         foreach ($paginatedDates as $dateValue) {
@@ -233,7 +238,8 @@ final class UserAttendanceHistoryService
                 $dateString,
                 $timezone,
                 $scheduledWorkDays,
-                $publicHolidays
+                $publicHolidays,
+                isset($approvedLeaveDates[$dateString])
             );
             $dayName = $this->getDayNameArabic($dateCarbon);
 
@@ -773,6 +779,41 @@ final class UserAttendanceHistoryService
     }
 
     /**
+     * Approved leave-request dates covering the visible range, resolved in one query
+     * (Y-m-d => true) so the per-day loop does not touch the database.
+     *
+     * @return array<string, true>
+     */
+    private function approvedLeaveDatesForRange(User $user, string $startDate, string $endDate): array
+    {
+        $leaveRequests = LeaveRequest::query()
+            ->where('user_id', (string) $user->id)
+            ->approved()
+            ->whereDate('start_date', '<=', $endDate)
+            ->whereDate('end_date', '>=', $startDate)
+            ->get(['start_date', 'end_date']);
+
+        $dates = [];
+        $windowStart = Carbon::parse($startDate)->startOfDay();
+        $windowEnd = Carbon::parse($endDate)->startOfDay();
+
+        foreach ($leaveRequests as $leave) {
+            $from = Carbon::parse($leave->start_date)->startOfDay()->max($windowStart);
+            $to = Carbon::parse($leave->end_date)->startOfDay()->min($windowEnd);
+
+            if ($to->lt($from)) {
+                continue;
+            }
+
+            foreach (CarbonPeriod::create($from, $to) as $day) {
+                $dates[$day->toDateString()] = true;
+            }
+        }
+
+        return $dates;
+    }
+
+    /**
      * @return array{status: string, is_late: int, is_absent: int, is_holiday: int}
      */
     private function buildDayStatusPayload(
@@ -782,7 +823,8 @@ final class UserAttendanceHistoryService
         ?string $dateString = null,
         ?string $timezone = null,
         ?ScheduledWorkDays $scheduledWorkDays = null,
-        ?PublicHolidayDates $publicHolidays = null
+        ?PublicHolidayDates $publicHolidays = null,
+        bool $approvedLeave = false
     ): array {
         // عطلة belongs to the schedule, not to the person: a disabled weekday or a date
         // listed in the constraint's holidays. Checked first so a weekend falling inside a
@@ -792,9 +834,10 @@ final class UserAttendanceHistoryService
             return $this->dayOffStatusPayload((int) $this->hasLateArrival($attendances));
         }
 
-        // إجازة is time off granted to the person: the attendance-status override while its
-        // date window is active, or an official public holiday for the employee's branch
-        // country. After the window the day falls back to the constraint (INV-18).
+        // إجازة is time off granted to the person: an approved leave request covering the
+        // date, the attendance-status override while its date window is active, or an
+        // official public holiday for the employee's branch country. After the window the
+        // day falls back to the constraint (INV-18).
         //
         // A required-attendance override outranks the holiday calendar, which is country-wide
         // and knows nothing about this one instruction (INV-21).
@@ -803,7 +846,7 @@ final class UserAttendanceHistoryService
             && $publicHolidays->isHoliday($dateString)
             && ! ManualAttendanceStatus::isRequiredAttendanceOn($user, $dateString);
 
-        if ($isPublicHoliday || $manualLeaveOverride) {
+        if ($isPublicHoliday || $manualLeaveOverride || $approvedLeave) {
             return $this->leaveStatusPayload((int) $this->hasLateArrival($attendances));
         }
 
