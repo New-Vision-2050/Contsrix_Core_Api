@@ -129,8 +129,6 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         ->permission(Permission::LEAVE_POLICY_UPDATE());
     Route::put('/{id}/rollover-allowed', [LeavePolicyController::class, 'updateRolloverAllowed'])
         ->permission(Permission::LEAVE_POLICY_UPDATE());
-    Route::put('/{id}/half-day-allowed', [LeavePolicyController::class, 'updateHalfDayAllowed'])
-        ->permission(Permission::LEAVE_POLICY_UPDATE());
     Route::delete('/{id}', [LeavePolicyController::class, 'delete'])
         ->permission(Permission::LEAVE_POLICY_DELETE());
 });

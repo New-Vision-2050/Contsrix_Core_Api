@@ -1,0 +1,144 @@
+{
+	"info": {
+		"_postman_id": "leave-type-crud-api-2026",
+		"name": "LeaveType CRUD API",
+		"description": "CRUD API collection for the LeaveType module (api/v1/leave-types). Fields: name, is_payed (paid salary during leave), is_deduct_from_balance (deduct from balance), requires_attachment (require attachment document on request).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List Leave Types",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Authorization", "value": "Bearer {{token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-types?page=1&per_page=10",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-types"],
+					"query": [
+						{ "key": "page", "value": "1" },
+						{ "key": "per_page", "value": "10" }
+					]
+				},
+				"description": "Get paginated list of leave types."
+			}
+		},
+		{
+			"name": "Get Leave Type by ID",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Authorization", "value": "Bearer {{token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-types/{{leave_type_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-types", "{{leave_type_id}}"]
+				},
+				"description": "Get a single leave type by UUID."
+			}
+		},
+		{
+			"name": "Create Leave Type",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Authorization", "value": "Bearer {{token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"اجازة مرضية\",\n    \"is_payed\": true,\n    \"is_deduct_from_balance\": false,\n    \"requires_attachment\": true\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-types",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-types"]
+				},
+				"description": "Create a new leave type.\n\nFields:\n- name: string, required, max 255, unique per company\n- is_payed: boolean, optional (default false) - salary during leave is paid/unpaid\n- is_deduct_from_balance: boolean, optional (default false) - deduct from leave balance\n- requires_attachment: boolean, optional (default false) - requires attaching a supporting document on request"
+			}
+		},
+		{
+			"name": "Update Leave Type",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Authorization", "value": "Bearer {{token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"اجازة مرضية محدثة\",\n    \"is_payed\": false,\n    \"is_deduct_from_balance\": true,\n    \"requires_attachment\": false\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-types/{{leave_type_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-types", "{{leave_type_id}}"]
+				},
+				"description": "Update an existing leave type."
+			}
+		},
+		{
+			"name": "Delete Leave Type",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Authorization", "value": "Bearer {{token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-types/{{leave_type_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-types", "{{leave_type_id}}"]
+				},
+				"description": "Delete a leave type by UUID."
+			}
+		},
+		{
+			"name": "Export Leave Types",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Authorization", "value": "Bearer {{token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"format\": \"xlsx\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/leave-types/export",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "leave-types", "export"]
+				},
+				"description": "Export leave types to a file (xlsx/csv)."
+			}
+		}
+	],
+	"variable": [
+		{ "key": "base_url", "value": "https://core-be-production.constrix-nv.com", "description": "API base URL" },
+		{ "key": "token", "value": "", "description": "Bearer auth token" },
+		{ "key": "tenant_id", "value": "", "description": "Company/tenant UUID" },
+		{ "key": "language", "value": "ar", "description": "en or ar" },
+		{ "key": "leave_type_id", "value": "", "description": "Leave type UUID for get/update/delete" }
+	]
+}

@@ -12,8 +12,7 @@ class CreateLeaveTypeDTO
         public readonly string $name,
         public readonly bool $is_payed = false,
         public readonly bool $is_deduct_from_balance = false,
-        public readonly ?string $conditions = null,
-        public readonly array $branch_ids = [],
+        public readonly bool $requires_attachment = false,
     ) {
     }
 
@@ -23,9 +22,8 @@ class CreateLeaveTypeDTO
             'name' => $this->name,
             'is_payed' => $this->is_payed,
             'is_deduct_from_balance' => $this->is_deduct_from_balance,
-            'conditions' => $this->conditions,
+            'requires_attachment' => $this->requires_attachment,
             'company_id' => tenant('id'),
-            'branch_ids' => $this->branch_ids,
         ];
     }
 
@@ -44,13 +42,8 @@ class CreateLeaveTypeDTO
         return $this->is_deduct_from_balance;
     }
 
-    public function getConditions(): ?string
+    public function getRequiresAttachment(): bool
     {
-        return $this->conditions;
-    }
-
-    public function getBranchIds(): array
-    {
-        return $this->branch_ids;
+        return $this->requires_attachment;
     }
 }

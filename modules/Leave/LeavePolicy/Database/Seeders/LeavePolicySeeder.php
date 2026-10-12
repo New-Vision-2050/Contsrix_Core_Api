@@ -6,6 +6,7 @@ namespace Modules\Leave\LeavePolicy\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Leave\LeavePolicy\Models\LeavePolicy;
+use Modules\Leave\LeaveType\Models\LeaveType;
 use Ramsey\Uuid\Uuid;
 
 class LeavePolicySeeder extends Seeder
@@ -24,15 +25,22 @@ class LeavePolicySeeder extends Seeder
 
         // Only create if it doesn't already exist
         if (!$existingPolicy) {
+            // Resolve the default "Annual Leave" leave type for this tenant if available
+            $leaveType = LeaveType::where('company_id', $companyId)
+                ->where('is_deduct_from_balance', true)
+                ->first();
+
             LeavePolicy::create([
                 'id' => Uuid::uuid4()->toString(),
                 'name' => 'Annual Year',
+                'leave_type_id' => $leaveType?->id,
                 'total_days' => 21,
-                'day_type' => 'Annual',
+                'max_balance_days' => 21,
+                'day_calculation_type' => 'calendar',
+                'entitlement_type' => 'upfront',
+                'entitlement_start_from' => 'hire_date',
                 'is_rollover_allowed' => true,
-                'max_days_per_request' => 21,
-                'upgrade_condition' => null,
-                'is_allow_half_day' => true,
+                'allow_exceed_balance' => false,
                 'company_id' => $companyId,
                 'created_at' => now(),
                 'updated_at' => now(),

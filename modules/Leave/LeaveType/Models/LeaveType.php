@@ -33,14 +33,15 @@ class LeaveType extends Model
         'name',
         'is_payed',
         'is_deduct_from_balance',
-        'conditions',
+        'requires_attachment',
         "company_id",
     ];
 
     protected $casts = [
         'id' => 'string',
-//        'is_payed' => 'boolean',
-//        'is_deduct_from_balance' => 'boolean',
+        'is_payed' => 'boolean',
+        'is_deduct_from_balance' => 'boolean',
+        'requires_attachment' => 'boolean',
     ];
 
     protected static function newFactory(): LeaveTypeFactory

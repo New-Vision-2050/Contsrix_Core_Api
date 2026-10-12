@@ -13,8 +13,7 @@ class UpdateLeaveTypeCommand
         private string $name,
         private bool $is_payed = false,
         private bool $is_deduct_from_balance = false,
-        private ?string $conditions = null,
-        private array $branch_ids = [],
+        private bool $requires_attachment = false,
     ) {
     }
 
@@ -38,14 +37,9 @@ class UpdateLeaveTypeCommand
         return $this->is_deduct_from_balance;
     }
 
-    public function getConditions(): ?string
+    public function getRequiresAttachment(): bool
     {
-        return $this->conditions;
-    }
-
-    public function getBranchIds(): array
-    {
-        return $this->branch_ids;
+        return $this->requires_attachment;
     }
 
     public function toArray(): array
@@ -54,8 +48,7 @@ class UpdateLeaveTypeCommand
             'name' => $this->name,
             'is_payed' => $this->is_payed,
             'is_deduct_from_balance' => $this->is_deduct_from_balance,
-            'conditions' => $this->conditions,
-            'branch_ids' => $this->branch_ids,
+            'requires_attachment' => $this->requires_attachment,
         ];
     }
 }

@@ -57,6 +57,9 @@ return [
         'is_deduct_from_balance' => [
             'boolean' => 'The deduct from balance field must be true or false.',
         ],
+        'requires_attachment' => [
+            'boolean' => 'The requires attachment field must be true or false.',
+        ],
     ],
 
     // LeavePolicy validation messages
@@ -66,26 +69,82 @@ return [
             'string' => 'The leave policy name must be a string.',
             'max' => 'The leave policy name must not exceed 255 characters.',
         ],
+        'leave_type_id' => [
+            'required' => 'The leave type is required.',
+            'uuid' => 'The leave type must be a valid UUID.',
+            'exists' => 'The selected leave type does not exist.',
+        ],
+        'max_balance_days' => [
+            'integer' => 'The maximum balance days must be an integer.',
+            'min' => 'The maximum balance days must be at least 0.',
+        ],
         'total_days' => [
+            'required' => 'The number of leave days is required for balance-based policies.',
             'integer' => 'The total days must be an integer.',
             'min' => 'The total days must be at least 0.',
         ],
-        'day_type' => [
-            'string' => 'The day type must be a string.',
-            'max' => 'The day type must not exceed 100 characters.',
+        'min_notice_days' => [
+            'integer' => 'The minimum notice days must be an integer.',
+            'min' => 'The minimum notice days must be at least 0.',
+        ],
+        'day_calculation_type' => [
+            'required' => 'The day calculation type is required for balance-based policies.',
+            'in' => 'The day calculation type must be one of: work_day, calendar.',
+        ],
+        'entitlement_type' => [
+            'required' => 'The entitlement type is required for balance-based policies.',
+            'in' => 'The entitlement type must be one of: upfront, monthly.',
+        ],
+        'entitlement_start_from' => [
+            'in' => 'The entitlement start from must be one of: hire_date.',
+        ],
+        'promotion_type' => [
+            'in' => 'The promotion type must be one of: after_duration.',
+        ],
+        'promotion_duration_months' => [
+            'integer' => 'The promotion duration must be an integer.',
+            'required_if' => 'The promotion duration is required when promotion type is after duration.',
         ],
         'is_rollover_allowed' => [
             'boolean' => 'The rollover allowed field must be true or false.',
         ],
-        'max_days_per_request' => [
-            'integer' => 'The maximum days per request must be an integer.',
-            'min' => 'The maximum days per request must be at least 1.',
+        'rollover_duration_months' => [
+            'integer' => 'The rollover duration must be an integer.',
         ],
-        'upgrade_condition' => [
-            'string' => 'The upgrade condition must be a string.',
+        'allow_exceed_balance' => [
+            'boolean' => 'The allow exceed balance field must be true or false.',
         ],
-        'is_allow_half_day' => [
-            'boolean' => 'The allow half day field must be true or false.',
+        'max_days' => [
+            'required' => 'The maximum leave days is required for non-balance policies.',
+            'integer' => 'The maximum days must be an integer.',
+            'min' => 'The maximum days must be at least 0.',
+        ],
+    ],
+
+    // Export validation messages
+    'export' => [
+        'format' => [
+            'invalid' => 'The export format must be xlsx or csv.',
+        ],
+        'name' => [
+            'string' => 'The name filter must be a string.',
+            'max' => 'The name filter must not exceed 255 characters.',
+        ],
+        'total_days' => [
+            'integer' => 'The total days filter must be an integer.',
+            'min' => 'The total days filter must be at least 0.',
+        ],
+        'day_calculation_type' => [
+            'in' => 'The day calculation type must be one of: work_day, calendar.',
+        ],
+        'leave_type_id' => [
+            'uuid' => 'The leave type filter must be a valid UUID.',
+            'exists' => 'The selected leave type does not exist.',
+        ],
+        'ids' => [
+            'array' => 'The ids filter must be an array.',
+            'uuid' => 'Each id must be a valid UUID.',
+            'exists' => 'One or more selected items do not exist.',
         ],
     ],
 ];

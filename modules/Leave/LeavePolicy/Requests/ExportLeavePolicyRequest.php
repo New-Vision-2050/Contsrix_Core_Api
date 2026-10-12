@@ -20,7 +20,8 @@ class ExportLeavePolicyRequest extends FormRequest
             'format' => ['sometimes', Rule::in(['xlsx', 'csv'])],
             'name' => ['sometimes', 'string', 'max:255'],
             'total_days' => ['sometimes', 'integer', 'min:0'],
-            'day_type' => ['sometimes', 'string', 'max:100'],
+            'day_calculation_type' => ['sometimes', 'string', 'in:work_day,calendar'],
+            'leave_type_id' => ['sometimes', 'uuid', 'exists:leave_types,id'],
             'ids' => ['sometimes', 'array'],
             'ids.*' => ['uuid', 'exists:leave_policies,id'],
         ];
@@ -36,7 +37,8 @@ class ExportLeavePolicyRequest extends FormRequest
         return array_filter([
             'name' => $this->get('name'),
             'total_days' => $this->get('total_days'),
-            'day_type' => $this->get('day_type'),
+            'day_calculation_type' => $this->get('day_calculation_type'),
+            'leave_type_id' => $this->get('leave_type_id'),
             'ids' => $this->get('ids'),
         ]);
     }
@@ -54,8 +56,9 @@ class ExportLeavePolicyRequest extends FormRequest
             'name.max' => __('leave.export.name.max'),
             'total_days.integer' => __('leave.export.total_days.integer'),
             'total_days.min' => __('leave.export.total_days.min'),
-            'day_type.string' => __('leave.export.day_type.string'),
-            'day_type.max' => __('leave.export.day_type.max'),
+            'day_calculation_type.in' => __('leave.export.day_calculation_type.in'),
+            'leave_type_id.uuid' => __('leave.export.leave_type_id.uuid'),
+            'leave_type_id.exists' => __('leave.export.leave_type_id.exists'),
             'ids.array' => __('leave.export.ids.array'),
             'ids.*.uuid' => __('leave.export.ids.uuid'),
             'ids.*.exists' => __('leave.export.ids.exists'),
