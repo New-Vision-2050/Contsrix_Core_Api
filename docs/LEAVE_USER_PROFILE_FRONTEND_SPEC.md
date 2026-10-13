@@ -185,3 +185,29 @@ rows of the leave-request object — full shape in `docs/LEAVE_REQUEST_API_SPEC.
 4. (Optional) Requests tab: `GET /leave-requests?user_id={userId}` with status/year filters.
 5. Remember: balances are **live per year** — no "reset balance" button exists or is needed;
    the new year's entitlement appears automatically.
+
+---
+
+## 4. Dedicated Leave Approver Inbox (بانتظار موافقتي)
+
+A mirror of `GET /admin/employee-tasks/inbox` scoped to leave requests only.
+It lists **pending requests whose current workflow step authorizes the caller** —
+"leave requests waiting on MY approval". Same criteria as the unified admin inbox,
+so these routes also carry **no permission middleware**.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /admin/leave-requests/inbox?page=1&per_page=15&date_from=&date_to=` | Paginated pending-for-me list |
+| `GET /admin/leave-requests/inbox-counts` | Badge counts: `{ "pending_leave_requests": n, "total": n }` |
+| `PATCH /admin/leave-requests/{id}/approve` | Approve my pending step |
+| `PATCH /admin/leave-requests/{id}/reject` | Reject — body `{ "rejection_reason": "..." }` (required, ≤1000) |
+
+Inbox rows use the **same unified shape** as `admin/employee-tasks/inbox`
+(`type: "leave_request"`, `category: "leave"`, `employee`, `status`,
+`current_step: { id, name, step_order, is_approve, action_takers[] }`,
+`summary: { leave_policy, leave_type, start_date, end_date, total_days, is_emergency, reason }`,
+`created_at`). Pagination keys: `{ current_page, last_page, per_page, total }`.
+
+> The unified `admin/employee-tasks/inbox` also includes leave requests
+> (`type = leave_request`) and its `inbox-counts` payload has
+> `pending_leave_requests` — use whichever view fits the screen.

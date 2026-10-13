@@ -71,5 +71,9 @@ class LeaveRequestServiceProvider extends ModuleServiceProvider
         Route::prefix('api/v1/my')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/my.php');
+
+        Route::prefix('api/v1/admin/leave-requests')
+            ->middleware('api')
+            ->group($this->getModulePath() . '/Resources/routes/admin.php');
     }
 }

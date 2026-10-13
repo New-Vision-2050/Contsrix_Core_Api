@@ -8,6 +8,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use BasePackage\Shared\Presenters\Json;
+use Modules\Advance\AdvanceRequest\Models\AdvanceRequest;
+use Modules\Advance\AdvanceRequest\Services\AdvanceRequestService;
+use Modules\Attendance\Models\LeaveRequest;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
@@ -28,6 +31,7 @@ use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionWorkflowService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\EmployeeTask\Services\EmployeeTaskStartRequestService;
+use Modules\Leave\LeaveRequest\Services\LeaveRequestService;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 use Modules\ProcedureSetting\Services\ActionTakerResolver;
 use Modules\User\Models\User;
@@ -55,6 +59,8 @@ class AdminEmployeeTaskController extends Controller
         private readonly EmployeeTaskEndRequestService        $endRequestService,
         private readonly EmployeeTaskStartRequestService      $startRequestService,
         private readonly ActionTakerResolver                  $actionTakerResolver,
+        private readonly LeaveRequestService                  $leaveRequestService,
+        private readonly AdvanceRequestService                $advanceRequestService,
     ) {}
 
     /**
@@ -166,13 +172,17 @@ class AdminEmployeeTaskController extends Controller
             $this->requestService->inboxAllStartRequests($adminId, $filters),
             $adminId,
         );
+        $leaveItems        = $this->leaveRequestService->inboxForApprover($adminId, $filters);
+        $advanceItems      = $this->advanceRequestService->inboxForApprover($adminId, $filters);
 
         $combined = collect()
             ->merge($taskItems->map(fn ($t)  => ['_type' => 'task_request',      '_model' => $t, '_at' => $t->created_at]))
             ->merge($extItems->map(fn ($e)   => ['_type' => 'extension_request', '_model' => $e, '_at' => $e->created_at]))
             ->merge($approvalItems->map(fn ($a) => ['_type' => 'task_approval',  '_model' => $a, '_at' => $a->created_at]))
             ->merge($endRequestItems->map(fn ($r) => ['_type' => 'end_request',  '_model' => $r, '_at' => $r->created_at]))
-            ->merge($startRequestItems->map(fn ($r) => ['_type' => 'start_request', '_model' => $r, '_at' => $r->created_at]));
+            ->merge($startRequestItems->map(fn ($r) => ['_type' => 'start_request', '_model' => $r, '_at' => $r->created_at]))
+            ->merge($leaveItems->map(fn ($l) => ['_type' => 'leave_request',     '_model' => $l, '_at' => $l->created_at]))
+            ->merge($advanceItems->map(fn ($a) => ['_type' => 'advance_request', '_model' => $a, '_at' => $a->created_at]));
 
         if ($type !== null) {
             $combined = $combined->filter(fn ($item) => $item['_type'] === $type);
@@ -204,6 +214,8 @@ class AdminEmployeeTaskController extends Controller
                 'task_approval'    => InboxItemPresenter::fromApprovalRequest($entry['_model']),
                 'end_request'      => InboxItemPresenter::fromEndRequest($entry['_model']),
                 'start_request'    => InboxItemPresenter::fromStartRequest($entry['_model']),
+                'leave_request'    => InboxItemPresenter::fromLeaveRequest($entry['_model']),
+                'advance_request'  => InboxItemPresenter::fromAdvanceRequest($entry['_model']),
             };
         })->all();
 
@@ -314,6 +326,21 @@ class AdminEmployeeTaskController extends Controller
                 return Json::item(EmployeeTaskExtensionPresenter::single($extension), message: 'Extension approved successfully');
             }
 
+            // Leave request (إجازة) — authorization comes from the caller's
+            // pending workflow step (authorized_user_ids), same as task items.
+            if (LeaveRequest::find($id)) {
+                $leaveRequest = $this->leaveRequestService->approve($id);
+                $leaveRequest->loadMissing(['user', 'leavePolicy.leaveType', 'processes.steps.procedureSettingStep', 'processes.steps.assignedUser']);
+                return Json::item(InboxItemPresenter::fromLeaveRequest($leaveRequest), message: 'Leave request approved successfully');
+            }
+
+            // Advance request (سلفة) — same workflow-step authorization criteria.
+            if (AdvanceRequest::find($id)) {
+                $advanceRequest = $this->advanceRequestService->approve($id);
+                $advanceRequest->loadMissing(['user', 'advancePolicy', 'processes.steps.procedureSettingStep', 'processes.steps.assignedUser']);
+                return Json::item(InboxItemPresenter::fromAdvanceRequest($advanceRequest), message: 'Advance request approved successfully');
+            }
+
             $task = $this->requestService->approve($id, (string) Auth::id());
             return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task approved successfully');
         } catch (EmployeeTaskException | ProcedureWorkflowException $e) {
@@ -361,6 +388,20 @@ class AdminEmployeeTaskController extends Controller
                     $request->input('rejection_reason'),
                 );
                 return Json::item(EmployeeTaskExtensionPresenter::single($extension), message: 'Extension rejected successfully');
+            }
+
+            // Leave request (إجازة) — rejects the caller's pending workflow step.
+            if (LeaveRequest::find($id)) {
+                $leaveRequest = $this->leaveRequestService->reject($id, (string) $request->input('rejection_reason'));
+                $leaveRequest->loadMissing(['user', 'leavePolicy.leaveType', 'processes.steps.procedureSettingStep', 'processes.steps.assignedUser']);
+                return Json::item(InboxItemPresenter::fromLeaveRequest($leaveRequest), message: 'Leave request rejected successfully');
+            }
+
+            // Advance request (سلفة) — rejects the caller's pending workflow step.
+            if (AdvanceRequest::find($id)) {
+                $advanceRequest = $this->advanceRequestService->reject($id, (string) $request->input('rejection_reason'));
+                $advanceRequest->loadMissing(['user', 'advancePolicy', 'processes.steps.procedureSettingStep', 'processes.steps.assignedUser']);
+                return Json::item(InboxItemPresenter::fromAdvanceRequest($advanceRequest), message: 'Advance request rejected successfully');
             }
 
             $task = $this->requestService->reject(
@@ -469,14 +510,18 @@ class AdminEmployeeTaskController extends Controller
             $this->requestService->inboxAllStartRequests($adminId, $filters),
             $adminId,
         )->count();
+        $leaveCount        = $this->leaveRequestService->inboxForApprover($adminId, $filters)->count();
+        $advanceCount      = $this->advanceRequestService->inboxForApprover($adminId, $filters)->count();
 
         return Json::item([
-            'pending_tasks'          => $taskCount,
-            'pending_extensions'     => $extCount,
-            'pending_approvals'      => $approvalCount,
-            'pending_end_requests'   => $endRequestCount,
-            'pending_start_requests' => $startRequestCount,
-            'total'                  => $taskCount + $extCount + $approvalCount + $endRequestCount + $startRequestCount,
+            'pending_tasks'            => $taskCount,
+            'pending_extensions'       => $extCount,
+            'pending_approvals'        => $approvalCount,
+            'pending_end_requests'     => $endRequestCount,
+            'pending_start_requests'   => $startRequestCount,
+            'pending_leave_requests'   => $leaveCount,
+            'pending_advance_requests' => $advanceCount,
+            'total'                    => $taskCount + $extCount + $approvalCount + $endRequestCount + $startRequestCount + $leaveCount + $advanceCount,
         ], message: 'Inbox counts retrieved successfully');
     }
 

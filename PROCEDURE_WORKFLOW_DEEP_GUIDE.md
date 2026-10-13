@@ -2,7 +2,11 @@
 
 > Comprehensive implementation reference for AI assistants and developers.
 >
-> **Last updated:** 2026-10-12 — **LeaveRequest module registered.** New `ProcedureSettingType::LeaveRequest` (`leave_request`), new `InternalProcessForm::CreateLeaveRequest` (`createLeaveRequest`, no conditions), morph map entry `'leave_request' => Modules\Attendance\Models\LeaveRequest`. The Leave module's `LeaveRequestService` starts a workflow on request creation; final status is set by `LeaveRequest::onAllProcessesCompleted()`/`onProcessFailed()` model hooks. Approve/reject routes authorize via step `authorized_user_ids` (no permission middleware). Balances live in `user_leave_policies` and renew every calendar year automatically (computed live, no reset job). See §40.8. Mobile spec: `docs/LEAVE_REQUEST_API_SPEC.md`.
+> **Last updated:** 2026-10-13 (rev 2) — **Approver inboxes for leave & advance.** `LeaveRequestService::inboxForApprover()` / `AdvanceRequestService::inboxForApprover()` return pending requests whose current pending step authorizes a user (`assigned_user_id` / `authorized_user_ids` JSON — same SQL semantics as `EmployeeTaskRepository::inboxAll`). They feed the unified `admin/employee-tasks/inbox` + `inbox-counts` (`type` = `leave_request` / `advance_request`, counts keys `pending_leave_requests` / `pending_advance_requests`) and the new dedicated endpoints `GET api/v1/admin/leave-requests/inbox[‑counts]` and `GET api/v1/admin/advance-requests/inbox[‑counts]` (+ `PATCH …/{id}/approve|reject` with `rejection_reason`, same step-authorization criteria, no permission middleware). Presented via `InboxItemPresenter::fromLeaveRequest` / `fromAdvanceRequest`.
+>
+> **Previous:** 2026-10-13 — **AdvanceRequest module registered (السلفة).** New `ProcedureSettingType::AdvanceRequest` (`advance_request`), new `InternalProcessForm::CreateAdvanceRequest` (`createAdvanceRequest`, no conditions), morph map entry `'advance_request' => Modules\Advance\AdvanceRequest\Models\AdvanceRequest`. Same pattern as LeaveRequest but **no types and no yearly balances** — flat `advance_policies` pool (name / max_amount / max_installments / max_active_advances / requires_attachment), per-user assignment via `user_advance_policies`, live availability (pending + approved count vs cap, no reset). See §40.9. Frontend spec: `docs/ADVANCE_MANAGEMENT_FRONTEND_SPEC.md`.
+>
+> **Previous:** 2026-10-12 — **LeaveRequest module registered.** New `ProcedureSettingType::LeaveRequest` (`leave_request`), new `InternalProcessForm::CreateLeaveRequest` (`createLeaveRequest`, no conditions), morph map entry `'leave_request' => Modules\Attendance\Models\LeaveRequest`. The Leave module's `LeaveRequestService` starts a workflow on request creation; final status is set by `LeaveRequest::onAllProcessesCompleted()`/`onProcessFailed()` model hooks. Approve/reject routes authorize via step `authorized_user_ids` (no permission middleware). Balances live in `user_leave_policies` and renew every calendar year automatically (computed live, no reset job). See §40.8. Mobile spec: `docs/LEAVE_REQUEST_API_SPEC.md`.
 >
 > **Previous:** 2026-07-10 — Reassignment endpoint now accepts multiple users via `assigned_user_ids` (§9.6). `ProjectNotificationService::reassignTask()` replaces the assigned-user list, cancels all stale processes, and creates per-user `CreateProjectNotificationTask` processes for every supplied user. Also clarified reassignment in §9.6 and §9.7 and added six common procedure-setting/reassignment traps for AI assistants.
 >
@@ -4213,7 +4217,54 @@ entitled/used/pending/available computed **live per calendar year** by
 `AssignDefaultLeavePolicySeeder` assigns the 21-day "Annual Year" default policy to all
 users; new users get it via a `User::created` listener in `LeaveRequestServiceProvider`.
 
-### 40.9 All Conditions Reference (what each condition does)
+**Approver inbox**: `LeaveRequestService::inboxForApprover($userId)` (pending requests
+whose current pending step authorizes the user) feeds the unified
+`admin/employee-tasks/inbox` (`type = leave_request`) and the dedicated
+`api/v1/admin/leave-requests/inbox` + `inbox-counts` + `PATCH {id}/approve|reject`
+(same step authorization, no permission middleware).
+
+### 40.9 AdvanceRequest Module (Advance module, 2026-10-13)
+
+**Type**: `advance_request`
+**Morph string**: `'advance_request'` → `Modules\Advance\AdvanceRequest\Models\AdvanceRequest` (registered in `Process::boot()`)
+**Controller**: `Modules\Advance\AdvanceRequest\Controllers\AdvanceRequestController` + `UserAdvancePolicyController`
+**Service**: `Modules\Advance\AdvanceRequest\Services\AdvanceRequestService` + `AdvanceRequestWorkflowService` + `UserAdvancePolicyService`
+**Notifier**: `AdvanceRequestWorkflowNotifier` (registered in `AdvanceRequestServiceProvider`)
+
+| # | Form Key | Label AR | Conditions |
+|---|----------|----------|------------|
+| 1 | `createAdvanceRequest` | إنشاء طلب سلفة | _(none)_ |
+
+**How it flows:** identical to LeaveRequest (§40.8) with these differences:
+1. `POST api/v1/advance-requests` → `AdvanceRequestService::create()` validates the
+   assigned policy: `amount ≤ max_amount`, `installments ≤ max_installments`,
+   attachment present when `requires_attachment`, and the **active-advance cap**
+   (pending + approved count `< max_active_advances`) — then
+   `AdvanceRequestWorkflowService::startForAdvanceRequest()` →
+   `WorkflowEngine::startWorkflow(..., formKey: 'createAdvanceRequest', branchId: creator's branch)`.
+2. Auto-approve when no setting/resolvable steps (status flips to `approved` immediately).
+3. `POST /{id}/approve` / `/{id}/reject` authorize via step `authorized_user_ids`
+   (no permission middleware); `/{id}/cancel` is owner-only and fails open processes.
+4. Final state via model hooks: `AdvanceRequest::onAllProcessesCompleted()` →
+   `approved`; `onProcessFailed()` → `rejected` (service writes `rejection_reason` first).
+
+**Availability instead of balances**: no types, no years, no reset. Flat per-company
+`advance_policies` pool (`name` unique per company, `max_amount`, `max_installments`,
+`max_active_advances` default 1, `requires_attachment`). Assignment pivot
+`user_advance_policies` (sync via `PUT api/v1/users/{userId}/advance-policies`).
+`UserAdvancePolicyService::availabilityFor()` computes live `active_count` /
+`pending_amount` / `active_amount` / `remaining_slots` / `can_request`; a slot frees
+when a request is rejected or cancelled (approved counts until repaid — repayment is
+out of scope). Permissions: `human-resources.settings*advance-policy.*`,
+`human-resources.advance-requests*advance-request.*` (config `modules/Advance/Config/permissions.php`).
+
+**Approver inbox**: `AdvanceRequestService::inboxForApprover($userId)` feeds the unified
+`admin/employee-tasks/inbox` (`type = advance_request`, counts key
+`pending_advance_requests`) and the dedicated `api/v1/admin/advance-requests/inbox` +
+`inbox-counts` + `PATCH {id}/approve|reject` (same step authorization, no permission
+middleware).
+
+### 40.10 All Conditions Reference (what each condition does)
 
 | Condition Key | Group | Category | Label AR | What It Checks | Settings |
 |---|---|---|---|---|---|
@@ -4234,7 +4285,7 @@ users; new users get it via a `User::created` listener in `LeaveRequestServicePr
 | `max_duration_hours` | **in** | duration | أقصى مدة بالساعات | Duration ≤ configured max hours | integer value |
 | `max_attachments` | **in** | attachment | أقصى عدد مرفقات | Attachment count ≤ configured max | integer value |
 
-### 40.10 "I want to apply procedure to my module" — Quick Decision
+### 40.11 "I want to apply procedure to my module" — Quick Decision
 
 ```
 Q: What module am I working in?
@@ -4273,13 +4324,20 @@ Q: What module am I working in?
   │    → forms = [createLeaveRequest]
   │    → controller = Modules\Leave\LeaveRequest\Controllers\LeaveRequestController
   │    → service = LeaveRequestService + LeaveRequestWorkflowService
-  │    → status finalized by LeaveRequest model hooks (onAllProcessesCompleted/onProcessFailed)
-  │
-  └── New module (not yet registered)
+  │        → status finalized by LeaveRequest model hooks (onAllProcessesCompleted/onProcessFailed)
+│
+├── AdvanceRequest (سلفة approvals — no types, availability not balances)
+│    → type = 'advance_request'
+│    → forms = [createAdvanceRequest]
+│    → controller = Modules\Advance\AdvanceRequest\Controllers\AdvanceRequestController
+│    → service = AdvanceRequestService + AdvanceRequestWorkflowService
+│    → status finalized by AdvanceRequest model hooks (onAllProcessesCompleted/onProcessFailed)
+│
+└── New module (not yet registered)
        → Follow §36 (10-step cookbook) from scratch
 ```
 
-### 40.11 "I want to add a condition to a form" — Quick Decision
+### 40.12 "I want to add a condition to a form" — Quick Decision
 
 ```
 Q: Is the condition a GATEKEEPER (checked before the form is accepted)?
@@ -4309,5 +4367,5 @@ Q: What do I need to do? (7 steps — see §28.6 / §34.9 for full details)
   4. Create evaluator class implementing ConditionEvaluator
   5. Register evaluator in EmployeeTaskServiceProvider
   6. Add exception case to EmployeeTaskExceptionResolver::throwFromResult()
-  7. Update §40.9 (this table) with the new condition
+  7. Update §40.10 (this table) with the new condition
 ```

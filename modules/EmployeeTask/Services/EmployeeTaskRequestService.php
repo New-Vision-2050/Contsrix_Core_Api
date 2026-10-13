@@ -720,18 +720,14 @@ class EmployeeTaskRequestService
         return $this->repository->getFilterMetadata($userId, $filters);
     }
 
+    /**
+     * Unified inbox counts (all request types: tasks, extensions, approvals,
+     * end/start requests, leave, advance). Resolved at runtime to avoid a
+     * constructor cycle — AdminInboxCountsService depends on this service.
+     */
     public function getInboxCountsForAdmin(string $adminId, array $filters = []): array
     {
-        $tasks = $this->repository->allInboxForAdmin($adminId, $filters)->where('status', 'pending')->count();
-        $extensions = $this->repository->allExtensionInboxForAdmin($adminId, $filters)->count();
-        $approvals = $this->repository->allApprovalInboxForAdmin($adminId, $filters)->count();
-
-        return [
-            'pending_tasks' => $tasks,
-            'pending_extensions' => $extensions,
-            'pending_approvals' => $approvals,
-            'total' => (int) ($tasks + $extensions + $approvals),
-        ];
+        return app(AdminInboxCountsService::class)->forUser($adminId, $filters);
     }
 
     public function broadcastInboxCounts(array $userIds, array $filters = []): void

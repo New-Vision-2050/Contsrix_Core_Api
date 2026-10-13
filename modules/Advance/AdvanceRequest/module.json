@@ -1,0 +1,14 @@
+{
+    "name": "AdvanceRequest",
+    "alias": "advancerequest",
+    "description": "Employee salary advance (سلفة) requests with procedure-workflow approval and per-user policy assignment",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Advance\\AdvanceRequest\\Providers\\AdvanceRequestServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Advance"
+}
