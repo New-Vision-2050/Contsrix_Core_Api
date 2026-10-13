@@ -48,6 +48,11 @@ class TenantDatabaseSeeder extends Seeder
 //        $this->call(CompanyModulesSeederTableSeeder::class);
         $this->call(GenaralAdminSeedTableSeeder::class);
 
+        // Sync ALL config permission keys (config/permissions + modules/*‎/Config/permissions.php)
+        // into the tenant DB and grant them to super-admin/admin roles. Idempotent
+        // (firstOrCreate + syncPermissions), safe to re-run when new keys are added.
+        $this->call(\Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder::class);
+
         $this->call(CompanyPackageAssignmentSeeder::class);
 
         // Set default storage limit for archive library (1000 MB for files, 1000 folders)
