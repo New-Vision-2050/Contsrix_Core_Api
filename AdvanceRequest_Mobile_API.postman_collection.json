@@ -1,0 +1,177 @@
+{
+	"info": {
+		"_postman_id": "advance-request-mobile-collection",
+		"name": "Advance Request Mobile API (السلفة)",
+		"description": "Mobile flow for employee salary advance (سلفة) requests.\n\n== THE POLICY DROPDOWN ==\nThe \"available advances\" dropdown in the create-request screen is fed by request #1 (GET /my/advance-policies). It returns ONLY the advance policies assigned to the logged-in employee, each with its LIVE availability (no types, no yearly balances — availability is computed on the fly, no reset). Use \"name\" as the dropdown label (recommended: show \"max_amount\" next to it, e.g. \"سلفة طارئة — up to 5,000\") and submit that item's \"advance_policy_id\" when creating the request (#2). Items with can_request=0 must be DISABLED (remaining_slots=0 means the employee already has the maximum number of active advances under that policy). Policies the employee is NOT assigned to will never appear here — assignment is done by HR from the user profile (web).\n\n== FLOW ==\n1) GET /my/advance-policies → fill the dropdown (also gives per-policy limits: max_amount, max_installments, requires_attachment, remaining_slots, can_request)\n2) POST /advance-requests with the chosen advance_policy_id → request enters the approval workflow (auto-approved instantly if the company has no approval steps configured)\n3) GET /advance-requests/my → track status (pending قيد الانتظار / approved مقبول / rejected مرفوض / cancelled ملغي)\n4) GET /advance-requests/{id} → details incl. workflow.in_progress + rejection_reason\n5) POST /advance-requests/{id}/cancel → cancel while still pending (owner only) — frees the policy slot immediately\n\n== NOTES ==\n- NO types and NO yearly balances: availability = pending + approved requests count vs the policy's max_active_advances. Rejected/cancelled requests free the slot right away; approved ones keep counting until repaid (repayment is handled outside this API).\n- Response envelope: { \"code\", \"message\", \"payload\" } (+ \"pagination\" on paginated lists).\n- Errors: 422 with { \"message\" } for business-rule failures (policy not assigned, amount over max, installments over max, missing required attachment, active-advance cap reached) — display \"message\" to the user.\n\nHeaders: Authorization: Bearer {{auth_token}}, X-Tenant: {{tenant_id}}, Accept: application/json, Accept-Language: {{language}}",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "base_url", "value": "https://core-be-dev.constrix-nv.com" },
+		{ "key": "auth_token", "value": "" },
+		{ "key": "tenant_id", "value": "" },
+		{ "key": "language", "value": "ar" },
+		{ "key": "advance_policy_id", "value": "" },
+		{ "key": "advance_request_id", "value": "" }
+	],
+	"item": [
+		{
+			"name": "1. My Advance Policies (dropdown source)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/my/advance-policies",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "my", "advance-policies"]
+				},
+				"description": "THE DROPDOWN SOURCE. Returns the advance policies ASSIGNED to the authenticated employee with live availability. Map each item: dropdown label = \"name\" (+ \"max_amount\"), submitted value = \"advance_policy_id\". Per selected policy adjust the form: requires_attachment=1 → show upload field; amount input max = max_amount; installments input max = max_installments; can_request=0 → disable the item (remaining_slots=0)."
+			},
+			"response": [
+				{
+					"name": "200 - Assigned policies with availability",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Your advance policies retrieved successfully\",\n  \"payload\": [\n    {\n      \"advance_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n      \"name\": \"سلفة طارئة\",\n      \"is_default\": 0,\n      \"assigned_at\": \"2026-10-10 09:00:00\",\n      \"max_amount\": 5000.0,\n      \"max_installments\": 6,\n      \"max_active_advances\": 1,\n      \"requires_attachment\": 0,\n      \"active_count\": 0,\n      \"pending_amount\": 0.0,\n      \"active_amount\": 0.0,\n      \"remaining_slots\": 1,\n      \"can_request\": 1\n    },\n    {\n      \"advance_policy_id\": \"7d0a9b5c-1f2e-4a3b-8c7d-333333333333\",\n      \"name\": \"سلفة زواج\",\n      \"is_default\": 0,\n      \"assigned_at\": \"2026-10-10 09:00:00\",\n      \"max_amount\": 20000.0,\n      \"max_installments\": 12,\n      \"max_active_advances\": 1,\n      \"requires_attachment\": 1,\n      \"active_count\": 1,\n      \"pending_amount\": 15000.0,\n      \"active_amount\": 0.0,\n      \"remaining_slots\": 0,\n      \"can_request\": 0\n    }\n  ]\n}"
+				}
+			]
+		},
+		{
+			"name": "2. Create Advance Request",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" },
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"advance_policy_id\": \"{{advance_policy_id}}\",\n  \"amount\": 2000,\n  \"installments\": 4,\n  \"reason\": \"ظروف عائلية طارئة\",\n  \"attachments\": [],\n  \"notes\": null\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/advance-requests",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "advance-requests"]
+				},
+				"description": "Creates the request for the authenticated employee using the advance_policy_id picked from the dropdown (#1). The approval workflow starts immediately: if the company configured approval steps, status stays \"pending\" (workflow.in_progress=true); otherwise it is auto-approved. On 422, display the returned \"message\" (policy not assigned / amount over max / installments over max / missing required attachment / active-advance cap reached)."
+			},
+			"response": [
+				{
+					"name": "200 - Created (pending approval)",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Advance request created successfully\",\n  \"payload\": {\n    \"id\": \"aa11bb22-cc33-4dd4-9e5f-555555555555\",\n    \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n    \"user_name\": \"أحمد محمد\",\n    \"advance_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n    \"advance_policy_name\": \"سلفة طارئة\",\n    \"amount\": 2000.0,\n    \"installments\": 4,\n    \"reason\": \"ظروف عائلية طارئة\",\n    \"status\": \"pending\",\n    \"status_label_ar\": \"قيد الانتظار\",\n    \"attachments\": [],\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"workflow\": { \"in_progress\": true, \"pending_step_order\": 1 },\n    \"created_at\": \"2026-10-13 00:20:00\"\n  }\n}"
+				},
+				{
+					"name": "422 - Amount over policy max",
+					"status": "Unprocessable Entity",
+					"code": 422,
+					"body": "{\n  \"message\": \"Amount exceeds the policy maximum of 5000.\"\n}"
+				},
+				{
+					"name": "422 - Active advance cap reached",
+					"status": "Unprocessable Entity",
+					"code": 422,
+					"body": "{\n  \"message\": \"You already have 1 active advance request(s) under this policy (maximum 1).\"\n}"
+				},
+				{
+					"name": "422 - Validation errors",
+					"status": "Unprocessable Entity",
+					"code": 422,
+					"body": "{\n  \"message\": \"The advance policy id field is required. (and 1 more error)\",\n  \"errors\": {\n    \"advance_policy_id\": [\"The advance policy id field is required.\"],\n    \"installments\": [\"The installments must be at least 1.\"]\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "3. My Advance Requests",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/advance-requests/my?page=1&per_page=10",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "advance-requests", "my"],
+					"query": [
+						{ "key": "page", "value": "1" },
+						{ "key": "per_page", "value": "10", "description": "Max 100" },
+						{ "key": "status", "value": "pending", "description": "Optional: pending|approved|rejected|cancelled", "disabled": true },
+						{ "key": "advance_policy_id", "value": "{{advance_policy_id}}", "description": "Optional filter", "disabled": true }
+					]
+				},
+				"description": "Paginated list of the authenticated employee's own requests, newest first. Use status_label_ar for Arabic UI; workflow.in_progress tells you it is still moving through approval steps."
+			},
+			"response": [
+				{
+					"name": "200 - My requests",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Your advance requests retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 2 },\n  \"payload\": [\n    {\n      \"id\": \"aa11bb22-cc33-4dd4-9e5f-555555555555\",\n      \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n      \"user_name\": \"أحمد محمد\",\n      \"advance_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n      \"advance_policy_name\": \"سلفة طارئة\",\n      \"amount\": 2000.0,\n      \"installments\": 4,\n      \"reason\": \"ظروف عائلية طارئة\",\n      \"status\": \"pending\",\n      \"status_label_ar\": \"قيد الانتظار\",\n      \"attachments\": [],\n      \"notes\": null,\n      \"rejection_reason\": null,\n      \"approved_at\": null,\n      \"rejected_at\": null,\n      \"workflow\": { \"in_progress\": true, \"pending_step_order\": 1 },\n      \"created_at\": \"2026-10-13 00:20:00\"\n    },\n    {\n      \"id\": \"cc33dd44-ee55-4ff6-8a7b-777777777777\",\n      \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n      \"user_name\": \"أحمد محمد\",\n      \"advance_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n      \"advance_policy_name\": \"سلفة طارئة\",\n      \"amount\": 3000.0,\n      \"installments\": 3,\n      \"reason\": \"مصاريف دراسة\",\n      \"status\": \"approved\",\n      \"status_label_ar\": \"مقبول\",\n      \"attachments\": [],\n      \"notes\": null,\n      \"rejection_reason\": null,\n      \"approved_at\": \"2026-06-08 11:30:00\",\n      \"rejected_at\": null,\n      \"workflow\": { \"in_progress\": false, \"pending_step_order\": null },\n      \"created_at\": \"2026-06-07 09:00:00\"\n    }\n  ]\n}"
+				}
+			]
+		},
+		{
+			"name": "4. Advance Request Details",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/advance-requests/{{advance_request_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "advance-requests", "{{advance_request_id}}"]
+				},
+				"description": "Single request details — same object shape as the create response payload. Shows rejection_reason when status = rejected."
+			},
+			"response": [
+				{
+					"name": "200 - Rejected example",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Advance request retrieved successfully\",\n  \"payload\": {\n    \"id\": \"dd44ee55-ff66-4aa7-9b8c-888888888888\",\n    \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n    \"user_name\": \"أحمد محمد\",\n    \"advance_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n    \"advance_policy_name\": \"سلفة طارئة\",\n    \"amount\": 4000.0,\n    \"installments\": 5,\n    \"reason\": \"مصاريف علاج\",\n    \"status\": \"rejected\",\n    \"status_label_ar\": \"مرفوض\",\n    \"attachments\": [],\n    \"notes\": null,\n    \"rejection_reason\": \"تجاوز ميزانية السلف لهذا الربع\",\n    \"approved_at\": null,\n    \"rejected_at\": \"2026-07-30 14:00:00\",\n    \"workflow\": { \"in_progress\": false, \"pending_step_order\": null },\n    \"created_at\": \"2026-07-28 10:00:00\"\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "5. Cancel Advance Request",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Authorization", "value": "Bearer {{auth_token}}" },
+					{ "key": "X-Tenant", "value": "{{tenant_id}}" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "Accept-Language", "value": "{{language}}" }
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/advance-requests/{{advance_request_id}}/cancel",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "advance-requests", "{{advance_request_id}}", "cancel"]
+				},
+				"description": "Cancels a PENDING request owned by the authenticated employee. Any open approval steps are closed and the policy slot is freed immediately (remaining_slots goes back up in #1). Errors: 422 if not pending, 403 if not the owner."
+			},
+			"response": [
+				{
+					"name": "200 - Cancelled",
+					"status": "OK",
+					"code": 200,
+					"body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Advance request cancelled successfully\",\n  \"payload\": {\n    \"id\": \"aa11bb22-cc33-4dd4-9e5f-555555555555\",\n    \"user_id\": \"bb22cc33-dd44-4ee5-8f6a-666666666666\",\n    \"user_name\": \"أحمد محمد\",\n    \"advance_policy_id\": \"9f1c2a7e-3b4d-4e5f-8a9b-111111111111\",\n    \"advance_policy_name\": \"سلفة طارئة\",\n    \"amount\": 2000.0,\n    \"installments\": 4,\n    \"reason\": \"ظروف عائلية طارئة\",\n    \"status\": \"cancelled\",\n    \"status_label_ar\": \"ملغي\",\n    \"attachments\": [],\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"workflow\": { \"in_progress\": false, \"pending_step_order\": null },\n    \"created_at\": \"2026-10-13 00:20:00\"\n  }\n}"
+				}
+			]
+		}
+	]
+}

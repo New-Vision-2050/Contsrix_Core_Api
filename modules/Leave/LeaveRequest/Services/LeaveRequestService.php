@@ -6,12 +6,15 @@ namespace Modules\Leave\LeaveRequest\Services;
 
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\LeaveRequest;
 use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\Leave\LeavePolicy\Models\LeavePolicy;
 use Modules\Leave\LeaveRequest\DTO\CreateLeaveRequestDTO;
+use Modules\Process\Enums\ProcessStatus;
+use Modules\Process\Enums\ProcessStepStatus;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 
@@ -157,6 +160,38 @@ class LeaveRequestService
         return LeaveRequest::query()
             ->with(['user', 'leavePolicy.leaveType', 'processes.steps'])
             ->findOrFail($id);
+    }
+
+    /**
+     * Approver inbox: pending requests whose CURRENT pending workflow step
+     * authorizes the given user (assigned_user_id or authorized_user_ids JSON).
+     * Same semantics as the admin employee-tasks inbox — used by the unified
+     * admin inbox, its counts, and the dedicated leave inbox endpoints.
+     */
+    public function inboxForApprover(string $userId, array $filters = []): Collection
+    {
+        return LeaveRequest::query()
+            ->where('status', LeaveRequest::STATUS_PENDING)
+            ->whereHas('processes', function ($q) use ($userId) {
+                $q->where('status', ProcessStatus::InProgress)
+                    ->whereHas('steps', function ($q) use ($userId) {
+                        $q->where('status', ProcessStepStatus::Pending)
+                            ->where(function ($q) use ($userId) {
+                                $q->where('assigned_user_id', $userId)
+                                    ->orWhereJsonContains('authorized_user_ids', $userId);
+                            });
+                    });
+            })
+            ->when($filters['date_from'] ?? null, fn ($q, $date) => $q->whereDate('created_at', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($q, $date) => $q->whereDate('created_at', '<=', $date))
+            ->with([
+                'user',
+                'leavePolicy.leaveType',
+                'processes' => fn ($q) => $q->where('status', ProcessStatus::InProgress)
+                    ->with(['steps.procedureSettingStep', 'steps.assignedUser']),
+            ])
+            ->orderByDesc('created_at')
+            ->get();
     }
 
     /**

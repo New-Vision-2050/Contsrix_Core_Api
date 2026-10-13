@@ -1,0 +1,14 @@
+{
+    "name": "AdvancePolicy",
+    "alias": "advancepolicy",
+    "description": "Salary advance (سلفة) policies — settings form, no types",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Advance\\AdvancePolicy\\Providers\\AdvancePolicyServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Advance"
+}

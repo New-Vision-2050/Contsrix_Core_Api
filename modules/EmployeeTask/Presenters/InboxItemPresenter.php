@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\EmployeeTask\Presenters;
 
+use Modules\Advance\AdvanceRequest\Models\AdvanceRequest;
+use Modules\Attendance\Models\LeaveRequest;
 use Modules\Attendance\Support\HoursFormatter;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskEndRequest;
@@ -170,6 +172,70 @@ final class InboxItemPresenter
         ];
     }
 
+    /**
+     * Pending leave request (الإجازة) in the unified inbox shape.
+     * Expects: user, leavePolicy.leaveType, processes.steps(.procedureSettingStep/.assignedUser).
+     */
+    public static function fromLeaveRequest(LeaveRequest $leaveRequest): array
+    {
+        $locale  = app()->getLocale();
+        $policy  = $leaveRequest->relationLoaded('leavePolicy') ? $leaveRequest->leavePolicy : null;
+        $leaveType = $policy && $policy->relationLoaded('leaveType') ? $policy->leaveType : null;
+
+        return [
+            'id'            => $leaveRequest->id,
+            'type'          => 'leave_request',
+            'type_label'    => $locale === 'ar' ? 'طلب إجازة' : 'Leave Request',
+            'category'      => 'leave',
+            'category_label' => $locale === 'ar' ? 'إجازة' : 'Leave',
+            'task'          => null,
+            'employee'      => self::employee($leaveRequest->relationLoaded('user') ? $leaveRequest->user : null),
+            'status'        => $leaveRequest->status,
+            'current_step'  => self::stepFromProcess($leaveRequest),
+            'duration_hours' => null,
+            'summary'       => [
+                'leave_policy'   => $policy?->name,
+                'leave_type'     => $leaveType?->name,
+                'start_date'     => $leaveRequest->start_date?->format('Y-m-d'),
+                'end_date'       => $leaveRequest->end_date?->format('Y-m-d'),
+                'total_days'     => $leaveRequest->total_days,
+                'is_emergency'   => (bool) $leaveRequest->is_emergency,
+                'reason'         => $leaveRequest->reason,
+            ],
+            'created_at' => $leaveRequest->created_at?->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    /**
+     * Pending advance request (السلفة) in the unified inbox shape.
+     * Expects: user, advancePolicy, processes.steps(.procedureSettingStep/.assignedUser).
+     */
+    public static function fromAdvanceRequest(AdvanceRequest $advanceRequest): array
+    {
+        $locale = app()->getLocale();
+        $policy = $advanceRequest->relationLoaded('advancePolicy') ? $advanceRequest->advancePolicy : null;
+
+        return [
+            'id'            => $advanceRequest->id,
+            'type'          => 'advance_request',
+            'type_label'    => $locale === 'ar' ? 'طلب سلفة' : 'Advance Request',
+            'category'      => 'advance',
+            'category_label' => $locale === 'ar' ? 'سلفة' : 'Advance',
+            'task'          => null,
+            'employee'      => self::employee($advanceRequest->relationLoaded('user') ? $advanceRequest->user : null),
+            'status'        => $advanceRequest->status,
+            'current_step'  => self::stepFromProcess($advanceRequest),
+            'duration_hours' => null,
+            'summary'       => [
+                'advance_policy' => $policy?->name,
+                'amount'         => (float) $advanceRequest->amount,
+                'installments'   => $advanceRequest->installments,
+                'reason'         => $advanceRequest->reason,
+            ],
+            'created_at' => $advanceRequest->created_at?->format('Y-m-d H:i:s'),
+        ];
+    }
+
     // ─── helpers ─────────────────────────────────────────────────────────────
 
     private static function taskSummary(EmployeeTaskRequest $task): array
@@ -212,9 +278,13 @@ final class InboxItemPresenter
         ];
     }
 
-    private static function stepFromProcess(EmployeeTaskRequest $task): ?array
+    /**
+     * Current pending step block for any processable model (task, leave,
+     * advance…) that has the centralized `processes` morphMany relation loaded.
+     */
+    private static function stepFromProcess($model): ?array
     {
-        if (!$task->relationLoaded('processes')) {
+        if (!$model->relationLoaded('processes')) {
             return [
                 'id'            => null,
                 'name'          => null,
@@ -224,7 +294,7 @@ final class InboxItemPresenter
             ];
         }
 
-        $process = $task->processes->first(fn ($p) => $p->status->value === 'in_progress');
+        $process = $model->processes->first(fn ($p) => $p->status->value === 'in_progress');
         if (!$process || !$process->relationLoaded('steps')) {
             return [
                 'id'            => null,
