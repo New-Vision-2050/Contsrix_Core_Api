@@ -312,8 +312,11 @@ class UserLeavePolicyService
                 $schedule,
             );
 
+            // NB: LeaveRequest casts ids via UuidCast (Ramsey UuidInterface objects) —
+            // normalize to string before using the id as an array offset.
+            $policyId = (string) $request->leave_policy_id;
             $bucket = $request->status === LeaveRequest::STATUS_APPROVED ? 'approved' : 'pending';
-            $usage[$request->leave_policy_id][$bucket] = ($usage[$request->leave_policy_id][$bucket] ?? 0) + $days;
+            $usage[$policyId][$bucket] = ($usage[$policyId][$bucket] ?? 0) + $days;
         }
 
         return $usage;
