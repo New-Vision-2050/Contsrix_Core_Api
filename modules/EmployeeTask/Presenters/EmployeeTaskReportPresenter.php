@@ -7,6 +7,7 @@ namespace Modules\EmployeeTask\Presenters;
 use Modules\Attendance\Support\HoursFormatter;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\Process\Enums\ProcessStatus;
 use Modules\Process\Models\Process;
 use Modules\User\Models\User;
 
@@ -286,6 +287,15 @@ final class EmployeeTaskReportPresenter
         ];
 
         return $labels[$type][$locale] ?? $labels[$type]['en'] ?? $type;
+    }
+
+    private function processStatusLabel(Process $process): string
+    {
+        return match ($process->status) {
+            ProcessStatus::Completed => 'approved',
+            ProcessStatus::Failed    => 'rejected',
+            default                  => 'pending',
+        };
     }
 
     private function requestStatusLabel(string $status, string $locale): string
