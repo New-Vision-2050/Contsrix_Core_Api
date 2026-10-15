@@ -19,6 +19,7 @@ use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\User\Database\Seeders\GenaralAdminSeedTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
+use Modules\Leave\LeaveRequest\Database\Seeders\AssignDefaultLeavePolicySeeder;
 use Modules\Leave\LeaveType\Database\Seeders\LeaveTypeBranchSeeder;
 use Modules\WebsiteCMS\WebsiteContactInfo\Database\Seeders\WebsiteContactInfoSeeder;
 use Modules\WebsiteCMS\WebsiteOurService\Database\Seeders\WebsiteOurServiceSeeder;
@@ -47,6 +48,11 @@ class TenantDatabaseSeeder extends Seeder
 //        $this->call(CompanyModulesSeederTableSeeder::class);
         $this->call(GenaralAdminSeedTableSeeder::class);
 
+        // Sync ALL config permission keys (config/permissions + modules/*‎/Config/permissions.php)
+        // into the tenant DB and grant them to super-admin/admin roles. Idempotent
+        // (firstOrCreate + syncPermissions), safe to re-run when new keys are added.
+        $this->call(\Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder::class);
+
         $this->call(CompanyPackageAssignmentSeeder::class);
 
         // Set default storage limit for archive library (1000 MB for files, 1000 folders)
@@ -64,6 +70,8 @@ class TenantDatabaseSeeder extends Seeder
 
         // Create default Annual Year leave policy for new companies
         $this->call(LeavePolicySeeder::class);
+        // Assign the default 21-day leave policy to every user of the company
+        $this->call(AssignDefaultLeavePolicySeeder::class);
         $this->call(DocumentTypeSeederTableSeeder::class);
 
         $this->call(DefaultNotificationSettingsSeeder::class);
