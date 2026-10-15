@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Leave\LeaveRequest\Controllers\AdminLeaveRequestInboxController;
+use Modules\RoleAndPermission\Enums\Permission;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +15,13 @@ use Modules\Leave\LeaveRequest\Controllers\AdminLeaveRequestInboxController;
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/inbox', [AdminLeaveRequestInboxController::class, 'inbox']);
     Route::get('/inbox-counts', [AdminLeaveRequestInboxController::class, 'inboxCounts']);
+
+    // Company-wide report (all requests + workflow detail). Permission-gated,
+    // unlike the approver inbox above.
+    Route::get('/report', [AdminLeaveRequestInboxController::class, 'report'])
+        ->permission(Permission::LEAVE_REQUEST_LIST());
+    Route::get('/report/{id}', [AdminLeaveRequestInboxController::class, 'reportShow'])
+        ->permission(Permission::LEAVE_REQUEST_VIEW());
     Route::patch('/{id}/approve', [AdminLeaveRequestInboxController::class, 'approve']);
     Route::patch('/{id}/reject', [AdminLeaveRequestInboxController::class, 'reject']);
 });
