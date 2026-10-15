@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Advance\AdvanceRequest\Controllers\AdminAdvanceRequestInboxController;
+use Modules\RoleAndPermission\Enums\Permission;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +15,13 @@ use Modules\Advance\AdvanceRequest\Controllers\AdminAdvanceRequestInboxControlle
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/inbox', [AdminAdvanceRequestInboxController::class, 'inbox']);
     Route::get('/inbox-counts', [AdminAdvanceRequestInboxController::class, 'inboxCounts']);
+
+    // Company-wide report (all requests + workflow detail). Permission-gated,
+    // unlike the approver inbox above.
+    Route::get('/report', [AdminAdvanceRequestInboxController::class, 'report'])
+        ->permission(Permission::ADVANCE_REQUEST_LIST());
+    Route::get('/report/{id}', [AdminAdvanceRequestInboxController::class, 'reportShow'])
+        ->permission(Permission::ADVANCE_REQUEST_VIEW());
     Route::patch('/{id}/approve', [AdminAdvanceRequestInboxController::class, 'approve']);
     Route::patch('/{id}/reject', [AdminAdvanceRequestInboxController::class, 'reject']);
 });

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Modules\Advance\AdvanceRequest\Presenters\AdvanceRequestReportPresenter;
 use Modules\Advance\AdvanceRequest\Requests\AdminRejectAdvanceRequestRequest;
 use Modules\Advance\AdvanceRequest\Services\AdvanceRequestService;
 use Modules\EmployeeTask\Presenters\InboxItemPresenter;
@@ -67,6 +68,42 @@ class AdminAdvanceRequestInboxController extends Controller
             'pending_advance_requests' => $count,
             'total' => $count,
         ], message: 'Advance inbox counts retrieved successfully');
+    }
+
+    /**
+     * Company-wide advance report table (every request, not only the caller's inbox).
+     */
+    public function report(): JsonResponse
+    {
+        $filters = request()->only(['user_id', 'status', 'advance_policy_id', 'date_from', 'date_to', 'search', 'page']);
+        $perPage = (int) request()->input('per_page', 15);
+
+        $paginator = $this->advanceRequestService->reportList($filters, $perPage);
+
+        return Json::items(
+            mainItems: AdvanceRequestReportPresenter::rows($paginator->items()),
+            paginationSettings: [
+                'page' => $paginator->currentPage(),
+                'next_page' => min($paginator->currentPage() + 1, $paginator->lastPage()),
+                'last_page' => $paginator->lastPage(),
+                'result_count' => $paginator->total(),
+            ],
+            message: 'Advance request report retrieved successfully',
+        );
+    }
+
+    /**
+     * One advance request with the full workflow: every step, who was allowed
+     * to act, and who actually approved or rejected it.
+     */
+    public function reportShow(string $id): JsonResponse
+    {
+        $advanceRequest = $this->advanceRequestService->reportDetail($id);
+
+        return Json::item(
+            AdvanceRequestReportPresenter::detail($advanceRequest),
+            message: 'Advance request report detail retrieved successfully',
+        );
     }
 
     /**

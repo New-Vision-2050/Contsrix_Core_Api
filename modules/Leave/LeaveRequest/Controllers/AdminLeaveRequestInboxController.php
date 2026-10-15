@@ -9,6 +9,7 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\EmployeeTask\Presenters\InboxItemPresenter;
+use Modules\Leave\LeaveRequest\Presenters\LeaveRequestReportPresenter;
 use Modules\Leave\LeaveRequest\Requests\AdminRejectLeaveRequestRequest;
 use Modules\Leave\LeaveRequest\Services\LeaveRequestService;
 
@@ -67,6 +68,42 @@ class AdminLeaveRequestInboxController extends Controller
             'pending_leave_requests' => $count,
             'total' => $count,
         ], message: 'Leave inbox counts retrieved successfully');
+    }
+
+    /**
+     * Company-wide leave report table (every request, not only the caller's inbox).
+     */
+    public function report(): JsonResponse
+    {
+        $filters = request()->only(['user_id', 'status', 'leave_policy_id', 'date_from', 'date_to', 'search', 'page']);
+        $perPage = (int) request()->input('per_page', 15);
+
+        $paginator = $this->leaveRequestService->reportList($filters, $perPage);
+
+        return Json::items(
+            mainItems: LeaveRequestReportPresenter::rows($paginator->items()),
+            paginationSettings: [
+                'page' => $paginator->currentPage(),
+                'next_page' => min($paginator->currentPage() + 1, $paginator->lastPage()),
+                'last_page' => $paginator->lastPage(),
+                'result_count' => $paginator->total(),
+            ],
+            message: 'Leave request report retrieved successfully',
+        );
+    }
+
+    /**
+     * One leave request with the full workflow: every step, who was allowed
+     * to act, and who actually approved or rejected it.
+     */
+    public function reportShow(string $id): JsonResponse
+    {
+        $leaveRequest = $this->leaveRequestService->reportDetail($id);
+
+        return Json::item(
+            LeaveRequestReportPresenter::detail($leaveRequest),
+            message: 'Leave request report detail retrieved successfully',
+        );
     }
 
     /**

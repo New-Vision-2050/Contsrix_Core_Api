@@ -86,6 +86,21 @@ class AdvanceRequest extends Model implements Auditable
         return $this->belongsTo(AdvancePolicy::class, 'advance_policy_id');
     }
 
+    public function requester(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'requested_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function rejector(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
+    }
+
     /**
      * Workflow processes attached to this request (polymorphic).
      */

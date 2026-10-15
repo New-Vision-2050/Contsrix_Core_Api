@@ -142,6 +142,59 @@ class AdvanceRequestService
             ->paginate($perPage, ['*'], 'page', (int) ($filters['page'] ?? 1));
     }
 
+    /**
+     * Paginated company report (dashboard table). Same role as
+     * admin/employee-tasks/report — every request, not only the caller's inbox.
+     */
+    public function reportList(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        $perPage = max(1, min(100, $perPage));
+
+        return AdvanceRequest::query()
+            ->when($filters['user_id'] ?? null, fn ($q, $id) => $q->where('user_id', $id))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
+            ->when($filters['advance_policy_id'] ?? null, fn ($q, $id) => $q->where('advance_policy_id', $id))
+            ->when($filters['date_from'] ?? null, fn ($q, $date) => $q->whereDate('created_at', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($q, $date) => $q->whereDate('created_at', '<=', $date))
+            ->when($filters['search'] ?? null, function ($q, $search) {
+                $q->where(function ($q) use ($search) {
+                    $q->where('reason', 'like', '%' . $search . '%')
+                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', '%' . $search . '%'));
+                });
+            })
+            ->with([
+                'user',
+                'advancePolicy',
+                'processes.steps.procedureSettingStep',
+                'processes.steps.assignedUser',
+                'processes.steps.actionByUser',
+                'processes.procedureSetting',
+            ])
+            ->orderByDesc('created_at')
+            ->paginate($perPage, ['*'], 'page', max(1, (int) ($filters['page'] ?? 1)));
+    }
+
+    /**
+     * Full report detail: request fields + every workflow process and the
+     * action taken on each step (who, when, approve/reject).
+     */
+    public function reportDetail(string $id): AdvanceRequest
+    {
+        return AdvanceRequest::query()
+            ->with([
+                'user',
+                'requester',
+                'approver',
+                'rejector',
+                'advancePolicy',
+                'processes.steps.procedureSettingStep',
+                'processes.steps.assignedUser',
+                'processes.steps.actionByUser',
+                'processes.procedureSetting',
+            ])
+            ->findOrFail($id);
+    }
+
     public function getById(string $id): AdvanceRequest
     {
         return AdvanceRequest::query()
