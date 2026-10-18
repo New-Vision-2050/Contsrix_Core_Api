@@ -24,6 +24,8 @@ class LeavePolicyPresenter extends AbstractPresenter
             'leave_type_id' => $this->leavePolicy->leave_type_id,
             'leave_type_name' => $this->leavePolicy->leaveType->name ?? null,
             'is_deduct_from_balance' => $this->leavePolicy->leaveType->is_deduct_from_balance ?? null,
+            'leave_category_id' => $this->leavePolicy->leave_category_id,
+            'leave_category_name' => $this->leavePolicy->leaveCategory->name ?? null,
             'max_balance_days' => $this->leavePolicy->max_balance_days,
             'total_days' => $this->leavePolicy->total_days,
             'min_notice_days' => $this->leavePolicy->min_notice_days,

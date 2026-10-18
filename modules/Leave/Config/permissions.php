@@ -16,6 +16,13 @@ return [
 //        'LEAVE_TYPE_ACTIVATE' => 'human-resources.settings*leave-type.activate',
         'LEAVE_TYPE_EXPORT' => 'human-resources.settings*leave-type.export',
 
+        // Leave Policy Category Management
+        'LEAVE_POLICY_CATEGORY_LIST' => 'human-resources.settings*leave-policy-category.list',
+        'LEAVE_POLICY_CATEGORY_VIEW' => 'human-resources.settings*leave-policy-category.view',
+        'LEAVE_POLICY_CATEGORY_CREATE' => 'human-resources.settings*leave-policy-category.create',
+        'LEAVE_POLICY_CATEGORY_UPDATE' => 'human-resources.settings*leave-policy-category.update',
+        'LEAVE_POLICY_CATEGORY_DELETE' => 'human-resources.settings*leave-policy-category.delete',
+
         // Leave Policy Management
         'LEAVE_POLICY_LIST' => 'human-resources.settings*leave-policy.list',
         'LEAVE_POLICY_VIEW' => 'human-resources.settings*leave-policy.view',

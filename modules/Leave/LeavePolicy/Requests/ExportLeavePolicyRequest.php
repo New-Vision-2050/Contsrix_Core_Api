@@ -22,6 +22,7 @@ class ExportLeavePolicyRequest extends FormRequest
             'total_days' => ['sometimes', 'integer', 'min:0'],
             'day_calculation_type' => ['sometimes', 'string', 'in:work_day,calendar'],
             'leave_type_id' => ['sometimes', 'uuid', 'exists:leave_types,id'],
+            'leave_category_id' => ['sometimes', 'uuid', 'exists:leave_policy_categories,id'],
             'ids' => ['sometimes', 'array'],
             'ids.*' => ['uuid', 'exists:leave_policies,id'],
         ];
@@ -39,6 +40,7 @@ class ExportLeavePolicyRequest extends FormRequest
             'total_days' => $this->get('total_days'),
             'day_calculation_type' => $this->get('day_calculation_type'),
             'leave_type_id' => $this->get('leave_type_id'),
+            'leave_category_id' => $this->get('leave_category_id'),
             'ids' => $this->get('ids'),
         ]);
     }

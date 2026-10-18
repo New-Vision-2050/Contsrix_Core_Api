@@ -11,6 +11,7 @@ class UpdateLeavePolicyCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
+        private ?string $leave_category_id = null,
         private ?int $max_balance_days = null,
         private ?int $total_days = null,
         private ?int $min_notice_days = null,
@@ -34,6 +35,11 @@ class UpdateLeavePolicyCommand
     public function getName(): string
     {
         return $this->name;
+    }
+
+    public function getLeaveCategoryId(): ?string
+    {
+        return $this->leave_category_id;
     }
 
     public function getMaxBalanceDays(): ?int
@@ -98,7 +104,7 @@ class UpdateLeavePolicyCommand
 
     public function toArray(): array
     {
-        return [
+        $data = [
             'name' => $this->name,
             'max_balance_days' => $this->max_balance_days,
             'total_days' => $this->total_days,
@@ -113,5 +119,11 @@ class UpdateLeavePolicyCommand
             'allow_exceed_balance' => $this->allow_exceed_balance,
             'max_days' => $this->max_days,
         ];
+
+        if ($this->leave_category_id !== null) {
+            $data['leave_category_id'] = $this->leave_category_id;
+        }
+
+        return $data;
     }
 }

@@ -21,6 +21,7 @@ class UpdateLeavePolicyRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255|unique:leave_policies,name,' . $this->route('id') . ',id,company_id,' . tenant('id'),
+            'leave_category_id' => 'sometimes|required|uuid|exists:leave_policy_categories,id,company_id,' . tenant('id'),
             'max_balance_days' => 'nullable|integer|min:0',
             'total_days' => 'nullable|integer|min:0',
             'min_notice_days' => 'nullable|integer|min:0',
@@ -54,6 +55,9 @@ class UpdateLeavePolicyRequest extends FormRequest
             'name.required' => __('leave.leave_policy.name.required'),
             'name.string' => __('leave.leave_policy.name.string'),
             'name.max' => __('leave.leave_policy.name.max'),
+            'leave_category_id.required' => __('leave.leave_policy.leave_category_id.required'),
+            'leave_category_id.uuid' => __('leave.leave_policy.leave_category_id.uuid'),
+            'leave_category_id.exists' => __('leave.leave_policy.leave_category_id.exists'),
             'max_balance_days.integer' => __('leave.leave_policy.max_balance_days.integer'),
             'max_balance_days.min' => __('leave.leave_policy.max_balance_days.min'),
             'total_days.integer' => __('leave.leave_policy.total_days.integer'),
@@ -79,6 +83,7 @@ class UpdateLeavePolicyRequest extends FormRequest
         return new UpdateLeavePolicyCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
+            leave_category_id: $this->get('leave_category_id'),
             max_balance_days: $this->get('max_balance_days'),
             total_days: $this->get('total_days'),
             min_notice_days: $this->get('min_notice_days'),

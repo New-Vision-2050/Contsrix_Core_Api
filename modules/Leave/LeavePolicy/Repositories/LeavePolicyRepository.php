@@ -29,7 +29,7 @@ class LeavePolicyRepository extends BaseRepository
 
     public function getLeavePolicy(UuidInterface $id): LeavePolicy
     {
-        return $this->model->with('leaveType')
+        return $this->model->with(['leaveType', 'leaveCategory'])
             ->where('id', $id->toString())
             ->firstOrFail();
     }
@@ -77,6 +77,10 @@ class LeavePolicyRepository extends BaseRepository
         // Apply leave_type_id filter if provided
         if (!empty($filters['leave_type_id'])) {
             $query->where('leave_type_id', $filters['leave_type_id']);
+        }
+
+        if (!empty($filters['leave_category_id'])) {
+            $query->where('leave_category_id', $filters['leave_category_id']);
         }
 
         // Apply specific IDs filter if provided

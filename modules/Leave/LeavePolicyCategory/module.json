@@ -1,0 +1,14 @@
+{
+    "name": "LeavePolicyCategory",
+    "alias": "leavepolicycategory",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Leave\\LeavePolicyCategory\\Providers\\LeavePolicyCategoryServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Leave"
+}

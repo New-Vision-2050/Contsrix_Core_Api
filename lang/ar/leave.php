@@ -62,8 +62,23 @@ return [
         ],
     ],
 
+    // LeavePolicyCategory validation messages
+    'leave_policy_category' => [
+        'name' => [
+            'required' => 'اسم التصنيف مطلوب.',
+            'string' => 'يجب أن يكون اسم التصنيف نص.',
+            'max' => 'يجب ألا يتجاوز اسم التصنيف 255 حرف.',
+            'unique' => 'اسم التصنيف مستخدم من قبل.',
+        ],
+    ],
+
     // LeavePolicy validation messages
     'leave_policy' => [
+        'leave_category_id' => [
+            'required' => 'تصنيف سياسة الإجازة مطلوب.',
+            'uuid' => 'يجب أن يكون تصنيف سياسة الإجازة UUID صالح.',
+            'exists' => 'تصنيف سياسة الإجازة المحدد غير موجود.',
+        ],
         'name' => [
             'required' => 'اسم سياسة الإجازة مطلوب.',
             'string' => 'يجب أن يكون اسم سياسة الإجازة نص.',

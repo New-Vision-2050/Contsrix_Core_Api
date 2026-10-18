@@ -62,8 +62,23 @@ return [
         ],
     ],
 
+    // LeavePolicyCategory validation messages
+    'leave_policy_category' => [
+        'name' => [
+            'required' => 'The category name is required.',
+            'string' => 'The category name must be a string.',
+            'max' => 'The category name must not exceed 255 characters.',
+            'unique' => 'The category name has already been taken.',
+        ],
+    ],
+
     // LeavePolicy validation messages
     'leave_policy' => [
+        'leave_category_id' => [
+            'required' => 'The leave policy category is required.',
+            'uuid' => 'The leave policy category must be a valid UUID.',
+            'exists' => 'The selected leave policy category does not exist.',
+        ],
         'name' => [
             'required' => 'The leave policy name is required.',
             'string' => 'The leave policy name must be a string.',
