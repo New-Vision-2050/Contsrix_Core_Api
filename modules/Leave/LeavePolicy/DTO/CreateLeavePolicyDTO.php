@@ -11,6 +11,7 @@ class CreateLeavePolicyDTO
     public function __construct(
         public readonly string $name,
         public readonly UuidInterface $leave_type_id,
+        public readonly UuidInterface $leave_category_id,
         public readonly ?int $max_balance_days = null,
         public readonly ?int $total_days = null,
         public readonly ?int $min_notice_days = null,
@@ -31,6 +32,7 @@ class CreateLeavePolicyDTO
         return [
             'name' => $this->name,
             'leave_type_id' => $this->leave_type_id->toString(),
+            'leave_category_id' => $this->leave_category_id->toString(),
             'max_balance_days' => $this->max_balance_days,
             'total_days' => $this->total_days,
             'min_notice_days' => $this->min_notice_days,
@@ -55,6 +57,11 @@ class CreateLeavePolicyDTO
     public function getLeaveTypeId(): UuidInterface
     {
         return $this->leave_type_id;
+    }
+
+    public function getLeaveCategoryId(): UuidInterface
+    {
+        return $this->leave_category_id;
     }
 
     public function getMaxBalanceDays(): ?int

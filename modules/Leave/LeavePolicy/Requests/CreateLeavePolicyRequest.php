@@ -16,6 +16,7 @@ class CreateLeavePolicyRequest extends FormRequest
         return [
             'name' => 'required|string|max:255|unique:leave_policies,name,NULL,id,company_id,' . tenant('id'),
             'leave_type_id' => 'required|uuid|exists:leave_types,id,company_id,' . tenant('id'),
+            'leave_category_id' => 'required|uuid|exists:leave_policy_categories,id,company_id,' . tenant('id'),
             'max_balance_days' => 'nullable|integer|min:0',
 
             // With-balance fields (required when the selected leave type has is_deduct_from_balance = true)
@@ -77,6 +78,9 @@ class CreateLeavePolicyRequest extends FormRequest
             'leave_type_id.required' => __('leave.leave_policy.leave_type_id.required'),
             'leave_type_id.uuid' => __('leave.leave_policy.leave_type_id.uuid'),
             'leave_type_id.exists' => __('leave.leave_policy.leave_type_id.exists'),
+            'leave_category_id.required' => __('leave.leave_policy.leave_category_id.required'),
+            'leave_category_id.uuid' => __('leave.leave_policy.leave_category_id.uuid'),
+            'leave_category_id.exists' => __('leave.leave_policy.leave_category_id.exists'),
             'max_balance_days.integer' => __('leave.leave_policy.max_balance_days.integer'),
             'max_balance_days.min' => __('leave.leave_policy.max_balance_days.min'),
             'total_days.integer' => __('leave.leave_policy.total_days.integer'),
@@ -102,6 +106,7 @@ class CreateLeavePolicyRequest extends FormRequest
         return new CreateLeavePolicyDTO(
             name: $this->get('name'),
             leave_type_id: Uuid::fromString($this->get('leave_type_id')),
+            leave_category_id: Uuid::fromString($this->get('leave_category_id')),
             max_balance_days: $this->get('max_balance_days'),
             total_days: $this->get('total_days'),
             min_notice_days: $this->get('min_notice_days'),

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Leave\LeavePolicy\Database\factories\LeavePolicyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Leave\LeaveType\Models\LeaveType;
+use Modules\Leave\LeavePolicyCategory\Models\LeavePolicyCategory;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -33,6 +34,7 @@ class LeavePolicy extends Model
     protected $fillable = [
         'name',
         'leave_type_id',
+        'leave_category_id',
         'total_days',
         'max_balance_days',
         'min_notice_days',
@@ -51,6 +53,7 @@ class LeavePolicy extends Model
     protected $casts = [
         'id' => 'string',
         'leave_type_id' => 'string',
+        'leave_category_id' => 'string',
         'total_days' => 'integer',
         'max_balance_days' => 'integer',
         'min_notice_days' => 'integer',
@@ -69,5 +72,10 @@ class LeavePolicy extends Model
     public function leaveType(): BelongsTo
     {
         return $this->belongsTo(LeaveType::class, 'leave_type_id');
+    }
+
+    public function leaveCategory(): BelongsTo
+    {
+        return $this->belongsTo(LeavePolicyCategory::class, 'leave_category_id');
     }
 }
