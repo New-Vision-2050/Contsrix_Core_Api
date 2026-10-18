@@ -11,6 +11,7 @@ use Modules\Attendance\Support\ScheduledWorkDays;
 use Modules\Leave\LeavePolicy\Models\LeavePolicy;
 use Modules\Leave\LeaveRequest\Models\UserLeavePolicy;
 use Modules\User\Models\User;
+use Modules\UserInfo\EmploymentContract\Models\EmploymentContract;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -71,6 +72,111 @@ class UserLeavePolicyService
     }
 
     /**
+     * Make the user's assignments exactly the policies of the given category.
+     * A null category removes the category-based assignments. The company default
+     * policy (is_default) is never removed.
+     */
+    public function syncCategoryForUser(string $userId, ?string $categoryId, ?string $assignedBy = null): void
+    {
+        $companyId = (string) tenant('id');
+
+        $policyIds = $categoryId === null
+            ? []
+            : LeavePolicy::query()
+                ->where('company_id', $companyId)
+                ->where('leave_category_id', $categoryId)
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id)
+                ->all();
+
+        UserLeavePolicy::query()
+            ->where('user_id', $userId)
+            ->where('company_id', $companyId)
+            ->where('is_default', false)
+            ->whereNotIn('leave_policy_id', $policyIds)
+            ->delete();
+
+        foreach ($policyIds as $policyId) {
+            UserLeavePolicy::query()->firstOrCreate(
+                [
+                    'user_id' => $userId,
+                    'leave_policy_id' => $policyId,
+                ],
+                [
+                    'id' => Uuid::uuid4()->toString(),
+                    'company_id' => $companyId,
+                    'assigned_by' => $assignedBy,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Ids of the users whose employment contract uses any of the given categories.
+     *
+     * @param list<string|null> $categoryIds
+     * @return list<string>
+     */
+    public function userIdsForCategories(array $categoryIds): array
+    {
+        $categoryIds = array_values(array_unique(array_filter($categoryIds)));
+
+        if ($categoryIds === []) {
+            return [];
+        }
+
+        $globalIds = EmploymentContract::query()
+            ->where('company_id', (string) tenant('id'))
+            ->whereIn('leave_category_id', $categoryIds)
+            ->pluck('global_id')
+            ->all();
+
+        if ($globalIds === []) {
+            return [];
+        }
+
+        return User::query()
+            ->where('company_id', (string) tenant('id'))
+            ->whereIn('global_company_user_id', $globalIds)
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+    }
+
+    /**
+     * Re-sync each user to the category currently set on their employment contract.
+     *
+     * @param list<string> $userIds
+     */
+    public function resyncUsersFromContracts(array $userIds, ?string $assignedBy = null): void
+    {
+        if ($userIds === []) {
+            return;
+        }
+
+        $users = User::query()->whereIn('id', $userIds)->get(['id', 'company_id', 'global_company_user_id']);
+        $contracts = EmploymentContract::query()
+            ->where('company_id', (string) tenant('id'))
+            ->whereIn('global_id', $users->pluck('global_company_user_id')->all())
+            ->pluck('leave_category_id', 'global_id');
+
+        foreach ($users as $user) {
+            $categoryId = $contracts[(string) $user->global_company_user_id] ?? null;
+            $this->syncCategoryForUser((string) $user->id, $categoryId ? (string) $categoryId : null, $assignedBy);
+        }
+    }
+
+    /**
+     * Re-sync every user whose contract category is one of the given categories.
+     *
+     * @param list<string|null> $categoryIds
+     */
+    public function resyncUsersOfCategories(array $categoryIds, ?string $assignedBy = null): void
+    {
+        $this->resyncUsersFromContracts($this->userIdsForCategories($categoryIds), $assignedBy);
+    }
+
+    /**
      * The user's assigned policies with live balance for the given (or current) year.
      *
      * @return list<array{assignment: UserLeavePolicy, policy: LeavePolicy, balance: array}>
@@ -80,7 +186,7 @@ class UserLeavePolicyService
         $year = $year ?? (int) now()->year;
 
         $assignments = UserLeavePolicy::query()
-            ->with(['leavePolicy.leaveType'])
+            ->with(['leavePolicy.leaveType', 'leavePolicy.leaveCategory'])
             ->where('user_id', (string) $user->id)
             ->get()
             ->filter(fn (UserLeavePolicy $assignment) => $assignment->leavePolicy !== null)

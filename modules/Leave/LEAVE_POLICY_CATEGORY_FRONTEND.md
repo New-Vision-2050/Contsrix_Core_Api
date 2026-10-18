@@ -81,6 +81,23 @@ They are `null` for old policies created before this change.
 ### Export
 `POST /api/v1/leave-policies/export` accepts an optional `leave_category_id` filter.
 
+## 2b. Employment contract – leave category (automatic assignment)
+
+`POST /api/v1/employment_contracts` (multipart) accepts optional `leave_category_id` (uuid|null, must exist in the company's categories; error: "The leave policy category is invalid."). Sending it empty clears the category; omitting it leaves it unchanged.
+
+`GET /employment_contracts/user/{userId}` and the POST response now include:
+```json
+{ "leave_category_id": "uuid|null", "leave_category": { "id": "uuid", "name": "Annual Leaves" } }
+```
+(`leave_category` is `null` when not set.)
+
+Backend behavior:
+- When `leave_category_id` is sent, the user's leave policies are synced to all policies of that category (missing ones added, others removed). Clearing the category removes the category-based assignments. The company default policy (`is_default = 1`) is never removed.
+- Re-sync also happens automatically when a policy is created, when a policy's `leave_category_id` changes, and when a category is deleted.
+- `GET /users/{id}/leave-policies?year=` is unchanged and rows now also include `leave_category_id` and `leave_category_name`.
+- `PUT /users/{id}/leave-policies` is no longer used by the frontend (still available, deprecated).
+- `GET /leave-policy-categories` is also allowed for users with the contract update permission (`PROFILE_CONTRACT_WORK_UPDATE`).
+
 ## 3. UI to-do
 - Add a **Leave Policy Categories** settings page (list, create, edit, delete).
 - Add a **Category** dropdown to the Leave Policy form (source: `GET /leave-policy-categories`), required on create.

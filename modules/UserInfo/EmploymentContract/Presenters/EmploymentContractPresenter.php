@@ -40,6 +40,12 @@ class EmploymentContractPresenter extends AbstractPresenter
             'country_id' => $this->employmentContract->country_id,
             'country_name' => $this->employmentContract?->country?->name??null,
 
+            'leave_category_id' => $this->employmentContract->leave_category_id,
+            'leave_category' => $this->employmentContract->leaveCategory ? [
+                'id' => $this->employmentContract->leaveCategory->id,
+                'name' => $this->employmentContract->leaveCategory->name,
+            ] : null,
+
             'latitude' => $this->employmentContract->latitude,
             'longitude' => $this->employmentContract->longitude,
             'files' => MediaPresenter::collection($this->employmentContract->getMedia('upload_employment_contracts')),

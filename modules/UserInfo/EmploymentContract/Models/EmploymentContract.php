@@ -9,6 +9,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Country\Models\Country;
+use Modules\Leave\LeavePolicyCategory\Models\LeavePolicyCategory;
 use Modules\Shared\NatureWork\Models\NatureWork;
 use Modules\Shared\RightTerminate\Models\RightTerminate;
 use Modules\Shared\TimeUnit\Models\TimeUnit;
@@ -58,6 +59,7 @@ class EmploymentContract extends Model implements HasMedia
         'contract_duration_unit',
         'notice_period_unit',
         'probation_period_unit',
+        'leave_category_id',
     ];
 
     protected $casts = [
@@ -76,6 +78,11 @@ class EmploymentContract extends Model implements HasMedia
     public function country()
     {
         return $this->belongsTo(Country::class);
+    }
+
+    public function leaveCategory()
+    {
+        return $this->belongsTo(LeavePolicyCategory::class, 'leave_category_id');
     }
 
     public function natureWork()

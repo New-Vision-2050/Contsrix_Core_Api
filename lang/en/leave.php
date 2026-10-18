@@ -136,6 +136,13 @@ return [
         ],
     ],
 
+    // EmploymentContract leave category messages
+    'employment_contract' => [
+        'leave_category_id' => [
+            'invalid' => 'The leave policy category is invalid.',
+        ],
+    ],
+
     // Export validation messages
     'export' => [
         'format' => [

@@ -32,6 +32,8 @@ class UserLeavePolicyPresenter extends AbstractPresenter
             'name' => $policy->name,
             'is_default' => $assignment->is_default ? 1 : 0,
             'assigned_at' => $assignment->created_at?->toDateTimeString(),
+            'leave_category_id' => $policy->leave_category_id,
+            'leave_category_name' => $policy->leaveCategory?->name,
             'leave_type_id' => (string) $policy->leave_type_id,
             'leave_type_name' => $policy->leaveType?->name,
             'requires_attachment' => (int) ($policy->leaveType?->requires_attachment ?? 0),

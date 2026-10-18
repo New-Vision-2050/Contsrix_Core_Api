@@ -136,6 +136,13 @@ return [
         ],
     ],
 
+    // EmploymentContract leave category messages
+    'employment_contract' => [
+        'leave_category_id' => [
+            'invalid' => 'تصنيف سياسة الإجازة غير صالح.',
+        ],
+    ],
+
     // Export validation messages
     'export' => [
         'format' => [

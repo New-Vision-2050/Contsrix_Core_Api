@@ -33,9 +33,18 @@ class CreateEmploymentContractRequest extends FormRequest
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'right_terminate_id' => 'nullable|string',
+            'leave_category_id' => 'nullable|uuid|exists:leave_policy_categories,id,company_id,' . tenant('id'),
 
             'file' => 'nullable|array',
             'file.*' => 'nullable',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'leave_category_id.uuid' => __('leave.employment_contract.leave_category_id.invalid'),
+            'leave_category_id.exists' => __('leave.employment_contract.leave_category_id.invalid'),
         ];
     }
 
@@ -64,6 +73,9 @@ class CreateEmploymentContractRequest extends FormRequest
             contract_duration_unit: $this->get('contract_duration_unit'),
             notice_period_unit: $this->get('notice_period_unit'),
             probation_period_unit: $this->get('probation_period_unit'),
+
+            leave_category_id: $this->get('leave_category_id') ?: null,
+            leave_category_provided: $this->has('leave_category_id'),
         );
     }
 }
