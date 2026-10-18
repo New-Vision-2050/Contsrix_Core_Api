@@ -8,6 +8,7 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Modules\Leave\LeaveRequest\Services\UserLeavePolicyService;
 use Modules\User\Repositories\UserRepository;
 
 use Modules\UserInfo\EmploymentContract\Presenters\EmploymentContractPresenter;
@@ -21,7 +22,8 @@ class EmploymentContractController extends Controller
 {
     public function __construct(
         private EmploymentContractCRUDService $employmentContractService,
-        private UserRepository $userRepository
+        private UserRepository $userRepository,
+        private UserLeavePolicyService $userLeavePolicyService,
     ) {
     }
 
@@ -60,7 +62,15 @@ class EmploymentContractController extends Controller
 
         $createdItem = $this->employmentContractService->create($createCreateEmploymentContractDTO,$request);
 
-        $presenter = new EmploymentContractPresenter($createdItem);
+        if ($createCreateEmploymentContractDTO->leave_category_provided) {
+            $this->userLeavePolicyService->syncCategoryForUser(
+                (string) $user->id,
+                $createCreateEmploymentContractDTO->leave_category_id,
+                (string) Auth::id(),
+            );
+        }
+
+        $presenter = new EmploymentContractPresenter($createdItem->refresh());
 
         return Json::item($presenter->getData());
     }

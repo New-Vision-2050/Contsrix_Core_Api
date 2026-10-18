@@ -9,18 +9,27 @@ use Modules\Leave\LeavePolicy\DTO\CreateLeavePolicyDTO;
 use Modules\Leave\LeavePolicy\DTO\UpdateRolloverAllowedDTO;
 use Modules\Leave\LeavePolicy\Models\LeavePolicy;
 use Modules\Leave\LeavePolicy\Repositories\LeavePolicyRepository;
+use Modules\Leave\LeaveRequest\Services\UserLeavePolicyService;
 use Ramsey\Uuid\UuidInterface;
 
 class LeavePolicyCRUDService
 {
     public function __construct(
         private LeavePolicyRepository $repository,
+        private UserLeavePolicyService $userLeavePolicyService,
     ) {
     }
 
     public function create(CreateLeavePolicyDTO $createLeavePolicyDTO): LeavePolicy
     {
-         return $this->repository->createLeavePolicy($createLeavePolicyDTO->toArray());
+        $policy = $this->repository->createLeavePolicy($createLeavePolicyDTO->toArray());
+
+        $this->userLeavePolicyService->resyncUsersOfCategories(
+            [$createLeavePolicyDTO->getLeaveCategoryId()->toString()],
+            (string) auth()->id()
+        );
+
+        return $policy;
     }
 
     public function list(int $page = 1, int $perPage = 10): array
