@@ -77,7 +77,7 @@ class PenaltyExceptionService
             'used'      => $used,
             'remaining' => $remaining,
             // show_exception_message: see PenaltyDayException::shouldShowMessage —
-            // first clock-in of today + last worked day penalized and undecided.
+            // before today's first clock-in + last worked day penalized and undecided.
             // message_day is the day the message is about (null when hidden).
             // can_use_exception: false once the monthly quota is exhausted, so the
             // app disables the "use exception" button and only offers "accept".
