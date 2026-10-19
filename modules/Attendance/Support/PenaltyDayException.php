@@ -59,14 +59,11 @@ final class PenaltyDayException
     }
 
     /**
-     * The استثناء اليوم message is shown once the employee has clocked in today
-     * (i.e. from his first clock-in onward), and only when his last worked day
-     * before today still carries an undecided, in-window penalty. Before the first
-     * clock-in, or once the last day is decided (or had no penalty), it stays hidden.
-     *
-     * Note: >= 1, not === 1 — flexible employees clock in/out several times a day
-     * (one row per session), so a "first row only" rule would hide the message from
-     * their second session on. The app shows it from the first clock-in until decided.
+     * The استثناء اليوم message is shown only BEFORE the employee's first clock-in
+     * today, and only when his last worked day before today still carries an
+     * undecided, in-window penalty. Once he has clocked in (any session — flexible
+     * employees clock in/out several times a day), or once the last day is decided
+     * (or had no penalty), it stays hidden, so re-clocking in never re-triggers it.
      *
      * @param int $todayClockIns attendance rows with a clock-in on today's business date
      */
@@ -76,7 +73,7 @@ final class PenaltyDayException
         bool $lastAlreadyDecided,
         bool $lastInDecisionWindow,
     ): bool {
-        return $todayClockIns >= 1
+        return $todayClockIns === 0
             && self::isPenalized($lastShiftEndMethod)
             && ! $lastAlreadyDecided
             && $lastInDecisionWindow;

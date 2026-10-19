@@ -1209,11 +1209,11 @@ day exception. The quota is `attendance.penalty_exceptions_monthly_limit`
 
 - `GET /api/v1/attendance/penalty-exceptions/current-month` — employee
   self-service status: `month`, `limit`, `used`, `remaining`, the mobile flags
-  `show_exception_message` (true from the employee's first clock-in today onward
+  `show_exception_message` (true only BEFORE the employee's first clock-in today
   when his last worked day before today is penalized, undecided and within the
   current or previous calendar month — a flexible day with several sessions
-  counts its penalized session, and later clock-ins the same day keep the
-  message visible; `message_day` carries that day, null when hidden — a manual
+  counts its penalized session; once he clocks in, the message is hidden and
+  never reappears on later clock-ins that day; `message_day` carries that day, null when hidden — a manual
   self clock-out has no penalty, so no message) and `can_use_exception`
   (false once the quota is exhausted), plus `pending_days`
   (this month's penalized rows awaiting a decision: `attendance_id`,
