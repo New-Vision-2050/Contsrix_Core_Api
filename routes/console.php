@@ -88,3 +88,10 @@ Schedule::command(\App\Console\Commands\GenerateAnnualPublicHolidaysCommand::cla
     ->timezone('Asia/Riyadh')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/public-holidays-annual.log'));
+
+// Truncate the api_request_logs table every 3 days to keep its size under control.
+Schedule::command('api-request-logs:truncate')
+    ->cron('0 0 */3 * *')
+    ->timezone('Asia/Riyadh')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/api-request-logs-truncate.log'));
