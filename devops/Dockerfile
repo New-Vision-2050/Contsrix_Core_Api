@@ -40,6 +40,17 @@ RUN echo "upload_max_filesize=500M" > /usr/local/etc/php/conf.d/uploads.ini && \
     echo "max_input_time=300" >> /usr/local/etc/php/conf.d/uploads.ini && \
     echo "output_buffering=Off" >> /usr/local/etc/php/conf.d/uploads.ini
 
+RUN { \
+    echo "opcache.enable=1"; \
+    echo "opcache.enable_cli=1"; \
+    echo "opcache.memory_consumption=256"; \
+    echo "opcache.interned_strings_buffer=32"; \
+    echo "opcache.max_accelerated_files=30000"; \
+    echo "opcache.validate_timestamps=0"; \
+    echo "realpath_cache_size=4096K"; \
+    echo "realpath_cache_ttl=600"; \
+    } > /usr/local/etc/php/conf.d/performance.ini
+
 RUN mkdir -p storage/framework/sessions && \
     mkdir -p storage/framework/views && \
     mkdir -p storage/framework/cache && \
@@ -51,7 +62,7 @@ RUN mkdir -p bootstrap/cache && \
    chmod -R 775 bootstrap/cache
 
 ## Install Laravel dependencies
-RUN composer install --no-scripts
+RUN composer install --no-scripts --optimize-autoloader
 
 # Download RoadRunner binary with retry logic and diagnostics
 RUN curl --version && \
