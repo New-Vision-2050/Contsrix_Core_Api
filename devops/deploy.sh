@@ -235,7 +235,7 @@ chmod 600 .env
 cd "$DEPLOY_DIR/devops"
 
 # Build the Docker images without using the cache
-docker compose build --no-cache
+docker compose build --no-cache --pull
 
 # Start the containers with the new unique namespace and remove any orphaned containers
 docker compose -p $DOCKER_NAMESPACE up --force-recreate --remove-orphans -d

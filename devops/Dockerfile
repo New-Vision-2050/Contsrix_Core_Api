@@ -1,20 +1,23 @@
-# Use an official PHP image with necessary extensions
-FROM mabou7agar/custom-nginx-php8-2
+# Official PHP image (always pulled at latest patch via --pull)
+FROM php:8.4-cli-bookworm
 
-# RUN docker-php-ext-install sockets \
-#     && docker-php-ext-enable sockets
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx supervisor git curl ca-certificates zip unzip \
+    libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libwebp-dev \
+    libicu-dev libonig-dev libxml2-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install -j"$(nproc)" zip gd bcmath intl exif pcntl sockets pdo_mysql mysqli opcache \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log \
+    && mkdir -p /etc/nginx/sites-enabled /var/log/nginx \
+    && rm -f /etc/nginx/sites-enabled/default \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/pear
 
-#RUN apt-get update && apt-get install -y \
-#        libmagickwand-dev --no-install-recommends \
-#    && pecl install imagick \
-#    && docker-php-ext-install sockets \
-#    && docker-php-ext-enable imagick sockets
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Install zip extension, curl, and ca-certificates for RoadRunner download
-RUN apt-get update && apt-get install -y \
-    libzip-dev zip unzip curl ca-certificates \
-    && docker-php-ext-install zip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN php -r '$v=PHP_VERSION; $min=["8.2"=>"8.2.35","8.3"=>"8.3.36","8.4"=>"8.4.27","8.5"=>"8.5.12"]; $b=PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION; if(!isset($min[$b])||version_compare($v,$min[$b],"<")){fwrite(STDERR,"Vulnerable or unsupported PHP $v (RCE CVEs). Update base image.\n");exit(1);} echo "PHP $v OK\n";'
 
 ARG CACHEBUST=1
 ## Set working directory
