@@ -21,23 +21,62 @@ class TrackLocationRequest extends FormRequest
     {
         $input = $this->all();
         $this->originalPayload = is_array($input) ? $input : [];
-        
+
         if (isset($input['tracking_points'])) {
             $tp = $input['tracking_points'];
             if (is_array($tp)) {
-                $isAssoc = array_keys($tp) !== range(0, count($tp) - 1);
-                if ($isAssoc && isset($tp['type'])) {
-                    $this->replace([$tp]);
+                $isAssoc = $tp !== [] && array_keys($tp) !== range(0, count($tp) - 1);
+                if ($isAssoc) {
+                    $this->replace([$this->normalizePoint($tp)]);
                     return;
                 }
-                $this->replace($tp);
+                $this->replace(array_map(fn ($p) => $this->normalizePoint($p), $tp));
                 return;
             }
         }
 
-        if (isset($input['type']) && is_string($input['type'])) {
-            $this->replace([$input]);
+        if (!is_array($input) || $input === []) {
+            return;
         }
+
+        $isList = array_keys($input) === range(0, count($input) - 1);
+        if ($isList) {
+            $this->replace(array_map(fn ($p) => $this->normalizePoint($p), $input));
+            return;
+        }
+
+        if (isset($input['type']) || isset($input['coords']) || isset($input['lat']) || isset($input['latitude'])) {
+            $this->replace([$this->normalizePoint($input)]);
+        }
+    }
+
+    /**
+     * Map raw background-geolocation records (coords.latitude, no type, etc.)
+     * to the format expected by the validation rules.
+     */
+    private function normalizePoint(mixed $point): mixed
+    {
+        if (!is_array($point)) {
+            return $point;
+        }
+
+        $coords = is_array($point['coords'] ?? null) ? $point['coords'] : [];
+
+        $point['type'] = $point['type'] ?? 'track';
+        $point['lat'] = $point['lat'] ?? $point['latitude'] ?? $coords['latitude'] ?? null;
+        $point['lng'] = $point['lng'] ?? $point['longitude'] ?? $coords['longitude'] ?? null;
+        $point['timestamp'] = $point['timestamp'] ?? $point['recorded_at'] ?? null;
+        $point['is_mock'] = $point['is_mock'] ?? $point['mock'] ?? $coords['mock'] ?? false;
+
+        if (!isset($point['accuracy']) && isset($coords['accuracy'])) {
+            $point['accuracy'] = $coords['accuracy'];
+        }
+
+        if ($point['type'] === 'track' && !isset($point['gps_status'])) {
+            $point['gps_status'] = $point['extras']['gps_status'] ?? 'enabled';
+        }
+
+        return $point;
     }
 
     public function getOriginalPayload(): array
@@ -60,9 +99,9 @@ class TrackLocationRequest extends FormRequest
             '*.is_mock' => ['required', 'boolean'],
             '*.uuid' => ['sometimes', 'string', 'max:255'],
             '*.accuracy' => ['sometimes', 'numeric', 'min:0'],
-            
+
             '*.gps_status' => ['required_if:*.type,track', 'string'],
-            
+
             '*.action' => ['required_if:*.type,geofence', 'string'],
             '*.id' => ['required_if:*.type,geofence', 'string'],
         ];
@@ -152,7 +191,7 @@ class TrackLocationRequest extends FormRequest
     {
         $trackingData = $this->getTrackingData();
         $points = [];
-        
+
         foreach ($trackingData as $data) {
             $pointData = [
                 'latitude' => $data['lat'],
@@ -165,7 +204,7 @@ class TrackLocationRequest extends FormRequest
                 'network_type' => '4G',
                 'location_source' => $data['type'] === 'track' ? 'GPS' : 'Network',
             ];
-            
+
             $points[] = [
                 'point' => LocationTrackingPoint::fromArray($pointData),
                 'type' => $data['type'],
@@ -177,7 +216,7 @@ class TrackLocationRequest extends FormRequest
                 'accuracy' => $data['accuracy'] ?? 5.0,
             ];
         }
-        
+
         return $points;
     }
 }
