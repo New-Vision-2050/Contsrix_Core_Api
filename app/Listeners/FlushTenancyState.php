@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use Illuminate\Support\Once;
 use Stancl\Tenancy\Tenancy;
 
 class FlushTenancyState
@@ -9,11 +10,17 @@ class FlushTenancyState
     /**
      * Handle the event.
      *
-     * Resets tenancy state and static caches between Octane requests 
+     * Resets tenancy state and static caches between Octane requests
      * to prevent tenant data leakage and stale data.
      */
     public function handle(): void
     {
+        // Flush Laravel's once() memoization cache. once() caches by call-site, not
+        // per-request, so under Octane a value resolved for one user/tenant (e.g.
+        // getTimeZoneBranchByRequest()) would otherwise stick for the whole worker
+        // process and leak into every later request it handles.
+        Once::flush();
+
         // End current tenancy if active
         $this->flushTenancy();
 
@@ -37,7 +44,7 @@ class FlushTenancyState
     {
         if (app()->bound(Tenancy::class)) {
             $tenancy = app(Tenancy::class);
-            
+
             if ($tenancy->initialized) {
                 $tenancy->end();
             }
@@ -62,7 +69,7 @@ class FlushTenancyState
     protected function disconnectTenantDatabases(): void
     {
         $tenantConnectionName = config('tenancy.database.tenant_connection', 'tenant');
-        
+
         try {
             if (app('db')->getConnections()) {
                 // Disconnect tenant connection if it exists
@@ -111,12 +118,12 @@ class FlushTenancyState
         // ManagementHierarchyUserTreePresenter
         if (class_exists(\Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyUserTreePresenter::class)) {
             $presenter = \Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyUserTreePresenter::class;
-            
+
             // Reset included users tracking
             if (method_exists($presenter, 'resetIncludedUsers')) {
                 $presenter::resetIncludedUsers();
             }
-            
+
             // Reset flags to defaults
             if (method_exists($presenter, 'setIncludeManagers')) {
                 $presenter::setIncludeManagers(true);
@@ -135,7 +142,7 @@ class FlushTenancyState
         // ManagementHierarchyTreePresenter
         if (class_exists(\Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyTreePresenter::class)) {
             $presenter = \Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyTreePresenter::class;
-            
+
             if (method_exists($presenter, 'setSkipManagementMainNodes')) {
                 $presenter::setSkipManagementMainNodes(false);
             }
