@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-install -j"$(nproc)" zip gd bcmath intl exif pcntl sockets pdo_mysql mysqli opcache \
     && pecl install redis \
     && docker-php-ext-enable redis \
+    && pecl install timezonedb \
+    && docker-php-ext-enable timezonedb \
     && ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log \
     && mkdir -p /etc/nginx/sites-enabled /var/log/nginx \

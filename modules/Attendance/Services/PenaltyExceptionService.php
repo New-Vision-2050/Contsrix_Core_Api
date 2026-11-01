@@ -60,11 +60,13 @@ class PenaltyExceptionService
             ->pluck('attendance_id')
             ->all();
 
+        $windowStart = $now->copy()->startOfMonth()->subMonthNoOverflow()->startOfDay();
+
         $pending = Attendance::query()
             ->where('user_id', (string) $user->id)
             ->where('shift_end_method', PenaltyDayException::PENALTY_METHOD)
-            ->whereYear('business_date', $now->year)
-            ->whereMonth('business_date', $now->month)
+            ->whereDate('business_date', '>=', $windowStart)
+            ->whereDate('business_date', '<=', $now)
             ->when($decidedIds !== [], fn ($q) => $q->whereNotIn('id', $decidedIds))
             ->orderBy('business_date')
             ->get(['id', 'business_date', 'clock_out_time', 'expected_clock_out_time']);
