@@ -37,19 +37,38 @@ class AuditController extends Controller
 
     public function activityLog(GetAuditListRequest $request)
     {
-        $list = $this->auditService->groupedByDate();
+        try {
+            $list = $this->auditService->groupedByDate();
 
-        // Apply presenter to each audit item while maintaining date grouping
-        $formattedList = [];
-        foreach ($list as $date => $audits) {
-            $formattedList[$date] = AuditPresenter::collection($audits);
+            // Apply presenter to each audit item while maintaining date grouping
+            $formattedList = [];
+            foreach ($list as $date => $audits) {
+                $formattedList[$date] = AuditPresenter::collection($audits);
+            }
+
+            return response([
+                "code" => "SUCCESS_WITH_LIST_PAYLOAD_OBJECTS",
+                "message" => null,
+                "payload" => $formattedList
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[AuditController@activityLog] ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response([
+                "code" => "DEBUG_EXCEPTION",
+                "message" => $e->getMessage(),
+                "payload" => [
+                    "exception" => get_class($e),
+                    "file" => $e->getFile(),
+                    "line" => $e->getLine(),
+                    "trace" => explode("\n", $e->getTraceAsString()),
+                ],
+            ], 500);
         }
-
-        return response([
-            "code" => "SUCCESS_WITH_LIST_PAYLOAD_OBJECTS",
-            "message" => null,
-            "payload" => $formattedList
-        ]);
     }
 
     public function show(GetAuditRequest $request): JsonResponse
