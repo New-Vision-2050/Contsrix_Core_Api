@@ -27,12 +27,17 @@ RUN php -r '$v=PHP_VERSION; $min=["8.2"=>"8.2.35","8.3"=>"8.3.36","8.4"=>"8.4.27
 ARG CACHEBUST=1
 ## Set working directory
 WORKDIR /var/www
-#
+
+## Install PHP dependencies first. This layer is only invalidated when
+## composer.json/composer.lock change, instead of on every code change.
+COPY composer.json composer.lock ./
+RUN composer install --no-scripts --no-autoloader --optimize-autoloader
+
 ## Copy Laravel application
-
 COPY . .
-#
 
+## Regenerate the autoloader now that the app code is present
+RUN composer dump-autoload --optimize --no-scripts
 
 COPY devops/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY devops/nginx/sites-enabled/default.conf /etc/nginx/sites-enabled/default.conf
@@ -65,9 +70,6 @@ RUN mkdir -p storage/framework/sessions && \
 
 RUN mkdir -p bootstrap/cache && \
    chmod -R 775 bootstrap/cache
-
-## Install Laravel dependencies
-RUN composer install --no-scripts --optimize-autoloader
 
 # Download RoadRunner binary with retry logic and diagnostics
 RUN curl --version && \

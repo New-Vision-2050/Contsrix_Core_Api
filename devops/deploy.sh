@@ -234,8 +234,9 @@ chmod 600 .env
 
 cd "$DEPLOY_DIR/devops"
 
-# Build the Docker images without using the cache
-docker compose build --no-cache --pull
+# Build the Docker images, reusing cached layers where possible.
+# --pull still ensures the base image is refreshed when a newer patch is available.
+docker compose build --pull
 
 # Start the containers with the new unique namespace and remove any orphaned containers
 docker compose -p $DOCKER_NAMESPACE up --force-recreate --remove-orphans -d
@@ -284,8 +285,11 @@ cleanup_server() {
     docker volume prune -f
     # Remove all dangling images
     docker image prune -f
-    # Remove BuildKit build cache (accumulates indefinitely with --no-cache builds)
-    docker builder prune -af
+    # NOTE: BuildKit build cache is intentionally NOT pruned here anymore.
+    # Pruning it on every deploy forced every build to start from scratch
+    # (composer install, apt-get, etc.), which is what made deploys so slow.
+    # Prune it periodically instead, e.g. via a nightly cron job:
+    #   docker builder prune -af --filter "until=72h"
 
     # Clean up system temp files
     echo "Cleaning up system temporary files..."
