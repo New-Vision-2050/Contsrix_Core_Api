@@ -24,6 +24,7 @@ use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitStatusRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
 use Modules\Project\ProjectType\Jobs\ImportProjectWorkOrdersJob;
 use Modules\Project\ProjectType\Jobs\ImportProjectOrderPermitUdsJob;
+use Modules\Project\ProjectType\Exports\WorkOrderImportTemplateExport;
 use Modules\Project\ProjectType\Imports\InvalidWorkOrderExcelHeaderException;
 use Modules\Project\ProjectType\Imports\InvalidUdsExcelHeaderException;
 use Modules\Project\ProjectType\Imports\UdsExcelHeaderReader;
@@ -224,21 +225,18 @@ class ProjectOrderPermitController extends Controller
         }
     }
 
-    public function downloadWorkOrderImportTemplate(): BinaryFileResponse
+    public function downloadWorkOrderImportTemplate()
     {
-        $path = WorkOrderExcelOfficialHeader::templateAbsolutePath();
-
-        abort_unless(is_file($path), 404, 'Official Project Work Orders template is missing.');
-
-        return response()->download($path, WorkOrderExcelOfficialHeader::DOWNLOAD_NAME, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ]);
+        return Excel::download(
+            new WorkOrderImportTemplateExport,
+            WorkOrderExcelOfficialHeader::DOWNLOAD_NAME,
+        );
     }
 
     public function importWorkOrdersExcel(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls|max:102400',
+            'file' => ['required', 'file', 'extensions:xlsx,xls', 'max:102400'],
         ]);
 
         $projectId = (string) $request->route('project');
@@ -250,12 +248,12 @@ class ProjectOrderPermitController extends Controller
             $headerRow = (new WorkOrderExcelHeaderReader())->readFirstRow((string) $file->getRealPath());
             (new WorkOrderExcelHeaderValidator())->validate($headerRow);
 
-            $path = $file->store('temp_imports', 'public');
+            $path = $file->store('temp_imports', 'local');
 
             try {
                 dispatch(new ImportProjectWorkOrdersJob($path, $projectId, $companyId));
             } catch (\Throwable $e) {
-                Storage::disk('public')->delete($path);
+                Storage::disk('local')->delete($path);
 
                 throw $e;
             }
