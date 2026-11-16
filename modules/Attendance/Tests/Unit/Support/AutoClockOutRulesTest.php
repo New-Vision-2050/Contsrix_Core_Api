@@ -35,12 +35,12 @@ class AutoClockOutRulesTest extends TestCase
         );
     }
 
-    public function test_enabled_without_extension_still_fires_at_expected_end(): void
+    public function test_enabled_without_extension_defaults_to_120_minutes(): void
     {
         $expected = CarbonImmutable::parse('2026-09-10 20:00:00', 'Asia/Riyadh');
 
         $this->assertSame(
-            '2026-09-10 20:00:00',
+            '2026-09-10 22:00:00',
             AutoClockOutRules::triggerAt($expected, 0, true)->format('Y-m-d H:i:s')
         );
     }
