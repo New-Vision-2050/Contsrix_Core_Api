@@ -27,6 +27,8 @@ use Carbon\CarbonImmutable;
  */
 final class AutoClockOutRules
 {
+    public const DEFAULT_EXTENSION_MINUTES = 120;
+
     public static function enabledFromConfig(): bool
     {
         try {
@@ -82,7 +84,9 @@ final class AutoClockOutRules
             return $expectedClockOutAt;
         }
 
-        return $expectedClockOutAt->addMinutes(max(0, $extensionMinutes));
+        $extensionMinutes = $extensionMinutes > 0 ? $extensionMinutes : self::DEFAULT_EXTENSION_MINUTES;
+
+        return $expectedClockOutAt->addMinutes($extensionMinutes);
     }
 
     /**
