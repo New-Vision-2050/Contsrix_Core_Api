@@ -31,7 +31,7 @@ final class ImportProjectWorkOrdersJob implements ShouldQueue
 
     public function handle(ProjectWorkOrderExcelImportService $service): void
     {
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('local');
 
         if (! $disk->exists($this->filePath)) {
             Log::error('Project Work Orders import file not found: '.$this->filePath);
@@ -40,6 +40,12 @@ final class ImportProjectWorkOrdersJob implements ShouldQueue
         }
 
         try {
+            if (tenancy()->initialized) {
+                tenancy()->end();
+            }
+
+            tenancy()->initialize($this->companyId);
+
             $rows = Excel::toArray([], $disk->path($this->filePath))[0] ?? [];
 
             if ($rows === []) {
@@ -57,6 +63,7 @@ final class ImportProjectWorkOrdersJob implements ShouldQueue
             Log::info('Project Work Orders import completed', [
                 'project_id' => $this->projectId,
                 'updated_rows' => $result['updated'],
+                'created_rows' => $result['created'],
                 'skipped_rows' => $result['skipped'],
                 'row_errors' => $result['errors'],
             ]);
