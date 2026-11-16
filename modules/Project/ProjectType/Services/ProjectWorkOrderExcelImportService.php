@@ -7,23 +7,36 @@ namespace Modules\Project\ProjectType\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
+use Modules\Project\ProjectType\Models\ConnectionCompletionPhase;
+use Modules\Project\ProjectType\Models\ConnectionPhaseStatus;
 use Modules\Project\ProjectType\Models\OrderPermit;
 use Modules\Project\ProjectType\Models\ProjectCompletionPhase;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
+use Modules\Project\ProjectType\Models\ProjectOrderPermitNoteLog;
 use Modules\Project\ProjectType\Models\ProjectPhaseStatus;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 final class ProjectWorkOrderExcelImportService
 {
+    private const DEPARTMENT_PROJECTS = 'مشاريع';
+
+    private const DEPARTMENT_CONNECTIONS = 'توصيلات';
+
+    public function __construct(
+        private readonly ConstructionArchiveFolderService $constructionArchiveFolders,
+    ) {}
+
     /**
      * @param  array<int, array<int|string, mixed>>  $rows
-     * @return array{updated: int, skipped: int, errors: list<array{row: int, reason: string}>}
+     * @return array{updated: int, created: int, skipped: int, errors: list<array{row: int, reason: string}>}
      */
     public function importRows(array $rows, string $projectId, string $companyId): array
     {
         $updated = 0;
+        $created = 0;
         $skipped = 0;
         $errors = [];
+        $employeesByName = $this->buildProjectEmployeeNameMap($projectId, $companyId);
 
         foreach ($rows as $index => $row) {
             if ($index === 0 || $this->isEmptyRow($row)) {
@@ -33,8 +46,13 @@ final class ProjectWorkOrderExcelImportService
             $excelRow = $index + 1;
 
             try {
-                $this->updateExistingWorkOrder($row, $projectId, $companyId);
-                $updated++;
+                $action = $this->upsertWorkOrder($row, $projectId, $companyId, $employeesByName);
+
+                if ($action === 'created') {
+                    $created++;
+                } else {
+                    $updated++;
+                }
             } catch (\DomainException $e) {
                 $skipped++;
                 $errors[] = ['row' => $excelRow, 'reason' => $e->getMessage()];
@@ -47,20 +65,23 @@ final class ProjectWorkOrderExcelImportService
             }
         }
 
-        return compact('updated', 'skipped', 'errors');
+        return compact('updated', 'created', 'skipped', 'errors');
     }
 
     /**
      * @param  array<int|string, mixed>  $row
+     * @param  array<string, list<string>>  $employeesByName
+     * @return 'updated'|'created'
      */
-    private function updateExistingWorkOrder(array $row, string $projectId, string $companyId): void
+    private function upsertWorkOrder(array $row, string $projectId, string $companyId, array $employeesByName): string
     {
         $workOrderName = $this->requiredText($row, 0, 'رقم أمر العمل');
         $orderPermitCode = $this->requiredText($row, 1, 'نوع أمر العمل');
 
         $orderPermits = OrderPermit::query()
             ->where('code', $orderPermitCode)
-            ->get(['id', 'code'])
+            ->with('department:id,name')
+            ->get(['id', 'code', 'order_permit_department_id'])
             ->filter(static fn (OrderPermit $permit): bool => (string) $permit->code === $orderPermitCode)
             ->values();
 
@@ -68,11 +89,22 @@ final class ProjectWorkOrderExcelImportService
             throw new \DomainException("نوع أمر العمل غير موجود: {$orderPermitCode}");
         }
 
+        if ($orderPermits->count() !== 1) {
+            throw new \DomainException("نوع أمر العمل غير فريد: {$orderPermitCode}");
+        }
+
+        /** @var OrderPermit $orderPermit */
+        $orderPermit = $orderPermits->first();
+
         $matches = ProjectOrderPermit::query()
             ->where('project_id', $projectId)
             ->where('name', $workOrderName)
-            ->whereIn('order_permit_id', $orderPermits->pluck('id'))
-            ->with('orderPermit:id,code,order_permit_department_id')
+            ->where('order_permit_id', $orderPermit->id)
+            ->with([
+                'orderPermit:id,code,order_permit_department_id',
+                'orderPermit.department:id,name',
+                'department:id,name',
+            ])
             ->get()
             ->filter(
                 static fn (ProjectOrderPermit $permit): bool => (string) $permit->name === $workOrderName
@@ -80,64 +112,27 @@ final class ProjectWorkOrderExcelImportService
             )
             ->values();
 
-        if ($matches->isEmpty()) {
-            throw new \DomainException(
-                "أمر العمل غير موجود للمشروع الحالي والرقم {$workOrderName} والنوع {$orderPermitCode}"
-            );
-        }
-
-        if ($matches->count() !== 1) {
+        if ($matches->count() > 1) {
             throw new \DomainException(
                 "يوجد أكثر من أمر عمل مطابق للمشروع الحالي والرقم {$workOrderName} والنوع {$orderPermitCode}"
             );
         }
 
-        /** @var ProjectOrderPermit $workOrder */
-        $workOrder = $matches->first();
         $employeeName = $this->requiredText($row, 3, 'المهندس المسؤول');
         $phaseName = $this->requiredText($row, 4, 'مرحلة التنفيذ');
         $statusName = $this->requiredText($row, 5, 'حالة المرحلة');
+        $employeeId = $this->resolveEmployeeId($employeesByName, $employeeName);
 
-        $employeeIds = ProjectEmployee::query()
-            ->join('users', 'users.id', '=', 'project_employees.user_id')
-            ->where('project_employees.project_id', $projectId)
-            ->where('project_employees.company_id', $companyId)
-            ->where('users.name', $employeeName)
-            ->whereNull('users.deleted_at')
-            ->get(['project_employees.user_id', 'users.name'])
-            ->filter(static fn (ProjectEmployee $employee): bool => (string) $employee->name === $employeeName)
-            ->pluck('user_id')
-            ->unique()
-            ->values();
+        $departmentName = $orderPermit->department?->name;
+        $departmentId = $orderPermit->order_permit_department_id;
+        $phaseFields = $this->resolvePhaseAndStatusFields($departmentName, $departmentId, $phaseName, $statusName);
 
-        if ($employeeIds->count() !== 1) {
-            throw new \DomainException("المهندس غير موجود أو غير محدد بشكل فريد في المشروع: {$employeeName}");
-        }
-
-        $phase = ProjectCompletionPhase::query()
-            ->where('name', $phaseName)
-            ->get(['id', 'name'])
-            ->filter(static fn (ProjectCompletionPhase $phase): bool => (string) $phase->name === $phaseName)
-            ->first();
-        $phaseId = $phase?->id;
-        $statusId = null;
-
-        if ($phaseId !== null) {
-            $status = ProjectPhaseStatus::query()
-                ->where('project_completion_phase_id', $phaseId)
-                ->where('name', $statusName)
-                ->get(['id', 'name'])
-                ->filter(static fn (ProjectPhaseStatus $status): bool => (string) $status->name === $statusName)
-                ->first();
-            $statusId = $status?->id;
-        }
-
-        $workOrder->update([
-            'order_permit_id' => $workOrder->order_permit_id,
+        $payload = [
+            'order_permit_id' => $orderPermit->id,
+            'order_permit_department_id' => $departmentId,
             'note_from_departments_to_permit' => $this->nullableText($row, 2),
-            'employee_id' => $employeeIds->first(),
-            'project_completion_phase_id' => $phaseId,
-            'project_phase_status_id' => $statusId,
+            'employee_id' => $employeeId,
+            ...$phaseFields,
             'target_drilling' => $this->nullableNumber($row, 6, 'الحفر المستهدف'),
             'achieved_drilling' => $this->nullableNumber($row, 7, 'الحفر المنفذ'),
             'target_extention' => $this->nullableNumber($row, 8, 'التمديد المستهدف'),
@@ -145,6 +140,159 @@ final class ProjectWorkOrderExcelImportService
             'description_details' => $this->nullableText($row, 10),
             'consultant_statement' => $this->nullableText($row, 11),
             'last_date_consultant_statement' => $this->nullableDate($row, 12),
+        ];
+
+        if ($matches->isEmpty()) {
+            $workOrder = ProjectOrderPermit::query()->create([
+                'project_id' => $projectId,
+                'name' => $workOrderName,
+                ...$payload,
+            ]);
+
+            $this->createDepartmentsNoteLog($workOrder, $payload['note_from_departments_to_permit'] ?? null);
+            $this->constructionArchiveFolders->ensureWorkOrderFolder($workOrder);
+
+            return 'created';
+        }
+
+        /** @var ProjectOrderPermit $workOrder */
+        $workOrder = $matches->first();
+        $workOrder->update($payload);
+
+        return 'updated';
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private function buildProjectEmployeeNameMap(string $projectId, string $companyId): array
+    {
+        $map = [];
+
+        $employees = ProjectEmployee::query()
+            ->where('project_id', $projectId)
+            ->where('company_id', $companyId)
+            ->with(['user' => static fn ($query) => $query->withoutGlobalScopes()->select('id', 'name')])
+            ->get(['user_id']);
+
+        foreach ($employees as $employee) {
+            $name = $this->normalizeText((string) ($employee->user?->name ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $map[$name][] = (string) $employee->user_id;
+        }
+
+        foreach ($map as $name => $ids) {
+            $map[$name] = array_values(array_unique($ids));
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param  array<string, list<string>>  $employeesByName
+     */
+    private function resolveEmployeeId(array $employeesByName, string $employeeName): string
+    {
+        $ids = $employeesByName[$employeeName] ?? [];
+
+        if (count($ids) !== 1) {
+            throw new \DomainException("المهندس غير موجود أو غير محدد بشكل فريد في المشروع: {$employeeName}");
+        }
+
+        return $ids[0];
+    }
+
+    /**
+     * @return array{
+     *     project_completion_phase_id?: int,
+     *     project_phase_status_id?: int,
+     *     connection_completion_phase_id?: int,
+     *     connection_phase_status_id?: int
+     * }
+     */
+    private function resolvePhaseAndStatusFields(
+        ?string $departmentName,
+        int|string|null $departmentId,
+        string $phaseName,
+        string $statusName,
+    ): array {
+        if ($departmentName === self::DEPARTMENT_PROJECTS) {
+            $phase = ProjectCompletionPhase::query()
+                ->when(
+                    $departmentId !== null,
+                    static fn ($query) => $query->where('order_permit_department_id', $departmentId),
+                )
+                ->get(['id', 'name'])
+                ->first(fn (ProjectCompletionPhase $phase): bool => $this->normalizeText((string) $phase->name) === $phaseName);
+
+            if ($phase === null) {
+                throw new \DomainException("مرحلة التنفيذ غير موجودة: {$phaseName}");
+            }
+
+            $status = ProjectPhaseStatus::query()
+                ->where('project_completion_phase_id', $phase->id)
+                ->get(['id', 'name'])
+                ->first(fn (ProjectPhaseStatus $status): bool => $this->normalizeText((string) $status->name) === $statusName);
+
+            if ($status === null) {
+                throw new \DomainException("حالة المرحلة غير موجودة: {$statusName}");
+            }
+
+            return [
+                'project_completion_phase_id' => $phase->id,
+                'project_phase_status_id' => $status->id,
+            ];
+        }
+
+        if ($departmentName === self::DEPARTMENT_CONNECTIONS) {
+            $phase = ConnectionCompletionPhase::query()
+                ->when(
+                    $departmentId !== null,
+                    static fn ($query) => $query->where('order_permit_department_id', $departmentId),
+                )
+                ->get(['id', 'name'])
+                ->first(fn (ConnectionCompletionPhase $phase): bool => $this->normalizeText((string) $phase->name) === $phaseName);
+
+            if ($phase === null) {
+                throw new \DomainException("مرحلة التنفيذ غير موجودة: {$phaseName}");
+            }
+
+            $status = ConnectionPhaseStatus::query()
+                ->where('connection_completion_phase_id', $phase->id)
+                ->get(['id', 'name'])
+                ->first(fn (ConnectionPhaseStatus $status): bool => $this->normalizeText((string) $status->name) === $statusName);
+
+            if ($status === null) {
+                throw new \DomainException("حالة المرحلة غير موجودة: {$statusName}");
+            }
+
+            return [
+                'connection_completion_phase_id' => $phase->id,
+                'connection_phase_status_id' => $status->id,
+            ];
+        }
+
+        throw new \DomainException(
+            'قسم أمر العمل غير مدعوم لاستيراد المرحلة/الحالة: '.($departmentName ?: 'غير معروف')
+        );
+    }
+
+    private function createDepartmentsNoteLog(ProjectOrderPermit $workOrder, ?string $note): void
+    {
+        if ($note === null || trim($note) === '') {
+            return;
+        }
+
+        ProjectOrderPermitNoteLog::query()->create([
+            'project_order_permit_id' => $workOrder->id,
+            'user_id' => auth()->id(),
+            'note' => $note,
+            'type' => ProjectOrderPermitNoteLog::TYPE_DEPARTMENTS_TO_PERMIT,
+            'timezone' => getTimeZoneBranchByRequest() ?? config('app.timezone'),
+            'created_by_name' => auth()->user()?->name,
         ]);
     }
 
@@ -177,9 +325,18 @@ final class ProjectWorkOrderExcelImportService
             $value = (int) $value;
         }
 
-        $value = trim((string) $value);
+        $value = $this->normalizeText((string) $value);
 
         return $value === '' ? null : $value;
+    }
+
+    private function normalizeText(string $value): string
+    {
+        // Excel often uses NBSP / odd unicode spaces that break exact DB matches.
+        $value = str_replace(["\u{00A0}", "\u{202F}", "\u{2007}"], ' ', $value);
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value);
     }
 
     /**
