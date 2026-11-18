@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectType\Services;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
 use Modules\Project\ProjectType\Models\ConnectionCompletionPhase;
 use Modules\Project\ProjectType\Models\ConnectionPhaseStatus;
@@ -14,67 +13,137 @@ use Modules\Project\ProjectType\Models\ProjectCompletionPhase;
 use Modules\Project\ProjectType\Models\ProjectOrderPermit;
 use Modules\Project\ProjectType\Models\ProjectOrderPermitNoteLog;
 use Modules\Project\ProjectType\Models\ProjectPhaseStatus;
+use Modules\Project\ProjectType\Support\WorkOrderExcelImportLogger;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
+/**
+ * Construction work-order Excel import — UPDATE ONLY.
+ * Never inserts a new ProjectOrderPermit.
+ */
 final class ProjectWorkOrderExcelImportService
 {
     private const DEPARTMENT_PROJECTS = 'مشاريع';
 
     private const DEPARTMENT_CONNECTIONS = 'توصيلات';
 
-    public function __construct(
-        private readonly ConstructionArchiveFolderService $constructionArchiveFolders,
-    ) {}
-
     /**
      * @param  array<int, array<int|string, mixed>>  $rows
-     * @return array{updated: int, created: int, skipped: int, errors: list<array{row: int, reason: string}>}
+     * @return array{
+     *     updated: int,
+     *     skipped: int,
+     *     processed: int,
+     *     total_data_rows: int,
+     *     errors: list<array{row: int, work_order_name: ?string, reason: string}>,
+     *     warnings: list<array{row: int, work_order_name: ?string, reason: string}>
+     * }
      */
-    public function importRows(array $rows, string $projectId, string $companyId): array
-    {
+    public function importRows(
+        array $rows,
+        string $projectId,
+        string $companyId,
+        string $importId,
+        ?string $actorUserId = null,
+        ?string $actorUserName = null,
+    ): array {
         $updated = 0;
-        $created = 0;
         $skipped = 0;
+        $processed = 0;
         $errors = [];
+        $warnings = [];
         $employeesByName = $this->buildProjectEmployeeNameMap($projectId, $companyId);
+
+        WorkOrderExcelImportLogger::info('employee_map_built', [
+            'import_id' => $importId,
+            'project_id' => $projectId,
+            'company_id' => $companyId,
+            'unique_engineer_names' => count($employeesByName),
+        ]);
+
+        $totalDataRows = 0;
 
         foreach ($rows as $index => $row) {
             if ($index === 0 || $this->isEmptyRow($row)) {
                 continue;
             }
 
+            $totalDataRows++;
             $excelRow = $index + 1;
+            $workOrderName = $this->peekWorkOrderName($row);
 
             try {
-                $action = $this->upsertWorkOrder($row, $projectId, $companyId, $employeesByName);
+                $rowWarnings = $this->updateExistingWorkOrder(
+                    $row,
+                    $projectId,
+                    $companyId,
+                    $employeesByName,
+                    $importId,
+                    $excelRow,
+                    $actorUserId,
+                    $actorUserName,
+                );
+                $updated++;
+                $processed++;
 
-                if ($action === 'created') {
-                    $created++;
-                } else {
-                    $updated++;
+                foreach ($rowWarnings as $warning) {
+                    $warnings[] = $warning;
                 }
+
+                WorkOrderExcelImportLogger::info('row_updated', [
+                    'import_id' => $importId,
+                    'project_id' => $projectId,
+                    'company_id' => $companyId,
+                    'row_number' => $excelRow,
+                    'work_order_name' => $workOrderName,
+                    'status' => 'updated',
+                    'warning_count' => count($rowWarnings),
+                ]);
             } catch (\DomainException $e) {
                 $skipped++;
-                $errors[] = ['row' => $excelRow, 'reason' => $e->getMessage()];
-
-                Log::warning('Project Work Order Excel row skipped', [
-                    'project_id' => $projectId,
-                    'excel_row' => $excelRow,
+                $processed++;
+                $errors[] = [
+                    'row' => $excelRow,
+                    'work_order_name' => $workOrderName,
                     'reason' => $e->getMessage(),
+                ];
+
+                WorkOrderExcelImportLogger::warning('row_skipped', [
+                    'import_id' => $importId,
+                    'project_id' => $projectId,
+                    'company_id' => $companyId,
+                    'row_number' => $excelRow,
+                    'work_order_name' => $workOrderName,
+                    'status' => 'skipped',
+                    'error_message' => $e->getMessage(),
                 ]);
             }
         }
 
-        return compact('updated', 'created', 'skipped', 'errors');
+        return [
+            'updated' => $updated,
+            'skipped' => $skipped,
+            'processed' => $processed,
+            'total_data_rows' => $totalDataRows,
+            'errors' => $errors,
+            'warnings' => $warnings,
+        ];
     }
 
     /**
      * @param  array<int|string, mixed>  $row
      * @param  array<string, list<string>>  $employeesByName
-     * @return 'updated'|'created'
+     * @return list<array{row: int, work_order_name: ?string, reason: string}>
      */
-    private function upsertWorkOrder(array $row, string $projectId, string $companyId, array $employeesByName): string
-    {
+    private function updateExistingWorkOrder(
+        array $row,
+        string $projectId,
+        string $companyId,
+        array $employeesByName,
+        string $importId,
+        int $excelRow,
+        ?string $actorUserId,
+        ?string $actorUserName,
+    ): array {
+        $warnings = [];
         $workOrderName = $this->requiredText($row, 0, 'رقم أمر العمل');
         $orderPermitCode = $this->requiredText($row, 1, 'نوع أمر العمل');
 
@@ -112,26 +181,69 @@ final class ProjectWorkOrderExcelImportService
             )
             ->values();
 
+        WorkOrderExcelImportLogger::info('row_match_lookup', [
+            'import_id' => $importId,
+            'project_id' => $projectId,
+            'company_id' => $companyId,
+            'row_number' => $excelRow,
+            'work_order_name' => $workOrderName,
+            'order_permit_code' => $orderPermitCode,
+            'matches_found' => $matches->count(),
+            'status' => 'lookup',
+        ]);
+
+        if ($matches->isEmpty()) {
+            throw new \DomainException(
+                "أمر العمل غير موجود للمشروع الحالي والرقم {$workOrderName} والنوع {$orderPermitCode}"
+            );
+        }
+
         if ($matches->count() > 1) {
             throw new \DomainException(
                 "يوجد أكثر من أمر عمل مطابق للمشروع الحالي والرقم {$workOrderName} والنوع {$orderPermitCode}"
             );
         }
 
-        $employeeName = $this->requiredText($row, 3, 'المهندس المسؤول');
+        /** @var ProjectOrderPermit $workOrder */
+        $workOrder = $matches->first();
+
         $phaseName = $this->requiredText($row, 4, 'مرحلة التنفيذ');
         $statusName = $this->requiredText($row, 5, 'حالة المرحلة');
-        $employeeId = $this->resolveEmployeeId($employeesByName, $employeeName);
 
-        $departmentName = $orderPermit->department?->name;
-        $departmentId = $orderPermit->order_permit_department_id;
+        $departmentName = $workOrder->department?->name
+            ?? $orderPermit->department?->name;
+        $departmentId = $workOrder->order_permit_department_id
+            ?? $orderPermit->order_permit_department_id;
         $phaseFields = $this->resolvePhaseAndStatusFields($departmentName, $departmentId, $phaseName, $statusName);
+
+        $note = $this->nullableText($row, 2);
+        $employeeName = $this->nullableText($row, 3);
+        $employeeResolution = $this->resolveEmployeeIdOptionally($employeesByName, $employeeName);
+
+        if ($employeeResolution['warning'] !== null) {
+            $warning = [
+                'row' => $excelRow,
+                'work_order_name' => $workOrderName,
+                'reason' => $employeeResolution['warning'],
+            ];
+            $warnings[] = $warning;
+
+            WorkOrderExcelImportLogger::warning('engineer_not_applied', [
+                'import_id' => $importId,
+                'project_id' => $projectId,
+                'company_id' => $companyId,
+                'row_number' => $excelRow,
+                'work_order_name' => $workOrderName,
+                'engineer_name' => $employeeName,
+                'status' => 'warning',
+                'error_message' => $employeeResolution['warning'],
+            ]);
+        }
 
         $payload = [
             'order_permit_id' => $orderPermit->id,
             'order_permit_department_id' => $departmentId,
-            'note_from_departments_to_permit' => $this->nullableText($row, 2),
-            'employee_id' => $employeeId,
+            'note_from_departments_to_permit' => $note,
             ...$phaseFields,
             'target_drilling' => $this->nullableNumber($row, 6, 'الحفر المستهدف'),
             'achieved_drilling' => $this->nullableNumber($row, 7, 'الحفر المنفذ'),
@@ -142,24 +254,35 @@ final class ProjectWorkOrderExcelImportService
             'last_date_consultant_statement' => $this->nullableDate($row, 12),
         ];
 
-        if ($matches->isEmpty()) {
-            $workOrder = ProjectOrderPermit::query()->create([
-                'project_id' => $projectId,
-                'name' => $workOrderName,
-                ...$payload,
-            ]);
-
-            $this->createDepartmentsNoteLog($workOrder, $payload['note_from_departments_to_permit'] ?? null);
-            $this->constructionArchiveFolders->ensureWorkOrderFolder($workOrder);
-
-            return 'created';
+        // Only change employee_id when the engineer resolves uniquely on this project.
+        // Never create users/employees; leave existing employee_id untouched otherwise.
+        if ($employeeResolution['employee_id'] !== null) {
+            $payload['employee_id'] = $employeeResolution['employee_id'];
         }
 
-        /** @var ProjectOrderPermit $workOrder */
-        $workOrder = $matches->first();
+        WorkOrderExcelImportLogger::info('row_update_started', [
+            'import_id' => $importId,
+            'project_id' => $projectId,
+            'company_id' => $companyId,
+            'row_number' => $excelRow,
+            'work_order_name' => $workOrderName,
+            'project_order_permit_id' => $workOrder->id,
+            'employee_applied' => $employeeResolution['employee_id'] !== null,
+            'status' => 'updating',
+        ]);
+
         $workOrder->update($payload);
 
-        return 'updated';
+        $this->createDepartmentsNoteLog(
+            $workOrder,
+            $note,
+            $actorUserId,
+            $actorUserName,
+            $importId,
+            $excelRow,
+        );
+
+        return $warnings;
     }
 
     /**
@@ -192,17 +315,41 @@ final class ProjectWorkOrderExcelImportService
     }
 
     /**
+     * Resolve engineer for update without failing the row.
+     * Does not create users or project employees.
+     *
      * @param  array<string, list<string>>  $employeesByName
+     * @return array{employee_id: ?string, warning: ?string}
      */
-    private function resolveEmployeeId(array $employeesByName, string $employeeName): string
+    private function resolveEmployeeIdOptionally(array $employeesByName, ?string $employeeName): array
     {
-        $ids = $employeesByName[$employeeName] ?? [];
-
-        if (count($ids) !== 1) {
-            throw new \DomainException("المهندس غير موجود أو غير محدد بشكل فريد في المشروع: {$employeeName}");
+        if ($employeeName === null) {
+            return [
+                'employee_id' => null,
+                'warning' => 'المهندس المسؤول فاضي في ملف الإكسل؛ تم تحديث باقي الحقول بدون تغيير المهندس',
+            ];
         }
 
-        return $ids[0];
+        $ids = $employeesByName[$employeeName] ?? [];
+
+        if ($ids === []) {
+            return [
+                'employee_id' => null,
+                'warning' => "المهندس غير موجود في قاعدة البيانات أو غير مربوط بالمشروع الحالي: {$employeeName}",
+            ];
+        }
+
+        if (count($ids) !== 1) {
+            return [
+                'employee_id' => null,
+                'warning' => "المهندس غير محدد بشكل فريد في المشروع: {$employeeName}",
+            ];
+        }
+
+        return [
+            'employee_id' => $ids[0],
+            'warning' => null,
+        ];
     }
 
     /**
@@ -280,20 +427,53 @@ final class ProjectWorkOrderExcelImportService
         );
     }
 
-    private function createDepartmentsNoteLog(ProjectOrderPermit $workOrder, ?string $note): void
-    {
+    private function createDepartmentsNoteLog(
+        ProjectOrderPermit $workOrder,
+        ?string $note,
+        ?string $actorUserId,
+        ?string $actorUserName,
+        string $importId,
+        int $excelRow,
+    ): void {
         if ($note === null || trim($note) === '') {
+            WorkOrderExcelImportLogger::info('note_log_skipped_empty', [
+                'import_id' => $importId,
+                'row_number' => $excelRow,
+                'project_order_permit_id' => $workOrder->id,
+                'status' => 'skipped',
+            ]);
+
             return;
         }
 
         ProjectOrderPermitNoteLog::query()->create([
             'project_order_permit_id' => $workOrder->id,
-            'user_id' => auth()->id(),
+            'user_id' => $actorUserId,
             'note' => $note,
             'type' => ProjectOrderPermitNoteLog::TYPE_DEPARTMENTS_TO_PERMIT,
             'timezone' => getTimeZoneBranchByRequest() ?? config('app.timezone'),
-            'created_by_name' => auth()->user()?->name,
+            'created_by_name' => $actorUserName,
         ]);
+
+        WorkOrderExcelImportLogger::info('note_log_created', [
+            'import_id' => $importId,
+            'row_number' => $excelRow,
+            'project_order_permit_id' => $workOrder->id,
+            'user_id' => $actorUserId,
+            'status' => 'created',
+        ]);
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $row
+     */
+    private function peekWorkOrderName(array $row): ?string
+    {
+        try {
+            return $this->nullableText($row, 0);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -332,7 +512,6 @@ final class ProjectWorkOrderExcelImportService
 
     private function normalizeText(string $value): string
     {
-        // Excel often uses NBSP / odd unicode spaces that break exact DB matches.
         $value = str_replace(["\u{00A0}", "\u{202F}", "\u{2007}"], ' ', $value);
         $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
 
