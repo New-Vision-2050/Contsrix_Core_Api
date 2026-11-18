@@ -22,6 +22,7 @@ use Modules\Project\ProjectType\Requests\SearchProjectOrderPermitUdsRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectOrderPermitStatusRequest;
 use Modules\Project\ProjectType\Services\ProjectOrderPermitService;
+use Illuminate\Support\Str;
 use Modules\Project\ProjectType\Jobs\ImportProjectWorkOrdersJob;
 use Modules\Project\ProjectType\Jobs\ImportProjectOrderPermitUdsJob;
 use Modules\Project\ProjectType\Exports\WorkOrderImportTemplateExport;
@@ -33,6 +34,8 @@ use Modules\Project\ProjectType\Imports\UdsExcelOfficialHeader;
 use Modules\Project\ProjectType\Imports\WorkOrderExcelHeaderReader;
 use Modules\Project\ProjectType\Imports\WorkOrderExcelHeaderValidator;
 use Modules\Project\ProjectType\Imports\WorkOrderExcelOfficialHeader;
+use Modules\Project\ProjectType\Models\ProjectWorkOrderExcelImport;
+use Modules\Project\ProjectType\Support\WorkOrderExcelImportLogger;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProjectOrderPermitController extends Controller
@@ -241,37 +244,146 @@ class ProjectOrderPermitController extends Controller
 
         $projectId = (string) $request->route('project');
         $companyId = (string) tenant('id');
+        $userId = auth()->id() ? (string) auth()->id() : null;
         ProjectManagement::query()->findOrFail($projectId);
 
+        $importId = (string) Str::uuid();
+        $file = $request->file('file');
+
+        WorkOrderExcelImportLogger::info('import_request_received', [
+            'import_id' => $importId,
+            'project_id' => $projectId,
+            'company_id' => $companyId,
+            'user_id' => $userId,
+            'tenant_id' => $companyId,
+            'original_filename' => $file?->getClientOriginalName(),
+            'file_size' => $file?->getSize(),
+            'extension' => $file?->getClientOriginalExtension(),
+            'mime_type' => $file?->getMimeType(),
+            'status' => 'received',
+        ]);
+
         try {
-            $file = $request->file('file');
             $headerRow = (new WorkOrderExcelHeaderReader())->readFirstRow((string) $file->getRealPath());
             (new WorkOrderExcelHeaderValidator())->validate($headerRow);
 
+            WorkOrderExcelImportLogger::info('file_validation_passed', [
+                'import_id' => $importId,
+                'project_id' => $projectId,
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'status' => 'validated',
+            ]);
+
             $path = $file->store('temp_imports', 'local');
 
+            WorkOrderExcelImportLogger::info('file_stored', [
+                'import_id' => $importId,
+                'project_id' => $projectId,
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'stored_path' => $path,
+                'disk' => 'local',
+                'status' => 'stored',
+            ]);
+
+            $import = ProjectWorkOrderExcelImport::query()->create([
+                'id' => $importId,
+                'project_id' => $projectId,
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'status' => ProjectWorkOrderExcelImport::STATUS_QUEUED,
+                'original_filename' => $file->getClientOriginalName(),
+                'stored_path' => $path,
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+            ]);
+
             try {
-                dispatch(new ImportProjectWorkOrdersJob($path, $projectId, $companyId));
+                dispatch(new ImportProjectWorkOrdersJob(
+                    $importId,
+                    $path,
+                    $projectId,
+                    $companyId,
+                    $userId,
+                ));
             } catch (\Throwable $e) {
                 Storage::disk('local')->delete($path);
+                $import->forceFill([
+                    'status' => ProjectWorkOrderExcelImport::STATUS_FAILED,
+                    'failure_reason' => $e->getMessage(),
+                    'finished_at' => now(),
+                ])->save();
+
+                WorkOrderExcelImportLogger::error('queue_dispatch_failed', [
+                    'import_id' => $importId,
+                    'project_id' => $projectId,
+                    'company_id' => $companyId,
+                    'user_id' => $userId,
+                    'status' => 'failed',
+                ], $e);
 
                 throw $e;
             }
 
+            WorkOrderExcelImportLogger::info('queue_dispatched', [
+                'import_id' => $importId,
+                'project_id' => $projectId,
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'status' => 'queued',
+            ]);
+
             return response()->json([
-                'message' => 'جاري تحديث أوامر العمل في الخلفية',
+                'message' => 'تم قبول الملف. جاري تحديث أوامر العمل في الخلفية (تحديث فقط، بدون إضافة سجلات جديدة).',
+                'import_id' => $importId,
+                'status' => ProjectWorkOrderExcelImport::STATUS_QUEUED,
+                'status_url' => url("/api/v1/projects/{$projectId}/order-permits/import-construction/{$importId}"),
             ]);
         } catch (InvalidWorkOrderExcelHeaderException $e) {
+            WorkOrderExcelImportLogger::warning('header_validation_failed', [
+                'import_id' => $importId,
+                'project_id' => $projectId,
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'status' => 'rejected',
+                'error_message' => $e->getMessage(),
+                'mismatches' => $e->mismatches(),
+            ]);
+
             return Json::error(
                 $e->getMessage(),
                 422,
                 'InvalidWorkOrdersTemplate',
-                ['mismatches' => $e->mismatches()],
+                ['mismatches' => $e->mismatches(), 'import_id' => $importId],
                 422,
             );
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            WorkOrderExcelImportLogger::error('import_request_failed', [
+                'import_id' => $importId,
+                'project_id' => $projectId,
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'status' => 'failed',
+            ], $e);
+
+            return response()->json(['error' => $e->getMessage(), 'import_id' => $importId], 500);
         }
+    }
+
+    public function showWorkOrderExcelImport(string $project, string $importId): JsonResponse
+    {
+        $companyId = (string) tenant('id');
+
+        $import = ProjectWorkOrderExcelImport::query()
+            ->where('id', $importId)
+            ->where('project_id', $project)
+            ->where('company_id', $companyId)
+            ->firstOrFail();
+
+        return response()->json([
+            'data' => $import->toStatusPayload(),
+        ]);
     }
 
     public function updateFromUds(Request $request, string $project, string $name): JsonResponse
