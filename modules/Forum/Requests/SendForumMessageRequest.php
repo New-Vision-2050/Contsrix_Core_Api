@@ -36,4 +36,9 @@ class SendForumMessageRequest extends FormRequest
     {
         return ForumMessageType::from($this->input('type', ForumMessageType::TEXT->value));
     }
+
+    public function durationSeconds(): ?int
+    {
+        return $this->filled('duration_seconds') ? (int) $this->input('duration_seconds') : null;
+    }
 }
