@@ -55,7 +55,7 @@ class ForumGroupService
             ->get()
             ->keyBy('group_id');
 
-        $unread = $this->unreadCounts($user->id);
+        $unread = $this->unreadCounts((string) $user->id);
 
         $rows = $groups->map(fn (ForumGroup $group) => [
             'group' => $group,
