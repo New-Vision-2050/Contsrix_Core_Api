@@ -1,0 +1,14 @@
+{
+    "name": "Forum",
+    "alias": "forum",
+    "description": "Real-time company forum: announcements and chat groups",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Forum\\Providers\\ForumServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

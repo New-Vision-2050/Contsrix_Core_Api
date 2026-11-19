@@ -22,6 +22,27 @@ Broadcast::channel('safety.notification.{userId}', function ($user, $userId) {
     return (string) $user->id === (string) $userId;
 });
 
+// Forum — private channels authorized through POST api/v1/forum/broadcasting/auth
+Broadcast::channel('forum.group.{groupId}', function ($user, $groupId) {
+    $group = \Modules\Forum\Models\ForumGroup::query()
+        ->where('company_id', $user->company_id)
+        ->find($groupId);
+
+    if ($group === null) {
+        return false;
+    }
+
+    $access = app(\Modules\Forum\Services\ForumAccessService::class);
+
+    return $access->canView($group, $user, $access->membership($group, $user));
+}, ['guards' => ['api']]);
+Broadcast::channel('forum.user.{userId}', function ($user, $userId) {
+    return (string) $user->id === (string) $userId;
+}, ['guards' => ['api']]);
+Broadcast::channel('forum.announcements.{companyId}', function ($user, $companyId) {
+    return (string) $user->company_id === (string) $companyId;
+}, ['guards' => ['api']]);
+
 //// Allow users to listen to their company's channel
 //Broadcast::channel('company.{companyId}', function ($user, $companyId) {
 //    return (string) $user->company_id === (string) $companyId;
