@@ -47,7 +47,7 @@ class ForumMessageController extends Controller
             $request->messageType(),
             $request->validated('body'),
             $request->file('attachment'),
-            $request->validated('duration_seconds'),
+            $request->durationSeconds(),
         );
 
         return Json::created(ForumPresenter::message($message));
