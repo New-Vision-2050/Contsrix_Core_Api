@@ -459,7 +459,7 @@ class ForumCatalogService
                 'last_message' => $previews[$id] ?? null,
             ];
         })->all();
-        $paged['extra'] = [];
+        $paged['extra'] = $this->access->capabilities($user);
 
         return $paged;
     }

@@ -47,7 +47,10 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/forums/{forumId}/access', [ForumCatalogController::class, 'access']);
     Route::get('/forums/{forumId}/admins', [ForumCatalogController::class, 'admins'])->permission(Permission::FORUM_ADMIN_LIST());
     Route::put('/forums/{forumId}/admins', [ForumCatalogController::class, 'syncAdmins'])->permission(Permission::FORUM_ADMIN_UPDATE());
-    Route::get('/forums/{forumId}/members', [ForumCatalogController::class, 'members'])->permission(Permission::FORUM_MEMBER_LIST());
+    Route::get('/forums/{forumId}/members', [ForumCatalogController::class, 'members'])->permission(
+        Permission::FORUM_MEMBER_LIST(),
+        Permission::FORUM_MEMBER_UPDATE(),
+    );
     Route::put('/forums/{forumId}/members', [ForumCatalogController::class, 'syncMembers'])->permission(Permission::FORUM_MEMBER_UPDATE());
     Route::put('/forums/{forumId}/members/{userId}/groups', [ForumCatalogController::class, 'distribute'])->permission(Permission::FORUM_MEMBER_UPDATE());
     Route::get('/forums/{forumId}/activity', [ForumCatalogController::class, 'activity'])->permission(Permission::FORUM_ACTIVITY_LIST());
@@ -69,7 +72,10 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::post('/forums/{forumId}/groups/{id}/archive', [ForumGroupController::class, 'archive'])->permission(Permission::FORUM_GROUP_ARCHIVE());
     Route::post('/forums/{forumId}/groups/{id}/restore', [ForumGroupController::class, 'restore'])->permission(Permission::FORUM_GROUP_RESTORE());
     Route::get('/forums/{forumId}/groups/{id}/access', [ForumGroupController::class, 'access']);
-    Route::get('/forums/{forumId}/groups/{id}/members', [ForumGroupController::class, 'members'])->permission(Permission::FORUM_MEMBER_LIST());
+    Route::get('/forums/{forumId}/groups/{id}/members', [ForumGroupController::class, 'members'])->permission(
+        Permission::FORUM_MEMBER_LIST(),
+        Permission::FORUM_MEMBER_UPDATE(),
+    );
     Route::put('/forums/{forumId}/groups/{id}/members', [ForumGroupController::class, 'syncMembers'])->permission(Permission::FORUM_MEMBER_UPDATE());
     Route::put('/forums/{forumId}/groups/{id}/send-settings', [ForumGroupController::class, 'updateSendSettings'])->permission(Permission::FORUM_GROUP_UPDATE());
     Route::post('/forums/{forumId}/groups/{id}/read', [ForumGroupController::class, 'markRead']);

@@ -108,6 +108,7 @@ class ForumCatalogController extends Controller
                 'logo_url' => $forum->getFirstMediaUrl(Forum::LOGO_COLLECTION) ?: null,
             ],
             'is_forum_admin' => $this->access->isForumManager($user, (string) $forum->id),
+            'capabilities' => $this->access->capabilities($user),
             'announcements' => [
                 'unread_count' => $this->announcements->unreadCount($user, (string) $forum->id),
                 'latest' => $latest ? ForumPresenter::announcement($latest) : null,
@@ -126,6 +127,7 @@ class ForumCatalogController extends Controller
             'is_forum_admin' => $this->access->isForumAdmin($user),
             'can_publish_announcements' => $this->access->allows($user, Permission::FORUM_ANNOUNCEMENT_CREATE()),
             'can_create_groups' => $this->access->allows($user, Permission::FORUM_GROUP_CREATE()),
+            'capabilities' => $this->access->capabilities($user),
             'groups' => $this->groups->listFor($user, 'all', null, (string) $forum->id, null, true)->pluck('access')->values()->all(),
         ]);
     }
