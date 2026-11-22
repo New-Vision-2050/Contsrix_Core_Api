@@ -27,7 +27,8 @@ class ForumAccessServiceTest extends TestCase
     {
         $user = Mockery::mock(User::class)->makePartial();
         $user->is_owner = false;
-        $user->shouldReceive('hasAnyRole')->andReturn($admin);
+        $user->shouldReceive('hasAnyRole')->andReturn(false);
+        $user->shouldReceive('can')->andReturn($admin);
 
         return $user;
     }

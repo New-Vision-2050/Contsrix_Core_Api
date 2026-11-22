@@ -19,6 +19,7 @@ class ForumMessageCreated implements ShouldBroadcast
     public function __construct(
         public string $groupId,
         public array $message,
+        public ?string $forumId = null,
     ) {}
 
     public function broadcastOn(): array
@@ -34,6 +35,7 @@ class ForumMessageCreated implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
+            'forum_id' => $this->forumId,
             'group_id' => $this->groupId,
             'message' => $this->message,
         ];

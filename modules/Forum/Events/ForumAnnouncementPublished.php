@@ -19,11 +19,17 @@ class ForumAnnouncementPublished implements ShouldBroadcast
     public function __construct(
         public string $companyId,
         public array $announcement,
+        public ?string $forumId = null,
     ) {}
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('forum.announcements.' . $this->companyId)];
+        $channels = [new PrivateChannel('forum.announcements.' . $this->companyId)];
+        if ($this->forumId !== null && $this->forumId !== '' && $this->forumId !== $this->companyId) {
+            $channels[] = new PrivateChannel('forum.announcements.' . $this->forumId);
+        }
+
+        return $channels;
     }
 
     public function broadcastAs(): string
@@ -33,6 +39,9 @@ class ForumAnnouncementPublished implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
-        return ['announcement' => $this->announcement];
+        return [
+            'forum_id' => $this->forumId,
+            'announcement' => $this->announcement,
+        ];
     }
 }

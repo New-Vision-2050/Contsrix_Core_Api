@@ -25,6 +25,7 @@ class ForumGroupActivity implements ShouldBroadcast
         public array $userIds,
         public string $groupId,
         public array $lastMessage,
+        public ?string $forumId = null,
     ) {}
 
     public function broadcastOn(): array
@@ -43,6 +44,7 @@ class ForumGroupActivity implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
+            'forum_id' => $this->forumId,
             'group_id' => $this->groupId,
             'last_message' => $this->lastMessage,
         ];

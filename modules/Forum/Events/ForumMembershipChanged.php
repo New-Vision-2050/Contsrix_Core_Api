@@ -25,6 +25,7 @@ class ForumMembershipChanged implements ShouldBroadcast
         public array $userIds,
         public string $groupId,
         public string $change,
+        public ?string $forumId = null,
     ) {}
 
     public function broadcastOn(): array
@@ -43,6 +44,7 @@ class ForumMembershipChanged implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
+            'forum_id' => $this->forumId,
             'group_id' => $this->groupId,
             'change' => $this->change,
         ];

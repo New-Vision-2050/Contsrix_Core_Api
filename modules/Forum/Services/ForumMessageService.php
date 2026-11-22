@@ -30,7 +30,7 @@ class ForumMessageService
     {
         $query = ForumMessage::query()
             ->where('group_id', $group->id)
-            ->with(['sender', 'media'])
+            ->with(['sender', 'media', 'group:id,forum_id'])
             ->orderByDesc('created_at')
             ->orderByDesc('id');
 
@@ -85,6 +85,7 @@ class ForumMessageService
         }
 
         $message->setRelation('sender', $user);
+        $message->setRelation('group', $group);
         $message->load('media');
 
         if ($member !== null) {
@@ -96,26 +97,29 @@ class ForumMessageService
         return $message;
     }
 
-    public function delete(ForumMessage $message, User $user): void
+    public function delete(ForumMessage $message, User $user, bool $asModerator = false): void
     {
-        abort_unless(
-            $message->sender_id === (string) $user->id || $this->access->isForumAdmin($user),
-            403,
-            __('forum::forum.only_admins'),
-        );
+        $group = $message->relationLoaded('group') ? $message->group : $message->group()->first();
+        $allowed = $asModerator
+            || (string) $message->sender_id === (string) $user->id
+            || $this->access->isForumAdmin($user)
+            || ($group !== null && $this->access->isForumManager($user, (string) ($group->forum_id ?? '')));
 
-        $groupId = $message->group_id;
-        $messageId = $message->id;
+        abort_unless($allowed, 403, __('forum::forum.only_admins'));
+
+        $groupId = (string) $message->group_id;
+        $messageId = (string) $message->id;
+        $forumId = $group?->forum_id;
 
         $message->clearMediaCollection(ForumMessage::ATTACHMENT_COLLECTION);
         $message->delete();
 
-        event(new ForumMessageDeleted($groupId, $messageId));
+        event(new ForumMessageDeleted($groupId, $messageId, $forumId !== null ? (string) $forumId : null));
     }
 
     private function publish(ForumGroup $group, ForumMessage $message, User $sender): void
     {
-        event(new ForumMessageCreated($group->id, ForumPresenter::message($message)));
+        event(new ForumMessageCreated($group->id, ForumPresenter::message($message), (string) $group->forum_id));
 
         $recipientIds = ForumGroupMember::query()
             ->where('group_id', $group->id)
@@ -128,7 +132,7 @@ class ForumMessageService
             return;
         }
 
-        event(new ForumGroupActivity($recipientIds, $group->id, ForumPresenter::lastMessage($message)));
+        event(new ForumGroupActivity($recipientIds, $group->id, ForumPresenter::lastMessage($message), (string) $group->forum_id));
 
         $this->push->notifyMessage($group, $message, $recipientIds);
     }

@@ -19,6 +19,8 @@ class SaveForumGroupRequest extends FormRequest
             'name' => [$required, 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'icon' => ['nullable', 'image', 'max:5120'],
+            'category' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'show_name_in_chat' => ['sometimes', 'boolean'],
             'send_permission' => ['sometimes', Rule::enum(ForumSendPermission::class)],
             'allow_images' => ['sometimes', 'boolean'],
             'allow_voice' => ['sometimes', 'boolean'],
@@ -38,6 +40,8 @@ class SaveForumGroupRequest extends FormRequest
         return $this->safe()->only([
             'name',
             'description',
+            'category',
+            'show_name_in_chat',
             'send_permission',
             'allow_images',
             'allow_voice',
