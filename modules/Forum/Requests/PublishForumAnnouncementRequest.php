@@ -13,6 +13,8 @@ class PublishForumAnnouncementRequest extends FormRequest
         return [
             'title' => ['nullable', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:10000'],
+            'status' => ['sometimes', 'in:draft,published'],
+            'notify' => ['sometimes', 'boolean'],
             'attachments' => ['sometimes', 'array', 'max:10'],
             'attachments.*' => ['file', 'max:20480'],
         ];

@@ -27,14 +27,28 @@ class ForumAnnouncement extends Model implements HasMedia
 
     protected $fillable = [
         'company_id',
+        'forum_id',
         'title',
         'body',
+        'status',
+        'notify',
         'created_by',
+    ];
+
+    protected $attributes = [
+        'status' => 'published',
+        'notify' => true,
     ];
 
     protected $casts = [
         'id' => 'string',
+        'notify' => 'boolean',
     ];
+
+    public function forum(): BelongsTo
+    {
+        return $this->belongsTo(Forum::class, 'forum_id');
+    }
 
     public function author(): BelongsTo
     {

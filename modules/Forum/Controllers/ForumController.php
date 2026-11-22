@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Modules\Forum\Presenters\ForumPresenter;
+use Modules\RoleAndPermission\Enums\Permission;
 use Modules\Forum\Services\ForumAccessService;
 use Modules\Forum\Services\ForumAnnouncementService;
 use Modules\Forum\Services\ForumGroupService;
@@ -57,8 +58,8 @@ class ForumController extends Controller
 
         return Json::item([
             'is_forum_admin' => $this->access->isForumAdmin($user),
-            'can_publish_announcements' => $this->access->isForumAdmin($user),
-            'can_create_groups' => $this->access->isForumAdmin($user),
+            'can_publish_announcements' => $this->access->allows($user, Permission::FORUM_ANNOUNCEMENT_CREATE()),
+            'can_create_groups' => $this->access->allows($user, Permission::FORUM_GROUP_CREATE()),
             'groups' => $this->groups->listFor($user)->pluck('access')->values()->all(),
         ]);
     }
@@ -68,23 +69,39 @@ class ForumController extends Controller
      */
     public function employees(Request $request): JsonResponse
     {
-        $this->access->assertForumAdmin($request->user());
+        $user = $request->user();
+        abort_unless($this->access->canPickEmployees($user), 403, __('forum::forum.only_admins'));
 
         $search = trim((string) $request->query('search', ''));
+        $branchId = $request->query('branch_id');
+        $projectId = $request->query('project_id');
 
         $users = User::query()
+            ->with(['professionalData.jobTitle', 'professionalData.branch', 'managementHierarchy'])
             ->where('company_id', tenant('id'))
             ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
             }))
+            ->when($branchId, fn ($q) => $q->where(function ($q) use ($branchId) {
+                $q->where('management_hierarchy_id', $branchId)
+                    ->orWhereHas('professionalData', function ($professional) use ($branchId) {
+                        $professional->where('branch_id', $branchId)
+                            ->orWhere('management_id', $branchId)
+                            ->orWhere('department_id', $branchId);
+                    });
+            }))
+            ->when($projectId, fn ($q) => $q->whereHas('projects', fn ($projects) => $projects->where('projects.id', $projectId)))
             ->orderBy('name')
             ->limit(100)
-            ->get(['id', 'name', 'email']);
+            ->get();
 
         return Json::items($users->map(fn (User $u) => [
             'id' => $u->id,
             'name' => $u->name,
             'email' => $u->email,
+            'job_title' => ForumPresenter::text($u->professionalData?->jobTitle?->name),
+            'branch_name' => ForumPresenter::text($u->professionalData?->branch?->name ?? $u->managementHierarchy?->name),
+            'avatar_url' => null,
         ])->all());
     }
 
