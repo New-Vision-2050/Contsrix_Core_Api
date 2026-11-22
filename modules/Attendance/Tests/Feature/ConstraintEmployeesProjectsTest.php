@@ -9,13 +9,25 @@ use Illuminate\Support\Str;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Tests\Feature\Reports\BaseAttendanceReportTestCase;
+use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Enum\CompanyUserStatus;
+use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\Project\ProjectManagement\Models\ProjectEmployee;
+use Modules\RoleAndPermission\Enums\Permission;
+use Spatie\Permission\Models\Permission as SpatiePermission;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\User\Models\User;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 
 class ConstraintEmployeesProjectsTest extends BaseAttendanceReportTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->grantListPermissions();
+    }
+
     public function test_constraint_employees_include_assigned_projects_without_changing_existing_fields(): void
     {
         $constraint = $this->createConstraint();
@@ -209,6 +221,70 @@ class ConstraintEmployeesProjectsTest extends BaseAttendanceReportTestCase
         $this->assertSame(__('validation.day_status.absent'), $absentRow['day_status']);
     }
 
+    public function test_constraint_employees_hide_users_who_are_not_active_in_the_company(): void
+    {
+        $constraint = $this->createConstraint();
+        $activeUser = $this->createConstraintUser('Active Employee', $constraint);
+        $inactiveUser = $this->createConstraintUser(
+            'Inactive Employee',
+            $constraint,
+            CompanyUserStatus::INACTIVE->value
+        );
+        $pendingUser = $this->createConstraintUser(
+            'Pending Employee',
+            $constraint,
+            CompanyUserStatus::PENDING->value
+        );
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/attendance/constraints/'.$constraint->id.'/employees?'.http_build_query([
+                'page' => 1,
+                'per_page' => 10,
+            ]));
+
+        $response->assertOk()
+            ->assertJsonPath('pagination.result_count', 1);
+
+        $ids = collect($response->json('payload'))->pluck('id');
+        $this->assertTrue($ids->contains((string) $activeUser->id));
+        $this->assertFalse($ids->contains((string) $inactiveUser->id));
+        $this->assertFalse($ids->contains((string) $pendingUser->id));
+    }
+
+    public function test_team_attendance_hides_users_who_are_not_active_in_the_company(): void
+    {
+        $constraint = $this->createConstraint();
+        $activeUser = $this->createConstraintUser('Active Team Employee', $constraint);
+        $inactiveUser = $this->createConstraintUser(
+            'Inactive Team Employee',
+            $constraint,
+            CompanyUserStatus::INACTIVE->value
+        );
+
+        $date = '2026-11-22';
+        $this->createDayAttendance($activeUser, $date);
+        $this->createDayAttendance($inactiveUser, $date);
+
+        $response = $this->actingAs($this->actor, 'api')
+            ->withHeader('X-Tenant', $this->company->id)
+            ->getJson('/api/v1/attendance/team?'.http_build_query([
+                'page' => 1,
+                'per_page' => 10,
+                'sort' => 'id',
+                'order' => 'asc',
+                'start_date' => $date,
+                'end_date' => $date,
+            ]));
+
+        $response->assertOk();
+
+        $userIds = collect($response->json('payload'))->pluck('user_id');
+        $this->assertTrue($userIds->contains((string) $activeUser->id));
+        $this->assertFalse($userIds->contains((string) $inactiveUser->id));
+        $this->assertSame(1, $response->json('pagination.result_count'));
+    }
+
     private function createConstraint(): AttendanceConstraint
     {
         return AttendanceConstraint::query()->create([
@@ -223,14 +299,25 @@ class ConstraintEmployeesProjectsTest extends BaseAttendanceReportTestCase
         ]);
     }
 
-    private function createConstraintUser(string $name, AttendanceConstraint $constraint): User
-    {
+    private function createConstraintUser(
+        string $name,
+        AttendanceConstraint $constraint,
+        int $companyStatus = CompanyUserStatus::ACTIVE->value,
+    ): User {
         $globalId = (string) Str::uuid();
 
         $user = User::factory()->create([
             'name' => $name,
             'company_id' => $this->company->id,
             'global_company_user_id' => $globalId,
+        ]);
+
+        CompanyUserCompany::query()->create([
+            'id' => (string) Str::uuid(),
+            'company_id' => $this->company->id,
+            'global_company_user_id' => $globalId,
+            'role' => (string) CompanyUserRole::EMPLOYEE->value,
+            'status' => (string) $companyStatus,
         ]);
 
         UserProfessionalData::query()->create([
@@ -245,6 +332,25 @@ class ConstraintEmployeesProjectsTest extends BaseAttendanceReportTestCase
         ]);
 
         return $user;
+    }
+
+    private function createDayAttendance(User $user, string $date): void
+    {
+        Attendance::query()->create([
+            'id' => (string) Str::uuid(),
+            'user_id' => $user->id,
+            'company_id' => $this->company->id,
+            'clock_in_time' => $date.' 12:00:00',
+            'clock_out_time' => $date.' 16:00:00',
+            'start_time' => $date.' 12:00:00',
+            'business_date' => $date,
+            'total_work_hours' => 4,
+            'is_late' => false,
+            'is_absent' => false,
+            'is_holiday' => false,
+            'day_status' => 'work_day',
+            'status' => 'approved',
+        ]);
     }
 
     private function createProject(string $name): ProjectManagement
@@ -266,6 +372,30 @@ class ConstraintEmployeesProjectsTest extends BaseAttendanceReportTestCase
             'company_id' => $this->company->id,
             'assigned_at' => now(),
             'assigned_by_user_id' => $this->actor->id,
+        ]);
+    }
+
+    private function grantListPermissions(): void
+    {
+        setPermissionsTeamId($this->company->id);
+
+        foreach ([
+            Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW(),
+            Permission::EMPLOYEE_ATTENDANCE_VIEW(),
+        ] as $permissionName) {
+            SpatiePermission::firstOrCreate(
+                ['name' => $permissionName, 'guard_name' => 'api'],
+                [
+                    'name' => $permissionName,
+                    'guard_name' => 'api',
+                    'company_id' => $this->company->id,
+                ],
+            );
+        }
+
+        $this->actor->givePermissionTo([
+            Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW(),
+            Permission::EMPLOYEE_ATTENDANCE_VIEW(),
         ]);
     }
 

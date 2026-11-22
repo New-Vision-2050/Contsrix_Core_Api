@@ -29,6 +29,7 @@ use Modules\Attendance\Models\AttendanceConstraintLocation;
 use Modules\Attendance\Presenters\ConstraintListPresenter;
 use Carbon\Carbon;
 use Modules\Attendance\Presenters\ConstraintPresenter;
+use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
@@ -665,6 +666,23 @@ class AttendanceConstraintController extends Controller
             ->toArray();
 
         $allUniqueIds = collect($mainUserIds)->merge($pivotUserIds)->unique()->values();
+
+        // Hide employees whose company membership is inactive or pending.
+        // Same rule as the team attendance list (company_users_companies.status = active).
+        if ($allUniqueIds->isNotEmpty()) {
+            $activeIds = User::withoutTenancy()
+                ->whereIn('id', $allUniqueIds->all())
+                ->whereCompanyUserCompanyStatus(CompanyUserStatus::ACTIVE->value)
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id)
+                ->all();
+
+            $activeLookup = array_flip($activeIds);
+            $allUniqueIds = $allUniqueIds
+                ->filter(fn ($id) => isset($activeLookup[(string) $id]))
+                ->values();
+        }
+
         if ($name) {
             $matchingUserIds = User::withoutTenancy()
                 ->whereIn('id', $allUniqueIds->toArray())
