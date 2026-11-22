@@ -59,6 +59,31 @@ class ForumAccessService
         abort_unless($this->isForumAdmin($user), 403, __('forum::forum.only_admins'));
     }
 
+    /**
+     * Buttons the mobile app may show. Each flag is one role permission.
+     *
+     * @return array<string, bool>
+     */
+    public function capabilities(User $user): array
+    {
+        return [
+            'can_create' => $this->allows($user, Permission::FORUM_CREATE()),
+            'can_update' => $this->allows($user, Permission::FORUM_UPDATE()),
+            'can_archive' => $this->allows($user, Permission::FORUM_ARCHIVE()),
+            'can_restore' => $this->allows($user, Permission::FORUM_RESTORE()),
+            'can_manage_members' => $this->allows($user, Permission::FORUM_MEMBER_UPDATE()),
+            'can_manage_admins' => $this->allows($user, Permission::FORUM_ADMIN_UPDATE()),
+            'can_create_groups' => $this->allows($user, Permission::FORUM_GROUP_CREATE()),
+            'can_update_groups' => $this->allows($user, Permission::FORUM_GROUP_UPDATE()),
+            'can_delete_groups' => $this->allows($user, Permission::FORUM_GROUP_DELETE()),
+            'can_archive_groups' => $this->allows($user, Permission::FORUM_GROUP_ARCHIVE()),
+            'can_restore_groups' => $this->allows($user, Permission::FORUM_GROUP_RESTORE()),
+            'can_publish_announcements' => $this->allows($user, Permission::FORUM_ANNOUNCEMENT_CREATE()),
+            'can_delete_announcements' => $this->allows($user, Permission::FORUM_ANNOUNCEMENT_DELETE()),
+            'can_review_reports' => $this->allows($user, Permission::FORUM_REPORT_UPDATE()),
+        ];
+    }
+
     public function canPickEmployees(User $user): bool
     {
         return $this->allows($user, Permission::FORUM_CREATE())

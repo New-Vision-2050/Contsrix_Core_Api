@@ -2,7 +2,7 @@
 
 A company has **many forums**. Each forum has its own announcements and chat groups (text, images, voice, files).
 
-The employee app lists the forums this user can see, then opens one. Creating forums, groups, members, permissions, announcements, reports review, settings, and the activity log are **dashboard** screens — see `docs/FORUM_DASHBOARD_FRONTEND_SPEC.md`.
+The employee app lists the forums this user can see, then opens one. Management buttons (create a forum, add members, create a group, publish an announcement, and the rest) are shown only when the matching flag in `capabilities` is true. The same actions exist on the dashboard — see `docs/FORUM_DASHBOARD_FRONTEND_SPEC.md`.
 
 Backend: Laravel REST + **Laravel Reverb** (WebSocket) + **FCM**.
 
@@ -61,7 +61,7 @@ Lists use `SUCCESS_WITH_LIST_PAYLOAD_OBJECTS` and `payload` is an array, plus `p
 | | Mobile |
 |--|--------|
 | Employee | Reads announcements. Reads groups they belong to. Sends when the group allows it. Can report a message. |
-| User whose role includes a forum permission | Same chat access, plus the flags below. The management screens stay on the dashboard. The app only uses these flags. |
+| User with a forum permission | Same chat access, plus the button whose flag in `capabilities` is true. |
 
 ---
 
@@ -93,7 +93,123 @@ First screen. One row per forum the user can open.
 
 Sort: most recent `last_message.created_at` first. Forums with no messages follow, by `name`.
 
+The response also has `capabilities` next to `pagination`. Show a button only when its flag is true. Do not read `GET /users/me`.
+
+```json
+{
+  "can_create": false,
+  "can_update": false,
+  "can_archive": false,
+  "can_restore": false,
+  "can_manage_members": false,
+  "can_manage_admins": false,
+  "can_create_groups": false,
+  "can_update_groups": false,
+  "can_delete_groups": false,
+  "can_archive_groups": false,
+  "can_restore_groups": false,
+  "can_publish_announcements": false,
+  "can_delete_announcements": false,
+  "can_review_reports": false
+}
+```
+
+The same object is on `GET /forums/{forumId}/overview` and `GET /forums/{forumId}/access`. A call without the permission returns `403`.
+
 Tapping a row opens that forum's home and subscribes to its announcements channel (section 5).
+
+### Create a forum — `POST /forums`
+
+Shown only when `can_create` is true. `multipart/form-data` when `logo` is attached, otherwise JSON. `403` if the role does not include `FORUM_CREATE`.
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `name` | yes | |
+| `description` | yes | |
+| `visibility` | yes | `company` (كل موظفي الشركة) or `scoped` |
+| `branch_ids` | when `scoped` | at least one branch **or** one project |
+| `project_ids` | when `scoped` | |
+| `admins` | when `status` is `published` | `[ { "user_id", "can_manage_groups": true, "can_publish_announcements": true } ]`. Include the current user if they should manage it |
+| `member_ids` | no | employee ids |
+| `notify_members` | no | default false if omitted. `true` sends push `forum_published` |
+| `status` | no | `published` (default for this button) or `draft` |
+| `logo` | no | PNG or JPG, max 5MB |
+
+```json
+{
+  "name": "منتدى إدارة المشاريع",
+  "description": "متابعة أعمال المشاريع والتنسيق بين الفرق",
+  "visibility": "company",
+  "admins": [
+    { "user_id": "current-user-uuid", "can_manage_groups": true, "can_publish_announcements": true }
+  ],
+  "member_ids": [],
+  "notify_members": true,
+  "status": "published"
+}
+```
+
+`422` when the name or description is empty, `scoped` has no branch and no project, or `published` has no admin. On success, prepend the forum and open it. A `draft` does not appear in `GET /forums` until it is published.
+
+### Other management actions
+
+Employee search for every picker: `GET /employees?search=` → `[ { "id", "name", "email", "job_title", "branch_name" } ]`.
+
+| Button | Flag | Request |
+|--------|------|---------|
+| إضافة أعضاء للمنتدى | `can_manage_members` | `PUT /forums/{forumId}/members` |
+| إضافة أعضاء لمجموعة | `can_manage_members` | `PUT /forums/{forumId}/groups/{groupId}/members` |
+| تعيين أدمنز | `can_manage_admins` | `PUT /forums/{forumId}/admins` |
+| إنشاء مجموعة | `can_create_groups` | `POST /forums/{forumId}/groups` |
+| تعديل مجموعة / صلاحيات الإرسال | `can_update_groups` | `POST /forums/{forumId}/groups/{groupId}` and `PUT .../send-settings` |
+| أرشفة / استعادة مجموعة | `can_archive_groups` / `can_restore_groups` | `POST .../groups/{groupId}/archive` or `.../restore` |
+| حذف مجموعة | `can_delete_groups` | `DELETE /forums/{forumId}/groups/{groupId}` |
+| تعديل المنتدى | `can_update` | `POST /forums/{forumId}` |
+| أرشفة / استعادة المنتدى | `can_archive` / `can_restore` | `POST /forums/{forumId}/archive` or `.../restore` |
+| نشر إعلان | `can_publish_announcements` | `POST /forums/{forumId}/announcements` |
+| حذف إعلان | `can_delete_announcements` | `DELETE /forums/{forumId}/announcements/{id}` |
+| مراجعة بلاغ | `can_review_reports` | `POST /forums/{forumId}/reports/{reportId}/resolve` |
+
+**إضافة أعضاء للمنتدى.** Load the current ids with `GET /forums/{forumId}/members`, then send the full list (old ids + the new ones). The server replaces the list. An id you omit is removed from the forum and from every group in it.
+
+```json
+{ "member_ids": ["uuid-existing", "uuid-new"] }
+```
+
+**إضافة أعضاء لمجموعة.** Same idea, scoped to that group. Each person has a role.
+
+```json
+{
+  "members": [
+    { "user_id": "uuid-1", "role": "admin" },
+    { "user_id": "uuid-2", "role": "member" }
+  ]
+}
+```
+
+`role` is `admin` or `member`. This replaces the members of that group only.
+
+**إنشاء مجموعة** (`multipart` when `icon` is attached):
+
+```json
+{
+  "name": "مهندسو المواقع",
+  "description": "تقارير الزيارات",
+  "show_name_in_chat": true,
+  "send_permission": "all_members"
+}
+```
+
+**نشر إعلان** (`multipart` when `attachments[]` is attached):
+
+```json
+{
+  "title": "تحديث مواعيد الدوام",
+  "body": "يُرجى مراجعة الجدول قبل بداية الأسبوع.",
+  "status": "published",
+  "notify": true
+}
+```
 
 ---
 
@@ -119,12 +235,17 @@ These flags already on the payload are the role permissions. Compare them as boo
 
 | Attribute | Where | True when the role has |
 |-----------|--------|------------------------|
-| `is_forum_admin` | `GET /forums/{id}/overview` and `GET /forums/{id}/access` | any forum management permission |
-| `can_create_groups` | `GET /forums/{id}/access` | `FORUM_GROUP_CREATE` |
-| `can_publish_announcements` | `GET /forums/{id}/access` | `FORUM_ANNOUNCEMENT_CREATE` |
+| `capabilities.can_create` | `GET /forums`, overview, access | `FORUM_CREATE` |
+| `capabilities.can_manage_members` | same | `FORUM_MEMBER_UPDATE` — إضافة أعضاء للمنتدى أو لمجموعة |
+| `capabilities.can_create_groups` | same | `FORUM_GROUP_CREATE` |
+| `capabilities.can_update_groups` | same | `FORUM_GROUP_UPDATE` |
+| `capabilities.can_manage_admins` | same | `FORUM_ADMIN_UPDATE` |
+| `capabilities.can_publish_announcements` | same | `FORUM_ANNOUNCEMENT_CREATE` |
+| `capabilities.can_review_reports` | same | `FORUM_REPORT_UPDATE` |
+| `is_forum_admin` | overview and access | any forum management permission |
 | `access.can_manage` | each group | `FORUM_GROUP_UPDATE` |
 
-Creating a forum is not a mobile screen. A user who only has `FORUM_CREATE` still gets `is_forum_admin: true`, and the dashboard (which reads `GET /users/me`) shows **إنشاء منتدى**.
+`can_update`, `can_archive`, `can_restore`, `can_delete_groups`, `can_archive_groups`, `can_restore_groups`, and `can_delete_announcements` are in the same `capabilities` object. The full map is in section 2.
 
 `send_permission` on the group:
 
@@ -155,6 +276,7 @@ Announcements card + «مجموعاتي» + «مجموعات أخرى» for **th
     "logo_url": null
   },
   "is_forum_admin": false,
+  "capabilities": { "can_create": false, "can_manage_members": false, "can_create_groups": false },
   "announcements": { "unread_count": 2, "latest": { } },
   "my_groups": [],
   "other_groups": []
@@ -319,13 +441,18 @@ If a push arrives for a `forum_id` that is not in the cached list, refetch `GET 
 
 | Screen | API |
 |--------|-----|
-| المنتديات (list) | `GET /forums` + `forum.list.changed` on `forum.user.{userId}` |
+| المنتديات (list) | `GET /forums` (`capabilities`) + `forum.list.changed` on `forum.user.{userId}` |
+| إنشاء منتدى | `POST /forums` when `capabilities.can_create` |
+| إضافة أعضاء للمنتدى | `GET /employees`, `GET/PUT /forums/{forumId}/members` when `can_manage_members` |
+| إضافة أعضاء لمجموعة | `PUT /forums/{forumId}/groups/{groupId}/members` when `can_manage_members` |
+| إنشاء مجموعة | `POST /forums/{forumId}/groups` when `can_create_groups` |
+| نشر إعلان | `POST /forums/{forumId}/announcements` when `can_publish_announcements` |
 | منتدى (home) | `GET /forums/{forumId}/overview` + `forum.group.activity` |
 | الإعلانات | `GET /forums/{forumId}/announcements`, `POST .../announcements/read`, channel `forum.announcements.{forumId}` |
 | شات المجموعة | `GET/POST .../groups/{id}/messages`, `POST .../groups/{id}/read`, channel `forum.group.{id}` |
 | إبلاغ عن رسالة | `POST .../messages/{messageId}/reports` |
 
-There is no «إدارة المنتدى» screen in the app. Admins use the dashboard.
+Show each management button only when its `capabilities` flag is true. The same screens also exist on the dashboard.
 
 ---
 
