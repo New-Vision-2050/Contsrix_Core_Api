@@ -72,7 +72,6 @@ Route::post('test', [AttendanceController::class, 'test'])
         ->name('attendance.current-status');
 
     Route::get('history', [AttendanceController::class, 'getHistory'])
-        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.history');
             // // Export Reports
     Route::post('/team/export', [AttendanceController::class, 'exportTeamAttendance'])
