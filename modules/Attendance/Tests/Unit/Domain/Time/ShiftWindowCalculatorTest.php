@@ -363,6 +363,45 @@ final class ShiftWindowCalculatorTest extends TestCase
         $this->assertSame('2026-08-13 23:59', $w->lastClockInAt->format('Y-m-d H:i'));
     }
 
+    public function test_flexible_late_night_clock_in_keeps_clock_out_on_the_next_morning(): void
+    {
+        $tz = 'Asia/Riyadh';
+        $w = $this->calc->compute(new ShiftWindowInput(
+            scheduledStart: CarbonImmutable::parse('2026-08-13 00:00:00', $tz),
+            scheduledEnd: CarbonImmutable::parse('2026-08-13 23:59:59', $tz),
+            clockIn: CarbonImmutable::parse('2026-08-13 23:00:00', $tz),
+            overtimeFlags: new OvertimeFlags(),
+            timezone: $tz,
+            requiredWorkMinutesOverride: 480,
+            flexibleDay: true,
+        ));
+
+        // 23:00 + 8h = 07:00 next day. Same session as a regular 23:00–07:00 shift.
+        // Clock-in still closes at the end of the calendar day.
+        $this->assertSame('2026-08-14 07:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-14 07:00', $w->lastClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-14 07:00', $w->autoCloseTriggerAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 23:59', $w->lastClockInAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 23:59', $w->absentAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 00:00', $w->earliestClockIn->format('Y-m-d H:i'));
+    }
+
+    public function test_flexible_daytime_clock_in_still_closes_inside_the_calendar_day(): void
+    {
+        $tz = 'Asia/Riyadh';
+        $w = $this->calc->compute(new ShiftWindowInput(
+            scheduledStart: CarbonImmutable::parse('2026-08-13 00:00:00', $tz),
+            scheduledEnd: CarbonImmutable::parse('2026-08-13 23:59:59', $tz),
+            clockIn: CarbonImmutable::parse('2026-08-13 11:00:00', $tz),
+            timezone: $tz,
+            requiredWorkMinutesOverride: 480,
+            flexibleDay: true,
+        ));
+
+        $this->assertSame('2026-08-13 19:00', $w->expectedClockOutAt->format('Y-m-d H:i'));
+        $this->assertSame('2026-08-13 23:59', $w->lastClockOutAt->format('Y-m-d H:i'));
+    }
+
     public function test_flexible_blocks_reclock_when_overtime_not_allowed(): void
     {
         $tz = 'Asia/Riyadh';

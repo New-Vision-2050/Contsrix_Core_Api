@@ -226,6 +226,57 @@ class UserAttendanceTodayPeriodPresenceTest extends TestCase
         $this->assertNotEmpty($periods[0]['attendance']);
     }
 
+    public function test_flexible_overnight_clock_in_stays_open_until_next_morning(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-14 02:00:00', 'Asia/Riyadh'));
+
+        $open = $this->punch([
+            'id' => 'night-1',
+            'clock_in_time' => '2026-08-13 23:00:00',
+            'clock_out_time' => null,
+            'start_time' => '2026-08-13 23:00:00',
+            'end_time' => '2026-08-14 07:00:00',
+            'expected_clock_out_time' => '2026-08-14 07:00:00',
+            'status' => Attendance::STATUS_ACTIVE,
+            'attendance_type' => 'flexible',
+            'total_work_hours' => 0,
+        ]);
+
+        $date = Carbon::parse('2026-08-14', 'Asia/Riyadh');
+        $workRules = [
+            'attendance_type' => 'flexible',
+            'flexible_required_work_minutes' => 480,
+            'early_clock_in_minutes' => 0,
+            'extension_minutes' => 0,
+        ];
+
+        $periods = $this->enhance->invoke(
+            $this->service,
+            [[
+                'status' => 'scheduled',
+                'date' => '2026-08-14',
+                'start_time' => '00:00',
+                'end_time' => '23:59',
+                'extends_to_next_day' => false,
+                'attendance_type' => 'flexible',
+            ]],
+            collect([$open]),
+            $date,
+            [],
+            $open,
+            $workRules
+        );
+
+        $this->assertFalse($periods[0]['can_clock_in']);
+        $this->assertTrue($periods[0]['can_clock_out']);
+        $this->assertFalse($periods[0]['is_absent']);
+        $this->assertSame('2026-08-14T07:00:00+03:00', $periods[0]['can_clock_out_until']);
+        $this->assertSame('night-1', $periods[0]['attendance'][0]['id']);
+        $this->assertSame('2026-08-13', $periods[0]['attendance'][0]['date']);
+        $this->assertSame('23:00', $periods[0]['attendance'][0]['clock_in_time']);
+        $this->assertSame('2026-08-14 07:00:00', $periods[0]['attendance'][0]['expected_clock_out_time']);
+    }
+
     public function test_no_punch_after_deadline_is_absent(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-08-30 16:55:00', 'Asia/Riyadh'));

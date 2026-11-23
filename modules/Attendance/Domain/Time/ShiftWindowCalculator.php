@@ -88,6 +88,11 @@ final class ShiftWindowCalculator
      * constraint working_hours. Auto-close when those hours complete. If overtime after
      * finish is allowed, a later session can run up to max_over_time.
      *
+     * A late punch (for example 23:00 on a night span that finishes at 07:00) keeps
+     * the clock-out on this same session the next morning. Regular overnight shifts
+     * already do that via extends_to_next_day. Clock-in itself still closes at the
+     * end of the calendar day — only the open session crosses midnight.
+     *
      * Rule-based auto clock-out applies the same as fixed shifts: the close fires at
      * expected clock-out (clock-in + required hours) + extension_minutes and stores
      * expected minus the penalty. The expected time floats with the clock-in instead
@@ -112,26 +117,25 @@ final class ShiftWindowCalculator
         if ($hoursComplete) {
             // Overtime re-clock-in after required hours were finished.
             $expectedClockOutAt = $anchor->addMinutes($maxOtMin + $in->completedBreakMinutes);
-            if ($expectedClockOutAt->greaterThan($dayEnd)) {
-                $expectedClockOutAt = $dayEnd;
-            }
             $lastClockInAt = $flags->afterFinishWork ? $dayEnd : $dayStart;
         } else {
             $expectedClockOutAt = $anchor->addMinutes($remainingMinutes + $in->completedBreakMinutes);
-            if ($expectedClockOutAt->greaterThan($dayEnd)) {
-                $expectedClockOutAt = $dayEnd;
-            }
             $lastClockInAt = $dayEnd;
         }
+
+        // Hours that still fit in the calendar day close at day end. Hours that run
+        // past midnight stay open until the punch + remaining work (next morning),
+        // so a 23:00 clock-in is not stored as the next day's departure.
+        $sessionEnd = $expectedClockOutAt->greaterThan($dayEnd) ? $expectedClockOutAt : $dayEnd;
 
         return $this->window(
             requiredMinutes: $requiredMinutes,
             workWindowStart: $dayStart,
-            workWindowEnd: $dayEnd,
+            workWindowEnd: $sessionEnd,
             earliestClockIn: $dayStart,
             firstClockInDeadline: null,
             lastClockInAt: $lastClockInAt,
-            lastClockOutAt: $dayEnd,
+            lastClockOutAt: $sessionEnd,
             expectedClockOutAt: $expectedClockOutAt,
             absentAt: $dayEnd,
             in: $in,
