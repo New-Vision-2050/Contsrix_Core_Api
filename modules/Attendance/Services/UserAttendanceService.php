@@ -419,7 +419,42 @@ class UserAttendanceService
                         && $a->end_time === $periodEnd->format('Y-m-d H:i:s'))
                     ->sum(fn ($a) => (float) $a->total_work_hours) * 60);
 
-            $window = $this->computePeriodWindow($periodStart, $periodEnd, $now, $workRules, $timezone, $alreadyWorked);
+            // An open flexible punch is one session. Anchor the window on that
+            // clock-in, and if it started yesterday (23:00 night span) evaluate it
+            // against yesterday's calendar day so clock-out stays at punch + required
+            // hours (07:00) instead of the next day's 23:59.
+            $windowStart = $periodStart;
+            $windowEnd = $periodEnd;
+            $windowAt = $now;
+            if ($isFlexiblePeriod && $currentAttendance !== null
+                && empty($currentAttendance->clock_out_time)
+                && ! empty($currentAttendance->clock_in_time)
+            ) {
+                $openClockIn = $this->toCarbon(
+                    $currentAttendance->clock_in_time,
+                    $currentAttendance->timezone ?? $timezone
+                );
+                if ($openClockIn->lt($periodStart)) {
+                    [$windowStart, $windowEnd] = \Modules\Attendance\Support\FlexibleWorkDay::dayBounds(
+                        $openClockIn->toDateString(),
+                        $timezone
+                    );
+                    $alreadyListed = collect($periodAttendances)->contains(
+                        fn ($att) => ($att['id'] ?? null) !== null
+                            && (string) $att['id'] === (string) $currentAttendance->id
+                    );
+                    if (! $alreadyListed) {
+                        $periodAttendances[] = $this->formatAttendanceForPeriod(
+                            $currentAttendance,
+                            $periodStart,
+                            $periodEnd
+                        );
+                    }
+                }
+                $windowAt = $openClockIn;
+            }
+
+            $window = $this->computePeriodWindow($windowStart, $windowEnd, $windowAt, $workRules, $timezone, $alreadyWorked);
             $hasAnyClockIn = collect($periodAttendances)->contains(fn ($att) => !empty($att['clock_in_time']));
             $hasActiveAttendance = collect($periodAttendances)->contains(fn ($att) => ($att['status'] ?? null) === 'active');
             // A real punch on this period outranks a leftover absent status (INV-16).
